@@ -15,7 +15,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 
-#include <boost/shared_ptr.hpp>
 #include "Global/GlobalDefines.h"
 
 /**
@@ -53,11 +52,11 @@ public:
 
     void setBoundaries(SequenceTime leftBound,SequenceTime rightBound);
 
-    void seekFrame(SequenceTime frame,const boost::shared_ptr<Natron::OutputEffectInstance>& caller);
+    void seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller);
 
-    void incrementCurrentFrame(const boost::shared_ptr<Natron::OutputEffectInstance>& caller);
+    void incrementCurrentFrame(Natron::OutputEffectInstance* caller);
 
-    void decrementCurrentFrame(const boost::shared_ptr<Natron::OutputEffectInstance>& caller) ;
+    void decrementCurrentFrame(Natron::OutputEffectInstance* caller) ;
 
 public slots:
     void onFrameChanged(SequenceTime frame);

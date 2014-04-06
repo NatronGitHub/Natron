@@ -45,7 +45,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                const std::string& context,
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-, _node()
+, _node(NULL)
 , _parentingMap()
 {
 }
@@ -465,7 +465,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
 /// set the timeline to a specific time
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
     
-    _node->getApp()->getTimeLine()->seekFrame((int)t,boost::shared_ptr<OutputEffectInstance>());
+    _node->getApp()->getTimeLine()->seekFrame((int)t,NULL);
     
 }
 

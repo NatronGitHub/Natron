@@ -113,9 +113,9 @@ struct ViewerTabPrivate {
     
     Gui* _gui;
     
-    boost::shared_ptr<ViewerInstance> _viewerNode;// < pointer to the internal node
+    ViewerInstance* _viewerNode;// < pointer to the internal node
 
-    ViewerTabPrivate(Gui* gui,boost::shared_ptr<ViewerInstance> node)
+    ViewerTabPrivate(Gui* gui,ViewerInstance* node)
     : _currentViewIndex(0)
     , _gui(gui)
     , _viewerNode(node)
@@ -124,7 +124,7 @@ struct ViewerTabPrivate {
     }
 };
 
-ViewerTab::ViewerTab(Gui* gui,boost::shared_ptr<ViewerInstance> node,QWidget* parent)
+ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
 : QWidget(parent)
 , _imp(new ViewerTabPrivate(gui,node))
 {
@@ -514,13 +514,13 @@ ViewerTab::ViewerTab(Gui* gui,boost::shared_ptr<ViewerInstance> node,QWidget* pa
     
     
     /*slots & signals*/
-    QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _imp->_viewerNode.get(),
+    QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _imp->_viewerNode,
                      SLOT(onColorSpaceChanged(QString)));
     QObject::connect(_imp->_zoomCombobox, SIGNAL(currentIndexChanged(QString)),_imp->viewer, SLOT(zoomSlot(QString)));
     QObject::connect(_imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
-    QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode.get(),SLOT(onGainChanged(double)));
+    QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode,SLOT(onGainChanged(double)));
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_gainBox, SLOT(setValue(double)));
-    QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_viewerNode.get(), SLOT(onGainChanged(double)));
+    QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_viewerNode, SLOT(onGainChanged(double)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(_imp->_currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)));
     
@@ -539,15 +539,15 @@ ViewerTab::ViewerTab(Gui* gui,boost::shared_ptr<ViewerInstance> node,QWidget* pa
     QObject::connect(_imp->loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
     QObject::connect(_imp->_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
-    QObject::connect(_imp->_viewerNode.get(),SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
+    QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
                      SLOT(onCachedFrameAdded(SequenceTime)));
-    QObject::connect(_imp->_viewerNode.get(),SIGNAL(removedLRUCachedFrame()),_imp->_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
+    QObject::connect(_imp->_viewerNode,SIGNAL(removedLRUCachedFrame()),_imp->_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
     QObject::connect(appPTR,SIGNAL(imageRemovedFromViewerCache(SequenceTime)),_imp->_timeLineGui,SLOT(onCachedFrameRemoved(SequenceTime)));
-    QObject::connect(_imp->_viewerNode.get(),SIGNAL(clearedViewerCache()),_imp->_timeLineGui,SLOT(onCachedFramesCleared()));
+    QObject::connect(_imp->_viewerNode,SIGNAL(clearedViewerCache()),_imp->_timeLineGui,SLOT(onCachedFramesCleared()));
     QObject::connect(_imp->_refreshButton, SIGNAL(clicked()), this, SLOT(refresh()));
     
     QObject::connect(_imp->_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
-    QObject::connect(_imp->_viewerNode.get(),SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
+    QObject::connect(_imp->_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
     QObject::connect(_imp->fpsBox, SIGNAL(valueChanged(double)), vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget, SLOT(setFps(double,double)));
     QObject::connect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget,SLOT(hideFps()));
@@ -555,7 +555,7 @@ ViewerTab::ViewerTab(Gui* gui,boost::shared_ptr<ViewerInstance> node,QWidget* pa
     QObject::connect(vengine, SIGNAL(engineStopped(int)), this, SLOT(onEngineStopped()));
     
     
-    QObject::connect(_imp->_viewerNode.get(), SIGNAL(mustRedraw()), _imp->viewer, SLOT(update()));
+    QObject::connect(_imp->_viewerNode, SIGNAL(mustRedraw()), _imp->viewer, SLOT(update()));
     
     QObject::connect(_imp->_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
     
@@ -719,6 +719,9 @@ void ViewerTab::refresh(){
 ViewerTab::~ViewerTab()
 {
     _imp->_viewerNode->invalidateUiContext();
+    if (_imp->_gui->getLastSelectedViewer() == this) {
+        _imp->_gui->setLastSelectedViewer(NULL);
+    }
 }
 
 
@@ -862,7 +865,7 @@ void ViewerTab::drawOverlays() const{
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         effect->drawOverlay_public();
@@ -878,7 +881,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -901,7 +904,7 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(viewportPos, pos);
@@ -924,7 +927,7 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayPenUp_public(viewportPos, pos);
@@ -947,7 +950,7 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
@@ -970,7 +973,7 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -993,7 +996,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1017,7 +1020,7 @@ bool ViewerTab::notifyOverlaysFocusGained(){
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1039,7 +1042,7 @@ bool ViewerTab::notifyOverlaysFocusLost(){
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> effect = nodes[i]->getLiveInstance();
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1145,7 +1148,7 @@ ViewerGL* ViewerTab::getViewer() const {
     return _imp->viewer;
 }
 
-boost::shared_ptr<ViewerInstance> ViewerTab::getInternalNode() const { return _imp->_viewerNode; }
+ViewerInstance* ViewerTab::getInternalNode() const { return _imp->_viewerNode; }
 
 Gui* ViewerTab::getGui() const { return _imp->_gui; }
 

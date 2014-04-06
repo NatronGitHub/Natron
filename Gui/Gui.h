@@ -90,7 +90,7 @@ public:
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(boost::shared_ptr<ViewerInstance> node,TabWidget* where);
+    ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where);
     
     void addViewerTab(ViewerTab* tab,TabWidget* where);
     
@@ -124,6 +124,8 @@ public:
     const std::vector<ToolButton*>& getToolButtons() const;
 
     void registerNewUndoStack(QUndoStack* stack);
+    
+    void registerNewUndoStack(QUndoStack* stack,QAction* undoAction,QAction* redoAction);
     
     void removeUndoStack(QUndoStack* stack);
         
@@ -222,11 +224,11 @@ public:
     
     void deactivateViewerTab(ViewerInstance* viewer);
     
-    ViewerTab* getViewerTabForInstance(const boost::shared_ptr<ViewerInstance>& node) const;
+    ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
     
-    const std::vector<boost::shared_ptr<NodeGui> >& getVisibleNodes() const;
+    const std::list<boost::shared_ptr<NodeGui> >& getVisibleNodes() const;
     
-    std::vector<boost::shared_ptr<NodeGui> > getVisibleNodes_mt_safe() const;
+    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes_mt_safe() const;
     
     void deselectAllNodes() const;
     
@@ -234,7 +236,7 @@ public:
                                  ProcessHandler* process);
     
     void onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,
-                               boost::shared_ptr<Natron::OutputEffectInstance> writer);
+                               Natron::OutputEffectInstance* writer);
     
     NodeGraph* getNodeGraph() const;
     
@@ -251,6 +253,8 @@ public:
     void updateLastSequenceSavedPath(const QString& path);
     
     bool isClosing() const;
+    
+    void clearExceedingUndoRedoEvents();
     
     void setGlewVersion(const QString& version);
     

@@ -449,7 +449,7 @@ void Gui::createViewerGui(boost::shared_ptr<Node> viewer){
     }else{
         _imp->_nextViewerTabPlace = NULL; // < reseting anchor to default
     }
-    boost::shared_ptr<ViewerInstance> v = boost::dynamic_pointer_cast<ViewerInstance>(viewer->getLiveInstance());
+    ViewerInstance* v = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
     assert(v);
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
     v->setUiContext(_imp->_lastSelectedViewer->getViewer());
@@ -1099,7 +1099,7 @@ void Gui::minimize(){
 }
 
 
-ViewerTab* Gui::addNewViewerTab(boost::shared_ptr<ViewerInstance> viewer,TabWidget* where){
+ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
     QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),this,SLOT(onViewerImageChanged()));
     {
@@ -1888,6 +1888,13 @@ void Gui::registerNewUndoStack(QUndoStack* stack){
     _imp->_undoStacksActions.insert(std::make_pair(stack, std::make_pair(undo, redo)));
 }
 
+void Gui::registerNewUndoStack(QUndoStack* stack,QAction* undoAction,QAction* redoAction)
+{
+    _imp->_undoStacksGroup->addStack(stack);
+    _imp->_undoStacksActions.insert(std::make_pair(stack, std::make_pair(undoAction, redoAction)));
+
+}
+
 void Gui::removeUndoStack(QUndoStack* stack){
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
     if(it != _imp->_undoStacksActions.end()){
@@ -2067,7 +2074,7 @@ void Gui::deactivateViewerTab(ViewerInstance* viewer) {
     }
 }
 
-ViewerTab* Gui::getViewerTabForInstance(const boost::shared_ptr<ViewerInstance>& node) const {
+ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         if ((*it)->getInternalNode() == node) {
@@ -2077,12 +2084,12 @@ ViewerTab* Gui::getViewerTabForInstance(const boost::shared_ptr<ViewerInstance>&
     return NULL;
 }
 
-const std::vector<boost::shared_ptr<NodeGui> >& Gui::getVisibleNodes() const {
+const std::list<boost::shared_ptr<NodeGui> >& Gui::getVisibleNodes() const {
     return  _imp->_nodeGraphArea->getAllActiveNodes();
     
 }
 
-std::vector<boost::shared_ptr<NodeGui> > Gui::getVisibleNodes_mt_safe() const {
+std::list<boost::shared_ptr<NodeGui> > Gui::getVisibleNodes_mt_safe() const {
     return _imp->_nodeGraphArea->getAllActiveNodes_mt_safe();
 }
 
@@ -2165,7 +2172,7 @@ void Gui::updateLastSequenceSavedPath(const QString& path) {
 }
 
 void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,
-                                boost::shared_ptr<Natron::OutputEffectInstance> writer) {
+                                Natron::OutputEffectInstance* writer) {
     RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,this);
     VideoEngine* ve = writer->getVideoEngine().get();
     QObject::connect(dialog,SIGNAL(canceled()),ve,SLOT(abortRenderingNonBlocking()));
@@ -2235,4 +2242,9 @@ void Gui::renderSelectedNode()
     } else {
         Natron::warningDialog("Render", "You must select a node to render first!");
     }
+}
+
+void Gui::clearExceedingUndoRedoEvents()
+{
+    _imp->_nodeGraphArea->clearExceedingUndoRedoEvents();
 }

@@ -119,7 +119,7 @@ struct Node::Implementation {
     std::vector<boost::shared_ptr<Node> > inputsQueue; //< This is written to by the GUI only. Then the render thread copies this queue
                                     //to the inputs in a thread-safe manner.
 
-    boost::shared_ptr<Natron::EffectInstance>  liveInstance; //< the effect hosted by this node
+    Natron::EffectInstance*  liveInstance; //< the effect hosted by this node
 
 
     mutable QMutex nameMutex;
@@ -181,7 +181,7 @@ Node::Node(AppInstance* app,LibraryBinary* plugin)
     : QObject()
     , _imp(new Implementation(app,plugin))
 {
-    
+    QObject::connect(this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)));
 }
 
 void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
@@ -201,8 +201,7 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
-        _imp->liveInstance.reset(func.second(thisShared));
-        _imp->liveInstance->initialize(_imp->liveInstance);
+        _imp->liveInstance = func.second(thisShared);
         if (!serialization.isNull() && serialization.getPluginID() == pluginID &&
             majorVersion() == serialization.getPluginMajorVersion() && minorVersion() == serialization.getPluginMinorVersion()) {
             loadKnobs(serialization);
@@ -357,25 +356,39 @@ bool Node::isRenderingPreview() const {
 
 void Node::quitAnyProcessing() {
     if (isOutputNode()) {
-        boost::dynamic_pointer_cast<Natron::OutputEffectInstance>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
+        dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
     }
     {
         QMutexLocker locker(&_imp->imageBeingRenderedMutex);
         _imp->imagesBeingRenderedNotEmpty.wakeAll();
-        if (_imp->computingPreview) {
-            QMutexLocker l(&_imp->mustQuitProcessingMutex);
-            _imp->mustQuitProcessing = true;
-            while (_imp->mustQuitProcessing) {
-                _imp->mustQuitProcessingCond.wait(&_imp->mustQuitProcessingMutex);
-            }
-        }
-        
     }
+    bool computingPreview;
+    {
+        QMutexLocker locker(&_imp->computingPreviewMutex);
+        computingPreview = _imp->computingPreview;
+    }
+    if (computingPreview) {
+        QMutexLocker l(&_imp->mustQuitProcessingMutex);
+        _imp->mustQuitProcessing = true;
+        while (_imp->mustQuitProcessing) {
+            _imp->mustQuitProcessingCond.wait(&_imp->mustQuitProcessingMutex);
+        }
+    }
+    
+    
 }
 
 Node::~Node()
 {
-    // delete _imp->liveInstance;
+    if (_imp->liveInstance) {
+        delete _imp->liveInstance;
+    }
+}
+
+void Node::removeReferences()
+{
+    delete _imp->liveInstance;
+    _imp->liveInstance = 0;
 }
 
 const std::vector<std::string>& Node::getInputLabels() const
@@ -520,30 +533,29 @@ void Node::createKnobDynamically()
 }
 
 
-void Node::setLiveInstance(boost::shared_ptr<Natron::EffectInstance> liveInstance)
+void Node::setLiveInstance(Natron::EffectInstance* liveInstance)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     _imp->liveInstance = liveInstance;
 }
 
-boost::shared_ptr<Natron::EffectInstance> Node::getLiveInstance() const
+Natron::EffectInstance* Node::getLiveInstance() const
 {
     ///Thread safe as it never changes
     return _imp->liveInstance;
 }
 
-void Node::hasViewersConnected(std::list< boost::shared_ptr<ViewerInstance> >* viewers) const
+void Node::hasViewersConnected(std::list< ViewerInstance* >* viewers) const
 {
     
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
     if(pluginID() == "Viewer") {
-        boost::shared_ptr<ViewerInstance> thisViewer = boost::dynamic_pointer_cast<ViewerInstance>(_imp->liveInstance);
+        ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
         assert(thisViewer);
-        std::list<boost::shared_ptr<ViewerInstance> >::const_iterator alreadyExists =
-        std::find(viewers->begin(), viewers->end(), thisViewer);
+        std::list<ViewerInstance* >::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
         if(alreadyExists == viewers->end()){
             viewers->push_back(thisViewer);
         }
@@ -1305,15 +1317,19 @@ void Node::setOutputFilesForWriter(const QString& pattern) {
 }
 
 void Node::registerPluginMemory(size_t nBytes) {
-    QMutexLocker l(&_imp->memoryUsedMutex);
-    _imp->pluginInstanceMemoryUsed += nBytes;
-    emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
+    {
+        QMutexLocker l(&_imp->memoryUsedMutex);
+        _imp->pluginInstanceMemoryUsed += nBytes;
+    }
+    emit pluginMemoryUsageChanged(nBytes);
 }
 
 void Node::unregisterPluginMemory(size_t nBytes) {
-    QMutexLocker l(&_imp->memoryUsedMutex);
-    _imp->pluginInstanceMemoryUsed -= nBytes;
-    emit pluginMemoryUsageChanged((unsigned long long)_imp->pluginInstanceMemoryUsed);
+    {
+        QMutexLocker l(&_imp->memoryUsedMutex);
+        _imp->pluginInstanceMemoryUsed -= nBytes;
+    }
+    emit pluginMemoryUsageChanged(-nBytes);
 }
 
 QMutex& Node::getRenderInstancesSharedMutex()
@@ -1350,13 +1366,13 @@ void Node::refreshPreviewsRecursively() {
 }
 
 
-void Node::onSlaveStateChanged(bool isSlave,const boost::shared_ptr<KnobHolder>& master) {
+void Node::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
    
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
     if (isSlave) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(master.get());
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(master);
         assert(effect);
         boost::shared_ptr<Natron::Node> masterNode = effect->getNode();
         {
@@ -1546,7 +1562,7 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     }
     computeHash();
     if (isOutputNode()) {
-        dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance().get())->updateTreeAndRender();
+        dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
     }
 }
 

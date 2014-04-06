@@ -73,7 +73,7 @@ public:
      *Once filled up, you can access the nodes in topological order with the iterators.
      *The reverse iterator will give you the opposite of the topological order.
      */
-    RenderTree(const boost::shared_ptr<Natron::EffectInstance>& output);
+    RenderTree(Natron::EffectInstance* output);
     
     /**
      *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
@@ -109,14 +109,14 @@ public:
     /**
      *@brief Returns a pointer to the output node of the graph.
      */
-    boost::shared_ptr<Natron::EffectInstance> getOutput() const {return _output;}
+    Natron::EffectInstance* getOutput() const {return _output;}
     
     
     /**
      *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
      *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
      */
-    boost::shared_ptr<ViewerInstance> outputAsViewer() const;
+    ViewerInstance* outputAsViewer() const;
 
     
     /**
@@ -150,7 +150,7 @@ private:
     /*clears out the structure*/
     void clearGraph();
     
-    boost::shared_ptr<Natron::EffectInstance> _output; /*!<the output of the Tree*/
+    Natron::EffectInstance* _output; /*!<the output of the Tree*/
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
@@ -256,7 +256,7 @@ signals:
 public:
    
     
-    VideoEngine(const boost::shared_ptr<Natron::OutputEffectInstance>& owner, QObject* parent = NULL);
+    VideoEngine(Natron::OutputEffectInstance* owner, QObject* parent = NULL);
     
     virtual ~VideoEngine();
     

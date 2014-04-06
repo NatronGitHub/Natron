@@ -71,7 +71,7 @@ static std::pair<std::string,LibraryBinary *>
 knobGuiFactoryEntry()
 {
     std::string stub;
-    boost::scoped_ptr<KnobHelper> knob(K::BuildKnob(boost::shared_ptr<KnobHolder>(), stub, 1));
+    boost::scoped_ptr<KnobHelper> knob(K::BuildKnob(NULL, stub, 1));
 
     std::map<std::string, void *> functions;
     functions.insert(make_pair("BuildKnobGui", (void *)&KG::BuildKnobGui));

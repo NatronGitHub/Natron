@@ -118,7 +118,6 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     }
     
     
-    
     try{
         node->load(pluginID.toStdString(),node, serialization,dontLoadName);
     } catch (const std::exception& e) {
@@ -176,7 +175,7 @@ void AppInstance::connectViewersToViewerCache(){
     for (U32 i = 0; i < currentNodes.size(); ++i) {
         assert(currentNodes[i]);
         if(currentNodes[i]->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance().get())->connectSlotsToViewerCache();
+            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->connectSlotsToViewerCache();
         }
     }
 }
@@ -186,7 +185,7 @@ void AppInstance::disconnectViewersFromViewerCache(){
     for (U32 i = 0; i < currentNodes.size(); ++i) {
         assert(currentNodes[i]);
         if(currentNodes[i]->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance().get())->disconnectSlotsToViewerCache();
+            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->disconnectSlotsToViewerCache();
         }
     }
 }
@@ -218,7 +217,7 @@ void AppInstance::checkViewersConnection(){
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->pluginID() == "Viewer") {
-            boost::shared_ptr<ViewerInstance> n = boost::dynamic_pointer_cast<ViewerInstance>(nodes[i]->getLiveInstance());
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->updateTreeAndRender();
         }
@@ -230,7 +229,7 @@ void AppInstance::redrawAllViewers() {
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->pluginID() == "Viewer") {
-            boost::shared_ptr<ViewerInstance> n = boost::dynamic_pointer_cast<ViewerInstance>(nodes[i]->getLiveInstance());
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->redrawViewer();
         }
@@ -247,7 +246,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
     
     const std::vector<boost::shared_ptr<Node> > projectNodes = _imp->_currentProject->getCurrentNodes();
     
-    std::vector<boost::shared_ptr<Natron::OutputEffectInstance> > renderers;
+    std::vector<Natron::OutputEffectInstance* > renderers;
     
     if (!writers.isEmpty()) {
         for (int i = 0; i < writers.size(); ++i) {
@@ -271,14 +270,14 @@ void AppInstance::startWritersRendering(const QStringList& writers){
                 if(node->pluginID() == "Viewer"){
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
-                renderers.push_back(boost::dynamic_pointer_cast<OutputEffectInstance>(node->getLiveInstance()));
+                renderers.push_back(dynamic_cast<OutputEffectInstance*>(node->getLiveInstance()));
             }
         }
     }else{
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
             if(projectNodes[j]->isOutputNode() && projectNodes[j]->pluginID() != "Viewer"){
-                renderers.push_back(boost::dynamic_pointer_cast<OutputEffectInstance>(projectNodes[j]->getLiveInstance()));
+                renderers.push_back(dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance()));
             }
         }
         
@@ -295,7 +294,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 }
 
 
-void AppInstance::startRenderingFullSequence(boost::shared_ptr<Natron::OutputEffectInstance> writer){
+void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
     
     BlockingBackgroundRender backgroundRender(writer);
     backgroundRender.blockingRender(); //< doesn't return before rendering is finished

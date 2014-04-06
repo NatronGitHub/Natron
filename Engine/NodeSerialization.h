@@ -62,6 +62,8 @@ public:
     U64 getKnobsAge() const { return _knobsAge; }
     
     const std::string& getMasterNodeName() const { return _masterNodeName; }
+    
+    boost::shared_ptr<Natron::Node> getNode() const { return _node; }
 private:
 
     bool _isNull;

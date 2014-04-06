@@ -32,12 +32,12 @@ class ViewerTab: public QWidget
     Q_OBJECT
     
 public:
-    explicit ViewerTab(Gui* gui,boost::shared_ptr<ViewerInstance> node,QWidget* parent=0);
+    explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
     
 	virtual ~ViewerTab() OVERRIDE;
     
     
-    boost::shared_ptr<ViewerInstance> getInternalNode() const;
+    ViewerInstance* getInternalNode() const;
 
     Gui* getGui() const;
     

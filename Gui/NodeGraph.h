@@ -24,6 +24,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QLabel>
 #include <QUndoCommand>
 #include <QMutex>
+#include <QAction>
 CLANG_DIAG_ON(deprecated)
 
 #ifndef Q_MOC_RUN
@@ -53,6 +54,25 @@ class NodeGuiSerialization;
 namespace Natron{
     class Node;
 }
+
+
+class QUndoAction : public QAction
+{
+    
+    Q_OBJECT
+public:
+    
+    explicit QUndoAction(QObject *parent = 0);
+    void setTextFormat(const QString &textFormat, const QString &defaultText);
+    
+public slots:
+    
+    void setPrefixedText(const QString &text);
+    
+private:
+    QString m_prefix;
+    QString m_defaultText;
+};
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     
@@ -101,9 +121,9 @@ public:
     
     QGraphicsItem* getRootItem() const {return _root;}
     
-    const std::vector<boost::shared_ptr<NodeGui> >& getAllActiveNodes() const;
+    const std::list<boost::shared_ptr<NodeGui> >& getAllActiveNodes() const;
     
-    std::vector<boost::shared_ptr<NodeGui> > getAllActiveNodes_mt_safe() const;
+    std::list<boost::shared_ptr<NodeGui> > getAllActiveNodes_mt_safe() const;
     
     void moveToTrash(NodeGui* node);
     
@@ -133,6 +153,8 @@ public:
     void decloneNode(const boost::shared_ptr<NodeGui>& n);
 
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
+    
+    void clearExceedingUndoRedoEvents();
     
 public slots:
     
@@ -167,6 +189,10 @@ public slots:
     void cloneSelectedNode();
     
     void decloneSelectedNode();
+    
+    void undoProxy();
+    
+    void redoProxy();
     
 private:
     
@@ -235,9 +261,8 @@ private:
     
     mutable QMutex _nodesMutex;
     
-    ///FIXME: use std::list instead for both
-    std::vector<boost::shared_ptr<NodeGui> > _nodes;
-    std::vector<boost::shared_ptr<NodeGui> > _nodesTrash;
+    std::list<boost::shared_ptr<NodeGui> > _nodes;
+    std::list<boost::shared_ptr<NodeGui> > _nodesTrash;
     
     bool _nodeCreationShortcutEnabled;
         
@@ -259,6 +284,8 @@ private:
     QGraphicsProxyWidget* _navigatorProxy;
     
     QUndoStack* _undoStack;
+    QUndoAction* _undoProxy;
+    QUndoAction* _redoProxy;
         
     QMenu* _menu;
     

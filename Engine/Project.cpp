@@ -142,7 +142,7 @@ void Project::refreshViewersAndPreviews() {
         for (U32 i = 0; i < nodes.size(); ++i) {
             assert(nodes[i]);
             if (nodes[i]->pluginID() == "Viewer") {
-                boost::shared_ptr<ViewerInstance> n = boost::dynamic_pointer_cast<ViewerInstance>(nodes[i]->getLiveInstance());
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                 assert(n);
                 n->getVideoEngine()->render(1,//< frame count
                                             true, //<seek timeline
@@ -414,8 +414,7 @@ bool Project::findAndTryLoadAutoSave() {
 
 void Project::initializeKnobs(){
     
-    boost::shared_ptr<Project> thisShared = getApp()->getProject();
-    _imp->formatKnob = Natron::createKnob<Choice_Knob>(thisShared, "Output Format");
+    _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -431,16 +430,16 @@ void Project::initializeKnobs(){
 
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
-    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(thisShared,"New format...");
+    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
 
-    _imp->viewsCount = Natron::createKnob<Int_Knob>(thisShared,"Number of views");
+    _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->setAnimationEnabled(false);
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
     
-    _imp->previewMode = Natron::createKnob<Bool_Knob>(thisShared, "Auto previews");
+    _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
     _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
@@ -493,7 +492,22 @@ void Project::addNodeToProject(boost::shared_ptr<Natron::Node> n) {
     _imp->currentNodes.push_back(n);
 }
     
-void Project::clearNodes() {
+void Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        for (std::vector<boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it!=_imp->currentNodes.end(); ++it) {
+            if (*it == n) {
+                _imp->currentNodes.erase(it);
+                break;
+            }
+        }
+    }
+    n->removeReferences();
+}
+    
+    void Project::clearNodes() {
     std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
     {
         QMutexLocker l(&_imp->nodesLock);
@@ -652,7 +666,7 @@ Project::getAdditionalFormats(std::list<Format> *formats) const
 }
 
 
-void Project::setLastTimelineSeekCaller(boost::shared_ptr<Natron::OutputEffectInstance> output) {
+void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output) {
     QMutexLocker l(&_imp->projectLock);
     _imp->lastTimelineSeekCaller = output;
 }
@@ -664,7 +678,7 @@ bool Project::isSaveUpToDate() const{
 
 ///this function is only called in the main thread
 void Project::onTimeChanged(SequenceTime time,int reason) {
-    std::vector<boost::shared_ptr<ViewerInstance> > viewers;
+    std::vector<ViewerInstance* > viewers;
     
     beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
     
@@ -675,7 +689,7 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
             continue;
         }
         if(_imp->currentNodes[i]->pluginID() == "Viewer"){
-            viewers.push_back(boost::dynamic_pointer_cast<ViewerInstance>(_imp->currentNodes[i]->getLiveInstance()));
+            viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance()));
         }
         _imp->currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
 
@@ -694,7 +708,7 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
                                                  false); //< force preview
         }
     }
-    _imp->lastTimelineSeekCaller.reset();
+    _imp->lastTimelineSeekCaller = 0;
 
 }
 
@@ -1140,9 +1154,9 @@ bool Project::autoConnectNodes(boost::shared_ptr<Node> selected,boost::shared_pt
     }
 
     ///update the render trees
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     created->hasViewersConnected(&viewers);
-    for(std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
     }
     return ret;

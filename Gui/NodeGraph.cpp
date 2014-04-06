@@ -29,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QCoreApplication>
 #include <QMimeData>
 #include <QLineEdit>
+#include <QDebug>
 
 #include "Engine/AppManager.h"
 
@@ -58,6 +59,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGuiSerialization.h"
+#include "Gui/CurveEditor.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -75,8 +77,15 @@ public:
     virtual int id() const { return kNodeGraphMoveNodeCommandCompressionID; }
     virtual bool mergeWith(const QUndoCommand *command);
 
+    boost::shared_ptr<NodeGui> getNode() const { return _node; }
+    
+    ///see clearExceedingUndoRedoEvents. It needs to be const.
+    void setDirty() const { _node.reset(); }
+    
+    bool isDirty() const { return !_node; }
+    
 private:
-    boost::shared_ptr<NodeGui> _node;
+    mutable boost::shared_ptr<NodeGui> _node;
     QPointF _oldPos;
     QPointF _newPos;
 };
@@ -89,10 +98,18 @@ public:
     virtual void undo();
     virtual void redo();
 
+    
+    boost::shared_ptr<NodeGui> getNode() const { return _node; }
+    
+    ///see clearExceedingUndoRedoEvents. It needs to be const.
+    void setDirty() const { _node.reset(); _outputs.clear(); _inputs.clear(); }
+    
+    bool isDirty() const { return !_node; }
+
 private:
-    std::list<boost::shared_ptr<Natron::Node> > _outputs;
-    std::vector<boost::shared_ptr<Natron::Node> > _inputs;
-    boost::shared_ptr<NodeGui> _node;
+    mutable std::list<boost::shared_ptr<Natron::Node> > _outputs;
+    mutable std::vector<boost::shared_ptr<Natron::Node> > _inputs;
+    mutable boost::shared_ptr<NodeGui> _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
 };
@@ -104,10 +121,17 @@ public:
     virtual void undo();
     virtual void redo();
 
+    boost::shared_ptr<NodeGui> getNode() const { return _node; }
+    
+    ///see clearExceedingUndoRedoEvents. It needs to be const.
+    void setDirty() const { _node.reset(); _outputs.clear(); _inputs.clear(); }
+    
+    bool isDirty() const { return !_node; }
+    
 private:
-    std::list<boost::shared_ptr<Natron::Node> > _outputs;
-    std::vector<boost::shared_ptr<Natron::Node> > _inputs;
-    boost::shared_ptr<NodeGui> _node;
+    mutable std::list<boost::shared_ptr<Natron::Node> > _outputs;
+    mutable std::vector<boost::shared_ptr<Natron::Node> > _inputs;
+    mutable boost::shared_ptr<NodeGui> _node; //< mutable because we need to modify it externally
     NodeGraph* _graph;
 };
 
@@ -118,10 +142,20 @@ public:
 
     virtual void undo();
     virtual void redo();
+    
+    bool containsNode(const boost::shared_ptr<NodeGui>& n) const {
+        return n == _oldSrc || n == _newSrc || n == _dst;
+    }
+    
+    ///see clearExceedingUndoRedoEvents. It needs to be const.
+    void setDirty() const { _oldSrc.reset(); _newSrc.reset(); _dst.reset(); }
+    
+    bool isDirty() const { return !_dst; }
+    
 private:
     Edge* _edge;
-    boost::shared_ptr<NodeGui> _oldSrc,_newSrc;
-    boost::shared_ptr<NodeGui> _dst;
+    mutable boost::shared_ptr<NodeGui> _oldSrc,_newSrc;
+    mutable boost::shared_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
 };
@@ -196,7 +230,20 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
     
     _undoStack = new QUndoStack(this);
-    _gui->registerNewUndoStack(_undoStack);
+    _undoProxy = new QUndoAction(this);
+    _undoProxy->setTextFormat(tr("Undo %1"), tr("Undo", "Default text for undo action"));
+    QObject::connect(_undoProxy, SIGNAL(triggered()), this, SLOT(undoProxy()));
+    QObject::connect(_undoStack, SIGNAL(canUndoChanged(bool)),_undoProxy, SLOT(setEnabled(bool)));
+    QObject::connect(_undoStack, SIGNAL(undoTextChanged(QString)),_undoProxy, SLOT(setPrefixedText(QString)));
+    _undoProxy->setShortcut(QKeySequence::Undo);
+    _redoProxy = new QUndoAction(this);
+    _redoProxy->setTextFormat(tr("Redo %1"), tr("Redo", "Default text for redo action"));
+    QObject::connect(_redoProxy, SIGNAL(triggered()), this, SLOT(redoProxy()));
+    QObject::connect(_undoStack, SIGNAL(canRedoChanged(bool)),_redoProxy, SLOT(setEnabled(bool)));
+    QObject::connect(_undoStack, SIGNAL(redoTextChanged(QString)),_redoProxy, SLOT(setPrefixedText(QString)));
+    _redoProxy->setShortcut(QKeySequence::Redo);
+    
+    _gui->registerNewUndoStack(_undoStack,_undoProxy,_redoProxy);
     
     
     _tL = new QGraphicsTextItem(0);
@@ -242,14 +289,13 @@ void NodeGraph::onProjectNodesCleared() {
     deselect();
     
     QMutexLocker l(&_nodesMutex);
-//    for (U32 i = 0; i < _nodes.size(); ++i) {
-//        delete _nodes[i];
-//    }
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        (*it)->deleteChildrenReferences();
+    }
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodesTrash.begin(); it!=_nodesTrash.end(); ++it) {
+        (*it)->deleteChildrenReferences();
+    }
     _nodes.clear();
-//    
-//    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
-//        delete _nodesTrash[i];
-//    }
     _nodesTrash.clear();
 }
 
@@ -314,7 +360,10 @@ boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,c
     if(nodeStack){
         _gui->registerNewUndoStack(nodeStack);
     }
+    
+    ///before we add a new node, clear exceeding entries
     _undoStack->setActive();
+    clearExceedingUndoRedoEvents();
     _undoStack->push(new AddCommand(this,node_ui));
     _evtState = DEFAULT;
     return node_ui;
@@ -472,8 +521,8 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     Edge* selectedEdge = 0;
     {
         QMutexLocker l(&_nodesMutex);
-        for(U32 i = 0;i < _nodes.size();++i){
-            boost::shared_ptr<NodeGui> n = _nodes[i];
+        for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it){
+            boost::shared_ptr<NodeGui>& n = *it;
             QPointF evpt = n->mapFromScene(_lastScenePosClick);
             if(n->isActive() && n->contains(evpt)){
                 selected = n;
@@ -516,9 +565,8 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
 
 void NodeGraph::deselect(){
     QMutexLocker l(&_nodesMutex);
-    for(U32 i = 0 ; i < _nodes.size() ;++i) {
-        boost::shared_ptr<NodeGui>& n = _nodes[i];
-        n->setSelected(false);
+    for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        (*it)->setSelected(false);
     }
     _nodeSelected.reset();
 }
@@ -533,11 +581,11 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         _arrowSelected->getSource() : _arrowSelected->getDest();
         assert(nodeHoldingEdge);
         
-        std::vector<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
+        std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
         QPointF ep = mapToScene(event->pos());
 
-        for(U32 i = 0; i < nodes.size() ;++i) {
-            boost::shared_ptr<NodeGui>& n = nodes[i];
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+            boost::shared_ptr<NodeGui>& n = *it;
             
             if(n->isActive() && n->isNearby(ep) &&
                     (n->getNode()->getName() != nodeHoldingEdge->getNode()->getName())){
@@ -613,11 +661,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         
         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(_lastScenePosClick).x();
         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(_lastScenePosClick).y();
-        //        double dx = newPos.x() - _lastScenePosClick.x();
-        //        double dy = newPos.y() - _lastScenePosClick.y();
         _root->moveBy(dx, dy);
-        //        QGraphicsView::mouseMoveEvent(event);
-        //        translate(dx, dy);
         setCursor(QCursor(Qt::SizeAllCursor));
     }else{
         boost::shared_ptr<NodeGui> selected;
@@ -625,8 +669,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         
         {
             QMutexLocker l(&_nodesMutex);
-            for(U32 i = 0;i < _nodes.size();++i){
-                boost::shared_ptr<NodeGui>& n = _nodes[i];
+            for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it){
+                boost::shared_ptr<NodeGui>& n = *it;
                 QPointF evpt = n->mapFromScene(newPos);
                 if(n->isActive() && n->contains(evpt)){
                     selected = n;
@@ -658,9 +702,9 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
     
-    std::vector<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
-    for (size_t i = 0; i < nodes.size() ; ++i) {
-        boost::shared_ptr<NodeGui>& n = nodes[i];
+    std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin();it!=_nodes.end();++it) {
+        boost::shared_ptr<NodeGui>& n = *it;
         
         QPointF evpt = n->mapFromScene(_lastScenePosClick);
         if(n->isActive() && n->contains(evpt) && n->getSettingPanel()){
@@ -736,6 +780,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
+    
+    if (!_gui->getLastSelectedViewer()) {
+        return;
+    }
     
     ///get a pointer to the last user selected viewer
     boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>(_gui->getLastSelectedViewer()->
@@ -819,6 +867,7 @@ void NodeGraph::deleteSelectedNode(){
     if(_nodeSelected){
         _undoStack->setActive();
         _nodeSelected->setSelected(false);
+        clearExceedingUndoRedoEvents();
         _undoStack->push(new RemoveCommand(this,_nodeSelected));
         _nodeSelected.reset();
     }
@@ -828,6 +877,7 @@ void NodeGraph::deleteNode(const boost::shared_ptr<NodeGui>& n) {
     assert(n);
     _undoStack->setActive();
     n->setSelected(false);
+    clearExceedingUndoRedoEvents();
     _undoStack->push(new RemoveCommand(this,n));
 }
 
@@ -838,12 +888,12 @@ void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n) {
     /*now remove previously selected node*/
     {
         QMutexLocker l(&_nodesMutex);
-        for(U32 i = 0 ; i < _nodes.size() ;++i) {
-            _nodes[i]->setSelected(false);
+        for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+            (*it)->setSelected(false);
         }
     }
     if(n->getNode()->pluginID() == "Viewer") {
-        OpenGLViewerI* viewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance().get())->getUiContext();
+        OpenGLViewerI* viewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext();
         const std::list<ViewerTab*>& viewerTabs = _gui->getViewersList();
         for(std::list<ViewerTab*>::const_iterator it = viewerTabs.begin();it!=viewerTabs.end();++it) {
             if((*it)->getViewer() == viewer) {
@@ -875,10 +925,8 @@ void NodeGraph::updateNavigator(){
 bool NodeGraph::areAllNodesVisible(){
     QRectF rect = visibleRect();
     QMutexLocker l(&_nodesMutex);
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        //        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
-        //        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
-        if(!rect.contains(_nodes[i]->boundingRectWithEdges()))
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        if(!rect.contains((*it)->boundingRectWithEdges()))
             return false;
     }
     return true;
@@ -933,11 +981,11 @@ void NodeGraph::NodeGraphNavigator::setImage(const QImage& img){
     setPixmap(pix);
 }
 
-const std::vector<boost::shared_ptr<NodeGui> >& NodeGraph::getAllActiveNodes() const {
+const std::list<boost::shared_ptr<NodeGui> >& NodeGraph::getAllActiveNodes() const {
     return _nodes;
 }
 
-std::vector<boost::shared_ptr<NodeGui> > NodeGraph::getAllActiveNodes_mt_safe() const {
+std::list<boost::shared_ptr<NodeGui> > NodeGraph::getAllActiveNodes_mt_safe() const {
     QMutexLocker l(&_nodesMutex);
     return _nodes;
 }
@@ -945,10 +993,10 @@ std::vector<boost::shared_ptr<NodeGui> > NodeGraph::getAllActiveNodes_mt_safe() 
 void NodeGraph::moveToTrash(NodeGui* node) {
     assert(node);
     QMutexLocker l(&_nodesMutex);
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        if (_nodes[i].get() == node) {
-            _nodesTrash.push_back(_nodes[i]);
-            _nodes.erase(_nodes.begin() + i);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        if ((*it).get() == node) {
+            _nodesTrash.push_back(*it);
+            _nodes.erase(it);
         }
     }
 }
@@ -956,10 +1004,10 @@ void NodeGraph::moveToTrash(NodeGui* node) {
 void NodeGraph::restoreFromTrash(NodeGui* node) {
     assert(node);
     QMutexLocker l(&_nodesMutex);
-    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
-        if (_nodesTrash[i].get() == node) {
-            _nodes.push_back(_nodesTrash[i]);
-            _nodesTrash.erase(_nodesTrash.begin() +i);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodesTrash.begin();it!=_nodesTrash.end();++it) {
+        if ((*it).get() == node) {
+            _nodes.push_back(*it);
+            _nodesTrash.erase(it);
         }
     }
 }
@@ -970,9 +1018,14 @@ MoveCommand::MoveCommand(const boost::shared_ptr<NodeGui>& node, const QPointF &
     _node(node),
     _oldPos(oldPos),
     _newPos(node->pos()){
+        assert(node);
     
 }
 void MoveCommand::undo(){
+    if (isDirty()) {
+        return;
+    }
+    
     _node->refreshPosition(_oldPos.x(),_oldPos.y());
     _node->refreshEdges();
     
@@ -982,13 +1035,26 @@ void MoveCommand::undo(){
             .arg(_node->getNode()->getName().c_str()));
 }
 void MoveCommand::redo(){
+    if (isDirty()) {
+        return;
+    }
+    
     _node->refreshPosition(_newPos.x(),_newPos.y());
     _node->refreshEdges();
     setText(QObject::tr("Move %1")
             .arg(_node->getNode()->getName().c_str()));
 }
 bool MoveCommand::mergeWith(const QUndoCommand *command){
+    if (isDirty()) {
+        return false;
+    }
+    
     const MoveCommand *moveCommand = static_cast<const MoveCommand *>(command);
+    
+    if (moveCommand->isDirty()) {
+        return false;
+    }
+    
     const boost::shared_ptr<NodeGui>& node = moveCommand->_node;
     if(_node != node)
         return false;
@@ -1004,6 +1070,11 @@ AddCommand::AddCommand(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,Q
     
 }
 void AddCommand::undo(){
+    
+    if (isDirty()) {
+        return;
+    }
+    
     _undoWasCalled = true;
     
     
@@ -1019,6 +1090,11 @@ void AddCommand::undo(){
     
 }
 void AddCommand::redo(){
+    
+    if (isDirty()) {
+        return;
+    }
+    
     if(_undoWasCalled){
         ///activate will trigger an autosave
         _node->getNode()->activate();
@@ -1032,9 +1108,14 @@ void AddCommand::redo(){
 
 RemoveCommand::RemoveCommand(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QUndoCommand *parent):QUndoCommand(parent),
     _node(node),_graph(graph){
-    
+        assert(node);
 }
 void RemoveCommand::undo() {
+    
+    if (isDirty()) {
+        return;
+    }
+    
     _node->getNode()->activate();
     
     _graph->scene()->update();
@@ -1045,6 +1126,11 @@ void RemoveCommand::undo() {
     
 }
 void RemoveCommand::redo() {
+    
+    if (isDirty()) {
+        return;
+    }
+    
     _inputs = _node->getNode()->getInputs_mt_safe();
     _outputs = _node->getNode()->getOutputs();
     
@@ -1083,10 +1169,15 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,const boost::shared_p
     _graph(graph),
     _inputNb(edge->getInputNumber())
 {
-    
+    assert(_dst);
 }
 
 void ConnectCommand::undo() {
+    
+    if (isDirty()) {
+        return;
+    }
+    
     boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(_dst->getNode());
     
     if (inspector) {
@@ -1129,13 +1220,17 @@ void ConnectCommand::undo() {
     }
     
     _graph->getGui()->getApp()->triggerAutoSave();
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
-    for(std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
     }    
 }
 void ConnectCommand::redo() {
+    
+    if (isDirty()) {
+        return;
+    }
     
     boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(_dst->getNode());
     _inputNb = _edge->getInputNumber();
@@ -1206,9 +1301,9 @@ void ConnectCommand::redo() {
     
     ///if the node has no inputs, all the viewers attached to that node should get disconnected. This will be done
     ///in VideoEngine::startEngine
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
-    for(std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
     }
     
@@ -1291,8 +1386,8 @@ bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
 }
 void NodeGraph::refreshAllEdges() {
     QMutexLocker l(&_nodesMutex);
-    for (U32 i=0; i < _nodes.size(); ++i) {
-        _nodes[i]->refreshEdges();
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        (*it)->refreshEdges();
     }
 }
 // grabbed from QDirModelPrivate::size() in qtbase/src/widgets/itemviews/qdirmodel.cpp
@@ -1323,8 +1418,8 @@ void NodeGraph::updateCacheSizeText(){
 QRectF NodeGraph::calcNodesBoundingRect(){
     QRectF ret;
     QMutexLocker l(&_nodesMutex);
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        ret = ret.united(_nodes[i]->boundingRectWithEdges());
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        ret = ret.united((*it)->boundingRectWithEdges());
     }
     return ret;
 }
@@ -1527,16 +1622,16 @@ void NodeGraph::turnOffPreviewForAllNodes(){
     
     if(pTurnedOff){
         QMutexLocker l(&_nodesMutex);
-        for(U32 i = 0; i < _nodes.size() ; ++i){
-            if(_nodes[i]->getNode()->isPreviewEnabled()){
-                _nodes[i]->togglePreview();
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+            if((*it)->getNode()->isPreviewEnabled()){
+                (*it)->togglePreview();
             }
         }
     }else{
         QMutexLocker l(&_nodesMutex);
-        for(U32 i = 0; i < _nodes.size() ; ++i){
-            if(!_nodes[i]->getNode()->isPreviewEnabled() && _nodes[i]->getNode()->makePreviewByDefault()){
-                _nodes[i]->togglePreview();
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+            if(!(*it)->getNode()->isPreviewEnabled() && (*it)->getNode()->makePreviewByDefault()){
+                (*it)->togglePreview();
             }
         }
     }
@@ -1694,16 +1789,200 @@ void NodeGraph::decloneNode(const boost::shared_ptr<NodeGui>& n) {
 
 boost::shared_ptr<NodeGui> NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) const
 {
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        if (_nodes[i].get() == n) {
-            return _nodes[i];
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        if ((*it).get() == n) {
+            return *it;
         }
     }
-    for (U32 i = 0; i < _nodesTrash.size(); ++i) {
-        if (_nodesTrash[i].get() == n) {
-            return _nodesTrash[i];
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodesTrash.begin();it!=_nodesTrash.end();++it) {
+        if ((*it).get() == n) {
+            return *it;
         }
     }
     ///it must either be in the trash or in the active nodes
     assert(false);
+}
+
+void NodeGraph::clearExceedingUndoRedoEvents()
+{
+    qint64 maximumMemForUndoRedo = appPTR->getCurrentSettings()->getMaximumUndoRedoRAM_Mb() * 1000000;
+    int minimumUndoRedoEvents = appPTR->getCurrentSettings()->getMinimumUndoRedoEvents();
+    qint64 globalNodesMemory = appPTR->getTotalNodesMemoryRegistered();
+    while (!_nodesTrash.empty() && globalNodesMemory > maximumMemForUndoRedo) {
+        ///delete the older nodes in the trash
+        boost::shared_ptr<NodeGui> toDelete = *_nodesTrash.begin();
+        
+        ///Starting from the current index in the stack (that is the current index of all the commands to have been redone)
+        ///we search for a command  which removed the node to delete. It must exist.
+        ///Also since we have no way to properly delete the command, we just flag it as a dirty command.
+        ///This way our redoProxy() and undoProxy() function can skip those commands from the stack as though
+        ///they didn't exist.
+        int index = _undoStack->index();
+        
+        ///If we reach the minimum number of commands that can be redone in the stack (controlled by Natron's settings)
+        ///we stop.
+        if (index <= minimumUndoRedoEvents) {
+            break;
+        }
+        
+     
+        while (index >= 0) {
+            const QUndoCommand* cmd = _undoStack->command(index);
+            const AddCommand* addCmd = dynamic_cast<const AddCommand*>(cmd);
+            const RemoveCommand* rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
+            const MoveCommand* mvCmd = dynamic_cast<const MoveCommand*>(cmd);
+            const ConnectCommand* cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
+            if (rmvCmd && !rmvCmd->isDirty()) {
+                if (rmvCmd->getNode() == toDelete) {
+                    rmvCmd->setDirty();
+                }
+            } else if (mvCmd && !mvCmd->isDirty()) {
+                if (mvCmd->getNode() == toDelete) {
+                    mvCmd->setDirty();
+                }
+            }  else if (cnctCmd && !cnctCmd->isDirty()) {
+                if (cnctCmd->containsNode(toDelete)) {
+                    cnctCmd->setDirty();
+                }
+            } else if (addCmd && !addCmd->isDirty()) {
+                if (addCmd->getNode() == toDelete) {
+                    addCmd->setDirty();
+                    break;
+                }
+            }
+            --index;
+        }
+        
+        index = _undoStack->index();
+
+        while (index < _undoStack->count()) {
+            const QUndoCommand* cmd = _undoStack->command(index);
+            const AddCommand* addCmd = dynamic_cast<const AddCommand*>(cmd);
+            const RemoveCommand* rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
+            const MoveCommand* mvCmd = dynamic_cast<const MoveCommand*>(cmd);
+            const ConnectCommand* cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
+            if (addCmd && !addCmd->isDirty()) {
+                if (addCmd->getNode() == toDelete) {
+                    addCmd->setDirty();
+                    break;
+                }
+            } else if (mvCmd && !mvCmd->isDirty()) {
+                if (mvCmd->getNode() == toDelete) {
+                    mvCmd->setDirty();
+                }
+            }  else if (cnctCmd && !cnctCmd->isDirty()) {
+                if (cnctCmd->containsNode(toDelete)) {
+                    cnctCmd->setDirty();
+                }
+            } else if (rmvCmd && !rmvCmd->isDirty()) {
+                if (rmvCmd->getNode() == toDelete) {
+                    rmvCmd->setDirty();
+                }
+            }
+            ++index;
+        }
+        
+        _nodesTrash.erase(_nodesTrash.begin());
+
+        
+        ///now that we made the command dirty, delete the node everywhere in Natron
+        getGui()->getApp()->deleteNode(toDelete);
+        getGui()->getCurveEditor()->removeNode(toDelete);
+        toDelete->deleteChildrenReferences();
+        if (_nodeSelected == toDelete) {
+            deselect();
+        }
+        
+
+        if (_nodeClipBoard._internal && _nodeClipBoard._internal->getNode() == toDelete->getNode()) {
+            _nodeClipBoard._internal.reset();
+            _nodeClipBoard._gui.reset();
+        }
+        
+        if (toDelete.use_count() > 1) {
+            qDebug() << "The node we're trying to delete is referenced " << toDelete.use_count() << " times.";
+        }
+        
+        
+        
+        globalNodesMemory = appPTR->getTotalNodesMemoryRegistered();
+    }
+}
+
+void NodeGraph::undoProxy()
+{
+    _undoStack->undo();
+    const QUndoCommand* cmd = _undoStack->command(_undoStack->index() - 1);
+    const RemoveCommand* rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
+    const AddCommand* addCmd = dynamic_cast<const AddCommand*>(cmd);
+    const MoveCommand* mvCmd = dynamic_cast<const MoveCommand*>(cmd);
+    const ConnectCommand* cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
+    while ((rmvCmd && rmvCmd->isDirty()) || (addCmd && addCmd->isDirty())
+           || (mvCmd && mvCmd->isDirty()) ||  (cnctCmd && cnctCmd->isDirty())) {
+        _undoStack->undo();
+        if (_undoStack->index() == 0) {
+            break;
+        }
+        
+        cmd = _undoStack->command(_undoStack->index() - 1);
+        rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
+        addCmd = dynamic_cast<const AddCommand*>(cmd);
+        mvCmd = dynamic_cast<const MoveCommand*>(cmd);
+        cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
+    }
+    
+    ///Doing this is not correct as when we reach the bottom of the stack, if the first command is dirty,
+    /// Qt will propose the user to redo it anyway.
+#pragma message WARN("Undo/redo bug")
+}
+
+void NodeGraph::redoProxy()
+{
+    _undoStack->redo();
+    const QUndoCommand* cmd = _undoStack->command(_undoStack->index());
+    const RemoveCommand* rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
+    const AddCommand* addCmd = dynamic_cast<const AddCommand*>(cmd);
+    const MoveCommand* mvCmd = dynamic_cast<const MoveCommand*>(cmd);
+    const ConnectCommand* cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
+    while ((rmvCmd && rmvCmd->isDirty()) || (addCmd && addCmd->isDirty())
+           || (mvCmd && mvCmd->isDirty()) ||  (cnctCmd && cnctCmd->isDirty())) {
+        _undoStack->redo();
+        
+        if (_undoStack->index() == (_undoStack->count() - 1)) {
+            break;
+        }
+        
+        cmd = _undoStack->command(_undoStack->index());
+        rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
+        addCmd = dynamic_cast<const AddCommand*>(cmd);
+        mvCmd = dynamic_cast<const MoveCommand*>(cmd);
+        cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
+    }
+}
+
+QUndoAction::QUndoAction(QObject *parent)
+: QAction(parent)
+{
+}
+
+void QUndoAction::setPrefixedText(const QString &text)
+{
+    if (m_defaultText.isEmpty()) {
+        QString s = m_prefix;
+        if (!m_prefix.isEmpty() && !text.isEmpty())
+            s.append(QLatin1Char(' '));
+        s.append(text);
+        setText(s);
+    } else {
+        if (text.isEmpty())
+            setText(m_defaultText);
+        else
+            setText(m_prefix.arg(text));
+    }
+}
+
+void QUndoAction::setTextFormat(const QString &textFormat, const QString &defaultText)
+{
+    m_prefix = textFormat;
+    m_defaultText = defaultText;
 }

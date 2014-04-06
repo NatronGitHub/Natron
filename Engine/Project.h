@@ -162,9 +162,17 @@ public:
     
     void addNodeToProject(boost::shared_ptr<Natron::Node> n);
     
+    /**
+     * @brief Remove the node n from the project so the pointer is no longer
+     * referenced anywhere. This function is called on nodes that were already deleted by the user but were kept into
+     * the undo/redo stack. That means this node is no longer references by any other node and can be safely deleted.
+     * The first thing this function does is to assert that the node n is not active.
+     **/
+    void removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n);
+    
     void clearNodes();
     
-    void setLastTimelineSeekCaller(boost::shared_ptr<Natron::OutputEffectInstance> output);
+    void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
     void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
 

@@ -12,7 +12,6 @@
 
 #include <string>
 #include <cstdarg>
-#include <boost/shared_ptr.hpp>
 
 #include <ofxhImageEffect.h>
 
@@ -32,7 +31,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstancePointer(boost::shared_ptr<OfxEffectInstance> node){ assert(node); _node = node;}
+    void setOfxEffectInstancePointer(OfxEffectInstance* node){ _node = node;}
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -172,7 +171,7 @@ public:
     //
 
     
-    boost::shared_ptr<OfxEffectInstance> node() const WARN_UNUSED_RETURN { return _node; }
+    OfxEffectInstance* node() const WARN_UNUSED_RETURN { return _node; }
     
     /// to be called right away after populate() is called. It adds to their group all the params.
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
@@ -180,7 +179,7 @@ public:
     
 
 private:
-    boost::shared_ptr<OfxEffectInstance> _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+    OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 
                      KnobFactory::createKnob() is called. That's why we need to pass a pointer
                      to an OfxParamInstance. Without this pointer we would be unable

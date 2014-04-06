@@ -131,7 +131,7 @@ protected:
     
     virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,bool /*loadRequest*/,bool /*openImageFileDialog*/) {}
     
-    virtual void startRenderingFullSequence(boost::shared_ptr<Natron::OutputEffectInstance> writer);
+    virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 private:
     

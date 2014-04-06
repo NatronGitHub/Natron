@@ -668,7 +668,7 @@ QWidget* DockablePanel::getHeaderWidget() const {
 }
 
 NodeSettingsPanel::NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
-:DockablePanel(gui,NodeUi->getNode()->getLiveInstance().get(),
+:DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
                false,

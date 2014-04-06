@@ -38,11 +38,11 @@ class File_Knob : public QObject, public AnimatingString_KnobHelper
     
 public:
 
-    static KnobHelper *BuildKnob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new File_Knob(holder, description, dimension);
     }
 
-    File_Knob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension);
+    File_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     virtual ~File_Knob();
 
@@ -120,11 +120,11 @@ class OutputFile_Knob:  public QObject, public Knob<std::string>
     Q_OBJECT
 public:
 
-    static KnobHelper *BuildKnob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new OutputFile_Knob(holder, description, dimension);
     }
 
-    OutputFile_Knob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension);
+    OutputFile_Knob(KnobHolder* holder, const std::string &description, int dimension);
 
     static const std::string& typeNameStatic();
     
@@ -164,11 +164,11 @@ class Path_Knob:  public QObject, public Knob<std::string>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Path_Knob(holder, description, dimension);
     }
     
-    Path_Knob(const boost::shared_ptr<KnobHolder>& holder, const std::string &description, int dimension);
+    Path_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     static const std::string& typeNameStatic();
     

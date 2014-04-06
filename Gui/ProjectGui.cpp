@@ -202,7 +202,7 @@ void AddFormatDialog::onCopyFromViewer(){
     QString activeText = _copyFromViewerCombo->itemText(_copyFromViewerCombo->activeIndex());
     for(U32 i = 0 ; i < nodes.size(); ++i){
         if(nodes[i]->getName() == activeText.toStdString()){
-            boost::shared_ptr<ViewerInstance> v = boost::dynamic_pointer_cast<ViewerInstance>(nodes[i]->getLiveInstance());
+            ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             ViewerTab* tab = _gui->getViewerTabForInstance(v);
             RectI f = tab->getViewer()->getRoD();
             Format format = tab->getViewer()->getDisplayWindow();
@@ -304,8 +304,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         if (nGui->getNode()->pluginID() == "Viewer") {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if (found != viewersProjections.end()) {
-                boost::shared_ptr<ViewerInstance> viewer = boost::dynamic_pointer_cast<ViewerInstance>(
-                                                                                    nGui->getNode()->getLiveInstance());
+                ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());
                 ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
                 tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomPAR);
                 tab->setChannels(found->second.channels);
@@ -321,10 +320,10 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     }
     
     
-    const std::vector<boost::shared_ptr<NodeGui> > nodesGui = getVisibleNodes();
-    for(U32 i = 0 ; i < nodesGui.size();++i){
-        nodesGui[i]->refreshEdges();
-        nodesGui[i]->refreshSlaveMasterLinkPosition();
+    const std::list<boost::shared_ptr<NodeGui> > nodesGui = getVisibleNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodesGui.begin();it!=nodesGui.end();++it) {
+        (*it)->refreshEdges();
+        (*it)->refreshSlaveMasterLinkPosition();
     }
     
     ///restore the histograms
@@ -373,7 +372,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
    
 }
 
-std::vector<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const {
+std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const {
     return _gui->getVisibleNodes_mt_safe();
 }
 

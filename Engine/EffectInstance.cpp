@@ -138,7 +138,7 @@ bool EffectInstance::hasOutputConnected() const{
     return _node->hasOutputConnected();
 }
 
-boost::shared_ptr<Natron::EffectInstance> EffectInstance::input(int n) const
+Natron::EffectInstance* EffectInstance::input(int n) const
 {
     
     ///Only called by the main-thread
@@ -147,16 +147,16 @@ boost::shared_ptr<Natron::EffectInstance> EffectInstance::input(int n) const
     if (inputNode) {
         return inputNode->getLiveInstance();
     }
-    return boost::shared_ptr<Natron::EffectInstance>();
+    return NULL;
 }
 
-boost::shared_ptr<EffectInstance> EffectInstance::input_other_thread(int n) const
+EffectInstance* EffectInstance::input_other_thread(int n) const
 {
     boost::shared_ptr<Natron::Node> inputNode = _node->input_other_thread(n);
     if (inputNode) {
         return inputNode->getLiveInstance();
     }
-    return boost::shared_ptr<Natron::EffectInstance>();
+    return NULL;
 }
 
 std::string EffectInstance::inputLabel(int inputNb) const
@@ -169,7 +169,7 @@ std::string EffectInstance::inputLabel(int inputNb) const
 boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view)
 {
     
-    boost::shared_ptr<EffectInstance> n  = input_other_thread(inputNb);
+    EffectInstance* n  = input_other_thread(inputNb);
     
     //if the node is not connected, return a NULL pointer!
     if(!n){
@@ -200,7 +200,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.
     QThreadPool::globalInstance()->reserveThread();
-    QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n.get(),&Natron::EffectInstance::renderRoI,
+    QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
                 RenderRoIArgs(time,scale,view,roi,isSequentialRender,isRenderUserInteraction,byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
@@ -213,7 +213,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* ro
     Format frmt;
     getRenderFormat(&frmt);
     for (int i = 0; i < maximumInputs(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> input = input_other_thread(i);
+        Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectI inputRod;
             Status st = input->getRegionOfDefinition(time, &inputRod,isProjectFormat);
@@ -240,7 +240,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* ro
 EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& renderWindow){
     RoIMap ret;
     for (int i = 0; i < maximumInputs(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> input = input_other_thread(i);
+        Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             ret.insert(std::make_pair(input, renderWindow));
         }
@@ -255,7 +255,7 @@ EffectInstance::FramesNeededMap EffectInstance::getFramesNeeded(SequenceTime tim
     std::vector<RangeD> ranges;
     ranges.push_back(defaultRange);
     for (int i = 0; i < maximumInputs(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> input = input_other_thread(i);
+        Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             ret.insert(std::make_pair(i, ranges));
         }
@@ -269,7 +269,7 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
     *first = INT_MIN;
     *last = INT_MAX;
     for (int i = 0; i < maximumInputs(); ++i) {
-        boost::shared_ptr<Natron::EffectInstance> input = input_other_thread(i);
+        Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             SequenceTime inpFirst,inpLast;
             input->getFrameRange(&inpFirst, &inpLast);
@@ -577,7 +577,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
          in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
          to remove them.*/
         for (FramesNeededMap::const_iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
-            boost::shared_ptr<EffectInstance> inputEffect = input_other_thread(it2->first);
+            EffectInstance* inputEffect = input_other_thread(it2->first);
             if (inputEffect) {
                 RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
                 assert(foundInputRoI != inputsRoi.end());
@@ -879,10 +879,10 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
         _node->incrementKnobsAge();
     }
     
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     _node->hasViewersConnected(&viewers);
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
-    for (std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it) {
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
             (*it)->refreshAndContinueRender(forcePreview);
         } else {
@@ -910,7 +910,7 @@ void EffectInstance::clearPersistentMessage() {
     _node->clearPersistentMessage();
 }
 
-int EffectInstance::getInputNumber(boost::shared_ptr<Natron::EffectInstance> inputEffect) const {
+int EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const {
     for (int i = 0; i < maximumInputs(); ++i) {
         if (input_other_thread(i) == inputEffect) {
             return i;
@@ -978,7 +978,7 @@ void EffectInstance::unregisterPluginMemory(size_t nBytes) {
     _node->unregisterPluginMemory(nBytes);
 }
 
-void EffectInstance::onSlaveStateChanged(bool isSlave,const boost::shared_ptr<KnobHolder>& master) {
+void EffectInstance::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
     _node->onSlaveStateChanged(isSlave,master);
 }
 
@@ -1087,7 +1087,7 @@ bool EffectInstance::onOverlayFocusLost_public()
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 : Natron::EffectInstance(node)
-, _videoEngine()
+, _videoEngine(node ? new VideoEngine(this) : 0)
 , _writerCurrentFrame(0)
 , _writerFirstFrame(0)
 , _writerLastFrame(0)
@@ -1095,12 +1095,6 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 , _outputEffectDataLock(new QMutex)
 , _renderController(0)
 {
-}
-
-void OutputEffectInstance::initialize(const boost::shared_ptr<EffectInstance>& thisShared)
-{
-    assert(getNode());
-    _videoEngine.reset(new VideoEngine(boost::dynamic_pointer_cast<OutputEffectInstance>(thisShared)));
 }
 
 OutputEffectInstance::~OutputEffectInstance(){

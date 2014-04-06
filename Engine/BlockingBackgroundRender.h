@@ -13,7 +13,6 @@
 
 #include <QMutex>
 #include <QWaitCondition>
-#include <boost/shared_ptr.hpp>
 
 namespace Natron {
     class OutputEffectInstance;
@@ -25,14 +24,14 @@ class BlockingBackgroundRender{
     bool _running;
     QWaitCondition _runningCond;
     QMutex _runningMutex;
-    boost::shared_ptr<Natron::OutputEffectInstance> _writer;
+    Natron::OutputEffectInstance* _writer;
 public:
     
-    BlockingBackgroundRender(boost::shared_ptr<Natron::OutputEffectInstance> writer);
+    BlockingBackgroundRender(Natron::OutputEffectInstance* writer);
     
     virtual ~BlockingBackgroundRender(){}
     
-    boost::shared_ptr<Natron::OutputEffectInstance> getWriter() const { return _writer; }
+    Natron::OutputEffectInstance* getWriter() const { return _writer; }
     
     void notifyFinished();
     

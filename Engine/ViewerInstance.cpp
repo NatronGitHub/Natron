@@ -141,9 +141,14 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
 
 ViewerInstance::~ViewerInstance()
 {
+
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
+    if (getVideoEngine()) {
+        getVideoEngine()->quitEngineThread();
+    }
+    
     // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
     // not yet processed. Since we're in the main thread and it is processed in the main thread,
     // there is no way to wait for it (locking the mutex would cause a deadlock).
@@ -159,6 +164,10 @@ ViewerInstance::~ViewerInstance()
     if (_imp->bufferAllocated) {
         free(_imp->buffer);
         _imp->bufferAllocated = 0;
+    }
+    
+    if (_imp->lastRenderedImage) {
+        unregisterPluginMemory(_imp->lastRenderedImage->size());
     }
 }
 
@@ -266,7 +275,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     _imp->assertVideoEngine();
 
     ///Return the RoD of the active input
-    boost::shared_ptr<EffectInstance> n = input_other_thread(activeInput());
+    EffectInstance* n = input_other_thread(activeInput());
     if (n) {
         return n->getRegionOfDefinition(time,rod,isProjectFormat);
     } else {
@@ -283,7 +292,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     SequenceTime inpFirst = 0,inpLast = 0;
-    boost::shared_ptr<EffectInstance> n = input_other_thread(activeInput());
+    EffectInstance* n = input_other_thread(activeInput());
     if (n) {
         n->getFrameRange(&inpFirst,&inpLast);
     }
@@ -320,7 +329,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     int viewsCount = getRenderViewsCount();
     int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
 
-    boost::shared_ptr<EffectInstance> activeInputToRender = input_other_thread(activeInput());
+    EffectInstance* activeInputToRender = input_other_thread(activeInput());
     assert(activeInputToRender);
     
     bool forceRender;
@@ -354,7 +363,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     ////While the inputs are identity get the RoD of the first non identity input
     while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
-        boost::shared_ptr<EffectInstance> recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
+        EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
             inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, scale,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
@@ -556,6 +565,13 @@ ViewerInstance::renderViewer(SequenceTime time,
         int inputIndex = activeInput();
         _node->notifyInputNIsRendering(inputIndex);
 
+        ///since we are going to render a new image, decrease the current memory use of the viewer by
+        ///the amount of the current image, and increase it after we rendered the new image.
+        size_t memoryDiff = 0;
+        if (_imp->lastRenderedImage) {
+            memoryDiff -= _imp->lastRenderedImage->size();
+        }
+        
         // If an exception occurs here it is probably fatal, since
         // it comes from Natron itself. All exceptions from plugins are already caught
         // by the HostSupport library.
@@ -574,7 +590,13 @@ ViewerInstance::renderViewer(SequenceTime time,
             _node->notifyInputNIsFinishedRendering(inputIndex);
             throw;
         }
-
+        
+        memoryDiff += _imp->lastRenderedImage->size();
+        
+        ///notify that the viewer is actually using that much memory.
+        ///It will never be freed unless we delete the node completely from the undo/redo stack.
+        registerPluginMemory(memoryDiff);
+        
         _node->notifyInputNIsFinishedRendering(inputIndex);
 
 

@@ -67,6 +67,8 @@ struct AppManagerPrivate {
     mutable QMutex _wasAbortCalledMutex;
     bool _wasAbortAnyProcessingCalled; // < has abortAnyProcessing() called at least once ?
 
+    U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
         , _appInstances()
@@ -83,6 +85,8 @@ struct AppManagerPrivate {
         ,_loaded(false)
         ,_binaryPath()
         ,_wasAbortAnyProcessingCalled(false)
+        ,_nodesGlobalMemoryUse(0)
+    
     {
         
     }
@@ -766,7 +770,7 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
 }
 
 
-boost::shared_ptr<Natron::EffectInstance> AppManager::createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
+Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
                                                     const NodeSerialization* serialization ) const {
     return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
 }
@@ -1128,6 +1132,26 @@ void AppManager::quit(AppInstance* instance)
 
 int AppManager::exec() {
     return qApp->exec();
+}
+
+void AppManager::onNodeMemoryRegistered(qint64 mem)
+{
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (((qint64)_imp->_nodesGlobalMemoryUse + mem) < 0) {
+        qDebug() << "Memory underflow...a node is trying to release more memory than it registered.";
+        _imp->_nodesGlobalMemoryUse = 0;
+        return;
+    }
+    _imp->_nodesGlobalMemoryUse += mem;
+    clearExceedingUndoRedoEvents();
+}
+
+qint64 AppManager::getTotalNodesMemoryRegistered() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_nodesGlobalMemoryUse;
 }
 
 namespace Natron{

@@ -56,18 +56,30 @@ static QString getDefaultOcioConfigPath() {
 
 void Settings::initializeKnobs(){
     
-    boost::shared_ptr<Settings> thisShared = appPTR->getCurrentSettings();
+    _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
     
-    _generalTab = Natron::createKnob<Tab_Knob>(thisShared, "General");
+    _maxUndoRedoNodeSize = Natron::createKnob<Int_Knob>(this, "Maximum undo/redo RAM size (Mb)");
+    _maxUndoRedoNodeSize->setAnimationEnabled(false);
+    _maxUndoRedoNodeSize->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME
+                                 " will remember. Past this limit, older events will be deleted permanantly "
+                                 " allowing to re-use the RAM for better purposes.");
+    _generalTab->addKnob(_maxUndoRedoNodeSize);
     
-    _linearPickers = Natron::createKnob<Bool_Knob>(thisShared, "Linear color pickers");
+    _minUndoRedoEvents = Natron::createKnob<Int_Knob>(this,"Minimum undo events");
+    _minUndoRedoEvents->setAnimationEnabled(false);
+    _minUndoRedoEvents->setHintToolTip("Minimum undo events to keep in the node graph stack, "
+                                        " regardless whether it breaches the maximum RAM allocated to the "
+                                        " undo/redo stack.");
+    _generalTab->addKnob(_minUndoRedoEvents);
+    
+    _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->setAnimationEnabled(false);
     _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters will be converted"
                                    " to linear before being fetched. Otherwise they will be in the same color-space "
                                    " as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
     
-    _numberOfThreads = Natron::createKnob<Int_Knob>(thisShared, "Number of render threads");
+    _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads");
     _numberOfThreads->setAnimationEnabled(false);
     QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
                                              "-1: Disable multi-threading totally (useful for debug) \n"
@@ -78,21 +90,21 @@ void Settings::initializeKnobs(){
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
     
-    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(thisShared, "Render in a separate process");
+    _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->setAnimationEnabled(false);
     _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render (using the write nodes) in "
                                              "a separate process. Disabling it is most helpful for the dev team.");
     _generalTab->addKnob(_renderInSeparateProcess);
     
-    _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(thisShared, "Auto-preview enabled by default for new projects");
+    _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked then when creating a new project, the Auto-preview option"
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
     
-    _generalTab->addKnob(Natron::createKnob<Separator_Knob>(thisShared, "OpenFX Plugins"));
+    _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
     
-    _extraPluginPaths = Natron::createKnob<Path_Knob>(thisShared, "Extra plugins search paths");
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
     _extraPluginPaths->setHintToolTip("All paths in this variable are separated by ';' and indicate"
                                       " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
                                       NATRON_APPLICATION_NAME " already searchs for plug-ins at these locations:\n "
@@ -104,10 +116,10 @@ void Settings::initializeKnobs(){
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
     
-    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(thisShared, "OpenColorIO");
+    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
     
     
-    _ocioConfigKnob = Natron::createKnob<Choice_Knob>(thisShared, "OpenColorIO config");
+    _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
     _ocioConfigKnob->setAnimationEnabled(false);
     
     QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
@@ -135,15 +147,15 @@ void Settings::initializeKnobs(){
     
     ocioTab->addKnob(_ocioConfigKnob);
     
-    _customOcioConfigFile = Natron::createKnob<File_Knob>(thisShared, "Custom OpenColorIO config file");
+    _customOcioConfigFile = Natron::createKnob<File_Knob>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setAllDimensionsEnabled(false);
     _customOcioConfigFile->setHintToolTip("To use this, set the OpenColorIO config to custom config a point "
                                           "to a custom OpenColorIO config file (.ocio).");
     ocioTab->addKnob(_customOcioConfigFile);
     
-    _viewersTab = Natron::createKnob<Tab_Knob>(thisShared, "Viewers");
+    _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
     
-    _texturesMode = Natron::createKnob<Choice_Knob>(thisShared, "Viewer textures bit depth");
+    _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
     _texturesMode->setAnimationEnabled(false);
     std::vector<std::string> textureModes;
     std::vector<std::string> helpStringsTextureModes;
@@ -160,7 +172,7 @@ void Settings::initializeKnobs(){
                                   " Hover each option with the mouse for a more detailed comprehension.");
     _viewersTab->addKnob(_texturesMode);
     
-    _powerOf2Tiling = Natron::createKnob<Int_Knob>(thisShared, "Viewer tile size is 2 to the power of...");
+    _powerOf2Tiling = Natron::createKnob<Int_Knob>(this, "Viewer tile size is 2 to the power of...");
     _powerOf2Tiling->setHintToolTip("The power of 2 of the tiles size used by the Viewer to render."
                                     " A high value means that the viewer will usually render big tiles, which means"
                                     " you have good chances when panning/zooming to find an already rendered texture in the cache."
@@ -174,9 +186,9 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
-    _cachingTab = Natron::createKnob<Tab_Knob>(thisShared, "Caching");
+    _cachingTab = Natron::createKnob<Tab_Knob>(this, "Caching");
     
-    _maxRAMPercent = Natron::createKnob<Int_Knob>(thisShared, "Maximum system's RAM for caching");
+    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
     _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
@@ -193,7 +205,7 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->setHintToolTip(ramHint);
     _cachingTab->addKnob(_maxRAMPercent);
     
-    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(thisShared, "Playback cache RAM percentage");
+    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
     _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
@@ -203,7 +215,7 @@ void Settings::initializeKnobs(){
                                         " this is made possible for convenience.");
     _cachingTab->addKnob(_maxPlayBackPercent);
     
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(thisShared, "Maximum disk cache size");
+    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
     _maxDiskCacheGB->setAnimationEnabled(false);
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setMaximum(100);
@@ -214,9 +226,9 @@ void Settings::initializeKnobs(){
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
     
-    _readersTab = Natron::createKnob<Tab_Knob>(thisShared, "Readers");
+    _readersTab = Natron::createKnob<Tab_Knob>(this, "Readers");
 
-    _writersTab = Natron::createKnob<Tab_Knob>(thisShared, "Writers");
+    _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
     
     
     setDefaultValues();
@@ -226,6 +238,8 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _maxUndoRedoNodeSize->setDefaultValue(50, 0);
+    _minUndoRedoEvents->setDefaultValue(4, 0);
     _linearPickers->setDefaultValue(true,0);
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
@@ -265,6 +279,8 @@ void Settings::saveSettings(){
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    settings.setValue("MaximumRAMUndoRedo", _maxUndoRedoNodeSize->getValue());
+    settings.setValue("MinUndoRedoEvents", _minUndoRedoEvents->getValue());
     settings.setValue("LinearColorPickers",_linearPickers->getValue());
     settings.setValue("Number of threads", _numberOfThreads->getValue());
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
@@ -314,6 +330,12 @@ void Settings::restoreSettings(){
     notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    if (settings.contains("MaximumRAMUndoRedo")) {
+        _maxUndoRedoNodeSize->setValue(settings.value("MaximumRAMUndoRedo").toInt(), 0);
+    }
+    if (settings.contains("MinUndoRedoEvents")) {
+        _minUndoRedoEvents->setValue(settings.value("MinUndoRedoEvents").toInt(),0);
+    }
     if(settings.contains("LinearColorPickers")){
         _linearPickers->setValue(settings.value("LinearColorPickers").toBool(),0);
     }
@@ -450,7 +472,7 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
                 if (nodes[i]->pluginID() == "Viewer") {
-                    ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance().get());
+                    ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                     assert(n);
                     if(isFirstViewer){
                         if(!n->supportsGLSL() && _texturesMode->getValue() != 0){
@@ -555,7 +577,7 @@ const std::string& Settings::getWriterPluginIDForFileType(const std::string& ext
 void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
     
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(appPTR->getCurrentSettings(), it->first);
+        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setAnimationEnabled(false);
         k->populateChoices(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
@@ -572,7 +594,7 @@ void Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::v
 
 void Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector<std::string> >& rows){
     for (std::map<std::string,std::vector<std::string> >::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(appPTR->getCurrentSettings(), it->first);
+        boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setAnimationEnabled(false);
         k->populateChoices(it->second);
         for (U32 i = 0; i < it->second.size(); ++i) {
@@ -624,4 +646,14 @@ void Settings::restoreDefault() {
 
 bool Settings::isRenderInSeparatedProcessEnabled() const {
     return _renderInSeparateProcess->getValue();
+}
+
+int Settings::getMaximumUndoRedoRAM_Mb() const
+{
+    return _maxUndoRedoNodeSize->getValue();
+}
+
+int Settings::getMinimumUndoRedoEvents() const
+{
+    return _minUndoRedoEvents->getValue();
 }

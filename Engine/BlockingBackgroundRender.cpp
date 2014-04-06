@@ -13,7 +13,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
 
-BlockingBackgroundRender::BlockingBackgroundRender(boost::shared_ptr<Natron::OutputEffectInstance> writer)
+BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance* writer)
 : _running(false)
 ,_writer(writer)
 {

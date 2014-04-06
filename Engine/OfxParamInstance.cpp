@@ -142,7 +142,7 @@ namespace OfxKeyFrame{
 
 ////////////////////////// OfxPushButtonInstance /////////////////////////////////////////////////
 
-OfxPushButtonInstance::OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
@@ -172,7 +172,7 @@ boost::shared_ptr<KnobI> OfxPushButtonInstance::getKnob() const {
 ////////////////////////// OfxIntegerInstance /////////////////////////////////////////////////
 
 
-OfxIntegerInstance::OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor)
+OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -204,6 +204,8 @@ OfxStatus OfxIntegerInstance::get(OfxTime time, int& v) {
     v = _knob->getValueAtTime(time);
     return kOfxStatOK;
 }
+
+#pragma message WARN("All \"set\" functions should ask for undo/redo command while asked inside an interact action.")
 OfxStatus OfxIntegerInstance::set(int v){
     _knob->setValue(v,0);
     return kOfxStatOK;
@@ -268,7 +270,7 @@ void OfxIntegerInstance::setDisplayRange(){
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
 
-OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,  OFX::Host::Param::Descriptor& descriptor)
+OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -442,7 +444,7 @@ OfxDoubleInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
 
-OfxBooleanInstance::OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor)
+OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -519,7 +521,7 @@ void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
-OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor)
+OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -622,7 +624,7 @@ void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
 
-OfxRGBAInstance::OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor)
+OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -803,7 +805,7 @@ OfxRGBAInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
-OfxRGBInstance::OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,  OFX::Host::Param::Descriptor& descriptor)
+OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -966,7 +968,7 @@ OfxRGBInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
-OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor)
+OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -1169,7 +1171,7 @@ OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
-OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor)
+OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
 {
     const int dims = 2;
@@ -1309,7 +1311,7 @@ OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
-OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor)
+OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double3DInstance(descriptor,node->effectInstance())
 {
     const int dims = 3;
@@ -1488,7 +1490,7 @@ OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
-OfxInteger3DInstance::OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>&node, OFX::Host::Param::Descriptor& descriptor)
+OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer3DInstance(descriptor,node->effectInstance())
 {
     const int dims = 3;
@@ -1633,7 +1635,7 @@ OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
 
-OfxGroupInstance::OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor)
+OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
 , _groupKnob()
 , _tabKnob()
@@ -1682,7 +1684,7 @@ void OfxGroupInstance::setSecret() {
 ////////////////////////// OfxStringInstance /////////////////////////////////////////////////
 
 
-OfxStringInstance::OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor)
+OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::StringInstance(descriptor,node->effectInstance())
 , _node(node)
 , _fileKnob()
@@ -1749,7 +1751,7 @@ OfxStringInstance::OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>&
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     int currentFrame;
-    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_node.get());
+    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_node);
     if (_node->isWriter() && outputEffect->isDoingFullSequenceRender()) {
         currentFrame = outputEffect->getCurrentFrame();
     } else {
@@ -1984,7 +1986,7 @@ void OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
 
 
 
-OfxCustomInstance::OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,OFX::Host::Param::Descriptor& descriptor)
+OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::CustomInstance(descriptor,node->effectInstance())
 , _node(node)
 , _knob()
@@ -2092,7 +2094,7 @@ void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl)
 
 ////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
 
-OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node, OFX::Host::Param::Descriptor& descriptor)
+OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::ParametricParam::ParametricInstance(descriptor,node->effectInstance())
 , _descriptor(descriptor)
 , _overlayInteract(NULL)

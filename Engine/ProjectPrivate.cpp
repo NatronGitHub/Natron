@@ -104,7 +104,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     /// 2) restore the timeline
     timeline->setBoundaries(obj.getLeftBoundTime(), obj.getRightBoundTime());
-    timeline->seekFrame(obj.getCurrentTime(),boost::shared_ptr<OutputEffectInstance>());
+    timeline->seekFrame(obj.getCurrentTime(),NULL);
 
     /// 3) Restore the nodes
     const std::list< NodeSerialization >& serializedNodes = obj.getNodesSerialization();

@@ -64,6 +64,11 @@ public:
                     const boost::shared_ptr<Natron::Node>& internalNode,
                     bool requestedByLoad);
     
+    /**
+     * @brief Called by NodeGraph::clearExceedingUndoRedoEvents when we want to delete a node.
+     **/
+    void deleteChildrenReferences();
+    
     ~NodeGui() OVERRIDE;
     
     /**

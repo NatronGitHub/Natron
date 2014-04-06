@@ -28,7 +28,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString& projectPath,
                                const QString& outputFileSequence,
                                int firstFrame,int lastFrame,
-                               boost::shared_ptr<Natron::OutputEffectInstance> writer)
+                               Natron::OutputEffectInstance* writer)
     : _app(app)
     ,_process(new QProcess)
     ,_writer(writer)

@@ -76,6 +76,9 @@ public:
     
     KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
     
+    virtual void clearExceedingUndoRedoEvents() OVERRIDE FINAL;
+
+    
 public slots:
     
     virtual void addPluginToolButtons(const QStringList& groups,
@@ -85,6 +88,7 @@ public slots:
                                       const QString& groupIconPath) OVERRIDE FINAL;
     
 private:
+    
     
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                                         std::map<std::string,std::vector<std::string> >* readersMap,

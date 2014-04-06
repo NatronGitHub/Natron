@@ -31,7 +31,7 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int 
         std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
         if (m.second) {
             _master.masterDimension = m.first;
-            Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(m.second->getHolder().get());
+            Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(m.second->getHolder());
             assert(holder);
             _master.masterNodeName = holder->getNode()->getName_mt_safe();
             _master.masterKnobName = m.second->getName();
@@ -45,25 +45,25 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int 
 bool KnobSerialization::createKnob(const std::string& typeName,int dimension)
 {
     if (typeName == Int_Knob::typeNameStatic()) {
-        _knob.reset(new Int_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Int_Knob(NULL,"",dimension));
     } else if (typeName == Bool_Knob::typeNameStatic()) {
-        _knob.reset(new Bool_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Bool_Knob(NULL,"",dimension));
     } else if (typeName == Double_Knob::typeNameStatic()) {
-        _knob.reset(new Double_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Double_Knob(NULL,"",dimension));
     } else if (typeName == Choice_Knob::typeNameStatic()) {
-        _knob.reset(new Choice_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Choice_Knob(NULL,"",dimension));
     } else if (typeName == String_Knob::typeNameStatic()) {
-        _knob.reset(new String_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new String_Knob(NULL,"",dimension));
     } else if (typeName == Parametric_Knob::typeNameStatic()) {
-        _knob.reset(new Parametric_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Parametric_Knob(NULL,"",dimension));
     } else if (typeName == Color_Knob::typeNameStatic()) {
-        _knob.reset(new Color_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Color_Knob(NULL,"",dimension));
     } else if (typeName == Path_Knob::typeNameStatic()) {
-        _knob.reset(new Path_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new Path_Knob(NULL,"",dimension));
     } else if (typeName == File_Knob::typeNameStatic()) {
-        _knob.reset(new File_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new File_Knob(NULL,"",dimension));
     } else if (typeName == OutputFile_Knob::typeNameStatic()) {
-        _knob.reset(new OutputFile_Knob(boost::shared_ptr<KnobHolder>(),"",dimension));
+        _knob.reset(new OutputFile_Knob(NULL,"",dimension));
     }
     if (_knob) {
         _knob->populate();

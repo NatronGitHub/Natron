@@ -183,6 +183,20 @@ boost::shared_ptr<Node> GuiAppInstance::getNode(boost::shared_ptr<NodeGui> n) co
     
 }
 
+void GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui>& n)
+{
+    assert(!n->getNode()->isActivated());
+    getProject()->removeNodeFromProject(n->getNode());
+    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
+        if(it->second == n){
+            _imp->_nodeMapping.erase(it);
+            break;
+        }
+    }
+    
+
+}
+
 void GuiAppInstance::errorDialog(const std::string& title,const std::string& message) const {
     _imp->_gui->errorDialog(title, message);
 }
@@ -217,7 +231,7 @@ void GuiAppInstance::setViewersCurrentView(int view) {
     _imp->_gui->setViewersCurrentView(view);
 }
 
-void GuiAppInstance::startRenderingFullSequence(boost::shared_ptr<Natron::OutputEffectInstance> writer) {
+void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer) {
     
     /*Start the renderer in a background process.*/
     getProject()->autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
@@ -284,4 +298,9 @@ void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceNa
                                        ProcessHandler* process) {
     _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame,process);
 
+}
+
+void GuiAppInstance::clearExceedingUndoRedoEvents()
+{
+    _imp->_gui->clearExceedingUndoRedoEvents();
 }

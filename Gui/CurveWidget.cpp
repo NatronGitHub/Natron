@@ -2182,7 +2182,7 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event)
             break;
             
         case DRAGGING_TIMELINE:
-            _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),boost::shared_ptr<OutputEffectInstance>());
+            _imp->_timeline->seekFrame((SequenceTime)newClick_opengl.x(),NULL);
             break;
             
         case NONE:

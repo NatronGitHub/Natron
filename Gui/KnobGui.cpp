@@ -838,6 +838,8 @@ void KnobGui::onCopyAnimationActionTriggered(){
 
 void KnobGui::pasteClipBoard(int targetDimension)
 {
+#pragma message WARN("Make this an undo command")
+    
     if (appPTR->isClipBoardEmpty()) {
         return;
     }

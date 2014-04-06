@@ -19,7 +19,6 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#include <boost/shared_ptr.hpp>
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
@@ -43,7 +42,7 @@ namespace Natron {
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(boost::shared_ptr<OfxEffectInstance> node
+    OfxClipInstance(OfxEffectInstance* node
                     ,Natron::OfxImageEffectInstance* effect
                     ,int index
                     , OFX::Host::ImageEffect::ClipDescriptor* desc);
@@ -149,13 +148,13 @@ public:
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<Natron::EffectInstance> getAssociatedNode() const WARN_UNUSED_RETURN;
+    Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
 
 private:
     
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
     
-    boost::shared_ptr<OfxEffectInstance> _nodeInstance;
+    OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     Natron::ThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };

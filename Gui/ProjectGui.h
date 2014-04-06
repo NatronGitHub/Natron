@@ -77,7 +77,7 @@ public:
     /**
      * @brief Retur
      **/
-    std::vector<boost::shared_ptr<NodeGui> > getVisibleNodes() const;
+    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes() const;
     
     const Gui* getGui() const { return _gui; }
     

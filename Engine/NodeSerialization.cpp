@@ -31,7 +31,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
         _inputs.clear();
         
         if (n->isOpenFXNode()) {
-            dynamic_cast<OfxEffectInstance*>(n->getLiveInstance().get())->syncPrivateData_other_thread();
+            dynamic_cast<OfxEffectInstance*>(n->getLiveInstance())->syncPrivateData_other_thread();
         }
         
         const std::vector< boost::shared_ptr<KnobI> >& knobs = n->getKnobs();

@@ -154,7 +154,7 @@ void NodeGui::initialize(NodeGraph* dag,
         }
         
         if(_internalNode->isOpenFXNode()){
-            OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance().get());
+            OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
 	}
@@ -231,24 +231,11 @@ QSize NodeGui::nodeSize(bool withPreview) {
 }
 
 NodeGui::~NodeGui(){
-    for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
-        Edge* e = it->second;
-        if(e){
-            QGraphicsScene* scene = e->scene();
-            if(scene){
-                scene->removeItem(e);
-            }
-            e->setParentItem(NULL);
-            delete e;
-        }
-    }
+    
+    deleteChildrenReferences();
+    
     delete _selectedGradient;
     delete _defaultGradient;
-    if (_settingsPanel) {
-        _settingsPanel->setParent(NULL);
-        delete _settingsPanel;
-        _settingsPanel = NULL;
-    }
 }
 
 void NodeGui::removeUndoStack(){
@@ -597,11 +584,11 @@ void NodeGui::activate() {
             setVisibleSettingsPanel(false);
         }
     }else{
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance().get());
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
         _graph->getGui()->activateViewerTab(viewer);
     }
     if(_internalNode->isOpenFXNode()){
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance().get());
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->beginInstanceEditAction();
     }
     
@@ -643,18 +630,18 @@ void NodeGui::deactivate() {
         }
         
     }else{
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance().get());
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
         _graph->getGui()->deactivateViewerTab(viewer);
     }
     if(_internalNode->isOpenFXNode()){
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance().get());
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->endInstanceEditAction();
     }
     
     getNode()->getApp()->triggerAutoSave();
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     getNode()->hasViewersConnected(&viewers);
-    for (std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it) {
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
             (*it)->updateTreeAndRender();
     }
 }
@@ -702,9 +689,9 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     }else{
         return;
     }
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     _internalNode->hasViewersConnected(&viewers);
-    for(std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
         ///the tab might not exist if the node is being deactivated following a tab close request by the user.
 
@@ -720,9 +707,9 @@ void NodeGui::onPersistentMessageCleared(){
     _persistentMessage->hide();
     _stateIndicator->hide();
     
-    std::list<boost::shared_ptr<ViewerInstance> > viewers;
+    std::list<ViewerInstance* > viewers;
     _internalNode->hasViewersConnected(&viewers);
-    for(std::list<boost::shared_ptr<ViewerInstance> >::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
 
         ///the tab might not exist if the node is being deactivated following a tab close request by the user.
@@ -988,4 +975,37 @@ void NodeGui::refreshOutputEdgeVisibility() {
             }
         }
     }
+}
+
+void NodeGui::deleteChildrenReferences()
+{
+    for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
+        Edge* e = it->second;
+        if(e){
+            QGraphicsScene* scene = e->scene();
+            if(scene){
+                scene->removeItem(e);
+            }
+            e->setParentItem(NULL);
+            delete e;
+        }
+    }
+    _inputEdges.clear();
+    
+    if (_outputEdge) {
+        QGraphicsScene* scene = _outputEdge->scene();
+        if(scene){
+            scene->removeItem(_outputEdge);
+        }
+        _outputEdge->setParentItem(NULL);
+        delete _outputEdge;
+        _outputEdge = NULL;
+    }
+    
+    if (_settingsPanel) {
+        _settingsPanel->setParent(NULL);
+        delete _settingsPanel;
+        _settingsPanel = NULL;
+    }
+
 }

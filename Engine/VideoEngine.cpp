@@ -46,7 +46,7 @@ using std::make_pair;
 using std::cout; using std::endl;
 
 
-VideoEngine::VideoEngine(const boost::shared_ptr<Natron::OutputEffectInstance>& owner,QObject* parent)
+VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     : QThread(parent)
     , _tree(owner)
     , _threadStarted(false)
@@ -103,6 +103,12 @@ void VideoEngine::quitEngineThread(){
             QMutexLocker locker(&_startMutex);
             ++_startCount;
             _startCondition.wakeAll();
+        }
+        
+        {
+            QMutexLocker locker(&_getFrameRangeMutex);
+            _gettingFrameRange = false;
+            _getFrameRangeCond.wakeAll();
         }
         
         {
@@ -204,7 +210,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
             getFrameRange();
         }
         
-        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput().get());
+        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         output->setFirstFrame(_firstFrame);
         output->setLastFrame(_lastFrame);
         output->setDoingFullSequenceRender(true);
@@ -213,7 +219,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     
     
-    boost::shared_ptr<ViewerInstance> viewer = _tree.outputAsViewer(); /*viewer might be NULL if the output is smthing else*/
+    ViewerInstance* viewer = _tree.outputAsViewer(); /*viewer might be NULL if the output is smthing else*/
     
     bool hasInput = false;
     for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
@@ -300,8 +306,7 @@ bool VideoEngine::stopEngine() {
 
     }
     
-    boost::shared_ptr<Natron::OutputEffectInstance> outputEffect =
-    boost::dynamic_pointer_cast<Natron::OutputEffectInstance>(_tree.getOutput());
+    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
     outputEffect->setDoingFullSequenceRender(false);
     if(appPTR->isBackground()){
        
@@ -332,7 +337,7 @@ void VideoEngine::run(){
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
                 _mustQuit = false;
-                Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput().get());
+                Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
                 if(appPTR->isBackground()){
                     outputEffect->notifyRenderFinished();
                 }
@@ -426,10 +431,9 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
             }
         }
         
-        boost::shared_ptr<Natron::OutputEffectInstance> output =
-        boost::dynamic_pointer_cast<Natron::OutputEffectInstance>(_tree.getOutput());
+        Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         assert(output);
-        boost::shared_ptr<ViewerInstance> viewer = _tree.outputAsViewer();
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(output);
         
         /*update the tree inputs */
         _tree.refreshInputsAndClearMessage();
@@ -445,10 +449,17 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
                         return;
                     }
                 }
+                
+                bool mustQuit;
+                {
+                    QMutexLocker l(&_mustQuitMutex);
+                    mustQuit = _mustQuit;
+                }
+                
                 QMutexLocker l(&_getFrameRangeMutex);
                 _gettingFrameRange = true;
                 emit mustGetFrameRange();
-                while (_gettingFrameRange) {
+                while (_gettingFrameRange && !mustQuit) {
                     _getFrameRangeCond.wait(&_getFrameRangeMutex);
                 }
                 
@@ -726,7 +737,7 @@ void VideoEngine::updateTreeAndContinueRender(){
 }
 
 
-RenderTree::RenderTree(const boost::shared_ptr<EffectInstance>& output):
+RenderTree::RenderTree(EffectInstance* output):
     _output(output)
   ,_sorted()
   ,_isViewer(false)
@@ -746,7 +757,7 @@ void RenderTree::clearGraph(){
 }
 
 void RenderTree::refreshTree(){
-    _isViewer = dynamic_cast<ViewerInstance*>(_output.get()) != NULL;
+    _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
     /*unmark all nodes already present in the graph*/
@@ -789,11 +800,11 @@ void RenderTree::refreshInputsAndClearMessage()
 }
 
 
-boost::shared_ptr<ViewerInstance> RenderTree::outputAsViewer() const {
+ViewerInstance* RenderTree::outputAsViewer() const {
     if(_output && _isViewer){
-        return boost::dynamic_pointer_cast<ViewerInstance>(_output);
+        return dynamic_cast<ViewerInstance*>(_output);
     }else{
-        return boost::shared_ptr<ViewerInstance>();
+        return NULL;
     }
 }
 

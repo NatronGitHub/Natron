@@ -83,7 +83,7 @@ struct ProjectPrivate {
     
     Natron::Project* project;
     
-    boost::shared_ptr<Natron::OutputEffectInstance> lastTimelineSeekCaller;
+    Natron::OutputEffectInstance* lastTimelineSeekCaller;
 
     int beginEndBracketsCount;
     int evaluationsCount;

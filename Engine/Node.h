@@ -59,6 +59,9 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
     
+    ///called by Project::removeNode, never call this
+    void removeReferences();
+    
     ///function called by EffectInstance to create a knob
     template <class K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1){
@@ -75,9 +78,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      *is set earlier.
      */
-    void setLiveInstance(boost::shared_ptr<Natron::EffectInstance> liveInstance);
+    void setLiveInstance(Natron::EffectInstance* liveInstance);
     
-    boost::shared_ptr<Natron::EffectInstance> getLiveInstance() const;
+    Natron::EffectInstance* getLiveInstance() const;
     
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
@@ -100,7 +103,7 @@ public:
     const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const;
 
     /*Returns in viewers the list of all the viewers connected to this node*/
-    void hasViewersConnected(std::list<boost::shared_ptr<ViewerInstance> >* viewers) const;
+    void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
     
     /**
      * @brief Forwarded to the live effect instance
@@ -436,7 +439,7 @@ public:
     
     U64 getKnobsAge() const;
     
-    void onSlaveStateChanged(bool isSlave,const boost::shared_ptr<KnobHolder>& master);
+    void onSlaveStateChanged(bool isSlave,KnobHolder* master);
   
     boost::shared_ptr<Natron::Node> getMasterNode() const;
     
@@ -509,7 +512,9 @@ signals:
     
     void renderingEnded();
     
-    void pluginMemoryUsageChanged(unsigned long long);
+    ///how much has just changed, this not the new value but the difference between the new value
+    ///and the old value
+    void pluginMemoryUsageChanged(qint64 mem);
     
     void slavedStateChanged(bool b);
     

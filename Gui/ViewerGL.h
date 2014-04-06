@@ -271,7 +271,7 @@ public:
     **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL ;
     
-    boost::shared_ptr<ViewerInstance> getInternalNode() const;
+    ViewerInstance* getInternalNode() const;
     
     ViewerTab* getViewerTab() const;
     

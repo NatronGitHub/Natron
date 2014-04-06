@@ -43,7 +43,7 @@ class EffectInstance : public KnobHolder
 {
 public:
     
-    typedef std::map<boost::shared_ptr<EffectInstance>,RectI> RoIMap;
+    typedef std::map<EffectInstance*,RectI> RoIMap;
     
     typedef std::map<int, std::vector<RangeD> > FramesNeededMap;
     
@@ -90,11 +90,6 @@ public:
      **/
     explicit EffectInstance(boost::shared_ptr<Node> node);
     
-    /**
-     * @brief Initialize any extra data after the constructor
-     **/
-    virtual void initialize(const boost::shared_ptr<EffectInstance>& /*thisShared*/) {};
-    
     virtual ~EffectInstance();
     
     /**
@@ -133,12 +128,12 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * Cannot be called by another thread than the application's main thread.
      **/
-    boost::shared_ptr<EffectInstance> input(int n) const WARN_UNUSED_RETURN;
+    EffectInstance* input(int n) const WARN_UNUSED_RETURN;
   
     /**
      * @brief Returns input n. It might be NULL if the input is not connected.
      **/
-    boost::shared_ptr<EffectInstance> input_other_thread(int n) const WARN_UNUSED_RETURN;
+    EffectInstance* input_other_thread(int n) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node holding the effect
@@ -591,7 +586,7 @@ private:
     void evaluate(KnobI* knob,bool isSignificant) OVERRIDE;
 
     
-    virtual void onSlaveStateChanged(bool isSlave,const boost::shared_ptr<KnobHolder>& master) OVERRIDE FINAL;
+    virtual void onSlaveStateChanged(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
 
     
     
@@ -602,7 +597,7 @@ private:
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(boost::shared_ptr<Natron::EffectInstance> inputEffect) const;
+    int getInputNumber(Natron::EffectInstance* inputEffect) const;
     
 };
 
@@ -630,8 +625,6 @@ public:
 
     OutputEffectInstance(boost::shared_ptr<Node> node);
     
-    virtual void initialize(const boost::shared_ptr<EffectInstance>& thisShared) OVERRIDE;
-
     virtual ~OutputEffectInstance();
 
     virtual bool isOutput() const { return true; }

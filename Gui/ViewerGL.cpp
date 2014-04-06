@@ -450,7 +450,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    setFocusPolicy(Qt::StrongFocus);
+    //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
     QObject::connect(parent->getGui()->getApp()->getProject().get(),SIGNAL(formatChanged(Format)),this,SLOT(onProjectFormatChanged(Format)));
@@ -468,7 +468,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
     onProjectFormatChanged(projectFormat);
     
-    QObject::connect(getInternalNode().get(), SIGNAL(rodChanged(RectI)), this, SLOT(setRegionOfDefinition(RectI)));
+    QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectI)), this, SLOT(setRegionOfDefinition(RectI)));
 
 }
 
@@ -560,7 +560,7 @@ void ViewerGL::resizeGL(int width, int height)
     glCheckError();
     _imp->ms = UNDEFINED;
     assert(_imp->viewerTab);
-    ViewerInstance* viewer = _imp->viewerTab->getInternalNode().get();
+    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (!_imp->zoomOrPannedSinceLastFit) {
         fitImageToFormat();
@@ -1906,7 +1906,7 @@ void ViewerGL::setClipToDisplayWindow(bool b)
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         _imp->clipToDisplayWindow = b;
     }
-    ViewerInstance* viewer = _imp->viewerTab->getInternalNode().get();
+    ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
@@ -2372,7 +2372,7 @@ int ViewerGL::getCurrentView() const
     return _imp->viewerTab->getCurrentView();
 }
 
-boost::shared_ptr<ViewerInstance> ViewerGL::getInternalNode() const {
+ViewerInstance* ViewerGL::getInternalNode() const {
     return _imp->viewerTab->getInternalNode();
 }
 

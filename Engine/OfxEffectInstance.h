@@ -49,7 +49,6 @@ public:
     virtual ~AbstractOfxEffectInstance(){}
     
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                              const boost::shared_ptr<AbstractOfxEffectInstance>& thisAsShared,
                                               const std::string& context,const NodeSerialization* serialization) = 0;
     
     static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
@@ -88,7 +87,6 @@ public:
     virtual ~OfxEffectInstance();
     
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                      const boost::shared_ptr<AbstractOfxEffectInstance>& thisAsShared,
                                       const std::string& context,const NodeSerialization* serialization) OVERRIDE FINAL;
     
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return effect_; }
