@@ -384,7 +384,7 @@ public:
 public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
-        
+
 private:
     OfxEffectInstance* _node;
     boost::shared_ptr<Double_Knob> _knob;

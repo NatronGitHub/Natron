@@ -277,7 +277,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
 
 
     const std::string& coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
-    
+
     _knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this));
     
     const std::string& doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
@@ -972,7 +972,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
 , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    
+
     const std::string& coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
 
     const int dims = 2;
