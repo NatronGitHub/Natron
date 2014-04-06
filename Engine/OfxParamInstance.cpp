@@ -205,7 +205,6 @@ OfxStatus OfxIntegerInstance::get(OfxTime time, int& v) {
     return kOfxStatOK;
 }
 
-#pragma message WARN("All \"set\" functions should ask for undo/redo command while asked inside an interact action.")
 OfxStatus OfxIntegerInstance::set(int v){
     _knob->setValue(v,0);
     return kOfxStatOK;

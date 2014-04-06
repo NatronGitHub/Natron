@@ -15,10 +15,13 @@
 #include "Knob.h"
 
 #include <stdexcept>
+#include <string>
+#include <QString>
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/EffectInstance.h"
 
 ///template specializations
 
@@ -169,7 +172,29 @@ T Knob<T>::getValueAtTime(double time, int dimension ) const
 
 }
 
+template <typename T>
+void Knob<T>::valueToVariant(const T& v,Variant* vari)
+{
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(this);
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
+    if (isInt) {
+        vari->setValue(v);
+    } else if (isBool) {
+        vari->setValue(v);
+    } else if (isDouble) {
+        vari->setValue(v);
+    }
+}
 
+template <>
+void Knob<std::string>::valueToVariant(const std::string& v,Variant* vari)
+{
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(this);
+    if (isString) {
+        vari->setValue<QString>(v.c_str());
+    }
+}
 
 template <typename T>
 KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
@@ -179,6 +204,14 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     }
 
     Knob::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
+    
+    Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
+    if (holder && holder->isDoingInteractAction() && reason != Natron::USER_EDITED) {
+        Variant vari;
+        valueToVariant(v, &vari);
+        _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
+        return ret;
+    }
 
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.

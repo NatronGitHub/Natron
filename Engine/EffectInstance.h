@@ -516,6 +516,8 @@ public:
     
     bool onOverlayFocusLost_public() WARN_UNUSED_RETURN;
     
+    bool isDoingInteractAction() const WARN_UNUSED_RETURN;
+    
 protected:
     
     /**

@@ -61,6 +61,8 @@ struct EffectInstance::Implementation {
     , previewEnabled(false)
     , beginEndRenderMutex()
     , beginEndRenderCount(0)
+    , duringInteractActionMutex()
+    , duringInteractAction(false)
     {
     }
 
@@ -72,7 +74,15 @@ struct EffectInstance::Implementation {
     bool previewEnabled;
     QMutex beginEndRenderMutex;
     int beginEndRenderCount;
+    
+    mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
+    bool duringInteractAction; //< true when we're running inside an interact action
 
+    void setDuringInteractAction(bool b) {
+        QWriteLocker l(&duringInteractActionMutex);
+        duringInteractAction = b;
+    }
+    
 };
 
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
@@ -988,7 +998,9 @@ void EffectInstance::drawOverlay_public()
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     drawOverlay();
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
 }
 
@@ -997,7 +1009,9 @@ bool EffectInstance::onOverlayPenDown_public(const QPointF& viewportPos, const Q
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenDown(viewportPos, pos);
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
@@ -1008,7 +1022,9 @@ bool EffectInstance::onOverlayPenMotion_public(const QPointF& viewportPos, const
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenMotion(viewportPos, pos);
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     //Don't chek if render is needed on pen motion, wait for the pen up
     //checkIfRenderNeeded();
@@ -1020,7 +1036,9 @@ bool EffectInstance::onOverlayPenUp_public(const QPointF& viewportPos, const QPo
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenUp(viewportPos, pos);
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
@@ -1031,7 +1049,9 @@ bool EffectInstance::onOverlayKeyDown_public(Natron::Key key,Natron::KeyboardMod
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyDown(key, modifiers);
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
@@ -1042,7 +1062,9 @@ bool EffectInstance::onOverlayKeyUp_public(Natron::Key key,Natron::KeyboardModif
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyUp(key, modifiers);
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
@@ -1054,7 +1076,9 @@ bool EffectInstance::onOverlayKeyRepeat_public(Natron::Key key,Natron::KeyboardM
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyRepeat(key, modifiers);
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
@@ -1066,7 +1090,9 @@ bool EffectInstance::onOverlayFocusGained_public()
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusGained();
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
@@ -1078,11 +1104,19 @@ bool EffectInstance::onOverlayFocusLost_public()
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     ++actionsRecursionLevel;
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusLost();
+    _imp->setDuringInteractAction(false);
     --actionsRecursionLevel;
     checkIfRenderNeeded();
     return ret;
 
+}
+
+bool EffectInstance::isDoingInteractAction() const
+{
+    QReadLocker l(&_imp->duringInteractActionMutex);
+    return _imp->duringInteractAction;
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)

@@ -832,9 +832,7 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
 }
 
 void ViewerTab::disconnectViewer(){
-    if (_imp->viewer->displayingImage()) {
-        _imp->viewer->disconnectViewer();
-    }
+    _imp->viewer->disconnectViewer();
 }
 
 

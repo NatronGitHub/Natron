@@ -161,7 +161,8 @@ struct Node::Implementation {
     
     mutable QMutex masterNodeMutex;
     boost::shared_ptr<Node> masterNode;
-    
+  
+
 };
 
 /**

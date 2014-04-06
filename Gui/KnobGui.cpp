@@ -49,6 +49,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/TimeLine.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
+#include "Engine/Variant.h"
 
 #include "Gui/AnimationButton.h"
 #include "Gui/DockablePanel.h"
@@ -128,7 +129,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(handler,SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
     QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SIGNAL(keyFrameRemoved()));
-
+    QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
 }
 
 KnobGui::~KnobGui(){
@@ -1142,3 +1143,23 @@ void KnobGui::setSpacingBetweenItems(int spacing){ _imp->spacingBetweenItems = s
 int KnobGui::getSpacingBetweenItems() const { return _imp->spacingBetweenItems; }
 
 bool KnobGui::hasWidgetBeenCreated() const {return _imp->widgetCreated;}
+
+void KnobGui::onSetValueUsingUndoStack(const Variant& v,int dim) {
+    boost::shared_ptr<KnobI> knob = getKnob();
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+    
+    if (isInt) {
+        pushUndoCommand(new KnobUndoCommand<int>(this,isInt->getValue(dim),v.toInt(),dim));
+    } else if (isBool) {
+        pushUndoCommand(new KnobUndoCommand<bool>(this,isBool->getValue(dim),v.toBool(),dim));
+    } else if (isDouble) {
+        pushUndoCommand(new KnobUndoCommand<double>(this,isDouble->getValue(dim),v.toDouble(),dim));
+    } else if (isString) {
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,isString->getValue(dim),v.toString().toStdString(),dim));
+    }
+
+
+}
