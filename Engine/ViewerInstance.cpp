@@ -1159,8 +1159,9 @@ ViewerInstance::onViewerCacheFrameAdded()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-
-    emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
+    if (getApp()->getTimeLine()) {
+        emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
+    }
 }
 
 void

@@ -997,6 +997,7 @@ void NodeGraph::moveToTrash(NodeGui* node) {
         if ((*it).get() == node) {
             _nodesTrash.push_back(*it);
             _nodes.erase(it);
+            break;
         }
     }
 }
@@ -1008,6 +1009,7 @@ void NodeGraph::restoreFromTrash(NodeGui* node) {
         if ((*it).get() == node) {
             _nodes.push_back(*it);
             _nodesTrash.erase(it);
+            break;
         }
     }
 }
