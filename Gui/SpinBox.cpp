@@ -70,6 +70,7 @@ SpinBox::~SpinBox(){
     }
 }
 void SpinBox::setValue(double d){
+    _valueWhenEnteringFocus = d;
     clear();
     QString str;
     switch (_type) {

@@ -15,6 +15,7 @@
 #include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
+#include <QtCore/QDebug>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Node.h"
@@ -257,7 +258,11 @@ void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedRe
         return;
     }
     
-    _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
+    try {
+        _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+    }
     
     //virtual portion
     keyframeRemoved_virtual(dimension, time);
