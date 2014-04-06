@@ -16,7 +16,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QProcess>
 #include <QThread>
 CLANG_DIAG_ON(deprecated)
-
 #include "Global/GlobalDefines.h"
 
 //natron

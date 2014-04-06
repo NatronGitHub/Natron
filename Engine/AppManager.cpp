@@ -67,6 +67,8 @@ struct AppManagerPrivate {
     mutable QMutex _wasAbortCalledMutex;
     bool _wasAbortAnyProcessingCalled; // < has abortAnyProcessing() called at least once ?
 
+    U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
         , _appInstances()
@@ -83,6 +85,8 @@ struct AppManagerPrivate {
         ,_loaded(false)
         ,_binaryPath()
         ,_wasAbortAnyProcessingCalled(false)
+        ,_nodesGlobalMemoryUse(0)
+    
     {
         
     }
@@ -498,7 +502,7 @@ void AppManager::abortAnyProcessing() {
         _imp->_wasAbortAnyProcessingCalled = true;
     }
     for (std::map<int,AppInstance*>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
-        std::vector<Natron::Node*> nodes;
+        std::vector<boost::shared_ptr<Natron::Node> > nodes;
         it->second->getActiveNodes(&nodes);
         for (U32 i = 0; i < nodes.size(); ++i) {
             nodes[i]->quitAnyProcessing();
@@ -586,7 +590,7 @@ void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >
     for (U32 i = 0 ; i < plugins.size(); ++i) {
         std::pair<bool,EffectBuilder> func = plugins[i]->findFunction<EffectBuilder>("BuildEffect");
         if(func.first){
-            EffectInstance* effect = func.second(NULL);
+            boost::shared_ptr<EffectInstance> effect(func.second(boost::shared_ptr<Natron::Node>()));
             assert(effect);
             QMutex* pluginMutex = NULL;
             if(effect->renderThreadSafety() == Natron::EffectInstance::UNSAFE){
@@ -595,7 +599,6 @@ void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >
             Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
                                                         pluginMutex,effect->majorVersion(),effect->minorVersion());
             _imp->_plugins.push_back(plugin);
-            delete effect;
         }
     }
     
@@ -767,7 +770,7 @@ Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int m
 }
 
 
-Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,Natron::Node* node,
+Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
                                                     const NodeSerialization* serialization ) const {
     return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
 }
@@ -1129,6 +1132,26 @@ void AppManager::quit(AppInstance* instance)
 
 int AppManager::exec() {
     return qApp->exec();
+}
+
+void AppManager::onNodeMemoryRegistered(qint64 mem)
+{
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (((qint64)_imp->_nodesGlobalMemoryUse + mem) < 0) {
+        qDebug() << "Memory underflow...a node is trying to release more memory than it registered.";
+        _imp->_nodesGlobalMemoryUse = 0;
+        return;
+    }
+    _imp->_nodesGlobalMemoryUse += mem;
+    clearExceedingUndoRedoEvents();
+}
+
+qint64 AppManager::getTotalNodesMemoryRegistered() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_nodesGlobalMemoryUse;
 }
 
 namespace Natron{

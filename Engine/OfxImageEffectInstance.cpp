@@ -45,7 +45,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                const std::string& context,
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-, _node()
+, _node(NULL)
 , _parentingMap()
 {
 }

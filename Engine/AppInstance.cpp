@@ -96,10 +96,10 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
     
 }
 
-Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
+boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
                                  bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,bool dontLoadName)
 {
-    Node* node = 0;
+    boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
     try {
         pluginBinary = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
@@ -112,29 +112,26 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
     }
     
     if (pluginID != "Viewer") { // for now only the viewer can be an inspector.
-        node = new Node(this,pluginBinary);
+        node.reset(new Node(this,pluginBinary));
     } else {
-        node = new InspectorNode(this,pluginBinary);
+        node.reset(new InspectorNode(this,pluginBinary));
     }
     
     
-    
     try{
-        node->load(pluginID.toStdString(), serialization,dontLoadName);
+        node->load(pluginID.toStdString(),node, serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Exception while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message);
-        delete node;
-        return NULL;
+        return boost::shared_ptr<Natron::Node>();
     } catch (...) {
         std::string title = std::string("Exception while creating node");
         std::string message = title + " " + pluginID.toStdString();
         qDebug() << message.c_str();
         errorDialog(title, message);
-        delete node;
-        return NULL;
+        return boost::shared_ptr<Natron::Node>();
     }
     
     
@@ -145,21 +142,21 @@ Natron::Node* AppInstance::createNodeInternal(const QString& pluginID,int majorV
 
 }
 
-Natron::Node* AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog) {
-    return createNodeInternal(name, majorVersion, minorVersion, false, openImageFileDialog, NodeSerialization((Natron::Node*)NULL),false);
+boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog) {
+    return createNodeInternal(name, majorVersion, minorVersion, false,
+                              openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
 }
 
-Natron::Node* AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,
-                                    bool dontLoadName) {
+boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName) {
     return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization,dontLoadName);
 
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }
 
-void AppInstance::getActiveNodes(std::vector<Natron::Node*>* activeNodes) const{
+void AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* activeNodes) const{
     
-    const std::vector<Natron::Node*> nodes = _imp->_currentProject->getCurrentNodes();
+    const std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for(U32 i = 0; i < nodes.size(); ++i){
         if(nodes[i]->isActivated()){
             activeNodes->push_back(nodes[i]);
@@ -174,19 +171,21 @@ boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  { return _imp->_cu
 
 
 void AppInstance::connectViewersToViewerCache(){
-    foreach(Node* n,_imp->_currentProject->getCurrentNodes()){
-        assert(n);
-        if(n->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(n->getLiveInstance())->connectSlotsToViewerCache();
+    std::vector<boost::shared_ptr<Natron::Node> > currentNodes = _imp->_currentProject->getCurrentNodes();
+    for (U32 i = 0; i < currentNodes.size(); ++i) {
+        assert(currentNodes[i]);
+        if(currentNodes[i]->pluginID() == "Viewer"){
+            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->connectSlotsToViewerCache();
         }
     }
 }
 
 void AppInstance::disconnectViewersFromViewerCache(){
-    foreach(Node* n,_imp->_currentProject->getCurrentNodes()){
-        assert(n);
-        if(n->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(n->getLiveInstance())->disconnectSlotsToViewerCache();
+    std::vector<boost::shared_ptr<Natron::Node> > currentNodes = _imp->_currentProject->getCurrentNodes();
+    for (U32 i = 0; i < currentNodes.size(); ++i) {
+        assert(currentNodes[i]);
+        if(currentNodes[i]->pluginID() == "Viewer"){
+            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->disconnectSlotsToViewerCache();
         }
     }
 }
@@ -214,7 +213,7 @@ Natron::StandardButton AppInstance::questionDialog(const std::string& title,cons
 
 
 void AppInstance::checkViewersConnection(){
-    const std::vector<Node*> nodes = _imp->_currentProject->getCurrentNodes();
+    std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->pluginID() == "Viewer") {
@@ -226,7 +225,7 @@ void AppInstance::checkViewersConnection(){
 }
 
 void AppInstance::redrawAllViewers() {
-    const std::vector<Node*>& nodes = _imp->_currentProject->getCurrentNodes();
+    std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->pluginID() == "Viewer") {
@@ -245,13 +244,13 @@ void AppInstance::triggerAutoSave() {
 
 void AppInstance::startWritersRendering(const QStringList& writers){
     
-    const std::vector<Node*> projectNodes = _imp->_currentProject->getCurrentNodes();
+    const std::vector<boost::shared_ptr<Node> > projectNodes = _imp->_currentProject->getCurrentNodes();
     
-    std::vector<Natron::OutputEffectInstance*> renderers;
+    std::vector<Natron::OutputEffectInstance* > renderers;
     
     if (!writers.isEmpty()) {
         for (int i = 0; i < writers.size(); ++i) {
-            Node* node = 0;
+            boost::shared_ptr<Node> node ;
             for (U32 j = 0; j < projectNodes.size(); ++j) {
                 if(projectNodes[j]->getName() == writers.at(i).toStdString()){
                     node = projectNodes[j];
@@ -304,7 +303,7 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
 
 
 void AppInstance::clearOpenFXPluginsCaches(){
-    const std::vector<Node*> activeNodes = _imp->_currentProject->getCurrentNodes();
+    const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
         activeNodes[i]->purgeAllInstancesCaches();
     }

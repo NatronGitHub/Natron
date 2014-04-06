@@ -19,7 +19,6 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#include <boost/shared_ptr.hpp>
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
@@ -155,7 +154,7 @@ private:
     
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
     
-    OfxEffectInstance* const _nodeInstance;
+    OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     Natron::ThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };

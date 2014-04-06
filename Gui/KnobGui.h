@@ -198,6 +198,7 @@ public slots:
     
     void onKnobSlavedChanged(int dimension,bool b);
 
+    void onSetValueUsingUndoStack(const Variant& v,int dim);
 signals:
     
     void knobUndoneChange();

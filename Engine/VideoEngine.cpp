@@ -106,6 +106,12 @@ void VideoEngine::quitEngineThread(){
         }
         
         {
+            QMutexLocker locker(&_getFrameRangeMutex);
+            _gettingFrameRange = false;
+            _getFrameRangeCond.wakeAll();
+        }
+        
+        {
             QMutexLocker locker(&_mustQuitMutex);
             while(_mustQuit){
                 _mustQuitCondition.wait(&_mustQuitMutex);
@@ -213,7 +219,7 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
     
     
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
+    ViewerInstance* viewer = _tree.outputAsViewer(); /*viewer might be NULL if the output is smthing else*/
     
     bool hasInput = false;
     for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
@@ -427,7 +433,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         
         Natron::OutputEffectInstance* output = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
         assert(output);
-        ViewerInstance* viewer = _tree.outputAsViewer();
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(output);
         
         /*update the tree inputs */
         _tree.refreshInputsAndClearMessage();
@@ -443,10 +449,17 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
                         return;
                     }
                 }
+                
+                bool mustQuit;
+                {
+                    QMutexLocker l(&_mustQuitMutex);
+                    mustQuit = _mustQuit;
+                }
+                
                 QMutexLocker l(&_getFrameRangeMutex);
                 _gettingFrameRange = true;
                 emit mustGetFrameRange();
-                while (_gettingFrameRange) {
+                while (_gettingFrameRange && !mustQuit) {
                     _getFrameRangeCond.wait(&_getFrameRangeMutex);
                 }
                 
@@ -724,7 +737,7 @@ void VideoEngine::updateTreeAndContinueRender(){
 }
 
 
-RenderTree::RenderTree(EffectInstance *output):
+RenderTree::RenderTree(EffectInstance* output):
     _output(output)
   ,_sorted()
   ,_isViewer(false)
@@ -749,28 +762,29 @@ void RenderTree::refreshTree(){
     
     /*unmark all nodes already present in the graph*/
     clearGraph();
-    std::vector<Natron::Node*> markedNodes;
+    std::vector<boost::shared_ptr<Natron::Node> > markedNodes;
     fillGraph(_output->getNode(),markedNodes);
 }
 
 
-void RenderTree::fillGraph(Natron::Node *node,std::vector<Natron::Node*>& markedNodes){
+void RenderTree::fillGraph(const boost::shared_ptr<Natron::Node>& node,std::vector<boost::shared_ptr<Natron::Node> >& markedNodes){
     
     
     /*call fillGraph recursivly on all the node's inputs*/
     node->updateRenderInputs();
-    const std::vector<Node*>& inputs = node->getInputs_other_thread();
+    const std::vector<boost::shared_ptr<Node> >& inputs = node->getInputs_other_thread();
+    const InspectorNode* insp = dynamic_cast<const InspectorNode*>(node.get());
     for (U32 i = 0; i < inputs.size(); ++i) {
         if(inputs[i]){
             /*if the node is an inspector we're interested just by the active input*/
-            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(node);
+            
             if (insp && (int)i != insp->activeInput()) {
                 continue;
             }
             fillGraph(inputs[i],markedNodes);
         }
     }
-    std::vector<Natron::Node*>::iterator foundNode = std::find(markedNodes.begin(), markedNodes.end(), node);
+    std::vector<boost::shared_ptr<Natron::Node> >::iterator foundNode = std::find(markedNodes.begin(), markedNodes.end(), node);
     if (foundNode == markedNodes.end()) {
         markedNodes.push_back(node);
         _sorted.push_back(node);

@@ -26,10 +26,11 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Node.h"
 
 using namespace Natron;
 
-QtWriter::QtWriter(Natron::Node* node)
+QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
 :Natron::OutputEffectInstance(node)
 , _lut(Natron::Color::LutManager::sRGBLut())
 {
@@ -94,14 +95,14 @@ void QtWriter::initializeKnobs(){
                           ". You cannot use it to render a project.");
     
     
-    _premultKnob = Natron::createKnob<Bool_Knob>(this, "Premultiply by alpha");
+    _premultKnob = getNode()->createKnob<Bool_Knob>("Premultiply by alpha");
     _premultKnob->setAnimationEnabled(false);
     _premultKnob->setDefaultValue(false,0);
     
-    _fileKnob = Natron::createKnob<OutputFile_Knob>(this, "File");
+    _fileKnob = getNode()->createKnob<OutputFile_Knob>("File");
     _fileKnob->setAsOutputImageFile();
     
-    _frameRangeChoosal = Natron::createKnob<Choice_Knob>(this, "Frame range");
+    _frameRangeChoosal = getNode()->createKnob<Choice_Knob>("Frame range");
     _frameRangeChoosal->setAnimationEnabled(false);
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Union of input ranges");
@@ -110,15 +111,15 @@ void QtWriter::initializeKnobs(){
     _frameRangeChoosal->populateChoices(frameRangeChoosalEntries);
     _frameRangeChoosal->setDefaultValue(1,0);
     
-    _firstFrameKnob = Natron::createKnob<Int_Knob>(this, "First frame");
+    _firstFrameKnob = getNode()->createKnob<Int_Knob>("First frame");
     _firstFrameKnob->setAnimationEnabled(false);
     _firstFrameKnob->setSecret(true);
     
-    _lastFrameKnob = Natron::createKnob<Int_Knob>(this, "Last frame");
+    _lastFrameKnob = getNode()->createKnob<Int_Knob>("Last frame");
     _lastFrameKnob->setAnimationEnabled(false);
     _lastFrameKnob->setSecret(true);
     
-    _renderKnob = Natron::createKnob<Button_Knob>(this, "Render");
+    _renderKnob = getNode()->createKnob<Button_Knob>("Render");
     _renderKnob->setAsRenderButton();
 }
 

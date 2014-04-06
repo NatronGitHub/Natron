@@ -49,6 +49,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/TimeLine.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
+#include "Engine/Variant.h"
 
 #include "Gui/AnimationButton.h"
 #include "Gui/DockablePanel.h"
@@ -128,7 +129,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(handler,SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
     QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SIGNAL(keyFrameRemoved()));
-
+    QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
 }
 
 KnobGui::~KnobGui(){
@@ -276,7 +277,7 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         std::string nodeName("Linked to: ");
         
         assert(getKnob()->getHolder()->getApp());
-        const std::vector<Natron::Node*> allNodes = knob->getHolder()->getApp()->getProject()->getCurrentNodes();
+        const std::vector<boost::shared_ptr<Natron::Node> > allNodes = knob->getHolder()->getApp()->getProject()->getCurrentNodes();
         for (U32 i = 0; i < allNodes.size(); ++i) {
             const std::vector< boost::shared_ptr<KnobI> >& knobs = allNodes[i]->getKnobs();
             bool shouldStop = false;
@@ -421,10 +422,20 @@ void KnobGui::createAnimationMenu(){
         
         bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
         
+        std::list<Variant> values;
+        std::list<boost::shared_ptr<Curve> > curves;
+        std::list<boost::shared_ptr<Curve> > parametricCurves;
+        std::map<int,std::string> stringAnimation;
+        
+        bool copyAnimation;
+        int dimension;
+        
+        appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
+        
         QAction* pasteAction = new QAction(tr("Paste animation"),_imp->animationMenu);
         QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
         _imp->animationMenu->addAction(pasteAction);
-        if (isClipBoardEmpty) {
+        if (!copyAnimation || isClipBoardEmpty) {
             pasteAction->setEnabled(false);
         }
     }
@@ -838,6 +849,7 @@ void KnobGui::onCopyAnimationActionTriggered(){
 
 void KnobGui::pasteClipBoard(int targetDimension)
 {
+    
     if (appPTR->isClipBoardEmpty()) {
         return;
     }
@@ -849,23 +861,26 @@ void KnobGui::pasteClipBoard(int targetDimension)
     
     bool copyAnimation;
     int dimension;
-    boost::shared_ptr<KnobI> knob = getKnob();
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(knob.get());
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+   
     appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
+    
+    boost::shared_ptr<KnobI> knob = getKnob();
 
     ///If we are interested in just copying a value but the dimension is it out of range, return
     if (!copyAnimation && targetDimension >= knob->getDimension()) {
         return;
     }
     
-    knob->beginValueChange(Natron::PLUGIN_EDITED);
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+
+    if (copyAnimation && !curves.empty() && ((int)curves.size() != knob->getDimension())) {
+        Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
+    }
     
-    bool stop = false;
     int i = 0;
     for (std::list<Variant>::iterator it = values.begin(); it!=values.end();++it) {
         if (i == dimension) {
@@ -873,72 +888,34 @@ void KnobGui::pasteClipBoard(int targetDimension)
                 if (!it->canConvert(QVariant::Int)) {
                     QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg(it->typeName());
                     Natron::errorDialog("Paste",err.toStdString());
-                    stop = true;
                     break;
                 }
-                isInt->setValue(it->toInt(), i);
             } else if (isBool) {
                 if (!it->canConvert(QVariant::Bool)) {
                     QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg(it->typeName());
                     Natron::errorDialog("Paste",err.toStdString());
-                    stop = true;
                     break;
                 }
-                isBool->setValue(it->toBool(), i);
             } else if (isDouble) {
                 if (!it->canConvert(QVariant::Double)) {
                     QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg(it->typeName());
                     Natron::errorDialog("Paste",err.toStdString());
-                    stop = true;
                     break;
                 }
-                isDouble->setValue(it->toDouble(), i);
             } else if (isString) {
                 if (!it->canConvert(QVariant::String)) {
                     QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type String").arg(it->typeName());
                     Natron::errorDialog("Paste",err.toStdString());
-                    stop = true;
                     break;
                 }
-                isString->setValue(it->toString().toStdString(), i);
             }
         }
         
         ++i;
     }
-    if (stop) {
-        return;
-    }
     
-    if (copyAnimation && !curves.empty() && ((int)curves.size() != knob->getDimension())) {
-        Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
-    } else {
-        i = 0;
-        for (std::list<boost::shared_ptr<Curve> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
-            knob->getCurve(i)->clone(*(*it));
-            ++i;
-        }
-        if (!curves.empty()) {
-            emit keyFrameSet();
-        }
-    }
-    
-    
-    if (isAnimatingString) {
-        isAnimatingString->loadAnimation(stringAnimation);
-    }
-    
-    if (isParametric) {
-        std::list<Curve> tmpCurves;
-        for(std::list<boost::shared_ptr<Curve> >::iterator it = parametricCurves.begin();it!=parametricCurves.end();++it) {
-            Curve c;
-            c.clone(*(*it));
-            tmpCurves.push_back(c);
-        }
-        isParametric->loadParametricCurves(tmpCurves);
-    }
-    
-    knob->endValueChange();
+    pushUndoCommand(new PasteUndoCommand(this,targetDimension,dimension,copyAnimation,values,curves,parametricCurves,stringAnimation));
+
 }
 
 void KnobGui::onPasteAnimationActionTriggered() {
@@ -984,7 +961,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     _selectionCombo = new ComboBox(_firstLine);
     _firstLineLayout->addWidget(_selectionCombo);
     
-    std::vector<Natron::Node*> allActiveNodes;
+    std::vector<boost::shared_ptr<Natron::Node> > allActiveNodes;
     
     assert(from->getKnob()->getHolder()->getApp());
     
@@ -1166,3 +1143,23 @@ void KnobGui::setSpacingBetweenItems(int spacing){ _imp->spacingBetweenItems = s
 int KnobGui::getSpacingBetweenItems() const { return _imp->spacingBetweenItems; }
 
 bool KnobGui::hasWidgetBeenCreated() const {return _imp->widgetCreated;}
+
+void KnobGui::onSetValueUsingUndoStack(const Variant& v,int dim) {
+    boost::shared_ptr<KnobI> knob = getKnob();
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+    
+    if (isInt) {
+        pushUndoCommand(new KnobUndoCommand<int>(this,isInt->getValue(dim),v.toInt(),dim));
+    } else if (isBool) {
+        pushUndoCommand(new KnobUndoCommand<bool>(this,isBool->getValue(dim),v.toBool(),dim));
+    } else if (isDouble) {
+        pushUndoCommand(new KnobUndoCommand<double>(this,isDouble->getValue(dim),v.toDouble(),dim));
+    } else if (isString) {
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,isString->getValue(dim),v.toString().toStdString(),dim));
+    }
+
+
+}

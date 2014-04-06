@@ -66,7 +66,7 @@ ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
 }
 #endif
 
-OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
+OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     : AbstractOfxEffectInstance(node)
     , effect_()
     , _isOutput(false)
@@ -78,9 +78,6 @@ OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
     , _wasRenderSafetySet(false)
     , _renderSafetyLock(new QReadWriteLock)
 {
-    if(node && !node->getLiveInstance()){
-        node->setLiveInstance(this);
-    }
     QObject::connect(this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()));
 }
 
@@ -116,7 +113,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     try {
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
-        effect_->setOfxEffectInstancePointer(this);
+        effect_->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
         notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
         OfxStatus stat = effect_->populate();
         

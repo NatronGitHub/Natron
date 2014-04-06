@@ -105,7 +105,7 @@ public:
     
     virtual void hideSplashScreen() {}
     
-    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,Natron::Node* node,
+    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
                                             const NodeSerialization* serialization ) const;
 
     void registerAppInstance(AppInstance* app);
@@ -211,6 +211,8 @@ public:
      * quit() is called on all AppInstance's
      **/
     int exec();
+    
+    virtual void clearExceedingUndoRedoEvents() {}
 
 public slots:
 
@@ -232,6 +234,10 @@ public slots:
                               const QString& /*pluginIconPath*/,
                                       const QString& /*groupIconPath*/) {}
     
+    void onNodeMemoryRegistered(qint64 mem);
+    
+    qint64 getTotalNodesMemoryRegistered() const;
+    
 signals:
 
     void imageRemovedFromNodeCache(SequenceTime time);
@@ -251,6 +257,7 @@ protected:
     
     virtual void initializeQApp(int argc,char* argv[]) const;
 private:
+    
 
     bool loadInternal(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName);
 
@@ -281,7 +288,7 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
                                       Natron::StandardButton defaultButton = Natron::NoButton);
 
 template <class K>
-boost::shared_ptr<K> createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1){
+    boost::shared_ptr<K> createKnob(KnobHolder*  holder, const std::string &description, int dimension = 1){
     return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension);
 }
     

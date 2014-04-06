@@ -118,7 +118,7 @@ public:
 static MetaTypesRegistration registration;
 
 Natron::EffectInstance*
-ViewerInstance::BuildEffect(Natron::Node* n)
+ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node> n)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -126,7 +126,7 @@ ViewerInstance::BuildEffect(Natron::Node* n)
     return new ViewerInstance(n);
 }
 
-ViewerInstance::ViewerInstance(Node* node)
+ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
 : Natron::OutputEffectInstance(node)
 , _imp(new ViewerInstancePrivate(this))
 {
@@ -135,15 +135,20 @@ ViewerInstance::ViewerInstance(Node* node)
 
     connectSlotsToViewerCache();
     if(node) {
-        connect(node,SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
+        connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
 }
 
 ViewerInstance::~ViewerInstance()
 {
+
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
+    if (getVideoEngine()) {
+        getVideoEngine()->quitEngineThread();
+    }
+    
     // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
     // not yet processed. Since we're in the main thread and it is processed in the main thread,
     // there is no way to wait for it (locking the mutex would cause a deadlock).
@@ -159,6 +164,10 @@ ViewerInstance::~ViewerInstance()
     if (_imp->bufferAllocated) {
         free(_imp->buffer);
         _imp->bufferAllocated = 0;
+    }
+    
+    if (_imp->lastRenderedImage) {
+        unregisterPluginMemory(_imp->lastRenderedImage->size());
     }
 }
 
@@ -246,7 +255,7 @@ int
 ViewerInstance::activeInput() const
 {
     //    InspectorNode::activeInput()  is MT-safe
-    return dynamic_cast<InspectorNode*>(getNode())->activeInput(); // not MT-SAFE!
+    return dynamic_cast<InspectorNode*>(getNode().get())->activeInput(); // not MT-SAFE!
 }
 
 int
@@ -556,6 +565,13 @@ ViewerInstance::renderViewer(SequenceTime time,
         int inputIndex = activeInput();
         _node->notifyInputNIsRendering(inputIndex);
 
+        ///since we are going to render a new image, decrease the current memory use of the viewer by
+        ///the amount of the current image, and increase it after we rendered the new image.
+        size_t memoryDiff = 0;
+        if (_imp->lastRenderedImage) {
+            memoryDiff -= _imp->lastRenderedImage->size();
+        }
+        
         // If an exception occurs here it is probably fatal, since
         // it comes from Natron itself. All exceptions from plugins are already caught
         // by the HostSupport library.
@@ -574,7 +590,13 @@ ViewerInstance::renderViewer(SequenceTime time,
             _node->notifyInputNIsFinishedRendering(inputIndex);
             throw;
         }
-
+        
+        memoryDiff += _imp->lastRenderedImage->size();
+        
+        ///notify that the viewer is actually using that much memory.
+        ///It will never be freed unless we delete the node completely from the undo/redo stack.
+        registerPluginMemory(memoryDiff);
+        
         _node->notifyInputNIsFinishedRendering(inputIndex);
 
 
@@ -1125,7 +1147,7 @@ ViewerInstance::onColorSpaceChanged(const QString& colorspaceName)
     }
 
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
-       && input(activeInput()) != NULL) {
+       && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false);
     } else {
         emit mustRedraw();

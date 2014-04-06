@@ -450,7 +450,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    setFocusPolicy(Qt::StrongFocus);
+    //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
     QObject::connect(parent->getGui()->getApp()->getProject().get(),SIGNAL(formatChanged(Format)),this,SLOT(onProjectFormatChanged(Format)));
@@ -1826,8 +1826,8 @@ void ViewerGL::disconnectViewer()
     assert(qApp && qApp->thread() == QThread::currentThread());
     if (displayingImage()) {
         setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
-        clearViewer();
     }
+    clearViewer();
 }
 
 
@@ -1925,7 +1925,9 @@ void ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    setDisplayingImage(false);
+    if (!_imp->displayingImage) {
+        setDisplayingImage(false);
+    }
     updateGL();
 }
 

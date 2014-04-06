@@ -41,7 +41,7 @@ class OfxOverlayInteract;
 class AbstractOfxEffectInstance : public Natron::OutputEffectInstance {
 public:
     
-    AbstractOfxEffectInstance(Natron::Node* node)
+    AbstractOfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     : Natron::OutputEffectInstance(node)
     {
     }
@@ -82,7 +82,7 @@ class OfxEffectInstance : public QObject, public AbstractOfxEffectInstance {
 public:
     
     
-    OfxEffectInstance(Natron::Node* node);
+    OfxEffectInstance(boost::shared_ptr<Natron::Node> node);
     
     virtual ~OfxEffectInstance();
     

@@ -85,24 +85,25 @@ void BaseTest::TearDown()
     delete appPTR;
 }
 
-Natron::Node* BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
-    Node* ret =  _app->createNode(pluginID,majorVersion,minorVersion,false);
-    EXPECT_NE(ret,(Node*)NULL);
+boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
+    boost::shared_ptr<Node> ret =  _app->createNode(pluginID,majorVersion,minorVersion,false);
+    EXPECT_NE(ret.get(),(Natron::Node*)NULL);
     return ret;
 }
 
-void BaseTest::connectNodes(Natron::Node* input,Natron::Node* output,int inputNumber,bool expectedReturnValue) {
+void BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,
+                            int inputNumber,bool expectedReturnValue) {
     
     if (expectedReturnValue) {
         ///check that the connections are internally all set as "expected"
         
-        EXPECT_EQ(NULL,output->input(inputNumber));
+        EXPECT_EQ((Natron::Node*)NULL,output->input(inputNumber).get());
         EXPECT_FALSE(output->isInputConnected(inputNumber));
     } else {
         
         ///the call can only fail for those 2 reasons
         EXPECT_TRUE(inputNumber > output->maximumInputs() || //< inputNumber is greater than the maximum input number
-                    output->input(inputNumber) != NULL); //< input slot is already filled with another node
+                    output->input(inputNumber).get() != (Natron::Node*)NULL); //< input slot is already filled with another node
     }
     
     
@@ -116,16 +117,16 @@ void BaseTest::connectNodes(Natron::Node* input,Natron::Node* output,int inputNu
     }
 }
 
-void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool expectedReturnvalue) {
+void BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool expectedReturnvalue) {
     
     if (expectedReturnvalue) {
         ///check that the connections are internally all set as "expected"
         
         ///the input must have in its output the node 'output'
         EXPECT_TRUE(input->hasOutputConnected());
-        const std::list<Natron::Node*>& outputs = input->getOutputs();
+        const std::list<boost::shared_ptr<Natron::Node> >& outputs = input->getOutputs();
         bool foundOutput = false;
-        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
             if ((*it) == output) {
                 foundOutput = true;
                 break;
@@ -133,7 +134,7 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
         }
         
         ///the output must have in its inputs the node 'input'
-        const std::vector<Natron::Node*>& inputs = output->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = output->getInputs_mt_safe();
         int inputIndex = 0;
         bool foundInput = false;
         for(U32 i = 0; i < inputs.size() ; ++i) {
@@ -157,9 +158,9 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
         
-        const std::list<Natron::Node*>& outputs = input->getOutputs();
+        const std::list<boost::shared_ptr<Natron::Node> >& outputs = input->getOutputs();
         bool foundOutput = false;
-        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end();++it) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end();++it) {
             if ((*it) == output) {
                 foundOutput = true;
                 break;
@@ -167,7 +168,7 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
         }
         
         ///the output must have in its inputs the node 'input'
-        const std::vector<Natron::Node*>& inputs = output->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = output->getInputs_mt_safe();
         int inputIndex = 0;
         bool foundInput = false;
         for(U32 i = 0 ; i < inputs.size() ;++i) {
@@ -180,7 +181,7 @@ void BaseTest::disconnectNodes(Natron::Node* input,Natron::Node* output,bool exp
         
         EXPECT_FALSE(foundOutput);
         EXPECT_FALSE(foundInput);
-        EXPECT_EQ(NULL,output->input(inputIndex));
+        EXPECT_EQ((Natron::Node*)NULL,output->input(inputIndex).get());
         EXPECT_FALSE(output->isInputConnected(inputIndex));
     }
 }
@@ -190,10 +191,10 @@ TEST_F(BaseTest,GenerateDot)
 {
     
     ///create the generator
-    Node* generator = createNode(_dotGeneratorPluginID);
+    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
     
     ///create the writer and set its output filename
-    Node* writer = createNode(_writeOIIOPluginID);
+    boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
     writer->setOutputFilesForWriter("test_dot_generator#.jpg");
     
     ///attempt to connect the 2 nodes together
@@ -206,10 +207,10 @@ TEST_F(BaseTest,GenerateDot)
 ///High level test: simple node connections test
 TEST_F(BaseTest,SimpleNodeConnections) {
     ///create the generator
-    Node* generator = createNode(_dotGeneratorPluginID);
+    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
     
     ///create the writer and set its output filename
-    Node* writer = createNode(_writeOIIOPluginID);
+    boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
     
     connectNodes(generator, writer, 0, true);
     connectNodes(generator, writer, 0, false); //< expect it to fail

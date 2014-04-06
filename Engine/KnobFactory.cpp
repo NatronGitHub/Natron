@@ -26,7 +26,7 @@ using std::pair;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelper* (*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
+typedef KnobHelper* (*KnobBuilder)(KnobHolder*  holder, const std::string &description, int dimension);
 
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory()
@@ -51,7 +51,7 @@ void KnobFactory::loadKnobPlugins()
         if (plugins[i]->loadFunctions(functions)) {
             std::pair<bool, KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
             if (builder.first) {
-                boost::shared_ptr<KnobHelper> knob(builder.second(NULL, "", 1));
+                boost::shared_ptr<KnobHelper> knob(builder.second((KnobHolder*)NULL, "", 1));
                 _loadedKnobs.insert(make_pair(knob->typeName(), plugins[i]));
             }
         } else {
@@ -94,7 +94,7 @@ void KnobFactory::loadBultinKnobs()
 }
 
 boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
-                              KnobHolder  *holder,
+                              KnobHolder*  holder,
                               const std::string &description, int dimension) const
 {
 

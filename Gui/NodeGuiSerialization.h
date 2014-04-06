@@ -29,7 +29,7 @@ public:
     
     NodeGuiSerialization(){}
     
-    void initialize(const NodeGui* n);
+    void initialize(const boost::shared_ptr<NodeGui>& n);
 
     double getX() const {return _posX;}
     

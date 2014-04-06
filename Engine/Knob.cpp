@@ -15,6 +15,7 @@
 #include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
+#include <QtCore/QDebug>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Node.h"
@@ -257,7 +258,11 @@ void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedRe
         return;
     }
     
-    _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
+    try {
+        _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+    }
     
     //virtual portion
     keyframeRemoved_virtual(dimension, time);
@@ -725,7 +730,7 @@ KnobHolder::~KnobHolder()
 {
     for (U32 i = 0; i < _knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>(_knobs[i].get());
-        helper->_imp->_holder = NULL;
+        helper->_imp->_holder = 0;
     }
 }
 
@@ -848,7 +853,7 @@ void KnobHolder::unslaveAllKnobs() {
         }
     }
     _isSlave = false;
-    onSlaveStateChanged(false,NULL);
+    onSlaveStateChanged(false,(KnobHolder*)NULL);
 }
 
 void KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reason)
@@ -910,7 +915,8 @@ void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI>& 
         _animation->clone(isAnimatedString->getAnimation());
     }
 }
-AnimatingString_KnobHelper::AnimatingString_KnobHelper(KnobHolder *holder, const std::string &description, int dimension)
+AnimatingString_KnobHelper::AnimatingString_KnobHelper(KnobHolder* holder,
+                                                       const std::string &description, int dimension)
 : Knob<std::string>(holder,description,dimension)
 , _animation(new StringAnimationManager(this))
 {

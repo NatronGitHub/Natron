@@ -514,7 +514,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     
     
     /*slots & signals*/
-    QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _imp->_viewerNode,SLOT(onColorSpaceChanged(QString)));
+    QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _imp->_viewerNode,
+                     SLOT(onColorSpaceChanged(QString)));
     QObject::connect(_imp->_zoomCombobox, SIGNAL(currentIndexChanged(QString)),_imp->viewer, SLOT(zoomSlot(QString)));
     QObject::connect(_imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode,SLOT(onGainChanged(double)));
@@ -524,6 +525,7 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)));
     
     VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
+    assert(vengine);
     
     QObject::connect(_imp->play_Forward_Button,SIGNAL(clicked(bool)),this,SLOT(startPause(bool)));
     QObject::connect(_imp->stop_Button,SIGNAL(clicked()),this,SLOT(abortRendering()));
@@ -537,7 +539,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
     QObject::connect(_imp->_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
-    QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,SLOT(onCachedFrameAdded(SequenceTime)));
+    QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
+                     SLOT(onCachedFrameAdded(SequenceTime)));
     QObject::connect(_imp->_viewerNode,SIGNAL(removedLRUCachedFrame()),_imp->_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
     QObject::connect(appPTR,SIGNAL(imageRemovedFromViewerCache(SequenceTime)),_imp->_timeLineGui,SLOT(onCachedFrameRemoved(SequenceTime)));
     QObject::connect(_imp->_viewerNode,SIGNAL(clearedViewerCache()),_imp->_timeLineGui,SLOT(onCachedFramesCleared()));
@@ -716,6 +719,9 @@ void ViewerTab::refresh(){
 ViewerTab::~ViewerTab()
 {
     _imp->_viewerNode->invalidateUiContext();
+    if (_imp->_gui->getLastSelectedViewer() == this) {
+        _imp->_gui->setLastSelectedViewer(NULL);
+    }
 }
 
 
@@ -826,9 +832,7 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
 }
 
 void ViewerTab::disconnectViewer(){
-    if (_imp->viewer->displayingImage()) {
-        _imp->viewer->disconnectViewer();
-    }
+    _imp->viewer->disconnectViewer();
 }
 
 
@@ -856,7 +860,7 @@ void ViewerTab::drawOverlays() const{
     }
 
     
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -872,7 +876,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         return false;
     }
     
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -895,7 +899,7 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     if (_imp->_gui->isClosing()) {
         return false;
     }
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -918,7 +922,7 @@ bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& po
         return false;
     }
     
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -941,7 +945,7 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         return false;
     }
     
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -964,7 +968,7 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
         return false;
     }
     
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -987,7 +991,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
     if (_imp->_gui->isClosing()) {
         return false;
     }
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -1011,7 +1015,7 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         return false;
     }
     bool ret = false;
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
@@ -1033,7 +1037,7 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         return false;
     }
     bool ret = false;
-    std::vector<Natron::Node*> nodes;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();

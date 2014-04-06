@@ -17,6 +17,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
+#include <boost/shared_ptr.hpp>
 
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
@@ -106,7 +107,8 @@ public:
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
 #endif
     
-    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,Node* node,const NodeSerialization* serialization );
+    AbstractOfxEffectInstance* createOfxEffect(const std::string& name,boost::shared_ptr<Node> node,
+                                                                 const NodeSerialization* serialization );
     
     void addPathToLoadOFXPlugins(const std::string path);
 

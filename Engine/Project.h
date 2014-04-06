@@ -93,29 +93,29 @@ public:
      * @brief Constructs a vector with all the nodes in the project (even the ones the user
      * has deleted but were kept in the undo/redo stack.) This is MT-safe.
      **/
-    std::vector<Node*> getCurrentNodes() const;
+    std::vector< boost::shared_ptr<Natron::Node> > getCurrentNodes() const;
     
-    bool connectNodes(int inputNumber,const std::string& inputName,Natron::Node* output);
+    bool connectNodes(int inputNumber,const std::string& inputName,boost::shared_ptr<Natron::Node> output);
     
     /**
      * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'
      * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
      * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
      **/
-    bool connectNodes(int inputNumber,Natron::Node* input,Natron::Node* output,bool force = false);
+    bool connectNodes(int inputNumber,boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool force = false);
     
     /**
      * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
      * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
      * 1 input, and it was connected, it will connect output to the input of  'input'.
      **/
-    bool disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect = false);
+    bool disconnectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool autoReconnect = false);
     
     /**
      * @brief Attempts to add automatically the node 'created' to the node graph.
      * 'selected' is the node currently selected by the user.
      **/
-    bool autoConnectNodes(Natron::Node* selected,Natron::Node* created);
+    bool autoConnectNodes(boost::shared_ptr<Natron::Node> selected,boost::shared_ptr<Natron::Node> created);
     
     QString getProjectName() const WARN_UNUSED_RETURN ;
     
@@ -160,7 +160,15 @@ public:
     
     void initNodeCountersAndSetName(Node* n);
     
-    void addNodeToProject(Node* n);
+    void addNodeToProject(boost::shared_ptr<Natron::Node> n);
+    
+    /**
+     * @brief Remove the node n from the project so the pointer is no longer
+     * referenced anywhere. This function is called on nodes that were already deleted by the user but were kept into
+     * the undo/redo stack. That means this node is no longer references by any other node and can be safely deleted.
+     * The first thing this function does is to assert that the node n is not active.
+     **/
+    void removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n);
     
     void clearNodes();
     
@@ -193,7 +201,13 @@ public:
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
      * If no such node could be found or the node is deactivated, NULL is returned.
      **/
-    Natron::Node* getNodeByName(const std::string& name) const;
+    boost::shared_ptr<Natron::Node> getNodeByName(const std::string& name) const;
+    
+    /**
+     * @brief Called exclusively by the Node class when it needs to retrieve the shared ptr
+     * from the "this" pointer.
+     **/
+    boost::shared_ptr<Natron::Node> getNodePointer(Natron::Node* n) const;
     
 public slots:
 

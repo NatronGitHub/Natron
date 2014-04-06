@@ -169,8 +169,6 @@ public:
     
 public slots:
     
-    //void onProjectFormatChanged(const Format& f);
-
     void onKnobAnimationLevelChanged(int lvl);
     
 private:
@@ -386,9 +384,7 @@ public:
 public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
-    
-    //void onProjectFormatChanged(const Format& f);
-    
+
 private:
     OfxEffectInstance* _node;
     boost::shared_ptr<Double_Knob> _knob;

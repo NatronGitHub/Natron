@@ -73,13 +73,13 @@ bool KnobSerialization::createKnob(const std::string& typeName,int dimension)
 
 }
 
-void KnobSerialization::restoreKnobLinks(const std::vector<Natron::Node*>& allNodes)
+void KnobSerialization::restoreKnobLinks(const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
 {
     int i = 0;
     for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
         if (it->masterDimension != -1) {
             ///we need to cycle through all the nodes of the project to find the real master
-            Natron::Node* masterNode = 0;
+            boost::shared_ptr<Natron::Node> masterNode;
             for (U32 k = 0; k < allNodes.size(); ++k) {
                 if (allNodes[k]->getName() == it->masterNodeName) {
                     masterNode = allNodes[k];

@@ -18,9 +18,9 @@ void ProjectSerialization::initialize(const Natron::Project* project) {
     
     ///All the code in this function is MT-safe
     
-    std::vector<Natron::Node*> activeNodes;
+    std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
     
-    std::vector<Natron::Node*> nodes = project->getCurrentNodes();
+    std::vector<boost::shared_ptr<Natron::Node> > nodes = project->getCurrentNodes();
     for(U32 i = 0; i < nodes.size(); ++i){
         if(nodes[i]->isActivated()){
             activeNodes.push_back(nodes[i]);

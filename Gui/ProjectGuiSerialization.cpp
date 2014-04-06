@@ -32,15 +32,15 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Splitter.h"
 
 void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) { 
-     std::vector<NodeGui*> activeNodes = projectGui->getVisibleNodes();
+     std::list<boost::shared_ptr<NodeGui> > activeNodes = projectGui->getVisibleNodes();
      _serializedNodes.clear();
-     for (U32 i = 0; i < activeNodes.size(); ++i) {
+     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = activeNodes.begin();it!=activeNodes.end();++it) {
          NodeGuiSerialization state;
-         activeNodes[i]->serialize(&state);
+         (*it)->serialize(&state);
          _serializedNodes.push_back(state);
          
-         if (activeNodes[i]->getNode()->pluginID() == "Viewer") {
-             ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getNode()->getLiveInstance());
+         if ((*it)->getNode()->pluginID() == "Viewer") {
+             ViewerInstance* viewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
              assert(viewer);
              ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
              assert(tab);

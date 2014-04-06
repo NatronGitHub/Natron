@@ -17,7 +17,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 #include <boost/scoped_ptr.hpp>
-
+#include <boost/shared_ptr.hpp>
 #include "Global/GlobalDefines.h"
 
 class ViewerGL;

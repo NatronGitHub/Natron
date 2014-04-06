@@ -452,7 +452,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
     
 #ifdef NATRON_DEBUG
     {
-        QtReader* reader = dynamic_cast<QtReader*>(QtReader::BuildEffect(NULL));
+        boost::shared_ptr<QtReader> reader(dynamic_cast<QtReader*>(QtReader::BuildEffect(boost::shared_ptr<Natron::Node>())));
         assert(reader);
         std::map<std::string,void*> readerFunctions;
         readerFunctions.insert(std::make_pair("BuildEffect", (void*)&QtReader::BuildEffect));
@@ -476,13 +476,10 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
                 readersMap->insert(std::make_pair(extensions[k], newVec));
             }
         }
-        
-        
-        delete reader;
     }
     
     {
-        QtWriter* writer = dynamic_cast<QtWriter*>(QtWriter::BuildEffect(NULL));
+        boost::shared_ptr<QtWriter> writer(dynamic_cast<QtWriter*>(QtWriter::BuildEffect(boost::shared_ptr<Natron::Node>())));
         assert(writer);
         std::map<std::string,void*> writerFunctions;
         writerFunctions.insert(std::make_pair("BuildEffect", (void*)&QtWriter::BuildEffect));
@@ -507,12 +504,11 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
             }
         }
         
-        delete writer;
     }
 #endif
     
     {
-        EffectInstance* viewer = ViewerInstance::BuildEffect(NULL);
+        boost::shared_ptr<EffectInstance> viewer(ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node>()));
         assert(viewer);
         std::map<std::string,void*> viewerFunctions;
         viewerFunctions.insert(std::make_pair("BuildEffect", (void*)&ViewerInstance::BuildEffect));
@@ -522,7 +518,6 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
                                                     (QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
         plugins->push_back(plugin);
         addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
-        delete viewer;
     }
 
 }
@@ -544,4 +539,16 @@ void GuiApplicationManager::initializeQApp(int argc,char* argv[]) const {
     QApplication* app = new QApplication(argc, argv);
     Q_INIT_RESOURCE(GuiResources);
     app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
+}
+
+void GuiApplicationManager::clearExceedingUndoRedoEvents()
+{
+    
+    const std::map<int,AppInstance*>& apps = getAppInstances();
+    for (std::map<int,AppInstance*>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second);
+        if (guiApp) {
+            guiApp->clearExceedingUndoRedoEvents();
+        }
+    }
 }

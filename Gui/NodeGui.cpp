@@ -50,15 +50,11 @@ using std::make_pair;
 
 static const double pi=3.14159265358979323846264338327950288419717;
 
-NodeGui::NodeGui(NodeGraph* dag,
-                 QVBoxLayout *dockContainer_,
-                 Natron::Node *node_,
-                 bool requestedByLoad,
-                 QGraphicsItem *parent)
+NodeGui::NodeGui(QGraphicsItem *parent)
 : QObject()
 , QGraphicsItem(parent)
-, _graph(dag)
-, _internalNode(node_)
+, _graph(NULL)
+, _internalNode()
 , _selected(false)
 , _nameItem(NULL)
 , _boundingBox(NULL)
@@ -74,43 +70,53 @@ NodeGui::NodeGui(NodeGraph* dag,
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
 , _clonedGradient(NULL)
-, _menu(new QMenu(dag))
+, _menu()
 , _lastRenderStartedSlotCallTime()
 , _lastInputNRenderStartedSlotCallTime()
 , _wasRenderStartedSlotRun(false)
 , _wasBeginEditCalled(false)
 , positionMutex()
 , _slaveMasterLink(NULL)
-, _masterNodeGui(NULL)
+, _masterNodeGui()
 {
     
-    assert(node_);
-    QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode, SLOT(onGUINameChanged(QString)));
-    
-    QObject::connect(_internalNode, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
-    QObject::connect(_internalNode, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
-    QObject::connect(_internalNode, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
-    QObject::connect(_internalNode, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
-    QObject::connect(_internalNode, SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
-    QObject::connect(_internalNode, SIGNAL(previewRefreshRequested(int)), this, SLOT(forceComputePreview(int)));
-    QObject::connect(_internalNode, SIGNAL(deactivated()),this,SLOT(deactivate()));
-    QObject::connect(_internalNode, SIGNAL(activated()), this, SLOT(activate()));
-    QObject::connect(_internalNode, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
-    QObject::connect(_internalNode, SIGNAL(persistentMessageChanged(int,QString)), this, SLOT(onPersistentMessageChanged(int,QString)));
-    QObject::connect(_internalNode, SIGNAL(persistentMessageCleared()), this, SLOT(onPersistentMessageCleared()));
-    
-    QObject::connect(_internalNode, SIGNAL(renderingStarted()), this, SLOT(onRenderingStarted()));
-    QObject::connect(_internalNode, SIGNAL(renderingEnded()), this, SLOT(onRenderingFinished()));
-    QObject::connect(_internalNode, SIGNAL(inputNIsRendering(int)), this, SLOT(onInputNRenderingStarted(int)));
-    QObject::connect(_internalNode, SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
+}
 
-    QObject::connect(_internalNode, SIGNAL(slavedStateChanged(bool)), this, SLOT(onSlaveStateChanged(bool)));
-    QObject::connect(_internalNode, SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()));
+void NodeGui::initialize(NodeGraph* dag,
+                         const boost::shared_ptr<NodeGui>& thisAsShared,
+                         QVBoxLayout *dockContainer,
+                         const boost::shared_ptr<Natron::Node>& internalNode,
+                         bool requestedByLoad)
+{
+    _internalNode = internalNode;
+    assert(internalNode);
+    _graph = dag;
+    _menu = new QMenu(dag);
+    
+    QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode.get(), SLOT(onGUINameChanged(QString)));
+    
+    QObject::connect(_internalNode.get(), SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
+    QObject::connect(_internalNode.get(), SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
+    QObject::connect(_internalNode.get(), SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
+    QObject::connect(_internalNode.get(), SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
+    QObject::connect(_internalNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
+    QObject::connect(_internalNode.get(), SIGNAL(previewRefreshRequested(int)), this, SLOT(forceComputePreview(int)));
+    QObject::connect(_internalNode.get(), SIGNAL(deactivated()),this,SLOT(deactivate()));
+    QObject::connect(_internalNode.get(), SIGNAL(activated()), this, SLOT(activate()));
+    QObject::connect(_internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
+    QObject::connect(_internalNode.get(), SIGNAL(persistentMessageChanged(int,QString)),this,SLOT(onPersistentMessageChanged(int,QString)));
+    QObject::connect(_internalNode.get(), SIGNAL(persistentMessageCleared()), this, SLOT(onPersistentMessageCleared()));
+    QObject::connect(_internalNode.get(), SIGNAL(renderingStarted()), this, SLOT(onRenderingStarted()));
+    QObject::connect(_internalNode.get(), SIGNAL(renderingEnded()), this, SLOT(onRenderingFinished()));
+    QObject::connect(_internalNode.get(), SIGNAL(inputNIsRendering(int)), this, SLOT(onInputNRenderingStarted(int)));
+    QObject::connect(_internalNode.get(), SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
+    QObject::connect(_internalNode.get(), SIGNAL(slavedStateChanged(bool)), this, SLOT(onSlaveStateChanged(bool)));
+    QObject::connect(_internalNode.get(), SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()));
     /*Disabled for now*/
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(1);
-
+    
     _boundingBox = new QGraphicsRectItem(this);
     _boundingBox->setZValue(0.5);
 	
@@ -121,7 +127,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor(QColor(0,0,0,255));
     _nameItem->setZValue(0.6);
-
+    
     _persistentMessage = new QGraphicsTextItem("",this);
     _persistentMessage->setZValue(0.7);
     QFont f = _persistentMessage->font();
@@ -132,14 +138,14 @@ NodeGui::NodeGui(NodeGraph* dag,
     _stateIndicator = new QGraphicsRectItem(this);
     _stateIndicator->setZValue(-1);
     _stateIndicator->hide();
-
+    
     /*building settings panel*/
     if(_internalNode->pluginID() != "Viewer"){
         _panelDisplayed=true;
-        assert(dockContainer_);
-        _settingsPanel = new NodeSettingsPanel(_graph->getGui(),this,dockContainer_,dockContainer_->parentWidget());
+        assert(dockContainer);
+        _settingsPanel = new NodeSettingsPanel(_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
-        dockContainer_->addWidget(_settingsPanel);
+        dockContainer->addWidget(_settingsPanel);
         
         if (!requestedByLoad) {
             _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
@@ -152,10 +158,10 @@ NodeGui::NodeGui(NodeGraph* dag,
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
 	}
-
+    
     if(_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()){
         togglePreview();
-
+        
     }else{
         updateShape(NODE_LENGTH,NODE_HEIGHT);
     }
@@ -184,8 +190,9 @@ NodeGui::NodeGui(NodeGraph* dag,
     onInternalNameChanged(_internalNode->getName().c_str());
     
     if (!_internalNode->isOutputNode()) {
-        _outputEdge = new Edge(this,parentItem());
+        _outputEdge = new Edge(thisAsShared,parentItem());
     }
+
 }
 
 void NodeGui::beginEditKnobs() {
@@ -224,24 +231,11 @@ QSize NodeGui::nodeSize(bool withPreview) {
 }
 
 NodeGui::~NodeGui(){
-    for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
-        Edge* e = it->second;
-        if(e){
-            QGraphicsScene* scene = e->scene();
-            if(scene){
-                scene->removeItem(e);
-            }
-            e->setParentItem(NULL);
-            delete e;
-        }
-    }
+    
+    deleteChildrenReferences();
+    
     delete _selectedGradient;
     delete _defaultGradient;
-    if (_settingsPanel) {
-        _settingsPanel->setParent(NULL);
-        delete _settingsPanel;
-        _settingsPanel = NULL;
-    }
 }
 
 void NodeGui::removeUndoStack(){
@@ -285,8 +279,8 @@ void NodeGui::updateShape(int width,int height){
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
     refreshEdges();
-    const std::list<Natron::Node*>& outputs = _internalNode->getOutputs();
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -299,10 +293,10 @@ void NodeGui::changePosition(double dx,double dy) {
 }
 
 void NodeGui::refreshEdges() {
-    const std::vector<Natron::Node*>& nodeInputs = _internalNode->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> >& nodeInputs = _internalNode->getInputs_mt_safe();
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
         assert(i->first < (int)nodeInputs.size() && i->first >= 0);
-        NodeGui *nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
+        boost::shared_ptr<NodeGui> nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
         i->second->setSource(nodeInputGui);
         i->second->initLine();
     }
@@ -387,9 +381,10 @@ void NodeGui::initializeInputs()
     }
     
     ///Make new edge for all non existing inputs
+    boost::shared_ptr<NodeGui> thisShared = _graph->getNodeGuiSharedPtr(this);
     for(int i = 0; i < inputnb;++i){
         if(_inputEdges.find(i) == _inputEdges.end()){
-            Edge* edge = new Edge(i,0.,this,parentItem());
+            Edge* edge = new Edge(i,0.,thisShared,parentItem());
             _inputEdges.insert(make_pair(i,edge));
         }
     }
@@ -401,7 +396,7 @@ void NodeGui::initializeInputs()
         }
     }
     
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(_internalNode);
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(_internalNode.get());
     if (isInspector) {
         ///if the node is an inspector and it has only 1 empty input, display it aside
         if(emptyInputsCount == 1 && _internalNode->maximumInputs() > 1){
@@ -524,7 +519,7 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
     for (U32 i =0 ; i < _inputEdges.size(); ++i) {
         Edge* e = _inputEdges[i];
         
-        if (e && e->getSource() == parent) {
+        if (e && e->getSource().get() == parent) {
             return e;
         }
     }
@@ -533,12 +528,12 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
 
 bool NodeGui::connectEdge(int edgeNumber) {
     
-    const std::vector<Natron::Node*>& inputs = _internalNode->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> >& inputs = _internalNode->getInputs_mt_safe();
     if (edgeNumber < 0 || edgeNumber >= (int)inputs.size()) {
         return false;
     }
    
-    NodeGui* src = _graph->getGui()->getApp()->getNodeGui(inputs[edgeNumber]);
+    boost::shared_ptr<NodeGui> src = _graph->getGui()->getApp()->getNodeGui(inputs[edgeNumber]);
     InputEdgesMap::const_iterator it2 = _inputEdges.find(edgeNumber);
     if(it2 == _inputEdges.end()){
         return false;
@@ -567,7 +562,7 @@ void NodeGui::activate() {
     show();
     setActive(true);
     _graph->restoreFromTrash(this);
-    _graph->getGui()->getCurveEditor()->addNode(this);
+    _graph->getGui()->getCurveEditor()->addNode(_graph->getNodeGuiSharedPtr(this));
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->addItem(it->second);
         it->second->setParentItem(parentItem());
@@ -579,8 +574,8 @@ void NodeGui::activate() {
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const std::list<Natron::Node*>& outputs = _internalNode->getOutputs();
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -614,11 +609,11 @@ void NodeGui::deactivate() {
     hide();
     setActive(false);
     _graph->moveToTrash(this);
-    _graph->getGui()->getCurveEditor()->removeNode(this);
+    _graph->getGui()->getCurveEditor()->removeNode(_graph->getNodeGuiSharedPtr(this));
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->removeItem(it->second);
         it->second->setActive(false);
-        it->second->setSource(NULL);
+        it->second->setSource(boost::shared_ptr<NodeGui>());
     }
     if (_outputEdge) {
         _graph->scene()->removeItem(_outputEdge);
@@ -644,9 +639,9 @@ void NodeGui::deactivate() {
     }
     
     getNode()->getApp()->triggerAutoSave();
-    std::list<ViewerInstance*> viewers;
+    std::list<ViewerInstance* > viewers;
     getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it) {
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
             (*it)->updateTreeAndRender();
     }
 }
@@ -694,9 +689,9 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     }else{
         return;
     }
-    std::list<ViewerInstance*> viewers;
+    std::list<ViewerInstance* > viewers;
     _internalNode->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
         ///the tab might not exist if the node is being deactivated following a tab close request by the user.
 
@@ -712,9 +707,9 @@ void NodeGui::onPersistentMessageCleared(){
     _persistentMessage->hide();
     _stateIndicator->hide();
     
-    std::list<ViewerInstance*> viewers;
+    std::list<ViewerInstance* > viewers;
     _internalNode->hasViewersConnected(&viewers);
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
 
         ///the tab might not exist if the node is being deactivated following a tab close request by the user.
@@ -781,7 +776,7 @@ const std::map<boost::shared_ptr<KnobI> ,KnobGui*>& NodeGui::getKnobs() const{
 }
 
 void NodeGui::serialize(NodeGuiSerialization* serializationObject) const{
-    serializationObject->initialize(this);
+    serializationObject->initialize(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::copyFrom(const NodeGuiSerialization& obj) {
@@ -851,10 +846,10 @@ void NodeGui::moveBelowPositionRecursively(const QRectF& r) {
 
     if (r.intersects(sceneRect)) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const std::list<Natron::Node*>& outputs = getNode()->getOutputs();
-        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
+        const std::list<boost::shared_ptr<Natron::Node> >& outputs = getNode()->getOutputs();
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!= outputs.end(); ++it) {
             assert(*it);
-            NodeGui* output = _graph->getGui()->getApp()->getNodeGui(*it);
+            boost::shared_ptr<NodeGui> output = _graph->getGui()->getApp()->getNodeGui(*it);
             assert(output);
             sceneRect = mapToScene(boundingRect()).boundingRect();
             output->moveBelowPositionRecursively(sceneRect);
@@ -890,19 +885,19 @@ void NodeGui::setPos_mt_safe(const QPointF& pos) {
 
 void NodeGui::centerGraphOnIt()
 {
-    _graph->centerOnNode(this);
+    _graph->centerOnNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::onSlaveStateChanged(bool b) {
     if (b) {
-        Natron::Node* masterNode = _internalNode->getMasterNode();
+        boost::shared_ptr<Natron::Node> masterNode = _internalNode->getMasterNode();
         assert(masterNode);
-        NodeGui* masterNodeGui = _graph->getGui()->getApp()->getNodeGui(masterNode);
+        boost::shared_ptr<NodeGui> masterNodeGui = _graph->getGui()->getApp()->getNodeGui(masterNode);
         assert(masterNodeGui);
         _masterNodeGui = masterNodeGui;
         assert(!_slaveMasterLink);
 
-        QObject::connect(_masterNodeGui, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
+        QObject::connect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
         QObject::connect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
         _slaveMasterLink = new QGraphicsLineItem(parentItem());
         _slaveMasterLink->setZValue(-1);
@@ -915,13 +910,13 @@ void NodeGui::onSlaveStateChanged(bool b) {
         }
 
     } else {
-        QObject::disconnect(_masterNodeGui, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
+        QObject::disconnect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
         QObject::disconnect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
 
         assert(_slaveMasterLink);
         delete _slaveMasterLink;
         _slaveMasterLink = 0;
-        _masterNodeGui = 0;
+        _masterNodeGui.reset();
         
         if (!isSelected()) {
             _boundingBox->setBrush(*_defaultGradient);
@@ -938,7 +933,7 @@ void NodeGui::refreshSlaveMasterLinkPosition() {
     QRectF bboxThisNode = boundingRect();
     QRectF bboxMasterNode = _masterNodeGui->boundingRect();
 
-    QPointF dst = _slaveMasterLink->mapFromItem(_masterNodeGui,QPointF(bboxMasterNode.x(),bboxMasterNode.y())
+    QPointF dst = _slaveMasterLink->mapFromItem(_masterNodeGui.get(),QPointF(bboxMasterNode.x(),bboxMasterNode.y())
                               + QPointF(bboxMasterNode.width() / 2., bboxMasterNode.height() / 2.));
     QPointF src = _slaveMasterLink->mapFromItem(this,QPointF(bboxThisNode.x(),bboxThisNode.y())
                               + QPointF(bboxThisNode.width() / 2., bboxThisNode.height() / 2.));
@@ -946,23 +941,23 @@ void NodeGui::refreshSlaveMasterLinkPosition() {
 }
 
 void NodeGui::copyNode() {
-    _graph->copyNode(this);
+    _graph->copyNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::cutNode() {
-    _graph->cutNode(this);
+    _graph->cutNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::cloneNode() {
-    _graph->cloneNode(this);
+    _graph->cloneNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::decloneNode() {
-    _graph->decloneNode(this);
+    _graph->decloneNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::duplicateNode() {
-    _graph->duplicateNode(this);
+    _graph->duplicateNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::refreshOutputEdgeVisibility() {
@@ -980,4 +975,37 @@ void NodeGui::refreshOutputEdgeVisibility() {
             }
         }
     }
+}
+
+void NodeGui::deleteChildrenReferences()
+{
+    for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
+        Edge* e = it->second;
+        if(e){
+            QGraphicsScene* scene = e->scene();
+            if(scene){
+                scene->removeItem(e);
+            }
+            e->setParentItem(NULL);
+            delete e;
+        }
+    }
+    _inputEdges.clear();
+    
+    if (_outputEdge) {
+        QGraphicsScene* scene = _outputEdge->scene();
+        if(scene){
+            scene->removeItem(_outputEdge);
+        }
+        _outputEdge->setParentItem(NULL);
+        delete _outputEdge;
+        _outputEdge = NULL;
+    }
+    
+    if (_settingsPanel) {
+        _settingsPanel->setParent(NULL);
+        delete _settingsPanel;
+        _settingsPanel = NULL;
+    }
+
 }

@@ -25,9 +25,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
-#include "Global/Macros.h"
-#include "Global/GlobalDefines.h"
+#include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 
 class AppInstance;
@@ -55,14 +53,24 @@ public:
     
     virtual ~Node();
     
-    void load(const std::string& pluginID,const NodeSerialization& serialization,bool dontLoadName);
+    void load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
+              const NodeSerialization& serialization,bool dontLoadName);
     
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
     
+    ///called by Project::removeNode, never call this
+    void removeReferences();
+    
+    ///function called by EffectInstance to create a knob
+    template <class K>
+    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1){
+        return appPTR->getKnobFactory().createKnob<K>(getLiveInstance(),description,dimension);
+    }
+    
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<Natron::Node*>& allNodes);
+    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
     
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
@@ -95,7 +103,7 @@ public:
     const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const;
 
     /*Returns in viewers the list of all the viewers connected to this node*/
-    void hasViewersConnected(std::list<ViewerInstance*>* viewers) const;
+    void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
     
     /**
      * @brief Forwarded to the live effect instance
@@ -138,7 +146,7 @@ public:
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.
      **/
-    Node* input(int index) const;
+    boost::shared_ptr<Node> input(int index) const;
    
     
     /**
@@ -146,7 +154,7 @@ public:
      * Basically it returns a consistent value throughout the rendering of a frame.
      * The inputs are then updated before the rendering of any frame.
      **/
-    Node* input_other_thread(int index) const;
+    boost::shared_ptr<Node> input_other_thread(int index) const;
     
     /**
      * @brief Look-ups the changes made to the inputs that are queued, and if any it updates
@@ -159,13 +167,13 @@ public:
      *The vector might be different from what getInputs_other_thread() could return.
      *This can only be called by the main thread.
      **/
-    const std::vector<Natron::Node*>& getInputs_mt_safe() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Natron::Node> >& getInputs_mt_safe() const WARN_UNUSED_RETURN;
     
     /**
      *@brief Returns the inputs of the node as the render thread see them.
      * They are modified only by the render thread when updateRenderInputs() is called.
      **/
-    const std::vector<Natron::Node*>& getInputs_other_thread() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Natron::Node> >& getInputs_other_thread() const WARN_UNUSED_RETURN;
     
     
     
@@ -199,9 +207,9 @@ public:
      * where the value of the map is the input index from which these outputs
      * are connected to this node.
      **/
-    void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
+    void getOutputsConnectedToThisNode(std::map< boost::shared_ptr<Node>,int>* outputs);
         
-    const std::list<Natron::Node*>& getOutputs() const;
+    const std::list<boost::shared_ptr<Natron::Node> >& getOutputs() const;
     
     /**
      * @brief Each input name is appended to the vector, in the same order
@@ -216,7 +224,7 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(Node* input,int inputNumber);
+    virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber);
     
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
@@ -227,17 +235,17 @@ public:
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
      -1.*/
-    virtual int disconnectInput(Node* input);
+    virtual int disconnectInput(boost::shared_ptr<Node> input);
     
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(Node* output);
+    void connectOutput(boost::shared_ptr<Node> output);
     
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
      otherwise returns -1.*/
-    int disconnectOutput(Node* output);
+    int disconnectOutput(boost::shared_ptr<Node> output);
     
 
     /*============================*/
@@ -433,7 +441,7 @@ public:
     
     void onSlaveStateChanged(bool isSlave,KnobHolder* master);
   
-    Natron::Node* getMasterNode() const;
+    boost::shared_ptr<Natron::Node> getMasterNode() const;
     
 public slots:
     
@@ -504,7 +512,9 @@ signals:
     
     void renderingEnded();
     
-    void pluginMemoryUsageChanged(unsigned long long);
+    ///how much has just changed, this not the new value but the difference between the new value
+    ///and the old value
+    void pluginMemoryUsageChanged(qint64 mem);
     
     void slavedStateChanged(bool b);
     
@@ -535,11 +545,6 @@ private:
     
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp;
-
-    /**
-     * @brief Used internally by findOrCreateLiveInstanceClone
-     **/
-    Natron::EffectInstance*  createLiveInstanceClone();
 };
 
 } //namespace Natron
@@ -565,11 +570,11 @@ public:
     
     virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
     
-    virtual bool connectInput(Node* input,int inputNumber) OVERRIDE;
+    virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber) OVERRIDE;
     
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     
-    virtual int disconnectInput(Node* input) OVERRIDE;
+    virtual int disconnectInput(boost::shared_ptr<Node> input) OVERRIDE;
     
     bool tryAddEmptyInput();
     

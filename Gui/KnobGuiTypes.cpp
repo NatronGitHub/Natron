@@ -33,7 +33,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Curve.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Lut.h"
-
+#include "Engine/Project.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
@@ -352,6 +352,51 @@ void Bool_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
 boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const { return _knob; }
 
 //=============================DOUBLE_KNOB_GUI===================================
+
+/*
+ FROM THE OFX SPEC:
+ 
+ * kOfxParamCoordinatesNormalised is OFX > 1.2 and is used ONLY for setting defaults
+ 
+ These new parameter types can set their defaults in one of two coordinate systems, the property kOfxParamPropDefaultCoordinateSystem. Specifies the coordinate system the default value is being specified in.
+ 
+ * kOfxParamDoubleTypeNormalized* is OFX < 1.2 and is used ONLY for displaying the value: get/set should always return the normalized value:
+ 
+ To flag to the host that a parameter as normalised, we use the kOfxParamPropDoubleType property. Parameters that are so flagged have values set and retrieved by an effect in normalized coordinates. However a host can choose to represent them to the user in whatever space it chooses.
+ 
+ Both properties can be easily supported:
+ - the first one is used ONLY when setting the *DEFAULT* value
+ - the second is used ONLY by the GUI
+ */
+void Double_KnobGui::valueAccordingToType(bool normalize,int dimension,double* value)
+{
+    if (_knob->getDimension() > 2 || _knob->getDimension() < 0 || (dimension != 0 && dimension != 1)) {
+        return;
+    }
+    
+    if (dimension == 0) {
+        Double_Knob::NormalizedState state = _knob->getNormalizedState(dimension);
+        if (state == Double_Knob::NORMALIZATION_X) {
+            Format f;
+            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+            if (normalize) {
+                *value /= f.width();
+            } else {
+                *value *= f.width();
+            }
+        } else if (state == Double_Knob::NORMALIZATION_Y) {
+            Format f;
+            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+            if (normalize) {
+                *value /= f.height();
+            } else {
+                *value *= f.height();
+            }
+        }
+    }
+}
+
+
 Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container): KnobGui(knob, container), _slider(0)
 {
     _knob = boost::dynamic_pointer_cast<Double_Knob>(knob);
@@ -418,7 +463,10 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         
         double min = std::max(displayMins[i],mins[i]);
         double max = std::min(displayMaxs[i],maxs[i]);
-        
+        double incr = increments[i];
+        valueAccordingToType(false, i, &min);
+        valueAccordingToType(false, i, &max);
+        valueAccordingToType(false, i, &incr);
         box->setMaximum(max);
         box->setMinimum(min);
         box->decimals(decimals[i]);
@@ -449,12 +497,16 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
 void Double_KnobGui::onMinMaxChanged(double mini, double maxi, int index)
 {
     assert(_spinBoxes.size() > (U32)index);
+    valueAccordingToType(false, index, &mini);
+    valueAccordingToType(false, index, &maxi);
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
     
 }
 
 void Double_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int index ){
+    valueAccordingToType(false, index, &mini);
+    valueAccordingToType(false, index, &maxi);
     _spinBoxes[index].first->setMinimum(mini);
     _spinBoxes[index].first->setMaximum(maxi);
     if(_slider){
@@ -465,6 +517,7 @@ void Double_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int index ){
 void Double_KnobGui::onIncrementChanged(double incr, int index)
 {
     assert(_spinBoxes.size() > (U32)index);
+    valueAccordingToType(false, index, &incr);
     _spinBoxes[index].first->setIncrement(incr);
 }
 void Double_KnobGui::onDecimalsChanged(int deci, int index)
@@ -476,6 +529,7 @@ void Double_KnobGui::onDecimalsChanged(int deci, int index)
 void Double_KnobGui::updateGUI(int dimension)
 {
     double v = _knob->getValue(dimension);
+    valueAccordingToType(false, dimension, &v);
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -500,15 +554,18 @@ void Double_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel 
 
 void Double_KnobGui::onSliderValueChanged(double d)
 {
-    assert(getKnob()->getDimension() == 1);
+    assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
+    valueAccordingToType(true, 0, &d);
     pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValue(),d));
 }
 void Double_KnobGui::onSpinBoxValueChanged()
 {
     std::list<double> newValues;
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        newValues.push_back(_spinBoxes[i].first->value());
+        double v = _spinBoxes[i].first->value();
+        valueAccordingToType(true, 0, &v);
+        newValues.push_back(v);
     }
     pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValueForEachDimension_mt_safe(),newValues));
 }

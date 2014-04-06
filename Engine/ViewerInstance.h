@@ -51,9 +51,9 @@ public:
     
 
 public:
-    static Natron::EffectInstance* BuildEffect(Natron::Node* n) WARN_UNUSED_RETURN;
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
     
-    ViewerInstance(Natron::Node* node);
+    ViewerInstance(boost::shared_ptr<Natron::Node> node);
     
     virtual ~ViewerInstance();
     

@@ -16,7 +16,7 @@
 #include <string>
 #include <QtCore/QReadWriteLock>
 
-
+#include "Engine/Variant.h"
 #include "Engine/AppManager.h"
 
 class Curve;
@@ -453,7 +453,7 @@ public:
     void s_animationRemoved(int dimension) { emit animationRemoved(dimension); }
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
-
+    void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
     
 public slots:
     
@@ -525,7 +525,9 @@ signals:
     ///Emitted whenever a knob is slaved via the slaveTo function with a reason of PLUGIN_EDITED.
     void knobSlaved(int,bool);
 
-    
+    ///Emitted whenever the GUI should set the value using the undo stack. This is
+    ///only to address the problem of interacts that should use the undo/redo stack.
+    void setValueWithUndoStack(Variant v,int dim);
 };
 
 ///Skins the API of KnobI by implementing most of the functions in a non templated manner.
@@ -782,6 +784,11 @@ public:
     ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey);
     
     /**
+     * @brief This is called by the plugin when a set value call would happen during  an interact action.
+     **/
+    void requestSetValueOnUndoStack(const T& value,int dimension);
+    
+    /**
      * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
      **/
     void setValueAtTime(int time,const T& v,int dimension);
@@ -854,7 +861,7 @@ private:
     
     T getValueFromMaster(int dimension);
     
-    
+    void valueToVariant(const T& v,Variant* vari);
     
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
@@ -875,7 +882,7 @@ class AnimatingString_KnobHelper : public Knob<std::string>
 {
 public:
     
-    AnimatingString_KnobHelper(KnobHolder *holder, const std::string &description, int dimension);
+    AnimatingString_KnobHelper(KnobHolder* holder, const std::string &description, int dimension);
     
     virtual ~AnimatingString_KnobHelper();
     

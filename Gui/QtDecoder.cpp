@@ -24,11 +24,12 @@
 #include "Engine/KnobFile.h"
 #include "Engine/Knob.h"
 #include "Engine/Project.h"
+#include "Engine/Node.h"
 
 using namespace Natron;
 using std::cout; using std::endl;
 
-QtReader::QtReader(Natron::Node* node)
+QtReader::QtReader(boost::shared_ptr<Natron::Node> node)
 : Natron::EffectInstance(node)
 , _lut(Color::LutManager::sRGBLut())
 , _img(0)
@@ -70,15 +71,15 @@ void QtReader::initializeKnobs() {
                           ". You cannot use it when rendering a project.");
     
     
-    _fileKnob = Natron::createKnob<File_Knob>(this, "File");
+    _fileKnob = getNode()->createKnob<File_Knob>("File");
     _fileKnob->setAsInputImage();
     
-    _firstFrame =  Natron::createKnob<Int_Knob>(this, "First frame");
+    _firstFrame =  getNode()->createKnob<Int_Knob>("First frame");
     _firstFrame->setAnimationEnabled(false);
     _firstFrame->setDefaultValue(0,0);
     
     
-    _before = Natron::createKnob<Choice_Knob>(this, "Before");
+    _before = getNode()->createKnob<Choice_Knob>("Before");
     std::vector<std::string> beforeOptions;
     beforeOptions.push_back("hold");
     beforeOptions.push_back("loop");
@@ -89,12 +90,12 @@ void QtReader::initializeKnobs() {
     _before->setAnimationEnabled(false);
     _before->setDefaultValue(0,0);
     
-    _lastFrame =  Natron::createKnob<Int_Knob>(this, "Last frame");
+    _lastFrame =  getNode()->createKnob<Int_Knob>("Last frame");
     _lastFrame->setAnimationEnabled(false);
     _lastFrame->setDefaultValue(0,0);
     
     
-    _after = Natron::createKnob<Choice_Knob>(this, "After");
+    _after = getNode()->createKnob<Choice_Knob>("After");
     std::vector<std::string> afterOptions;
     afterOptions.push_back("hold");
     afterOptions.push_back("loop");
@@ -105,7 +106,7 @@ void QtReader::initializeKnobs() {
     _after->setAnimationEnabled(false);
     _after->setDefaultValue(0,0);
     
-    _missingFrameChoice = Natron::createKnob<Choice_Knob>(this, "On missing frame");
+    _missingFrameChoice = getNode()->createKnob<Choice_Knob>("On missing frame");
     std::vector<std::string> missingFrameOptions;
     missingFrameOptions.push_back("Load nearest");
     missingFrameOptions.push_back("Error");
@@ -114,7 +115,7 @@ void QtReader::initializeKnobs() {
     _missingFrameChoice->setDefaultValue(0,0);
     _missingFrameChoice->setAnimationEnabled(false);
     
-    _frameMode = Natron::createKnob<Choice_Knob>(this, "Frame mode");
+    _frameMode = getNode()->createKnob<Choice_Knob>("Frame mode");
     _frameMode->setAnimationEnabled(false);
     std::vector<std::string> frameModeOptions;
     frameModeOptions.push_back("Starting frame");
@@ -122,11 +123,11 @@ void QtReader::initializeKnobs() {
     _frameMode->populateChoices(frameModeOptions);
     _frameMode->setDefaultValue(0,0);
     
-    _startingFrame = Natron::createKnob<Int_Knob>(this, "Starting frame");
+    _startingFrame = getNode()->createKnob<Int_Knob>("Starting frame");
     _startingFrame->setAnimationEnabled(false);
     _startingFrame->setDefaultValue(0,0);
     
-    _timeOffset = Natron::createKnob<Int_Knob>(this, "Time offset");
+    _timeOffset = getNode()->createKnob<Int_Knob>("Time offset");
     _timeOffset->setAnimationEnabled(false);
     _timeOffset->setDefaultValue(0,0);
     _timeOffset->setSecret(true);

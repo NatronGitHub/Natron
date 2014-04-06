@@ -202,6 +202,15 @@ public slots:
 
 private:
 
+    /**
+     * @brief Normalized parameters handling. It converts from project format
+     * to normailzed coords or from project format to normalized coords.
+     * @param normalize True if we want to normalize, false otherwise
+     * @param dimension Must be either 0 and 1
+     * @note If the dimension of the knob is not 1 or 2 this function does nothing.
+     **/
+    void valueAccordingToType(bool normalize,int dimension,double* value);
+    
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
     void setMaximum(int);

@@ -43,7 +43,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , autoSetProjectFormat(true)
     , currentNodes()
     , project(project)
-    , lastTimelineSeekCaller(NULL)
+    , lastTimelineSeekCaller()
     , beginEndBracketsCount(0)
     , evaluationsCount(0)
     , holdersWhoseBeginWasCalled()
@@ -117,9 +117,8 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             continue;
         }
 
-        Natron::Node* n = 0;
-        ///this code may throw an exception which will be caught above
-        n = project->getApp()->loadNode(it->getPluginID().c_str()
+         ///this code may throw an exception which will be caught above
+        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(it->getPluginID().c_str()
                                                         ,it->getPluginMajorVersion()
                                                         ,it->getPluginMinorVersion(),*it,false);
         if (!n) {
@@ -151,7 +150,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
 
         
-        Natron::Node* thisNode = NULL;
+        boost::shared_ptr<Natron::Node> thisNode;
         for (U32 j = 0; j < currentNodes.size(); ++j) {
             if (currentNodes[j]->getName() == it->getPluginLabel()) {
                 thisNode = currentNodes[j];
@@ -164,7 +163,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         const std::string& masterNodeName = it->getMasterNodeName();
         if (!masterNodeName.empty()) {
             ///find such a node
-            Natron::Node* masterNode = NULL;
+            boost::shared_ptr<Natron::Node> masterNode;
             for (U32 j = 0; j < currentNodes.size(); ++j) {
                 if (currentNodes[j]->getName() == masterNodeName) {
                     masterNode = currentNodes[j];

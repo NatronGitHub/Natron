@@ -67,12 +67,13 @@ public:
      * If openImageFileDialog is true then if the node has a file knob indicating an image file it will automatically
      * prompt the user with a file dialog.
      **/
-    Natron::Node* createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,bool openImageFileDialog = true);
+    boost::shared_ptr<Natron::Node> createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,
+                                               bool openImageFileDialog = true);
     
     ///Same as createNode but used when loading a project
-    Natron::Node* loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName);
+    boost::shared_ptr<Natron::Node> loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName);
 
-    void getActiveNodes(std::vector<Natron::Node*> *activeNodes) const;
+    void getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> > *activeNodes) const;
 
     boost::shared_ptr<Natron::Project> getProject() const;
 
@@ -128,13 +129,13 @@ signals:
     
 protected:
     
-    virtual void createNodeGui(Natron::Node* /*node*/,bool /*loadRequest*/,bool /*openImageFileDialog*/) {}
+    virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,bool /*loadRequest*/,bool /*openImageFileDialog*/) {}
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 private:
     
-    Natron::Node* createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
+    boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
                                      bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,
                                      bool dontLoadName);
     

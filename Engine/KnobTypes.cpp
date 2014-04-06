@@ -24,7 +24,7 @@ using std::make_pair;
 using std::pair;
 
 /******************************INT_KNOB**************************************/
-Int_Knob::Int_Knob(KnobHolder *holder, const std::string &description, int dimension):
+Int_Knob::Int_Knob(KnobHolder* holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 , _dimensionNames(dimension)
 , _minimums(dimension)
@@ -231,7 +231,7 @@ const std::string& Int_Knob::typeName() const
 }
 /******************************BOOL_KNOB**************************************/
 
-Bool_Knob::Bool_Knob(KnobHolder *holder, const std::string &description, int dimension):
+Bool_Knob::Bool_Knob(KnobHolder* holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 {}
 
@@ -255,7 +255,7 @@ const std::string& Bool_Knob::typeName() const
 /******************************DOUBLE_KNOB**************************************/
 
 
-Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int dimension)
+Double_Knob::Double_Knob(KnobHolder* holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 , _dimensionNames(dimension)
 , _minimums(dimension)
@@ -265,8 +265,12 @@ Double_Knob::Double_Knob(KnobHolder *holder, const std::string &description, int
 , _displayMaxs(dimension)
 , _decimals(dimension)
 , _disableSlider(false)
+, _normalizationXY()
 
 {
+    _normalizationXY.first = NORMALIZATION_NONE;
+    _normalizationXY.second = NORMALIZATION_NONE;
+    
     for (int i = 0; i < dimension; ++i) {
         _minimums[i] = -DBL_MAX;
         _maximums[i] = DBL_MAX;
@@ -484,7 +488,7 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
 
 /******************************BUTTON_KNOB**************************************/
 
-Button_Knob::Button_Knob(KnobHolder  *holder, const std::string &description, int dimension):
+Button_Knob::Button_Knob(KnobHolder*  holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 , _renderButton(false)
 {
@@ -511,7 +515,7 @@ const std::string& Button_Knob::typeName() const
 
 /******************************CHOICE_KNOB**************************************/
 
-Choice_Knob::Choice_Knob(KnobHolder *holder, const std::string &description, int dimension):
+Choice_Knob::Choice_Knob(KnobHolder* holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 {
     
@@ -614,7 +618,7 @@ const std::string &Choice_Knob::getActiveEntryText() const
 //
 /******************************SEPARATOR_KNOB**************************************/
 
-Separator_Knob::Separator_Knob(KnobHolder *holder, const std::string &description, int dimension)
+Separator_Knob::Separator_Knob(KnobHolder* holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 {
     
@@ -646,7 +650,7 @@ const std::string& Separator_Knob::typeName() const
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
 
-Color_Knob::Color_Knob(KnobHolder *holder, const std::string &description, int dimension)
+Color_Knob::Color_Knob(KnobHolder* holder, const std::string &description, int dimension)
 : Knob(holder, description, dimension)
 , _allDimensionsEnabled(true)
 , _dimensionNames(dimension)
@@ -837,7 +841,7 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, cons
 /******************************STRING_KNOB**************************************/
 
 
-String_Knob::String_Knob(KnobHolder *holder, const std::string &description, int dimension):
+String_Knob::String_Knob(KnobHolder* holder, const std::string &description, int dimension):
 AnimatingString_KnobHelper(holder, description, dimension)
 , _multiLine(false)
 , _isLabel(false)
@@ -870,7 +874,7 @@ const std::string& String_Knob::typeName() const
 
 /******************************GROUP_KNOB**************************************/
 
-Group_Knob::Group_Knob(KnobHolder *holder, const std::string &description, int dimension):
+Group_Knob::Group_Knob(KnobHolder* holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 {
     
@@ -912,7 +916,7 @@ const std::vector< boost::shared_ptr<KnobI> > &Group_Knob::getChildren() const
 
 /******************************TAB_KNOB**************************************/
 
-Tab_Knob::Tab_Knob(KnobHolder *holder, const std::string &description, int dimension):
+Tab_Knob::Tab_Knob(KnobHolder* holder, const std::string &description, int dimension):
 Knob(holder, description, dimension)
 {
     
@@ -950,7 +954,7 @@ void Tab_Knob::addKnob(boost::shared_ptr<KnobI> k)
 /******************************Parametric_Knob**************************************/
 
 
-Parametric_Knob::Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension)
+Parametric_Knob::Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension)
 : Knob(holder,description,dimension)
 , _curvesMutex()
 , _curves(dimension)

@@ -39,11 +39,11 @@ class Int_Knob: public QObject, public Knob<int>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Int_Knob(holder, description, dimension);
     }
     
-    Int_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Int_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     void disableSlider();
     
@@ -115,11 +115,11 @@ class Bool_Knob:  public Knob<bool>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Bool_Knob(holder, description, dimension);
     }
     
-    Bool_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Bool_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
@@ -146,11 +146,17 @@ class Double_Knob:  public QObject,public Knob<double>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    enum NormalizedState {
+        NORMALIZATION_NONE = 0, ///< indicating that the dimension holds a  non-normalized value.
+        NORMALIZATION_X, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
+        NORMALIZATION_Y ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
+    };
+    
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Double_Knob(holder, description, dimension);
     }
     
-    Double_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Double_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     
     void disableSlider();
@@ -198,7 +204,27 @@ public:
     void setDimensionName(int dim,const std::string& name);
     
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
-
+    
+    NormalizedState getNormalizedState(int dimension) const
+    {
+        assert(dimension < 2 && dimension >= 0);
+        if (dimension == 0) {
+            return _normalizationXY.first;
+        } else {
+            return _normalizationXY.second;
+        }
+        
+    }
+    
+    void setNormalizedState(int dimension,NormalizedState state) {
+        assert(dimension < 2 && dimension >= 0);
+        if (dimension == 0) {
+            _normalizationXY.first = state;
+        } else {
+            _normalizationXY.second = state;
+        }
+    }
+    
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
     
@@ -221,6 +247,13 @@ private:
     std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     std::vector<int> _decimals;
     bool _disableSlider;
+    
+    
+    /// to support ofx deprecated normalizd params:
+    /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
+    /// BY default they have NORMALIZATION_NONE
+    std::pair<NormalizedState, NormalizedState> _normalizationXY;
+    
     static const std::string _typeNameStr;
     
 };
@@ -232,11 +265,11 @@ class Button_Knob: public Knob<bool>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Button_Knob(holder, description, dimension);
     }
     
-    Button_Knob(KnobHolder  *holder, const std::string &description, int dimension);
+    Button_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     static const std::string& typeNameStatic();
     
@@ -263,11 +296,11 @@ class Choice_Knob: public QObject,public Knob<int>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Choice_Knob(holder, description, dimension);
     }
     
-    Choice_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Choice_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     /*Must be called right away after the constructor.*/
     void populateChoices(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
@@ -354,11 +387,11 @@ class Separator_Knob: public Knob<bool>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Separator_Knob(holder, description, dimension);
     }
     
-    Separator_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Separator_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     static const std::string& typeNameStatic();
     
@@ -385,12 +418,12 @@ class Color_Knob:  public QObject, public Knob<double>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Color_Knob(holder, description, dimension);
     }
     
     
-    Color_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Color_Knob(KnobHolder* holder, const std::string &description, int dimension);
 
     const std::vector<double> &getMinimums() const;
 
@@ -459,11 +492,11 @@ class String_Knob: public AnimatingString_KnobHelper
 public:
     
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new String_Knob(holder, description, dimension);
     }
     
-    String_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    String_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     virtual ~String_Knob();
     
@@ -514,11 +547,11 @@ class Group_Knob:  public QObject, public Knob<bool>
     std::vector< boost::shared_ptr<KnobI> > _children;
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Group_Knob(holder, description, dimension);
     }
     
-    Group_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Group_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     void addKnob(boost::shared_ptr<KnobI> k);
     
@@ -543,11 +576,11 @@ class Tab_Knob :  public QObject,public Knob<bool>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Tab_Knob(holder, description, dimension);
     }
     
-    Tab_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Tab_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     void addKnob(boost::shared_ptr<KnobI> k);
     
@@ -582,11 +615,11 @@ class Parametric_Knob :  public QObject, public Knob<double>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
         return new Parametric_Knob(holder, description, dimension);
     }
     
-    Parametric_Knob(KnobHolder *holder, const std::string &description, int dimension);
+    Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension);
     
     void setCurveColor(int dimension,double r,double g,double b);
     

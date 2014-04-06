@@ -62,7 +62,7 @@ class RenderTree {
     
     
 public:
-    typedef std::vector<Natron::Node*> TreeContainer;
+    typedef std::vector<boost::shared_ptr<Natron::Node> > TreeContainer;
     typedef TreeContainer::const_iterator TreeIterator;
     typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
     typedef TreeContainer::const_iterator InputsIterator;
@@ -146,7 +146,7 @@ public:
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
-    void fillGraph(Natron::Node* effect,std::vector<Natron::Node*>& markedNodes);
+    void fillGraph(const boost::shared_ptr<Natron::Node>& effect,std::vector<boost::shared_ptr<Natron::Node> >& markedNodes);
     /*clears out the structure*/
     void clearGraph();
     

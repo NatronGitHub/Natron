@@ -27,7 +27,7 @@ using namespace Natron;
 
 struct GuiAppInstancePrivate {
     Gui* _gui; //< ptr to the Gui interface
-    std::map<Natron::Node*,NodeGui*> _nodeMapping; //< a mapping between all nodes and their respective gui. FIXME: it should go away.
+    std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeGui> > _nodeMapping; //< a mapping between all nodes and their respective gui. FIXME: it should go away.
     std::list< boost::shared_ptr<ProcessHandler> > _activeBgProcesses;
     QMutex _activeBgProcessesMutex;
     GuiAppInstancePrivate()
@@ -47,6 +47,8 @@ GuiAppInstance::GuiAppInstance(int appID)
 }
 
 GuiAppInstance::~GuiAppInstance() {
+    
+    _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
     delete _imp->_gui;
 }
 
@@ -101,8 +103,8 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
 
 }
 
-void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool openImageFileDialog) {
-    NodeGui* nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
+void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool loadRequest,bool openImageFileDialog) {
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
     assert(nodegui);
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));
     
@@ -123,7 +125,7 @@ void GuiAppInstance::createNodeGui(Natron::Node *node,bool loadRequest,bool open
     
     if (!loadRequest) {
         if(_imp->_gui->getSelectedNode()){
-            Node* selected = _imp->_gui->getSelectedNode()->getNode();
+            boost::shared_ptr<Node> selected = _imp->_gui->getSelectedNode()->getNode();
             getProject()->autoConnectNodes(selected, node);
         }
         _imp->_gui->selectNode(nodegui);
@@ -150,35 +152,49 @@ bool GuiAppInstance::shouldRefreshPreview() const {
 }
 
 
-NodeGui* GuiAppInstance::getNodeGui(Node* n) const {
-    std::map<Node*,NodeGui*>::const_iterator it = _imp->_nodeMapping.find(n);
+boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(boost::shared_ptr<Node> n) const {
+    std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.find(n);
     if (it == _imp->_nodeMapping.end()) {
-        return NULL;
+        return boost::shared_ptr<NodeGui>();
     } else {
         assert(it->second);
         return it->second;
     }
 }
 
-NodeGui* GuiAppInstance::getNodeGui(const std::string& nodeName) const{
-    for(std::map<Node*,NodeGui*>::const_iterator it = _imp->_nodeMapping.begin();
+boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const std::string& nodeName) const{
+    for(std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin();
         it != _imp->_nodeMapping.end();++it){
         assert(it->first && it->second);
         if(it->first->getName() == nodeName){
             return it->second;
         }
     }
-    return (NodeGui*)NULL;
+    return boost::shared_ptr<NodeGui>();
 }
 
-Node* GuiAppInstance::getNode(NodeGui* n) const{
-    for (std::map<Node*,NodeGui*>::const_iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
+boost::shared_ptr<Node> GuiAppInstance::getNode(boost::shared_ptr<NodeGui> n) const{
+    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
         if(it->second == n){
             return it->first;
         }
     }
-    return NULL;
+    return boost::shared_ptr<Node>();
     
+}
+
+void GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui>& n)
+{
+    assert(!n->getNode()->isActivated());
+    getProject()->removeNodeFromProject(n->getNode());
+    for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
+        if(it->second == n){
+            _imp->_nodeMapping.erase(it);
+            break;
+        }
+    }
+    
+
 }
 
 void GuiAppInstance::errorDialog(const std::string& title,const std::string& message) const {
@@ -282,4 +298,9 @@ void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceNa
                                        ProcessHandler* process) {
     _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame,process);
 
+}
+
+void GuiAppInstance::clearExceedingUndoRedoEvents()
+{
+    _imp->_gui->clearExceedingUndoRedoEvents();
 }

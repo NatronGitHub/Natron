@@ -12,7 +12,6 @@
 
 #include <string>
 #include <cstdarg>
-#include <boost/shared_ptr.hpp>
 
 #include <ofxhImageEffect.h>
 
@@ -32,7 +31,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstancePointer(OfxEffectInstance *node){_node = node;}
+    void setOfxEffectInstancePointer(OfxEffectInstance* node){ _node = node;}
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////

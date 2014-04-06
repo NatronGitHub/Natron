@@ -15,7 +15,7 @@
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
 
-void NodeGuiSerialization::initialize(const NodeGui* n)
+void NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui>& n)
 {
     
     ////All this code is MT-safe

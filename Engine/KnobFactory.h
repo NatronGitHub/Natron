@@ -37,13 +37,13 @@ public:
     ~KnobFactory();
 
     template <typename K>
-    boost::shared_ptr<K> createKnob(KnobHolder  *holder, const std::string &description, int dimension = 1) const
+    boost::shared_ptr<K> createKnob(KnobHolder*  holder, const std::string &description, int dimension = 1) const
     {
         return boost::dynamic_pointer_cast<K>(createKnob(K::typeNameStatic(),holder,description,dimension));
     }
 
 private:
-    boost::shared_ptr<KnobHelper> createKnob(const std::string &id, KnobHolder *holder,
+    boost::shared_ptr<KnobHelper> createKnob(const std::string &id,KnobHolder* holder,
                                        const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
 
     const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const {

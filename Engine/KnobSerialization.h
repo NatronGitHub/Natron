@@ -323,7 +323,7 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const std::vector<Natron::Node*>& allNodes);
+    void restoreKnobLinks(const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
     
     boost::shared_ptr<KnobI> getKnob() const { return _knob; }
 

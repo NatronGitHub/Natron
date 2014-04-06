@@ -55,7 +55,22 @@ static QString getDefaultOcioConfigPath() {
 }
 
 void Settings::initializeKnobs(){
+    
     _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
+    
+    _maxUndoRedoNodeSize = Natron::createKnob<Int_Knob>(this, "Maximum undo/redo RAM size (Mb)");
+    _maxUndoRedoNodeSize->setAnimationEnabled(false);
+    _maxUndoRedoNodeSize->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME
+                                 " will remember. Past this limit, older events will be deleted permanantly "
+                                 " allowing to re-use the RAM for better purposes.");
+    _generalTab->addKnob(_maxUndoRedoNodeSize);
+    
+    _minUndoRedoEvents = Natron::createKnob<Int_Knob>(this,"Minimum undo events");
+    _minUndoRedoEvents->setAnimationEnabled(false);
+    _minUndoRedoEvents->setHintToolTip("Minimum undo events to keep in the node graph stack, "
+                                        " regardless whether it breaches the maximum RAM allocated to the "
+                                        " undo/redo stack.");
+    _generalTab->addKnob(_minUndoRedoEvents);
     
     _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->setAnimationEnabled(false);
@@ -223,6 +238,8 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _maxUndoRedoNodeSize->setDefaultValue(50, 0);
+    _minUndoRedoEvents->setDefaultValue(4, 0);
     _linearPickers->setDefaultValue(true,0);
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
@@ -262,6 +279,8 @@ void Settings::saveSettings(){
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    settings.setValue("MaximumRAMUndoRedo", _maxUndoRedoNodeSize->getValue());
+    settings.setValue("MinUndoRedoEvents", _minUndoRedoEvents->getValue());
     settings.setValue("LinearColorPickers",_linearPickers->getValue());
     settings.setValue("Number of threads", _numberOfThreads->getValue());
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
@@ -311,6 +330,12 @@ void Settings::restoreSettings(){
     notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    if (settings.contains("MaximumRAMUndoRedo")) {
+        _maxUndoRedoNodeSize->setValue(settings.value("MaximumRAMUndoRedo").toInt(), 0);
+    }
+    if (settings.contains("MinUndoRedoEvents")) {
+        _minUndoRedoEvents->setValue(settings.value("MinUndoRedoEvents").toInt(),0);
+    }
     if(settings.contains("LinearColorPickers")){
         _linearPickers->setValue(settings.value("LinearColorPickers").toBool(),0);
     }
@@ -443,7 +468,7 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
         std::map<int,AppInstance*> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
-            const std::vector<Node*> nodes = it->second->getProject()->getCurrentNodes();
+            const std::vector<boost::shared_ptr<Node> > nodes = it->second->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
                 if (nodes[i]->pluginID() == "Viewer") {
@@ -621,4 +646,14 @@ void Settings::restoreDefault() {
 
 bool Settings::isRenderInSeparatedProcessEnabled() const {
     return _renderInSeparateProcess->getValue();
+}
+
+int Settings::getMaximumUndoRedoRAM_Mb() const
+{
+    return _maxUndoRedoNodeSize->getValue();
+}
+
+int Settings::getMinimumUndoRedoEvents() const
+{
+    return _minUndoRedoEvents->getValue();
 }
