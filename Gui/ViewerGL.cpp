@@ -1925,7 +1925,7 @@ void ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (!_imp->displayingImage) {
+    if (_imp->displayingImage) {
         setDisplayingImage(false);
     }
     updateGL();
