@@ -36,6 +36,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     ,_bgProcessOutputSocket(0)
     ,_bgProcessInputSocket(0)
     ,_earlyCancel(false)
+    ,_processLog()
 {
 
     ///setup the server used to listen the output of the background process
@@ -67,19 +68,31 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 
     
     ///start the process
-    qDebug() << "Starting background rendering: " << QCoreApplication::applicationFilePath() << processArgs;
+    _processLog.push_back("Starting background rendering: " + QCoreApplication::applicationFilePath());
+    _processLog.push_back(" ");
+    for (int i = 0; i < processArgs.size(); ++i) {
+        _processLog.push_back(processArgs[i] + " ");
+    }
     _process->start(QCoreApplication::applicationFilePath(),processArgs);
 
-    app->notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,this);
 
 }
 
 
 ProcessHandler::~ProcessHandler(){
+    
+    emit deleted();
+    
     _process->close();
     delete _process;
     delete _ipcServer;
     delete _bgProcessInputSocket;
+    
+}
+
+const QString& ProcessHandler::getProcessLog() const
+{
+    return _processLog;
 }
 
 void ProcessHandler::onNewConnectionPending() {
@@ -95,11 +108,15 @@ void ProcessHandler::onNewConnectionPending() {
 
 
 void ProcessHandler::onDataWrittenToSocket() {
+    
+    ///always running in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     QString str = _bgProcessOutputSocket->readLine();
     while(str.endsWith('\n')) {
         str.chop(1);
     }
-    qDebug() << "ProcessHandler::onDataWrittenToSocket() received " << str;
+    _processLog.append("Message received: " + str + '\n');
     if (str.startsWith(kFrameRenderedStringShort)) {
         str = str.remove(kFrameRenderedStringShort);
         emit frameRendered(str.toInt());
@@ -126,25 +143,29 @@ void ProcessHandler::onDataWrittenToSocket() {
             onProcessCanceled();
         }
     } else {
-        qDebug() << "Error: Unable to interpret message: " << str;
+        _processLog.append("Error: Unable to interpret message.\n");
         throw std::runtime_error("ProcessHandler::onDataWrittenToSocket() received erroneous message");
     }
 
 }
 
 void ProcessHandler::onInputPipeConnectionMade() {
-    qDebug() << "The input channel was successfully created and connected.";
+    
+    ///always running in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    _processLog.append("The input channel (the one the bg process listens to) was successfully created and connected.\n");
 }
 
 void ProcessHandler::onStandardOutputBytesWritten(){
 
     QString str(_process->readAllStandardOutput().data());
-    qDebug() << str ;
+    _processLog.append("stdout: " + str) + '\n';
 }
 
 void ProcessHandler::onStandardErrorBytesWritten() {
     QString str(_process->readAllStandardError().data());
-    qDebug() << str ;
+    _processLog.append("stderr: " + str) + '\n';
 }
 
 void ProcessHandler::onProcessCanceled(){
@@ -239,7 +260,7 @@ bool ProcessInputChannel::onInputChannelMessageReceived() {
         appPTR->abortAnyProcessing();
         return true;
     } else {
-        qDebug() << "Error: Unable to interpret message: " << str;
+        std::cerr << "Error: Unable to interpret message: " << str.toStdString() << std::endl;
         throw std::runtime_error("ProcessInputChannel::onInputChannelMessageReceived() received erroneous message");
     }
 

@@ -15,6 +15,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QProcess>
 #include <QThread>
+#include <QString>
 CLANG_DIAG_ON(deprecated)
 #include "Global/GlobalDefines.h"
 
@@ -85,6 +86,7 @@ class ProcessHandler : public QObject {
     QLocalSocket* _bgProcessInputSocket;
     
     bool _earlyCancel; //< true if the user pressed cancel but the _bgProcessInput socket was not created yet
+    QString _processLog; //< used to record the log of the process
     
 public:
 
@@ -99,6 +101,8 @@ public:
                    Natron::OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();
+    
+    const QString& getProcessLog() const;
 
 public slots:
 
@@ -147,6 +151,8 @@ public slots:
     void onInputPipeConnectionMade();
     
 signals:
+    
+    void deleted();
     
     void frameRendered(int);
     

@@ -17,10 +17,14 @@ CLANG_DIAG_OFF(deprecated)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 
+#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
+class QVBoxLayout;
+class QTextBrowser;
+class Button;
 class QString;
-
+class ProcessHandler;
 struct RenderingProgressDialogPrivate;
 class RenderingProgressDialog : public QDialog {
 
@@ -28,12 +32,15 @@ class RenderingProgressDialog : public QDialog {
 
 public:
 
-    RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
+    RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,
+                            const boost::shared_ptr<ProcessHandler>& process,QWidget* parent = 0);
 
     virtual ~RenderingProgressDialog();
 
 
 public slots:
+    
+    void onProcessDeleted();
 
     void onFrameRendered(int);
 
@@ -52,6 +59,22 @@ private:
     
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
     
+};
+
+
+class LogWindow : public QDialog
+{
+    
+    Q_OBJECT
+    
+    QVBoxLayout* mainLayout;
+    QTextBrowser* textBrowser;
+    Button* okButton;
+    
+    
+public:
+    
+    LogWindow(const QString& log,QWidget* parent = 0);
 };
 
 #endif // RENDERINGPROGRESSDIALOG_H

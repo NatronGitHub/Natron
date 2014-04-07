@@ -17,11 +17,17 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QFrame>
+#include <QTextBrowser>
 
 #include <QString>
 
+#include "Engine/ProcessHandler.h"
+
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
+
+
+
 
 struct RenderingProgressDialogPrivate {
     QVBoxLayout* _mainLayout;
@@ -34,8 +40,9 @@ struct RenderingProgressDialogPrivate {
     QString _sequenceName;
     int _firstFrame;
     int _lastFrame;
+    boost::shared_ptr<ProcessHandler> _process;
     
-    RenderingProgressDialogPrivate(const QString& sequenceName,int firstFrame,int lastFrame)
+    RenderingProgressDialogPrivate(const QString& sequenceName,int firstFrame,int lastFrame,const boost::shared_ptr<ProcessHandler>& proc)
     : _mainLayout(0)
     , _totalLabel(0)
     , _totalProgress(0)
@@ -46,6 +53,7 @@ struct RenderingProgressDialogPrivate {
     , _sequenceName(sequenceName)
     , _firstFrame(firstFrame)
     , _lastFrame(lastFrame)
+    , _process(proc)
     {
         
     }
@@ -83,12 +91,37 @@ void RenderingProgressDialog::onProcessCanceled() {
 void RenderingProgressDialog::onProcessFinished(int retCode) {
     if (isVisible()) {
         hide();
+        
+        bool showLog = false;
         if (retCode == 0) {
             Natron::informationDialog("Render", "Render finished.");
         } else if (retCode == 1) {
-            Natron::errorDialog("Render", "The render ended with a return code of 1, a problem occured.");
+            if (_imp->_process) {
+                Natron::StandardButton reply = Natron::questionDialog("Render",
+                                                                      "The render ended with a return code of 1, a problem occured.\n"
+                                                                      "Would you like to see the log ?");
+                if (reply == Natron::Yes) {
+                    showLog = true;
+                }
+            } else {
+                Natron::errorDialog("Render","The render ended with a return code of 1, a problem occured.");
+            }
+            
         } else {
-            Natron::errorDialog("Render","The render crashed.");
+            if (_imp->_process) {
+                Natron::StandardButton reply = Natron::questionDialog("Render","The render crashed.\n"
+                                                                      "Would you like to see the log ?");
+                if (reply == Natron::Yes) {
+                    showLog = true;
+                }
+            } else {
+                Natron::errorDialog("Render","The render crashed.");
+            }
+        }
+        if (showLog) {
+            assert(_imp->_process);
+            LogWindow log(_imp->_process->getProcessLog(),this);
+            log.exec();
         }
     }
    
@@ -102,9 +135,10 @@ void RenderingProgressDialog::onVideoEngineStopped(int retCode) {
     }
 }
 
-RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent)
+RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,
+                                                 const boost::shared_ptr<ProcessHandler>& process,QWidget* parent)
 : QDialog(parent)
-, _imp(new RenderingProgressDialogPrivate(sequenceName,firstFrame,lastFrame))
+, _imp(new RenderingProgressDialogPrivate(sequenceName,firstFrame,lastFrame,process))
 
 {
     
@@ -151,6 +185,44 @@ RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int
     QObject::connect(_imp->_cancelButton, SIGNAL(clicked()), this, SIGNAL(canceled()));
     
     
+    if (process) {
+        
+        QObject::connect(this,SIGNAL(canceled()),process.get(),SLOT(onProcessCanceled()));
+        QObject::connect(process.get(),SIGNAL(processCanceled()),this,SLOT(onProcessCanceled()));
+        QObject::connect(process.get(),SIGNAL(frameRendered(int)),this,SLOT(onFrameRendered(int)));
+        QObject::connect(process.get(),SIGNAL(frameProgress(int)),this,SLOT(onCurrentFrameProgress(int)));
+        QObject::connect(process.get(),SIGNAL(processFinished(int)),this,SLOT(onProcessFinished(int)));
+        QObject::connect(process.get(),SIGNAL(deleted()),this,SLOT(onProcessDeleted()));
+    }
 }
 
 RenderingProgressDialog::~RenderingProgressDialog() {}
+
+void RenderingProgressDialog::onProcessDeleted()
+{
+    assert(_imp->_process);
+    QObject::disconnect(this,SIGNAL(canceled()),_imp->_process.get(),SLOT(onProcessCanceled()));
+    QObject::disconnect(_imp->_process.get(),SIGNAL(processCanceled()),this,SLOT(onProcessCanceled()));
+    QObject::disconnect(_imp->_process.get(),SIGNAL(frameRendered(int)),this,SLOT(onFrameRendered(int)));
+    QObject::disconnect(_imp->_process.get(),SIGNAL(frameProgress(int)),this,SLOT(onCurrentFrameProgress(int)));
+    QObject::disconnect(_imp->_process.get(),SIGNAL(processFinished(int)),this,SLOT(onProcessFinished(int)));
+    QObject::disconnect(_imp->_process.get(),SIGNAL(deleted()),this,SLOT(onProcessDeleted()));
+
+}
+
+LogWindow::LogWindow(const QString& log,QWidget* parent)
+: QDialog(parent)
+{
+    mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    
+    textBrowser = new QTextBrowser(this);
+    textBrowser->setOpenExternalLinks(true);
+    textBrowser->setText(log);
+    
+    mainLayout->addWidget(textBrowser);
+    
+    okButton = new Button("Ok",this);
+    QObject::connect(okButton, SIGNAL(clicked()), this, SLOT(accept()));
+    mainLayout->addWidget(okButton);
+}

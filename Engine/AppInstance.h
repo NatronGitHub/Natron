@@ -104,7 +104,7 @@ public:
     
     virtual void notifyRenderProcessHandlerStarted(const QString& /*sequenceName*/,
                                                    int /*firstFrame*/,int /*lastFrame*/,
-                                                   ProcessHandler* /*process*/) {}
+                                                   const boost::shared_ptr<ProcessHandler>& /*process*/) {}
 
 public slots:
     

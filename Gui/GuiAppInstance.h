@@ -68,7 +68,7 @@ public:
     
     virtual void notifyRenderProcessHandlerStarted(const QString& sequenceName,
                                                    int firstFrame,int lastFrame,
-                                                   ProcessHandler* process) OVERRIDE FINAL;
+                                                   const boost::shared_ptr<ProcessHandler>& process) OVERRIDE FINAL;
     
     virtual void setupViewersForViews(int viewsCount) OVERRIDE FINAL;
     

@@ -2093,17 +2093,10 @@ void Gui::deselectAllNodes() const {
     _imp->_nodeGraphArea->deselect();
 }
 
-void Gui::onProcessHandlerStarted(const QString& sequenceName,int firstFrame,int lastFrame,ProcessHandler* process) {
+void Gui::onProcessHandlerStarted(const QString& sequenceName,int firstFrame,int lastFrame,
+                                  const boost::shared_ptr<ProcessHandler>& process) {
     ///make the dialog which will show the progress
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,this);
-    QObject::connect(dialog,SIGNAL(canceled()),process,SLOT(onProcessCanceled()));
-    QObject::connect(process,SIGNAL(processCanceled()),dialog,SLOT(onProcessCanceled()));
-    QObject::connect(process,SIGNAL(frameRendered(int)),dialog,SLOT(onFrameRendered(int)));
-    QObject::connect(process,SIGNAL(frameProgress(int)),dialog,SLOT(onCurrentFrameProgress(int)));
-    if (process) {
-        QObject::connect(process,SIGNAL(processFinished(int)),dialog,SLOT(onProcessFinished(int)));
-        
-    }
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,process,this);
     dialog->show();
 }
 
@@ -2168,7 +2161,8 @@ void Gui::updateLastSequenceSavedPath(const QString& path) {
 
 void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,
                                 Natron::OutputEffectInstance* writer) {
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,this);
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,
+                                                                  boost::shared_ptr<ProcessHandler>(),this);
     VideoEngine* ve = writer->getVideoEngine().get();
     QObject::connect(dialog,SIGNAL(canceled()),ve,SLOT(abortRenderingNonBlocking()));
     QObject::connect(ve,SIGNAL(frameRendered(int)),dialog,SLOT(onFrameRendered(int)));
