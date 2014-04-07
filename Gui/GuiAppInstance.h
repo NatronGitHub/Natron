@@ -74,7 +74,7 @@ public:
     
     void setViewersCurrentView(int view);
     
-    void clearExceedingUndoRedoEvents();
+    void setUndoRedoStackLimit(int limit);
 
 public slots:
     

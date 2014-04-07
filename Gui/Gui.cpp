@@ -1889,12 +1889,6 @@ void Gui::registerNewUndoStack(QUndoStack* stack){
     _imp->_undoStacksActions.insert(std::make_pair(stack, std::make_pair(undo, redo)));
 }
 
-void Gui::registerNewUndoStack(QUndoStack* stack,QAction* undoAction,QAction* redoAction)
-{
-    _imp->_undoStacksGroup->addStack(stack);
-    _imp->_undoStacksActions.insert(std::make_pair(stack, std::make_pair(undoAction, redoAction)));
-
-}
 
 void Gui::removeUndoStack(QUndoStack* stack){
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
@@ -2245,7 +2239,6 @@ void Gui::renderSelectedNode()
     }
 }
 
-void Gui::clearExceedingUndoRedoEvents()
-{
-    _imp->_nodeGraphArea->clearExceedingUndoRedoEvents();
+void Gui::setUndoRedoStackLimit(int limit) {
+    _imp->_nodeGraphArea->setUndoRedoStackLimit(limit);
 }

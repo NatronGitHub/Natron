@@ -212,7 +212,7 @@ public:
      **/
     int exec();
     
-    virtual void clearExceedingUndoRedoEvents() {}
+    virtual void setUndoRedoStackLimit(int /*limit*/) {}
 
 public slots:
 

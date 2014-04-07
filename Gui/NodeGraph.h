@@ -56,24 +56,6 @@ namespace Natron{
 }
 
 
-class QUndoAction : public QAction
-{
-    
-    Q_OBJECT
-public:
-    
-    explicit QUndoAction(QObject *parent = 0);
-    void setTextFormat(const QString &textFormat, const QString &defaultText);
-    
-public slots:
-    
-    void setPrefixedText(const QString &text);
-    
-private:
-    QString m_prefix;
-    QString m_defaultText;
-};
-
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
@@ -154,7 +136,9 @@ public:
 
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
     
-    void clearExceedingUndoRedoEvents();
+    void setUndoRedoStackLimit(int limit);
+    
+    void deleteNodePermanantly(const boost::shared_ptr<NodeGui>& n);
     
 public slots:
     
@@ -189,11 +173,7 @@ public slots:
     void cloneSelectedNode();
     
     void decloneSelectedNode();
-    
-    void undoProxy();
-    
-    void redoProxy();
-    
+
 private:
     
     /**
@@ -284,8 +264,7 @@ private:
     QGraphicsProxyWidget* _navigatorProxy;
     
     QUndoStack* _undoStack;
-    QUndoAction* _undoProxy;
-    QUndoAction* _redoProxy;
+
         
     QMenu* _menu;
     

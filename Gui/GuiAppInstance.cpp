@@ -300,7 +300,6 @@ void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceNa
 
 }
 
-void GuiAppInstance::clearExceedingUndoRedoEvents()
-{
-    _imp->_gui->clearExceedingUndoRedoEvents();
+void GuiAppInstance::setUndoRedoStackLimit(int limit) {
+    _imp->_gui->setUndoRedoStackLimit(limit);
 }

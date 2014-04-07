@@ -1145,7 +1145,6 @@ void AppManager::onNodeMemoryRegistered(qint64 mem)
         return;
     }
     _imp->_nodesGlobalMemoryUse += mem;
-    clearExceedingUndoRedoEvents();
 }
 
 qint64 AppManager::getTotalNodesMemoryRegistered() const

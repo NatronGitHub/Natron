@@ -76,7 +76,7 @@ public:
     
     KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
     
-    virtual void clearExceedingUndoRedoEvents() OVERRIDE FINAL;
+    virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
 
     
 public slots:

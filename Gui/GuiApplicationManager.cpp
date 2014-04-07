@@ -541,14 +541,14 @@ void GuiApplicationManager::initializeQApp(int argc,char* argv[]) const {
     app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
 }
 
-void GuiApplicationManager::clearExceedingUndoRedoEvents()
+void GuiApplicationManager::setUndoRedoStackLimit(int limit)
 {
     
     const std::map<int,AppInstance*>& apps = getAppInstances();
     for (std::map<int,AppInstance*>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second);
         if (guiApp) {
-            guiApp->clearExceedingUndoRedoEvents();
+            guiApp->setUndoRedoStackLimit(limit);
         }
     }
 }

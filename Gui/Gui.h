@@ -124,9 +124,7 @@ public:
     const std::vector<ToolButton*>& getToolButtons() const;
 
     void registerNewUndoStack(QUndoStack* stack);
-    
-    void registerNewUndoStack(QUndoStack* stack,QAction* undoAction,QAction* redoAction);
-    
+        
     void removeUndoStack(QUndoStack* stack);
         
     /**
@@ -255,7 +253,7 @@ public:
     
     bool isClosing() const;
     
-    void clearExceedingUndoRedoEvents();
+    void setUndoRedoStackLimit(int limit);
     
     void setGlewVersion(const QString& version);
     

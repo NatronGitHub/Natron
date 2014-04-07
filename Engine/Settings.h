@@ -94,9 +94,7 @@ public:
     
     void restoreDefault();
     
-    int getMaximumUndoRedoRAM_Mb() const;
-    
-    int getMinimumUndoRedoEvents() const;
+    int getMaximumUndoRedoNodeGraph() const;
     
 private:
     
@@ -108,8 +106,7 @@ private:
 
     
     boost::shared_ptr<Tab_Knob> _generalTab;
-    boost::shared_ptr<Int_Knob> _maxUndoRedoNodeSize;
-    boost::shared_ptr<Int_Knob> _minUndoRedoEvents;
+    boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
