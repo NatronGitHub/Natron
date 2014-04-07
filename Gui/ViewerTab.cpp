@@ -72,6 +72,8 @@ struct ViewerTabPrivate {
     Button* _clipToProjectFormatButton;
     Button* _enableViewerRoI;
     Button* _refreshButton;
+    Button* _activateRenderScale;
+    ComboBox* _renderScaleCombo;
     
     /*2nd row*/
     SpinBox* _gainBox;
@@ -201,9 +203,27 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     _imp->_firstRowLayout->addWidget(_imp->_enableViewerRoI);
     
     _imp->_refreshButton = new Button(_imp->_firstSettingsRow);
-    _imp->_refreshButton->setToolTip("Force a new render of the current frame."
+    _imp->_refreshButton->setToolTip("Forces a new render of the current frame."
                                      "<p><b>Keyboard shortcut: U</b></p>");
     _imp->_firstRowLayout->addWidget(_imp->_refreshButton);
+    
+    _imp->_activateRenderScale = new Button(_imp->_firstSettingsRow);
+    QKeySequence rsKs(Qt::CTRL + Qt::Key_P);
+    _imp->_activateRenderScale->setToolTip("Activates the downscaling by the amount indicated by the value on the right."
+                                           "<p><b>Keyboard shortcut: "+ rsKs.toString(QKeySequence::NativeText) +"</b></p>");
+    _imp->_activateRenderScale->setCheckable(true);
+    _imp->_activateRenderScale->setChecked(false);
+    _imp->_activateRenderScale->setDown(false);
+    _imp->_firstRowLayout->addWidget(_imp->_activateRenderScale);
+    
+    _imp->_renderScaleCombo = new ComboBox(_imp->_firstSettingsRow);
+    _imp->_renderScaleCombo->setToolTip("Scales down the rendered image by this factor to accelerate the rendering.");
+    _imp->_renderScaleCombo->addItem("2");
+    _imp->_renderScaleCombo->addItem("4");
+    _imp->_renderScaleCombo->addItem("8");
+    _imp->_renderScaleCombo->addItem("16");
+    _imp->_renderScaleCombo->addItem("32");
+    _imp->_firstRowLayout->addWidget(_imp->_renderScaleCombo);
     
     _imp->_firstRowLayout->addStretch();
     
@@ -455,6 +475,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QPixmap pixLoopMode;
     QPixmap pixClipToProject ;
     QPixmap pixViewerRoI;
+    QPixmap pixViewerRs;
+    QPixmap pixViewerRsChecked;
     
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
@@ -472,6 +494,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT,&pixClipToProject);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI,&pixViewerRoI);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_RENDER_SCALE,&pixViewerRs);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED,&pixViewerRsChecked);
     
     _imp->firstFrame_Button->setIcon(QIcon(pixFirst));
     _imp->previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
@@ -489,6 +513,11 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     _imp->loopMode_Button->setIcon(QIcon(pixLoopMode));
     _imp->_clipToProjectFormatButton->setIcon(QIcon(pixClipToProject));
     _imp->_enableViewerRoI->setIcon(QIcon(pixViewerRoI));
+    
+    QIcon icViewerRs;
+    icViewerRs.addPixmap(pixViewerRs,QIcon::Normal,QIcon::Off);
+    icViewerRs.addPixmap(pixViewerRsChecked,QIcon::Normal,QIcon::On);
+    _imp->_activateRenderScale->setIcon(icViewerRs);
     
     
     _imp->_centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
@@ -565,6 +594,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_autoContrast,SIGNAL(clicked(bool)),this,SLOT(onAutoContrastChanged(bool)));
     QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),this,SLOT(onAutoContrastChanged(bool)));
     QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),_imp->_autoContrast,SLOT(setChecked(bool)));
+    QObject::connect(_imp->_renderScaleCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(onRenderScaleComboIndexChanged(int)));
+    QObject::connect(_imp->_activateRenderScale,SIGNAL(clicked(bool)),this,SLOT(onRenderScaleButtonClicked(bool)));
 }
 
 void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
@@ -792,6 +823,8 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         refresh();
     } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)) {
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
+    } else if (event->key() == Qt::Key_P && event->modifiers().testFlag(Qt::ControlModifier)) {
+        onRenderScaleButtonClicked(!_imp->_activateRenderScale->isDown());
     }
     
 }
@@ -1114,6 +1147,39 @@ double ViewerTab::getGain() const {
     return _imp->_viewerNode->getGain();
 }
 
+void ViewerTab::setRenderScale(double scale)
+{
+    if (scale == 0.5) {
+        _imp->_renderScaleCombo->setCurrentIndex(0);
+    } else if (scale == 0.25) {
+        _imp->_renderScaleCombo->setCurrentIndex(1);
+    } else if (scale == 0.125) {
+        _imp->_renderScaleCombo->setCurrentIndex(2);
+    } else if (scale == 0.0625) {
+        _imp->_renderScaleCombo->setCurrentIndex(3);
+    } else if (scale == 0.03125) {
+        _imp->_renderScaleCombo->setCurrentIndex(4);
+    } else {
+        _imp->_renderScaleCombo->setCurrentIndex(0);
+    }
+    _imp->_viewerNode->onRenderScaleChanged(scale);
+}
+
+double ViewerTab::getRenderScale() const
+{
+    return _imp->_viewerNode->getRenderScale();
+}
+
+void ViewerTab::setRenderScaleActivated(bool act)
+{
+    onRenderScaleButtonClicked(act);
+}
+
+bool ViewerTab::getRenderScaleActivated() const
+{
+    return _imp->_viewerNode->getRenderScale() != 1.;
+}
+
 std::string ViewerTab::getChannelsString() const {
     ViewerInstance::DisplayChannels c = _imp->_viewerNode->getChannels();
     switch (c) {
@@ -1159,4 +1225,41 @@ void ViewerTab::onAutoContrastChanged(bool b) {
     if (!b) {
         _imp->_viewerNode->onGainChanged(_imp->_gainBox->value()) ;
     }
+}
+
+void ViewerTab::onRenderScaleComboIndexChanged(int index)
+{
+    double rs;
+    if (_imp->_activateRenderScale->isDown()) {
+        switch (index) {
+            case 0:
+                rs = 0.5;
+                break;
+            case 1:
+                rs = 0.25;
+                break;
+            case 2:
+                rs = 0.125;
+                break;
+            case 3:
+                rs = 0.0625;
+                break;
+            case 4:
+                rs = 0.03125;
+                break;
+            default:
+                rs = 1.;
+                break;
+        }
+    } else {
+        rs = 1.;
+    }
+    _imp->_viewerNode->onRenderScaleChanged(rs);
+}
+
+void ViewerTab::onRenderScaleButtonClicked(bool checked)
+{
+    _imp->_activateRenderScale->setDown(checked);
+    _imp->_activateRenderScale->setChecked(checked);
+    onRenderScaleComboIndexChanged(_imp->_renderScaleCombo->activeIndex());
 }

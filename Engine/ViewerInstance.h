@@ -114,6 +114,8 @@ public:
     int getLutType() const WARN_UNUSED_RETURN ;
 
     double getGain() const WARN_UNUSED_RETURN ;
+    
+    double getRenderScale() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
@@ -145,6 +147,8 @@ public slots:
     void onViewerCacheFrameAdded();
 
     void onGainChanged(double exp);
+    
+    void onRenderScaleChanged(double scale);
 
     void onColorSpaceChanged(const QString& colorspaceName);
 

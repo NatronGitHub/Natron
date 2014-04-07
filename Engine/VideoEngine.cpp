@@ -716,7 +716,11 @@ void VideoEngine::refreshAndContinueRender(bool forcePreview){
 
     bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
-    if(!isPlaybackRunning){
+    if(!isPlaybackRunning) {
+#pragma message WARN("We should abort here because this is called following a parameter change but doing so make some plugin error.")
+        ///(typically S_Blur)
+        
+        //abortRendering(false);
         render(1,false,false,_currentRunArgs._forward,true,forcePreview);
     }
 }

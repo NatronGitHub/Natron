@@ -1108,6 +1108,23 @@ ViewerInstance::onGainChanged(double exp)
 }
 
 void
+ViewerInstance::onRenderScaleChanged(double scale)
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        if (_imp->viewerRenderScale == scale) {
+            return;
+        }
+        _imp->viewerRenderScale = scale;
+    }
+    if(input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
+        refreshAndContinueRender(false);
+    }
+}
+
+void
 ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh)
 {
     // always running in the main thread
@@ -1282,6 +1299,16 @@ ViewerInstance::getGain() const
 
     QMutexLocker l(&_imp->viewerParamsMutex);
     return _imp->viewerParamsGain;
+}
+
+double
+ViewerInstance::getRenderScale() const
+{
+    // MT-SAFE: called from main thread and Serialization (pooled) thread
+    
+    QMutexLocker l(&_imp->viewerParamsMutex);
+    return _imp->viewerRenderScale;
+
 }
 
 

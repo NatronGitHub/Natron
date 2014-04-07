@@ -928,7 +928,7 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
             }
         }
     }
-   
+
 
 }
 

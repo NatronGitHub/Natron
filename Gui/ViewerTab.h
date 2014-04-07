@@ -100,6 +100,14 @@ public:
     
     void setAutoContrastEnabled(bool b);
     
+    void setRenderScale(double scale);
+    
+    double getRenderScale() const;
+    
+    void setRenderScaleActivated(bool act);
+    
+    bool getRenderScaleActivated() const;
+    
 public slots:
     
     void startPause(bool);
@@ -120,6 +128,8 @@ public slots:
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
     
+    void onRenderScaleComboIndexChanged(int index);
+    
     /*makes the viewer black*/
     void disconnectViewer();
     
@@ -138,6 +148,7 @@ public slots:
         
     void onAutoContrastChanged(bool b);
 
+    void onRenderScaleButtonClicked(bool checked);
 
 private:
         

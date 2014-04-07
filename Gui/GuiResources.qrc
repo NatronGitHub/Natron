@@ -85,5 +85,7 @@
         <file>Resources/Images/checkbox_unchecked_readonly.png</file>
         <file>Resources/Images/readImage.png</file>
         <file>Resources/Images/writeImage.png</file>
+        <file>Resources/Images/renderScale.png</file>
+        <file>Resources/Images/renderScale_checked.png</file>
     </qresource>
 </RCC>

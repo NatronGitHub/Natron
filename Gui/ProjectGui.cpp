@@ -314,6 +314,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->setAutoContrastEnabled(found->second.autoContrastEnabled);
                 tab->setUserRoI(found->second.userRoI);
                 tab->setClipToProject(found->second.isClippedToProject);
+                tab->setRenderScaleActivated(found->second.renderScaleActivated);
+                tab->setRenderScale(found->second.renderScale);
             }
         }
         

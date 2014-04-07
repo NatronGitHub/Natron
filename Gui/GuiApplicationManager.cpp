@@ -215,6 +215,14 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"viewer_roi.png");
                 *pix = QPixmap::fromImage(img).scaled(20,20);
                 break;
+            case NATRON_PIXMAP_VIEWER_RENDER_SCALE:
+                img.load(NATRON_IMAGES_PATH"renderScale.png");
+                *pix = QPixmap::fromImage(img).scaled(20,20);
+                break;
+            case NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED:
+                img.load(NATRON_IMAGES_PATH"renderScale_checked.png");
+                *pix = QPixmap::fromImage(img).scaled(20,20);
+                break;
             case NATRON_PIXMAP_OPEN_FILE:
                 img.load(NATRON_IMAGES_PATH"open-file.png");
                 *pix = QPixmap::fromImage(img).scaled(15,15);

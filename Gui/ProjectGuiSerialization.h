@@ -36,6 +36,8 @@ struct ViewerData {
     bool isClippedToProject;
     bool autoContrastEnabled;
     double gain;
+    bool renderScaleActivated;
+    double renderScale;
     std::string colorSpace;
     std::string channels;
     
@@ -55,6 +57,8 @@ struct ViewerData {
         ar & boost::serialization::make_nvp("Gain",gain);
         ar & boost::serialization::make_nvp("ColorSpace",colorSpace);
         ar & boost::serialization::make_nvp("Channels",channels);
+        ar & boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
+        ar & boost::serialization::make_nvp("RenderScale",renderScale);
     }
 };
 
