@@ -670,18 +670,16 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
     
     std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin();it!=_nodes.end();++it) {
-        boost::shared_ptr<NodeGui>& n = *it;
-        
-        QPointF evpt = n->mapFromScene(_lastScenePosClick);
-        if(n->isActive() && n->contains(evpt) && n->getSettingPanel()){
-            if(!n->isSettingsPanelVisible()){
-                n->setVisibleSettingsPanel(true);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin();it!=nodes.end();++it) {
+        QPointF evpt = (*it)->mapFromScene(_lastScenePosClick);
+        if((*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel()){
+            if(!(*it)->isSettingsPanelVisible()){
+                (*it)->setVisibleSettingsPanel(true);
             }
-            if (!n->wasBeginEditCalled()) {
-                n->beginEditKnobs();
+            if (!(*it)->wasBeginEditCalled()) {
+                (*it)->beginEditKnobs();
             }
-            _gui->putSettingsPanelFirst(n->getSettingPanel());
+            _gui->putSettingsPanelFirst((*it)->getSettingPanel());
             break;
         }
     }
