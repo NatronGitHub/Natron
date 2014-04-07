@@ -43,7 +43,11 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     QObject::connect(_ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
     QString serverName;
     {
+#ifndef __NATRON_WIN32__
         QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(_process->pid()));
+#else
+		QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(_process->pid()->dwProcessId));
+#endif
         tmpf.open();
         serverName = tmpf.fileName();
     }
