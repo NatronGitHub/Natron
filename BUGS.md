@@ -6,9 +6,7 @@ Bugs
 
 Here is a list of know bugs, ordered by priority from high to low:
 
-- kOfxParamDoubleTypeNormalised* parameters (which still have to be supported, although they have been deprecated since OFX 1.2) have to be denormalized when presented in the GUI (internally, they still have to be stored as normalized values), and normalized when set by the user.
-
-- Some plugins crash using the multi-thread suite (mainly Furnace)
+- Some plugins crash using the multi-thread suite (mainly Furnace) when the implementation is based on QtConcurrent
 
 - messages (and persistent messages) should be associated with an instance, not with a viewer. The message should appear in the viewer if and only of the given instance is in the the viewer's parents.
 
@@ -31,8 +29,6 @@ Here is a list of non-blocking bugs / wanted features:
 - the nodegraph should have a "f" shortcut to recenter the graph, and scrollbars (or a birds eye view) when the graph is too large.
 
 - Progress suite is not implemented (GUI is blocked until the operation has ended)
-
-- a log window with OFX and Natron log messages (see OfxImageEffectInstance::vmessage, OfxHost::vmessage)
 
 - The OFX keyframe interface is missing some unimplemented functions yet:
   - OfxParameterSuiteV1::paramEditBegin — Used to group any parameter changes for undo/redo purposes
