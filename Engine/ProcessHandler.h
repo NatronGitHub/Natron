@@ -96,8 +96,6 @@ public:
      **/
     ProcessHandler(AppInstance* app,
                    const QString& projectPath,
-                   const QString& outputFileSequence,
-                   int firstFrame,int lastFrame,
                    Natron::OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();

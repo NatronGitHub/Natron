@@ -69,6 +69,9 @@ struct AppManagerPrivate {
 
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     
+    mutable QMutex _ofxLogMutex;
+    QString _ofxLog;
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
         , _appInstances()
@@ -86,6 +89,8 @@ struct AppManagerPrivate {
         ,_binaryPath()
         ,_wasAbortAnyProcessingCalled(false)
         ,_nodesGlobalMemoryUse(0)
+        ,_ofxLogMutex()
+        ,_ofxLog()
     
     {
         
@@ -1151,6 +1156,18 @@ qint64 AppManager::getTotalNodesMemoryRegistered() const
 {
     assert(QThread::currentThread() == qApp->thread());
     return _imp->_nodesGlobalMemoryUse;
+}
+
+QString AppManager::getOfxLog_mt_safe() const
+{
+    QMutexLocker l(&_imp->_ofxLogMutex);
+    return _imp->_ofxLog;
+}
+
+void AppManager::writeToOfxLog_mt_safe(const QString& str)
+{
+    QMutexLocker l(&_imp->_ofxLogMutex);
+    _imp->_ofxLog.append(str + '\n');
 }
 
 namespace Natron{

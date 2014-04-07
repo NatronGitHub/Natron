@@ -258,8 +258,7 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     
     if (appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled()) {
         try {
-            boost::shared_ptr<ProcessHandler> process(new ProcessHandler(this,
-                                                                         getProject()->getLastAutoSaveFilePath(),outputFileSequence,firstFrame,lastFrame ,writer));
+            boost::shared_ptr<ProcessHandler> process(new ProcessHandler(this,getProject()->getLastAutoSaveFilePath(),writer));
             QObject::connect(process.get(), SIGNAL(processFinished(int)), this, SLOT(onProcessFinished()));
             notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,process);
 

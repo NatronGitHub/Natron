@@ -334,6 +334,8 @@ public slots:
     void showSettings();
     
     void showAbout();
+    
+    void showOfxLog();
 
     void openRecentFile();
     

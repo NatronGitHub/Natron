@@ -213,6 +213,10 @@ public:
     int exec();
     
     virtual void setUndoRedoStackLimit(int /*limit*/) {}
+    
+    QString getOfxLog_mt_safe() const;
+    
+    void writeToOfxLog_mt_safe(const QString& str);
 
 public slots:
 

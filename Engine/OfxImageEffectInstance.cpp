@@ -111,8 +111,7 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-#pragma message WARN("Log in a log buffer, not on stdout!")
-        std::cout << message << std::endl;
+        appPTR->writeToOfxLog_mt_safe(message.c_str());
     } else if (type == kOfxMessageFatal || type == kOfxMessageError) {
         _node->message(Natron::ERROR_MESSAGE, message);
     } else if (type == kOfxMessageWarning) {

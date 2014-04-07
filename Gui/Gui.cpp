@@ -127,6 +127,7 @@ struct GuiPrivate {
     QAction *actionPreferences;
     QAction *actionExit;
     QAction *actionProject_settings;
+    QAction *actionShowOfxLog;
     QAction *actionFullScreen;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
@@ -278,6 +279,7 @@ struct GuiPrivate {
     , actionPreferences(0)
     , actionExit(0)
     , actionProject_settings(0)
+    , actionShowOfxLog(0)
     , actionFullScreen(0)
     , actionClearDiskCache(0)
     , actionClearPlayBackCache(0)
@@ -504,6 +506,8 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     actionExit->setText(_gui->tr("E&xit"));
     assert(actionProject_settings);
     actionProject_settings->setText(_gui->tr("Project Settings..."));
+    assert(actionShowOfxLog);
+    actionShowOfxLog->setText(_gui->tr("Show OpenFX log"));
     assert(actionFullScreen);
     actionFullScreen->setText(_gui->tr("Toggle Full Screen"));
     assert(actionClearDiskCache);
@@ -631,6 +635,8 @@ void Gui::setupUi()
     _imp->actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
     _imp->actionProject_settings->setIcon(get_icon("document-properties"));
     _imp->actionProject_settings->setShortcut(QKeySequence(Qt::Key_S));
+    _imp->actionShowOfxLog = new QAction(this);
+    _imp->actionShowOfxLog->setObjectName(QString::fromUtf8("actionShowOfxLog"));
     _imp->actionFullScreen = new QAction(this);
     _imp->actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
     _imp->actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
@@ -854,6 +860,7 @@ void Gui::setupUi()
     _imp->menuEdit->addAction(_imp->actionPreferences);
 
     _imp->menuOptions->addAction(_imp->actionProject_settings);
+    _imp->menuOptions->addAction(_imp->actionShowOfxLog);
     _imp->menuDisplay->addAction(_imp->viewersMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewerInputsMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewersViewMenu->menuAction());
@@ -896,6 +903,7 @@ void Gui::setupUi()
     QObject::connect(_imp->actionClearNodeCache, SIGNAL(triggered()),_imp->_appInstance,SLOT(clearOpenFXPluginsCaches()));
     QObject::connect(_imp->actionExit,SIGNAL(triggered()),this,SLOT(exitGui()));
     QObject::connect(_imp->actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
+    QObject::connect(_imp->actionShowOfxLog,SIGNAL(triggered()),this,SLOT(showOfxLog()));
     
     QObject::connect(_imp->actionConnectInput1, SIGNAL(triggered()),this,SLOT(connectInput1()));
     QObject::connect(_imp->actionConnectInput2, SIGNAL(triggered()),this,SLOT(connectInput2()));
@@ -2235,4 +2243,12 @@ void Gui::renderSelectedNode()
 
 void Gui::setUndoRedoStackLimit(int limit) {
     _imp->_nodeGraphArea->setUndoRedoStackLimit(limit);
+}
+
+void Gui::showOfxLog()
+{
+    QString log = appPTR->getOfxLog_mt_safe();
+    LogWindow lw(log,this);
+    lw.setWindowTitle(tr("OpenFX messages log"));
+    lw.exec();
 }
