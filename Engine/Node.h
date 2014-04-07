@@ -411,12 +411,12 @@ public:
     /**
      * @brief forwarded to the live instance
      **/
-    void setInputFilesForReader(const QStringList& files);
+    void setInputFilesForReader(const std::vector<std::string>& files);
     
     /**
      * @brief forwarded to the live instance
      **/
-    void setOutputFilesForWriter(const QString& pattern);
+    void setOutputFilesForWriter(const std::string& pattern);
     
     
     ///called by EffectInstance

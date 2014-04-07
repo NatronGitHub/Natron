@@ -17,7 +17,7 @@
 
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
-#include "Engine/SequenceParsing.h"
+#include <SequenceParsing.h>
 #include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
 
@@ -144,14 +144,14 @@ void File_KnobGui::open_file(bool openSequence)
     if (currentFiles.empty()) {
         pathWhereToOpen = _lastOpened;
     } else {
-        pathWhereToOpen = currentFiles.getPath();
+        pathWhereToOpen = currentFiles.getPath().c_str();
     }
     
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString());
     SequenceParsing::SequenceFromFiles selectedFiles(false);
     if (dialog.exec()) {
         selectedFiles = dialog.getSelectedFilesAsSequence();
-        updateLastOpened(selectedFiles.getPath());
+        updateLastOpened(selectedFiles.getPath().c_str());
         pushUndoCommand(new File_Knob_UndoCommand(this,currentFiles,selectedFiles));
     }
     
@@ -159,8 +159,8 @@ void File_KnobGui::open_file(bool openSequence)
 
 void File_KnobGui::updateLastOpened(const QString &str)
 {
-    QString unpathed = str;
-    _lastOpened = SequenceParsing::removePath(unpathed);
+    std::string unpathed = str.toStdString();
+    _lastOpened = SequenceParsing::removePath(unpathed).c_str();
     getGui()->updateLastSequenceOpenedPath(_lastOpened);
 
 }
@@ -183,19 +183,19 @@ void File_KnobGui::onReturnPressed()
     }
     
     SequenceParsing::SequenceFromPattern sequence;
-    SequenceParsing::filesListFromPattern(str, &sequence);
+    SequenceParsing::filesListFromPattern(str.toStdString(), &sequence);
     ///Even though the user might have passed to the file knob a view variable (%v or %V)
     ///we just keep the files corresponding to the view 0 because the file knob doesn't support multiviews.
-    QStringList newList = SequenceParsing::sequenceFromPatternToFilesList(sequence,0);
+    StringList newList = SequenceParsing::sequenceFromPatternToFilesList(sequence,0);
     SequenceParsing::SequenceFromFiles sequenceFromFiles(false);
-    for (int i = 0; i < newList.size(); ++i) {
+    for (U32 i = 0; i < newList.size(); ++i) {
         sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(newList.at(i)));
     }
 
     ///even though the algorithm didnt recognize a file with the pattern given by the user, insert it to the sequence
     ///so the knob displays something.
     if (sequenceFromFiles.empty()) {
-        sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(str));
+        sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(str.toStdString()));
     }
     
     SequenceParsing::SequenceFromFiles oldFiles(false);
@@ -302,18 +302,18 @@ void OutputFile_KnobGui::open_file(bool openSequence)
     
     SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString());
     if (dialog.exec()) {
-        QString oldPattern = _lineEdit->text();
-        QString newPattern = dialog.filesToSave();
-        updateLastOpened(SequenceParsing::removePath(oldPattern));
+        std::string oldPattern = _lineEdit->text().toStdString();
+        std::string newPattern = dialog.filesToSave();
+        updateLastOpened(SequenceParsing::removePath(oldPattern).c_str());
         
-        pushUndoCommand(new KnobUndoCommand<std::string>(this,oldPattern.toStdString(),newPattern.toStdString()));
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,oldPattern,newPattern));
     }
 }
 
 void OutputFile_KnobGui::updateLastOpened(const QString &str)
 {
-    QString withoutPath = str;
-    _lastOpened = SequenceParsing::removePath(withoutPath);
+    std::string withoutPath = str.toStdString();
+    _lastOpened = SequenceParsing::removePath(withoutPath).c_str();
     getGui()->updateLastSequenceSavedPath(_lastOpened);
 
 }
@@ -435,8 +435,8 @@ void Path_KnobGui::open_file()
 
 void Path_KnobGui::updateLastOpened(const QString &str)
 {
-    QString withoutPath = str;
-    _lastOpened = SequenceParsing::removePath(withoutPath);
+    std::string withoutPath = str.toStdString();
+    _lastOpened = SequenceParsing::removePath(withoutPath).c_str();
 }
 
 void Path_KnobGui::updateGUI(int /*dimension*/)

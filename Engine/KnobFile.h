@@ -52,7 +52,7 @@ public:
     
     bool isInputImageFile() const { return _isInputImage; }
     
-    void setFiles(const QStringList& files);
+    void setFiles(const std::vector<std::string> & files);
 
     ///Set the files and updates the pattern on gui
     void setFiles(const SequenceParsing::SequenceFromFiles& fileSequence);

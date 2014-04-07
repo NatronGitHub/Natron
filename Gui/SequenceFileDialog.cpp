@@ -63,7 +63,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
 
-#include "Engine/SequenceParsing.h"
+#include <SequenceParsing.h>
 
 
 
@@ -98,9 +98,9 @@ namespace {
     struct NameMappingCompareFirstNoPath {
         NameMappingCompareFirstNoPath(const QString &val) : val_(val) {}
         bool operator()(const SequenceFileDialog::NameMappingElement& elem) const {
-            QString unpathed = elem.first;
+            std::string unpathed = elem.first.toStdString();
             SequenceParsing::removePath(unpathed);
-            return val_ == unpathed;
+            return val_.toStdString() == unpathed;
         }
     private:
         QString val_;
@@ -514,10 +514,10 @@ void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext) {
         }
         if (sequenceModeEnabled()) {
             //find out if there's already a # character
-            QString unpathed = str;
+            std::string unpathed = str.toStdString();
             SequenceParsing::removePath(unpathed);
-            pos = unpathed.indexOf(QChar('#'));
-            if(pos == -1){
+            pos = unpathed.find_first_of('#');
+            if((size_t)pos == std::string::npos){
                 str.append("#");
             }
         }
@@ -601,30 +601,30 @@ void SequenceFileDialog::selectionChanged() {
             SequenceParsing::SequenceFromFiles sequence(false);
             _proxy->getSequenceFromFilesForFole(itemText, &sequence);
             if (!sequence.empty()) {
-                _selectionLineEdit->setText(sequence.generateValidSequencePattern());
+                _selectionLineEdit->setText(sequence.generateValidSequencePattern().c_str());
             } else {
                 _selectionLineEdit->setText(itemText);
             }
         }
     } else if (_dialogMode == SAVE_DIALOG) {
         QString lineEditText = _selectionLineEdit->text();
-        SequenceParsing::FileNameContent content(lineEditText);
+        SequenceParsing::FileNameContent content(lineEditText.toStdString());
         if (_model->isDir(mappedIndex)) {
-            if (!content.fileName().isEmpty()) {
+            if (!content.fileName().empty()) {
                 QDir dir(itemText);
-                _selectionLineEdit->setText(dir.absoluteFilePath(content.fileName()));
+                _selectionLineEdit->setText(dir.absoluteFilePath(content.fileName().c_str()));
                 
             }
         } else {
             SequenceParsing::SequenceFromFiles sequence(false);
             _proxy->getSequenceFromFilesForFole(itemText, &sequence);
             if (!sequence.empty()) {
-                _selectionLineEdit->setText(sequence.generateValidSequencePattern());
+                _selectionLineEdit->setText(sequence.generateValidSequencePattern().c_str());
             } else {
                 _selectionLineEdit->setText(itemText);
             }
             for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
-                if (_fileExtensionCombo->itemText(i) == sequence.fileExtension()) {
+                if (_fileExtensionCombo->itemText(i).toStdString() == sequence.fileExtension()) {
                     _fileExtensionCombo->setCurrentIndex_no_emit(i);
                     break;
                 }
@@ -672,9 +672,9 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     } else {
         ///find out if there's already a filename typed by the user
         ///and append it to the new path
-        QString unpathed = _selectionLineEdit->text();
+        std::string unpathed = _selectionLineEdit->text().toStdString();
         SequenceParsing::removePath(unpathed);
-        _selectionLineEdit->setText(newDirectory + unpathed);
+        _selectionLineEdit->setText(newDirectory + unpathed.c_str());
     }
     
     _selectionLineEdit->blockSignals(false);
@@ -782,7 +782,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     }
 
     /*if we reach here, this is a valid file and we need to take actions*/
-    SequenceParsing::FileNameContent fileContent(path);
+    SequenceParsing::FileNameContent fileContent(path.toStdString());
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
         if (_frameSequences[i]->tryInsertFile(fileContent)) {
             ///don't accept the file in the proxy because it already belongs to a sequence
@@ -797,27 +797,19 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
 
 QString SequenceDialogProxyModel::getUserFriendlyFileSequencePatternForFile(const QString& filename,quint64* sequenceSize) const {
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
-        if (_frameSequences[i]->contains(filename)) {
+        if (_frameSequences[i]->contains(filename.toStdString())) {
             *sequenceSize = _frameSequences[i]->getEstimatedTotalSize();
-            return _frameSequences[i]->generateUserFriendlySequencePattern();
+            return _frameSequences[i]->generateUserFriendlySequencePattern().c_str();
         }
     }
     *sequenceSize = 0;
     return filename;
 }
 
-QStringList SequenceDialogProxyModel::getSequenceFilesForFile(const QString& file) const {
-    for (U32 i = 0; i < _frameSequences.size(); ++i) {
-        if (_frameSequences[i]->contains(file)) {
-            return _frameSequences[i]->getFilesList();
-        }
-    }
-    return QStringList(file);
-}
 
 void SequenceDialogProxyModel::getSequenceFromFilesForFole(const QString& file,SequenceParsing::SequenceFromFiles* sequence) const {
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
-        if (_frameSequences[i]->contains(file)) {
+        if (_frameSequences[i]->contains(file.toStdString())) {
             *sequence = *_frameSequences[i];
             break;
         }
@@ -1223,8 +1215,8 @@ void SequenceFileDialog::openSelectedFiles(){
     if (_dialogMode != DIR_DIALOG) {
         if(!isDirectory(str)){
             if (_dialogMode == OPEN_DIALOG) {
-                QStringList files = selectedFiles();
-                if(!files.isEmpty()){
+                std::vector<std::string> files = selectedFiles();
+                if(!files.empty()){
                     QDialog::accept();
                 }
             } else {
@@ -1245,16 +1237,16 @@ void SequenceFileDialog::openSelectedFiles(){
                 }
                 
                 SequenceParsing::SequenceFromPattern sequence;
-                SequenceParsing::filesListFromPattern(str, &sequence);
+                SequenceParsing::filesListFromPattern(str.toStdString(), &sequence);
                 if (sequence.size() > 0) {
                     
                     QString text;
                     if (sequence.size() == 1) {
-                        std::map<int,QString>& views = sequence.begin()->second;
+                        std::map<int,std::string>& views = sequence.begin()->second;
                         assert(!views.empty());
                         
                         text = "The file ";
-                        text.append(views.begin()->second);
+                        text.append(views.begin()->second.c_str());
                         text.append(" already exists.\n Would you like to replace it ?");
                     } else {
                         text = "The sequence ";
@@ -1286,8 +1278,8 @@ void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter){
         QString str = _selectionLineEdit->text();
         if(!isDirectory(str)){
-            QStringList files = selectedFiles();
-            if(!files.isEmpty()){
+            std::vector<std::string> files = selectedFiles();
+            if(!files.empty()){
                 QDialog::accept();
             }
         }else{
@@ -1475,7 +1467,7 @@ QStringList SequenceFileDialog::history() const{
     return currentHistory;
 }
 
-QStringList SequenceFileDialog::selectedFiles() {
+std::vector<std::string> SequenceFileDialog::selectedFiles() {
     return getSelectedFilesAsSequence().getFilesList();
 }
 
@@ -1493,15 +1485,15 @@ SequenceParsing::SequenceFromFiles SequenceFileDialog::getSelectedFilesAsSequenc
             //if nothing is selected, pick whatever the line edit tells us
             QString lineEditTxt = _selectionLineEdit->text();
             SequenceParsing::SequenceFromPattern seqFromPattern;
-            SequenceParsing::filesListFromPattern(lineEditTxt, &seqFromPattern);
-            QStringList filesList = SequenceParsing::sequenceFromPatternToFilesList(seqFromPattern);
+            SequenceParsing::filesListFromPattern(lineEditTxt.toStdString(), &seqFromPattern);
+            StringList filesList = SequenceParsing::sequenceFromPatternToFilesList(seqFromPattern);
             SequenceParsing::SequenceFromFiles ret(false);
-            for (int i = 0; i < filesList.size(); ++i) {
+            for (U32 i = 0; i < filesList.size(); ++i) {
                 SequenceParsing::FileNameContent content(filesList.at(i));
                 bool ok = ret.tryInsertFile(content);
                 if (!ok) {
-                    qDebug() << "Failure to add " << filesList.at(i) << " to the sequence with the following pattern: "
-                    << ret.generateValidSequencePattern() << ". (Debug info: the pattern on the left should be equal to: "
+                    qDebug() << "Failure to add " << filesList.at(i).c_str() << " to the sequence with the following pattern: "
+                    << ret.generateValidSequencePattern().c_str() << ". (Debug info: the pattern on the left should be equal to: "
                     << lineEditTxt << " , if not, this is probably a bug in the sequence parsing.";
                 }
             }
@@ -1513,12 +1505,12 @@ SequenceParsing::SequenceFromFiles SequenceFileDialog::getSelectedFilesAsSequenc
         if (indexes.count() == 1) {
             QModelIndex sequenceIndex = mapToSource(indexes.at(0));
             QString absoluteFileName = sequenceIndex.data(QFileSystemModel::FilePathRole).toString();
-            seq.tryInsertFile(SequenceParsing::FileNameContent(absoluteFileName));
+            seq.tryInsertFile(SequenceParsing::FileNameContent(absoluteFileName.toStdString()));
         } else {
             //if nothing is selected, pick whatever the line edit tells us
             QString lineEditTxt = _selectionLineEdit->text();
             if (QFile::exists(lineEditTxt)) {
-                seq.tryInsertFile(SequenceParsing::FileNameContent(lineEditTxt));
+                seq.tryInsertFile(SequenceParsing::FileNameContent(lineEditTxt.toStdString()));
             }
         }
         return seq;
@@ -1526,9 +1518,9 @@ SequenceParsing::SequenceFromFiles SequenceFileDialog::getSelectedFilesAsSequenc
 
 }
 
-QString SequenceFileDialog::filesToSave() {
+std::string SequenceFileDialog::filesToSave() {
     assert(_dialogMode == SAVE_DIALOG);
-    return _selectionLineEdit->text();
+    return _selectionLineEdit->text().toStdString();
 }
 
 QDir SequenceFileDialog::currentDirectory() const{
@@ -2116,37 +2108,31 @@ void FileDialogComboBox::paintEvent(QPaintEvent *){
 }
 
 
-std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes){
-    std::vector<QStringList> ret;
-    typedef std::map<QString,std::map<QString,QStringList> >  Sequences; //<common name, <extention,files list> >
+std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes){
     
-    std::vector< SequenceParsing::SequenceFromFiles > sequences;
+    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
 
     for (int i = 0; i < files.size(); ++i) {
-        SequenceParsing::FileNameContent fileContent(files.at(i));
+        SequenceParsing::FileNameContent fileContent(files.at(i).toStdString());
         
-        if (!supportedFileTypes.contains(fileContent.getExtension(),Qt::CaseInsensitive)) {
+        if (!supportedFileTypes.contains(fileContent.getExtension().c_str(),Qt::CaseInsensitive)) {
             continue;
         }
         
         bool found = false;
 
         for (U32 j = 0; j < sequences.size(); ++j) {
-            if (sequences[j].tryInsertFile(fileContent)) {
+            if (sequences[j]->tryInsertFile(fileContent)) {
                 found = true;
                 break;
             }
         }
         if (!found) {
-            SequenceParsing::SequenceFromFiles seq(fileContent,false);
+            boost::shared_ptr<SequenceParsing::SequenceFromFiles> seq(new SequenceParsing::SequenceFromFiles(fileContent,false));
             sequences.push_back(seq);
         }
     }
-    
-    for (U32 i = 0; i < sequences.size(); ++i) {
-        ret.push_back(sequences[i].getFilesList());
-    }
-    return ret;
+    return sequences;
 }
 
 void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringList* files){

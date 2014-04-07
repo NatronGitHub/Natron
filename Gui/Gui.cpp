@@ -50,7 +50,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Plugin.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
-#include "Engine/SequenceParsing.h"
+#include "SequenceParsing.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
@@ -1410,25 +1410,25 @@ void Gui::newProject() {
 void Gui::openProject() {
     std::vector<std::string> filters;
     filters.push_back(NATRON_PROJECT_FILE_EXT);
-    QStringList selectedFiles =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
+    std::vector<std::string> selectedFiles =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
     
     if (selectedFiles.size() > 0) {
         //clearing current graph
-        QString file = selectedFiles.at(0);
-        QString path = SequenceParsing::removePath(file);
+        std::string file = selectedFiles.at(0);
+        std::string path = SequenceParsing::removePath(file);
         
         ///if the current graph has no value, just load the project in the same window
         if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
-            _imp->_appInstance->getProject()->loadProject(path, file);
+            _imp->_appInstance->getProject()->loadProject(path.c_str(), file.c_str());
         } else {
             AppInstance* newApp = appPTR->newAppInstance();
-            newApp->getProject()->loadProject(path, file);
+            newApp->getProject()->loadProject(path.c_str(), file.c_str());
         }
         
         QSettings settings;
         QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll(file);
-        recentFiles.prepend(file);
+        recentFiles.removeAll(file.c_str());
+        recentFiles.prepend(file.c_str());
         while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
             recentFiles.removeLast();
         
@@ -1462,19 +1462,19 @@ bool Gui::saveProject(){
 bool Gui::saveProjectAs(){
     std::vector<std::string> filter;
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    QString outFile = popSaveFileDialog(false, filter,_imp->_lastSaveProjectOpenedDir.toStdString());
+    std::string outFile = popSaveFileDialog(false, filter,_imp->_lastSaveProjectOpenedDir.toStdString());
     if (outFile.size() > 0) {
-        if (outFile.indexOf("." NATRON_PROJECT_FILE_EXT) == -1) {
+        if (outFile.find("." NATRON_PROJECT_FILE_EXT) == std::string::npos) {
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
-        QString path = SequenceParsing::removePath(outFile);
-        _imp->_appInstance->getProject()->saveProject(path,outFile,false);
+        std::string path = SequenceParsing::removePath(outFile);
+        _imp->_appInstance->getProject()->saveProject(path.c_str(),outFile.c_str(),false);
         
-        QString filePath = path + outFile;
+        std::string filePath = path + outFile;
         QSettings settings;
         QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll(filePath);
-        recentFiles.prepend(filePath);
+        recentFiles.removeAll(filePath.c_str());
+        recentFiles.prepend(filePath.c_str());
         while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
             recentFiles.removeLast();
         
@@ -1493,9 +1493,9 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
     for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    QStringList files = popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString());
-    if(!files.isEmpty()){
-        QString first = files.at(0);
+    std::vector<std::string> files = popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString());
+    if(!files.empty()){
+        QString first = files.at(0).c_str();
         std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
 
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
@@ -1541,9 +1541,9 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
     for (std::map<std::string,std::string>::const_iterator it = writersForFormat.begin(); it!=writersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    QString file = popSaveFileDialog(true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString());
-    if(!file.isEmpty()){
-        QString fileCpy = file;
+    std::string file = popSaveFileDialog(true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString());
+    if(!file.empty()){
+        QString fileCpy = file.c_str();
         std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
@@ -1559,7 +1559,7 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
                     boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
                     assert(fk);
                     if(fk->isOutputImageFile()){
-                        fk->setValue(file.toStdString(),0);
+                        fk->setValue(file,0);
                         break;
                     }
                 }
@@ -1572,16 +1572,17 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
     return ret;
 }
 
-QStringList Gui::popOpenFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
+std::vector<std::string> Gui::popOpenFileDialog(bool sequenceDialog,
+                                                const std::vector<std::string>& initialfilters,const std::string& initialDir) {
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir);
     if (dialog.exec()) {
         return dialog.selectedFiles();
     }else{
-        return QStringList();
+        return std::vector<std::string>();
     }
 }
 
-QString Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
+std::string Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
     SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir);
     if(dialog.exec()){
         return dialog.filesToSave();

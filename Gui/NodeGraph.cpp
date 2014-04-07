@@ -31,6 +31,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QLineEdit>
 #include <QDebug>
 
+#include <SequenceParsing.h>
+
 #include "Engine/AppManager.h"
 
 #include "Engine/VideoEngine.h"
@@ -1558,7 +1560,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
         supportedExtensions.push_back(it->first.c_str());
     }
     
-    std::vector<QStringList> files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
+    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
     
     for(U32 i = 0 ; i < files.size();++i){
         
@@ -1566,10 +1568,10 @@ void NodeGraph::dropEvent(QDropEvent* event){
         std::map<std::string,std::string> readersForFormat;
         appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
         
-        QStringList list = files[i];
+        boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence = files[i];
         
         ///find a decoder for this file type
-        QString first = list.at(0);
+        QString first = sequence->getFilesList()[0].c_str();
         std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
         
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
@@ -1583,11 +1585,11 @@ void NodeGraph::dropEvent(QDropEvent* event){
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
                     assert(fk);
                     
-                    if(!fk->isAnimationEnabled() && list.size() > 1){
+                    if(!fk->isAnimationEnabled() && sequence->count() > 1){
                         errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
                         break;
                     } else {
-                        fk->setFiles(list);
+                        fk->setFiles(sequence->getFilesList());
                         if (n->isPreviewEnabled()) {
                             n->computePreviewImage(_gui->getApp()->getTimeLine()->currentFrame());
                         }
@@ -1853,35 +1855,6 @@ void NodeGraph::clearExceedingUndoRedoEvents()
                 }
             }
             --index;
-        }
-        
-        index = _undoStack->index();
-
-        while (index < _undoStack->count()) {
-            const QUndoCommand* cmd = _undoStack->command(index);
-            const AddCommand* addCmd = dynamic_cast<const AddCommand*>(cmd);
-            const RemoveCommand* rmvCmd = dynamic_cast<const RemoveCommand*>(cmd);
-            const MoveCommand* mvCmd = dynamic_cast<const MoveCommand*>(cmd);
-            const ConnectCommand* cnctCmd = dynamic_cast<const ConnectCommand*>(cmd);
-            if (addCmd && !addCmd->isDirty()) {
-                if (addCmd->getNode() == toDelete) {
-                    addCmd->setDirty();
-                    break;
-                }
-            } else if (mvCmd && !mvCmd->isDirty()) {
-                if (mvCmd->getNode() == toDelete) {
-                    mvCmd->setDirty();
-                }
-            }  else if (cnctCmd && !cnctCmd->isDirty()) {
-                if (cnctCmd->containsNode(toDelete)) {
-                    cnctCmd->setDirty();
-                }
-            } else if (rmvCmd && !rmvCmd->isDirty()) {
-                if (rmvCmd->getNode() == toDelete) {
-                    rmvCmd->setDirty();
-                }
-            }
-            ++index;
         }
         
         _nodesTrash.erase(_nodesTrash.begin());

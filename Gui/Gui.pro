@@ -31,6 +31,7 @@ DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 DEPENDPATH += $$PWD/../Engine
 DEPENDPATH += $$PWD/../Global

@@ -17,7 +17,7 @@
 
 #include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/SequenceParsing.h"
+#include <SequenceParsing.h>
 #include "Global/QtCompat.h"
 
 using namespace Natron;
@@ -52,10 +52,10 @@ const std::string& File_Knob::typeName() const
 }
 
 
-void File_Knob::setFiles(const QStringList& files) {
+void File_Knob::setFiles(const std::vector<std::string>& files) {
 
     SequenceParsing::SequenceFromFiles sequence(false);
-    for (int i = 0; i < files.size(); ++i) {
+    for (U32 i = 0; i < files.size(); ++i) {
         sequence.tryInsertFile(SequenceParsing::FileNameContent(files.at(i)));
     }
     setFiles(sequence);
@@ -65,15 +65,15 @@ void File_Knob::setFilesInternal(const SequenceParsing::SequenceFromFiles& fileS
     KnobI::removeAnimation(0);
     if (!fileSequence.empty()) {
         if (isAnimationEnabled()) {
-            const std::map<int, QString>& filesMap  = fileSequence.getFrameIndexes();
+            const std::map<int, std::string>& filesMap  = fileSequence.getFrameIndexes();
             if (!filesMap.empty()) {
-                for (std::map<int, QString>::const_iterator it = filesMap.begin(); it!=filesMap.end(); ++it) {
-                    setValueAtTime(it->first, it->second.toStdString(),0);
+                for (std::map<int, std::string>::const_iterator it = filesMap.begin(); it!=filesMap.end(); ++it) {
+                    setValueAtTime(it->first, it->second,0);
                 }
             } else {
                 ///the sequence has no indexes,if it has one file set a keyframe at time 0 for the single file
                 if (fileSequence.isSingleFile()) {
-                    setValueAtTime(0, fileSequence.getFilesList().at(0).toStdString(),0);
+                    setValueAtTime(0, fileSequence.getFilesList().at(0),0);
                 }
             }
             
@@ -87,7 +87,7 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
     
     beginValueChange(Natron::PLUGIN_EDITED);
     setFilesInternal(fileSequence);
-    _pattern = fileSequence.generateValidSequencePattern();
+    _pattern = fileSequence.generateValidSequencePattern().c_str();
     
     ///necessary for the changedParam call!
     setValue(_pattern.toStdString(),0,true);
@@ -203,7 +203,7 @@ const std::string& OutputFile_Knob::typeName() const
 }
 
 QString OutputFile_Knob::generateFileNameAtTime(SequenceTime time,int view) const {
-    return SequenceParsing::generateFileNameFromPattern(getValue(0).c_str(), time, view);
+    return SequenceParsing::generateFileNameFromPattern(getValue(0), time, view).c_str();
 }
 
 /***********************************PATH_KNOB*****************************************/

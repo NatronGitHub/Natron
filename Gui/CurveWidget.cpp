@@ -3047,15 +3047,15 @@ void ImportExportCurveDialog::open_file()
     if(_isExportDialog) {
         SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::SAVE_DIALOG);
         if (dialog.exec()) {
-            QString file = dialog.filesToSave();
-            _fileLineEdit->setText(file);
+            std::string file = dialog.filesToSave();
+            _fileLineEdit->setText(file.c_str());
         }
     } else {
         SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG);
         if (dialog.exec()) {
-            QStringList files = dialog.selectedFiles();
-            if(!files.isEmpty()) {
-                _fileLineEdit->setText(files.at(0));
+            std::vector<std::string> files = dialog.selectedFiles();
+            if(!files.empty()) {
+                _fileLineEdit->setText(files.at(0).c_str());
             }
         }
     }

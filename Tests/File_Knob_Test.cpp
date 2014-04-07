@@ -10,7 +10,7 @@
 #include <QDir>
 
 #include "Engine/StandardPaths.h"
-#include "Engine/SequenceParsing.h"
+#include <SequenceParsing.h>
 
 using namespace SequenceParsing;
 
@@ -21,6 +21,10 @@ TEST(SequenceParsing,TestHashCharacter) {
     /////// WARNING: If this test fails it *may* left some files on disk
     ////// which can cause this test to fail on next run. For safety, if the test fails,
     ////// please delete the files indicated by the location that should've been printed on stdout.
+    
+    QStringList fileNames;
+
+    
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
     QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
@@ -30,45 +34,49 @@ TEST(SequenceParsing,TestHashCharacter) {
     dir.cd("NatronUnitTest");
     for (int i = 0; i < sequenceItemsCount; ++i) {
         QFile file(dir.absoluteFilePath("test_" + QString::number(i) + ".unittest"));
+        fileNames << file.fileName();
         std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     SequenceFromPattern sequence;
-    filesListFromPattern(dir.absoluteFilePath("test_#.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_#.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_##.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_##.unittest").toStdString(), &sequence);
     EXPECT_EQ(0,(int)sequence.size());
     
     ///test that a single file matching pattern would match a single file only.
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_0.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_0.unittest").toStdString(), &sequence);
     EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
-    for (int i = 0; i < sequenceItemsCount; ++i) {
-        dir.remove("test_" + QString::number(i) + ".unittest");
+    for (int i = 0; i < fileNames.size(); ++i) {
+        QFile::remove(fileNames[i]);
     }
     
-    
+    fileNames.clear();
     ///re-create all 11 files withtout padding
     sequenceItemsCount = 11;
     for (int i = 0; i < sequenceItemsCount; ++i) {
         QFile file(dir.absoluteFilePath("test_" + QString::number(i) + ".unittest"));
+        fileNames << file.fileName();
         std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_##.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_##.unittest").toStdString(), &sequence);
     EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
-    for (int i = 0; i < sequenceItemsCount; ++i) {
-        dir.remove("test_" + QString::number(i) + ".unittest");
+    for (int i = 0; i < fileNames.size(); ++i) {
+        QFile::remove(fileNames[i]);
     }
     
+    
+    fileNames.clear();
     ///re-create 11 files with padding
     for (int i = 0; i < sequenceItemsCount; ++i) {
         QString number = QString::number(i);
@@ -76,25 +84,21 @@ TEST(SequenceParsing,TestHashCharacter) {
             number.prepend('0');
         }
         QFile file(dir.absoluteFilePath("test_" + number + ".unittest"));
+        fileNames << file.fileName();
         std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_##.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_##.unittest").toStdString(), &sequence);
     EXPECT_EQ(11,(int)sequence.size());
     
     ///delete files
-    for (int i = 0; i < sequenceItemsCount; ++i) {
-        QString number = QString::number(i);
-        while (number.size() < 2) {
-            number.prepend('0');
-        }
-
-        dir.remove("test_" + number + ".unittest");
+    for (int i = 0; i < fileNames.size(); ++i) {
+        QFile::remove(fileNames[i]);
     }
     
-    
+    fileNames.clear();
     ///now test with mixed paddings
     for (int i = 0; i < sequenceItemsCount; ++i) {
         QString number = QString::number(i);
@@ -102,28 +106,25 @@ TEST(SequenceParsing,TestHashCharacter) {
             number.prepend('0');
         }
         QFile file(dir.absoluteFilePath(QString::number(i) + "test_" + number + ".unittest"));
+        fileNames << file.fileName();
         std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("#test_##.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("#test_##.unittest").toStdString(), &sequence);
     EXPECT_EQ(11,(int)sequence.size());
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("##test_##.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("##test_##.unittest").toStdString(), &sequence);
     EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
-    for (int i = 0; i < sequenceItemsCount; ++i) {
-        QString number = QString::number(i);
-        while (number.size() < 2) {
-            number.prepend('0');
-        }
-        
-        dir.remove(QString::number(i) + "test_" + number + ".unittest");
+    for (int i = 0; i < fileNames.size(); ++i) {
+        QFile::remove(fileNames[i]);
     }
     
+    fileNames.clear();
     
     ///now test with mixed false paddings
     for (int i = 0; i < sequenceItemsCount; ++i) {
@@ -132,47 +133,43 @@ TEST(SequenceParsing,TestHashCharacter) {
             number.prepend('0');
         }
         QFile file(dir.absoluteFilePath(QString::number(i+1) + "test_" + number + ".unittest"));
+        fileNames << file.fileName();
         std::cout << "Creating file: " << file.fileName().toStdString() << std::endl;
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("#test_##.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("#test_##.unittest").toStdString(), &sequence);
     EXPECT_EQ(0,(int)sequence.size());
     ///delete files
-    for (int i = 0; i < sequenceItemsCount; ++i) {
-        QString number = QString::number(i);
-        while (number.size() < 2) {
-            number.prepend('0');
-        }
-        
-        dir.remove(QString::number(i+1) + "test_" + number + ".unittest");
+    for (int i = 0; i < fileNames.size(); ++i) {
+        QFile::remove(fileNames[i]);
     }
     
     ///now test with filenames containing only digits
-    QStringList fileNames;
-    fileNames << "12345.unittest";
+    fileNames.clear();
     {
         QFile file(dir.absoluteFilePath("12345.unittest"));
+        fileNames << file.fileName();
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
-    fileNames << "93830.unittest";
     {
         QFile file(dir.absoluteFilePath("93830.unittest"));
+        fileNames << file.fileName();
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
-    fileNames << "03829.unittest";
     {
         QFile file(dir.absoluteFilePath("03829.unittest"));
+        fileNames << file.fileName();
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
-    fileNames << "003830.unittest";
     {
         QFile file(dir.absoluteFilePath("003830.unittest"));
+        fileNames << file.fileName();
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("#####.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("#####.unittest").toStdString(), &sequence);
     EXPECT_EQ(3,(int)sequence.size());
     
     for (int i = 0; i < fileNames.size(); ++i) {
@@ -200,11 +197,11 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     SequenceFromPattern sequence;
-    filesListFromPattern(dir.absoluteFilePath("test_%01d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_%01d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_%02d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_%02d.unittest").toStdString(), &sequence);
     EXPECT_EQ(0,(int)sequence.size());
     
     ///delete files
@@ -225,12 +222,12 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_%04d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_%04d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
 
     ///testing wrong pattern
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("%02dtest_%04d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("%02dtest_%04d.unittest").toStdString(), &sequence);
     EXPECT_EQ(0,(int)sequence.size());
     
     ///delete files
@@ -260,17 +257,17 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
         file.open(QIODevice::WriteOnly | QIODevice::Text);
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("%02dtest_%04d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("%02dtest_%04d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     
     ///try mixing printf-like syntax with hashes characters (###)
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("##test_%04d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("##test_%04d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("#test_%04d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("#test_%04d.unittest").toStdString(), &sequence);
     EXPECT_EQ(1,(int)sequence.size());
     
     ///delete files
@@ -313,7 +310,7 @@ TEST(SequenceParsing,TestViews) {
     }
     
     SequenceFromPattern sequence;
-    filesListFromPattern(dir.absoluteFilePath("test_%01d.%V.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_%01d.%V.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_EQ(2,(int)it->second.size());
@@ -335,7 +332,7 @@ TEST(SequenceParsing,TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("weird.%V.test_%01d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("weird.%V.test_%01d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_EQ(2,(int)it->second.size());
@@ -359,7 +356,7 @@ TEST(SequenceParsing,TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("test_%01d.%v.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("test_%01d.%v.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_EQ(2,(int)it->second.size());
@@ -382,7 +379,7 @@ TEST(SequenceParsing,TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("weird%vtest_%01d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("weird%vtest_%01d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
 
     for (int i = 0; i < filesCreated.size(); ++i) {
@@ -402,7 +399,7 @@ TEST(SequenceParsing,TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("weird.%v.test_%01d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("weird.%v.test_%01d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_EQ(2,(int)it->second.size());
@@ -445,7 +442,7 @@ TEST(SequenceParsing,TestViews) {
         }
     }
     sequence.clear();
-    filesListFromPattern(dir.absoluteFilePath("weird.%v.test_%01d.unittest"), &sequence);
+    filesListFromPattern(dir.absoluteFilePath("weird.%v.test_%01d.unittest").toStdString(), &sequence);
     EXPECT_EQ(sequenceItemsCount,(int)sequence.size());
     for (SequenceFromPattern::iterator it = sequence.begin(); it!=sequence.end(); ++it) {
         EXPECT_EQ(5, (int)it->second.size());
@@ -458,21 +455,21 @@ TEST(SequenceParsing,TestViews) {
 }
 
 TEST(SequenceParsing,OutputSequence) {
-    QString pattern = "weird.%v.test_%01d.unittest";
-    QString filename = generateFileNameFromPattern(pattern, 120, 0);
-    EXPECT_EQ(QString("weird.l.test_120.unittest"),filename);
+    std::string pattern = "weird.%v.test_%01d.unittest";
+    std::string filename = generateFileNameFromPattern(pattern, 120, 0);
+    EXPECT_EQ("weird.l.test_120.unittest",filename);
 
     pattern = "####.jpg";
     filename = generateFileNameFromPattern(pattern, 120, 0);
-    EXPECT_EQ(QString("0120.jpg"),filename);
+    EXPECT_EQ("0120.jpg",filename);
 
     pattern = "###lalala%04d.jpg";
     filename = generateFileNameFromPattern(pattern, 120, 0);
-    EXPECT_EQ(QString("120lalala0120.jpg"),filename);
+    EXPECT_EQ("120lalala0120.jpg",filename);
 
     pattern = "####%V.jpg";
     filename = generateFileNameFromPattern(pattern, 120, 5);
-    EXPECT_EQ(QString("0120view5.jpg"),filename);
+    EXPECT_EQ("0120view5.jpg",filename);
 
     ///test with a non-pattern
     pattern = "mysequence10.png";
@@ -482,7 +479,7 @@ TEST(SequenceParsing,OutputSequence) {
 
 
 TEST(FileNameContent,GeneralTest) {
-    QString file1("/Users/Test/mysequence001.jpg");
+    std::string file1("/Users/Test/mysequence001.jpg");
     
     ///first off test-out the API of FileNameContent, see if it is working
     ///correctly for base functionnality
@@ -494,13 +491,13 @@ TEST(FileNameContent,GeneralTest) {
     ASSERT_TRUE(file1Content.hasSingleNumber());
     ASSERT_FALSE(file1Content.isFileNameComposedOnlyOfDigits());
     ASSERT_TRUE(file1Content.getFilePattern() == "mysequence###0.jpg");
-    QString numberStr;
+    std::string numberStr;
     ASSERT_TRUE(file1Content.getNumberByIndex(0, &numberStr));
     ASSERT_TRUE(numberStr == "001");
-    ASSERT_TRUE(numberStr.toInt() == 1);
+    ASSERT_TRUE(QString(numberStr.c_str()).toInt() == 1);
     
     ///now attempt to match it to a second filename
-    QString file2("/Users/Test/mysequence002.jpg");
+    std::string file2("/Users/Test/mysequence002.jpg");
     FileNameContent file2Content(file2);
     std::vector<int> frameNumberIndex;
     ASSERT_TRUE(file1Content.matchesPattern(file2Content, &frameNumberIndex));
@@ -532,7 +529,7 @@ TEST(SequenceFromFiles,SimpleTest) {
         while (number.size() < 3) {
             number.prepend('0');
         }
-        bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/mysequence" + number + ".jpg"));
+        bool ok = sequence.tryInsertFile(FileNameContent(QString("/Users/Test/mysequence" + number + ".jpg").toStdString()));
         if (i == 0) {
             EXPECT_FALSE(ok);
         } else {
@@ -557,7 +554,7 @@ TEST(SequenceFromFiles,ComplexTest) {
             while (number.size() < 3) {
                 number.prepend('0');
             }
-            bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/00mysequence" + number + ".jpg"));
+            bool ok = sequence.tryInsertFile(FileNameContent(QString("/Users/Test/00mysequence" + number + ".jpg").toStdString()));
             EXPECT_TRUE(ok);
         }
         EXPECT_EQ("/Users/Test/00mysequence###.jpg", sequence.generateValidSequencePattern());
@@ -571,7 +568,8 @@ TEST(SequenceFromFiles,ComplexTest) {
             while (number.size() < 3) {
                 number.prepend('0');
             }
-            bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/00my"+ number + "sequence" + number + ".jpg"));
+            bool ok = sequence.tryInsertFile(FileNameContent(QString("/Users/Test/00my"+ number + "sequence" + number + ".jpg")
+                                                             .toStdString()));
             EXPECT_TRUE(ok);
         }
         EXPECT_EQ("/Users/Test/00my###sequence###.jpg", sequence.generateValidSequencePattern());
@@ -587,7 +585,8 @@ TEST(SequenceFromFiles,ComplexTest) {
             while (number.size() < 3) {
                 number.prepend('0');
             }
-            bool ok = sequence.tryInsertFile(FileNameContent("/Users/Test/00my"+ originalNumber + "sequence" + number + ".jpg"));
+            bool ok = sequence.tryInsertFile(FileNameContent(QString("/Users/Test/00my"+ originalNumber + "sequence" + number + ".jpg")
+                                                             .toStdString()));
             EXPECT_TRUE(ok);
         }
         EXPECT_EQ("/Users/Test/00my#sequence###.jpg", sequence.generateValidSequencePattern());

@@ -10,3 +10,6 @@
 [submodule "Gui/Resources/OpenColorIO-Configs"]
 	path = Gui/Resources/OpenColorIO-Configs
 	url = https://github.com/MrKepzie/OpenColorIO-Configs.git
+[submodule "libs/SequenceParsing"]
+	path = libs/SequenceParsing
+	url = https://github.com/MrKepzie/SequenceParsing

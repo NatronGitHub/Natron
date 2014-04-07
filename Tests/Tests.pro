@@ -24,6 +24,7 @@ INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 ################
 # Gui

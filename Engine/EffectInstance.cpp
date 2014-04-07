@@ -930,7 +930,7 @@ int EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const {
 }
 
 
-void EffectInstance::setInputFilesForReader(const QStringList& files) {
+void EffectInstance::setInputFilesForReader(const std::vector<std::string>& files) {
     
     if (!isReader()) {
         return;
@@ -952,7 +952,7 @@ void EffectInstance::setInputFilesForReader(const QStringList& files) {
     }
 }
 
-void EffectInstance::setOutputFilesForWriter(const QString& pattern) {
+void EffectInstance::setOutputFilesForWriter(const std::string& pattern) {
     
     if (!isWriter()) {
         return;
@@ -964,7 +964,7 @@ void EffectInstance::setOutputFilesForWriter(const QString& pattern) {
             boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
             assert(fk);
             if (fk->isOutputImageFile()) {
-                fk->setValue(pattern.toStdString(),0);
+                fk->setValue(pattern,0);
                 break;
             }
         }

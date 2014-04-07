@@ -205,9 +205,7 @@ public:
     }
     
     QString getUserFriendlyFileSequencePatternForFile(const QString& filename,quint64* sequenceSize) const;
-    
-    QStringList getSequenceFilesForFile(const QString& file) const;
-    
+        
     void getSequenceFromFilesForFole(const QString& file,SequenceParsing::SequenceFromFiles* sequence) const;
 
     void clear(){_frameSequences.clear();}
@@ -278,14 +276,14 @@ public:
     
     ///Returns the selected sequence.
     ///Works only in OPEN_DIALOG mode.
-    QStringList selectedFiles();
+    std::vector<std::string> selectedFiles();
     
     ///Same as selectedFiles() but more convenient when the dialog is in sequence mode.
     SequenceParsing::SequenceFromFiles getSelectedFilesAsSequence();
     
     ///Returns  the content of the selection line edit.
     ///Works only in SAVE_DIALOG mode.
-    QString filesToSave();
+    std::string filesToSave();
     
     ///Returns the current directory of the dialog.
     ///This can be used for a DIR_DIALOG to retrieve the value selected by the user.
@@ -342,7 +340,7 @@ public:
      * @brief Returns a vector of the different image file sequences found in the files given in parameter. 
      * Any file which has an extension not contained in the supportedFileType will be ignored.
      **/
-    static std::vector<QStringList> fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes);
+    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes);
     
     /**
      * @brief Append all files in the current directory and all its sub-directories recursively.

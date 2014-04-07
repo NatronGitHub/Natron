@@ -32,6 +32,7 @@ DEPENDPATH  += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 DEPENDPATH += $$PWD/../Global
 
@@ -76,14 +77,14 @@ SOURCES += \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
-    SequenceParsing.cpp \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
     TimeLine.cpp \
     Timer.cpp \
     VideoEngine.cpp \
-    ViewerInstance.cpp
+    ViewerInstance.cpp \
+    ../libs/SequenceParsing/SequenceParsing.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -140,7 +141,6 @@ HEADERS += \
     ProjectPrivate.h \
     ProjectSerialization.h \
     Rect.h \
-    SequenceParsing.h \
     Settings.h \
     Singleton.h \
     StandardPaths.h \
@@ -161,5 +161,6 @@ HEADERS += \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \
     ../Global/MemoryInfo.h \
-    ../Global/QtCompat.h
+    ../Global/QtCompat.h \
+    ../libs/SequenceParsing/SequenceParsing.h
 

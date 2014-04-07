@@ -450,13 +450,13 @@ public:
      * with the content of files. Note that an exception is thrown if the file knob does not support image sequences
      * but you attempt to feed-in several files.
      **/
-    void setInputFilesForReader(const QStringList& files);
+    void setInputFilesForReader(const std::vector<std::string>& files);
     
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
      * with the content of pattern.
      **/
-    void setOutputFilesForWriter(const QString& pattern);
+    void setOutputFilesForWriter(const std::string& pattern);
     
     /**
      * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
