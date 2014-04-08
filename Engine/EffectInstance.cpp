@@ -83,6 +83,20 @@ struct EffectInstance::Implementation {
         duringInteractAction = b;
     }
     
+    void setLocalRenderArgs(const RectI& roi,SequenceTime time,int view,const RenderScale& scale,bool sequential,bool userInteraction,
+                            bool bypassCache)
+    {
+        RenderArgs args;
+        args._roi = roi;
+        args._time = time;
+        args._view = view;
+        args._scale = scale;
+        args._isSequentialRender = sequential;
+        args._isRenderResponseToUserInteraction = userInteraction;
+        args._byPassCache = bypassCache;
+        renderArgs.setLocalData(args);
+    }
+    
 };
 
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
@@ -200,7 +214,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         byPassCache = _imp->renderArgs.localData()._byPassCache;
     } else {
         bool isProjectFormat;
-        Natron::Status stat = n->getRegionOfDefinition(time, &roi,&isProjectFormat);
+        Natron::Status stat = n->getRegionOfDefinition(time,scale, &roi,&isProjectFormat);
         precomputedRoD = roi;
         if(stat == Natron::StatFailed) {//we have no choice but compute the full region of definition
             return boost::shared_ptr<Natron::Image>();
@@ -218,7 +232,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     return future.result();
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) {
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat) {
     
     Format frmt;
     getRenderFormat(&frmt);
@@ -226,7 +240,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* ro
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectI inputRod;
-            Status st = input->getRegionOfDefinition(time, &inputRod,isProjectFormat);
+            Status st = input->getRegionOfDefinition(time,scale, &inputRod,isProjectFormat);
             if (st == StatFailed) {
                 return st;
             }
@@ -301,7 +315,6 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
 
 boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& args)
 {
-    bool byPassCache = args.byPassCache;
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
     Natron::Log::print(QString("Time "+QString::number(time)+
@@ -312,16 +325,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                         + " ymax= " + QString::number(renderWindow.top())).toStdString());
 #endif
     
-    /// First-off look-up the cache and see if we can find the cached actions results and cached image.
-    boost::shared_ptr<const ImageParams> cachedImgParams;
-    boost::shared_ptr<Image> image;
-    bool isCached = false;
-    Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time, args.scale,args.view);
-    
     ///The effect caching policy might forbid caching (Readers could use this when going out of the original frame range.)
+    ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
+    bool byPassCache = args.byPassCache;
     if (getCachePolicy(args.time) == NEVER_CACHE || isWriter()) {
         byPassCache = true;
     }
+    
+    boost::shared_ptr<const ImageParams> cachedImgParams;
+    boost::shared_ptr<Image> image;
+    Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time, args.scale,args.view);
+
+    /// First-off look-up the cache and see if we can find the cached actions results and cached image.
+    bool isCached = false;
     
     if (!byPassCache) {
         isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -343,7 +359,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         }
     }
     
+#pragma message WARN("Specify image components here")
+    ImageComponents components = Natron::ImageComponentRGBA;
     
+    boost::shared_ptr<Natron::Image> downscaledImage = image;
+
     if (!isCached) {
         
         ///first-off check whether the effect is identity, in which case we don't want
@@ -353,18 +373,17 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         RectI rod;
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
+        
+        RenderScale upscaleFactor,upscale;
+        upscale.x = upscale.y = 1.;
+        upscaleFactor.x = upscale.x / args.scale.x;
+        upscaleFactor.y = upscale.y / args.scale.y;
+
+        
         bool identity = isIdentity(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
-           
-            RenderArgs localData;
-            localData._roi = args.roi;
-            localData._time = args.time;
-            localData._view = args.view;
-            localData._scale = args.scale;
-            localData._isSequentialRender = args.isSequentialRender;
-            localData._isRenderResponseToUserInteraction = args.isRenderUserInteraction;
-            localData._byPassCache = byPassCache;
-            _imp->renderArgs.setLocalData(localData);
+            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale,
+                                     args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
             image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
@@ -374,7 +393,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 return image;
             }
         } else {
-            ///set it to -1 so the cache know its not an identity
+            ///set it to -1 so the cache knows it's not an identity
             inputNbIdentity = -1;
             
             ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
@@ -382,28 +401,21 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 rod = *args.preComputedRoD;
             } else {
                 ///before allocating it we must fill the RoD of the image we want to render
-                if(getRegionOfDefinition(args.time, &rod,&isProjectFormat) == StatFailed){
+                if(getRegionOfDefinition(args.time,args.scale, &rod,&isProjectFormat) == StatFailed){
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
             }
+            if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+                rod = rod.scaled(args.scale.x, args.scale.y);
+            }
             // why should the rod be empty here?
             assert(!rod.isNull());
-            
-            ///add the window to the project's available formats if the effect is a reader
-            if (isReader()) {
-                Format frmt;
-                frmt.set(rod);
-                ///FIXME: what about the pixel aspect ratio ?
-                getApp()->getProject()->setOrAddProjectFormat(frmt);
-            }
             
             framesNeeded = getFramesNeeded(args.time);
           
         }
-        
-#pragma message WARN("Specify image components here")
-        ImageComponents components = Natron::ImageComponentRGBA;
+    
         
         int cost = 0;
         /*should data be stored on a physical device ?*/
@@ -414,20 +426,34 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (identity) {
             cost = -1;
         }
+      
         
         cachedImgParams = Natron::Image::makeParams(cost, rod,isProjectFormat,
                                                     components,
                                                     inputNbIdentity, inputTimeIdentity,
                                                     framesNeeded);
         
+        
+        RectI upscaledRoD = rod;
+        ///if the effect doesnt support render scale, scale the RoD
+        if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+            upscaledRoD = rod.scaled(upscaleFactor.x, upscaleFactor.y);
+        }
+        
         if (byPassCache) {
             ///if we bypass the cache, allocate the image ourselves
             assert(!image);
             assert(!identity);
-            image.reset(new Natron::Image(components,rod,args.scale,args.time));
+            if (!supportsRenderScale() && args.scale.x != 1 && args.scale.y != 1.) {
+                image.reset(new Natron::Image(components,upscaledRoD,upscale,args.time));
+                downscaledImage.reset(new Natron::Image(components,rod,args.scale,args.time));
+            } else {
+                image.reset(new Natron::Image(components,rod,args.scale,args.time));
+            }
             
         } else {
-
+            
+            
             ///even though we called getImage before and it returned false, it may now
             ///return true if another thread created the image in the cache, so we can't
             ///make any assumption on the return value of this function call.
@@ -441,9 +467,14 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             if (identity) {
                 ///don't return the empty allocated image but the input effect image instead!
                 return image;
-            } else {
-                image = newImage;
             }
+            image = newImage;
+            downscaledImage = image;
+
+            if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+                image.reset(new Natron::Image(components,upscaledRoD,upscale,args.time));
+            }
+            
         }
         assert(cachedImgParams);
 
@@ -461,16 +492,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             
-            RenderArgs localData;
-            localData._roi = args.roi;
-            localData._time = args.time;
-            localData._view = args.view;
-            localData._scale = args.scale;
-            localData._isSequentialRender = args.isSequentialRender;
-            localData._isRenderResponseToUserInteraction = args.isRenderUserInteraction;
-            localData._byPassCache = byPassCache;
-            _imp->renderArgs.setLocalData(localData);
-            
+            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
@@ -481,12 +503,41 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         }
 #endif
 
+        ///For effects that don't support the render scale we have to upscale this cached image,
+        ///render the parts we are interested in and then downscale again
+        ///Before doing that we verify if everything we want is already rendered in which case we
+        ///dont degrade the image
+        if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+            
+            std::list<RectI> rectsRendered = image->getRestToRender(args.roi);
+            if (rectsRendered.empty()) {
+                return image;
+            }
+            
+            RenderScale upscaleFactor,upscale;
+            upscale.x = upscale.y = 1.;
+            upscaleFactor.x = upscale.x / args.scale.x;
+            upscaleFactor.y = upscale.y / args.scale.y;
+            boost::shared_ptr<Natron::Image> upscaledImage(
+                            new Natron::Image(components,cachedImgParams->getRoD().scaled(upscaleFactor.x, upscaleFactor.y),upscale,args.time));
+            image->scaled(upscaledImage.get(), upscaleFactor.x, upscaleFactor.y);
+            image = upscaledImage;
+        }
+        
     }
+    
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
     bool success = renderRoIInternal(args.time, args.scale, args.view, args.roi, cachedImgParams, image,
                                      args.isSequentialRender,args.isRenderUserInteraction ,byPassCache);
+    
+    ///If the image was cached but the effect doesn't support the render scale, we downscale the result of the render into
+    ///the original image
+    if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+        image->scaled(downscaledImage.get(), args.scale.x, args.scale.y);
+        image = downscaledImage;
+    }
     
     if(aborted() || !success){
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -523,6 +574,16 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                                        bool isSequentialRender,
                                        bool isRenderMadeInResponseToUserInteraction,
                                        bool byPassCache) {
+    
+    ///add the window to the project's available formats if the effect is a reader
+    if (isReader() && scale.x == 1 && scale.y == 1) {
+        Format frmt;
+        frmt.set(cachedImgParams->getRoD());
+        ///FIXME: what about the pixel aspect ratio ?
+        getApp()->getProject()->setOrAddProjectFormat(frmt);
+    }
+
+    
     _node->addImageBeingRendered(image, time, view);
     
     ///We check what is left to render.
@@ -531,7 +592,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
     RectI intersection;
     renderWindow.intersect(image->getRoD(), &intersection);
     
-    /// If the list contains only null rects then we already rendered it all
+    /// If the list is empty then we already rendered it all
     std::list<RectI> rectsToRender = image->getRestToRender(intersection);
     
     ///if the effect doesn't support tiles and it has something left to render, just render the rod again
@@ -572,7 +633,6 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         args._isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
         args._byPassCache = byPassCache;
         _imp->renderArgs.setLocalData(args);
-        
         
         ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
         RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);

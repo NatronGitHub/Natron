@@ -383,66 +383,78 @@ const float* Image::pixelAt(int x,int y) const {
     return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
 }
 
-void Image::scale(Natron::Image* output,double sx,double sy) const
+namespace {
+
+template<typename PIX>
+PIX get(const PIX* p,int x,int compCount,int comp) {
+    return p ? p[x * compCount + comp] : 0.;
+}
+
+static void bilinearFiltering(const float* pixFloor,const float* pixCeil,
+                              int fx,int cx,double dx,double dy,int compCount,
+                              int component,float* dstPix)
 {
+    const double Icc = get(pixFloor,fx,compCount,component);
+    const double Inc = get(pixFloor,cx,compCount,component);
+    const double Icn = get(pixCeil,fx,compCount,component);
+    const double Inn = get(pixCeil,cx,compCount,component);
+    *dstPix = Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc);
+}
+    
+}
+void Image::scaled(Natron::Image* output,double sx,double sy) const
+{
+    
     assert((output->getRoD().width() == ((double)getRoD().width() * sx)) &&
-           (output->getRoD().height() == ((double)getRoD().height() * sy)) &&
-           (sx == output->getRenderScale().x) && (sy == output->getRenderScale().y));
+           (output->getRoD().height() == ((double)getRoD().height() * sy)));
     
     
     const RectI& dstRoD = output->getRoD();
     const RectI& srcRoD = getRoD();
     
     double yScaleFactor = (double)dstRoD.height() / (double)srcRoD.height();
-    double xScaleFactor = (double)dstRoD.width() / (double)srcRoD.height();
+    double xScaleFactor = (double)dstRoD.width() / (double)srcRoD.width();
     
     int elementsCount = getElementsCountForComponents(_components);
     
     for (int y = dstRoD.y1; y < dstRoD.y2; ++y) {
         
-        float* dstPixels = output->pixelAt(dstRoD.x1,y);
         
         double ysrc = ((double)y / yScaleFactor);
-        int ysrcFloor = std::floor(ysrc);
-        int ysrcCeil = std::ceil(ysrc);
         
-        assert(ysrcFloor < srcRoD.y2 && ysrcFloor >= srcRoD.y1 && ysrcCeil < srcRoD.y2 && ysrcCeil >= srcRoD.y1);
+        int fy = std::floor(ysrc);
+        int cy = fy + 1;
+        double dy = std::max(0., std::min(ysrc - fy, 1.));
         
-        const float* srcPixelsFloor = pixelAt(srcRoD.x1, ysrcFloor);
-        const float* srcPixelsCeil = pixelAt(srcRoD.x1, ysrcCeil);
+        const float* srcPixelsFloor = pixelAt(srcRoD.x1, fy);
+        const float* srcPixelsCeil = pixelAt(srcRoD.x1, cy);
+        float* dstPixels = output->pixelAt(dstRoD.x1,y);
+
+        const char* srcBitmapFloor = getBitmap() + (fy - srcRoD.bottom()) * srcRoD.width() + (srcRoD.x1 - srcRoD.left());
+        const char* srcBitmapCeil = getBitmap() + (cy - srcRoD.bottom()) * srcRoD.width() + (srcRoD.x1 - srcRoD.left());
+        char* dstBitmap = output->getBitmap() + (y - dstRoD.bottom()) * dstRoD.width() + (dstRoD.x1 - dstRoD.left());
         
         for (int x = dstRoD.x1; x < dstRoD.x2; ++x) {
             double xsrc = ((double)x / xScaleFactor);
-            int xsrcFloor = std::floor(xsrc);
-            int xsrcCeil = std::ceil(xsrc);
-            assert(xsrcFloor < srcRoD.x2 && xsrcFloor >= srcRoD.x1 && xsrcCeil < srcRoD.x2 && xsrcCeil >= srcRoD.x1);
+            
+            int fx = std::floor(xsrc);
+            int cx = fx + 1;
+            double dx = std::max(0., std::min(xsrc - fx, 1.));
+            
+
+            for (int i = 0; i < elementsCount ;++i) {
+                bilinearFiltering(srcPixelsFloor, srcPixelsCeil, fx, cx, dx, dy, elementsCount, i, dstPixels);
+                ++dstPixels;
+            }
             
             
-            xsrcFloor *= elementsCount;
-            xsrcCeil *= elementsCount;
+
             ///average the 4 neighbooring pixels
-            
-#pragma message WARN("This code doesn't support image components it assumes RGBA")
-            ///set the r intensity
-            *dstPixels++ = (srcPixelsFloor[xsrcFloor] +
-                            srcPixelsFloor[xsrcCeil] +
-                            srcPixelsCeil[xsrcFloor] +
-                            srcPixelsCeil[xsrcCeil]) / 4.;
-            
-            *dstPixels++ = (srcPixelsFloor[xsrcFloor + 1]
-                            + srcPixelsFloor[xsrcCeil + 1] +
-                            srcPixelsCeil[xsrcFloor + 1] +
-                            srcPixelsCeil[xsrcCeil + 1]) / 4.;
-            
-            *dstPixels++ = (srcPixelsFloor[xsrcFloor + 1]
-                            + srcPixelsFloor[xsrcCeil + 2] +
-                            srcPixelsCeil[xsrcFloor + 2] +
-                            srcPixelsCeil[xsrcCeil + 2]) / 4.;
-            
-            *dstPixels++ = (srcPixelsFloor[xsrcFloor + 3]
-                            + srcPixelsFloor[xsrcCeil + 3] +
-                            srcPixelsCeil[xsrcFloor + 3] +
-                            srcPixelsCeil[xsrcCeil + 3]) / 4.;
+            *dstBitmap++ = (get(srcBitmapFloor,fx,1,0) +
+                            get(srcBitmapFloor,cx,1,0) +
+                            get(srcBitmapCeil,fx,1,0) +
+                            get(srcBitmapCeil,cx,1,0)) / 4.;
+
             
         }
     }

@@ -269,7 +269,7 @@ ViewerInstance::maximumInputs() const
 }
 
 Natron::Status
-ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat)
+ViewerInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat)
 {
     // always running in the VideoEngine thread
     _imp->assertVideoEngine();
@@ -277,7 +277,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProje
     ///Return the RoD of the active input
     EffectInstance* n = input_other_thread(activeInput());
     if (n) {
-        return n->getRegionOfDefinition(time,rod,isProjectFormat);
+        return n->getRegionOfDefinition(time,scale,rod,isProjectFormat);
     } else {
         return StatFailed;
     }
@@ -320,10 +320,6 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     double zoomFactor = _imp->uiContext->getZoomFactor();
 
-#pragma message WARN("Make use of the render scale here")
-    RenderScale scale;
-    scale.x = scale.y = 1.;
-    
     Format dispW;
     getRenderFormat(&dispW);
     int viewsCount = getRenderViewsCount();
@@ -348,6 +344,14 @@ ViewerInstance::renderViewer(SequenceTime time,
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> inputImage;
     bool isInputImgCached = false;
+    
+    RenderScale scale;
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        scale.x = scale.y = _imp->viewerRenderScale;
+    }
+    
+    
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash(), time, scale,view);
     RectI rod;
     bool isRodProjectFormat = false;
@@ -391,14 +395,13 @@ ViewerInstance::renderViewer(SequenceTime time,
                 cachedImgParams.reset();
             }
         }
-    }
-    if (isInputImgCached) {
+        
         rod = inputImage->getRoD();
         isRodProjectFormat = cachedImgParams->isRodProjectFormat();
         _imp->lastRenderedImage = inputImage;
-
-    } else {
-        Status stat = getRegionOfDefinition(time, &rod,&isRodProjectFormat);
+        
+    }  else {
+        Status stat = getRegionOfDefinition(time,scale, &rod,&isRodProjectFormat);
         if(stat == StatFailed){
 #ifdef NATRON_LOG
             Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
@@ -406,7 +409,9 @@ ViewerInstance::renderViewer(SequenceTime time,
 #endif
             return stat;
         }
+      
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
+
     }
     
 
@@ -439,18 +444,25 @@ ViewerInstance::renderViewer(SequenceTime time,
     texRectClipped.y1 *= closestPowerOf2;
     texRectClipped.y2 *= closestPowerOf2;
     texRectClipped.intersect(rod, &texRectClipped);
+    RectI texRectClippedScaled = texRectClipped;
+    
+    if (!isInputImgCached) {
+        texRectClippedScaled.x2 *= scale.x;
+        texRectClippedScaled.y2 *= scale.y;
+    }
     
     int texW = texRect.width() > rod.width() ? rod.width() : texRect.width();
     int texH = texRect.height() > rod.height() ? rod.height() : texRect.height();
     
-    TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
-                            texRectClipped.y2,texW,texH,closestPowerOf2);
+    TextureRect textureRect(texRectClippedScaled.x1,texRectClippedScaled.y1,texRectClippedScaled.x2,
+                            texRectClippedScaled.y2,texW,texH,closestPowerOf2);
     
     //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
     
 #pragma message WARN("Specify image components here")
-    size_t bytesCount = textureRect.w * textureRect.h * 4;
+    ImageComponents components = Natron::ImageComponentRGBA;
+    size_t bytesCount = textureRect.w * textureRect.h * getElementsCountForComponents(components);
     
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
     
@@ -480,7 +492,8 @@ ViewerInstance::renderViewer(SequenceTime time,
                  (int)bitDepth,
                  channels,
                  view,
-                 textureRect);
+                 textureRect,
+                 scale);
 
     /////////////////////////////////////
     // start UpdateViewerParams scope
@@ -560,7 +573,30 @@ ViewerInstance::renderViewer(SequenceTime time,
         if (!activeInputToRender->supportsTiles()) {
             texRectClipped.intersect(rod, &texRectClipped);
         }
+        
+        boost::shared_ptr<Natron::Image> originalInputImage = inputImage;
+        
+        bool renderedCompletely = false;
+        ///If the plug-in doesn't support the render scale and we found an image cached but which still
+        ///contains some stuff to render we don't want to use it, instead we need to upscale the image
+        if (!activeInputToRender->supportsRenderScale() && isInputImgCached && scale.x != 1. && scale.y != 1.) {
+            ///intersect the image render window to the actual image region of definition.
 
+            /// If the list is empty then we already rendered it all
+            std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
+            if (!rectsToRender.empty()) {
+                RenderScale upscaleFactor,upscale;
+                upscale.x = upscale.y = 1.;
+                upscaleFactor.x = upscale.x / scale.x;
+                upscaleFactor.y = upscale.y / scale.y;
+                boost::shared_ptr<Natron::Image> upscaledImage(
+                            new Natron::Image(components,cachedImgParams->getRoD().scaled(upscaleFactor.x, upscaleFactor.y),upscale,time));
+                inputImage->scaled(upscaledImage.get(), upscaleFactor.x, upscaleFactor.y);
+                inputImage = upscaledImage;
+            } else {
+                renderedCompletely = true;
+            }
+        }
 
         int inputIndex = activeInput();
         _node->notifyInputNIsRendering(inputIndex);
@@ -572,23 +608,33 @@ ViewerInstance::renderViewer(SequenceTime time,
             memoryDiff -= _imp->lastRenderedImage->size();
         }
         
-        // If an exception occurs here it is probably fatal, since
-        // it comes from Natron itself. All exceptions from plugins are already caught
-        // by the HostSupport library.
-        // We catch it  and rethrow it just to notify the rendering is done.
-        try {
-            if (isInputImgCached) {
-                ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
-                ///cache lookup things because we already did it ourselves.
-                activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage,isSequentialRender,true);
-            } else {
-                _imp->lastRenderedImage = activeInputToRender->renderRoI(
-                            EffectInstance::RenderRoIArgs(time, scale,view,texRectClipped,isSequentialRender,true,
-                                                                         byPassCache,&rod));
+        if (!renderedCompletely) {
+            // If an exception occurs here it is probably fatal, since
+            // it comes from Natron itself. All exceptions from plugins are already caught
+            // by the HostSupport library.
+            // We catch it  and rethrow it just to notify the rendering is done.
+            try {
+                if (isInputImgCached) {
+                    ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
+                    ///cache lookup things because we already did it ourselves.
+                    activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage,isSequentialRender,true);
+                    
+                    ///If the plug-in doesn't support the render scale, we just rendered an upscaled version of the image and we need
+                    ///to scale it down
+                    if (!activeInputToRender->supportsRenderScale()  && scale.x != 1. && scale.y != 1.) {
+                        inputImage->scaled(originalInputImage.get(), scale.x, scale.y);
+                        inputImage = originalInputImage;
+                    }
+                    
+                } else {
+                    _imp->lastRenderedImage = activeInputToRender->renderRoI(
+                                                                             EffectInstance::RenderRoIArgs(time, scale,view,texRectClipped,isSequentialRender,true,
+                                                                                                           byPassCache,&rod));
+                }
+            } catch (...) {
+                _node->notifyInputNIsFinishedRendering(inputIndex);
+                throw;
             }
-        } catch (...) {
-            _node->notifyInputNIsFinishedRendering(inputIndex);
-            throw;
         }
         
         memoryDiff += _imp->lastRenderedImage->size();
@@ -639,18 +685,18 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         offset,
                                         lutFromColorspace(lut));
 
-            renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
+            renderFunctor(std::make_pair(texRectClippedScaled.y1,texRectClippedScaled.y2),
                           args,
                           ramBuffer);
         } else {
 
-            int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
+            int rowsPerThread = std::ceil((double)(texRectClippedScaled.x2 - texRectClippedScaled.x1) / (double)QThread::idealThreadCount());
             // group of group of rows where first is image coordinate, second is texture coordinate
             QList< std::pair<int, int> > splitRows;
-            int k = texRectClipped.y1;
-            while (k < texRectClipped.y2) {
+            int k = texRectClippedScaled.y1;
+            while (k < texRectClippedScaled.y2) {
                 int top = k + rowsPerThread;
-                int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
+                int realTop = top > texRectClippedScaled.y2 ? texRectClippedScaled.y2 : top;
                 splitRows.push_back(std::make_pair(k,realTop));
                 k += rowsPerThread;
             }

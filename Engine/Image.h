@@ -81,6 +81,8 @@ namespace Natron {
         void markForRendered(const RectI& roi);
 
         const char* getBitmap() const { return _map.get(); }
+        
+        char* getBitmap() { return _map.get(); }
 
     private:
         RectI _rod;
@@ -118,11 +120,13 @@ namespace Natron {
                                                          int inputNbIdentity,int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> >& framesNeeded) ;
         
+        ////Note that for a scaled image (one whose render scale is different of 1) this will return the scaled RoD, not the
+        ////RoD of the unscaled image.
         const RectI& getRoD() const {return _bitmap.getRoD();}
         
         virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
         
-        RenderScale getRenderScale() const {return this->_key._renderScale;}
+        const RenderScale& getRenderScale() const {return this->_key._renderScale;}
         
         SequenceTime getTime() const {return this->_key._time;}
         
@@ -136,6 +140,10 @@ namespace Natron {
         
         const float* pixelAt(int x,int y) const;
         
+        const char* getBitmap() const { return this->_bitmap.getBitmap(); }
+        
+        char* getBitmap() { return this->_bitmap.getBitmap(); }
+
         /**
          * @brief Returns a list of portions of image that are not yet rendered within the 
          * region of interest given. This internally uses the bitmap to know what portion
@@ -194,10 +202,10 @@ namespace Natron {
          * @param sx The scale to apply in the x dimension. It must be 1 divided by a power of 2.
          * @param sy The scale to apply in the y dimension. It must be 1 divided by a power of 2.
          * 
-         * The method use is quite simple: we just average 4 pixels.
-         *
+         * This method use bilinear filtering for the color and average of 4 pixels for the bitmap.
+         * WARNING: This functions acts like a simple copy (but slower) if sx and sy equal 1.
          **/
-        void scale(Natron::Image* output,double sx,double sy) const;
+        void scaled(Natron::Image* output,double sx,double sy) const;
     
     
     };    

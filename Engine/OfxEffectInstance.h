@@ -134,7 +134,8 @@ public:
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,
+                                                 RectI* rod,bool* isProjectFormat) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE WARN_UNUSED_RETURN;
     
@@ -185,6 +186,8 @@ public:
     virtual void purgeCaches() OVERRIDE;
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool supportsRenderScale() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     

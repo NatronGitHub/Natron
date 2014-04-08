@@ -25,11 +25,14 @@ FrameKey::FrameKey()
 , _channels(0)
 , _view(0)
 , _textureRect()
-{}
+, _scale()
+{
+    _scale.x = _scale.y = 0.;
+}
 
 
 FrameKey::FrameKey(SequenceTime time,U64 treeVersion,double gain,
-         int lut,int bitDepth,int channels,int view,const TextureRect& textureRect):
+         int lut,int bitDepth,int channels,int view,const TextureRect& textureRect,const RenderScale& scale):
 KeyHelper<U64>()
 ,_time(time)
 ,_treeVersion(treeVersion)
@@ -39,6 +42,7 @@ KeyHelper<U64>()
 ,_channels(channels)
 ,_view(view)
 ,_textureRect(textureRect)
+,_scale(scale)
 {
     
 }
@@ -58,6 +62,8 @@ void FrameKey::fillHash(Hash64* hash) const {
     hash->append(_textureRect.w);
     hash->append(_textureRect.h);
     hash->append(_textureRect.closestPo2);
+    hash->append(_scale.x);
+    hash->append(_scale.y);
 }
 
 bool FrameKey::operator==(const FrameKey& other) const {
@@ -68,12 +74,14 @@ bool FrameKey::operator==(const FrameKey& other) const {
     _bitDepth == other._bitDepth &&
     _channels == other._channels &&
     _view == other._view &&
-    _textureRect == other._textureRect;
+    _textureRect == other._textureRect &&
+    _scale.x == other._scale.x &&
+    _scale.y == other._scale.y;
 }
 
 FrameKey FrameEntry::makeKey(SequenceTime time,U64 treeVersion,double gain,
-                        int lut,int bitDepth,int channels,int view,const TextureRect& textureRect){
-    return FrameKey(time,treeVersion,gain,lut,bitDepth,channels,view,textureRect);
+                        int lut,int bitDepth,int channels,int view,const TextureRect& textureRect,const RenderScale& scale){
+    return FrameKey(time,treeVersion,gain,lut,bitDepth,channels,view,textureRect,scale);
 }
 
 boost::shared_ptr<const FrameParams> FrameEntry::makeParams(const RectI rod,int bitDepth,int texW,int texH)

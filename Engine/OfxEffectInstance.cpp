@@ -451,17 +451,15 @@ std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
     return formats;
 }
 
-Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat){
+Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat){
     if(!_initialized){
         return Natron::StatFailed;
     }
 
     assert(effect_);
-    
-    OfxPointD rS;
-    rS.x = rS.y = 1.0;
+
     OfxRectD ofxRod;
-    OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
+    OfxStatus stat = effect_->getRegionOfDefinitionAction(time, (OfxPointD)scale, ofxRod);
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
@@ -1003,6 +1001,11 @@ bool OfxEffectInstance::supportsTiles() const {
         return false;
     }
     return effectInstance()->supportsTiles() && outputClip->supportsTiles();
+}
+
+bool OfxEffectInstance::supportsRenderScale() const
+{
+    return effectInstance()->supportsMultiResolution();
 }
 
 void OfxEffectInstance::beginEditKnobs() {

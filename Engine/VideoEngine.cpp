@@ -646,7 +646,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
         scale.x = scale.y = 1.;
         RectI rod;
         bool isProjectFormat;
-        stat = _tree.getOutput()->getRegionOfDefinition(time, &rod,&isProjectFormat);
+        stat = _tree.getOutput()->getRegionOfDefinition(time,scale, &rod,&isProjectFormat);
         if(stat != StatFailed){
             int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
             for(int i = 0; i < viewsCount;++i){

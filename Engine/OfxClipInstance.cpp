@@ -181,8 +181,9 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             ret.y2 = rod.top();
 
         } else {
-            
-            Natron::Status st = n->getRegionOfDefinition(time,&rod,&isProjectFormat);
+            RenderScale scale;
+            scale.x = scale.y = 1.;
+            Natron::Status st = n->getRegionOfDefinition(time,scale,&rod,&isProjectFormat);
             if (st == StatFailed) {
                 //assert(!"cannot compute ROD");
                 ret.x1 = kOfxFlagInfiniteMin;

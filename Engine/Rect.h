@@ -88,6 +88,14 @@ public:
     
     void set(const RectI& b) { *this = b; }
     
+    RectI scaled(double sx,double sy) const {
+        RectI ret;
+        ret.x1 = x1;
+        ret.y1 = y1;
+        ret.x2 = std::floor((double)(x2 * sx) + 0.5);
+        ret.y2 = std::floor((double)(y2 * sy) + 0.5);
+        return ret;
+    }
     
     bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
     
@@ -302,6 +310,14 @@ public:
     
     void set(const RectD& b) { *this = b; }
     
+    RectD scaled(double sx,double sy) const {
+        RectD ret;
+        ret.x1 = x1;
+        ret.y1 = y1;
+        ret.x2 = (double)x2 * sx;
+        ret.y2 = (double)y2 * sy;
+        return ret;
+    }
     
     bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
     

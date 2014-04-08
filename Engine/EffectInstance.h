@@ -305,7 +305,8 @@ public:
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,
+                                                 RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
     
     
     /**
@@ -444,6 +445,11 @@ public:
      * @brief Does this effect supports tiling ?
      **/
     virtual bool supportsTiles() const { return false; }
+    
+    /**
+     * @brief Does this effect supports rendering at a different scale than 1 ?
+     **/
+    virtual bool supportsRenderScale() const { return false; }
     
     /**
      * @brief If this effect is a reader then the file path corresponding to the input images path will be fed

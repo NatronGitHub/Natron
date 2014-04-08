@@ -1009,7 +1009,9 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     
     RectI rod;
     bool isProjectFormat;
-    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition(time, &rod,&isProjectFormat);
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition(time,scale, &rod,&isProjectFormat);
     if (stat == StatFailed) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();
@@ -1020,14 +1022,21 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     w = rod.width() < width ? rod.width() : width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
-
+    
+    double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(xZoomFactor) / std::log(2.)));
+    double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(yZoomFactor) / std::log(2.)));
+    
+    double closestPowerOf2 = std::max(std::max(closestPowerOf2X,closestPowerOf2Y),32.);
+    scale.x = 1./closestPowerOf2;
+    scale.y = scale.x;
+    
+    rod = rod.scaled(scale.x, scale.y);
+    
 #ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
 
-    RenderScale scale;
-    scale.x = scale.y = 1.;
     boost::shared_ptr<Image> img;
 
     // Exceptions are caught because the program can run without a preview,
