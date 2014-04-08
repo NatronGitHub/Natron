@@ -37,6 +37,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/ImageParams.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -986,6 +987,18 @@ void Node::removeImageBeingRendered(SequenceTime time,int view )
     _imp->imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
 }
 
+namespace {
+static float bilinearFiltering(const float* srcPixelsFloor,const float* srcPixelsCeil,int fx,int cx,
+                               int elementsCount,int comp,double dx,double dy,const RectI& srcRoD)
+{
+    const double Icc = (!srcPixelsFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx * elementsCount + comp];
+    const double Inc = (!srcPixelsFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx * elementsCount + comp];
+    const double Icn = (!srcPixelsCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx * elementsCount + comp];
+    const double Inn = (!srcPixelsCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx * elementsCount + comp];
+    return Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc);
+}
+}
+
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
 {
 
@@ -1017,20 +1030,13 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         _imp->computingPreviewCond.wakeOne();
         return;
     }
-    int h,w;
-    h = rod.height() < height ? rod.height() : height;
-    w = rod.width() < width ? rod.width() : width;
-    double yZoomFactor = (double)h/(double)rod.height();
-    double xZoomFactor = (double)w/(double)rod.width();
+    double yZoomFactor = (double)height/(double)rod.height();
+    double xZoomFactor = (double)width/(double)rod.width();
     
     double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(xZoomFactor) / std::log(2.)));
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(yZoomFactor) / std::log(2.)));
     
-    double closestPowerOf2 = std::max(std::max(closestPowerOf2X,closestPowerOf2Y),32.);
-    scale.x = 1./closestPowerOf2;
-    scale.y = scale.x;
-    
-    rod = rod.scaled(scale.x, scale.y);
+    double closestPowerOf2 = std::min(std::max(closestPowerOf2X,closestPowerOf2Y),32.);
     
 #ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
@@ -1038,7 +1044,10 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 #endif
 
     boost::shared_ptr<Image> img;
-
+    
+    scale.x = 1./closestPowerOf2;
+    scale.y = scale.x;
+    
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
@@ -1060,29 +1069,43 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         _imp->computingPreviewCond.wakeOne();
         return;
     }
-    
-    for (int i=0; i < h; ++i) {
-        double y = (double)i/yZoomFactor + rod.y1;
-        int nearestY = std::floor(y+0.5);
-        if (nearestY >= rod.height()) {
-            break;
-        }
+  
+    ///update the Rod to the scaled image rod
+    rod = img->getRoD();
 
-        U32 *dst_pixels = buf + width*(h-1-i);
-        const float* src_pixels = img->pixelAt(0, nearestY);
+    ImageComponents components = img->getComponents();
+    int elemCount = getElementsCountForComponents(components);
+    
+    ///recompute it after the rescaling
+    yZoomFactor = (double)height/(double)rod.height();
+    xZoomFactor = (double)width/(double)rod.width();
+    
+    for (int i = 0; i < height; ++i) {
+        double y = (double)i/yZoomFactor + rod.y1;
+        int yFloor = std::floor(y);
+        int yCeil = std::ceil(y);
+        double dy = std::max(0., std::min(y - yFloor, 1.));
         
-        for(int j = 0;j < w;++j) {
+        U32 *dst_pixels = buf + width * (height-1-i);
+        
+        const float* src_pixels_floor = img->pixelAt(rod.x1, yFloor);
+        const float* src_pixels_ceil = img->pixelAt(rod.x1, yCeil);
+        
+        for (int j = 0; j < width; ++j) {
             
             double x = (double)j/xZoomFactor + rod.x1;
-            int nearestX = std::floor(x+0.5);
+            int xFloor = std::floor(x);
+            int xCeil = std::ceil(x);
+            double dx = std::max(0., std::min(x - xFloor, 1.));
             
-            if (nearestX >= rod.width()) {
-                break;
-            }
+#pragma message WARN("Preview only support RGB or RGBA images")
+            float rFilt = bilinearFiltering(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 0, dx, dy, rod);
+            float gFilt = bilinearFiltering(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 1, dx, dy, rod);
+            float bFilt = bilinearFiltering(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 2, dx, dy, rod);
             
-            int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4]));
-            int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+1]));
-            int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(src_pixels[nearestX*4+2]));
+            int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(rFilt));
+            int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(gFilt));
+            int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(bFilt));
             dst_pixels[j] = toBGRA(r, g, b, 255);
 
         }

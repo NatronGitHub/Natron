@@ -383,25 +383,6 @@ const float* Image::pixelAt(int x,int y) const {
     return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
 }
 
-namespace {
-
-template<typename PIX>
-PIX get(const PIX* p,int x,int compCount,int comp) {
-    return p ? p[x * compCount + comp] : 0.;
-}
-
-static void bilinearFiltering(const float* pixFloor,const float* pixCeil,
-                              int fx,int cx,double dx,double dy,int compCount,
-                              int component,float* dstPix)
-{
-    const double Icc = get(pixFloor,fx,compCount,component);
-    const double Inc = get(pixFloor,cx,compCount,component);
-    const double Icn = get(pixCeil,fx,compCount,component);
-    const double Inn = get(pixCeil,cx,compCount,component);
-    *dstPix = Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc);
-}
-    
-}
 void Image::scaled(Natron::Image* output,double sx,double sy) const
 {
     
@@ -420,7 +401,7 @@ void Image::scaled(Natron::Image* output,double sx,double sy) const
     for (int y = dstRoD.y1; y < dstRoD.y2; ++y) {
         
         
-        double ysrc = ((double)y / yScaleFactor);
+        double ysrc = ((double)y / yScaleFactor) + srcRoD.y1;
         
         int fy = std::floor(ysrc);
         int cy = fy + 1;
@@ -435,7 +416,7 @@ void Image::scaled(Natron::Image* output,double sx,double sy) const
         char* dstBitmap = output->getBitmap() + (y - dstRoD.bottom()) * dstRoD.width() + (dstRoD.x1 - dstRoD.left());
         
         for (int x = dstRoD.x1; x < dstRoD.x2; ++x) {
-            double xsrc = ((double)x / xScaleFactor);
+            double xsrc = ((double)x / xScaleFactor) + srcRoD.x1;
             
             int fx = std::floor(xsrc);
             int cx = fx + 1;
@@ -443,17 +424,22 @@ void Image::scaled(Natron::Image* output,double sx,double sy) const
             
 
             for (int i = 0; i < elementsCount ;++i) {
-                bilinearFiltering(srcPixelsFloor, srcPixelsCeil, fx, cx, dx, dy, elementsCount, i, dstPixels);
-                ++dstPixels;
+                
+                const double Icc = (!srcPixelsFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx * elementsCount + i];
+                const double Inc = (!srcPixelsFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx * elementsCount + i];
+                const double Icn = (!srcPixelsCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx * elementsCount + i];
+                const double Inn = (!srcPixelsCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx * elementsCount + i];
+                *dstPixels++ = Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc);
             }
             
             
-
+            const double Icc = (!srcBitmapFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx];
+            const double Inc = (!srcBitmapFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx];
+            const double Icn = (!srcBitmapCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx];
+            const double Inn = (!srcBitmapCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx];
+            
             ///average the 4 neighbooring pixels
-            *dstBitmap++ = (get(srcBitmapFloor,fx,1,0) +
-                            get(srcBitmapFloor,cx,1,0) +
-                            get(srcBitmapCeil,fx,1,0) +
-                            get(srcBitmapCeil,cx,1,0)) / 4.;
+            *dstBitmap++ = (Icc + Inc + Icn + Inn) / 4.;
 
             
         }
