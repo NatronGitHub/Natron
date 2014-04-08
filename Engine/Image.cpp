@@ -382,3 +382,68 @@ const float* Image::pixelAt(int x,int y) const {
     int compsCount = getElementsCountForComponents(getComponents());
     return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
 }
+
+void Image::scale(Natron::Image* output,double sx,double sy) const
+{
+    assert((output->getRoD().width() == ((double)getRoD().width() * sx)) &&
+           (output->getRoD().height() == ((double)getRoD().height() * sy)) &&
+           (sx == output->getRenderScale().x) && (sy == output->getRenderScale().y));
+    
+    
+    const RectI& dstRoD = output->getRoD();
+    const RectI& srcRoD = getRoD();
+    
+    double yScaleFactor = (double)dstRoD.height() / (double)srcRoD.height();
+    double xScaleFactor = (double)dstRoD.width() / (double)srcRoD.height();
+    
+    int elementsCount = getElementsCountForComponents(_components);
+    
+    for (int y = dstRoD.y1; y < dstRoD.y2; ++y) {
+        
+        float* dstPixels = output->pixelAt(dstRoD.x1,y);
+        
+        double ysrc = ((double)y / yScaleFactor);
+        int ysrcFloor = std::floor(ysrc);
+        int ysrcCeil = std::ceil(ysrc);
+        
+        assert(ysrcFloor < srcRoD.y2 && ysrcFloor >= srcRoD.y1 && ysrcCeil < srcRoD.y2 && ysrcCeil >= srcRoD.y1);
+        
+        const float* srcPixelsFloor = pixelAt(srcRoD.x1, ysrcFloor);
+        const float* srcPixelsCeil = pixelAt(srcRoD.x1, ysrcCeil);
+        
+        for (int x = dstRoD.x1; x < dstRoD.x2; ++x) {
+            double xsrc = ((double)x / xScaleFactor);
+            int xsrcFloor = std::floor(xsrc);
+            int xsrcCeil = std::ceil(xsrc);
+            assert(xsrcFloor < srcRoD.x2 && xsrcFloor >= srcRoD.x1 && xsrcCeil < srcRoD.x2 && xsrcCeil >= srcRoD.x1);
+            
+            
+            xsrcFloor *= elementsCount;
+            xsrcCeil *= elementsCount;
+            ///average the 4 neighbooring pixels
+            
+#pragma message WARN("This code doesn't support image components it assumes RGBA")
+            ///set the r intensity
+            *dstPixels++ = (srcPixelsFloor[xsrcFloor] +
+                            srcPixelsFloor[xsrcCeil] +
+                            srcPixelsCeil[xsrcFloor] +
+                            srcPixelsCeil[xsrcCeil]) / 4.;
+            
+            *dstPixels++ = (srcPixelsFloor[xsrcFloor + 1]
+                            + srcPixelsFloor[xsrcCeil + 1] +
+                            srcPixelsCeil[xsrcFloor + 1] +
+                            srcPixelsCeil[xsrcCeil + 1]) / 4.;
+            
+            *dstPixels++ = (srcPixelsFloor[xsrcFloor + 1]
+                            + srcPixelsFloor[xsrcCeil + 2] +
+                            srcPixelsCeil[xsrcFloor + 2] +
+                            srcPixelsCeil[xsrcCeil + 2]) / 4.;
+            
+            *dstPixels++ = (srcPixelsFloor[xsrcFloor + 3]
+                            + srcPixelsFloor[xsrcCeil + 3] +
+                            srcPixelsCeil[xsrcFloor + 3] +
+                            srcPixelsCeil[xsrcCeil + 3]) / 4.;
+            
+        }
+    }
+}

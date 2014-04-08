@@ -187,6 +187,17 @@ namespace Natron {
          * @brief Copies the content of the other image pixels into this image.
          **/
         void copy(const Natron::Image& other);
+        
+        /**
+         * @brief Makes a scaled copy of this image into output.
+         * @pre Output is an image of (this->getRoD().width() * sx,this->getRoD().height() * sy)
+         * @param sx The scale to apply in the x dimension. It must be 1 divided by a power of 2.
+         * @param sy The scale to apply in the y dimension. It must be 1 divided by a power of 2.
+         * 
+         * The method use is quite simple: we just average 4 pixels.
+         *
+         **/
+        void scale(Natron::Image* output,double sx,double sy) const;
     
     
     };    
