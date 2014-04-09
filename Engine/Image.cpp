@@ -290,6 +290,23 @@ void Natron::Bitmap::markForRendered(const RectI& roi){
     }
 }
 
+const char* Natron::Bitmap::getBitmapAt(int x,int y) const
+{
+    if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
+        return _map.get() + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
+    } else {
+        return NULL;
+    }
+}
+
+char* Natron::Bitmap::getBitmapAt(int x,int y)
+{
+    if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
+        return _map.get() + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
+    } else {
+        return NULL;
+    }
+}
 
 Image::Image(const ImageKey& key,const NonKeyParams& params,bool restore,const std::string& path):
 CacheEntryHelper<float,ImageKey>(key,params,restore,path)
@@ -380,7 +397,11 @@ float* Image::pixelAt(int x,int y){
 const float* Image::pixelAt(int x,int y) const {
     const RectI& rod = _bitmap.getRoD();
     int compsCount = getElementsCountForComponents(getComponents());
-    return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
+    if (x >= rod.left() && x < rod.right() && y >= rod.bottom() && y < rod.top()) {
+        return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
+    } else {
+        return NULL;
+    }
 }
 
 void Image::scaled(Natron::Image* output,double sx,double sy) const
@@ -411,9 +432,9 @@ void Image::scaled(Natron::Image* output,double sx,double sy) const
         const float* srcPixelsCeil = pixelAt(srcRoD.x1, cy);
         float* dstPixels = output->pixelAt(dstRoD.x1,y);
 
-        const char* srcBitmapFloor = getBitmap() + (fy - srcRoD.bottom()) * srcRoD.width() + (srcRoD.x1 - srcRoD.left());
-        const char* srcBitmapCeil = getBitmap() + (cy - srcRoD.bottom()) * srcRoD.width() + (srcRoD.x1 - srcRoD.left());
-        char* dstBitmap = output->getBitmap() + (y - dstRoD.bottom()) * dstRoD.width() + (dstRoD.x1 - dstRoD.left());
+        const char* srcBitmapFloor = getBitmapAt(srcRoD.x1, fy);
+        const char* srcBitmapCeil = getBitmapAt(srcRoD.x1, cy);
+        char* dstBitmap = output->getBitmapAt(dstRoD.x1, y);
         
         for (int x = dstRoD.x1; x < dstRoD.x2; ++x) {
             double xsrc = ((double)x / xScaleFactor) + srcRoD.x1;

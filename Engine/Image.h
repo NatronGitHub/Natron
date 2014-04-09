@@ -83,6 +83,10 @@ namespace Natron {
         const char* getBitmap() const { return _map.get(); }
         
         char* getBitmap() { return _map.get(); }
+        
+        const char* getBitmapAt(int x,int y) const;
+        
+        char* getBitmapAt(int x,int y);
 
     private:
         RectI _rod;
@@ -140,9 +144,9 @@ namespace Natron {
         
         const float* pixelAt(int x,int y) const;
         
-        const char* getBitmap() const { return this->_bitmap.getBitmap(); }
+        const char* getBitmapAt(int x,int y) const { return this->_bitmap.getBitmapAt(x,y); }
         
-        char* getBitmap() { return this->_bitmap.getBitmap(); }
+        char* getBitmapAt(int x,int y) { return this->_bitmap.getBitmapAt(x,y); }
 
         /**
          * @brief Returns a list of portions of image that are not yet rendered within the 
