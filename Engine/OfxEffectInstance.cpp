@@ -652,6 +652,8 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
+    ///before calling render, set the render scale thread storage for each clip
+    effectInstance()->setClipsRenderScale(scale);
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale,isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
     if (stat != kOfxStatOK) {
         return StatFailed;

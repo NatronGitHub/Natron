@@ -222,19 +222,20 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
 {
-    return getImageInternal(time,_viewRendered.localData(),optionalBounds);
+    const LastRenderArgs& args = _lastRenderArgs.localData();
+    return getImageInternal(time,args.scale,args.view,optionalBounds);
 }
 
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, int view, OfxRectD */*optionalBounds*/){
+OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,const OfxPointD& renderScale,
+                                                                 int view, OfxRectD */*optionalBounds*/){
     if(isOutput()){
         boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
         assert(outputImage);
         return new OfxImage(outputImage,*this);
     }else{
-        RenderScale scale;
-        scale.x = scale.y = 1.;
+
         // input has been rendered just find it in the cache
-        boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, scale,view);
+        boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view);
         if(!image){
             return NULL;
         }else{
@@ -331,9 +332,34 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
 {
-    return getImageInternal(time,view,optionalBounds);
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    if (_lastRenderArgs.hasLocalData()) {
+        scale = _lastRenderArgs.localData().scale;
+    }
+    return getImageInternal(time,scale,view,optionalBounds);
 }
 
-void OfxClipInstance::setView(int view){
-    _viewRendered.setLocalData(view);
+void OfxClipInstance::setView(int view) {
+    LastRenderArgs args;
+    if (_lastRenderArgs.hasLocalData()) {
+        args = _lastRenderArgs.localData();
+    } else {
+        args.scale.x = args.scale.y = 1.;
+    }
+    args.view = view;
+    _lastRenderArgs.setLocalData(args);
+}
+
+void OfxClipInstance::setRenderScale(const OfxPointD& scale)
+{
+    LastRenderArgs args;
+    if (_lastRenderArgs.hasLocalData()) {
+        args = _lastRenderArgs.localData();
+    } else {
+        args.view = 0;
+    }
+    args.scale = scale;
+    _lastRenderArgs.setLocalData(args);
+
 }

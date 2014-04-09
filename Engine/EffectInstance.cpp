@@ -363,7 +363,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     ImageComponents components = Natron::ImageComponentRGBA;
     
     boost::shared_ptr<Natron::Image> downscaledImage = image;
-
+    
+    ///The roi to render, if we upscale the image, we upscale it too
+    RectI roiToRender = args.roi;
+    
     if (!isCached) {
         
         ///first-off check whether the effect is identity, in which case we don't want
@@ -405,10 +408,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
+                if (args.scale.x != 1. || args.scale.y != 1.) {
+                    rod = rod.scaled(args.scale.x, args.scale.y);
+                }
             }
-            if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
-                rod = rod.scaled(args.scale.x, args.scale.y);
-            }
+            
             // why should the rod be empty here?
             assert(!rod.isNull());
             
@@ -435,8 +439,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         
         RectI upscaledRoD = rod;
-        ///if the effect doesnt support render scale, scale the RoD
-        if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+        ///if the effect doesnt support render scale, compute the upscaled RoD
+        if (args.scale.x != 1. || args.scale.y != 1.) {
             upscaledRoD = rod.scaled(upscaleFactor.x, upscaleFactor.y);
         }
         
@@ -447,6 +451,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             if (!supportsRenderScale() && args.scale.x != 1 && args.scale.y != 1.) {
                 image.reset(new Natron::Image(components,upscaledRoD,upscale,args.time));
                 downscaledImage.reset(new Natron::Image(components,rod,args.scale,args.time));
+                roiToRender = roiToRender.scaled(upscaleFactor.x, upscaleFactor.y);
             } else {
                 image.reset(new Natron::Image(components,rod,args.scale,args.time));
             }
@@ -471,8 +476,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             image = newImage;
             downscaledImage = image;
 
-            if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+            if (!supportsRenderScale() && (args.scale.x != 1. || args.scale.y != 1.)) {
                 image.reset(new Natron::Image(components,upscaledRoD,upscale,args.time));
+                roiToRender = roiToRender.scaled(upscaleFactor.x, upscaleFactor.y);
             }
             
         }
@@ -507,12 +513,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         ///render the parts we are interested in and then downscale again
         ///Before doing that we verify if everything we want is already rendered in which case we
         ///dont degrade the image
-        if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+        if (!supportsRenderScale() && (args.scale.x != 1. || args.scale.y != 1.)) {
             
             std::list<RectI> rectsRendered = image->getRestToRender(args.roi);
             if (rectsRendered.empty()) {
                 return image;
             }
+            
             
             RenderScale upscaleFactor,upscale;
             upscale.x = upscale.y = 1.;
@@ -522,6 +529,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                             new Natron::Image(components,cachedImgParams->getRoD().scaled(upscaleFactor.x, upscaleFactor.y),upscale,args.time));
             image->scaled(upscaledImage.get(), upscaleFactor.x, upscaleFactor.y);
             image = upscaledImage;
+            
+            roiToRender = roiToRender.scaled(upscaleFactor.x, upscaleFactor.y);
         }
         
     }
@@ -529,12 +538,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
-    bool success = renderRoIInternal(args.time, args.scale, args.view, args.roi, cachedImgParams, image,
+    bool success = renderRoIInternal(args.time, args.scale, args.view, roiToRender, cachedImgParams, image,
                                      args.isSequentialRender,args.isRenderUserInteraction ,byPassCache);
     
     ///If the image was cached but the effect doesn't support the render scale, we downscale the result of the render into
     ///the original image
-    if (!supportsRenderScale() && args.scale.x != 1. && args.scale.y != 1.) {
+    if (!supportsRenderScale() && (args.scale.x != 1. || args.scale.y != 1.)) {
         image->scaled(downscaledImage.get(), args.scale.x, args.scale.y);
         image = downscaledImage;
     }

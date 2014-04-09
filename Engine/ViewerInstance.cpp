@@ -409,6 +409,10 @@ ViewerInstance::renderViewer(SequenceTime time,
 #endif
             return stat;
         }
+        
+        if (scale.x != 1. || scale.y != 1.) {
+            rod = rod.scaled(scale.x,scale.y);
+        }
       
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 
@@ -444,18 +448,13 @@ ViewerInstance::renderViewer(SequenceTime time,
     texRectClipped.y1 *= closestPowerOf2;
     texRectClipped.y2 *= closestPowerOf2;
     texRectClipped.intersect(rod, &texRectClipped);
-    RectI texRectClippedScaled = texRectClipped;
-    
-    if (!isInputImgCached) {
-        texRectClippedScaled.x2 *= scale.x;
-        texRectClippedScaled.y2 *= scale.y;
-    }
     
     int texW = texRect.width() > rod.width() ? rod.width() : texRect.width();
     int texH = texRect.height() > rod.height() ? rod.height() : texRect.height();
     
-    TextureRect textureRect(texRectClippedScaled.x1,texRectClippedScaled.y1,texRectClippedScaled.x2,
-                            texRectClippedScaled.y2,texW,texH,closestPowerOf2);
+    
+    TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
+                            texRectClipped.y2,texW,texH,closestPowerOf2);
     
     //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
@@ -685,18 +684,18 @@ ViewerInstance::renderViewer(SequenceTime time,
                                         offset,
                                         lutFromColorspace(lut));
 
-            renderFunctor(std::make_pair(texRectClippedScaled.y1,texRectClippedScaled.y2),
+            renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
                           ramBuffer);
         } else {
 
-            int rowsPerThread = std::ceil((double)(texRectClippedScaled.x2 - texRectClippedScaled.x1) / (double)QThread::idealThreadCount());
+            int rowsPerThread = std::ceil((double)(texRectClipped.x2 - texRectClipped.x1) / (double)QThread::idealThreadCount());
             // group of group of rows where first is image coordinate, second is texture coordinate
             QList< std::pair<int, int> > splitRows;
-            int k = texRectClippedScaled.y1;
-            while (k < texRectClippedScaled.y2) {
+            int k = texRectClipped.y1;
+            while (k < texRectClipped.y2) {
                 int top = k + rowsPerThread;
-                int realTop = top > texRectClippedScaled.y2 ? texRectClippedScaled.y2 : top;
+                int realTop = top > texRectClipped.y2 ? texRectClipped.y2 : top;
                 splitRows.push_back(std::make_pair(k,realTop));
                 k += rowsPerThread;
             }

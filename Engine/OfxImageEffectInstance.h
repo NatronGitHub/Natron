@@ -177,6 +177,7 @@ public:
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
     void addParamsToTheirParents();
     
+    void setClipsRenderScale(const OfxPointD& scale);
 
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //

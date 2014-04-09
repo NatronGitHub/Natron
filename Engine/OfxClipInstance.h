@@ -144,6 +144,8 @@ public:
     /// The view number has to be stored in the Clip, so this is typically not thread-safe,
     /// except if thread-local storage is used.
     virtual void setView(int view) OVERRIDE FINAL;
+    
+    void setRenderScale(const OfxPointD& scale);
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -152,11 +154,18 @@ public:
 
 private:
     
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
+    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD& renderScale, int view, OfxRectD *optionalBounds);
     
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
-    Natron::ThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
+    
+    struct LastRenderArgs
+    {
+        OfxPointD scale;
+        int view;
+    };
+    
+    Natron::ThreadStorage<LastRenderArgs> _lastRenderArgs; //< foreach render thread, the args
 };
 
 class OfxImage : public OFX::Host::ImageEffect::Image
