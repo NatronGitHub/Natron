@@ -181,7 +181,11 @@ Key_R14 = kOfxKey_R14,
 Key_F35 = kOfxKey_F35,
 Key_R15 = kOfxKey_R15,
 
-
+// Note that on the Mac:
+// cmd/apple/cloverleaf is kOfxKey_Control_L
+// ctrl is kOfxKey_Meta_L
+// alt/option is kOfxKey_Alt_L
+// Qt does the translation for us
 Key_Shift_L = kOfxKey_Shift_L,
 Key_Shift_R = kOfxKey_Shift_R,
 Key_Control_L = kOfxKey_Control_L,
