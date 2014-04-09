@@ -288,6 +288,9 @@ void ViewerGL::drawRenderingVAO()
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    RectI texRect(r.x1,r.y1,r.x2,r.y2);
+    
+    double renderScale = getInternalNode()->getRenderScale();
     
     ///the RoD of the iamge
     RectI rod;
@@ -301,6 +304,13 @@ void ViewerGL::drawRenderingVAO()
             rod.intersect(getRoD(), &rod);
         }
     }
+    
+    if (renderScale != 1.) {
+        double rs = 1. / renderScale;
+        rod = rod.scaled(rs,rs);
+        texRect = texRect.scaled(rs, rs);
+    }
+
     
     //if user RoI is enabled, clip the rod to that roi
     {
@@ -328,32 +338,35 @@ void ViewerGL::drawRenderingVAO()
     glScissor(scissorBoxBtmLeft.x(),scissorBoxBtmLeft.y(),scissorBoxTopRight.x() - scissorBoxBtmLeft.x(),
               scissorBoxTopRight.y() - scissorBoxBtmLeft.y());
     
+    
+    
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
-        (GLfloat)r.x1       , (GLfloat)rod.top()  , //1
-        (GLfloat)r.x2 , (GLfloat)rod.top()  , //2
+        (GLfloat)texRect.x1       , (GLfloat)rod.top()  , //1
+        (GLfloat)texRect.x2 , (GLfloat)rod.top()  , //2
         (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
-        (GLfloat)rod.left(), (GLfloat)r.y2, //4
-        (GLfloat)r.x1      ,  (GLfloat)r.y2, //5
-        (GLfloat)r.x2,  (GLfloat)r.y2, //6
-        (GLfloat)rod.right(),(GLfloat)r.y2, //7
-        (GLfloat)rod.left() ,(GLfloat)r.y1      , //8
-        (GLfloat)r.x1      ,  (GLfloat)r.y1      , //9
-        (GLfloat)r.x2,  (GLfloat)r.y1      , //10
-        (GLfloat)rod.right(),(GLfloat)r.y1      , //11
+        (GLfloat)rod.left(), (GLfloat)texRect.y2, //4
+        (GLfloat)texRect.x1      ,  (GLfloat)texRect.y2, //5
+        (GLfloat)texRect.x2,  (GLfloat)texRect.y2, //6
+        (GLfloat)rod.right(),(GLfloat)texRect.y2, //7
+        (GLfloat)rod.left() ,(GLfloat)texRect.y1      , //8
+        (GLfloat)texRect.x1      ,  (GLfloat)texRect.y1      , //9
+        (GLfloat)texRect.x2,  (GLfloat)texRect.y1      , //10
+        (GLfloat)rod.right(),(GLfloat)texRect.y1      , //11
         (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
-        (GLfloat)r.x1      ,  (GLfloat)rod.bottom(), //13
-        (GLfloat)r.x2,  (GLfloat)rod.bottom(), //14
+        (GLfloat)texRect.x1      ,  (GLfloat)rod.bottom(), //13
+        (GLfloat)texRect.x2,  (GLfloat)rod.bottom(), //14
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
 
    // std::cout << "ViewerGL: x1= " << r.x1 << " x2= " << r.x2 << " y1= " << r.y1 << " y2= " << r.y2 << std::endl;
 
+    
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
-    texTop =  (GLfloat)(r.y2 - r.y1)/ (GLfloat)(r.h * r.closestPo2);
+    texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
-    texRight = (GLfloat)(r.x2 - r.x1) / (GLfloat)(r.w * r.closestPo2);
+    texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
     
     // texTop = texTop > 1 ? 1 : texTop;
     //  texRight = texRight > 1 ? 1 : texRight;
@@ -2381,3 +2394,4 @@ ViewerInstance* ViewerGL::getInternalNode() const {
 ViewerTab* ViewerGL::getViewerTab() const {
     return _imp->viewerTab;
 }
+

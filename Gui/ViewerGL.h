@@ -90,7 +90,7 @@ public:
     
     
     /**
-     *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
+     *@returns Returns the displayWindow of the currentFrame(Resolution)
      **/
     // MT-SAFE: don't return a reference
     Format getDisplayWindow() const;
@@ -274,7 +274,7 @@ public:
     ViewerInstance* getInternalNode() const;
     
     ViewerTab* getViewerTab() const;
-    
+        
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.

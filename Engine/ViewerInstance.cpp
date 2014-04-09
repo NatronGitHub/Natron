@@ -418,6 +418,15 @@ ViewerInstance::renderViewer(SequenceTime time,
 
     }
     
+    RenderScale upscaleFactor,upscale;
+    upscale.x = upscale.y = 1.;
+    upscaleFactor.x = upscale.x / scale.x;
+    upscaleFactor.y = upscale.y / scale.y;
+    RectI upscaledRoD = rod;
+    if (scale.x != 1. || scale.y != 1.) {
+        upscaledRoD = upscaledRoD.scaled(upscaleFactor.x, upscaleFactor.y);
+    }
+    
 
     emit rodChanged(rod);
 
@@ -584,12 +593,8 @@ ViewerInstance::renderViewer(SequenceTime time,
             /// If the list is empty then we already rendered it all
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
             if (!rectsToRender.empty()) {
-                RenderScale upscaleFactor,upscale;
-                upscale.x = upscale.y = 1.;
-                upscaleFactor.x = upscale.x / scale.x;
-                upscaleFactor.y = upscale.y / scale.y;
                 boost::shared_ptr<Natron::Image> upscaledImage(
-                            new Natron::Image(components,cachedImgParams->getRoD().scaled(upscaleFactor.x, upscaleFactor.y),upscale,time));
+                            new Natron::Image(components,upscaledRoD,upscale,time));
                 inputImage->scaled(upscaledImage.get(), upscaleFactor.x, upscaleFactor.y);
                 inputImage = upscaledImage;
             } else {
@@ -931,7 +936,7 @@ scaleToTexture8bits(std::pair<int,int> yRange,
     int dstY = 0;
     for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
         
-        int start = (int)(rand() % ((args.texRect.x2 - args.texRect.x1)/args.closestPowerOf2));
+        int start = (int)(rand() % std::max(((args.texRect.x2 - args.texRect.x1)/args.closestPowerOf2),1));
         const float* src_pixels = (const float*)args.inputImage->pixelAt(args.texRect.x1, y);
         
         U32* dst_pixels = output + dstY * args.texRect.w;

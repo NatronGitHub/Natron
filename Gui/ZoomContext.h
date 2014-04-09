@@ -164,7 +164,7 @@ public:
         _zoomBottom = centerY - (centerY - bottom()) / scale;
         _zoomFactor *= scale;
     }
-
+    
     // only zoom the x axis: changes the PAR and the Left but not the zoomFactor or the bottom
     void zoomx(double centerX, double /*centerY*/, double scale)
     {

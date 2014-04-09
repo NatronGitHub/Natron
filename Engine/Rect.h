@@ -92,8 +92,8 @@ public:
         RectI ret;
         ret.x1 = x1;
         ret.y1 = y1;
-        ret.x2 = std::floor((double)(x2 * sx) + 0.5);
-        ret.y2 = std::floor((double)(y2 * sy) + 0.5);
+        ret.x2 = x1 + std::floor((double)((x2 - x1) * sx) + 0.5);
+        ret.y2 = y1 + std::floor((double)((y2 - y1) * sy) + 0.5);
         return ret;
     }
     

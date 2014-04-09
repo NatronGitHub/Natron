@@ -209,7 +209,10 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     
     _imp->_activateRenderScale = new Button(_imp->_firstSettingsRow);
     QKeySequence rsKs(Qt::CTRL + Qt::Key_P);
-    _imp->_activateRenderScale->setToolTip("Activates the downscaling by the amount indicated by the value on the right."
+    _imp->_activateRenderScale->setToolTip("<p><b>Proxy mode</b></p>"
+                                           "Activates the downscaling by the amount indicated by the value on the right. \n"
+                                           "The rendered images are degraded and as a result of this the whole rendering pipeline \n"
+                                           "is much faster."
                                            "<p><b>Keyboard shortcut: "+ rsKs.toString(QKeySequence::NativeText) +"</b></p>");
     _imp->_activateRenderScale->setCheckable(true);
     _imp->_activateRenderScale->setChecked(false);
@@ -217,7 +220,8 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     _imp->_firstRowLayout->addWidget(_imp->_activateRenderScale);
     
     _imp->_renderScaleCombo = new ComboBox(_imp->_firstSettingsRow);
-    _imp->_renderScaleCombo->setToolTip("Scales down the rendered image by this factor to accelerate the rendering.");
+    _imp->_renderScaleCombo->setToolTip("When proxy mode is activated, it scales down the rendered image by this factor \n"
+                                        "to accelerate the rendering.");
     _imp->_renderScaleCombo->addItem("2");
     _imp->_renderScaleCombo->addItem("4");
     _imp->_renderScaleCombo->addItem("8");
