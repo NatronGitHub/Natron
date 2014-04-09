@@ -31,6 +31,8 @@ Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension )
     , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)
     , _defaultValues(dimension)
+    , _isDoingSetValue(false)
+    , _isDoingSetValueMutex(QMutex::Recursive)
 {
     
 }
@@ -207,10 +209,24 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
     if (holder && holder->isDoingInteractAction() && reason != Natron::USER_EDITED) {
-        Variant vari;
-        valueToVariant(v, &vari);
-        _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
-        return ret;
+        
+        bool doingSetValue;
+        {
+            QMutexLocker l(&_isDoingSetValueMutex);
+            doingSetValue = _isDoingSetValue;
+        }
+        if (!doingSetValue) {
+            Variant vari;
+            valueToVariant(v, &vari);
+            _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
+            return ret;
+            
+        }
+    }
+    
+    {
+        QMutexLocker l(&_isDoingSetValueMutex);
+        _isDoingSetValue = true;
     }
 
     ///if the knob is slaved to another knob,return, because we don't want the
@@ -243,6 +259,12 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason);
     }
+    {
+        QMutexLocker l(&_isDoingSetValueMutex);
+        _isDoingSetValue = false;
+    }
+
+    
     return ret;
 
 }

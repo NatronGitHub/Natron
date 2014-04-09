@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <QtCore/QReadWriteLock>
+#include <QtCore/QMutex>
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
@@ -873,6 +874,10 @@ private:
     mutable QReadWriteLock _valueMutex; //< protects _values
     std::vector<T> _values;
     std::vector<T> _defaultValues;
+    
+    ///this flag is to avoid recursive setValue calls
+    bool _isDoingSetValue;
+    QMutex _isDoingSetValueMutex;
 
 
 };
