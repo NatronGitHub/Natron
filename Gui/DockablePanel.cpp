@@ -439,10 +439,8 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
             assert(fieldContainer);
             assert(fieldLayout);
             
-            ClickableLabel* label = NULL;
-            if (makeNewLine) {
-                label = new ClickableLabel("",parentTab->second.first);
-            }
+            ClickableLabel* label = new ClickableLabel("",parentTab->second.first);
+
             
             if (ret->showDescriptionLabel() && label) {
                 label->setText_overload(QString(QString(ret->getKnob()->getDescription().c_str()) + ":"));
@@ -571,6 +569,7 @@ void DockablePanel::closePanel() {
         floatPanel();
     }
     close();
+    getGui()->getApp()->redrawAllViewers();
     
 }
 void DockablePanel::minimizeOrMaximize(bool toggled){

@@ -49,6 +49,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
 
 using namespace Natron;
 
@@ -897,13 +899,14 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
     }
 
     
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        effect->drawOverlay_public(scaleX,scaleY);
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            effect->drawOverlay_public(scaleX,scaleY);
+        }
     }
 }
 
@@ -913,19 +916,20 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
         return false;
     }
     
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
     return false;
@@ -936,18 +940,19 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
     if (_imp->_gui->isClosing()) {
         return false;
     }
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
     return false;
@@ -959,18 +964,19 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
         return false;
     }
     
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
     return false;
@@ -982,19 +988,20 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
         return false;
     }
     
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,
-                                        QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,
+                                                              QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
     return false;
@@ -1006,20 +1013,21 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
         return false;
     }
     
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyUp_public(scaleX,scaleY,
-                                        QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayKeyUp_public(scaleX,scaleY,
+                                                            QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
     return false;
@@ -1030,20 +1038,21 @@ bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e
     if (_imp->_gui->isClosing()) {
         return false;
     }
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat_public(scaleX,scaleY,
-                                            QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayKeyRepeat_public(scaleX,scaleY,
+                                        QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+                // to any other interactive object it may own that shares the same view.
+                return true;
+            }
         }
     }
     return false;
@@ -1055,18 +1064,18 @@ bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
         return false;
     }
     bool ret = false;
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
-        if (didSmthing) {
-            ret = true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
+            if (didSmthing) {
+                ret = true;
+            }
         }
-        
     }
     return ret;
 }
@@ -1077,16 +1086,17 @@ bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
         return false;
     }
     bool ret = false;
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
-        if (didSmthing) {
-            ret = true;
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        if ((*it)->isSettingsPanelVisible()) {
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            
+            effect->setCurrentViewportForOverlays(_imp->viewer);
+            bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
+            if (didSmthing) {
+                ret = true;
+            }
         }
     }
     return ret;

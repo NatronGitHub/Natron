@@ -683,6 +683,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
             break;
         }
     }
+    getGui()->getApp()->redrawAllViewers();
     
 }
 bool NodeGraph::event(QEvent* event){
