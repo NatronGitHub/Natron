@@ -65,7 +65,7 @@ public:
     /**
      * @brief Must return the user's region of interest rectangle.
     **/
-    virtual const RectI& getUserRegionOfInterest() const = 0;
+    virtual RectI getUserRegionOfInterest() const = 0;
 
     /**
      * @brief This function must do the following:

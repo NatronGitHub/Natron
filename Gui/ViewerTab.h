@@ -24,7 +24,7 @@ class ViewerGL;
 class ViewerInstance;
 class Gui;
 class RectI;
-
+class Format;
 
 struct ViewerTabPrivate;
 class ViewerTab: public QWidget 
@@ -53,23 +53,23 @@ public:
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
     /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays() const;
+    void drawOverlays(double scaleX,double scaleY) const;
     
-    bool notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     
-    bool notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     
-    bool notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     
-    bool notifyOverlaysKeyDown(QKeyEvent* e);
+    bool notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e);
     
-    bool notifyOverlaysKeyUp(QKeyEvent* e);
+    bool notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e);
     
-    bool notifyOverlaysKeyRepeat(QKeyEvent* e);
+    bool notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e);
     
-    bool notifyOverlaysFocusGained();
+    bool notifyOverlaysFocusGained(double scaleX,double scaleY);
     
-    bool notifyOverlaysFocusLost();
+    bool notifyOverlaysFocusLost(double scaleX,double scaleY);
     
     
     
@@ -107,6 +107,8 @@ public:
     void setRenderScaleActivated(bool act);
     
     bool getRenderScaleActivated() const;
+    
+    void setInfoBarResolution(const Format& f);
     
 public slots:
     

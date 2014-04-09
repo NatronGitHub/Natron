@@ -14,7 +14,10 @@
 #include <QtGui/QImage>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QThread>
+#include <QCoreApplication>
 
+#include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"
 #include "Gui/ViewerGL.h"
 
@@ -173,13 +176,16 @@ void InfoViewerWidget::updateCoordMouse(){
     .arg(mousePos.y());
     coordMouse->setText(coord);
 }
-void InfoViewerWidget::changeResolution(){
-    format = viewer->getDisplayWindow();
+
+void InfoViewerWidget::setResolution(const Format& f)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    format = f;
     if(format.getName() == std::string("")){
         QString reso;
         reso = QString("<font color=\"#DBE0E0\">%1x%2\t</font>")
-        .arg(viewer->getDisplayWindow().width())
-        .arg(viewer->getDisplayWindow().height());
+        .arg(format.width())
+        .arg(format.height());
         resolution->setText(reso);
         resolution->setMaximumWidth(resolution->sizeHint().width());
     }else{
@@ -189,16 +195,29 @@ void InfoViewerWidget::changeResolution(){
         reso.append("</font>");
         resolution->setText(reso);
         resolution->setMaximumWidth(resolution->sizeHint().width());
-
+        
     }
+}
+
+void InfoViewerWidget::changeResolution(){
+    Format f = viewer->getDisplayWindow();
+    double scale = viewer->getInternalNode()->getRenderScale();
+    if (scale != 1.) {
+        f = f.scaled(scale, scale);
+    }
+    setResolution(f);
+    
+    
+   
 }
 void InfoViewerWidget::changeDataWindow(){
     QString bbox;
+    RectI rod = viewer->getRoD();
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-    .arg(viewer->getRoD().left())
-    .arg(viewer->getRoD().bottom())
-    .arg(viewer->getRoD().right())
-    .arg(viewer->getRoD().top());
+    .arg(rod.left())
+    .arg(rod.bottom())
+    .arg(rod.right())
+    .arg(rod.top());
 
     coordDispWindow->setText(bbox);
 }

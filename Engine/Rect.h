@@ -90,10 +90,10 @@ public:
     
     RectI scaled(double sx,double sy) const {
         RectI ret;
-        ret.x1 = x1;
-        ret.y1 = y1;
-        ret.x2 = x1 + std::floor((double)((x2 - x1) * sx) + 0.5);
-        ret.y2 = y1 + std::floor((double)((y2 - y1) * sy) + 0.5);
+        ret.x1 = std::floor(x1 * sx + 0.5);
+        ret.y1 = std::floor(y1 * sy + 0.5);
+        ret.x2 = ret.x1 + std::floor((double)((x2 - x1) * sx) + 0.5);
+        ret.y2 = ret.y1 + std::floor((double)((y2 - y1) * sy) + 0.5);
         return ret;
     }
     

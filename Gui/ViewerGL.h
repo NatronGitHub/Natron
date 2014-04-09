@@ -242,7 +242,7 @@ public:
     
     virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
     
-    virtual const RectI& getUserRegionOfInterest() const OVERRIDE FINAL;
+    virtual RectI getUserRegionOfInterest() const OVERRIDE FINAL;
     
     void setUserRoI(const RectI& r);
 
@@ -274,6 +274,8 @@ public:
     ViewerInstance* getInternalNode() const;
     
     ViewerTab* getViewerTab() const;
+    
+    void onRenderScaleChanged(double scale);
         
 signals:
     /**
@@ -379,7 +381,7 @@ private:
      *@brief Fill the rendering VAO with vertices and texture coordinates
      *that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO();
+    void drawRenderingVAO(double renderScale);
     
     /**
      *@brief Makes the viewer display black only.
@@ -406,7 +408,7 @@ private:
      *@brief Called inside paintGL(). It will draw all the overlays. It also calls
      *VideoEngine::drawOverlay()
      **/
-    void drawOverlay();
+    void drawOverlay(double renderScale);
     
     /**
      * @brief Called by drawOverlay to draw the user region of interest.
@@ -418,23 +420,23 @@ private:
      **/
     void drawPersistentMessage();
 
-    bool isNearByUserRoITopEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoITopEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIRightEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoIRightEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoILeftEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoILeftEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIBottomEdge(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoIBottomEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIMiddleHandle(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoIMiddleHandle(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoITopLeft(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoITopLeft(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoITopRight(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoITopRight(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIBottomRight(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoIBottomRight(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
     
-    bool isNearByUserRoIBottomLeft(const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoIBottomLeft(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details

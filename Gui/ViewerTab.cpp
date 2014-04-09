@@ -891,7 +891,7 @@ void ViewerTab::showView(int view){
 }
 
 
-void ViewerTab::drawOverlays() const{
+void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
     if (_imp->_gui->isClosing()) {
         return;
     }
@@ -903,11 +903,11 @@ void ViewerTab::drawOverlays() const{
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        effect->drawOverlay_public();
+        effect->drawOverlay_public(scaleX,scaleY);
     }
 }
 
-bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
     if (_imp->_gui->isClosing()) {
         return false;
@@ -920,7 +920,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -931,7 +931,7 @@ bool ViewerTab::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& 
     return false;
 }
 
-bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
     if (_imp->_gui->isClosing()) {
         return false;
@@ -942,7 +942,7 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -953,30 +953,7 @@ bool ViewerTab::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF
     return false;
 }
 
-bool ViewerTab::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
-    
-    if (_imp->_gui->isClosing()) {
-        return false;
-    }
-    
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    _imp->_gui->getApp()->getActiveNodes(&nodes);
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenUp_public(viewportPos, pos);
-        if (didSmthing) {
-            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-            // if the instance returns kOfxStatOK, the host should not pass the pen motion
-            // to any other interactive object it may own that shares the same view.
-            return true;
-        }
-    }
-    return false;
-}
-
-bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
+bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
     if (_imp->_gui->isClosing()) {
         return false;
@@ -988,7 +965,7 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -999,7 +976,7 @@ bool ViewerTab::notifyOverlaysKeyDown(QKeyEvent* e){
     return false;
 }
 
-bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
+bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
     
     if (_imp->_gui->isClosing()) {
         return false;
@@ -1010,9 +987,9 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
     for (U32 i = 0; i < nodes.size(); ++i) {
         Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
         assert(effect);
-        
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyUp_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,
+                                        QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -1023,11 +1000,12 @@ bool ViewerTab::notifyOverlaysKeyUp(QKeyEvent* e){
     return false;
 }
 
-bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
+bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
     
     if (_imp->_gui->isClosing()) {
         return false;
     }
+    
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_gui->getApp()->getActiveNodes(&nodes);
     for (U32 i = 0; i < nodes.size(); ++i) {
@@ -1035,7 +1013,8 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat_public(QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        bool didSmthing = effect->onOverlayKeyUp_public(scaleX,scaleY,
+                                        QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -1046,7 +1025,31 @@ bool ViewerTab::notifyOverlaysKeyRepeat(QKeyEvent* e){
     return false;
 }
 
-bool ViewerTab::notifyOverlaysFocusGained(){
+bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e){
+    
+    if (_imp->_gui->isClosing()) {
+        return false;
+    }
+    std::vector<boost::shared_ptr<Natron::Node> > nodes;
+    _imp->_gui->getApp()->getActiveNodes(&nodes);
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        Natron::EffectInstance* effect = nodes[i]->getLiveInstance();
+        assert(effect);
+        
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayKeyRepeat_public(scaleX,scaleY,
+                                            QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+        if (didSmthing) {
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            // to any other interactive object it may own that shares the same view.
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
     
     if (_imp->_gui->isClosing()) {
         return false;
@@ -1059,7 +1062,7 @@ bool ViewerTab::notifyOverlaysFocusGained(){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusGained_public();
+        bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
         if (didSmthing) {
             ret = true;
         }
@@ -1068,7 +1071,7 @@ bool ViewerTab::notifyOverlaysFocusGained(){
     return ret;
 }
 
-bool ViewerTab::notifyOverlaysFocusLost(){
+bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
     
     if (_imp->_gui->isClosing()) {
         return false;
@@ -1081,7 +1084,7 @@ bool ViewerTab::notifyOverlaysFocusLost(){
         assert(effect);
         
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusLost_public();
+        bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
         if (didSmthing) {
             ret = true;
         }
@@ -1166,6 +1169,7 @@ void ViewerTab::setRenderScale(double scale)
     } else {
         _imp->_renderScaleCombo->setCurrentIndex(0);
     }
+    _imp->viewer->onRenderScaleChanged(scale);
     _imp->_viewerNode->onRenderScaleChanged(scale);
 }
 
@@ -1258,6 +1262,7 @@ void ViewerTab::onRenderScaleComboIndexChanged(int index)
     } else {
         rs = 1.;
     }
+    _imp->viewer->onRenderScaleChanged(rs);
     _imp->_viewerNode->onRenderScaleChanged(rs);
 }
 
@@ -1266,4 +1271,9 @@ void ViewerTab::onRenderScaleButtonClicked(bool checked)
     _imp->_activateRenderScale->setDown(checked);
     _imp->_activateRenderScale->setChecked(checked);
     onRenderScaleComboIndexChanged(_imp->_renderScaleCombo->activeIndex());
+}
+
+void ViewerTab::setInfoBarResolution(const Format& f)
+{
+    _imp->_infosWidget->setResolution(f);
 }

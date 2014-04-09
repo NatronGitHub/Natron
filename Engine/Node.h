@@ -309,24 +309,6 @@ public:
      **/
     void setAborted(bool b);
 
-    void drawOverlay();
-    
-    bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos);
-    
-    bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos);
-    
-    bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos);
-    
-    bool onOverlayKeyDown(Natron::Key key,Natron::KeyboardModifiers modifiers);
-    
-    bool onOverlayKeyUp(Natron::Key key,Natron::KeyboardModifiers modifiers);
-    
-    bool onOverlayKeyRepeat(Natron::Key key,Natron::KeyboardModifiers modifiers);
-    
-    bool onOverlayFocusGained();
-    
-    bool onOverlayFocusLost();
-
     bool makePreviewByDefault() const;
     
     void togglePreview();

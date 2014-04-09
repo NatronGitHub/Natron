@@ -36,6 +36,8 @@ public:
     bool colorAndMouseVisible(){return _colorAndMouseVisible;}
     void colorAndMouseVisible(bool b){_colorAndMouseVisible=b;}
     
+    void setResolution(const Format& f);
+    
 public slots:
     void updateColor();
     void updateCoordMouse();
@@ -49,6 +51,8 @@ public slots:
     
 private:
     virtual QSize sizeHint() const OVERRIDE FINAL;
+    
+    
     
 private:
     bool _colorAndMouseVisible;

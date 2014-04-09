@@ -578,9 +578,9 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         assert(ramBuffer);
 
-        if (!activeInputToRender->supportsTiles()) {
+        // if (!activeInputToRender->supportsTiles()) {
             texRectClipped.intersect(rod, &texRectClipped);
-        }
+        //}
         
         boost::shared_ptr<Natron::Image> originalInputImage = inputImage;
         
@@ -958,9 +958,14 @@ scaleToTexture8bits(std::pair<int,int> yRange,
                     break;
                     //dst_pixels[dstIndex] = toBGRA(0,0,0,255);
                 } else {
-                    double r = src_pixels[srcIndex * 4 + rOffset] * args.gain + args.offset;
-                    double g = src_pixels[srcIndex * 4 + gOffset] * args.gain + args.offset;
-                    double b = src_pixels[srcIndex * 4 + bOffset] * args.gain + args.offset;
+                    
+                    double r = src_pixels ? src_pixels[srcIndex * 4 + rOffset] : 0.;
+                    double g = src_pixels ? src_pixels[srcIndex * 4 + gOffset] : 0.;
+                    double b = src_pixels ? src_pixels[srcIndex * 4 + bOffset] : 0.;
+                    r =  r * args.gain + args.offset;
+                    g =  g * args.gain + args.offset;
+                    b =  b * args.gain + args.offset;
+                    
                     if (luminance) {
                         r = 0.299 * r + 0.587 * g + 0.114 * b;
                         g = r;
