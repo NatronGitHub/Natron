@@ -167,6 +167,9 @@ void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWi
     _imp->field = fieldContainer;
     _imp->descriptionLabel = label;
     _imp->isOnNewLine = isOnNewLine;
+    if (!isOnNewLine) {
+        layout->addWidget(label);
+    }
     createWidget(layout);
     if(knob->isAnimationEnabled() && knob->typeName() != File_Knob::typeNameStatic()){
         createAnimationButton(layout);

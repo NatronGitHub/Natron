@@ -560,3 +560,8 @@ void GuiApplicationManager::setUndoRedoStackLimit(int limit)
         }
     }
 }
+
+void GuiApplicationManager::debugImage(Natron::Image* image,const QString& filename) const
+{
+    Gui::debugImage(image,filename);
+}

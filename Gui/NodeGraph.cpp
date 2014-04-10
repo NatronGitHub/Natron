@@ -682,7 +682,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
             _gui->putSettingsPanelFirst((*it)->getSettingPanel());
             break;
         }
-    }
+    } 
     getGui()->getApp()->redrawAllViewers();
     
 }

@@ -217,6 +217,8 @@ public:
     QString getOfxLog_mt_safe() const;
     
     void writeToOfxLog_mt_safe(const QString& str);
+    
+    virtual void debugImage(Natron::Image* /*image*/,const QString& /*filename = QString()*/) const {}
 
 public slots:
 
