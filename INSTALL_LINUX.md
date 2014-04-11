@@ -60,6 +60,8 @@ LIBS is the path to the libs
 ----- copy and paste the following in a terminal -----
 cat > config.pri << EOF
 boost: LIBS += -lboost_serialization
+expat: LIBS += -lexpat
+expat: PKGCONFIG -= expat
 EOF
 ----- end -----
 
