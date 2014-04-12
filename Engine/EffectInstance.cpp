@@ -202,24 +202,34 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
-    RectI roi;
+    RectI roi,currentEffectRenderWindow;
     RectI precomputedRoD;
     bool isSequentialRender = false;
     bool isRenderUserInteraction = true;
     bool byPassCache = false;
+    bool isProjectFormat;
+    
+    ///we have no choice but to ask for a render of the region of interest
+
+
     if (_imp->renderArgs.hasLocalData()) {
-        roi = _imp->renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
         byPassCache = _imp->renderArgs.localData()._byPassCache;
+        currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
     } else {
-        bool isProjectFormat;
-        Natron::Status stat = n->getRegionOfDefinition(time,scale, &roi,&isProjectFormat);
-        precomputedRoD = roi;
-        if(stat == Natron::StatFailed) {//we have no choice but compute the full region of definition
+        Natron::Status stat = n->getRegionOfDefinition(time,scale, &precomputedRoD,&isProjectFormat);
+        if(stat == Natron::StatFailed) {
             return boost::shared_ptr<Natron::Image>();
         }
+        currentEffectRenderWindow = precomputedRoD;
     }
+    
+    RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow);
+    RoIMap::iterator found = inputsRoI.find(n);
+    assert(found != inputsRoI.end());
+    roi = found->second;
+    
     
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.
@@ -560,7 +570,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     if (!success) {
         throw std::runtime_error("Rendering Failed");
     }
-    
+
     return image;
 }
 

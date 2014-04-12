@@ -82,3 +82,9 @@ If you want to build in DEBUG mode change the qmake call to this line:
 Some debug options are available for developers of Natron and you can see them in the
 global.pri file. To enable an option just add CONFIG+=<option> in the qmake call.
 
+### OpenColorIO configs
+Note that if you want Natron to find the OpenColorIO config files you will need to
+place them in the appropriate location. In the repository they are located under
+Gui/Resources/OpenColorIO-Configs
+You must copy them to a directory named ../share/OpenColorIO-Configs relative to
+Natron's binary.
