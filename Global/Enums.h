@@ -177,7 +177,7 @@ namespace Natron{
         NATRON_PIXMAP_APP_ICON
     };
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2,OTHER_REASON =3};
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2,PROJECT_LOADING =3};
     
     enum AnimationLevel {
         NO_ANIMATION = 0,

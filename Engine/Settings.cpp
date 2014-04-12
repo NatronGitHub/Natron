@@ -322,7 +322,7 @@ void Settings::restoreSettings(){
     
     _wereChangesMadeSinceLastSave = false;
     
-    notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
+    notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     if (settings.contains("MaximumUndoRedoNodeGraph")) {

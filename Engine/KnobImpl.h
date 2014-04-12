@@ -297,7 +297,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,Natron::OTHER_REASON,NULL);
+        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
     }
 
     if (reason != Natron::USER_EDITED) {
@@ -332,7 +332,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,Natron::OTHER_REASON,NULL);
+        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
     }
 
     if (reason != Natron::USER_EDITED) {

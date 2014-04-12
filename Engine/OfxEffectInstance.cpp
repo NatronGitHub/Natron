@@ -114,7 +114,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
         effect_->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
-        notifyProjectBeginKnobsValuesChanged(Natron::OTHER_REASON);
+        notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
         OfxStatus stat = effect_->populate();
         
         initializeContextDependentParams();
@@ -913,7 +913,7 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
         case Natron::PLUGIN_EDITED:
             stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
             break;
-        case Natron::OTHER_REASON:
+        case Natron::PROJECT_LOADING:
         default:
             break;
     }
@@ -957,7 +957,7 @@ void OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reaso
         case Natron::PLUGIN_EDITED:
             stat = effectInstance()->beginInstanceChangedAction(kOfxChangePluginEdited);
             break;
-        case Natron::OTHER_REASON:
+        case Natron::PROJECT_LOADING:
         default:
             break;
     }
@@ -980,7 +980,7 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
         case Natron::PLUGIN_EDITED:
             stat = effectInstance()->endInstanceChangedAction(kOfxChangePluginEdited);
             break;
-        case Natron::OTHER_REASON:
+        case Natron::PROJECT_LOADING:
         default:
             break;
     }

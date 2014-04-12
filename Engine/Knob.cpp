@@ -184,7 +184,7 @@ struct KnobHelper::KnobHelperPrivate {
     , _animationLevel(dimension)
     , _betweenBeginEndMutex(QMutex::Recursive)
     , _betweenBeginEndCount(0)
-    , _beginEndReason(Natron::OTHER_REASON)
+    , _beginEndReason(Natron::PROJECT_LOADING)
     , _dimensionChanged()
     {
     }
@@ -969,6 +969,7 @@ void AnimatingString_KnobHelper::setCustomInterpolation(customParamInterpolation
 void AnimatingString_KnobHelper::loadAnimation(const std::map<int,std::string>& keyframes)
 {
     _animation->load(keyframes);
+    processNewValue(Natron::PROJECT_LOADING);
 }
 
 void AnimatingString_KnobHelper::saveAnimation(std::map<int,std::string>* keyframes) const

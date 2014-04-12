@@ -96,7 +96,7 @@ void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence)
 
 ///called when a value changes, just update the pattern
 void File_Knob::processNewValue(Natron::ValueChangedReason reason) {
-    if (reason != Natron::TIME_CHANGED) {
+    if (reason != Natron::TIME_CHANGED && reason != Natron::PROJECT_LOADING) {
         if (isSlave(0)) {
             std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(0);
             assert(master.second);
@@ -108,7 +108,16 @@ void File_Knob::processNewValue(Natron::ValueChangedReason reason) {
             _pattern = dynamic_cast< Knob<std::string>* >(this)->getValueForEachDimension()[0].c_str();
         }
  
-    }    
+    } else if (reason == Natron::PROJECT_LOADING) {
+        ///when the project is loading, build the pattern
+        if (isAnimated(0)) {
+            SequenceParsing::SequenceFromFiles sequence;
+            getFiles(&sequence);
+            _pattern = sequence.generateValidSequencePattern().c_str();
+        } else {
+            _pattern = dynamic_cast< Knob<std::string>* >(this)->getValueForEachDimension()[0].c_str();
+        }
+    }
 }
 
 void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)

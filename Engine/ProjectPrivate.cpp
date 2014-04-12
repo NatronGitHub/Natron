@@ -60,7 +60,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    project->beginProjectWideValueChanges(Natron::OTHER_REASON,project);
+    project->beginProjectWideValueChanges(Natron::PROJECT_LOADING,project);
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     

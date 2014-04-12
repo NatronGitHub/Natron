@@ -1048,6 +1048,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     scale.x = 1./closestPowerOf2;
     scale.y = scale.x;
     
+    rod = rod.scaled(scale.x, scale.y);
+    
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {

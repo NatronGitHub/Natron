@@ -1604,8 +1604,8 @@ CurveWidget::CurveWidget(boost::shared_ptr<TimeLine> timeline, QWidget* parent, 
     if(timeline){
         QObject::connect(timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeLineFrameChanged(SequenceTime,int)));
         QObject::connect(timeline.get(),SIGNAL(boundariesChanged(SequenceTime,SequenceTime,int)),this,SLOT(onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int)));
-        onTimeLineFrameChanged(timeline->currentFrame(), Natron::OTHER_REASON);
-        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::OTHER_REASON);
+        onTimeLineFrameChanged(timeline->currentFrame(), Natron::PROJECT_LOADING);
+        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::PROJECT_LOADING);
     }
 }
 
