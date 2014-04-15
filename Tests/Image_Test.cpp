@@ -65,25 +65,22 @@ TEST(ImageKeyTest,Equality) {
     int randomHashKey1 = rand();
 
     SequenceTime time1 = 0;
-    RenderScale scale1;
-    scale1.x = scale1.y = 1.;
+    unsigned int level1 = 1;
     int view1 = 0;
     double pa1 = 1.;
 
-    Natron::ImageKey key1(randomHashKey1,time1,scale1,view1,pa1);
+    Natron::ImageKey key1(randomHashKey1,time1,level1,view1,pa1);
     U64 keyHash1 = key1.getHash();
 
 
     ///make a second ImageKey equal to the first
     int randomHashKey2 = randomHashKey1;
     SequenceTime time2 = time1;
-    RenderScale scale2;
-    scale2.x = scale1.x;
-    scale2.y = scale1.y;
+    unsigned int level2 = level1;
     int view2 = view1;
     double pa2 = pa1;
 
-    Natron::ImageKey key2(randomHashKey2,time2,scale2,view2,pa2);
+    Natron::ImageKey key2(randomHashKey2,time2,level2,view2,pa2);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 
@@ -95,25 +92,22 @@ TEST(ImageKeyTest,Difference) {
     int randomHashKey1 = rand() % 100;
 
     SequenceTime time1 = 0;
-    RenderScale scale1;
-    scale1.x = scale1.y = 1.;
+    unsigned int level1 = 1;
     int view1 = 0;
     double pa1 = 1.;
 
-    Natron::ImageKey key1(randomHashKey1,time1,scale1,view1,pa1);
+    Natron::ImageKey key1(randomHashKey1,time1,level1,view1,pa1);
     U64 keyHash1 = key1.getHash();
 
 
     ///make a second ImageKey different to the first
     int randomHashKey2 = rand() % 1000  + 150;
     SequenceTime time2 = time1;
-    RenderScale scale2;
-    scale2.x = scale1.x;
-    scale2.y = scale1.y;
+    unsigned int level2 = 1;
     int view2 = view1;
     double pa2 = pa1;
 
-    Natron::ImageKey key2(randomHashKey2,time2,scale2,view2,pa2);
+    Natron::ImageKey key2(randomHashKey2,time2,level2,view2,pa2);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 != keyHash2);
 
