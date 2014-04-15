@@ -241,7 +241,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     assert(found != inputsRoI.end());
     roi = found->second;
     
-    if (!n->supportsRenderScale() && mipMapLevel != 0) {
+    ///If the effect doesn't support the render scale, scale down the roi ourselves
+    if (!supportsRenderScale() && mipMapLevel != 0) {
         roi = roi.downscale(1 << mipMapLevel);
     }
     
@@ -684,7 +685,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 _node->notifyInputNIsRendering(it2->first);
                 
                 for (U32 range = 0; range < it2->second.size(); ++range) {
-                    for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
+                    for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
                         boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(RenderRoIArgs(f, scale,mipMapLevel
                             ,view, foundInputRoI->second,isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache,NULL));
                         if (inputImg) {
@@ -917,7 +918,6 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
     
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
-    
     return renderSucceeded;
 
 }
