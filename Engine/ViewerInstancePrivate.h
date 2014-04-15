@@ -98,7 +98,8 @@ public:
     , viewerParamsLut(ViewerInstance::sRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels(ViewerInstance::RGB)
-    , viewerRenderScale(1.)
+    , viewerMipMapLevel(0)
+    , lastRenderedImageMutex()
     , lastRenderedImage()
     , threadIdMutex()
     , threadIdVideoEngine(NULL)
@@ -169,8 +170,9 @@ public:
                                        0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool             viewerParamsAutoContrast;
     DisplayChannels  viewerParamsChannels;
-    double viewerRenderScale; //< 1 / pow(2,x)
+    unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
 
+    mutable QMutex lastRenderedImageMutex;
     boost::shared_ptr<Natron::Image> lastRenderedImage; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
 
     // store the threadId of the VideoEngine thread - used for debugging purposes

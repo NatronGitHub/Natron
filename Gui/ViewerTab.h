@@ -100,9 +100,9 @@ public:
     
     void setAutoContrastEnabled(bool b);
     
-    void setRenderScale(double scale);
+    void setMipMapLevel(int level);
     
-    double getRenderScale() const;
+    int getMipMapLevel() const;
     
     void setRenderScaleActivated(bool act);
     

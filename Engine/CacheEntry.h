@@ -8,6 +8,7 @@
 #include <QtCore/QDir>
 
 #include <boost/utility.hpp>
+#include <boost/shared_ptr.hpp>
 
 
 #include "Engine/Hash64.h"
@@ -283,7 +284,7 @@ public:
      * @param path The path of the file where to save/restore the buffer. If empty then it assumes
      * the buffer will be in RAM, hence volatile.
      **/
-    CacheEntryHelper(const KeyType& key,const NonKeyParams& params,bool restore,const std::string& path)
+    CacheEntryHelper(const KeyType& key,const boost::shared_ptr<const NonKeyParams>& params,bool restore,const std::string& path)
     : _key(key)
     , _params(params)
     , _data()
@@ -292,7 +293,7 @@ public:
             if (restore) {
                 restoreBufferFromFile(path);
             } else {
-                allocate(params.getElementsCount(),params.getCost(),path);
+                allocate(params->getElementsCount(),params->getCost(),path);
             }
         } catch(const std::bad_alloc& e)
         {
@@ -300,7 +301,7 @@ public:
         }
     }
     
-    virtual ~CacheEntryHelper() {}
+    virtual ~CacheEntryHelper() { }
     
     const KeyType& getKey() const {return _key;}
     
@@ -389,7 +390,7 @@ private:
 protected:
     
     KeyType _key;
-    NonKeyParams _params;
+    boost::shared_ptr<const NonKeyParams> _params;
     Buffer<DataType> _data;
 };
 

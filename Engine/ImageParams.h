@@ -34,6 +34,7 @@ public:
     ImageParams()
     : NonKeyParams()
     , _rod()
+    , _pixelRoD()
     , _isRoDProjectFormat(false)
     , _inputNbIdentity(-1)
     , _inputTimeIdentity(0)
@@ -46,6 +47,7 @@ public:
     ImageParams(const ImageParams& other)
     : NonKeyParams(other)
     , _rod(other._rod)
+    , _pixelRoD(other._pixelRoD)
     , _isRoDProjectFormat(other._isRoDProjectFormat)
     , _inputNbIdentity(other._inputNbIdentity)
     , _inputTimeIdentity(other._inputTimeIdentity)
@@ -55,10 +57,12 @@ public:
         
     }
     
-    ImageParams(int cost,const RectI& rod,bool isRoDProjectFormat,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
+    ImageParams(int cost,const RectI& rod,const RectI& pixelRoD,
+                bool isRoDProjectFormat,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> >& framesNeeded)
-    : NonKeyParams(cost,rod.area() * getElementsCountForComponents(components))
+    : NonKeyParams(cost,pixelRoD.area() * getElementsCountForComponents(components))
     , _rod(rod)
+    , _pixelRoD(pixelRoD)
     , _isRoDProjectFormat(isRoDProjectFormat)
     , _inputNbIdentity(inputNbIdentity)
     , _inputTimeIdentity(inputTimeIdentity)
@@ -71,6 +75,8 @@ public:
     virtual ~ImageParams() {}
     
     const RectI& getRoD() const { return _rod; }
+    
+    const RectI& getPixelRoD() const { return _pixelRoD; }
     
     int getInputNbIdentity() const { return _inputNbIdentity; }
     
@@ -114,6 +120,8 @@ private:
     }
     
     RectI _rod;
+    RectI _pixelRoD;
+
     
     /// if true then when retrieving the associated image from cache
     /// the caller should update the rod to the current project format.

@@ -54,7 +54,7 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
              viewerData.colorSpace = tab->getColorSpace();
              viewerData.channels = tab->getChannelsString();
              viewerData.renderScaleActivated = tab->getRenderScaleActivated();
-             viewerData.renderScale = tab->getRenderScale();
+             viewerData.mipMapLevel = tab->getMipMapLevel();
              _viewersData.insert(std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData));
          }
      }

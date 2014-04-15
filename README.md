@@ -72,19 +72,16 @@ The system must support one of these OpenGL configurations:
 Planned features
 ----------------
 
-### High priority
-
-- Proxy mode(i.e: downscaling of the input images to render faster)
-
 ### Features planned for next major version
 
 - Dopesheet
 - Rotopainting/scoping nodes
-- Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
-- Meta-data support as well as per-plugin meta-data support by the node-graph
+- Python scripting
 
 ### Features planned for future versions
 
+- Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
+- Meta-data support as well as per-plugin meta-data support by the node-graph
 - Graphical user interface colours customisation
 - OpenGL rendering support to make processing nodes even faster
 - 3D models viewer + renderer (using libQGLViewer)

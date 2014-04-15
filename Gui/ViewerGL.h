@@ -274,9 +274,7 @@ public:
     ViewerInstance* getInternalNode() const;
     
     ViewerTab* getViewerTab() const;
-    
-    void onRenderScaleChanged(double scale);
-        
+            
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.
@@ -381,7 +379,7 @@ private:
      *@brief Fill the rendering VAO with vertices and texture coordinates
      *that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(double renderScale);
+    void drawRenderingVAO(unsigned int mipMapLevel);
     
     /**
      *@brief Makes the viewer display black only.
@@ -408,7 +406,7 @@ private:
      *@brief Called inside paintGL(). It will draw all the overlays. It also calls
      *VideoEngine::drawOverlay()
      **/
-    void drawOverlay(double renderScale);
+    void drawOverlay(unsigned int mipMapLevel);
     
     /**
      * @brief Called by drawOverlay to draw the user region of interest.

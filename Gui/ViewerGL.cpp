@@ -279,7 +279,7 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  |/  |/  |/  |
  12--13--14--15
  */
-void ViewerGL::drawRenderingVAO(double renderScale)
+void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -290,18 +290,16 @@ void ViewerGL::drawRenderingVAO(double renderScale)
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
     
-    double rs = 1. / renderScale;
-
-    if (renderScale != 1.) {
-        texRect = texRect.scaled(rs, rs);
+    if (mipMapLevel != 0) {
+        texRect = texRect.upscale(mipMapLevel);
     }
     ///the RoD of the iamge
     RectI rod;
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         RectI actualRoD = getRoD();
-        if (renderScale != 1.) {
-            actualRoD = actualRoD.scaled(rs, rs);
+        if (mipMapLevel != 0) {
+            actualRoD = actualRoD.upscale(mipMapLevel);
         }
         if (_imp->clipToDisplayWindow) {
             ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
@@ -644,9 +642,9 @@ void ViewerGL::paintGL()
         glCheckError();
     }
 
-    double renderScale = getInternalNode()->getRenderScale();
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
-    drawRenderingVAO(renderScale);
+    drawRenderingVAO(mipMapLevel);
     glCheckError();
 
     if (_imp->displayingImage) {
@@ -661,7 +659,7 @@ void ViewerGL::paintGL()
 
     glCheckError();
     if (_imp->overlay) {
-        drawOverlay(1. / renderScale);
+        drawOverlay(mipMapLevel);
     }
 
     if (_imp->displayPersistentMessage) {
@@ -689,7 +687,7 @@ void ViewerGL::toggleOverlays()
 }
 
 
-void ViewerGL::drawOverlay(double renderScale)
+void ViewerGL::drawOverlay(unsigned int mipMapLevel)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -728,26 +726,21 @@ void ViewerGL::drawOverlay(double renderScale)
     glCheckErrorIgnoreOSXBug();
 
     RectI dataW = getRoD();
-    RectI scaledDataW = dataW;
-    RectI downscaledDispW = dispW;
-    if (renderScale != 1.) {
-        scaledDataW = scaledDataW.scaled(renderScale,renderScale);
-        downscaledDispW = downscaledDispW.scaled(1. / renderScale, 1. / renderScale);
-    }
-    if(downscaledDispW != dataW){
+
+    if(dataW != dispW){
         
         
-        renderText(scaledDataW.right(), scaledDataW.top(),
+        renderText(dataW.right(), dataW.top(),
                    _imp->currentViewerInfos_topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
-        renderText(scaledDataW.left(), scaledDataW.bottom(),
+        renderText(dataW.left(), dataW.bottom(),
                    _imp->currentViewerInfos_btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
         
         
         
-        QPoint topRight2(scaledDataW.right(), scaledDataW.top());
-        QPoint topLeft2(scaledDataW.left(),scaledDataW.top());
-        QPoint btmLeft2(scaledDataW.left(),scaledDataW.bottom() );
-        QPoint btmRight2(scaledDataW.right(),scaledDataW.bottom() );
+        QPoint topRight2(dataW.right(), dataW.top());
+        QPoint topLeft2(dataW.left(),dataW.top());
+        QPoint btmLeft2(dataW.left(),dataW.bottom() );
+        QPoint btmRight2(dataW.right(),dataW.bottom() );
         glPushAttrib(GL_LINE_BIT);
         glLineStipple(2, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
@@ -782,7 +775,7 @@ void ViewerGL::drawOverlay(double renderScale)
         drawUserRoI();
     }
     
-    _imp->viewerTab->drawOverlays(renderScale,renderScale);
+    _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
 
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
@@ -1079,10 +1072,10 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         ret.x2 = std::ceil(bottomRight.x());
         ret.y1 = std::floor(bottomRight.y());
     }
-    double scale = getInternalNode()->getRenderScale();
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
     
-    if (scale != 1.) {
-        ret = ret.scaled(scale, scale);
+    if (mipMapLevel != 0) {
+        ret = ret.downscale(1 << mipMapLevel);
     }
     
     if (!ret.intersect(imageRoD, &ret)) {
@@ -1092,8 +1085,8 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         QMutexLocker l(&_imp->userRoIMutex);
         if (_imp->userRoIEnabled) {
             RectI userRoI = _imp->userRoI;
-            if (scale != 1.) {
-                userRoI = userRoI.scaled(scale, scale);
+            if (mipMapLevel != 0) {
+                userRoI = userRoI.downscale(1 << mipMapLevel);
             }
             if (!ret.intersect(userRoI, &ret)) {
                 ret.clear();
@@ -1420,8 +1413,8 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
     }
     if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED) {
-        double scale = getInternalNode()->getRenderScale();
-        if (_imp->viewerTab->notifyOverlaysPenDown(1. / scale,1. / scale,QMouseEventLocalPos(event),zoomPos)) {
+        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+        if (_imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos)) {
             updateGL();
         }
     }
@@ -1438,8 +1431,8 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
     }
-    double scale = getInternalNode()->getRenderScale();
-    if (_imp->viewerTab->notifyOverlaysPenUp(1. / scale,1. / scale,QMouseEventLocalPos(event), zoomPos)) {
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+    if (_imp->viewerTab->notifyOverlaysPenUp(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
         updateGL();
     }
 
@@ -1450,7 +1443,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
     assert(qApp && qApp->thread() == QThread::currentThread());
     QPointF zoomPos;
     
-    double scale = getInternalNode()->getRenderScale();
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
     
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
@@ -1475,7 +1468,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         if (!videoEngine->isWorking()) {
             updateColorPicker(event->x(),event->y());
         }
-        _imp->infoViewer->setMousePos(QPoint((int)(zoomPos.x() * scale),(int)(zoomPos.y() * scale)));
+        _imp->infoViewer->setMousePos(QPoint((int)(zoomPos.x()),(int)(zoomPos.y())));
         emit infoMousePosChanged();
     } else {
         if (_imp->infoViewer->colorAndMouseVisible()) {
@@ -1665,7 +1658,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             updateGL();
         } break;
         default: {
-            if (_imp->viewerTab->notifyOverlaysPenMotion(1. / scale,1. / scale,QMouseEventLocalPos(event), zoomPos)) {
+            if (_imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
                 updateGL();
             }
         }break;
@@ -1714,9 +1707,9 @@ void ViewerGL::updateColorPicker(int x,int y)
         imgPos = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
     }
     
-    double renderScale = getInternalNode()->getRenderScale();
-    if (renderScale != 1.) {
-        imgPos *= renderScale;
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+    if (mipMapLevel != 0) {
+        imgPos /= (1 << mipMapLevel);
     }
     
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
@@ -2009,8 +2002,8 @@ void ViewerGL::focusInEvent(QFocusEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    double scale = getInternalNode()->getRenderScale();
-    if(_imp->viewerTab->notifyOverlaysFocusGained(1. / scale,1. / scale)){
+    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    if(_imp->viewerTab->notifyOverlaysFocusGained(scale,scale)){
         updateGL();
     }
     QGLWidget::focusInEvent(event);
@@ -2020,8 +2013,8 @@ void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    double scale = getInternalNode()->getRenderScale();
-    if(_imp->viewerTab->notifyOverlaysFocusLost(1. / scale,1. / scale)){
+    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    if(_imp->viewerTab->notifyOverlaysFocusLost(scale,scale)){
         updateGL();
     }
     QGLWidget::focusOutEvent(event);
@@ -2059,13 +2052,13 @@ void ViewerGL::keyPressEvent(QKeyEvent* event)
         toggleOverlays();
     }
     
-    double scale = getInternalNode()->getRenderScale();
+    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
     if(event->isAutoRepeat()){
-        if(_imp->viewerTab->notifyOverlaysKeyRepeat(1. / scale,1. / scale,event)){
+        if(_imp->viewerTab->notifyOverlaysKeyRepeat(scale,scale,event)){
             updateGL();
         }
     }else{
-        if(_imp->viewerTab->notifyOverlaysKeyDown(1. / scale,1. / scale,event)){
+        if(_imp->viewerTab->notifyOverlaysKeyDown(scale,scale,event)){
             updateGL();
         }
     }
@@ -2077,8 +2070,8 @@ void ViewerGL::keyReleaseEvent(QKeyEvent* event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    double scale = getInternalNode()->getRenderScale();
-    if(_imp->viewerTab->notifyOverlaysKeyUp(1. / scale,1. / scale,event)){
+    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    if(_imp->viewerTab->notifyOverlaysKeyUp(scale,scale,event)){
         updateGL();
     }
 }
@@ -2422,47 +2415,4 @@ ViewerTab* ViewerGL::getViewerTab() const {
     return _imp->viewerTab;
 }
 
-void ViewerGL::onRenderScaleChanged(double scale)
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    Format f = getDisplayWindow();
-    if (scale != 1.) {
-        f = f.scaled(scale, scale);
-    }
-    _imp->viewerTab->setInfoBarResolution(f);
-    _imp->currentViewerInfos_resolutionOverlay.clear();
-    _imp->currentViewerInfos_resolutionOverlay.append(QString::number(f.width()));
-    _imp->currentViewerInfos_resolutionOverlay.append("x");
-    _imp->currentViewerInfos_resolutionOverlay.append(QString::number(f.height()));
-    QPoint pos = QCursor::pos();
-    pos = mapFromGlobal(pos);
-    
-    QPointF imgPos;
-    {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        imgPos = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y()) * scale;
-    }
-    
-    // if the mouse is inside the image, update the color picker
-    if (imgPos.x() >= f.left() &&
-        imgPos.x() <= f.width() &&
-        imgPos.y() >= f.bottom() &&
-        imgPos.y() <= f.height() &&
-        pos.x() >= 0 && pos.x() < width() &&
-        pos.y() >= 0 && pos.y() < height()) {
-        if (!_imp->infoViewer->colorAndMouseVisible()) {
-            _imp->infoViewer->showColorAndMouseInfo();
-        }
-        
-        _imp->infoViewer->setMousePos(QPoint((int)(imgPos.x()),(int)(imgPos.y())));
-        emit infoMousePosChanged();
-        updateColorPicker(imgPos.x(),imgPos.y());
-    } else {
-        if (_imp->infoViewer->colorAndMouseVisible()) {
-            _imp->infoViewer->hideColorAndMouseInfo();
-        }
-    }
-    
-}
 

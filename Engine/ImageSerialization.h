@@ -17,8 +17,7 @@ namespace boost {
         void serialize(Archive & ar, Natron::ImageKey& k,const unsigned int /*version*/ )
         {
             ar & boost::serialization::make_nvp("NodeHashKey",k._nodeHashKey);
-            ar & boost::serialization::make_nvp("RenderScaleX",k._renderScale.x);
-            ar & boost::serialization::make_nvp("RenderScaleY",k._renderScale.y);
+            ar & boost::serialization::make_nvp("MipMapLevel",k._mipMapLevel);
             ar & boost::serialization::make_nvp("Time",k._time);
             ar & boost::serialization::make_nvp("View",k._view);
             ar & boost::serialization::make_nvp("PixelAspect",k._pixelAspect);

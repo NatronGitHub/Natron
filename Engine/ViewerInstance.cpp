@@ -301,6 +301,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
 }
 
 
+
 Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded,bool isSequentialRender)
@@ -346,14 +347,16 @@ ViewerInstance::renderViewer(SequenceTime time,
     bool isInputImgCached = false;
     
     RenderScale scale;
+    int mipMapLevel;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        scale.x = scale.y = _imp->viewerRenderScale;
+        scale = Natron::Image::getScaleFromMipMapLevel(_imp->viewerMipMapLevel);
+        mipMapLevel = _imp->viewerMipMapLevel;
     }
     
     
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash(), time, scale,view);
-    RectI rod;
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash(), time, mipMapLevel,view);
+    RectI rod,pixelRoD;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime;
@@ -369,7 +372,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
         EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
-            inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, scale,view);
+            inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, mipMapLevel,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
             if (isInputImgCached) {
                 inputIdentityNumber = cachedImgParams->getInputNbIdentity();
@@ -397,8 +400,13 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         
         rod = inputImage->getRoD();
+        pixelRoD = inputImage->getPixelRoD();
         isRodProjectFormat = cachedImgParams->isRodProjectFormat();
-        _imp->lastRenderedImage = inputImage;
+        
+        {
+            QMutexLocker l(&_imp->lastRenderedImageMutex);
+            _imp->lastRenderedImage = inputImage;
+        }
         
     }  else {
         Status stat = getRegionOfDefinition(time,scale, &rod,&isRodProjectFormat);
@@ -410,35 +418,25 @@ ViewerInstance::renderViewer(SequenceTime time,
             return stat;
         }
         
-        if (scale.x != 1. || scale.y != 1.) {
-            rod = rod.scaled(scale.x,scale.y);
-        }
+        pixelRoD = rod.downscale(1 << mipMapLevel);
       
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 
     }
-    
-    RenderScale upscaleFactor,upscale;
-    upscale.x = upscale.y = 1.;
-    upscaleFactor.x = upscale.x / scale.x;
-    upscaleFactor.y = upscale.y / scale.y;
-    RectI upscaledRoD = rod;
-    if (scale.x != 1. || scale.y != 1.) {
-        upscaledRoD = upscaledRoD.scaled(upscaleFactor.x, upscaleFactor.y);
-    }
-    
 
     emit rodChanged(rod);
 
-        
     if (!_imp->uiContext->isClippingImageToProjectWindow()) {
         dispW.set(rod);
     }
     
     /*computing the RoI*/
+    
+    // scale the zoomFactor by the inverse of the current render scale
+    zoomFactor /= scale.x;
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2.)));
 
-    RectI roi = _imp->uiContext->getImageRectangleDisplayed(rod);
+    RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD);
 
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
@@ -456,10 +454,10 @@ ViewerInstance::renderViewer(SequenceTime time,
     texRectClipped.x2 *= closestPowerOf2;
     texRectClipped.y1 *= closestPowerOf2;
     texRectClipped.y2 *= closestPowerOf2;
-    texRectClipped.intersect(rod, &texRectClipped);
+    texRectClipped.intersect(pixelRoD, &texRectClipped);
     
-    int texW = texRect.width() > rod.width() ? rod.width() : texRect.width();
-    int texH = texRect.height() > rod.height() ? rod.height() : texRect.height();
+    int texW = texRect.width() > pixelRoD.width() ? pixelRoD.width() : texRect.width();
+    int texH = texRect.height() > pixelRoD.height() ? pixelRoD.height() : texRect.height();
     
     
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
@@ -562,7 +560,9 @@ ViewerInstance::renderViewer(SequenceTime time,
             ramBuffer = (unsigned char*)_imp->buffer;
 
         } else {
-            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams = FrameEntry::makeParams(rod, key.getBitDepth(), textureRect.w, textureRect.h);
+            boost::shared_ptr<const Natron::FrameParams> cachedFrameParams =
+            FrameEntry::makeParams(pixelRoD, key.getBitDepth(), textureRect.w, textureRect.h);
+            
             bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
             ///are sure that this time the image was not in the cache and we created it because this functino
@@ -578,24 +578,24 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         assert(ramBuffer);
 
-        // if (!activeInputToRender->supportsTiles()) {
-            texRectClipped.intersect(rod, &texRectClipped);
-        //}
+        ///intersect the image render window to the actual image region of definition.
+        texRectClipped.intersect(pixelRoD, &texRectClipped);
         
         boost::shared_ptr<Natron::Image> originalInputImage = inputImage;
         
         bool renderedCompletely = false;
+        boost::shared_ptr<Natron::Image> downscaledImage = inputImage;
+        
         ///If the plug-in doesn't support the render scale and we found an image cached but which still
         ///contains some stuff to render we don't want to use it, instead we need to upscale the image
-        if (!activeInputToRender->supportsRenderScale() && isInputImgCached && scale.x != 1. && scale.y != 1.) {
-            ///intersect the image render window to the actual image region of definition.
+        if (!activeInputToRender->supportsRenderScale() && isInputImgCached && mipMapLevel != 0) {
 
             /// If the list is empty then we already rendered it all
+            /// Otherwise we have to upscale the found image, render what we need and downscale it again
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
             if (!rectsToRender.empty()) {
-                boost::shared_ptr<Natron::Image> upscaledImage(
-                            new Natron::Image(components,upscaledRoD,upscale,time));
-                inputImage->scaled(upscaledImage.get(), upscaleFactor.x, upscaleFactor.y);
+                boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,rod,0));
+                downscaledImage->scale(downscaledImage->getPixelRoD(),upscaledImage.get());
                 inputImage = upscaledImage;
             } else {
                 renderedCompletely = true;
@@ -608,9 +608,19 @@ ViewerInstance::renderViewer(SequenceTime time,
         ///since we are going to render a new image, decrease the current memory use of the viewer by
         ///the amount of the current image, and increase it after we rendered the new image.
         size_t memoryDiff = 0;
-        if (_imp->lastRenderedImage) {
-            memoryDiff -= _imp->lastRenderedImage->size();
+        
+        {
+            QMutexLocker l(&_imp->lastRenderedImageMutex);
+            if (_imp->lastRenderedImage) {
+                memoryDiff -= _imp->lastRenderedImage->size();
+            }
         }
+        
+        boost::shared_ptr<Natron::Image> lastRenderedImage;
+        if (isInputImgCached) {
+            lastRenderedImage = inputImage;
+        }
+        
         
         if (!renderedCompletely) {
             // If an exception occurs here it is probably fatal, since
@@ -621,19 +631,16 @@ ViewerInstance::renderViewer(SequenceTime time,
                 if (isInputImgCached) {
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
-                    activeInputToRender->renderRoI(time, scale, view, texRectClipped, cachedImgParams, inputImage,isSequentialRender,true);
-                    
-                    ///If the plug-in doesn't support the render scale, we just rendered an upscaled version of the image and we need
-                    ///to scale it down
-                    if (!activeInputToRender->supportsRenderScale()  && scale.x != 1. && scale.y != 1.) {
-                        inputImage->scaled(originalInputImage.get(), scale.x, scale.y);
-                        inputImage = originalInputImage;
-                    }
+                        activeInputToRender->renderRoI(time, scale,mipMapLevel, view, texRectClipped, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true);
                     
                 } else {
-                    _imp->lastRenderedImage = activeInputToRender->renderRoI(
-                                                                             EffectInstance::RenderRoIArgs(time, scale,view,texRectClipped,isSequentialRender,true,
-                                                                                                           byPassCache,&rod));
+                    
+                    lastRenderedImage = activeInputToRender->renderRoI(
+                    EffectInstance::RenderRoIArgs(time, scale,mipMapLevel,view,texRectClipped,isSequentialRender,true,byPassCache,&rod));
+                    {
+                        QMutexLocker l(&_imp->lastRenderedImageMutex);
+                        _imp->lastRenderedImage = lastRenderedImage;
+                    }
                 }
             } catch (...) {
                 _node->notifyInputNIsFinishedRendering(inputIndex);
@@ -641,22 +648,20 @@ ViewerInstance::renderViewer(SequenceTime time,
             }
         }
         
-        memoryDiff += _imp->lastRenderedImage->size();
-        
-        ///notify that the viewer is actually using that much memory.
-        ///It will never be freed unless we delete the node completely from the undo/redo stack.
-        registerPluginMemory(memoryDiff);
-        
         _node->notifyInputNIsFinishedRendering(inputIndex);
-
-
-        if (!_imp->lastRenderedImage) {
+        
+        
+        
+        if (!lastRenderedImage) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             appPTR->removeFromViewerCache(params->cachedFrame);
             return StatFailed;
         }
-
-        //  Natron::debugImage(_lastRenderedImage.get(),"img.png");
+        
+        memoryDiff += lastRenderedImage->size();
+        ///notify that the viewer is actually using that much memory.
+        ///It will never be freed unless we delete the node completely from the undo/redo stack.
+        registerPluginMemory(memoryDiff);
 
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -667,7 +672,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         if (singleThreaded) {
             if (autoContrast) {
                 double vmin, vmax;
-                std::pair<double,double> vMinMax = findAutoContrastVminVmax(_imp->lastRenderedImage, channels, roi);
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(lastRenderedImage, channels, roi);
                 vmin = vMinMax.first;
                 vmax = vMinMax.second;
 
@@ -680,7 +685,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 offset = -vmin / ( vmax - vmin);
             }
 
-            const RenderViewerArgs args(_imp->lastRenderedImage,
+            const RenderViewerArgs args(lastRenderedImage,
                                         textureRect,
                                         channels,
                                         closestPowerOf2,
@@ -720,7 +725,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
                 QFuture<std::pair<double,double> > future = QtConcurrent::mapped(splitRects,
                                                                                  boost::bind(findAutoContrastVminVmax,
-                                                                                             _imp->lastRenderedImage,
+                                                                                             lastRenderedImage,
                                                                                              channels,
                                                                                              _1));
                 future.waitForFinished();
@@ -744,7 +749,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 offset =  -vmin / (vmax - vmin);
             }
 
-            const RenderViewerArgs args(_imp->lastRenderedImage,
+            const RenderViewerArgs args(lastRenderedImage,
                                         textureRect,
                                         channels,
                                         closestPowerOf2,
@@ -1163,16 +1168,16 @@ ViewerInstance::onGainChanged(double exp)
 }
 
 void
-ViewerInstance::onRenderScaleChanged(double scale)
+ViewerInstance::onMipMapLevelChanged(int level)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerRenderScale == scale) {
+        if (_imp->viewerMipMapLevel == (unsigned int)level) {
             return;
         }
-        _imp->viewerRenderScale = scale;
+        _imp->viewerMipMapLevel = level;
     }
     if(input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false);
@@ -1269,7 +1274,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-
+    QMutexLocker l(&_imp->lastRenderedImageMutex);
     if (!_imp->lastRenderedImage) {
         return false;
     }
@@ -1335,6 +1340,7 @@ ViewerInstance::getLastRenderedImage() const
     if (!getNode()->isActivated()) {
         return boost::shared_ptr<Natron::Image>();
     }
+    QMutexLocker l(&_imp->lastRenderedImageMutex);
     return _imp->lastRenderedImage;
 }
 
@@ -1356,13 +1362,13 @@ ViewerInstance::getGain() const
     return _imp->viewerParamsGain;
 }
 
-double
-ViewerInstance::getRenderScale() const
+int
+ViewerInstance::getMipMapLevel() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
     
     QMutexLocker l(&_imp->viewerParamsMutex);
-    return _imp->viewerRenderScale;
+    return _imp->viewerMipMapLevel;
 
 }
 

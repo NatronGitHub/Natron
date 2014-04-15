@@ -47,6 +47,7 @@ struct EffectInstance::RenderArgs {
     RectI _roi;
     SequenceTime _time;
     RenderScale _scale;
+    unsigned int _mipMapLevel;
     int _view;
     bool _isSequentialRender;
     bool _isRenderResponseToUserInteraction;
@@ -83,7 +84,8 @@ struct EffectInstance::Implementation {
         duringInteractAction = b;
     }
     
-    void setLocalRenderArgs(const RectI& roi,SequenceTime time,int view,const RenderScale& scale,bool sequential,bool userInteraction,
+    void setLocalRenderArgs(const RectI& roi,SequenceTime time,int view,const RenderScale& scale,unsigned int mipMapLevel,
+                            bool sequential,bool userInteraction,
                             bool bypassCache)
     {
         RenderArgs args;
@@ -91,6 +93,7 @@ struct EffectInstance::Implementation {
         args._time = time;
         args._view = view;
         args._scale = scale;
+        args._mipMapLevel = mipMapLevel;
         args._isSequentialRender = sequential;
         args._isRenderResponseToUserInteraction = userInteraction;
         args._byPassCache = bypassCache;
@@ -208,21 +211,23 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     bool isRenderUserInteraction = true;
     bool byPassCache = false;
     bool isProjectFormat;
-    
+    int mipMapLevel;
     ///we have no choice but to ask for a render of the region of interest
 
-
+    
     if (_imp->renderArgs.hasLocalData()) {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
         byPassCache = _imp->renderArgs.localData()._byPassCache;
         currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
+        mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
     } else {
         Natron::Status stat = n->getRegionOfDefinition(time,scale, &precomputedRoD,&isProjectFormat);
         if(stat == Natron::StatFailed) {
             return boost::shared_ptr<Natron::Image>();
         }
         currentEffectRenderWindow = precomputedRoD;
+        mipMapLevel = Natron::Image::getLevelFromScale(scale);
     }
     
     RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow);
@@ -230,12 +235,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     assert(found != inputsRoI.end());
     roi = found->second;
     
-    
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.
     QThreadPool::globalInstance()->reserveThread();
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
-                RenderRoIArgs(time,scale,view,roi,isSequentialRender,isRenderUserInteraction,byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
+                RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
+                              byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
 
@@ -323,6 +328,8 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
     }
 }
 
+
+
 boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& args)
 {
 #ifdef NATRON_LOG
@@ -344,7 +351,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
-    Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time, args.scale,args.view);
+
+    Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time,args.mipMapLevel ,args.view);
 
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = false;
@@ -374,28 +382,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     
     boost::shared_ptr<Natron::Image> downscaledImage = image;
     
-    ///The roi to render, if we upscale the image, we upscale it too
-    RectI roiToRender = args.roi;
-    
     if (!isCached) {
         
         ///first-off check whether the effect is identity, in which case we don't want
         /// to cache anything or render anything for this effect.
         SequenceTime inputTimeIdentity;
         int inputNbIdentity;
-        RectI rod;
+        RectI rod,scaledRod;
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
         
-        RenderScale upscaleFactor,upscale;
-        upscale.x = upscale.y = 1.;
-        upscaleFactor.x = upscale.x / args.scale.x;
-        upscaleFactor.y = upscale.y / args.scale.y;
-
-        
         bool identity = isIdentity(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
-            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale,
+            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale,args.mipMapLevel,
                                      args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
@@ -418,9 +417,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
-                if (args.scale.x != 1. || args.scale.y != 1.) {
-                    rod = rod.scaled(args.scale.x, args.scale.y);
-                }
+            }
+            
+            if (args.mipMapLevel != 0) {
+                scaledRod = rod.downscale(1 << args.mipMapLevel);
             }
             
             // why should the rod be empty here?
@@ -442,28 +442,26 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         }
       
         
-        cachedImgParams = Natron::Image::makeParams(cost, rod,isProjectFormat,
+        cachedImgParams = Natron::Image::makeParams(cost, rod,args.mipMapLevel,isProjectFormat,
                                                     components,
                                                     inputNbIdentity, inputTimeIdentity,
                                                     framesNeeded);
         
         
-        RectI upscaledRoD = rod;
-        ///if the effect doesnt support render scale, compute the upscaled RoD
-        if (args.scale.x != 1. || args.scale.y != 1.) {
-            upscaledRoD = rod.scaled(upscaleFactor.x, upscaleFactor.y);
-        }
-        
         if (byPassCache) {
             ///if we bypass the cache, allocate the image ourselves
             assert(!image);
             assert(!identity);
-            if (!supportsRenderScale() && args.scale.x != 1 && args.scale.y != 1.) {
-                image.reset(new Natron::Image(components,upscaledRoD,upscale,args.time));
-                downscaledImage.reset(new Natron::Image(components,rod,args.scale,args.time));
-                roiToRender = roiToRender.scaled(upscaleFactor.x, upscaleFactor.y);
+            if (!supportsRenderScale() && args.mipMapLevel != 0) {
+                
+                ///Allocate the upscaled image
+                image.reset(new Natron::Image(components,rod,0));
+                
+                ///Allocate the downscaled image
+                downscaledImage.reset(new Natron::Image(components,rod,args.mipMapLevel));
             } else {
-                image.reset(new Natron::Image(components,rod,args.scale,args.time));
+                image.reset(new Natron::Image(components,rod,args.mipMapLevel));
+                downscaledImage = image;
             }
             
         } else {
@@ -486,9 +484,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             image = newImage;
             downscaledImage = image;
 
-            if (!supportsRenderScale() && (args.scale.x != 1. || args.scale.y != 1.)) {
-                image.reset(new Natron::Image(components,upscaledRoD,upscale,args.time));
-                roiToRender = roiToRender.scaled(upscaleFactor.x, upscaleFactor.y);
+            if (!supportsRenderScale() && args.mipMapLevel != 0) {
+                ///Allocate the upscaled image
+                image.reset(new Natron::Image(components,rod,0));
             }
             
         }
@@ -508,7 +506,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             
-            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
+            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale,args.mipMapLevel, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
@@ -523,26 +521,21 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         ///render the parts we are interested in and then downscale again
         ///Before doing that we verify if everything we want is already rendered in which case we
         ///dont degrade the image
-        if (!supportsRenderScale() && (args.scale.x != 1. || args.scale.y != 1.)) {
+        if (!supportsRenderScale() && args.mipMapLevel != 0) {
             
             RectI intersection;
-            args.roi.intersect(image->getRoD(), &intersection);
+            args.roi.intersect(image->getPixelRoD(), &intersection);
             std::list<RectI> rectsRendered = image->getRestToRender(intersection);
             if (rectsRendered.empty()) {
                 return image;
             }
+        
+            downscaledImage = image;
             
-            
-            RenderScale upscaleFactor,upscale;
-            upscale.x = upscale.y = 1.;
-            upscaleFactor.x = upscale.x / args.scale.x;
-            upscaleFactor.y = upscale.y / args.scale.y;
-            boost::shared_ptr<Natron::Image> upscaledImage(
-                            new Natron::Image(components,cachedImgParams->getRoD().scaled(upscaleFactor.x, upscaleFactor.y),upscale,args.time));
-            image->scaled(upscaledImage.get(), upscaleFactor.x, upscaleFactor.y);
+            ///Allocate the upscaled image
+            boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,cachedImgParams->getRoD(),0));
+            downscaledImage->scale(downscaledImage->getPixelRoD(),upscaledImage.get());
             image = upscaledImage;
-            
-            roiToRender = roiToRender.scaled(upscaleFactor.x, upscaleFactor.y);
         }
         
     }
@@ -550,15 +543,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
-    bool success = renderRoIInternal(args.time, args.scale, args.view, roiToRender, cachedImgParams, image,
-                                     args.isSequentialRender,args.isRenderUserInteraction ,byPassCache);
-    
-    ///If the image was cached but the effect doesn't support the render scale, we downscale the result of the render into
-    ///the original image
-    if (!supportsRenderScale() && (args.scale.x != 1. || args.scale.y != 1.)) {
-        image->scaled(downscaledImage.get(), args.scale.x, args.scale.y);
-        image = downscaledImage;
-    }
+    bool success = renderRoIInternal(args.time, args.scale,args.mipMapLevel, args.view, args.roi, cachedImgParams, image,
+                                     downscaledImage,args.isSequentialRender,args.isRenderUserInteraction ,byPassCache);
     
     if(aborted() || !success){
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -571,33 +557,35 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         throw std::runtime_error("Rendering Failed");
     }
 
-    return image;
+    return downscaledImage;
 }
 
 
-void EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
+void EffectInstance::renderRoI(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
                                int view,const RectI& renderWindow,
                                const boost::shared_ptr<const ImageParams>& cachedImgParams,
                                const boost::shared_ptr<Image>& image,
+                               const boost::shared_ptr<Image>& downscaledImage,
                                bool isSequentialRender,
                                bool isRenderMadeInResponseToUserInteraction,
                                bool byPassCache) {
-    bool success = renderRoIInternal(time, scale, view, renderWindow, cachedImgParams, image,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache);
+    bool success = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache);
     if (!success) {
         throw std::runtime_error("Rendering Failed");
     }
 }
 
-bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
+bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
                                        int view,const RectI& renderWindow,
                                        const boost::shared_ptr<const ImageParams>& cachedImgParams,
                                        const boost::shared_ptr<Image>& image,
+                                       const boost::shared_ptr<Image>& downscaledImage,
                                        bool isSequentialRender,
                                        bool isRenderMadeInResponseToUserInteraction,
                                        bool byPassCache) {
     
     ///add the window to the project's available formats if the effect is a reader
-    if (isReader() && scale.x == 1 && scale.y == 1) {
+    if (isReader() && mipMapLevel != 0) {
         Format frmt;
         frmt.set(cachedImgParams->getRoD());
         ///FIXME: what about the pixel aspect ratio ?
@@ -611,10 +599,10 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
     
     ///intersect the image render window to the actual image region of definition.
     RectI intersection;
-    renderWindow.intersect(image->getRoD(), &intersection);
+    renderWindow.intersect(downscaledImage->getPixelRoD(), &intersection);
     
     /// If the list is empty then we already rendered it all
-    std::list<RectI> rectsToRender = image->getRestToRender(intersection);
+    std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
     
     ///if the effect doesn't support tiles and it has something left to render, just render the rod again
     ///note that it should NEVER happen because if it doesn't support tiles in the first place, it would
@@ -635,7 +623,14 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
     
     for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
-        RectI& rectToRender = *it;
+        RectI &rectToRender = *it;
+        
+        RectI upscaledRoI = rectToRender;
+        bool useFullResImage = !supportsRenderScale() && mipMapLevel != 0;
+        ///Upscale the RoI to a region in the unscaled image
+        if (useFullResImage) {
+            upscaledRoI = rectToRender.upscale(mipMapLevel);
+        }
         
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
@@ -650,11 +645,12 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         args._time = time;
         args._view = view;
         args._scale = scale;
+        args._mipMapLevel = mipMapLevel;
         args._isSequentialRender = isSequentialRender;
         args._isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
         args._byPassCache = byPassCache;
         _imp->renderArgs.setLocalData(args);
-        
+         
         ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
         RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);
         
@@ -679,8 +675,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 
                 for (U32 range = 0; range < it2->second.size(); ++range) {
                     for (U32 f = it2->second[range].min; f < it2->second[range].max; ++f) {
-                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(
-                                                                                           RenderRoIArgs(f, scale,view, foundInputRoI->second,isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache,NULL));
+                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(RenderRoIArgs(f, scale,mipMapLevel
+                            ,view, foundInputRoI->second,isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache,NULL));
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }
@@ -719,8 +715,9 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         ///if the project lock is already locked at this point, don't start any othter thread
         ///as it would lead to a deadlock when the project is loading.
         ///Just fall back to Fully_safe
+        int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
         if (safety == FULLY_SAFE_FRAME) {
-            int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+            
             if (nbThreads == -1 || nbThreads == 1 || (nbThreads == 0 && QThread::idealThreadCount() == 1) ||
                 QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount()) {
                 safety = FULLY_SAFE;
@@ -734,14 +731,14 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
         }
         
         switch (safety) {
-            case FULLY_SAFE_FRAME: // the plugin will perform any per frame SMP threading
+            case FULLY_SAFE_FRAME: // the plugin will not perform any per frame SMP threading
             {
                 // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
-                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, QThread::idealThreadCount());
+                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, nbThreads);
                 // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
                                                                    boost::bind(&EffectInstance::tiledRenderingFunctor,
-                                                                               this,args,_1,image));
+                                                                               this,args,_1,downscaledImage,image));
                 ret.waitForFinished();
                 
                 bool callEndRender = false;
@@ -775,10 +772,21 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 QMutexLocker l(&getNode()->getRenderInstancesSharedMutex());
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                rectToRender = image->getMinimalRect(rectToRender);
-                if (!rectToRender.isNull()) {
-                    Natron::Status st = render(time, scale, rectToRender,view,isSequentialRender,isRenderMadeInResponseToUserInteraction, image);
+                rectToRender = downscaledImage->getMinimalRect(rectToRender);
+                upscaledRoI = rectToRender;
+                if (useFullResImage) {
+                    upscaledRoI = rectToRender.upscale(mipMapLevel);
+                    upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
+                }
+                
+                if (!upscaledRoI.isNull()) {
+                    Natron::Status st = render(time, scale, upscaledRoI,view,isSequentialRender,
+                                               isRenderMadeInResponseToUserInteraction,useFullResImage ? image : downscaledImage);
                     
+                    ///copy the rectangle rendered in the full scale image to the downscaled output
+                    if (useFullResImage) {
+                        image->scale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                    }
                     bool callEndRender = false;
                     {
                         QMutexLocker locker(&_imp->beginEndRenderMutex);
@@ -796,7 +804,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                         renderSucceeded = false;
                     }
                     if (!aborted()) {
-                        image->markForRendered(rectToRender);
+                        downscaledImage->markForRendered(rectToRender);
                     }
                 }
             } break;
@@ -808,10 +816,20 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                 QMutexLocker l(&getNode()->getFrameMutex(time));
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                rectToRender = image->getMinimalRect(rectToRender);
-                if (!rectToRender.isNull()) {
-                    Natron::Status st = render(time, scale, rectToRender,view,isSequentialRender,isRenderMadeInResponseToUserInteraction, image);
-                    
+                rectToRender = downscaledImage->getMinimalRect(rectToRender);
+                upscaledRoI = rectToRender;
+                if (useFullResImage) {
+                    upscaledRoI = rectToRender.upscale(mipMapLevel);
+                    upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
+                }
+                
+                if (!upscaledRoI.isNull()) {
+                    Natron::Status st = render(time, scale, upscaledRoI,view,isSequentialRender,
+                                               isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
+                    ///copy the rectangle rendered in the full scale image to the downscaled output
+                    if (useFullResImage) {
+                        image->scale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                    }
                     bool callEndRender = false;
                     {
                         QMutexLocker locker(&_imp->beginEndRenderMutex);
@@ -829,7 +847,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                         renderSucceeded = false;
                     }
                     if (!aborted()) {
-                        image->markForRendered(rectToRender);
+                        downscaledImage->markForRendered(rectToRender);
                     }
                 }
             } break;
@@ -840,10 +858,21 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
             {
                 QMutexLocker lock(appPTR->getMutexForPlugin(pluginID().c_str()));
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                rectToRender = image->getMinimalRect(rectToRender);
-                if (!rectToRender.isNull()) {
-                    Natron::Status st = render(time, scale, rectToRender,view,isSequentialRender,isRenderMadeInResponseToUserInteraction, image);
+                rectToRender = downscaledImage->getMinimalRect(rectToRender);
+                upscaledRoI = rectToRender;
+                if (useFullResImage) {
+                    upscaledRoI = rectToRender.upscale(mipMapLevel);
+                    upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
+                }
+                
+                if (!upscaledRoI.isNull()) {
+                    Natron::Status st = render(time, scale, upscaledRoI,view,isSequentialRender,
+                                               isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     
+                    ///copy the rectangle rendered in the full scale image to the downscaled output
+                    if (useFullResImage) {
+                        image->scale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                    }
                     bool callEndRender = false;
                     {
                         QMutexLocker locker(&_imp->beginEndRenderMutex);
@@ -861,7 +890,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,RenderScale scale,
                         renderSucceeded = false;
                     }
                     if (!aborted()) {
-                        image->markForRendered(rectToRender);
+                        downscaledImage->markForRendered(rectToRender);
                     }
                 }
             } break;
@@ -889,21 +918,40 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceT
 
 Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                                      const RectI& roi,
+                                                     boost::shared_ptr<Natron::Image> downscaledOutput,
                                                      boost::shared_ptr<Natron::Image> output)
 {
     _imp->renderArgs.setLocalData(args);
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-    RectI rectToRender = output->getMinimalRect(roi);
-    if (!rectToRender.isNull()) {
-        Natron::Status st = render(args._time, args._scale, rectToRender, args._view,
-                                   args._isSequentialRender,args._isRenderResponseToUserInteraction, output);
+    RectI rectToRender = downscaledOutput->getMinimalRect(roi);
+    bool useFullResImage = !supportsRenderScale() && args._mipMapLevel != 0;
+    
+    RectI upscaledRoi = rectToRender;
+    if (useFullResImage) {
+        upscaledRoi = rectToRender.upscale(args._mipMapLevel);
+        upscaledRoi.intersect(output->getPixelRoD(), &upscaledRoi);
+    }
+    
+    if (!upscaledRoi.isNull()) {
+        Natron::Status st = render(args._time, args._scale, upscaledRoi, args._view,
+                                   args._isSequentialRender,args._isRenderResponseToUserInteraction,
+                                   useFullResImage ? output : downscaledOutput);
         if(st != StatOK){
             return st;
         }
-        if(!aborted()){
-            output->markForRendered(roi);
+        
+        
+        
+        if (!aborted()) {
+            downscaledOutput->markForRendered(rectToRender);
         }
+        ///copy the rectangle rendered in the full scale image to the downscaled output
+        if (useFullResImage) {
+            output->scale_mipmap(upscaledRoi,downscaledOutput.get(), args._mipMapLevel);
+        }
+
     }
+    
     return StatOK;
 }
 

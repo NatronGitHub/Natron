@@ -270,7 +270,7 @@ public:
     
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
-    static void debugImage(Natron::Image* image,const QString& filename = QString());
+    static void debugImage(const Natron::Image* image,const QString& filename = QString());
     
 signals:
     

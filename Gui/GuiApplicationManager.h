@@ -78,7 +78,7 @@ public:
     
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
 
-    virtual void debugImage(Natron::Image* image,const QString& filename = QString()) const OVERRIDE FINAL;
+    virtual void debugImage(const Natron::Image* image,const QString& filename = QString()) const OVERRIDE FINAL;
     
 public slots:
     

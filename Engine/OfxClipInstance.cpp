@@ -169,7 +169,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ///Use a render scale of 1 and the view 0 as we have no means to get them from here
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time, scale,0);
+        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,0,0);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);
@@ -270,7 +270,7 @@ OFX::Host::ImageEffect::Image(clip)
 ,_bitDepth(OfxImage::eBitDepthFloat)
 ,_floatImage(internalImage)
 {
-    RenderScale scale = internalImage->getRenderScale();
+    RenderScale scale = Natron::Image::getScaleFromMipMapLevel(internalImage->getMipMapLevel());
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr

@@ -1036,7 +1036,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(xZoomFactor) / std::log(2.)));
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(yZoomFactor) / std::log(2.)));
     
-    double closestPowerOf2 = std::min(std::max(closestPowerOf2X,closestPowerOf2Y),32.);
+    int closestPowerOf2 = std::max(closestPowerOf2X,closestPowerOf2Y);
+    unsigned int mipMapLevel = std::min(std::log(closestPowerOf2) / std::log(2),5.);
     
 #ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
@@ -1045,15 +1046,11 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
     boost::shared_ptr<Image> img;
     
-    scale.x = 1./closestPowerOf2;
-    scale.y = scale.x;
-    
-    rod = rod.scaled(scale.x, scale.y);
-    
+    RectI scaledRod = rod.mipMapLevel(mipMapLevel,false);
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
-        img = _imp->liveInstance->renderRoI(EffectInstance::RenderRoIArgs(time, scale, 0,rod,false,true,false,NULL));
+        img = _imp->liveInstance->renderRoI(EffectInstance::RenderRoIArgs(time, scale,mipMapLevel, 0,scaledRod,false,true,false,NULL));
     } catch (const std::exception& e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;
@@ -1073,7 +1070,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     }
   
     ///update the Rod to the scaled image rod
-    rod = img->getRoD();
+    rod = img->getPixelRoD();
 
     ImageComponents components = img->getComponents();
     int elemCount = getElementsCountForComponents(components);

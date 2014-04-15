@@ -16,7 +16,6 @@
 #include <map>
 
 #include "Global/GlobalDefines.h"
-#include <boost/scoped_array.hpp>
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QHash>
@@ -36,7 +35,7 @@ namespace Natron {
         
         U64 _nodeHashKey;
         SequenceTime _time;
-        RenderScale _renderScale;
+        unsigned int _mipMapLevel;
         int _view;
         double _pixelAspect;
 
@@ -44,7 +43,7 @@ namespace Natron {
         
         ImageKey(U64 nodeHashKey,
                  SequenceTime time,
-                 RenderScale scale,
+                 unsigned int mipMapLevel,
                  int view,
                  double pixelAspect = 1.);
         
@@ -67,10 +66,25 @@ namespace Natron {
             // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
             //assert(!rod.isNull());
             
-            std::fill(_map.get(), _map.get()+rod.area(), 0); // is it necessary?
+            std::fill(_map, _map+rod.area(), 0); 
         }
         
-        ~Bitmap() {}
+        Bitmap()
+        : _rod()
+        , _map(0)
+        {
+            
+        }
+        
+        void initialize(const RectI& rod)
+        {
+            assert(!_map);
+            _rod = rod;
+            _map = new char[rod.area()];
+            std::fill(_map, _map+rod.area(), 0);
+        }
+        
+        ~Bitmap() { delete _map; }
         
         const RectI& getRoD() const {return _rod;}
         
@@ -80,9 +94,9 @@ namespace Natron {
 
         void markForRendered(const RectI& roi);
 
-        const char* getBitmap() const { return _map.get(); }
+        const char* getBitmap() const { return _map; }
         
-        char* getBitmap() { return _map.get(); }
+        char* getBitmap() { return _map; }
         
         const char* getBitmapAt(int x,int y) const;
         
@@ -90,7 +104,7 @@ namespace Natron {
 
     private:
         RectI _rod;
-        boost::scoped_array<char> _map;
+        char* _map;
     };
     
 
@@ -100,37 +114,50 @@ namespace Natron {
     {
         
         ImageComponents _components;
-        Bitmap _bitmap;
         mutable QReadWriteLock _lock;
+        Bitmap _bitmap;
+        RectI _rod;
+        RectI _pixelRod;
+
         
     public:
    
-        Image(const ImageKey& key,const NonKeyParams& params,bool restore,const std::string& path);
+        Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,bool restore,const std::string& path);
         
         
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time);
+        Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel);
         
         virtual ~Image(){}
         
         static ImageKey makeKey(U64 nodeHashKey,
                                 SequenceTime time,
-                                RenderScale scale,
+                                unsigned int mipMapLevel,
                                 int view);
         
-        static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,bool isRoDProjectFormat,ImageComponents components,
+        static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
+                                                         bool isRoDProjectFormat,ImageComponents components,
                                                          int inputNbIdentity,int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> >& framesNeeded) ;
         
-        ////Note that for a scaled image (one whose render scale is different of 1) this will return the scaled RoD, not the
-        ////RoD of the unscaled image.
-        const RectI& getRoD() const {return _bitmap.getRoD();}
+        /**
+         * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
+         * scale applied to it. In order to return the true pixel data window you must call getPixelRoD()
+         **/
+        const RectI& getRoD() const;
+        
+        /**
+         * @brief Returns the bounds where data is in the image.
+         * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
+         * but slightly faster since it is stored as a member of the image.
+         **/
+        const RectI& getPixelRoD() const;
         
         virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
         
-        const RenderScale& getRenderScale() const {return this->_key._renderScale;}
+        unsigned int getMipMapLevel() const {return this->_key._mipMapLevel;}
         
         SequenceTime getTime() const {return this->_key._time;}
         
@@ -196,22 +223,52 @@ namespace Natron {
         }
         
         /**
-         * @brief Copies the content of the other image pixels into this image.
+         * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
+         * The internal bitmap will be copied aswell
          **/
-        void copy(const Natron::Image& other);
+        void copy(const Natron::Image& other,const RectI& roi);
         
         /**
-         * @brief Makes a scaled copy of this image into output.
-         * @pre Output is an image of (this->getRoD().width() * sx,this->getRoD().height() * sy)
-         * @param sx The scale to apply in the x dimension. It must be 1 divided by a power of 2.
-         * @param sy The scale to apply in the y dimension. It must be 1 divided by a power of 2.
-         * 
-         * This method use bilinear filtering for the color and average of 4 pixels for the bitmap.
-         * WARNING: This functions acts like a simple copy (but slower) if sx and sy equal 1.
+         * @brief Scales a portion of this image into output.
+         * This function will adjust roi to the nearest power of two rectangle
+         * and then computes the mipmap of the given level of that rectangle.
+         * The resulting mipmap will then be scaled into output using the
+         * scale(...) function.
          **/
-        void scaled(Natron::Image* output,double sx,double sy) const;
-    
-    
+        void scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const;
+        
+        /**
+         * @brief Scales the roi of this image to the size of the output image.
+         * This is used internally by buildMipMapLevel when the image is a NPOT.
+         * This should not be used for downscaling.
+         **/
+        void scale(const RectI& roi,Natron::Image* output) const;
+        
+        
+
+        static RenderScale getScaleFromMipMapLevel(unsigned int level);
+        
+        static unsigned int getLevelFromScale(const RenderScale& s);
+        
+    private:
+        
+        /**
+         * @brief Given the output buffer,the region of interest and the mip map level, this
+         * function computes the mip map of this image in the given roi.
+         * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
+         **/
+        void buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int level) const;
+        
+        
+        /**
+         * @brief Halve the roi of this image into output.
+         **/
+        void halveImage(const RectI& roi,Natron::Image* output) const;
+        
+        /**
+         * @brief Same as halveImage but for 1D only (either width == 1 or height == 1)
+         **/
+        void halve1DImage(const RectI& roi,Natron::Image* output) const;
     };    
     
 }//namespace Natron

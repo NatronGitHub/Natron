@@ -201,9 +201,9 @@ void InfoViewerWidget::setResolution(const Format& f)
 
 void InfoViewerWidget::changeResolution(){
     Format f = viewer->getDisplayWindow();
-    double scale = viewer->getInternalNode()->getRenderScale();
-    if (scale != 1.) {
-        f = f.scaled(scale, scale);
+    unsigned int mmLvl = viewer->getInternalNode()->getMipMapLevel();
+    if (mmLvl != 0) {
+        f = f.mipMapLevel(mmLvl,true);
     }
     setResolution(f);
     

@@ -51,6 +51,7 @@ public:
     {
         SequenceTime time;
         RenderScale scale;
+        unsigned int mipMapLevel;
         int view;
         RectI roi;
         bool isSequentialRender;
@@ -60,6 +61,7 @@ public:
         
         RenderRoIArgs(SequenceTime time_,
                       RenderScale scale_,
+                      unsigned int mipMapLevel_,
                       int view_,
                       RectI roi_,
                       bool isSequentialRender_,
@@ -68,6 +70,7 @@ public:
                       const RectI* preComputedRoD_)
         : time(time_)
         , scale(scale_)
+        , mipMapLevel(mipMapLevel_)
         , view(view_)
         , roi(roi_)
         , isSequentialRender(isSequentialRender_)
@@ -229,10 +232,11 @@ public:
      * the outputImage where to render instead. This is used by the Viewer which already did
      * a cache look-up for optimization purposes.
      **/
-    void renderRoI(SequenceTime time,RenderScale scale,
+    void renderRoI(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
                    int view,const RectI& renderWindow,
                    const boost::shared_ptr<const ImageParams>& cachedImgParams,
                    const boost::shared_ptr<Image>& image,
+                   const boost::shared_ptr<Image>& downscaledImage,
                    bool isSequentialRender,
                    bool isRenderMadeInResponseToUserInteraction,
                    bool byPassCache = false);
@@ -584,10 +588,11 @@ private:
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    bool renderRoIInternal(SequenceTime time,RenderScale scale,
-                           int view,const RectI& renderWindow,
+    bool renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
+                           int view,const RectI& renderWindow, //< renderWindow in pixel coordinates
                            const boost::shared_ptr<const ImageParams>& cachedImgParams,
                            const boost::shared_ptr<Image>& image,
+                           const boost::shared_ptr<Image>& downscaledImage,
                            bool isSequentialRender,
                            bool isRenderMadeInResponseToUserInteraction,
                            bool byPassCache);
@@ -606,6 +611,7 @@ private:
     
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,
                                          const RectI& roi,
+                                         boost::shared_ptr<Natron::Image> downscaledOutput,
                                          boost::shared_ptr<Natron::Image> output);
     
     /**

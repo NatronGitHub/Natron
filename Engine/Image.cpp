@@ -13,6 +13,7 @@
 
 #include <QDebug>
 
+#include "Engine/AppManager.h"
 #include "Engine/ImageParams.h"
 
 using namespace Natron;
@@ -23,7 +24,7 @@ ImageKey::ImageKey()
 : KeyHelper<U64>()
 , _nodeHashKey(0)
 , _time(0)
-, _renderScale()
+, _mipMapLevel(0)
 , _view(0)
 , _pixelAspect(1)
 {}
@@ -31,7 +32,7 @@ ImageKey::ImageKey()
 
 ImageKey::ImageKey(U64 nodeHashKey,
          SequenceTime time,
-         RenderScale scale,
+         unsigned int mipMapLevel,
          int view,
          double pixelAspect)
 : KeyHelper<U64>()
@@ -39,12 +40,11 @@ ImageKey::ImageKey(U64 nodeHashKey,
 , _time(time)
 , _view(view)
 , _pixelAspect(pixelAspect)
-{ _renderScale = scale; }
+{ _mipMapLevel = mipMapLevel; }
 
 void ImageKey::fillHash(Hash64* hash) const {
     hash->append(_nodeHashKey);
-    hash->append(_renderScale.x);
-    hash->append(_renderScale.y);
+    hash->append(_mipMapLevel);
     hash->append(_time);
     hash->append(_view);
     hash->append(_pixelAspect);
@@ -54,8 +54,7 @@ void ImageKey::fillHash(Hash64* hash) const {
 
 bool ImageKey::operator==(const ImageKey& other) const {
     return _nodeHashKey == other._nodeHashKey &&
-    _renderScale.x == other._renderScale.x &&
-    _renderScale.y == other._renderScale.y &&
+    _mipMapLevel == other._mipMapLevel &&
     _time == other._time &&
     _view == other._view &&
     _pixelAspect == other._pixelAspect;
@@ -283,6 +282,16 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     return ret;
 }
 
+const RectI& Image::getPixelRoD() const
+{
+    return _pixelRod;
+}
+
+const RectI& Image::getRoD() const
+{
+    return _rod;
+}
+
 void Natron::Bitmap::markForRendered(const RectI& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width() + (roi.left() - _rod.left())];
@@ -293,7 +302,7 @@ void Natron::Bitmap::markForRendered(const RectI& roi){
 const char* Natron::Bitmap::getBitmapAt(int x,int y) const
 {
     if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
-        return _map.get() + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
+        return _map + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
     } else {
         return NULL;
     }
@@ -302,62 +311,93 @@ const char* Natron::Bitmap::getBitmapAt(int x,int y) const
 char* Natron::Bitmap::getBitmapAt(int x,int y)
 {
     if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
-        return _map.get() + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
+        return _map + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
     } else {
         return NULL;
     }
 }
 
-Image::Image(const ImageKey& key,const NonKeyParams& params,bool restore,const std::string& path):
+Image::Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,bool restore,const std::string& path):
 CacheEntryHelper<float,ImageKey>(key,params,restore,path)
-, _components(dynamic_cast<const ImageParams&>(params).getComponents())
-,_bitmap(dynamic_cast<const ImageParams&>(params).getRoD())
 {
+    const ImageParams* p = dynamic_cast<const ImageParams*>(params.get());
+    _components = p->getComponents();
+    _bitmap.initialize(p->getPixelRoD());
+    _rod = p->getRoD();
+    _pixelRod = p->getPixelRoD();
 }
 
 /*This constructor can be used to allocate a local Image. The deallocation should
  then be handled by the user. Note that no view number is passed in parameter
  as it is not needed.*/
-Image::Image(ImageComponents components,const RectI& regionOfDefinition,RenderScale scale,SequenceTime time)
-: CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,0),
-                                   ImageParams(0, regionOfDefinition, false ,components,-1,0,std::map<int,std::vector<RangeD> >()),
+Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel)
+: CacheEntryHelper<float,ImageKey>(makeKey(0,0,mipMapLevel,0),
+                                   boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
+                                                                                         regionOfDefinition,
+                                                                                         regionOfDefinition.downscale(1 << mipMapLevel),
+                                                                                         false ,
+                                                                                         components,
+                                                                                         -1,
+                                                                                         0,
+                                                                                         std::map<int,std::vector<RangeD> >())),
                                    false,"")
-, _components(components)
-, _bitmap(regionOfDefinition)
 {
     // NOTE: before removing the following assert, please explain why an empty image may happen
     assert(!regionOfDefinition.isNull());
+    
+    const ImageParams* p = dynamic_cast<const ImageParams*>(_params.get());
+    _components = components;
+    _bitmap.initialize(p->getPixelRoD());
+    _rod = regionOfDefinition;
+    _pixelRod = p->getPixelRoD();
 }
 
 ImageKey Image::makeKey(U64 nodeHashKey,
                         SequenceTime time,
-                        RenderScale scale,
+                        unsigned int mipMapLevel,
                         int view){
-    return ImageKey(nodeHashKey,time,scale,view);
+    return ImageKey(nodeHashKey,time,mipMapLevel,view);
 }
 
-boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,bool isRoDProjectFormat,ImageComponents components,
+boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
+                                                 bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscale(1 << mipMapLevel)
+                                                          ,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 
 
-void Natron::Image::copy(const Natron::Image& other)
+void Natron::Image::copy(const Natron::Image& other,const RectI& roi)
 {
     // NOTE: before removing the following asserts, please explain why an empty image may happen
-    assert(!getRoD().isNull());
-    assert(!other.getRoD().isNull());
-    RectI intersection;
-    getRoD().intersect(other.getRoD(), &intersection);
+    const RectI& srcRoD = getPixelRoD();
+    const RectI& dstRoD = other.getPixelRoD();
     
-    if (intersection.isNull()) {
+    assert(!srcRoD.isNull());
+    assert(!dstRoD.isNull());
+    RectI intersection;
+    bool doInteresect = srcRoD.intersect(dstRoD, &intersection);
+    if (!doInteresect) {
         return;
     }
     
-    const float* src = other.pixelAt(0, 0);
-    float* dst = pixelAt(0, 0);
-    memcpy(dst, src, intersection.area());
+    if (!roi.intersect(intersection, &intersection)) {
+        return;
+    }
+    
+    assert(getComponents() == other.getComponents());
+    int components = getElementsCountForComponents(getComponents());
+    
+    for (int y = intersection.y1; y < intersection.y2; ++y) {
+        const float* src = other.pixelAt(dstRoD.x1, y);
+        float* dst = pixelAt(intersection.x1, y);
+        memcpy(dst, src, intersection.width() * sizeof(float) * components);
+        
+        const char* srcBm = other.getBitmapAt(dstRoD.x1, y);
+        char* dstBm = getBitmapAt(intersection.x1, y);
+        memcpy(dstBm, srcBm, intersection.width());
+    }
 }
 
 void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
@@ -389,80 +429,477 @@ void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
 }
 
 float* Image::pixelAt(int x,int y){
-    const RectI& rod = _bitmap.getRoD();
     int compsCount = getElementsCountForComponents(getComponents());
-    return this->_data.writable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
+    return this->_data.writable() + (y-_pixelRod.bottom()) * compsCount * _pixelRod.width() + (x-_pixelRod.left()) * compsCount;
 }
 
 const float* Image::pixelAt(int x,int y) const {
-    const RectI& rod = _bitmap.getRoD();
     int compsCount = getElementsCountForComponents(getComponents());
-    if (x >= rod.left() && x < rod.right() && y >= rod.bottom() && y < rod.top()) {
-        return this->_data.readable() + (y-rod.bottom()) * compsCount * rod.width() + (x-rod.left()) * compsCount;
+    if (x >= _pixelRod.left() && x < _pixelRod.right() && y >= _pixelRod.bottom() && y < _pixelRod.top()) {
+        return this->_data.readable() + (y-_pixelRod.bottom()) * compsCount * _pixelRod.width() + (x-_pixelRod.left()) * compsCount;
     } else {
         return NULL;
     }
 }
 
-void Image::scaled(Natron::Image* output,double sx,double sy) const
+void Image::halveImage(const RectI& roi,Natron::Image* output) const
 {
+    ///handle case where there is only 1 column/row
+    int width = roi.width();
+    int height = roi.height();
     
-    assert((output->getRoD().width() == ((double)getRoD().width() * sx)) &&
-           (output->getRoD().height() == ((double)getRoD().height() * sy)));
+    if (width == 1 || height == 1) {
+        assert( !(width == 1 && height == 1) ); /// can't be 1x1
+        halve1DImage(roi,output);
+        return;
+    }
     
     
-    const RectI& dstRoD = output->getRoD();
-    const RectI& srcRoD = getRoD();
     
-    double yScaleFactor = (double)dstRoD.height() / (double)srcRoD.height();
-    double xScaleFactor = (double)dstRoD.width() / (double)srcRoD.width();
+    int newWidth = width / 2;
+    int newHeight = height / 2;
     
-    int elementsCount = getElementsCountForComponents(_components);
+    assert(output->getPixelRoD().width() == newWidth && output->getPixelRoD().height() == newHeight);
+    assert(getComponents() == output->getComponents());
     
-    for (int y = dstRoD.y1; y < dstRoD.y2; ++y) {
-        
-        
-        double ysrc = ((double)y / yScaleFactor) + srcRoD.y1;
-        
-        int fy = std::floor(ysrc);
-        int cy = fy + 1;
-        double dy = std::max(0., std::min(ysrc - fy, 1.));
-        
-        const float* srcPixelsFloor = pixelAt(srcRoD.x1, fy);
-        const float* srcPixelsCeil = pixelAt(srcRoD.x1, cy);
-        float* dstPixels = output->pixelAt(dstRoD.x1,y);
-
-        const char* srcBitmapFloor = getBitmapAt(srcRoD.x1, fy);
-        const char* srcBitmapCeil = getBitmapAt(srcRoD.x1, cy);
-        char* dstBitmap = output->getBitmapAt(dstRoD.x1, y);
-        
-        for (int x = dstRoD.x1; x < dstRoD.x2; ++x) {
-            double xsrc = ((double)x / xScaleFactor) + srcRoD.x1;
-            
-            int fx = std::floor(xsrc);
-            int cx = fx + 1;
-            double dx = std::max(0., std::min(xsrc - fx, 1.));
-            
-
-            for (int i = 0; i < elementsCount ;++i) {
-                
-                const double Icc = (!srcPixelsFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx * elementsCount + i];
-                const double Inc = (!srcPixelsFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx * elementsCount + i];
-                const double Icn = (!srcPixelsCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx * elementsCount + i];
-                const double Inn = (!srcPixelsCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx * elementsCount + i];
-                *dstPixels++ = Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc);
+    int components = getElementsCountForComponents(getComponents());
+    
+    const float* src = pixelAt(roi.x1, roi.y1);
+    float* dst = output->pixelAt(output->getPixelRoD().x1, output->getPixelRoD().y1);
+    
+    int rowSize = getPixelRoD().width() * components;
+    
+    for (int y = 0; y < newHeight; ++y) {
+        for (int x = 0; x < newWidth; ++x) {
+            for (int k = 0; k < components; ++k) {
+                *dst++ =  (*src +
+                        *(src + components) +
+                        *(src + rowSize) +
+                        *(src + rowSize  + components)) / 4;
+                ++src;
             }
-            
-            
-            const double Icc = (!srcBitmapFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx];
-            const double Inc = (!srcBitmapFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx];
-            const double Icn = (!srcBitmapCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx];
-            const double Inn = (!srcBitmapCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx];
-            
-            ///average the 4 neighbooring pixels
-            *dstBitmap++ = (Icc + Inc + Icn + Inn) / 4.;
+            src += components;
+        }
+        src += rowSize;
+    }
+}
 
-            
+void Image::halve1DImage(const RectI& roi,Natron::Image* output) const
+{
+    int width = roi.width();
+    int height = roi.height();
+    
+    int halfWidth = width / 2;
+    int halfHeight = height / 2;
+    
+    assert(width == 1 || height == 1); /// must be 1D
+    assert(output->getComponents() == getComponents());
+    
+    int components = getElementsCountForComponents(getComponents());
+    
+    
+    if (height == 1) { //1 row
+        assert(width != 1);	/// widthxheight can't be 1x1
+        halfHeight = 1;
+        
+        const float* src = pixelAt(roi.x1, roi.y1);
+        float* dst = output->pixelAt(output->getRoD().x1, output->getRoD().y1);
+        
+        for (int x = 0; x < halfWidth; ++x) {
+            for (int k = 0; k < components; ++k) {
+                *dst++ = (*src + *(src + components)) / 2.;
+                ++src;
+            }
+            src += components;
+        }
+        
+    } else if (width == 1) {
+        
+        int rowSize = getPixelRoD().width() * components;
+        
+        const float* src = pixelAt(roi.x1, roi.y1);
+        float* dst = output->pixelAt(output->getRoD().x1, output->getRoD().y1);
+        
+        for (int y = 0; y < halfHeight; ++y) {
+            for (int k = 0; k < components;++k) {
+                *dst++ = (*src + (*src + rowSize)) / 2.;
+                ++src;
+            }
+            src += rowSize;
         }
     }
+}
+
+void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const
+{
+    ///You should not call this function with a level equal to 0.
+    assert(level > 0);
+    
+    ///This is the portion we computed in buildMipMapLevel
+    RectI srcRoI = roi.mipMapLevel(level, false);
+    
+    ///Even if the roi is this image's RoD, the
+    ///resulting mipmap of that roi should fit into output.
+    Natron::Image* tmpImg = new Natron::Image(getComponents(),srcRoI,0);
+    
+    buildMipMapLevel(tmpImg, roi, level);
+    
+    RectI dstRoI = roi.downscale(1 << level);
+    
+    Natron::Image* tmpImg2  = new Natron::Image(getComponents(),dstRoI,0);
+    tmpImg->scale(srcRoI, tmpImg2);
+    
+    ///Now copy the result of tmpImg2 into the output image
+    output->copy(*tmpImg2, dstRoI);
+        
+    ///clean-up
+    delete tmpImg;
+    delete tmpImg2;
+}
+
+void Image::scale(const RectI& roi,Natron::Image* output) const
+{
+    ///The destination rectangle
+    const RectI& dstRod = output->getPixelRoD();
+    
+    ///The source rectangle, intersected to this image region of definition in pixels
+    RectI srcRod = roi;
+    srcRod.intersect(getPixelRoD(), &srcRod);
+
+    ///If the roi is exactly twice the destination rect, just halve that portion into output.
+    if (srcRod.width() == 2 * dstRod.width() && srcRod.height() == 2 * dstRod.height()) {
+        halveImage(srcRod,output);
+        return;
+    }
+    
+    RenderScale scale;
+    scale.x = (double) srcRod.width() / dstRod.width();
+    scale.y = (double) srcRod.height() / dstRod.height();
+    
+    int convx_int = std::floor(scale.x);
+    int convy_int = std::floor(scale.y);
+    double convx_float = scale.x - convx_int;
+    double convy_float = scale.y - convy_int;
+    double area = scale.x * scale.y;
+    
+    int lowy_int = 0;
+    double lowy_float = 0.;
+    int highy_int = convy_int;
+    double highy_float = convy_float;
+    
+    const float *src = pixelAt(srcRod.x1, srcRod.y1);
+    float* dst = output->pixelAt(dstRod.x1, dstRod.y1);
+    
+    assert(output->getComponents() == getComponents());
+    int components = getElementsCountForComponents(getComponents());
+    
+    int rowSize = getPixelRoD().width() * components;
+    
+    float totals[4];
+    
+    for (int y = 0; y < dstRod.height(); ++y) {
+        
+        /* Clamp here to be sure we don't read beyond input buffer. */
+        if (highy_int >= srcRod.height())
+            highy_int = srcRod.height() - 1;
+        
+        int lowx_int = 0;
+        double lowx_float = 0.;
+        int highx_int = convx_int;
+        double highx_float = convx_float;
+        
+        for (int x = 0; x < dstRod.width(); ++x) {
+            if (highx_int >= srcRod.width()) {
+                highx_int = srcRod.width() - 1;
+            }
+            
+            /*
+             ** Ok, now apply box filter to box that goes from (lowx, lowy)
+             ** to (highx, highy) on input data into this pixel on output
+             ** data.
+             */
+            totals[0] = totals[1] = totals[2] = totals[3] = 0.0;
+            
+            /// calculate the value for pixels in the 1st row
+            int xindex = lowx_int * components;
+            if ((highy_int > lowy_int) && (highx_int > lowx_int)) {
+                double y_percent = 1. - lowy_float;
+                double percent = y_percent * (1. - lowx_float);
+                const float* temp = src + xindex + lowy_int * rowSize;
+                const float* temp_index ;
+                int k;
+                for (k = 0,temp_index = temp; k < components; ++k,++temp_index) {
+                     totals[k] += *temp_index * percent;
+                }
+                const float* left = temp;
+                for(int l = lowx_int + 1; l < highx_int; ++l) {
+                    temp += components;
+                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                        totals[k] += *temp_index * y_percent;
+                    };
+                }
+                
+                temp += components;
+                const float* right = temp;
+                percent = y_percent * highx_float;
+                
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+                
+                /// calculate the value for pixels in the last row
+                y_percent = highy_float;
+                percent = y_percent * (1. - lowx_float);
+                temp = src + xindex + highy_int * rowSize;
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+                for(int l = lowx_int + 1; l < highx_int; ++l) {
+                    temp += components;
+                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                        totals[k] += *temp_index * y_percent;
+                    }
+                }
+                temp += components;
+                percent = y_percent * highx_float;
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+                
+                /* calculate the value for pixels in the 1st and last column */
+                for(int m = lowy_int + 1; m < highy_int; ++m) {
+                    left += rowSize;
+                    right += rowSize;
+                    for (k = 0; k < components;++k, ++left, ++right) {
+                        totals[k] += *left * (1 - lowx_float) + *right * highx_float;
+                    }
+                }
+            } else if (highy_int > lowy_int) {
+                double x_percent = highx_float - lowx_float;
+                double percent = (1. - lowy_float) * x_percent;
+                const float* temp = src + xindex + lowy_int * rowSize;
+                const float* temp_index;
+                int k;
+                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+                for(int m = lowy_int + 1; m < highy_int; ++m) {
+                    temp += rowSize;
+                    for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                        totals[k] += *temp_index * x_percent;
+                    }
+                }
+                percent = x_percent * highy_float;
+                temp += rowSize;
+                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+            } else if (highx_int > lowx_int) {
+                double y_percent = highy_float - lowy_float;
+                double percent = (1. - lowx_float) * y_percent;
+                int k;
+                const float* temp = src + xindex + lowy_int * rowSize;
+                const float* temp_index;
+                
+                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+                for (int l = lowx_int + 1; l < highx_int; ++l) {
+                    temp += components;
+                    for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                        totals[k] += *temp_index * y_percent;
+                    }
+                }
+                temp += components;
+                percent = y_percent * highx_float;
+                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+            } else {
+                double percent = (highy_float - lowy_float) * (highx_float - lowx_float);
+                const float* temp = src + xindex + lowy_int * rowSize;
+                int k;
+                const float* temp_index;
+                
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
+                    totals[k] += *temp_index * percent;
+                }
+            }
+            
+            /// this is for the pixels in the body
+            const float* temp0 = src + lowx_int + components + (lowy_int + 1) * rowSize;
+            const float* temp;
+            
+            for (int m = lowy_int + 1; m < highy_int; ++m) {
+                temp = temp0;
+                for(int l = lowx_int + 1; l < highx_int; ++l) {
+                    int k;
+                    const float *temp_index;
+                    
+                    for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                        totals[k] += *temp_index;
+                    }
+                    temp += components;
+                }
+                temp0 += rowSize;
+            }
+            
+            int outindex = (x + (y * dstRod.width())) * components;
+            for (int k = 0; k < components; ++k) {
+                dst[outindex + k] = totals[k] / area;
+            }
+            lowx_int = highx_int;
+            lowx_float = highx_float;
+            highx_int += convx_int;
+            highx_float += convx_float;
+            if (highx_float > 1) {
+                highx_float -= 1.0;
+                ++highx_int;
+            }
+        }
+        lowy_int = highy_int;
+        lowy_float = highy_float;
+        highy_int += convy_int;
+        highy_float += convy_float;
+        if (highy_float > 1) {
+            highy_float -= 1.0;
+            ++highy_int;
+        }
+    }
+}
+
+static RectI nextRectLevel(const RectI& r) {
+    RectI ret = r;
+    ret.x1 /= 2;
+    ret.y1 /= 2;
+    ret.x2 /= 2;
+    ret.y2 /= 2;
+    return ret;
+}
+
+void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int level) const
+{
+    ///The output image data window
+    const RectI& dstRoD = output->getPixelRoD();
+    
+    ///The nearest po2 box of the roi
+    RectI closestPo2 = roi.closestPo2Rect();
+    
+    ///The last mip map level we will make with closestPo2
+    RectI lastLevelRoI = closestPo2.mipMapLevel(level,true);
+    
+    ///The output image must contain the last level roi
+    assert(dstRoD.contains(lastLevelRoI));
+    
+    assert(output->getComponents() == getComponents());
+    
+    const Natron::Image* srcImg = NULL;
+    Natron::Image* dstImg = NULL;
+    bool mustFreeSrc = false;
+    
+    if (closestPo2 == roi) { ///The roi is already a Po2
+        if (level == 0) {
+            ///Just copy the roi and return
+            output->copy(*this,closestPo2);
+            return;
+        } else {
+            ///We want to downscale, use this image as a start
+            srcImg = this;
+        }
+        
+    } else { ///The roi is not a po2
+             ///Allocate a new image of the size of the nearest po2 box of the roi
+        Natron::Image* tmpImg = new Natron::Image(getComponents(),closestPo2,0);
+        
+        ///Scale the roi of this image into tmpImg using a box filter.
+        scale(roi,tmpImg);
+        srcImg = tmpImg;
+        mustFreeSrc = true;
+    }
+    
+    ///Build all the mipmap levels until we reach the one we are interested in
+    for (unsigned int i = 0; i < level; ++i) {
+        
+        ///Halve the closestPo2 rect
+        RectI halvedRoI = nextRectLevel(closestPo2);
+        
+        ///Allocate an image with half the size of the source image
+        dstImg = new Natron::Image(getComponents(),halvedRoI,0);
+        
+        ///Half the source image into dstImg.
+        ///We pass the closestPo2 roi which might not be the entire size of the source image
+        ///If the source image'sroi was originally a po2.
+        srcImg->halveImage(closestPo2,dstImg);
+        
+        ///Clean-up, we should use shared_ptrs for safety
+        if (mustFreeSrc) {
+            delete srcImg;
+        }
+        
+        ///Switch for next pass
+        closestPo2 = halvedRoI;
+        srcImg = dstImg;
+        mustFreeSrc = true;
+    }
+    
+    assert(srcImg->getPixelRoD() == lastLevelRoI);
+    
+    ///Finally copy the last mipmap level into output.
+    output->copy(*srcImg,srcImg->getPixelRoD());
+    
+    ///Clean-up, we should use shared_ptrs for safety
+    if (mustFreeSrc) {
+        delete srcImg;
+    }
+}
+
+
+RenderScale Image::getScaleFromMipMapLevel(unsigned int level) {
+    RenderScale scale;
+    switch (level) {
+        case 0:
+            scale.x = 1.;
+            break;
+        case 1:
+            scale.x = 0.5;
+            break;
+        case 2:
+            scale.x = 0.25;
+            break;
+        case 3:
+            scale.x = 0.125;
+            break;
+        case 4:
+            scale.x = 0.0625;
+            break;
+        case 5:
+            scale.x = 0.03125;
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    scale.y = scale.x;
+    return scale;
+}
+
+unsigned int Image::getLevelFromScale(const RenderScale& s)
+{
+    assert(s.x == s.y);
+    if (s.x == 1.) {
+        return 0;
+    } else if (s.x == 0.5) {
+        return 1;
+    } else if (s.x == 0.25) {
+        return 2;
+    } else if (s.x == 0.125) {
+        return 3;
+    } else if (s.x == 0.0625) {
+        return 4;
+    } else if (s.x == 0.03125) {
+        return 5;
+    } else {
+        assert(false);
+    }
+    return 0;
 }

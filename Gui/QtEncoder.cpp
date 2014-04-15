@@ -201,7 +201,7 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
     boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view);
     
     if(hasOutputConnected()){
-        output->copy(*src);
+        output->copy(*src,src->getRoD());
     }
     
     ////initializes to black

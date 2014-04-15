@@ -2146,8 +2146,8 @@ TabWidget* Gui::getWorkshopPane() const { return _imp->_workshopPane; }
 
 const std::map<std::string,QWidget*>& Gui::getRegisteredTabs() const { return _imp->_registeredTabs; }
 
-void Gui::debugImage(Natron::Image* image,const QString& filename ) {
-    const RectI& rod = image->getRoD();
+void Gui::debugImage(const Natron::Image* image,const QString& filename ) {
+    const RectI& rod = image->getPixelRoD();
     QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
     lut->to_byte_packed(output.bits(), image->pixelAt(0, 0), rod, rod, rod,

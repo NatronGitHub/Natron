@@ -11,11 +11,12 @@
 
 #include "OfxParamInstance.h"
 #include <iostream>
-
+#include <boost/scoped_array.hpp>
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
 #include <ofxParametricParam.h>
+
 
 #include "Engine/AppManager.h"
 

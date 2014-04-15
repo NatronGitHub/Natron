@@ -653,7 +653,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
                 // Do not catch exceptions: if an exception occurs here it is probably fatal, since
                 // it comes from Natron itself. All exceptions from plugins are already caught
                 // by the HostSupport library.
-                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, scale,i ,rod,isSequentialRender,false,false,NULL));
+                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, scale,0,i ,rod,isSequentialRender,false,false,NULL));
             }
         }
         

@@ -568,7 +568,7 @@ namespace Natron {
                 }
                 EntryType* value = NULL;
                 try {
-                    value = new EntryType(it->key,*(it->params),true,QString(getCachePath()+QDir::separator()).toStdString());
+                    value = new EntryType(it->key,it->params,true,QString(getCachePath()+QDir::separator()).toStdString());
                 } catch (const std::bad_alloc& e) {
                     qDebug() << e.what();
                     continue;
@@ -590,7 +590,7 @@ namespace Natron {
      **/
         EntryTypePtr newEntry(const typename EntryType::key_type& key,const NonKeyParamsPtr& params) const {
             assert(!_lock.tryLock()); // must be locked
-            EntryTypePtr entryptr(new EntryType(key,*params, false , QString(getCachePath()+QDir::separator()).toStdString()));
+            EntryTypePtr entryptr(new EntryType(key,params, false , QString(getCachePath()+QDir::separator()).toStdString()));
             CachedValue cachedValue;
             cachedValue._entry = entryptr;
             cachedValue._params = params;

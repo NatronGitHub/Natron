@@ -315,7 +315,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->setUserRoI(found->second.userRoI);
                 tab->setClipToProject(found->second.isClippedToProject);
                 tab->setRenderScaleActivated(found->second.renderScaleActivated);
-                tab->setRenderScale(found->second.renderScale);
+                tab->setMipMapLevel(found->second.mipMapLevel);
             }
         }
         

@@ -224,11 +224,11 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     _imp->_renderScaleCombo = new ComboBox(_imp->_firstSettingsRow);
     _imp->_renderScaleCombo->setToolTip("When proxy mode is activated, it scales down the rendered image by this factor \n"
                                         "to accelerate the rendering.");
-    _imp->_renderScaleCombo->addItem("2");
-    _imp->_renderScaleCombo->addItem("4");
-    _imp->_renderScaleCombo->addItem("8");
-    _imp->_renderScaleCombo->addItem("16");
-    _imp->_renderScaleCombo->addItem("32");
+    _imp->_renderScaleCombo->addItem("2",QIcon(),QKeySequence(Qt::ALT + Qt::Key_1));
+    _imp->_renderScaleCombo->addItem("4",QIcon(),QKeySequence(Qt::ALT + Qt::Key_2));
+    _imp->_renderScaleCombo->addItem("8",QIcon(),QKeySequence(Qt::ALT + Qt::Key_3));
+    _imp->_renderScaleCombo->addItem("16",QIcon(),QKeySequence(Qt::ALT + Qt::Key_4));
+    _imp->_renderScaleCombo->addItem("32",QIcon(),QKeySequence(Qt::ALT + Qt::Key_5));
     _imp->_firstRowLayout->addWidget(_imp->_renderScaleCombo);
     
     _imp->_firstRowLayout->addStretch();
@@ -831,7 +831,22 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
     } else if (event->key() == Qt::Key_P && event->modifiers().testFlag(Qt::ControlModifier)) {
         onRenderScaleButtonClicked(!_imp->_activateRenderScale->isDown());
+    } else if (event->key() == Qt::Key_1 && event->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->_renderScaleCombo->setCurrentIndex(0);
+    } else if (event->key() == Qt::Key_2 && event->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->_renderScaleCombo->setCurrentIndex(1);
+    } else if (event->key() == Qt::Key_3 && event->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->_renderScaleCombo->setCurrentIndex(2);
+    } else if (event->key() == Qt::Key_4 && event->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->_renderScaleCombo->setCurrentIndex(3);
+    } else if (event->key() == Qt::Key_5 && event->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->_renderScaleCombo->setCurrentIndex(4);
     }
+
+
+
+
+
     
 }
 
@@ -1164,28 +1179,18 @@ double ViewerTab::getGain() const {
     return _imp->_viewerNode->getGain();
 }
 
-void ViewerTab::setRenderScale(double scale)
+void ViewerTab::setMipMapLevel(int level)
 {
-    if (scale == 0.5) {
-        _imp->_renderScaleCombo->setCurrentIndex(0);
-    } else if (scale == 0.25) {
-        _imp->_renderScaleCombo->setCurrentIndex(1);
-    } else if (scale == 0.125) {
-        _imp->_renderScaleCombo->setCurrentIndex(2);
-    } else if (scale == 0.0625) {
-        _imp->_renderScaleCombo->setCurrentIndex(3);
-    } else if (scale == 0.03125) {
-        _imp->_renderScaleCombo->setCurrentIndex(4);
-    } else {
-        _imp->_renderScaleCombo->setCurrentIndex(0);
+    if (level > 0) {
+        _imp->_renderScaleCombo->setCurrentIndex(level - 1);
     }
-    _imp->viewer->onRenderScaleChanged(scale);
-    _imp->_viewerNode->onRenderScaleChanged(scale);
+
+    _imp->_viewerNode->onMipMapLevelChanged(level);
 }
 
-double ViewerTab::getRenderScale() const
+int ViewerTab::getMipMapLevel() const
 {
-    return _imp->_viewerNode->getRenderScale();
+    return _imp->_viewerNode->getMipMapLevel();
 }
 
 void ViewerTab::setRenderScaleActivated(bool act)
@@ -1195,7 +1200,7 @@ void ViewerTab::setRenderScaleActivated(bool act)
 
 bool ViewerTab::getRenderScaleActivated() const
 {
-    return _imp->_viewerNode->getRenderScale() != 1.;
+    return _imp->_viewerNode->getMipMapLevel() != 0;
 }
 
 std::string ViewerTab::getChannelsString() const {
@@ -1247,33 +1252,13 @@ void ViewerTab::onAutoContrastChanged(bool b) {
 
 void ViewerTab::onRenderScaleComboIndexChanged(int index)
 {
-    double rs;
+    int level;
     if (_imp->_activateRenderScale->isDown()) {
-        switch (index) {
-            case 0:
-                rs = 0.5;
-                break;
-            case 1:
-                rs = 0.25;
-                break;
-            case 2:
-                rs = 0.125;
-                break;
-            case 3:
-                rs = 0.0625;
-                break;
-            case 4:
-                rs = 0.03125;
-                break;
-            default:
-                rs = 1.;
-                break;
-        }
+        level = index + 1;
     } else {
-        rs = 1.;
+        level = 0;
     }
-    _imp->viewer->onRenderScaleChanged(rs);
-    _imp->_viewerNode->onRenderScaleChanged(rs);
+    _imp->_viewerNode->onMipMapLevelChanged(level);
 }
 
 void ViewerTab::onRenderScaleButtonClicked(bool checked)

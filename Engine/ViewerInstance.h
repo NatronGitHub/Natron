@@ -115,7 +115,7 @@ public:
 
     double getGain() const WARN_UNUSED_RETURN ;
     
-    double getRenderScale() const WARN_UNUSED_RETURN;
+    int getMipMapLevel() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
@@ -148,7 +148,7 @@ public slots:
 
     void onGainChanged(double exp);
     
-    void onRenderScaleChanged(double scale);
+    void onMipMapLevelChanged(int level);
 
     void onColorSpaceChanged(const QString& colorspaceName);
 
