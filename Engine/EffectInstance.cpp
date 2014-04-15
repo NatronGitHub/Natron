@@ -211,29 +211,39 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     bool isRenderUserInteraction = true;
     bool byPassCache = false;
     bool isProjectFormat;
-    int mipMapLevel;
+    unsigned int mipMapLevel;
     ///we have no choice but to ask for a render of the region of interest
 
     
     if (_imp->renderArgs.hasLocalData()) {
+        ///Re-use the data the render thread gave us
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
         byPassCache = _imp->renderArgs.localData()._byPassCache;
         currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
         mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
     } else {
+        ///We have no choice but compute the RoI based on the assumption that the effect is currently
+        ///rendering the RoD. This is the best we can do.
+        /// We should never enter this case unless this function was called by a thread that
+        /// is NOT a render thread. (i.e: not controlled by Natron).
         Natron::Status stat = n->getRegionOfDefinition(time,scale, &precomputedRoD,&isProjectFormat);
         if(stat == Natron::StatFailed) {
             return boost::shared_ptr<Natron::Image>();
         }
         currentEffectRenderWindow = precomputedRoD;
         mipMapLevel = Natron::Image::getLevelFromScale(scale);
+        currentEffectRenderWindow = currentEffectRenderWindow.downscale(1 << mipMapLevel);
     }
     
     RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow);
     RoIMap::iterator found = inputsRoI.find(n);
     assert(found != inputsRoI.end());
     roi = found->second;
+    
+    if (!n->supportsRenderScale() && mipMapLevel != 0) {
+        roi = roi.downscale(1 << mipMapLevel);
+    }
     
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.
@@ -610,7 +620,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
     if (!supportsTiles() && !rectsToRender.empty()) {
         ///if the effect doesn't support tiles, just render the whole rod again even though
         rectsToRender.clear();
-        rectsToRender.push_back(cachedImgParams->getRoD());
+        rectsToRender.push_back(cachedImgParams->getPixelRoD());
     }
 #ifdef NATRON_LOG
     else if (rectsToRender.empty()) {

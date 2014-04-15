@@ -274,19 +274,20 @@ OFX::Host::ImageEffect::Image(clip)
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
+    const RectI& pixelrod = internalImage->getPixelRoD();
     const RectI& rod = internalImage->getRoD();
     setPointerProperty(kOfxImagePropData,internalImage->pixelAt(rod.left(), rod.bottom()));
     // bounds and rod
-    setIntProperty(kOfxImagePropBounds, rod.left(), 0);
-    setIntProperty(kOfxImagePropBounds, rod.bottom(), 1);
-    setIntProperty(kOfxImagePropBounds, rod.right(), 2);
-    setIntProperty(kOfxImagePropBounds, rod.top(), 3);
+    setIntProperty(kOfxImagePropBounds, pixelrod.left(), 0);
+    setIntProperty(kOfxImagePropBounds, pixelrod.bottom(), 1);
+    setIntProperty(kOfxImagePropBounds, pixelrod.right(), 2);
+    setIntProperty(kOfxImagePropBounds, pixelrod.top(), 3);
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.left(), 0);
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.bottom(), 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.top(), 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, rod.width() *
+    setIntProperty(kOfxImagePropRowBytes, pixelrod.width() *
                    Natron::getElementsCountForComponents(internalImage->getComponents()) *
                    sizeof(float));
     setStringProperty(kOfxImageEffectPropComponents, natronsComponentsToOfxComponents(internalImage->getComponents()));
