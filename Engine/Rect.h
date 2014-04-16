@@ -173,38 +173,23 @@ public:
      **/
     RectI upscalePowerOfTwo(unsigned int thisLevel) const {
         RectI ret;
-        unsigned int scale = (1 << thisLevel);
-        ret.x1 = x1 * scale;
-        ret.x2 = x2 * scale;
-        ret.y1 = y1 * scale;
-        ret.y2 = y2 * scale;
+        ret.x1 = x1 << thisLevel;
+        ret.x2 = x2 << thisLevel;
+        ret.y1 = y1 << thisLevel;
+        ret.y2 = y2 << thisLevel;
         return ret;
     }
     
-#if 0
-    /**
-     * @brief Scales down the rectangle by the given power of 2
-     **/
-    RectI downscale(int po2) const {
-        RectI ret;
-        ret.x1 = std::floor(x1 / (double)po2);
-        ret.y1 = std::floor(y1 / (double)po2);
-        ret.y2 = std::ceil(y2 / (double)po2);
-        ret.x2 = std::ceil(x2 / (double)po2);
-        return ret;
-    }
-#endif
     /**
      * @brief Scales down the rectangle by the given power of 2
      **/
     RectI downscalePowerOfTwo(unsigned int thisLevel) const {
         RectI ret;
-        unsigned int scale = (1<<thisLevel);
-        assert(x1 % scale == 0 && x2 % scale == 0 && y1 % scale == 0 && y2 % scale == 0);
-        ret.x1 = x1 / scale;
-        ret.x2 = x2 / scale;
-        ret.y1 = y1 / scale;
-        ret.y2 = y2 / scale;
+        assert(x1 % (1<<thisLevel) == 0 && x2 % (1<<thisLevel) == 0 && y1 % (1<<thisLevel) == 0 && y2 % (1<<thisLevel) == 0);
+        ret.x1 = x1 >> thisLevel;
+        ret.x2 = x2 >> thisLevel;
+        ret.y1 = y1 >> thisLevel;
+        ret.y2 = y2 >> thisLevel;
         return ret;
     }
 
@@ -219,7 +204,7 @@ public:
        int scalem1 = scale - 1;
        for(i=-100; i<100; ++i)
        {
-         printf("%d => %d,%d\n", i, i & ~scalem1, i+scalem1 & ~scalem1);
+         printf("%d => %d,%d %d,%d\n", i, i & ~scalem1, i+scalem1 & ~scalem1, (i >> pot) << pot, ((i+scalem1)>>pot) << pot);
        }
      }
      */
