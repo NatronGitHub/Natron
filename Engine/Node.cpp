@@ -1204,16 +1204,16 @@ bool Node::message(MessageType type,const std::string& content) const
 {
     switch (type) {
         case INFO_MESSAGE:
-            informationDialog(getName(), content);
+            informationDialog(getName_mt_safe(), content);
             return true;
         case WARNING_MESSAGE:
-            warningDialog(getName(), content);
+            warningDialog(getName_mt_safe(), content);
             return true;
         case ERROR_MESSAGE:
-            errorDialog(getName(), content);
+            errorDialog(getName_mt_safe(), content);
             return true;
         case QUESTION_MESSAGE:
-            return questionDialog(getName(), content) == Yes;
+            return questionDialog(getName_mt_safe(), content) == Yes;
         default:
             return false;
     }

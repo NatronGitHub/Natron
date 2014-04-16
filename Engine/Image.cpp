@@ -368,7 +368,7 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsig
 }
 
 
-void Natron::Image::copy(const Natron::Image& other,const RectI& roi)
+void Natron::Image::copy(const Natron::Image& other,const RectI& roi,bool copyBitmap)
 {
     // NOTE: before removing the following asserts, please explain why an empty image may happen
     const RectI& srcRoD = getPixelRoD();
@@ -394,9 +394,12 @@ void Natron::Image::copy(const Natron::Image& other,const RectI& roi)
         float* dst = pixelAt(intersection.x1, y);
         memcpy(dst, src, intersection.width() * sizeof(float) * components);
         
-        const char* srcBm = other.getBitmapAt(dstRoD.x1, y);
-        char* dstBm = getBitmapAt(intersection.x1, y);
-        memcpy(dstBm, srcBm, intersection.width());
+        if (copyBitmap) {
+            const char* srcBm = other.getBitmapAt(dstRoD.x1, y);
+            char* dstBm = getBitmapAt(intersection.x1, y);
+            memcpy(dstBm, srcBm, intersection.width());
+        }
+        
     }
 }
 
@@ -430,7 +433,11 @@ void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
 
 float* Image::pixelAt(int x,int y){
     int compsCount = getElementsCountForComponents(getComponents());
-    return this->_data.writable() + (y-_pixelRod.bottom()) * compsCount * _pixelRod.width() + (x-_pixelRod.left()) * compsCount;
+    if (x >= _pixelRod.left() && x < _pixelRod.right() && y >= _pixelRod.bottom() && y < _pixelRod.top()) {
+        return this->_data.writable() + (y-_pixelRod.bottom()) * compsCount * _pixelRod.width() + (x-_pixelRod.left()) * compsCount;
+    } else {
+        return NULL;
+    }
 }
 
 const float* Image::pixelAt(int x,int y) const {
@@ -552,14 +559,14 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     Natron::Image* tmpImg = new Natron::Image(getComponents(),srcRoI,0);
     
     buildMipMapLevel(tmpImg, roi, level);
-    
+
     RectI dstRoI = roi.downscalePowerOfTwo(level);
     
     Natron::Image* tmpImg2  = new Natron::Image(getComponents(),dstRoI,0);
     tmpImg->scale(srcRoI, tmpImg2);
-    
+   
     ///Now copy the result of tmpImg2 into the output image
-    output->copy(*tmpImg2, dstRoI);
+    output->copy(*tmpImg2, dstRoI,false);
         
     ///clean-up
     delete tmpImg;
