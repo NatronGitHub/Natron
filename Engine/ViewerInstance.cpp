@@ -1274,12 +1274,13 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(r && g && b && a);
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     if (!_imp->lastRenderedImage) {
         return false;
     }
     
-    const RectI& bbox = _imp->lastRenderedImage->getRoD();
+    const RectI& bbox = _imp->lastRenderedImage->getPixelRoD();
     
     if (x < bbox.x1 || x >= bbox.x2 || y < bbox.y1 || y >= bbox.y2) {
         return false;
