@@ -208,6 +208,84 @@ public:
         return ret;
     }
 
+    /*
+     test program for rounding integer to the next/previous pot:
+     #include <stdio.h>
+     int main()
+     {
+       int i;
+       int pot = 3;
+       int scale = 1 << pot;
+       int scalem1 = scale - 1;
+       for(i=-100; i<100; ++i)
+       {
+         printf("%d => %d,%d\n", i, i & ~scalem1, i+scalem1 & ~scalem1);
+       }
+     }
+     */
+    /**
+     * @brief round the rectangle by the given power of 2, and return the largest *enclosed* (inside) rectangle
+     **/
+    RectI roundPowerOfTwoLargestEnclosed(unsigned int thisLevel) const {
+        RectI ret;
+        int pot = (1<<thisLevel);
+        int pot_minus1 = pot - 1;
+        ret.x1 = (x1 + pot_minus1) & ~pot_minus1;
+        ret.x2 = x2 & ~pot_minus1;
+        ret.y1 = (y1 + pot_minus1) & ~pot_minus1;
+        ret.y2 = y2 & ~pot_minus1;
+        // check that it's enclosed
+        assert(ret.x1 >= x1 && ret.x2 <= x2 && ret.y1 >= y1 && ret.y2 <= y2);
+        return ret;
+    }
+
+    /**
+     * @brief round the rectangle by the given power of 2, and return the smallest *enclosing* rectangle
+     **/
+    RectI roundPowerOfTwoSmallestEnclosing(unsigned int thisLevel) const {
+        RectI ret;
+        int pot = (1<<thisLevel);
+        int pot_minus1 = pot - 1;
+        ret.x1 = x1 & ~pot_minus1;
+        ret.x2 = (x2 + pot_minus1) & ~pot_minus1;
+        ret.y1 = y1 & ~pot_minus1;
+        ret.y2 = (y2 + pot_minus1) & ~pot_minus1;
+        // check that it's enclosing
+        assert(ret.x1 <= x1 && ret.x2 >=x2 && ret.y1 <= y1 && ret.y2 >= y2);
+        return ret;
+    }
+
+    /**
+     * @brief Scales down the rectangle by the given power of 2, and return the largest *enclosed* (inside) rectangle
+     **/
+    RectI downscalePowerOfTwoLargestEnclosed(unsigned int thisLevel) const {
+        RectI ret;
+        int pot = (1<<thisLevel);
+        int pot_minus1 = pot - 1;
+        ret.x1 = (x1 + pot_minus1) >> thisLevel;
+        ret.x2 = x2 >> thisLevel;
+        ret.y1 = (y1 + pot_minus1) >> thisLevel;
+        ret.y2 = y2 >> thisLevel;
+        // check that it's enclosed
+        assert(ret.x1*pot >= x1 && ret.x2*pot <= x2 && ret.y1*pot >= y1 && ret.y2*pot <= y2);
+        return ret;
+    }
+
+    /**
+     * @brief Scales down the rectangle by the given power of 2, and return the smallest *enclosing* rectangle
+     **/
+    RectI downscalePowerOfTwoSmallestEnclosing(unsigned int thisLevel) const {
+        RectI ret;
+        int pot = (1<<thisLevel);
+        int pot_minus1 = pot - 1;
+        ret.x1 = x1 >> thisLevel;
+        ret.x2 = (x2 + pot_minus1) >> thisLevel;
+        ret.y1 = y1 >> thisLevel;
+        ret.y2 = (y2 + pot_minus1) >> thisLevel;
+        // check that it's enclosing
+        assert(ret.x1*pot <= x1 && ret.x2*pot >=x2 && ret.y1*pot <= y1 && ret.y2*pot >= y2);
+        return ret;
+    }
 
     bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
     
