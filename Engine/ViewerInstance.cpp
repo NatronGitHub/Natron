@@ -1278,14 +1278,10 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     if (!_imp->lastRenderedImage) {
         return false;
     }
-    
-    const RectI& bbox = _imp->lastRenderedImage->getRoD();
-    
-    if (x < bbox.x1 || x >= bbox.x2 || y < bbox.y1 || y >= bbox.y2) {
+    const float* pix = _imp->lastRenderedImage->pixelAt(x, y);
+    if (!pix) {
         return false;
     }
-    
-    const float* pix = _imp->lastRenderedImage->pixelAt(x, y);
     *r = *pix;
     *g = *(pix + 1);
     *b = *(pix + 2);

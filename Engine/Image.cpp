@@ -433,7 +433,11 @@ void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
 
 float* Image::pixelAt(int x,int y){
     int compsCount = getElementsCountForComponents(getComponents());
-    return this->_data.writable() + (y-_pixelRod.bottom()) * compsCount * _pixelRod.width() + (x-_pixelRod.left()) * compsCount;
+    if (x >= _pixelRod.left() && x < _pixelRod.right() && y >= _pixelRod.bottom() && y < _pixelRod.top()) {
+        return this->_data.writable() + (y-_pixelRod.bottom()) * compsCount * _pixelRod.width() + (x-_pixelRod.left()) * compsCount;
+    } else {
+        return NULL;
+    }
 }
 
 const float* Image::pixelAt(int x,int y) const {
