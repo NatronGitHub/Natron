@@ -186,10 +186,10 @@ public:
      **/
     RectI downscale(int po2) const {
         RectI ret;
-        ret.x1 = std::floor(x1 / (double)po2 + 0.5);
-        ret.y1 = std::floor(y1 / (double)po2 + 0.5);
-        ret.y2 = std::floor(y2 / (double)po2 + 0.5);
-        ret.x2 = std::floor(x2 / (double)po2 + 0.5);
+        ret.x1 = std::floor(x1 / (double)po2);
+        ret.y1 = std::floor(y1 / (double)po2);
+        ret.y2 = std::ceil(y2 / (double)po2);
+        ret.x2 = std::ceil(x2 / (double)po2);
         return ret;
     }
     

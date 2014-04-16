@@ -294,20 +294,13 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         texRect = texRect.upscale(mipMapLevel);
     }
     ///the RoD of the iamge
-    RectI rod;
+    RectI rod = getRoD();
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
-        RectI actualRoD = getRoD();
-        if (mipMapLevel != 0) {
-            actualRoD = actualRoD.upscale(mipMapLevel);
-        }
         if (_imp->clipToDisplayWindow) {
             ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
             ///if so then we don't want to display "all" the project window.
             rod = getDisplayWindow();
-            rod.intersect(actualRoD, &rod);
-        } else {
-            rod = actualRoD;
         }
 
     }
@@ -517,7 +510,7 @@ QSize ViewerGL::sizeHint() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    return QSize(1024,768);
+    return QSize(1920,1080);
 }
 
 const QFont& ViewerGL::textFont() const

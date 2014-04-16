@@ -226,7 +226,7 @@ namespace Natron {
          * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
          * The internal bitmap will be copied aswell
          **/
-        void copy(const Natron::Image& other,const RectI& roi);
+        void copy(const Natron::Image& other,const RectI& roi,bool copyBitmap = true);
         
         /**
          * @brief Scales a portion of this image into output.
