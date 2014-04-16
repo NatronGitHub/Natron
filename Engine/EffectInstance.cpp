@@ -233,7 +233,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         }
         currentEffectRenderWindow = precomputedRoD;
         mipMapLevel = Natron::Image::getLevelFromScale(scale);
-        currentEffectRenderWindow = currentEffectRenderWindow.downscale(1 << mipMapLevel);
+        currentEffectRenderWindow = currentEffectRenderWindow.downscalePowerOfTwo(mipMapLevel);
     }
     
     RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow);
@@ -243,7 +243,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
     ///If the effect doesn't support the render scale, scale down the roi ourselves
     if (!supportsRenderScale() && mipMapLevel != 0) {
-        roi = roi.downscale(1 << mipMapLevel);
+        roi = roi.downscalePowerOfTwo(mipMapLevel);
     }
     
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
@@ -431,7 +431,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
             
             if (args.mipMapLevel != 0) {
-                scaledRod = rod.downscale(1 << args.mipMapLevel);
+                scaledRod = rod.downscalePowerOfTwo(args.mipMapLevel);
             }
             
             // why should the rod be empty here?
@@ -640,7 +640,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         bool useFullResImage = !supportsRenderScale() && mipMapLevel != 0;
         ///Upscale the RoI to a region in the unscaled image
         if (useFullResImage) {
-            upscaledRoI = rectToRender.upscale(mipMapLevel);
+            upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
         }
         
 #ifdef NATRON_LOG
@@ -786,7 +786,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
                 upscaledRoI = rectToRender;
                 if (useFullResImage) {
-                    upscaledRoI = rectToRender.upscale(mipMapLevel);
+                    upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
                     upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
                 }
                 
@@ -830,7 +830,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
                 upscaledRoI = rectToRender;
                 if (useFullResImage) {
-                    upscaledRoI = rectToRender.upscale(mipMapLevel);
+                    upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
                     upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
                 }
                 
@@ -872,7 +872,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
                 upscaledRoI = rectToRender;
                 if (useFullResImage) {
-                    upscaledRoI = rectToRender.upscale(mipMapLevel);
+                    upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
                     upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
                 }
                 
@@ -938,7 +938,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     
     RectI upscaledRoi = rectToRender;
     if (useFullResImage) {
-        upscaledRoi = rectToRender.upscale(args._mipMapLevel);
+        upscaledRoi = rectToRender.upscalePowerOfTwo(args._mipMapLevel);
         upscaledRoi.intersect(output->getPixelRoD(), &upscaledRoi);
     }
     

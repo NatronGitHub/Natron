@@ -334,7 +334,7 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
 : CacheEntryHelper<float,ImageKey>(makeKey(0,0,mipMapLevel,0),
                                    boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
                                                                                          regionOfDefinition,
-                                                                                         regionOfDefinition.downscale(1 << mipMapLevel),
+                                                                                         regionOfDefinition.downscalePowerOfTwo(mipMapLevel),
                                                                                          false ,
                                                                                          components,
                                                                                          -1,
@@ -363,7 +363,7 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsig
                                                  bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscale(1 << mipMapLevel)
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwo(mipMapLevel)
                                                           ,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 
@@ -459,7 +459,12 @@ void Image::halveImage(const RectI& roi,Natron::Image* output) const
     int newWidth = width / 2;
     int newHeight = height / 2;
     
-    assert(output->getPixelRoD().width() == newWidth && output->getPixelRoD().height() == newHeight);
+    assert(output->getPixelRoD().x1*2 == roi.x1 &&
+           output->getPixelRoD().x2*2 == roi.x2 &&
+           output->getPixelRoD().y1*2 == roi.y1 &&
+           output->getPixelRoD().y2*2 == roi.y2 &&
+           output->getPixelRoD().width() == newWidth &&
+           output->getPixelRoD().height() == newHeight);
     assert(getComponents() == output->getComponents());
     
     int components = getElementsCountForComponents(getComponents());
@@ -494,7 +499,11 @@ void Image::halve1DImage(const RectI& roi,Natron::Image* output) const
     
     assert(width == 1 || height == 1); /// must be 1D
     assert(output->getComponents() == getComponents());
-    
+    assert(output->getPixelRoD().x1*2 == roi.x1 &&
+           output->getPixelRoD().x2*2 == roi.x2 &&
+           output->getPixelRoD().y1*2 == roi.y1 &&
+           output->getPixelRoD().y2*2 == roi.y2);
+
     int components = getElementsCountForComponents(getComponents());
     
     
@@ -544,7 +553,7 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     
     buildMipMapLevel(tmpImg, roi, level);
     
-    RectI dstRoI = roi.downscale(1 << level);
+    RectI dstRoI = roi.downscalePowerOfTwo(level);
     
     Natron::Image* tmpImg2  = new Natron::Image(getComponents(),dstRoI,0);
     tmpImg->scale(srcRoI, tmpImg2);
@@ -567,7 +576,10 @@ void Image::scale(const RectI& roi,Natron::Image* output) const
     srcRod.intersect(getPixelRoD(), &srcRod);
 
     ///If the roi is exactly twice the destination rect, just halve that portion into output.
-    if (srcRod.width() == 2 * dstRod.width() && srcRod.height() == 2 * dstRod.height()) {
+    if (srcRod.x1 == 2 * dstRod.x1 &&
+        srcRod.x2 == 2 * dstRod.x2 &&
+        srcRod.y1 == 2 * dstRod.y1 &&
+        srcRod.y2 == 2 * dstRod.y2) {
         halveImage(srcRod,output);
         return;
     }

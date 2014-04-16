@@ -171,7 +171,7 @@ public:
     /**
      * @brief Upscales the bounds assuming this rectangle is the Nth level of mipmap
      **/
-    RectI upscale(unsigned int thisLevel) const {
+    RectI upscalePowerOfTwo(unsigned int thisLevel) const {
         RectI ret;
         unsigned int scale = (1 << thisLevel);
         ret.x1 = x1 * scale;
@@ -181,6 +181,7 @@ public:
         return ret;
     }
     
+#if 0
     /**
      * @brief Scales down the rectangle by the given power of 2
      **/
@@ -192,7 +193,22 @@ public:
         ret.x2 = std::floor(x2 / (double)po2 + 0.5);
         return ret;
     }
-    
+#endif
+    /**
+     * @brief Scales down the rectangle by the given power of 2
+     **/
+    RectI downscalePowerOfTwo(unsigned int thisLevel) const {
+        RectI ret;
+        unsigned int scale = (1<<thisLevel);
+        assert(x1 % scale == 0 && x2 % scale == 0 && y1 % scale == 0 && y2 % scale == 0);
+        ret.x1 = x1 / scale;
+        ret.x2 = x2 / scale;
+        ret.y1 = y1 / scale;
+        ret.y2 = y2 / scale;
+        return ret;
+    }
+
+
     bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
     
     operator bool() const { return !isNull(); }

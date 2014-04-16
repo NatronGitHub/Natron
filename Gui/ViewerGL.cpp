@@ -291,7 +291,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
     
     if (mipMapLevel != 0) {
-        texRect = texRect.upscale(mipMapLevel);
+        texRect = texRect.upscalePowerOfTwo(mipMapLevel);
     }
     ///the RoD of the iamge
     RectI rod;
@@ -299,7 +299,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         RectI actualRoD = getRoD();
         if (mipMapLevel != 0) {
-            actualRoD = actualRoD.upscale(mipMapLevel);
+            actualRoD = actualRoD.upscalePowerOfTwo(mipMapLevel);
         }
         if (_imp->clipToDisplayWindow) {
             ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
@@ -1075,7 +1075,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
     
     if (mipMapLevel != 0) {
-        ret = ret.downscale(1 << mipMapLevel);
+        ret = ret.downscalePowerOfTwo(mipMapLevel);
     }
     
     if (!ret.intersect(imageRoD, &ret)) {
@@ -1086,7 +1086,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         if (_imp->userRoIEnabled) {
             RectI userRoI = _imp->userRoI;
             if (mipMapLevel != 0) {
-                userRoI = userRoI.downscale(1 << mipMapLevel);
+                userRoI = userRoI.downscalePowerOfTwo(mipMapLevel);
             }
             if (!ret.intersect(userRoI, &ret)) {
                 ret.clear();
