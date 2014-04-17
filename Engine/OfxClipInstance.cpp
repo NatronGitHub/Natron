@@ -210,7 +210,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 //    }
     else {
         // default value: should never happen
-        assert(!"cannot compute ROD");
+        assert(!"Cannot compute ROD the input is probably disconnected. The plug-in should have checked this before calling this function.");
         ret.x1 = kOfxFlagInfiniteMin;
         ret.x2 = kOfxFlagInfiniteMax;
         ret.y1 = kOfxFlagInfiniteMin;

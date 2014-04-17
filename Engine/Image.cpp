@@ -334,7 +334,7 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
 : CacheEntryHelper<float,ImageKey>(makeKey(0,0,mipMapLevel,0),
                                    boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
                                                                                          regionOfDefinition,
-                                                                                         regionOfDefinition.downscalePowerOfTwo(mipMapLevel),
+                                                                                         regionOfDefinition.downscalePowerOfTwoLargestEnclosed(mipMapLevel),
                                                                                          false ,
                                                                                          components,
                                                                                          -1,
@@ -363,7 +363,7 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsig
                                                  bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwo(mipMapLevel)
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel)
                                                           ,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 
@@ -559,12 +559,11 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     Natron::Image* tmpImg = new Natron::Image(getComponents(),srcRoI,0);
     
     buildMipMapLevel(tmpImg, roi, level);
-
-    RectI dstRoI = roi.downscalePowerOfTwo(level);
+  
+    RectI dstRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
     
     Natron::Image* tmpImg2  = new Natron::Image(getComponents(),dstRoI,0);
     tmpImg->scale(srcRoI, tmpImg2);
-   
     ///Now copy the result of tmpImg2 into the output image
     output->copy(*tmpImg2, dstRoI,false);
         

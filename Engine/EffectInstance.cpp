@@ -233,7 +233,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         }
         currentEffectRenderWindow = precomputedRoD;
         mipMapLevel = Natron::Image::getLevelFromScale(scale);
-        currentEffectRenderWindow = currentEffectRenderWindow.downscalePowerOfTwo(mipMapLevel);
+        currentEffectRenderWindow = currentEffectRenderWindow.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
     RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow);
@@ -243,7 +243,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
     ///If the effect doesn't support the render scale, scale down the roi ourselves
     if (!supportsRenderScale() && mipMapLevel != 0) {
-        roi = roi.downscalePowerOfTwo(mipMapLevel);
+        roi = roi.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
@@ -431,7 +431,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
             
             if (args.mipMapLevel != 0) {
-                scaledRod = rod.downscalePowerOfTwo(args.mipMapLevel);
+                scaledRod = rod.downscalePowerOfTwoLargestEnclosed(args.mipMapLevel);
             }
             
             // why should the rod be empty here?

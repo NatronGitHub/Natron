@@ -418,7 +418,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             return stat;
         }
         
-        pixelRoD = rod.downscalePowerOfTwo(mipMapLevel);
+        pixelRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
       
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 

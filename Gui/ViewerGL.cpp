@@ -1068,7 +1068,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
     
     if (mipMapLevel != 0) {
-        ret = ret.downscalePowerOfTwo(mipMapLevel);
+        ret = ret.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
     if (!ret.intersect(imageRoD, &ret)) {
@@ -1079,7 +1079,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         if (_imp->userRoIEnabled) {
             RectI userRoI = _imp->userRoI;
             if (mipMapLevel != 0) {
-                userRoI = userRoI.downscalePowerOfTwo(mipMapLevel);
+                userRoI = userRoI.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
             }
             if (!ret.intersect(userRoI, &ret)) {
                 ret.clear();
