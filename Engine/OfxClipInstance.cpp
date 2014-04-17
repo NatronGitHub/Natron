@@ -166,10 +166,16 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
         
-        ///Use a render scale of 1 and the view 0 as we have no means to get them from here
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,0,0);
+        if (_lastRenderArgs.hasLocalData()) {
+            scale = _lastRenderArgs.localData().scale;
+        }
+        int view = 0;
+        if (_lastRenderArgs.hasLocalData()) {
+            view = _lastRenderArgs.localData().view;
+        }
+        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,Natron::Image::getLevelFromScale(scale),view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);

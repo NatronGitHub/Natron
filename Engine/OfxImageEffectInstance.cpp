@@ -497,3 +497,10 @@ void OfxImageEffectInstance::setClipsRenderScale(const OfxPointD& scale)
         dynamic_cast<OfxClipInstance*>(it->second)->setRenderScale(scale);
     } 
 }
+
+void OfxImageEffectInstance::setClipsView(int view)
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        it->second->setView(view);
+    }
+}

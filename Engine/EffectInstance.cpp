@@ -236,7 +236,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         currentEffectRenderWindow = currentEffectRenderWindow.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
-    RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow);
+    RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow,view);
     RoIMap::iterator found = inputsRoI.find(n);
     assert(found != inputsRoI.end());
     roi = found->second;
@@ -287,7 +287,8 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const Ren
     return StatReplyDefault;
 }
 
-EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& renderWindow){
+EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& renderWindow,
+                                                           int /*view*/){
     RoIMap ret;
     for (int i = 0; i < maximumInputs(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
@@ -663,7 +664,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         _imp->renderArgs.setLocalData(args);
          
         ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
-        RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender);
+        RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender,args._view);
         
         ///get the cached frames needed or the one we just computed earlier.
         const FramesNeededMap& framesNeeeded = cachedImgParams->getFramesNeeded();
