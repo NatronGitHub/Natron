@@ -45,6 +45,7 @@ class OutputFile_Knob;
 
 struct EffectInstance::RenderArgs {
     RectI _roi;
+    RoIMap _regionOfInterestResults;
     SequenceTime _time;
     RenderScale _scale;
     unsigned int _mipMapLevel;
@@ -52,6 +53,7 @@ struct EffectInstance::RenderArgs {
     bool _isSequentialRender;
     bool _isRenderResponseToUserInteraction;
     bool _byPassCache;
+    
 };
 
 struct EffectInstance::Implementation {
@@ -84,12 +86,19 @@ struct EffectInstance::Implementation {
         duringInteractAction = b;
     }
     
-    void setLocalRenderArgs(const RectI& roi,SequenceTime time,int view,const RenderScale& scale,unsigned int mipMapLevel,
-                            bool sequential,bool userInteraction,
+    void setLocalRenderArgs(const RectI& roi,
+                            const RoIMap& roiMap,
+                            SequenceTime time,
+                            int view,
+                            const RenderScale& scale,
+                            unsigned int mipMapLevel,
+                            bool sequential,
+                            bool userInteraction,
                             bool bypassCache)
     {
         RenderArgs args;
         args._roi = roi;
+        args._regionOfInterestResults = roiMap;
         args._time = time;
         args._view = view;
         args._scale = scale;
@@ -203,44 +212,24 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         return boost::shared_ptr<Natron::Image>();
     }
 
+    ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
+    ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
+    assert(_imp->renderArgs.hasLocalData());
+    
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
-    RectI roi,currentEffectRenderWindow;
+    
+    RectI currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
     RectI precomputedRoD;
-    bool isSequentialRender = false;
-    bool isRenderUserInteraction = true;
-    bool byPassCache = false;
-    bool isProjectFormat;
-    unsigned int mipMapLevel;
-    ///we have no choice but to ask for a render of the region of interest
-
+    bool isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
+    bool isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
+    bool byPassCache = _imp->renderArgs.localData()._byPassCache;
+    unsigned int mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;;
+    RoIMap inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
     
-    if (_imp->renderArgs.hasLocalData()) {
-        ///Re-use the data the render thread gave us
-        isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
-        isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
-        byPassCache = _imp->renderArgs.localData()._byPassCache;
-        currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
-        mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
-    } else {
-        ///We have no choice but compute the RoI based on the assumption that the effect is currently
-        ///rendering the RoD. This is the best we can do.
-        /// We should never enter this case unless this function was called by a thread that
-        /// is NOT a render thread. (i.e: not controlled by Natron).
-        Natron::Status stat = n->getRegionOfDefinition(time,scale, &precomputedRoD,&isProjectFormat);
-        if(stat == Natron::StatFailed) {
-            return boost::shared_ptr<Natron::Image>();
-        }
-        currentEffectRenderWindow = precomputedRoD;
-        assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
-        mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-        currentEffectRenderWindow = currentEffectRenderWindow.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
-    }
-    
-    RoIMap inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow,view);
     RoIMap::iterator found = inputsRoI.find(n);
     assert(found != inputsRoI.end());
-    roi = found->second;
+    RectI roi = found->second;
     
     ///If the effect doesn't support the render scale, scale down the roi ourselves
     if (!supportsRenderScale() && mipMapLevel != 0) {
@@ -267,7 +256,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const Ren
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectI inputRod;
-            Status st = input->getRegionOfDefinition(time,scale, &inputRod,isProjectFormat);
+            Status st = input->getRegionOfDefinition_public(time,scale, &inputRod,isProjectFormat);
             if (st == StatFailed) {
                 return st;
             }
@@ -412,9 +401,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
         
-        bool identity = isIdentity(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
+        bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
-            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale,args.mipMapLevel,
+            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, args.roi, args.view);
+            _imp->setLocalRenderArgs(args.roi,inputsRoI, args.time, args.view, args.scale,args.mipMapLevel,
                                      args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
@@ -433,7 +423,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 rod = *args.preComputedRoD;
             } else {
                 ///before allocating it we must fill the RoD of the image we want to render
-                if(getRegionOfDefinition(args.time,args.scale, &rod,&isProjectFormat) == StatFailed){
+                if(getRegionOfDefinition_public(args.time,args.scale, &rod,&isProjectFormat) == StatFailed){
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
@@ -442,7 +432,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             // why should the rod be empty here?
             assert(!rod.isNull());
             
-            framesNeeded = getFramesNeeded(args.time);
+            framesNeeded = getFramesNeeded_public(args.time);
           
         }
     
@@ -509,8 +499,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
-            
-            _imp->setLocalRenderArgs(args.roi, args.time, args.view, args.scale,args.mipMapLevel, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
+            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, args.roi, args.view);
+            _imp->setLocalRenderArgs(args.roi,inputsRoI, args.time, args.view, args.scale,args.mipMapLevel, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
@@ -643,9 +633,16 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                                    QString::number(rectToRender.right())+ " ymax= "+
                                    QString::number(rectToRender.top())).toStdString());
 #endif
+        
+        ///the getRegionOfInterest call will not be cached because it would be unnecessary
+        ///To put that information (which depends on the RoI) into the cache. That's why we
+        ///store it into the render args so the getImage() function can retrieve the results.
+        RoIMap inputsRoi = getRegionOfInterest_public(time, scale, rectToRender,view);
+        
         /*we can set the render args*/
         RenderArgs args;
         args._roi = rectToRender;
+        args._regionOfInterestResults = inputsRoi;
         args._time = time;
         args._view = view;
         args._scale = scale;
@@ -655,8 +652,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         args._byPassCache = byPassCache;
         _imp->renderArgs.setLocalData(args);
          
-        ///the getRegionOfInterest call CANNOT be cached because it depends of the render window.
-        RoIMap inputsRoi = getRegionOfInterest(time, scale, rectToRender,args._view);
+       
         
         ///get the cached frames needed or the one we just computed earlier.
         const FramesNeededMap& framesNeeeded = cachedImgParams->getFramesNeeded();
@@ -709,7 +705,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
             ++_imp->beginEndRenderCount;
         }
         if (callBegin) {
-            beginSequenceRender(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
+            beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,
+                                       isRenderMadeInResponseToUserInteraction,view);
         }
         
         /*depending on the thread-safety of the plug-in we render with a different
@@ -755,7 +752,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                     }
                 }
                 if (callEndRender) {
-                    endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
+                    endSequenceRender_public(time, time, time, false, scale,
+                                             isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
                 }
                 
                 for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
@@ -784,7 +782,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
                 
                 if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render(time, scale, upscaledRoI,view,isSequentialRender,
+                    Natron::Status st = render_public(time, scale, upscaledRoI,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction,useFullResImage ? image : downscaledImage);
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
@@ -801,7 +799,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                         }
                     }
                     if (callEndRender) {
-                        endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
+                        endSequenceRender_public(time, time, time, false, scale,isSequentialRender,
+                                                 isRenderMadeInResponseToUserInteraction,view);
                     }
                     
                     if (st != Natron::StatOK) {
@@ -828,7 +827,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
                 
                 if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render(time, scale, upscaledRoI,view,isSequentialRender,
+                    Natron::Status st = render_public(time, scale, upscaledRoI,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
@@ -844,7 +843,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                         }
                     }
                     if (callEndRender) {
-                        endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
+                        endSequenceRender_public(time, time, time, false, scale,isSequentialRender,
+                                                 isRenderMadeInResponseToUserInteraction,view);
                     }
                     
                     if (st != Natron::StatOK) {
@@ -870,7 +870,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
                 
                 if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render(time, scale, upscaledRoI,view,isSequentialRender,
+                    Natron::Status st = render_public(time, scale, upscaledRoI,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
@@ -887,7 +887,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                         }
                     }
                     if (callEndRender) {
-                        endSequenceRender(time, time, time, false, scale,isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
+                        endSequenceRender_public(time, time, time, false, scale,isSequentialRender,
+                                                 isRenderMadeInResponseToUserInteraction,view);
                     }
                     
                     if(st != Natron::StatOK){
@@ -936,7 +937,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     }
     
     if (!upscaledRoi.isNull()) {
-        Natron::Status st = render(args._time, args._scale, upscaledRoi, args._view,
+        Natron::Status st = render_public(args._time, args._scale, upscaledRoi, args._view,
                                    args._isSequentialRender,args._isRenderResponseToUserInteraction,
                                    useFullResImage ? output : downscaledOutput);
         if(st != StatOK){
@@ -1129,22 +1130,26 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    
+    ///Recursive action, must not call assertActionIsNotRecursive()
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     drawOverlay(scaleX,scaleY);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
 }
 
 bool EffectInstance::onOverlayPenDown_public(double scaleX,double scaleY,const QPointF& viewportPos, const QPointF& pos)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 }
@@ -1153,11 +1158,13 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     //Don't chek if render is needed on pen motion, wait for the pen up
     //checkIfRenderNeeded();
     return ret;
@@ -1167,11 +1174,12 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
-    _imp->setDuringInteractAction(true);
+    
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 }
@@ -1180,11 +1188,12 @@ bool EffectInstance::onOverlayKeyDown_public(double scaleX,double scaleY,Natron:
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 }
@@ -1193,11 +1202,12 @@ bool EffectInstance::onOverlayKeyUp_public(double scaleX,double scaleY,Natron::K
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyUp(scaleX,scaleY,key, modifiers);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -1207,11 +1217,12 @@ bool EffectInstance::onOverlayKeyRepeat_public(double scaleX,double scaleY,Natro
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -1221,11 +1232,12 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusGained(scaleX,scaleY);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -1235,11 +1247,12 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusLost(scaleX,scaleY);
     _imp->setDuringInteractAction(false);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -1250,6 +1263,87 @@ bool EffectInstance::isDoingInteractAction() const
     QReadLocker l(&_imp->duringInteractActionMutex);
     return _imp->duringInteractAction;
 }
+
+Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scale, const RectI& roi, int view,
+                             bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                             boost::shared_ptr<Natron::Image> output)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    Natron::Status ret = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+    decrementRecursionLevel();
+    return ret;
+}
+
+bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
+                       int view,SequenceTime* inputTime,int* inputNb)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    bool ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
+    decrementRecursionLevel();
+    return ret;
+}
+
+Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,
+                                            RectI* rod,bool* isProjectFormat)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    Natron::Status ret = getRegionOfDefinition(time, scale, rod, isProjectFormat);
+    decrementRecursionLevel();
+    return ret;
+}
+
+EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, renderWindow, view);
+    decrementRecursionLevel();
+    return ret;
+}
+
+EffectInstance::FramesNeededMap EffectInstance::getFramesNeeded_public(SequenceTime time)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    EffectInstance::FramesNeededMap ret = getFramesNeeded(time);
+    decrementRecursionLevel();
+    return ret;
+}
+
+void EffectInstance::getFrameRange_public(SequenceTime *first,SequenceTime *last)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    getFrameRange(first, last);
+    decrementRecursionLevel();
+}
+
+void EffectInstance::beginSequenceRender_public(SequenceTime first,SequenceTime last,
+                                SequenceTime step,bool interactive,RenderScale scale,
+                                bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                int view)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+    decrementRecursionLevel();
+}
+
+void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime last,
+                              SequenceTime step,bool interactive,RenderScale scale,
+                              bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                              int view)
+{
+    assertActionIsNotRecursive();
+    incrementRecursionLevel();
+    endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+    decrementRecursionLevel();
+}
+
+
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 : Natron::EffectInstance(node)

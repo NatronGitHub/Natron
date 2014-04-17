@@ -552,7 +552,6 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
                || _currentRunArgs._frameRequestsCount == 0// #3 the sequence ended and it was not an infinite run
                || (appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN && appPTR->hasAbortAnyProcessingBeenCalled()))
             {
-                locker.unlock();
                 return;
             }
         }
@@ -646,7 +645,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
         scale.x = scale.y = 1.;
         RectI rod;
         bool isProjectFormat;
-        stat = _tree.getOutput()->getRegionOfDefinition(time,scale, &rod,&isProjectFormat);
+        stat = _tree.getOutput()->getRegionOfDefinition_public(time,scale, &rod,&isProjectFormat);
         if(stat != StatFailed){
             int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
             for(int i = 0; i < viewsCount;++i){
@@ -884,7 +883,7 @@ void VideoEngine::getFrameRange() {
     QMutexLocker l(&_getFrameRangeMutex);
     
     if(_tree.getOutput()){
-        _tree.getOutput()->getFrameRange(&_firstFrame, &_lastFrame);
+        _tree.getOutput()->getFrameRange_public(&_firstFrame, &_lastFrame);
         if(_firstFrame == INT_MIN){
             _firstFrame = _timeline->leftBound();
         }

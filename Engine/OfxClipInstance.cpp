@@ -92,7 +92,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
     SequenceTime first,last;
     EffectInstance* n = getAssociatedNode();
     if(n) {
-       n->getFrameRange(&first, &last);
+       n->getFrameRange_public(&first, &last);
     } else {
         assert(_nodeInstance->getApp());
         assert(_nodeInstance->getApp()->getTimeLine());
@@ -174,6 +174,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
             view = _lastRenderArgs.localData().view;
         }
+#pragma messageWARN("the mipmap level should really be stored instead of scale in the lastrenderargs")
         assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
         Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,Natron::Image::getLevelFromScale(scale.x),view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -201,7 +202,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             
             RenderScale scale;
             scale.x = scale.y = 1.;
-            Natron::Status st = n->getRegionOfDefinition(time,scale,&rod,&isProjectFormat);
+            Natron::Status st = n->getRegionOfDefinition_public(time,scale,&rod,&isProjectFormat);
             if (st == StatFailed) {
                 //assert(!"cannot compute ROD");
                 ret.x1 = kOfxFlagInfiniteMin;

@@ -247,6 +247,8 @@ public:
      **/
     boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const WARN_UNUSED_RETURN;
     
+    
+protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
      * at the given scale.
@@ -259,6 +261,13 @@ public:
                                   bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                   boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN { return Natron::StatOK; }
     
+public:
+    
+     Natron::Status render_public(SequenceTime time, RenderScale scale, const RectI& roi, int view,
+                                      bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                      boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN;
+    
+protected:
     /**
      * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
      * any change in output.
@@ -271,6 +280,11 @@ public:
      **/
     virtual bool isIdentity(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& /*roi*/,
                             int /*view*/,SequenceTime* /*inputTime*/,int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
+    
+public:
+    
+    bool isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
+                           int view,SequenceTime* inputTime,int* inputNb) WARN_UNUSED_RETURN;
     
     enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2,FULLY_SAFE_FRAME = 3};
     /**
@@ -302,6 +316,8 @@ public:
      */
     boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view) WARN_UNUSED_RETURN;
     
+protected:
+    
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
@@ -327,13 +343,26 @@ public:
      * that this effects need in order to render the frame at the given time.
      **/
     virtual FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
-
+    
+    
     /**
      * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return StatFailed.
      **/
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
+
+    
+public:
+    
+    Natron::Status getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,
+                                         RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
+    
+    RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
+    
+    FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
+    
+    void getFrameRange_public(SequenceTime *first,SequenceTime *last);
     
     /**
      * @brief Override to initialize the overlay interact. It is called only on the 
@@ -497,6 +526,9 @@ public:
     
     virtual std::vector<std::string> supportedFileFormats() const { return std::vector<std::string>(); }
     
+protected:
+    
+    
     virtual void beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
                                      SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
                                      bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
@@ -506,6 +538,17 @@ public:
                                    SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
                                    bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                    int /*view*/) {}
+public:
+    
+    void beginSequenceRender_public(SequenceTime first,SequenceTime last,
+                                     SequenceTime step,bool interactive,RenderScale scale,
+                                     bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                    int view);
+    
+    void endSequenceRender_public(SequenceTime first,SequenceTime last,
+                                   SequenceTime step,bool interactive,RenderScale scale,
+                                   bool isSequentialRender,bool isRenderResponseToUserInteraction,
+                                  int view);
     
     
     void drawOverlay_public(double scaleX,double scaleY);
