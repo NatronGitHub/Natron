@@ -491,10 +491,10 @@ OFX::Host::Memory::Instance* OfxImageEffectInstance::newMemoryInstance(size_t nB
     return ret;
 }
 
-void OfxImageEffectInstance::setClipsRenderScale(const OfxPointD& scale)
+void OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->setRenderScale(scale);
+        dynamic_cast<OfxClipInstance*>(it->second)->setMipMapLevel(mipMapLevel);
     } 
 }
 

@@ -462,7 +462,7 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
 
     assert(effect_);
     
-    effectInstance()->setClipsRenderScale(scale);
+    effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(scale.x));
 
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, (OfxPointD)scale, ofxRod);
@@ -497,7 +497,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     }
     
     ///before calling getRoIaction set the relevant infos on the clips
-    effectInstance()->setClipsRenderScale(scale);
+    effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(scale.x));
     effectInstance()->setClipsView(view);
     
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
@@ -664,7 +664,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     ///before calling render, set the render scale thread storage for each clip
-    effectInstance()->setClipsRenderScale(scale);
+    effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(scale.x));
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale,isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
     if (stat != kOfxStatOK) {
         return StatFailed;

@@ -145,7 +145,7 @@ public:
     /// except if thread-local storage is used.
     virtual void setView(int view) OVERRIDE FINAL;
     
-    void setRenderScale(const OfxPointD& scale);
+    void setMipMapLevel(unsigned int mipMapLevel);
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -161,7 +161,7 @@ private:
     
     struct LastRenderArgs
     {
-        OfxPointD scale;
+        unsigned int mipMapLevel;
         int view;
     };
     
