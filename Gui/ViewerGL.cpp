@@ -300,7 +300,9 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         if (_imp->clipToDisplayWindow) {
             ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
             ///if so then we don't want to display "all" the project window.
-            rod = getDisplayWindow();
+            if (!rod.intersect(getDisplayWindow(),&rod)) {
+                return;
+            }
         }
 
     }
