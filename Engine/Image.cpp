@@ -363,7 +363,7 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsig
                                                  bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwo(mipMapLevel)
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel)
                                                           ,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 
@@ -551,7 +551,7 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     assert(level > 0);
     
     ///This is the portion we computed in buildMipMapLevel
-    RectI srcRoI = roi.mipMapLevel(level, false);
+    RectI srcRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
     
     ///Even if the roi is this image's RoD, the
     ///resulting mipmap of that roi should fit into output.
@@ -572,6 +572,7 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     delete tmpImg2;
 }
 
+#pragma message WARN("Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by buildMipMapLevel")
 void Image::scale(const RectI& roi,Natron::Image* output) const
 {
     ///The destination rectangle
@@ -799,47 +800,32 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
 {
     ///The output image data window
     const RectI& dstRoD = output->getPixelRoD();
-    
-    ///The nearest po2 box of the roi
-    RectI closestPo2 = roi.closestPo2Rect();
+
+    RectI roi_rounded = roi.roundPowerOfTwoLargestEnclosed(level);
     
     ///The last mip map level we will make with closestPo2
-    RectI lastLevelRoI = closestPo2.mipMapLevel(level,true);
+    RectI lastLevelRoI = roi_rounded.downscalePowerOfTwo(level);
     
     ///The output image must contain the last level roi
     assert(dstRoD.contains(lastLevelRoI));
     
     assert(output->getComponents() == getComponents());
-    
-    const Natron::Image* srcImg = NULL;
+
+    if (level == 0) {
+        ///Just copy the roi and return
+        output->copy(*this, roi);
+        return;
+    }
+
+    const Natron::Image* srcImg = this;
     Natron::Image* dstImg = NULL;
     bool mustFreeSrc = false;
-    
-    if (closestPo2 == roi) { ///The roi is already a Po2
-        if (level == 0) {
-            ///Just copy the roi and return
-            output->copy(*this,closestPo2);
-            return;
-        } else {
-            ///We want to downscale, use this image as a start
-            srcImg = this;
-        }
-        
-    } else { ///The roi is not a po2
-             ///Allocate a new image of the size of the nearest po2 box of the roi
-        Natron::Image* tmpImg = new Natron::Image(getComponents(),closestPo2,0);
-        
-        ///Scale the roi of this image into tmpImg using a box filter.
-        scale(roi,tmpImg);
-        srcImg = tmpImg;
-        mustFreeSrc = true;
-    }
-    
+
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 0; i < level; ++i) {
         
         ///Halve the closestPo2 rect
-        RectI halvedRoI = nextRectLevel(closestPo2);
+        RectI halvedRoI = nextRectLevel(roi_rounded);
         
         ///Allocate an image with half the size of the source image
         dstImg = new Natron::Image(getComponents(),halvedRoI,0);
@@ -847,7 +833,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveImage(closestPo2,dstImg);
+        srcImg->halveImage(roi_rounded, dstImg);
         
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {
@@ -855,7 +841,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
         }
         
         ///Switch for next pass
-        closestPo2 = halvedRoI;
+        roi_rounded = halvedRoI;
         srcImg = dstImg;
         mustFreeSrc = true;
     }

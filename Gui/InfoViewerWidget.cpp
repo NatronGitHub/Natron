@@ -199,18 +199,18 @@ void InfoViewerWidget::setResolution(const Format& f)
     }
 }
 
-void InfoViewerWidget::changeResolution(){
+void InfoViewerWidget::changeResolution()
+{
     Format f = viewer->getDisplayWindow();
     unsigned int mmLvl = viewer->getInternalNode()->getMipMapLevel();
     if (mmLvl != 0) {
-        f = f.mipMapLevel(mmLvl,true);
+        f = f.downscalePowerOfTwoLargestEnclosed(mmLvl);
     }
     setResolution(f);
-    
-    
-   
 }
-void InfoViewerWidget::changeDataWindow(){
+
+void InfoViewerWidget::changeDataWindow()
+{
     QString bbox;
     RectI rod = viewer->getRoD();
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
