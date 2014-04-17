@@ -349,7 +349,8 @@ ViewerInstance::renderViewer(SequenceTime time,
     int mipMapLevel;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        scale = Natron::Image::getScaleFromMipMapLevel(_imp->viewerMipMapLevel);
+        scale.x = Natron::Image::getScaleFromMipMapLevel(_imp->viewerMipMapLevel);
+        scale.y = scale.x;
         mipMapLevel = _imp->viewerMipMapLevel;
     }
     

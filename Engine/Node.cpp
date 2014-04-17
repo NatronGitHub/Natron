@@ -1039,7 +1039,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     int closestPowerOf2 = std::max(closestPowerOf2X,closestPowerOf2Y);
     unsigned int mipMapLevel = std::min(std::log(closestPowerOf2) / std::log(2),5.);
     
-    scale = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
 #ifdef NATRON_LOG
     Log::beginFunction(getName(),"makePreviewImage");
     Log::print(QString("Time "+QString::number(time)).toStdString());

@@ -168,14 +168,14 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        if (_lastRenderArgs.hasLocalData()) {
-            scale = _lastRenderArgs.localData().scale;
-        }
         int view = 0;
         if (_lastRenderArgs.hasLocalData()) {
+            scale = _lastRenderArgs.localData().scale;
+            assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
             view = _lastRenderArgs.localData().view;
         }
-        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,Natron::Image::getLevelFromScale(scale),view);
+        assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
+        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,Natron::Image::getLevelFromScale(scale.x),view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);
@@ -243,6 +243,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
 {
     const LastRenderArgs& args = _lastRenderArgs.localData();
+    assert(args.scale.x == args.scale.y && 0. < args.scale.x && args.scale.x <= 1.);
     return getImageInternal(time,args.scale,args.view,optionalBounds);
 }
 
@@ -290,7 +291,9 @@ OFX::Host::ImageEffect::Image(clip)
 ,_bitDepth(OfxImage::eBitDepthFloat)
 ,_floatImage(internalImage)
 {
-    RenderScale scale = Natron::Image::getScaleFromMipMapLevel(internalImage->getMipMapLevel());
+    RenderScale scale;
+    scale.x = Natron::Image::getScaleFromMipMapLevel(internalImage->getMipMapLevel());
+    scale.y = scale.x;
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
@@ -357,6 +360,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime tim
     scale.x = scale.y = 1.;
     if (_lastRenderArgs.hasLocalData()) {
         scale = _lastRenderArgs.localData().scale;
+        assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
     }
     return getImageInternal(time,scale,view,optionalBounds);
 }
@@ -365,6 +369,7 @@ void OfxClipInstance::setView(int view) {
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
+        assert(args.scale.x == args.scale.y && 0. < args.scale.x && args.scale.x <= 1.);
     } else {
         args.scale.x = args.scale.y = 1.;
     }
@@ -375,8 +380,10 @@ void OfxClipInstance::setView(int view) {
 void OfxClipInstance::setRenderScale(const OfxPointD& scale)
 {
     LastRenderArgs args;
+    assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
+        assert(args.scale.x == args.scale.y && 0. < args.scale.x && args.scale.x <= 1.);
     } else {
         args.view = 0;
     }

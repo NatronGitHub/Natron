@@ -253,9 +253,9 @@ namespace Natron {
         
         
 
-        static RenderScale getScaleFromMipMapLevel(unsigned int level);
+        static double getScaleFromMipMapLevel(unsigned int level);
         
-        static unsigned int getLevelFromScale(const RenderScale& s);
+        static unsigned int getLevelFromScale(double s);
         
     private:
         

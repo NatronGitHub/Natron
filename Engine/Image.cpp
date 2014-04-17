@@ -857,54 +857,22 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
 }
 
 
-RenderScale Image::getScaleFromMipMapLevel(unsigned int level) {
-    RenderScale scale;
-    switch (level) {
-        case 0:
-            scale.x = 1.;
-            break;
-        case 1:
-            scale.x = 0.5;
-            break;
-        case 2:
-            scale.x = 0.25;
-            break;
-        case 3:
-            scale.x = 0.125;
-            break;
-        case 4:
-            scale.x = 0.0625;
-            break;
-        case 5:
-            scale.x = 0.03125;
-            break;
-        default:
-            assert(false);
-            break;
-    }
-    scale.y = scale.x;
-    return scale;
+double
+Image::getScaleFromMipMapLevel(unsigned int level)
+{
+    return 1./(1<<level);
 }
 
-unsigned int Image::getLevelFromScale(const RenderScale& s)
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+unsigned int
+Image::getLevelFromScale(double s)
 {
-    assert(s.x == s.y);
-    if (s.x == 1.) {
-        return 0;
-    } else if (s.x == 0.5) {
-        return 1;
-    } else if (s.x == 0.25) {
-        return 2;
-    } else if (s.x == 0.125) {
-        return 3;
-    } else if (s.x == 0.0625) {
-        return 4;
-    } else if (s.x == 0.03125) {
-        return 5;
-    } else {
-        assert(false);
-    }
-    return 0;
+    assert(0. < s && s <= 1.);
+    int retval = -std::floor(std::log(s)/M_LN2 + 0.5);
+    assert(retval >= 0);
+    return retval;
 }
 
 void Image::clearBitmap()

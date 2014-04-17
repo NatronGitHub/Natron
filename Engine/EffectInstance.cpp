@@ -232,7 +232,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
             return boost::shared_ptr<Natron::Image>();
         }
         currentEffectRenderWindow = precomputedRoD;
-        mipMapLevel = Natron::Image::getLevelFromScale(scale);
+        assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
+        mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
         currentEffectRenderWindow = currentEffectRenderWindow.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
