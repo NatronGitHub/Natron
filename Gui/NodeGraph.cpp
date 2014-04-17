@@ -255,10 +255,11 @@ NodeGraph::~NodeGraph(){
 void NodeGraph::onProjectNodesCleared() {
     
     deselect();
-    
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
         (*it)->deleteChildrenReferences();
+        //        getGui()->getCurveEditor()->removeNode(n);
+
     }
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodesTrash.begin(); it!=_nodesTrash.end(); ++it) {
         (*it)->deleteChildrenReferences();
