@@ -174,7 +174,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
             view = _lastRenderArgs.localData().view;
         }
-#pragma messageWARN("the mipmap level should really be stored instead of scale in the lastrenderargs")
+#pragma message WARN("the mipmap level should really be stored instead of scale in the lastrenderargs")
         assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
         Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,Natron::Image::getLevelFromScale(scale.x),view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -243,9 +243,15 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
 {
-    const LastRenderArgs& args = _lastRenderArgs.localData();
-    assert(args.scale.x == args.scale.y && 0. < args.scale.x && args.scale.x <= 1.);
-    return getImageInternal(time,args.scale,args.view,optionalBounds);
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int view = 0;
+    if (_lastRenderArgs.hasLocalData()) {
+        scale = _lastRenderArgs.localData().scale;
+        assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
+        view = _lastRenderArgs.localData().view;
+    }
+    return getImageInternal(time, scale, view, optionalBounds);
 }
 
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,const OfxPointD& renderScale,
@@ -358,10 +364,11 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
 {
     OfxPointD scale;
-    scale.x = scale.y = 1.;
     if (_lastRenderArgs.hasLocalData()) {
         scale = _lastRenderArgs.localData().scale;
         assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
+    } else {
+        scale.x = scale.y = 1.;
     }
     return getImageInternal(time,scale,view,optionalBounds);
 }
@@ -384,7 +391,6 @@ void OfxClipInstance::setRenderScale(const OfxPointD& scale)
     assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(args.scale.x == args.scale.y && 0. < args.scale.x && args.scale.x <= 1.);
     } else {
         args.view = 0;
     }
