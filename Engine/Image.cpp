@@ -554,29 +554,23 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     assert(level > 0);
     
     ///This is the portion we computed in buildMipMapLevel
-    RectI srcRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
+    RectI dstRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
     
     ///Even if the roi is this image's RoD, the
     ///resulting mipmap of that roi should fit into output.
-    Natron::Image* tmpImg = new Natron::Image(getComponents(),srcRoI,0);
+    Natron::Image* tmpImg = new Natron::Image(getComponents(),dstRoI,0);
     
     buildMipMapLevel(tmpImg, roi, level);
   
-    RectI dstRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
-    
-    Natron::Image* tmpImg2  = new Natron::Image(getComponents(),dstRoI,0);
-    tmpImg->scale(srcRoI, tmpImg2);
-    appPTR->debugImage(tmpImg, "mm.png");
-    appPTR->debugImage(tmpImg2, "scld.png");
-    ///Now copy the result of tmpImg2 into the output image
-    output->copy(*tmpImg2, dstRoI,false);
+    ///Now copy the result of tmpImg into the output image
+    output->copy(*tmpImg, dstRoI,false);
         
     ///clean-up
     delete tmpImg;
-    delete tmpImg2;
 }
 
-#pragma message WARN("Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by buildMipMapLevel")
+//Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by
+//buildMipMapLevel
 void Image::scale(const RectI& roi,Natron::Image* output) const
 {
     ///The destination rectangle
