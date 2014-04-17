@@ -91,7 +91,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     for(U32 i = 0 ; i < projectKnobs.size();++i){
         ///try to find a serialized value for this knob
         for(std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it!=projectSerializedValues.end();++it) {
-            if((*it)->getName() == projectKnobs[i]->getDescription()) {
+            if((*it)->getName() == projectKnobs[i]->getName()) {
                 if (projectKnobs[i]->getIsPersistant()) {
                     projectKnobs[i]->clone((*it)->getKnob());
                 }
