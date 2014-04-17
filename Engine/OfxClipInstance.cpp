@@ -185,6 +185,14 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             ret.y2 = rod.top();
 
         } else {
+            
+            ///Explanation: If the clip is the output clip (hence the current node), we can't call
+            ///getRegionOfDefinition because it will be a recursive call to an action within another action.
+            ///Worse it could be a recursive call to kOfxgetRegionOfDefinitionAction within a call to kOfxgetRegionOfDefinitionAction
+            ///The cache is guaranteed to have the RoD cached because the image is currently being computed by the plug-in.
+            ///If it's not the case then this is a bug of Natron.
+            assert(n != _nodeInstance);
+            
             RenderScale scale;
             scale.x = scale.y = 1.;
             Natron::Status st = n->getRegionOfDefinition(time,scale,&rod,&isProjectFormat);
