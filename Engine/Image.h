@@ -65,8 +65,7 @@ namespace Natron {
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
             // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
             //assert(!rod.isNull());
-            
-            std::fill(_map, _map+rod.area(), 0); 
+            clear();
         }
         
         Bitmap()
@@ -81,10 +80,12 @@ namespace Natron {
             assert(!_map);
             _rod = rod;
             _map = new char[rod.area()];
-            std::fill(_map, _map+rod.area(), 0);
+            clear();
         }
         
         ~Bitmap() { delete _map; }
+        
+        void clear() { std::fill(_map, _map+ _rod.area(), 0); }
         
         const RectI& getRoD() const {return _rod;}
         
@@ -174,6 +175,12 @@ namespace Natron {
         const char* getBitmapAt(int x,int y) const { return this->_bitmap.getBitmapAt(x,y); }
         
         char* getBitmapAt(int x,int y) { return this->_bitmap.getBitmapAt(x,y); }
+        
+        /**
+         * @brief Zeroes out the bitmap so the image is considered to be as though nothing
+         * had been rendered.
+         **/
+        void clearBitmap();
 
         /**
          * @brief Returns a list of portions of image that are not yet rendered within the 

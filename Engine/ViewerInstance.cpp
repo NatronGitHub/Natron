@@ -344,7 +344,6 @@ ViewerInstance::renderViewer(SequenceTime time,
     ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> inputImage;
-    bool isInputImgCached = false;
     
     RenderScale scale;
     int mipMapLevel;
@@ -360,13 +359,21 @@ ViewerInstance::renderViewer(SequenceTime time,
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime;
-    if (!forceRender) {
-        isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
-        if (isInputImgCached) {
-            inputIdentityNumber = cachedImgParams->getInputNbIdentity();
-            inputIdentityTime = cachedImgParams->getInputTimeIdentity();
+    
+    
+    bool isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+    if (isInputImgCached) {
+        inputIdentityNumber = cachedImgParams->getInputNbIdentity();
+        inputIdentityTime = cachedImgParams->getInputTimeIdentity();
+        if (forceRender) {
+            ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
+            ///we're sure renderRoIInternal will compute the whole image again.
+            ///We must use the cache facility anyway because we rely on it for caching the results
+            ///of actions which is necessary to avoid recursive actions.
+            inputImage->clearBitmap();
         }
     }
+    
     
     ////While the inputs are identity get the RoD of the first non identity input
     while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {

@@ -920,3 +920,8 @@ unsigned int Image::getLevelFromScale(const RenderScale& s)
     }
     return 0;
 }
+
+void Image::clearBitmap()
+{
+    _bitmap.clear();
+}

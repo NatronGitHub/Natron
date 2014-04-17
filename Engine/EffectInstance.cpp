@@ -365,29 +365,36 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     boost::shared_ptr<Image> image;
 
     Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time,args.mipMapLevel ,args.view);
-
-    /// First-off look-up the cache and see if we can find the cached actions results and cached image.
-    bool isCached = false;
     
-    if (!byPassCache) {
-        isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
+    /// First-off look-up the cache and see if we can find the cached actions results and cached image.
+    bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
+    
+    if (isCached) {
+        assert(cachedImgParams);
         
-        ////If the image was cached with a RoD dependent on the project format, but the project format changed,
-        ////just discard this entry
-        if (isCached) {
-            assert(cachedImgParams);
-            if (cachedImgParams->isRodProjectFormat()) {
-                Format projectFormat;
-                getRenderFormat(&projectFormat);
-                if (dynamic_cast<RectI&>(projectFormat) != cachedImgParams->getRoD()) {
-                    isCached = false;
-                    appPTR->removeFromNodeCache(image);
-                    cachedImgParams.reset();
-                    image.reset();
-                }
+        if (cachedImgParams->isRodProjectFormat()) {
+            ////If the image was cached with a RoD dependent on the project format, but the project format changed,
+            ////just discard this entry
+            Format projectFormat;
+            getRenderFormat(&projectFormat);
+            if (dynamic_cast<RectI&>(projectFormat) != cachedImgParams->getRoD()) {
+                isCached = false;
+                appPTR->removeFromNodeCache(image);
+                cachedImgParams.reset();
+                image.reset();
             }
         }
+        
+        if (isCached && byPassCache) {
+            ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
+            ///we're sure renderRoIInternal will compute the whole image again.
+            ///We must use the cache facility anyway because we rely on it for caching the results
+            ///of actions which is necessary to avoid recursive actions.
+            image->clearBitmap();
+        }
+
     }
+    
     
 #pragma message WARN("Specify image components here")
     ImageComponents components = Natron::ImageComponentRGBA;
@@ -453,55 +460,43 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             cost = -1;
         }
       
-        
         cachedImgParams = Natron::Image::makeParams(cost, rod,args.mipMapLevel,isProjectFormat,
                                                     components,
                                                     inputNbIdentity, inputTimeIdentity,
                                                     framesNeeded);
+    
+        ///even though we called getImage before and it returned false, it may now
+        ///return true if another thread created the image in the cache, so we can't
+        ///make any assumption on the return value of this function call.
+        ///
+        ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
+        boost::shared_ptr<Image> newImage;
+        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, &newImage);
+        assert(newImage);
         
         
-        if (byPassCache) {
-            ///if we bypass the cache, allocate the image ourselves
-            assert(!image);
-            assert(!identity);
-            if (!supportsRenderScale() && args.mipMapLevel != 0) {
-                
-                ///Allocate the upscaled image
-                image.reset(new Natron::Image(components,rod,0));
-                
-                ///Allocate the downscaled image
-                downscaledImage.reset(new Natron::Image(components,rod,args.mipMapLevel));
-            } else {
-                image.reset(new Natron::Image(components,rod,args.mipMapLevel));
-                downscaledImage = image;
-            }
-            
-        } else {
-            
-            
-            ///even though we called getImage before and it returned false, it may now
-            ///return true if another thread created the image in the cache, so we can't
-            ///make any assumption on the return value of this function call.
-            ///
-            ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
-            boost::shared_ptr<Image> newImage;
-            appPTR->getImageOrCreate(key, cachedImgParams, &newImage);
-            assert(newImage);
-            
-            ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
-            if (identity) {
-                ///don't return the empty allocated image but the input effect image instead!
-                return image;
-            }
-            image = newImage;
-            downscaledImage = image;
-
-            if (!supportsRenderScale() && args.mipMapLevel != 0) {
-                ///Allocate the upscaled image
-                image.reset(new Natron::Image(components,rod,0));
-            }
-            
+        if (cached && byPassCache) {
+            ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
+            ///we're sure renderRoIInternal will compute the whole image again.
+            ///We must use the cache facility anyway because we rely on it for caching the results
+            ///of actions which is necessary to avoid recursive actions.
+            newImage->clearBitmap();
         }
+        
+        ///if the plugin is an identity we just inserted in the cache the identity params, we can now return.
+        if (identity) {
+            ///don't return the empty allocated image but the input effect image instead!
+            return image;
+        }
+        image = newImage;
+        downscaledImage = image;
+        
+        if (!supportsRenderScale() && args.mipMapLevel != 0) {
+            ///Allocate the upscaled image
+            image.reset(new Natron::Image(components,rod,0));
+        }
+        
+        
         assert(cachedImgParams);
 
     } else {
