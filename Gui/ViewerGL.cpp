@@ -1068,7 +1068,8 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
     
     if (mipMapLevel != 0) {
-        ret = ret.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+        // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
+        ret = ret.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
     
     if (!ret.intersect(imageRoD, &ret)) {

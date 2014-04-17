@@ -397,7 +397,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         /// to cache anything or render anything for this effect.
         SequenceTime inputTimeIdentity;
         int inputNbIdentity;
-        RectI rod,scaledRod;
+        RectI rod;
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
         
@@ -427,10 +427,6 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
-            }
-            
-            if (args.mipMapLevel != 0) {
-                scaledRod = rod.downscalePowerOfTwoLargestEnclosed(args.mipMapLevel);
             }
             
             // why should the rod be empty here?

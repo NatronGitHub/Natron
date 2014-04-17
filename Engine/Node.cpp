@@ -1047,7 +1047,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
     boost::shared_ptr<Image> img;
     
-    RectI scaledRod = rod.mipMapLevel(mipMapLevel,false);
+    RectI scaledRod = rod.roundPowerOfTwoLargestEnclosed(mipMapLevel);
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {

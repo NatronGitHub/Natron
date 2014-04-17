@@ -424,11 +424,12 @@ ViewerInstance::renderViewer(SequenceTime time,
 #endif
             return stat;
         }
-        
-        pixelRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
-      
+
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 
+        // For the viewer, we need the enclosing rectangle to avoid black borders.
+        // Do this here to avoid infinity values.
+        pixelRoD = rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
 
     emit rodChanged(rod);

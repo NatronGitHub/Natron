@@ -87,91 +87,15 @@ public:
     
     
     void set(const RectI& b) { *this = b; }
-    
-private:
-    
-    /*
-     ** Compute the nearest power of 2 number.  This algorithm is a little
-     ** strange, but it works quite well.
-     ** ftp://ftp.freedesktop.org/pub/mesa/glu/glu-9.0.0.tar.bz2 mipmap.c
-     */
-    static int nearestPower(unsigned int value)
-    {
-        int i;
-        
-        i = 1;
-        
-        /* Error! */
-        if (value == 0) return -1;
-        
-        for (;;) {
-            if (value == 1) {
-                return i;
-            } else if (value == 3) {
-                return i*4;
-            }
-            value = value >> 1;
-            i *= 2;
-        }
-    }
-    
-    static int nearestPowerForAllNumbers(int value)
-    {
-        if (value == 0) return 0;
-        
-        bool isNegative = value < 0;
-        int ret = nearestPower(std::abs(value));
-        return isNegative ? -ret : ret;
-    }
-    
-public:
-    
-    /**
-     * @brief Returns a rectangle whose bounds are all adjusted to the closest power of 2.
-     **/
-    RectI closestPo2Rect() const {
-        if (isNull()) {
-            return *this;
-        }
-        RectI ret;
-        ret.x1 = nearestPowerForAllNumbers(x1);
-        ret.y1 = nearestPowerForAllNumbers(y1);
-        ret.x2 = nearestPowerForAllNumbers(x2);
-        if (ret.x2 == ret.x1) {
-            ret.x2 *= 2;
-        }
-        ret.y2 = nearestPowerForAllNumbers(y2);
-        if (ret.y2 == ret.y1) {
-            ret.y2 *= 2;
-        }
-        return ret;
-    }
-     
-    /**
-     * @brief Returns a rectangle corresponding to the bounds of the userLevel mip map level
-     * If userLevel == 0, this function will return the closestPo2
-     **/
-    RectI mipMapLevel(unsigned int userLevel,bool alsoComputeIfUserLevelIs0) const {
-        if (!alsoComputeIfUserLevelIs0 && userLevel == 0) {
-            return *this;
-        }
-        RectI closestPo2 = closestPo2Rect();
-        for (unsigned int i = 0; i < userLevel;++i) {
-            closestPo2.x1 /= 2;
-            closestPo2.y1 /= 2;
-            closestPo2.x2 /= 2;
-            closestPo2.y2 /= 2;
-            if (closestPo2.height() == 1 || closestPo2.width() == 1) {
-                break;
-            }
-        }
-        return closestPo2;
-    }
-    
+
     /**
      * @brief Upscales the bounds assuming this rectangle is the Nth level of mipmap
      **/
-    RectI upscalePowerOfTwo(unsigned int thisLevel) const {
+    RectI upscalePowerOfTwo(unsigned int thisLevel) const
+    {
+        if (thisLevel == 0) {
+            return *this;
+        }
         RectI ret;
         ret.x1 = x1 << thisLevel;
         ret.x2 = x2 << thisLevel;
@@ -183,7 +107,11 @@ public:
     /**
      * @brief Scales down the rectangle by the given power of 2
      **/
-    RectI downscalePowerOfTwo(unsigned int thisLevel) const {
+    RectI downscalePowerOfTwo(unsigned int thisLevel) const
+    {
+        if (thisLevel == 0) {
+            return *this;
+        }
         RectI ret;
         assert(x1 % (1<<thisLevel) == 0 && x2 % (1<<thisLevel) == 0 && y1 % (1<<thisLevel) == 0 && y2 % (1<<thisLevel) == 0);
         ret.x1 = x1 >> thisLevel;
@@ -211,7 +139,11 @@ public:
     /**
      * @brief round the rectangle by the given power of 2, and return the largest *enclosed* (inside) rectangle
      **/
-    RectI roundPowerOfTwoLargestEnclosed(unsigned int thisLevel) const {
+    RectI roundPowerOfTwoLargestEnclosed(unsigned int thisLevel) const
+    {
+        if (thisLevel == 0) {
+            return *this;
+        }
         RectI ret;
         int pot = (1<<thisLevel);
         int pot_minus1 = pot - 1;
@@ -227,7 +159,11 @@ public:
     /**
      * @brief round the rectangle by the given power of 2, and return the smallest *enclosing* rectangle
      **/
-    RectI roundPowerOfTwoSmallestEnclosing(unsigned int thisLevel) const {
+    RectI roundPowerOfTwoSmallestEnclosing(unsigned int thisLevel) const
+    {
+        if (thisLevel == 0) {
+            return *this;
+        }
         RectI ret;
         int pot = (1<<thisLevel);
         int pot_minus1 = pot - 1;
@@ -243,7 +179,11 @@ public:
     /**
      * @brief Scales down the rectangle by the given power of 2, and return the largest *enclosed* (inside) rectangle
      **/
-    RectI downscalePowerOfTwoLargestEnclosed(unsigned int thisLevel) const {
+    RectI downscalePowerOfTwoLargestEnclosed(unsigned int thisLevel) const
+    {
+        if (thisLevel == 0) {
+            return *this;
+        }
         RectI ret;
         int pot = (1<<thisLevel);
         int pot_minus1 = pot - 1;
@@ -259,7 +199,11 @@ public:
     /**
      * @brief Scales down the rectangle by the given power of 2, and return the smallest *enclosing* rectangle
      **/
-    RectI downscalePowerOfTwoSmallestEnclosing(unsigned int thisLevel) const {
+    RectI downscalePowerOfTwoSmallestEnclosing(unsigned int thisLevel) const
+    {
+        if (thisLevel == 0) {
+            return *this;
+        }
         RectI ret;
         int pot = (1<<thisLevel);
         int pot_minus1 = pot - 1;
