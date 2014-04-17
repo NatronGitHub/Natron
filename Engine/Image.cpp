@@ -481,6 +481,8 @@ void Image::halveImage(const RectI& roi,Natron::Image* output) const
     
     int rowSize = getPixelRoD().width() * components;
     
+    int padding = rowSize - (width * components);
+    
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
             for (int k = 0; k < components; ++k) {
@@ -492,6 +494,7 @@ void Image::halveImage(const RectI& roi,Natron::Image* output) const
             }
             src += components;
         }
+        src += padding;
         src += rowSize;
     }
 }
@@ -563,6 +566,8 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     
     Natron::Image* tmpImg2  = new Natron::Image(getComponents(),dstRoI,0);
     tmpImg->scale(srcRoI, tmpImg2);
+    appPTR->debugImage(tmpImg, "mm.png");
+    appPTR->debugImage(tmpImg2, "scld.png");
     ///Now copy the result of tmpImg2 into the output image
     output->copy(*tmpImg2, dstRoI,false);
         
