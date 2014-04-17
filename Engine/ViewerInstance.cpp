@@ -277,7 +277,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale
     ///Return the RoD of the active input
     EffectInstance* n = input_other_thread(activeInput());
     if (n) {
-        return n->getRegionOfDefinition(time,scale,rod,isProjectFormat);
+        return n->getRegionOfDefinition_public(time,scale,rod,isProjectFormat);
     } else {
         return StatFailed;
     }
@@ -294,7 +294,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     SequenceTime inpFirst = 0,inpLast = 0;
     EffectInstance* n = input_other_thread(activeInput());
     if (n) {
-        n->getFrameRange(&inpFirst,&inpLast);
+        n->getFrameRange_public(&inpFirst,&inpLast);
     }
     *first = inpFirst;
     *last = inpLast;

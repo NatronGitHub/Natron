@@ -26,6 +26,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/ThreadStorage.h"
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
@@ -716,35 +717,97 @@ int KnobHelper::getKeyFrameIndex(int dimension, double time) const
 
 /***************************KNOB HOLDER******************************************/
 
-KnobHolder::KnobHolder(AppInstance* appInstance):
-_app(appInstance)
-, _knobs()
-, _knobsInitialized(false)
-, _isSlave(false)
-, actionsRecursionLevel(0)
-, evaluateQueue()
+struct KnobHolder::KnobHolderPrivate
+{
+    AppInstance* _app;
+    std::vector< boost::shared_ptr<KnobI> > _knobs;
+    bool _knobsInitialized;
+    bool _isSlave;
+    
+    ///Use to count the recursion in the function calls
+    /* The image effect actions which may trigger a recursive action call on a single instance are...
+     
+     kOfxActionBeginInstanceChanged
+     kOfxActionInstanceChanged
+     kOfxActionEndInstanceChanged
+     The interact actions which may trigger a recursive action to be called on the associated plugin instance are...
+     
+     kOfxInteractActionGainFocus
+     kOfxInteractActionKeyDown
+     kOfxInteractActionKeyRepeat
+     kOfxInteractActionKeyUp
+     kOfxInteractActionLoseFocus
+     kOfxInteractActionPenDown
+     kOfxInteractActionPenMotion
+     kOfxInteractActionPenUp
+     
+     The image effect actions which may be called recursively are...
+     
+     kOfxActionBeginInstanceChanged
+     kOfxActionInstanceChanged
+     kOfxActionEndInstanceChanged
+     kOfxImageEffectActionGetClipPreferences
+     The interact actions which may be called recursively are...
+     
+     kOfxInteractActionDraw
+     
+     */
+    ThreadStorage<int> actionsRecursionLevel;
+    
+    ///If true, when the actionsRecursionLevel hit 0, it will trigger an evaluation.
+    struct EvaluationRequest {
+        KnobI* requester; //< the last requester
+        bool isSignificant; //< is it a significant evaluation ?
+        
+        EvaluationRequest()
+        : requester(0) , isSignificant(false)
+        {
+            
+        }
+    };
+    
+    EvaluationRequest evaluateQueue;
+    
+    KnobHolderPrivate(AppInstance* appInstance)
+    : _app(appInstance)
+    , _knobs()
+    , _knobsInitialized(false)
+    , _isSlave(false)
+    , actionsRecursionLevel()
+    , evaluateQueue()
+    {
+        
+    }
+};
+
+KnobHolder::KnobHolder(AppInstance* appInstance)
+: _imp(new KnobHolderPrivate(appInstance))
 {
 }
 
 KnobHolder::~KnobHolder()
 {
-    for (U32 i = 0; i < _knobs.size(); ++i) {
-        KnobHelper* helper = dynamic_cast<KnobHelper*>(_knobs[i].get());
+    for (U32 i = 0; i < _imp->_knobs.size(); ++i) {
+        KnobHelper* helper = dynamic_cast<KnobHelper*>(_imp->_knobs[i].get());
         helper->_imp->_holder = 0;
     }
 }
 
+AppInstance* KnobHolder::getApp() const {return _imp->_app;}
+
 void KnobHolder::initializeKnobsPublic()
 {
     initializeKnobs();
-    _knobsInitialized = true;
+    _imp->_knobsInitialized = true;
 }
+
+void KnobHolder::addKnob(boost::shared_ptr<KnobI> k){ _imp->_knobs.push_back(k); }
 
 void KnobHolder::removeKnob(KnobI* knob)
 {
-    for (U32 i = 0; i < _knobs.size() ; ++i) {
-        if (_knobs[i].get() == knob) {
-            _knobs.erase(_knobs.begin()+i);
+    for (U32 i = 0; i < _imp->_knobs.size() ; ++i) {
+        if (_imp->_knobs[i].get() == knob) {
+            _imp->_knobs.erase(_imp->_knobs.begin()+i);
             break;
         }
     }
@@ -752,40 +815,40 @@ void KnobHolder::removeKnob(KnobI* knob)
 
 void KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
-    for (U32 i = 0; i < _knobs.size() ; ++i) {
-        _knobs[i]->onTimeChanged(time);
+    for (U32 i = 0; i < _imp->_knobs.size() ; ++i) {
+        _imp->_knobs[i]->onTimeChanged(time);
     }
 }
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason)
 {
-    if (!_knobsInitialized) {
+    if (!_imp->_knobsInitialized) {
         return;
     }
     
-    if (_app) {
+    if (_imp->_app) {
         getApp()->getProject()->beginProjectWideValueChanges(reason, this);
     }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged()
 {
-    if (!_knobsInitialized) {
+    if (!_imp->_knobsInitialized) {
         return;
     }
     
-    if (_app) {
+    if (_imp->_app) {
         getApp()->getProject()->endProjectWideValueChanges(this);
     }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,KnobI* k,bool significant)
 {
-    if (!_knobsInitialized) {
+    if (!_imp->_knobsInitialized) {
         return;
     }
     
-    if (_app) {
+    if (_imp->_app) {
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     } else {
         onKnobValueChanged(k, reason);
@@ -807,13 +870,13 @@ boost::shared_ptr<KnobI> KnobHolder::getKnobByName(const std::string& name) cons
 
 const std::vector< boost::shared_ptr<KnobI> >& KnobHolder::getKnobs() const {
     ///MT-safe since it never changes
-    return _knobs;
+    return _imp->_knobs;
 }
 
 
 void KnobHolder::slaveAllKnobs(KnobHolder* other) {
     
-    if (_isSlave) {
+    if (_imp->_isSlave) {
         return;
     }
     const std::vector<boost::shared_ptr<KnobI> >& otherKnobs = other->getKnobs();
@@ -831,17 +894,17 @@ void KnobHolder::slaveAllKnobs(KnobHolder* other) {
             foundKnob->slaveTo(j, otherKnobs[i], j);
         }
     }
-    _isSlave = true;
+    _imp->_isSlave = true;
     onSlaveStateChanged(true,other);
 
 }
 
 bool KnobHolder::isSlave() const  {
-    return _isSlave;
+    return _imp->_isSlave;
 }
 
 void KnobHolder::unslaveAllKnobs() {
-    if (!_isSlave) {
+    if (!_imp->_isSlave) {
         return;
     }
     const std::vector<boost::shared_ptr<KnobI> >& thisKnobs = getKnobs();
@@ -852,7 +915,7 @@ void KnobHolder::unslaveAllKnobs() {
             }
         }
     }
-    _isSlave = false;
+    _imp->_isSlave = false;
     onSlaveStateChanged(false,(KnobHolder*)NULL);
 }
 
@@ -860,18 +923,22 @@ void KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reaso
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    
+    ///Recursive action, must not call assertActionIsNotRecursive()
+    incrementRecursionLevel();
     beginKnobsValuesChanged(reason);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
 }
 
 void KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReason reason)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    
+    ///Recursive action, must not call assertActionIsNotRecursive()
+    incrementRecursionLevel();
     endKnobsValuesChanged(reason);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
 }
 
 
@@ -879,21 +946,23 @@ void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason r
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    ++actionsRecursionLevel;
+    
+    ///Recursive action, must not call assertActionIsNotRecursive()
+    incrementRecursionLevel();
     onKnobValueChanged(k, reason);
-    --actionsRecursionLevel;
+    decrementRecursionLevel();
 }
 
 void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    evaluateQueue.isSignificant |= isSignificant;
-    evaluateQueue.requester = knob;
-    if (actionsRecursionLevel == 0) {
-        evaluate(knob, evaluateQueue.isSignificant);
-        evaluateQueue.requester = NULL;
-        evaluateQueue.isSignificant = false;
+    _imp->evaluateQueue.isSignificant |= isSignificant;
+    _imp->evaluateQueue.requester = knob;
+    if (getRecursionLevel() == 0) {
+        evaluate(knob, _imp->evaluateQueue.isSignificant);
+        _imp->evaluateQueue.requester = NULL;
+        _imp->evaluateQueue.isSignificant = false;
     }
 }
 
@@ -901,11 +970,42 @@ void KnobHolder::checkIfRenderNeeded()
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    if (actionsRecursionLevel == 0 && evaluateQueue.requester != NULL) {
-        evaluate(evaluateQueue.requester, evaluateQueue.isSignificant);
-        evaluateQueue.requester = NULL;
-        evaluateQueue.isSignificant = false;
+    if (getRecursionLevel() == 0 && _imp->evaluateQueue.requester != NULL) {
+        evaluate(_imp->evaluateQueue.requester, _imp->evaluateQueue.isSignificant);
+        _imp->evaluateQueue.requester = NULL;
+        _imp->evaluateQueue.isSignificant = false;
     }
+}
+
+void KnobHolder::assertActionIsNotRecursive() const
+{
+    int recursionLvl = getRecursionLevel();
+    assert(recursionLvl == 0);
+    if (recursionLvl != 0) {
+        throw std::runtime_error("A non-recursive action has been called recursively.");
+    }
+    
+}
+
+void KnobHolder::incrementRecursionLevel()
+{
+    if (!_imp->actionsRecursionLevel.hasLocalData()) {
+        _imp->actionsRecursionLevel.setLocalData(1);
+    } else {
+        _imp->actionsRecursionLevel.setLocalData(_imp->actionsRecursionLevel.localData() + 1);
+    }
+}
+
+
+void KnobHolder::decrementRecursionLevel()
+{
+    assert(_imp->actionsRecursionLevel.hasLocalData());
+    _imp->actionsRecursionLevel.setLocalData(_imp->actionsRecursionLevel.localData() - 1);
+}
+
+int KnobHolder::getRecursionLevel() const
+{
+    return _imp->actionsRecursionLevel.localData();
 }
 
 /***************************STRING ANIMATION******************************************/

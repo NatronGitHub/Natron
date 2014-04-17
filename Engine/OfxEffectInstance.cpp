@@ -437,7 +437,11 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
 }
 
 void OfxEffectInstance::onMultipleInputsChanged() {
+    
+    ///Recursive action, must not call assertActionIsNotRecursive()
+    incrementRecursionLevel();
     effect_->runGetClipPrefsConditionally();
+    decrementRecursionLevel();
 }
 
 std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
@@ -931,7 +935,10 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
     }
     
     if (effect_->isClipPreferencesSlaveParam(k->getName())) {
+        ///Recursive action, must not call assertActionIsNotRecursive()
+        incrementRecursionLevel();
         effect_->runGetClipPrefsConditionally();
+        decrementRecursionLevel();
     }
     if(_overlayInteract){
         std::vector<std::string> params;

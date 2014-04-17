@@ -92,7 +92,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
     SequenceTime first,last;
     EffectInstance* n = getAssociatedNode();
     if(n) {
-       n->getFrameRange(&first, &last);
+       n->getFrameRange_public(&first, &last);
     } else {
         assert(_nodeInstance->getApp());
         assert(_nodeInstance->getApp()->getTimeLine());
@@ -201,7 +201,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             
             RenderScale scale;
             scale.x = scale.y = 1.;
-            Natron::Status st = n->getRegionOfDefinition(time,scale,&rod,&isProjectFormat);
+            Natron::Status st = n->getRegionOfDefinition_public(time,scale,&rod,&isProjectFormat);
             if (st == StatFailed) {
                 //assert(!"cannot compute ROD");
                 ret.x1 = kOfxFlagInfiniteMin;

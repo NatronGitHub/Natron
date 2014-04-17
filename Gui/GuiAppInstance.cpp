@@ -239,7 +239,7 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     
     ///validate the frame range to render
     int firstFrame,lastFrame;
-    writer->getFrameRange(&firstFrame, &lastFrame);
+    writer->getFrameRange_public(&firstFrame, &lastFrame);
     if(firstFrame > lastFrame) {
         throw std::invalid_argument("First frame in the sequence is greater than the last frame");
     }

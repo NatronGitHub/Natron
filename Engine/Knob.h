@@ -939,57 +939,9 @@ private:
  **/
 class KnobHolder {
     
-    AppInstance* _app;
-    std::vector< boost::shared_ptr<KnobI> > _knobs;
-    bool _knobsInitialized;
-    bool _isSlave;
+    struct KnobHolderPrivate;
+    boost::scoped_ptr<KnobHolderPrivate> _imp;
     
-protected:
-    
-    ///Use to count the recursion in the function calls; doesn't need to be locked as it is run on the main-thread.
-    ///Protected so EffectInstance can use it for overlay interacts as well
-    /* The image effect actions which may trigger a recursive action call on a single instance are...
-     
-     kOfxActionBeginInstanceChanged
-     kOfxActionInstanceChanged
-     kOfxActionEndInstanceChanged
-     The interact actions which may trigger a recursive action to be called on the associated plugin instance are...
-     
-     kOfxInteractActionGainFocus
-     kOfxInteractActionKeyDown
-     kOfxInteractActionKeyRepeat
-     kOfxInteractActionKeyUp
-     kOfxInteractActionLoseFocus
-     kOfxInteractActionPenDown
-     kOfxInteractActionPenMotion
-     kOfxInteractActionPenUp
-     
-     The image effect actions which may be called recursively are...
-     
-     kOfxActionBeginInstanceChanged
-     kOfxActionInstanceChanged
-     kOfxActionEndInstanceChanged
-     kOfxImageEffectActionGetClipPreferences
-     The interact actions which may be called recursively are...
-     
-     kOfxInteractActionDraw
-     
-     */
-    int actionsRecursionLevel;
-    
-    ///If true, when the actionsRecursionLevel hit 0, it will trigger an evaluation.
-    struct EvaluationRequest {
-        KnobI* requester; //< the last requester
-        bool isSignificant; //< is it a significant evaluation ?
-        
-        EvaluationRequest()
-        : requester(0) , isSignificant(false)
-        {
-            
-        }
-    };
-    
-    EvaluationRequest evaluateQueue;
     
 public:
     
@@ -1005,13 +957,42 @@ public:
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
 
-    AppInstance* getApp() const WARN_UNUSED_RETURN {return _app;}
+    AppInstance* getApp() const WARN_UNUSED_RETURN;
     
     boost::shared_ptr<KnobI> getKnobByName(const std::string& name) const WARN_UNUSED_RETURN;
     
     const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const WARN_UNUSED_RETURN;
     
     void refreshAfterTimeChange(SequenceTime time);
+    
+protected:
+    /**
+     * @brief Equivalent to assert(actionsRecursionLevel == 0).
+     * In release mode an exception is thrown instead.
+     * This should be called in all actions except in the following recursive actions...
+     *
+     * kOfxActionBeginInstanceChanged
+     * kOfxActionInstanceChanged
+     * kOfxActionEndInstanceChanged
+     * kOfxImageEffectActionGetClipPreferences
+     * kOfxInteractActionDraw
+     **/
+    void assertActionIsNotRecursive() const;
+    
+    /**
+     * @brief Should be called in the begining of an action.
+     * Right after assertActionIsNotRecursive() for non recursive actions.
+     **/
+    void incrementRecursionLevel();
+    
+    /**
+     * @brief Should be called at the end of an action.
+     **/
+    void decrementRecursionLevel();
+    
+    int getRecursionLevel() const;
+    
+public:
     
     /**
      * @brief Used to bracket a series of calls to setValue(...) in case many complex changes are done
@@ -1076,7 +1057,7 @@ public:
     
     /*Add a knob to the vector. This is called by the
      Knob class. Don't call this*/
-    void addKnob(boost::shared_ptr<KnobI> k){ _knobs.push_back(k); }
+    void addKnob(boost::shared_ptr<KnobI> k);
     
     
     /*Removes a knob to the vector. This is called by the
