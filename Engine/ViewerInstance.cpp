@@ -416,7 +416,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         
     }  else {
-        Status stat = getRegionOfDefinition(time,scale, &rod,&isRodProjectFormat);
+        Status stat = getRegionOfDefinition_public(time,scale, &rod,&isRodProjectFormat);
         if(stat == StatFailed){
 #ifdef NATRON_LOG
             Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
@@ -615,12 +615,10 @@ ViewerInstance::renderViewer(SequenceTime time,
 
         ///since we are going to render a new image, decrease the current memory use of the viewer by
         ///the amount of the current image, and increase it after we rendered the new image.
-        size_t memoryDiff = 0;
-        
         {
             QMutexLocker l(&_imp->lastRenderedImageMutex);
             if (_imp->lastRenderedImage) {
-                memoryDiff -= _imp->lastRenderedImage->size();
+                unregisterPluginMemory(_imp->lastRenderedImage->size());
             }
         }
         
@@ -666,10 +664,9 @@ ViewerInstance::renderViewer(SequenceTime time,
             return StatFailed;
         }
         
-        memoryDiff += lastRenderedImage->size();
         ///notify that the viewer is actually using that much memory.
         ///It will never be freed unless we delete the node completely from the undo/redo stack.
-        registerPluginMemory(memoryDiff);
+        registerPluginMemory(lastRenderedImage->size());
 
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
