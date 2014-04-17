@@ -461,6 +461,8 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     }
 
     assert(effect_);
+    
+    effectInstance()->setClipsRenderScale(scale);
 
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, (OfxPointD)scale, ofxRod);
