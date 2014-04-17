@@ -43,7 +43,10 @@ Project::Project(AppInstance* appInstance)
 
 Project::~Project() {
     clearNodes();
-    removeAutoSaves();
+    
+    ///Don't clear autosaves if the program is shutting down by user request.
+    ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
+    //removeAutoSaves();
 }
 
 bool Project::loadProject(const QString& path,const QString& name){

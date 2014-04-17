@@ -160,7 +160,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     RectI rod;
     EffectInstance* n = getAssociatedNode();
-    if (n && n != _nodeInstance) {
+    if (n) {
         bool isProjectFormat;
         
         boost::shared_ptr<const ImageParams> cachedImgParams;
@@ -173,7 +173,11 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);
-        if (isCached && cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)) {
+        
+        ///If the RoD is cached accept it always if it doesn't depend on the project format.
+        ///Otherwise cehck that it is really the current project format.
+        if (isCached && (!cachedImgParams->isRodProjectFormat()
+            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)))) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
             ret.x2 = rod.right();
@@ -199,10 +203,12 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             
         }
         
-    } else if(_nodeInstance && _nodeInstance->effectInstance()) {
-        _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
-        _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
-    } else {
+    }
+//    else if(_nodeInstance && _nodeInstance->effectInstance()) {
+//        _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
+//        _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
+//    }
+    else {
         // default value: should never happen
         assert(!"cannot compute ROD");
         ret.x1 = kOfxFlagInfiniteMin;
