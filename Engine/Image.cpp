@@ -516,7 +516,6 @@ void Image::halve1DImage(const RectI& roi,Natron::Image* output) const
     
     if (height == 1) { //1 row
         assert(width != 1);	/// widthxheight can't be 1x1
-        halfHeight = 1;
         
         const float* src = pixelAt(roi.x1, roi.y1);
         float* dst = output->pixelAt(output->getRoD().x1, output->getRoD().y1);
