@@ -510,7 +510,7 @@ void Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n)
     n->removeReferences();
 }
     
-    void Project::clearNodes() {
+void Project::clearNodes() {
     std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
     {
         QMutexLocker l(&_imp->nodesLock);
@@ -519,6 +519,7 @@ void Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n)
     }
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->quitAnyProcessing();
+        nodesToDelete[i]->removeReferences();
     }
     nodesToDelete.clear();
     

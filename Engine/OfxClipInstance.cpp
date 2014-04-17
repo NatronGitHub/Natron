@@ -166,10 +166,16 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
         
-        ///Use a render scale of 1 and the view 0 as we have no means to get them from here
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,0,0);
+        if (_lastRenderArgs.hasLocalData()) {
+            scale = _lastRenderArgs.localData().scale;
+        }
+        int view = 0;
+        if (_lastRenderArgs.hasLocalData()) {
+            view = _lastRenderArgs.localData().view;
+        }
+        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,Natron::Image::getLevelFromScale(scale),view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);
@@ -185,6 +191,14 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             ret.y2 = rod.top();
 
         } else {
+            
+            ///Explanation: If the clip is the output clip (hence the current node), we can't call
+            ///getRegionOfDefinition because it will be a recursive call to an action within another action.
+            ///Worse it could be a recursive call to kOfxgetRegionOfDefinitionAction within a call to kOfxgetRegionOfDefinitionAction
+            ///The cache is guaranteed to have the RoD cached because the image is currently being computed by the plug-in.
+            ///If it's not the case then this is a bug of Natron.
+            assert(n != _nodeInstance);
+            
             RenderScale scale;
             scale.x = scale.y = 1.;
             Natron::Status st = n->getRegionOfDefinition(time,scale,&rod,&isProjectFormat);
@@ -210,7 +224,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 //    }
     else {
         // default value: should never happen
-        assert(!"cannot compute ROD");
+        assert(!"Cannot compute ROD the input is probably disconnected. The plug-in should have checked this before calling this function.");
         ret.x1 = kOfxFlagInfiniteMin;
         ret.x2 = kOfxFlagInfiniteMax;
         ret.y1 = kOfxFlagInfiniteMin;

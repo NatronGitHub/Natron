@@ -482,13 +482,18 @@ OfxRectD rectToOfxRect2D(const RectI b){
 }
 
 
-EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) {
+EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view) {
     
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
     if(!_initialized){
         return ret;
     }
+    
+    ///before calling getRoIaction set the relevant infos on the clips
+    effectInstance()->setClipsRenderScale(scale);
+    effectInstance()->setClipsView(view);
+    
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
     
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
