@@ -482,8 +482,8 @@ void Image::halveImage(const RectI& roi,Natron::Image* output) const
     
     int padding = rowSize - (width * components);
     
-    for (int y = 0; y < pixelRoD.height(); ++y) {
-        for (int x = 0; x < pixelRoD.width(); ++x) {
+    for (int y = 0; y < outputPixelRoD.height(); ++y) {
+        for (int x = 0; x < outputPixelRoD.width(); ++x) {
             for (int k = 0; k < components; ++k) {
                 *dst++ =  (*src +
                         *(src + components) +
