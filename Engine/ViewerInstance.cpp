@@ -604,7 +604,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
             if (!rectsToRender.empty()) {
                 boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,rod,0));
-                downscaledImage->scale(downscaledImage->getPixelRoD(),upscaledImage.get());
+                downscaledImage->upscale_nearest(downscaledImage->getPixelRoD(),upscaledImage.get());
                 inputImage = upscaledImage;
             } else {
                 renderedCompletely = true;

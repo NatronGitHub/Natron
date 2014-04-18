@@ -528,7 +528,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             
             ///Allocate the upscaled image
             boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,cachedImgParams->getRoD(),0));
-            downscaledImage->scale(downscaledImage->getPixelRoD(),upscaledImage.get());
+            downscaledImage->upscale_nearest(downscaledImage->getPixelRoD(),upscaledImage.get());
             image = upscaledImage;
         }
         
@@ -787,7 +787,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
-                        image->scale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                        image->downscale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
                     }
                     bool callEndRender = false;
                     {
@@ -831,7 +831,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
-                        image->scale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                        image->downscale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
                     }
                     bool callEndRender = false;
                     {
@@ -875,7 +875,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
-                        image->scale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                        image->downscale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
                     }
                     bool callEndRender = false;
                     {
@@ -951,7 +951,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
         }
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (useFullResImage) {
-            output->scale_mipmap(upscaledRoi,downscaledOutput.get(), args._mipMapLevel);
+            output->downscale_mipmap(upscaledRoi,downscaledOutput.get(), args._mipMapLevel);
         }
 
     }

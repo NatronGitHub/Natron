@@ -548,7 +548,7 @@ void Image::halve1DImage(const RectI& roi,Natron::Image* output) const
     }
 }
 
-void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const
+void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const
 {
     ///You should not call this function with a level equal to 0.
     assert(level > 0);
@@ -571,7 +571,7 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
 
 //Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by
 //buildMipMapLevel
-void Image::scale(const RectI& roi,Natron::Image* output) const
+void Image::upscale_nearest(const RectI& roi,Natron::Image* output) const
 {
     ///The destination rectangle
     const RectI& dstRod = output->getPixelRoD();
@@ -821,9 +821,10 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     
     ///The roi isn't a pot. We have to first scale the portion of this image
     ///to the smallest pot enclosing
+#pragma message WARN("WHY?")
     if (roi != roi_rounded) {
         Natron::Image* tmpImg = new Natron::Image(getComponents(),roi_rounded,0);
-        scale(roi, tmpImg);
+        upscale_nearest(roi, tmpImg);
         srcImg = tmpImg;
         mustFreeSrc = true;
     }

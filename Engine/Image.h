@@ -240,16 +240,16 @@ namespace Natron {
          * This function will adjust roi to the nearest power of two rectangle
          * and then computes the mipmap of the given level of that rectangle.
          * The resulting mipmap will then be scaled into output using the
-         * scale(...) function.
+         * upscale_nearest(...) function.
          **/
-        void scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const;
+        void downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const;
         
         /**
          * @brief Scales the roi of this image to the size of the output image.
          * This is used internally by buildMipMapLevel when the image is a NPOT.
          * This should not be used for downscaling.
          **/
-        void scale(const RectI& roi,Natron::Image* output) const;
+        void upscale_nearest(const RectI& roi,Natron::Image* output) const;
         
         
 
