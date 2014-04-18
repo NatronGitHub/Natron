@@ -501,17 +501,18 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     const float* src = pixelAt(srcRoi.x1, srcRoi.y1);
     float* dst = output->pixelAt(dstRoi.x1, dstRoi.y1);
     
-    int srcRowSize = srcRoD.width() * components;
+    int srcRowSize = getPixelRoD().width() * components;
     int dstRowSize = dstRoD.width() * components;
-
+    int srcPadding = srcRowSize - (width * components);
+    int dstPadding = dstRowSize - (dstWidth * components);
+    
     for (int y = 0; y < dstHeight;
          ++y,
-         src += srcRowSize+srcRowSize - (dstWidth*2*components),
-         dst += dstRowSize - (dstWidth*components)) {
+         src += (srcRowSize + srcPadding),
+         dst += dstPadding) {
         for (int x = 0; x < dstWidth;
              ++x,
-             src += components+components - components,
-             dst += components - components) {
+             src += components) {
             assert(dstRoD.x1 <= dstRoi.x1+x && dstRoi.x1+x < dstRoD.x2);
             assert(dstRoD.y1 <= dstRoi.y1+y && dstRoi.y1+y < dstRoD.y2);
             assert(dst == output->pixelAt(dstRoi.x1+x, dstRoi.y1+y));
