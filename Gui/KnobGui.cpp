@@ -698,8 +698,8 @@ void KnobGui::hide(){
     if (shouldRemoveWidget) {
         _imp->containerLayout->removeWidget(_imp->field);
         if (_imp->descriptionLabel) {
-            _imp->containerLayout->removeWidget(_imp->descriptionLabel);
-            _imp->descriptionLabel->setParent(0);
+            //_imp->containerLayout->removeWidget(_imp->descriptionLabel);
+            //_imp->descriptionLabel->setParent(0);
         }
         _imp->field->setParent(0);
         _imp->field->hide();
@@ -724,14 +724,17 @@ void KnobGui::show(int index){
             _imp->containerLayout->insertRow(indexToUse, _imp->descriptionLabel, _imp->field);
         }
         _imp->field->setParent(_imp->containerLayout->parentWidget());
+        _imp->field->show();
+        
         if (_imp->descriptionLabel) {
             _imp->descriptionLabel->setParent(_imp->containerLayout->parentWidget());
+            _imp->descriptionLabel->show();
         }
-        _imp->field->show();
-    }
-    if (_imp->descriptionLabel) {
+    } else {
         _imp->descriptionLabel->show();
     }
+
+    
 
 }
 
