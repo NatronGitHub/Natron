@@ -454,37 +454,36 @@ void Image::halveImage(const RectI& roi,Natron::Image* output) const
     ///handle case where there is only 1 column/row
     int width = roi.width();
     int height = roi.height();
-    
+    const RectI& pixelRoD = getPixelRoD();
+    const RectI& outputPixelRoD = output->getPixelRoD();
+
     if (width == 1 || height == 1) {
         assert( !(width == 1 && height == 1) ); /// can't be 1x1
         halve1DImage(roi,output);
         return;
     }
-    
-    
-    
-    int newWidth = width / 2;
-    int newHeight = height / 2;
-    
-    assert(output->getPixelRoD().x1*2 == roi.x1 &&
-           output->getPixelRoD().x2*2 == roi.x2 &&
-           output->getPixelRoD().y1*2 == roi.y1 &&
-           output->getPixelRoD().y2*2 == roi.y2 &&
-           output->getPixelRoD().width() == newWidth &&
-           output->getPixelRoD().height() == newHeight);
+
+    // the pixelRoD of the output should be enclosed in half the roi.
+    // It does not have to be exactly half of the input.
+    assert(outputPixelRoD.x1*2 >= roi.x1 &&
+           outputPixelRoD.x2*2 <= roi.x2 &&
+           outputPixelRoD.y1*2 >= roi.y1 &&
+           outputPixelRoD.y2*2 <= roi.y2 &&
+           outputPixelRoD.width()*2 <= width &&
+           outputPixelRoD.height()*2 <= height);
     assert(getComponents() == output->getComponents());
     
     int components = getElementsCountForComponents(getComponents());
     
     const float* src = pixelAt(roi.x1, roi.y1);
-    float* dst = output->pixelAt(output->getPixelRoD().x1, output->getPixelRoD().y1);
+    float* dst = output->pixelAt(outputPixelRoD.x1, outputPixelRoD.y1);
     
-    int rowSize = getPixelRoD().width() * components;
+    int rowSize = pixelRoD.width() * components;
     
     int padding = rowSize - (width * components);
     
-    for (int y = 0; y < newHeight; ++y) {
-        for (int x = 0; x < newWidth; ++x) {
+    for (int y = 0; y < pixelRoD.height(); ++y) {
+        for (int x = 0; x < pixelRoD.width(); ++x) {
             for (int k = 0; k < components; ++k) {
                 *dst++ =  (*src +
                         *(src + components) +
