@@ -265,7 +265,7 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  The actual texture seen on the viewport is the rect (5,9,10,6).
  We draw  3*6 strips
  
- 0 ___1___2___3
+ 0___1___2___3
  |  /|  /|  /|
  | / | / | / |
  |/  |/  |/  |
@@ -306,7 +306,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         }
 
     }
-    
     //if user RoI is enabled, clip the rod to that roi
     {
         QMutexLocker l(&_imp->userRoIMutex);

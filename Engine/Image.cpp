@@ -334,7 +334,7 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
 : CacheEntryHelper<float,ImageKey>(makeKey(0,0,mipMapLevel,0),
                                    boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
                                                                                          regionOfDefinition,
-                                                                                         regionOfDefinition.downscalePowerOfTwoLargestEnclosed(mipMapLevel),
+                                                                                         regionOfDefinition.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
                                                                                          false ,
                                                                                          components,
                                                                                          -1,
@@ -363,7 +363,7 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsig
                                                  bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel)
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel)
                                                           ,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 
@@ -554,7 +554,7 @@ void Image::scale_mipmap(const RectI& roi,Natron::Image* output,unsigned int lev
     assert(level > 0);
     
     ///This is the portion we computed in buildMipMapLevel
-    RectI dstRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
+    RectI dstRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
     
     ///Even if the roi is this image's RoD, the
     ///resulting mipmap of that roi should fit into output.
@@ -799,7 +799,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     ///The output image data window
     const RectI& dstRoD = output->getPixelRoD();
 
-    RectI roi_rounded = roi.roundPowerOfTwoLargestEnclosed(level);
+    RectI roi_rounded = roi.roundPowerOfTwoSmallestEnclosing(level);
     
     ///The last mip map level we will make with closestPo2
     RectI lastLevelRoI = roi_rounded.downscalePowerOfTwo(level);
@@ -818,6 +818,15 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     const Natron::Image* srcImg = this;
     Natron::Image* dstImg = NULL;
     bool mustFreeSrc = false;
+    
+    ///The roi isn't a pot. We have to first scale the portion of this image
+    ///to the smallest pot enclosing
+    if (roi != roi_rounded) {
+        Natron::Image* tmpImg = new Natron::Image(getComponents(),roi_rounded,0);
+        scale(roi, tmpImg);
+        srcImg = tmpImg;
+        mustFreeSrc = true;
+    }
 
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 0; i < level; ++i) {

@@ -271,7 +271,7 @@ public:
     }
     
     
-    /// returns true if the rect passed as parameter is intersects this one
+    /// returns true if the rect passed as parameter  intersects this one
     bool intersects(const RectI& r) const {
         if(isNull() || r.isNull()){
             return false;
