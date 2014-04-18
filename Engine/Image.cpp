@@ -454,18 +454,17 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     ///handle case where there is only 1 column/row
     int width = roi.width();
     int height = roi.height();
-    ///The source rectangle, intersected to this image region of definition in pixels
-    RectI srcRoD = roi;
-    srcRoD.intersect(getPixelRoD(), &srcRoD);
-    const RectI& dstRoD = output->getPixelRoD();
-
     if (width == 1 || height == 1) {
         assert( !(width == 1 && height == 1) ); /// can't be 1x1
         halve1DImage(roi,output);
         return;
     }
 
-    // the srcRoD of the output should be enclosed in half the roi.
+    ///The source rectangle, intersected to this image region of definition in pixels
+    const RectI &srcRoD = getPixelRoD();
+    const RectI &dstRoD = output->getPixelRoD();
+
+   // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
     assert(dstRoD.x1*2 >= roi.x1 &&
            dstRoD.x2*2 <= roi.x2 &&
@@ -477,48 +476,57 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     
     int components = getElementsCountForComponents(getComponents());
 
-    RectI srcRoi = roi.roundPowerOfTwoLargestEnclosed(1);
-    RectI dstRoi = srcRoi.downscalePowerOfTwo(1);
-    assert(srcRoi.x1 >= srcRoD.x1);
-    assert(srcRoi.x2 <= srcRoD.x2);
-    assert(srcRoi.y1 >= srcRoD.y1);
-    assert(srcRoi.y2 <= srcRoD.y2);
-    assert(srcRoi.x1 >= dstRoD.x1*2);
-    assert(srcRoi.x2 <= dstRoD.x2*2);
-    assert(srcRoi.y1 >= dstRoD.y1*2);
-    assert(srcRoi.y2 <= dstRoD.y2*2);
-    assert(srcRoi.x1 == dstRoi.x1*2);
-    assert(srcRoi.x2 == dstRoi.x2*2);
-    assert(srcRoi.y1 == dstRoi.y1*2);
-    assert(srcRoi.y2 == dstRoi.y2*2);
-    assert(srcRoi.width() == dstRoi.width()*2);
-    assert(srcRoi.height() == dstRoi.height()*2);
+    RectI srcRoI = roi;
+    srcRoI.intersect(srcRoD, &srcRoI); // interset srcRoI with the region of definition
+    srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
+    RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
+    // a few checks...
+    // srcRoI must be inside srcRoD
+    assert(srcRoI.x1 >= srcRoD.x1);
+    assert(srcRoI.x2 <= srcRoD.x2);
+    assert(srcRoI.y1 >= srcRoD.y1);
+    assert(srcRoI.y2 <= srcRoD.y2);
+    // srcRoI must be inside dstRoD*2
+    assert(srcRoI.x1 >= dstRoD.x1*2);
+    assert(srcRoI.x2 <= dstRoD.x2*2);
+    assert(srcRoI.y1 >= dstRoD.y1*2);
+    assert(srcRoI.y2 <= dstRoD.y2*2);
+    // srcRoI must be equal to dstRoI*2
+    assert(srcRoI.x1 == dstRoI.x1*2);
+    assert(srcRoI.x2 == dstRoI.x2*2);
+    assert(srcRoI.y1 == dstRoI.y1*2);
+    assert(srcRoI.y2 == dstRoI.y2*2);
+    assert(srcRoI.width() == dstRoI.width()*2);
+    assert(srcRoI.height() == dstRoI.height()*2);
 
-    //int srcWidth = srcRoi.width();
-    //int srcHeight = srcRoi.height();
-    int dstWidth = dstRoi.width();
-    int dstHeight = dstRoi.height();
-    const float* src = pixelAt(srcRoi.x1, srcRoi.y1);
-    float* dst = output->pixelAt(dstRoi.x1, dstRoi.y1);
+    //int srcWidth = srcRoI.width();
+    //int srcHeight = srcRoI.height();
+    int dstWidth = dstRoI.width();
+    int dstHeight = dstRoI.height();
+    const float* src = pixelAt(srcRoI.x1, srcRoI.y1);
+    float* dst = output->pixelAt(dstRoI.x1, dstRoI.y1);
     
-    int srcRowSize = getPixelRoD().width() * components;
+    int srcRowSize = srcRoD.width() * components;
     int dstRowSize = dstRoD.width() * components;
-    int srcPadding = srcRowSize - (width * components);
-    int dstPadding = dstRowSize - (dstWidth * components);
-    
+
+    // Loop with sliding pointers:
+    // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
+    // This is the *good* way to code it, let the optimizer do the rest!
+    // Please don't change this, and don't remove the comments.
     for (int y = 0; y < dstHeight;
          ++y,
-         src += (srcRowSize + srcPadding),
-         dst += dstPadding) {
+         src += (srcRowSize+srcRowSize) - width*components, // two rows minus what was done on previous iteration
+         dst += (dstRowSize) - dstWidth*components) { // one row minus what was done on previous iteration
         for (int x = 0; x < dstWidth;
              ++x,
-             src += components) {
-            assert(dstRoD.x1 <= dstRoi.x1+x && dstRoi.x1+x < dstRoD.x2);
-            assert(dstRoD.y1 <= dstRoi.y1+y && dstRoi.y1+y < dstRoD.y2);
-            assert(dst == output->pixelAt(dstRoi.x1+x, dstRoi.y1+y));
-            assert(srcRoD.x1 <= srcRoi.x1+2*x && srcRoi.x1+2*x < srcRoD.x2);
-            assert(srcRoD.y1 <= srcRoi.y1+2*y && srcRoi.y1+2*y < srcRoD.y2);
-            assert(src == pixelAt(srcRoi.x1+2*x, srcRoi.y1+2*y));
+             src += (components+components) - components, // two pixels minus what was done on previous iteration
+             dst += (components) - components) { // one pixel minus what was done on previous iteration
+            assert(dstRoD.x1 <= dstRoI.x1+x && dstRoI.x1+x < dstRoD.x2);
+            assert(dstRoD.y1 <= dstRoI.y1+y && dstRoI.y1+y < dstRoD.y2);
+            assert(dst == output->pixelAt(dstRoI.x1+x, dstRoI.y1+y));
+            assert(srcRoD.x1 <= srcRoI.x1+2*x && srcRoI.x1+2*x < srcRoD.x2);
+            assert(srcRoD.y1 <= srcRoI.y1+2*y && srcRoI.y1+2*y < srcRoD.y2);
+            assert(src == pixelAt(srcRoI.x1+2*x, srcRoI.y1+2*y));
             for (int k = 0; k < components; ++k, ++dst, ++src) {
                 *dst = (*src +
                         *(src + components) +
