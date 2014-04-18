@@ -362,6 +362,18 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
     
+    if (mipMapLevel > 0) {
+        ///texRect is the roi upscaled to a mipmaplevel of 0
+        ///We compute the difference between the real scaled RoD and  POT rectangle (texRect)
+        ///We normalize the results in texture coordinates
+        double xOffset = (texRect.width() / (double)mipMapLevel - rod.width() / (double)mipMapLevel) / (double)(r.x2 - r.x1);
+        if (xOffset < 0) xOffset = 0;
+        double yOffset = (texRect.height() / (double)mipMapLevel - rod.height() / (double)mipMapLevel) / (double)(r.y2 - r.y1);
+        if (yOffset < 0) yOffset = 0;
+        
+        texTop -= yOffset;
+        texRight -= xOffset;
+    }
     // texTop = texTop > 1 ? 1 : texTop;
     //  texRight = texRight > 1 ? 1 : texRight;
     
