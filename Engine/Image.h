@@ -236,14 +236,18 @@ namespace Natron {
         void copy(const Natron::Image& other,const RectI& roi,bool copyBitmap = true);
         
         /**
-         * @brief Scales a portion of this image into output.
-         * This function will adjust roi to the nearest power of two rectangle
+         * @brief Downscales a portion of this image into output.
+         * This function will adjust roi to the largest enclosed rectangle for the
+         * given mipmap level,
          * and then computes the mipmap of the given level of that rectangle.
-         * The resulting mipmap will then be scaled into output using the
-         * scale_box_generic(...) function.
          **/
-        void downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const;
-        
+        void downscale_mipmap(const RectI& roi, Natron::Image* output, unsigned int level) const;
+
+        /**
+         * @brief Upscales a portion of this image into output.
+         **/
+        void upscale_mipmap(const RectI& roi, Natron::Image* output, unsigned int level) const;
+
         /**
          * @brief Scales the roi of this image to the size of the output image.
          * This is used internally by buildMipMapLevel when the image is a NPOT.

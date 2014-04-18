@@ -568,6 +568,47 @@ void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int
     delete tmpImg;
 }
 
+void Image::upscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const
+{
+    ///You should not call this function with a level equal to 0.
+    assert(level > 0);
+
+    ///The source rectangle, intersected to this image region of definition in pixels
+    RectI srcRod = roi;
+    srcRod.intersect(getPixelRoD(), &srcRod);
+
+    RectI dstRod = roi.upscalePowerOfTwo(level);
+    unsigned int scale = 1 << level;
+
+    const float *src = pixelAt(srcRod.x1, srcRod.y1);
+    float* dst = output->pixelAt(dstRod.x1, dstRod.y1);
+
+    assert(output->getComponents() == getComponents());
+    int components = getElementsCountForComponents(getComponents());
+
+    int srcRowSize = getPixelRoD().width() * components;
+    int dstRowSize = output->getPixelRoD().width() * components;
+
+
+    for (int y = 0; y < srcRod.height(); ++y) {
+        const float *srcLineStart = src + y*srcRowSize;
+        float *dstLineStart = dst + y*scale*dstRowSize;
+        for (int x = 0; x < srcRod.height(); ++x) {
+            const float *srcPix = srcLineStart + x*components;
+            float *dstPix = dstLineStart + x*scale*components;
+            for (unsigned int j = 0; j < scale; ++j) {
+                float *dstSubPixLineStart = dstPix + j*dstRowSize;
+                for (unsigned int i = 0; i < scale; ++i) {
+                    float *dstSubPix = dstSubPixLineStart + i*components;
+                    for (int c = 0; c < components; ++c) {
+                        dstSubPix[c] = srcPix[c];
+                    }
+                }
+            }
+        }
+    }
+}
+
 //Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by
 //buildMipMapLevel
 void Image::scale_box_generic(const RectI& roi,Natron::Image* output) const
