@@ -419,7 +419,9 @@ void KnobHelper::setSpacingBetweenItems(int spacing)
 void KnobHelper::setEnabled(int dimension,bool b)
 {
     _imp->_enabled[dimension] = b;
-    _signalSlotHandler->s_enabledChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_enabledChanged();
+    }
 }
 
 void KnobHelper::setAllDimensionsEnabled(bool b)
@@ -433,7 +435,9 @@ void KnobHelper::setAllDimensionsEnabled(bool b)
 void KnobHelper::setSecret(bool b)
 {
     _imp->_IsSecret = b;
-    _signalSlotHandler->s_secretChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_secretChanged();
+    }
 }
 
 int KnobHelper::determineHierarchySize() const

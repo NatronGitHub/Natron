@@ -79,6 +79,9 @@ struct ValueSerialization
         ///Make sure the knob is one of these types
         assert(isInt || isBool || isDouble || isChoice || isString || isFile || isOutputFile || isPath || isColor || isParametric);
         
+        bool enabled = _knob->isEnabled(_dimension);
+        ar & boost::serialization::make_nvp("Enabled",enabled);
+        
         bool hasAnimation = _knob->isAnimated(_dimension);
         ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
         if (hasAnimation) {
@@ -147,6 +150,10 @@ struct ValueSerialization
         
         ///Make sure the knob is one of these types
         assert(isInt || isBool || isDouble || isChoice || isString || isFile || isOutputFile || isPath || isColor || isParametric);
+        
+        bool enabled;
+        ar & boost::serialization::make_nvp("Enabled",enabled);
+        _knob->setEnabled(_dimension, enabled);
         
         bool hasAnimation;
         ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
@@ -235,6 +242,8 @@ class KnobSerialization
         
         ar & boost::serialization::make_nvp("Dimension",_dimension);
 
+        bool secret = _knob->getIsSecret();
+        ar & boost::serialization::make_nvp("Secret",secret);
         
         for (int i = 0; i < _knob->getDimension(); ++i) {
             ValueSerialization vs(_knob,i,true);
@@ -265,6 +274,7 @@ class KnobSerialization
         ar & boost::serialization::make_nvp("Type",_typeName);
         
         ar & boost::serialization::make_nvp("Dimension",_dimension);
+        
 
         assert(!_knob);
         
@@ -273,6 +283,11 @@ class KnobSerialization
             return;
         }
         _knob->setName(name);
+        
+        
+        bool secret;
+        ar & boost::serialization::make_nvp("Secret",secret);
+        _knob->setSecret(secret);
         
         boost::shared_ptr<AnimatingString_KnobHelper> isStringAnimated = boost::dynamic_pointer_cast<AnimatingString_KnobHelper>(_knob);
         boost::shared_ptr<File_Knob> isFile = boost::dynamic_pointer_cast<File_Knob>(_knob);

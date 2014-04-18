@@ -709,8 +709,10 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
     for (int i = 0; i < getDimension();++i) {
         getCurve(i)->clone(*other->getCurve(i));
         _signalSlotHandler->s_valueChanged(i);
+        setEnabled(i, other->isEnabled(i));
     }
     cloneExtraData(other);
+    setSecret(other->getIsSecret());
 }
 
 
