@@ -570,7 +570,7 @@ void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int
 
 //Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by
 //buildMipMapLevel
-void Image::upscale_nearest(const RectI& roi,Natron::Image* output) const
+void Image::scale_box_generic(const RectI& roi,Natron::Image* output) const
 {
     ///The destination rectangle
     const RectI& dstRod = output->getPixelRoD();
@@ -823,7 +823,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
 #pragma message WARN("WHY?")
     if (roi != roi_rounded) {
         Natron::Image* tmpImg = new Natron::Image(getComponents(),roi_rounded,0);
-        upscale_nearest(roi, tmpImg);
+        scale_box_generic(roi, tmpImg);
         srcImg = tmpImg;
         mustFreeSrc = true;
     }

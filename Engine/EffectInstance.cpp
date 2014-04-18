@@ -528,7 +528,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             
             ///Allocate the upscaled image
             boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,cachedImgParams->getRoD(),0));
-            downscaledImage->upscale_nearest(downscaledImage->getPixelRoD(),upscaledImage.get());
+            downscaledImage->scale_box_generic(downscaledImage->getPixelRoD(),upscaledImage.get());
             image = upscaledImage;
         }
         
