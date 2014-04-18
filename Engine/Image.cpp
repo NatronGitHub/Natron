@@ -449,13 +449,15 @@ const float* Image::pixelAt(int x,int y) const {
     }
 }
 
-void Image::halveImage(const RectI& roi,Natron::Image* output) const
+void Image::halveRoI(const RectI& roi,Natron::Image* output) const
 {
     ///handle case where there is only 1 column/row
     int width = roi.width();
     int height = roi.height();
-    const RectI& pixelRoD = getPixelRoD();
-    const RectI& outputPixelRoD = output->getPixelRoD();
+    ///The source rectangle, intersected to this image region of definition in pixels
+    RectI srcRoD = roi;
+    srcRoD.intersect(getPixelRoD(), &srcRoD);
+    const RectI& dstRoD = output->getPixelRoD();
 
     if (width == 1 || height == 1) {
         assert( !(width == 1 && height == 1) ); /// can't be 1x1
@@ -463,38 +465,66 @@ void Image::halveImage(const RectI& roi,Natron::Image* output) const
         return;
     }
 
-    // the pixelRoD of the output should be enclosed in half the roi.
+    // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
-    assert(outputPixelRoD.x1*2 >= roi.x1 &&
-           outputPixelRoD.x2*2 <= roi.x2 &&
-           outputPixelRoD.y1*2 >= roi.y1 &&
-           outputPixelRoD.y2*2 <= roi.y2 &&
-           outputPixelRoD.width()*2 <= width &&
-           outputPixelRoD.height()*2 <= height);
+    assert(dstRoD.x1*2 >= roi.x1 &&
+           dstRoD.x2*2 <= roi.x2 &&
+           dstRoD.y1*2 >= roi.y1 &&
+           dstRoD.y2*2 <= roi.y2 &&
+           dstRoD.width()*2 <= width &&
+           dstRoD.height()*2 <= height);
     assert(getComponents() == output->getComponents());
     
     int components = getElementsCountForComponents(getComponents());
+
+    RectI srcRoi = roi.roundPowerOfTwoLargestEnclosed(1);
+    RectI dstRoi = srcRoi.downscalePowerOfTwo(1);
+    assert(srcRoi.x1 >= srcRoD.x1);
+    assert(srcRoi.x2 <= srcRoD.x2);
+    assert(srcRoi.y1 >= srcRoD.y1);
+    assert(srcRoi.y2 <= srcRoD.y2);
+    assert(srcRoi.x1 >= dstRoD.x1*2);
+    assert(srcRoi.x2 <= dstRoD.x2*2);
+    assert(srcRoi.y1 >= dstRoD.y1*2);
+    assert(srcRoi.y2 <= dstRoD.y2*2);
+    assert(srcRoi.x1 == dstRoi.x1*2);
+    assert(srcRoi.x2 == dstRoi.x2*2);
+    assert(srcRoi.y1 == dstRoi.y1*2);
+    assert(srcRoi.y2 == dstRoi.y2*2);
+    assert(srcRoi.width() == dstRoi.width()*2);
+    assert(srcRoi.height() == dstRoi.height()*2);
+
+    int srcWidth = srcRoi.width();
+    int srcHeight = srcRoi.height();
+    int dstWidth = dstRoi.width();
+    int dstHeight = dstRoi.height();
+    const float* src = pixelAt(srcRoi.x1, srcRoi.y1);
+    float* dst = output->pixelAt(dstRoi.x1, dstRoi.y1);
     
-    const float* src = pixelAt(roi.x1, roi.y1);
-    float* dst = output->pixelAt(outputPixelRoD.x1, outputPixelRoD.y1);
-    
-    int rowSize = pixelRoD.width() * components;
-    
-    int padding = rowSize - (width * components);
-    
-    for (int y = 0; y < pixelRoD.height(); ++y) {
-        for (int x = 0; x < pixelRoD.width(); ++x) {
-            for (int k = 0; k < components; ++k) {
-                *dst++ =  (*src +
+    int srcRowSize = srcRoD.width() * components;
+    int dstRowSize = dstRoD.width() * components;
+
+    for (int y = 0; y < dstHeight;
+         ++y,
+         src += srcRowSize+srcRowSize - (dstWidth*2*components),
+         dst += dstRowSize - (dstWidth*components)) {
+        for (int x = 0; x < dstWidth;
+             ++x,
+             src += components+components - components,
+             dst += components - components) {
+            assert(dstRoD.x1 <= dstRoi.x1+x && dstRoi.x1+x < dstRoD.x2);
+            assert(dstRoD.y1 <= dstRoi.y1+y && dstRoi.y1+y < dstRoD.y2);
+            assert(dst == output->pixelAt(dstRoi.x1+x, dstRoi.y1+y));
+            assert(srcRoD.x1 <= srcRoi.x1+2*x && srcRoi.x1+2*x < srcRoD.x2);
+            assert(srcRoD.y1 <= srcRoi.y1+2*y && srcRoi.y1+2*y < srcRoD.y2);
+            assert(src == pixelAt(srcRoi.x1+2*x, srcRoi.y1+2*y));
+            for (int k = 0; k < components; ++k, ++dst, ++src) {
+                *dst = (*src +
                         *(src + components) +
-                        *(src + rowSize) +
-                        *(src + rowSize  + components)) / 4;
-                ++src;
+                        *(src + srcRowSize) +
+                        *(src + srcRowSize  + components)) / 4;
             }
-            src += components;
         }
-        src += padding;
-        src += rowSize;
     }
 }
 
@@ -625,7 +655,7 @@ void Image::scale_box_generic(const RectI& roi,Natron::Image* output) const
         srcRod.x2 == 2 * dstRod.x2 &&
         srcRod.y1 == 2 * dstRod.y1 &&
         srcRod.y2 == 2 * dstRod.y2) {
-        halveImage(srcRod,output);
+        halveRoI(srcRod,output);
         return;
     }
     
@@ -839,7 +869,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     ///The output image data window
     const RectI& dstRoD = output->getPixelRoD();
 
-    RectI roi_rounded = roi.roundPowerOfTwoSmallestEnclosing(level);
+    RectI roi_rounded = roi.roundPowerOfTwoLargestEnclosed(level);
     
     ///The last mip map level we will make with closestPo2
     RectI lastLevelRoI = roi_rounded.downscalePowerOfTwo(level);
@@ -859,16 +889,6 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     Natron::Image* dstImg = NULL;
     bool mustFreeSrc = false;
     
-    ///The roi isn't a pot. We have to first scale the portion of this image
-    ///to the smallest pot enclosing
-#pragma message WARN("WHY?")
-    if (roi != roi_rounded) {
-        Natron::Image* tmpImg = new Natron::Image(getComponents(),roi_rounded,0);
-        scale_box_generic(roi, tmpImg);
-        srcImg = tmpImg;
-        mustFreeSrc = true;
-    }
-
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 0; i < level; ++i) {
         
@@ -881,7 +901,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveImage(roi_rounded, dstImg);
+        srcImg->halveRoI(roi_rounded, dstImg);
         
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {

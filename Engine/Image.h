@@ -272,12 +272,13 @@ namespace Natron {
         
         
         /**
-         * @brief Halve the roi of this image into output.
+         * @brief Halve the given roi of this image into output.
+         * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
          **/
-        void halveImage(const RectI& roi,Natron::Image* output) const;
+        void halveRoI(const RectI& roi,Natron::Image* output) const;
         
         /**
-         * @brief Same as halveImage but for 1D only (either width == 1 or height == 1)
+         * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
          **/
         void halve1DImage(const RectI& roi,Natron::Image* output) const;
     };    
