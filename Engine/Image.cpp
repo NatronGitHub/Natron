@@ -494,8 +494,8 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     assert(srcRoi.width() == dstRoi.width()*2);
     assert(srcRoi.height() == dstRoi.height()*2);
 
-    int srcWidth = srcRoi.width();
-    int srcHeight = srcRoi.height();
+    //int srcWidth = srcRoi.width();
+    //int srcHeight = srcRoi.height();
     int dstWidth = dstRoi.width();
     int dstHeight = dstRoi.height();
     const float* src = pixelAt(srcRoi.x1, srcRoi.y1);
