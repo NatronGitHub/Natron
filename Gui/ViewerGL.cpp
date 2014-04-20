@@ -290,9 +290,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
     
-    if (mipMapLevel != 0) {
-        texRect = texRect.upscalePowerOfTwo(mipMapLevel);
-    }
+    
     ///the RoD of the iamge
     RectI rod = getRoD();
     {
@@ -306,6 +304,21 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         }
 
     }
+    
+    double texXOffset = 0,texYOffset = 0;
+    if (mipMapLevel != 0) {
+        texRect = texRect.upscalePowerOfTwo(mipMapLevel);
+        RectI texRectClipped;
+        texRect.intersect(rod, &texRectClipped);
+        RectI largestEnclosedRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+        texXOffset = (double)(r.x2 - largestEnclosedRoD.x2) / r.w;
+        if (texXOffset < 0) texXOffset = 0;
+        texYOffset = (double)(r.y2 - largestEnclosedRoD.y2) / r.h;
+        if (texYOffset < 0) texYOffset = 0;
+        texRect = texRectClipped;
+        
+    }
+    
     //if user RoI is enabled, clip the rod to that roi
     {
         QMutexLocker l(&_imp->userRoIMutex);
@@ -316,23 +329,29 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
             }
         }
     }
-   
-    /*setup the scissor box to paint only what's contained in the project's window*/
-    QPointF scissorBoxBtmLeft, scissorBoxTopRight;
+    
     {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        scissorBoxBtmLeft = _imp->zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
-        scissorBoxTopRight = _imp->zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
+        /*setup the scissor box to paint only what's contained in the project's window*/
+        QPointF scissorBoxBtmLeft, scissorBoxTopRight;
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            scissorBoxBtmLeft = _imp->zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
+            scissorBoxTopRight = _imp->zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
+        }
+        
+        /*invert y coordinate as OpenGL expects btm left corner to be 0,0*/
+        scissorBoxBtmLeft.ry() = height() - scissorBoxBtmLeft.ry();
+        scissorBoxTopRight.ry() = height() - scissorBoxTopRight.ry();
+        
+        int scissorBoxBtmLeftX_int = std::floor(scissorBoxBtmLeft.x());
+        int scissorBoxBtmLeftY_int = std::floor(scissorBoxBtmLeft.y());
+        int scissorBoxTopRightX_int = std::ceil(scissorBoxTopRight.x());
+        int scissorBoxTopRightY_int = std::ceil(scissorBoxTopRight.y());
+        
+        glScissor(scissorBoxBtmLeftX_int,scissorBoxBtmLeftY_int,scissorBoxTopRightX_int - scissorBoxBtmLeftX_int,
+                  scissorBoxTopRightY_int - scissorBoxBtmLeftY_int);
+        
     }
-
-    /*invert y coordinate as OpenGL expects btm left corner to be 0,0*/
-    scissorBoxBtmLeft.ry() = height() - scissorBoxBtmLeft.ry();
-    scissorBoxTopRight.ry() = height() - scissorBoxTopRight.ry();
-    
-    glScissor(scissorBoxBtmLeft.x(),scissorBoxBtmLeft.y(),scissorBoxTopRight.x() - scissorBoxBtmLeft.x(),
-              scissorBoxTopRight.y() - scissorBoxBtmLeft.y());
-    
-    
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -352,32 +371,14 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         (GLfloat)texRect.x2,  (GLfloat)rod.bottom(), //14
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
-
-   // std::cout << "ViewerGL: x1= " << r.x1 << " x2= " << r.x2 << " y1= " << r.y1 << " y2= " << r.y2 << std::endl;
-
     
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
     texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
-    
-    if (mipMapLevel > 0) {
-        ///texRect is the roi upscaled to a mipmaplevel of 0
-        ///We compute the difference between the real scaled RoD and  POT rectangle (texRect)
-        ///We normalize the results in texture coordinates
-        double xOffset = (texRect.width() / (double)mipMapLevel - rod.width() / (double)mipMapLevel) / (double)(r.x2 - r.x1);
-        if (xOffset < 0) xOffset = 0;
-        double yOffset = (texRect.height() / (double)mipMapLevel - rod.height() / (double)mipMapLevel) / (double)(r.y2 - r.y1);
-        if (yOffset < 0) yOffset = 0;
-        
-        texTop -= yOffset;
-        texRight -= xOffset;
-    }
-    // texTop = texTop > 1 ? 1 : texTop;
-    //  texRight = texRight > 1 ? 1 : texRight;
-    
-    
+    texTop -= texYOffset;
+    texRight -= texXOffset;
     GLfloat renderingTextureCoordinates[32] = {
         texLeft , texTop , //0
         texLeft , texTop , //1
@@ -629,8 +630,8 @@ void ViewerGL::paintGL()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
-        // GLfloat d;
-        //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        //GLfloat d;
+        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if (_imp->supportsGLSL) {
             activateShaderRGB();
         }

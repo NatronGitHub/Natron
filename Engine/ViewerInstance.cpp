@@ -445,8 +445,12 @@ ViewerInstance::renderViewer(SequenceTime time,
     zoomFactor /= scale.x;
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2.)));
 
+    ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
+    ///The roi is then in pixel coordinates.
     RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD);
 
+    ////Texrect is the coordinates of the 4 corners of the texture in the pixelRoD with the current zoom
+    ////factor taken into account.
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
     texRect.x1 = std::floor(((double)roi.x1 / closestPowerOf2) / tileSize) * tileSize;
@@ -458,13 +462,18 @@ ViewerInstance::renderViewer(SequenceTime time,
         return StatOK;
     }
     
+    ///TexRectClipped is the same as texRect but without the zoom factor taken into account
     RectI texRectClipped = texRect;
     texRectClipped.x1 *= closestPowerOf2;
     texRectClipped.x2 *= closestPowerOf2;
     texRectClipped.y1 *= closestPowerOf2;
     texRectClipped.y2 *= closestPowerOf2;
+    
+    ///Make sure the bounds of the area to render in the texture lies in the pixelRoD
     texRectClipped.intersect(pixelRoD, &texRectClipped);
     
+    ///The width and height of the texture is the width of texRect clamped to the
+    ///pixelRoD
     int texW = texRect.width() > pixelRoD.width() ? pixelRoD.width() : texRect.width();
     int texH = texRect.height() > pixelRoD.height() ? pixelRoD.height() : texRect.height();
     
@@ -653,6 +662,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 _node->notifyInputNIsFinishedRendering(inputIndex);
                 throw;
             }
+            
         }
         
         _node->notifyInputNIsFinishedRendering(inputIndex);
