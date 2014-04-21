@@ -31,7 +31,7 @@ For now only boost serialization is required.
 
 In Natron's source tree's root type:
 
-	git submodule update -i
+	git submodule update -i --recursive
 
 ###*Expat*
 

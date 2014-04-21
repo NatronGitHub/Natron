@@ -25,7 +25,7 @@ For now just boost serialization is required.
 
 Go under Natron and type
 
-	git submodule update -i
+	git submodule update -i --recursive
 
 ###*Expat*
  (The package depends on your distribution).

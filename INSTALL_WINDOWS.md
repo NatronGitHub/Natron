@@ -29,7 +29,7 @@ You'll need to download glew, that provides a recent version of the OpenGL API:
 
 At the source tree's root, type the following command in the command prompt:
 
-	git submodule update -i
+	git submodule update -i --recursive
 	
 (If you cloned the repository with the github app you probably don't need this command.)
 

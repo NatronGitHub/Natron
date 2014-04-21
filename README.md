@@ -48,7 +48,7 @@ platforms not supporting GLSL are also supported
 - Project format written in XML and easily editable by human.
 - The project saves also the layout of the application.
 - Command line tool for execution of project files. The command line version is executable from ssh on a computer without any display.
-- Animation support and possibility to change it with a curve editor
+- Animation support via a curve editor
 - OpenColorIO support via the plug-ins located in  [OpenFX-IO](https://github.com/MrKepzie/openfx-io)
 - OpenImageIO support via the plug-ins located in  [OpenFX-IO](https://github.com/MrKepzie/openfx-io)
 
@@ -80,6 +80,7 @@ Planned features
 
 ### Features planned for future versions
 
+- Node-graph enhancements: "global view" + magnetic grid + pre-comps
 - Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
 - Meta-data support as well as per-plugin meta-data support by the node-graph
 - Graphical user interface colours customisation
