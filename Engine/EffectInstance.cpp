@@ -614,13 +614,13 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
     
     bool renderSucceeded = true;
 
-    
+    bool useFullResImage = !supportsRenderScale() && mipMapLevel != 0;
+
     for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
         RectI &rectToRender = *it;
         
         RectI upscaledRoI = rectToRender;
-        bool useFullResImage = !supportsRenderScale() && mipMapLevel != 0;
         ///Upscale the RoI to a region in the unscaled image
         if (useFullResImage) {
             upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
@@ -730,11 +730,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
             }
         }
-        
-        ///This is passed to the render action to plug-ins that don't support render scale
-        RenderScale scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
-        
+
         switch (safety) {
             case FULLY_SAFE_FRAME: // the plugin will not perform any per frame SMP threading
             {
@@ -786,7 +782,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
                 
                 if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render_public(time, useFullResImage ? scaleOne : scale, upscaledRoI,view,isSequentialRender,
+                    Natron::Status st = render_public(time, scale, upscaledRoI,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction,useFullResImage ? image : downscaledImage);
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
@@ -831,7 +827,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
                 
                 if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render_public(time, useFullResImage ? scaleOne : scale, upscaledRoI,view,isSequentialRender,
+                    Natron::Status st = render_public(time,scale, upscaledRoI,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
@@ -874,7 +870,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
                 
                 if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render_public(time, useFullResImage ? scaleOne : scale, upscaledRoI,view,isSequentialRender,
+                    Natron::Status st = render_public(time,scale, upscaledRoI,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
@@ -942,11 +938,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     
     if (!upscaledRoi.isNull()) {
         
-        ///This is passed to the render action to plug-ins that don't support render scale
-        RenderScale scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
-        
-        Natron::Status st = render_public(args._time, useFullResImage ? scaleOne : args._scale, upscaledRoi, args._view,
+        Natron::Status st = render_public(args._time,args._scale, upscaledRoi, args._view,
                                    args._isSequentialRender,args._isRenderResponseToUserInteraction,
                                    useFullResImage ? output : downscaledOutput);
         if(st != StatOK){

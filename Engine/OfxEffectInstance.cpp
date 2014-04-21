@@ -664,8 +664,17 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     ///before calling render, set the render scale thread storage for each clip
-    effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(scale.x));
-    stat = effect_->renderAction((OfxTime)time, field, ofxRoI, scale,isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
+    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
+    effectInstance()->setClipsMipMapLevel(mipMapLevel);
+    
+    ///This is passed to the render action to plug-ins that don't support render scale
+    RenderScale scaleOne;
+    scaleOne.x = scaleOne.y = 1.;
+    
+    bool useScaleOne = !supportsRenderScale() && mipMapLevel != 0;
+    
+    stat = effect_->renderAction((OfxTime)time, field, ofxRoI,useScaleOne ? scaleOne : scale,
+                                 isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
     if (stat != kOfxStatOK) {
         return StatFailed;
     } else {
