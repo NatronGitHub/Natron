@@ -303,7 +303,7 @@ OFX::Host::ImageEffect::Image(clip)
     // data ptr
     const RectI& pixelrod = internalImage->getPixelRoD();
     const RectI& rod = internalImage->getRoD();
-    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(rod.left(), rod.bottom()));
+    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(pixelrod.left(), pixelrod.bottom()));
     // bounds and rod
     setIntProperty(kOfxImagePropBounds, pixelrod.left(), 0);
     setIntProperty(kOfxImagePropBounds, pixelrod.bottom(), 1);
