@@ -869,10 +869,9 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     ///The output image data window
     const RectI& dstRoD = output->getPixelRoD();
 
-    RectI roi_rounded = roi.roundPowerOfTwoLargestEnclosed(level);
     
     ///The last mip map level we will make with closestPo2
-    RectI lastLevelRoI = roi_rounded.downscalePowerOfTwo(level);
+    RectI lastLevelRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
     
     ///The output image must contain the last level roi
     assert(dstRoD.contains(lastLevelRoI));
@@ -883,17 +882,18 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
         ///Just copy the roi and return
         output->copy(*this, roi);
         return;
-    }
+    } 
 
     const Natron::Image* srcImg = this;
     Natron::Image* dstImg = NULL;
     bool mustFreeSrc = false;
     
+    RectI previousRoI = roi;
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 0; i < level; ++i) {
         
         ///Halve the closestPo2 rect
-        RectI halvedRoI = roi_rounded.downscalePowerOfTwo(1);
+        RectI halvedRoI = roi.downscalePowerOfTwoLargestEnclosed(i);
         
         ///Allocate an image with half the size of the source image
         dstImg = new Natron::Image(getComponents(),halvedRoI,0);
@@ -901,7 +901,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveRoI(roi_rounded, dstImg);
+        srcImg->halveRoI(previousRoI, dstImg);
         
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {
@@ -909,7 +909,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
         }
         
         ///Switch for next pass
-        roi_rounded = halvedRoI;
+        previousRoI = halvedRoI;
         srcImg = dstImg;
         mustFreeSrc = true;
     }
