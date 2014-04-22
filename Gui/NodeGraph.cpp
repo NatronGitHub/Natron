@@ -257,12 +257,10 @@ void NodeGraph::onProjectNodesCleared() {
     deselect();
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
-        (*it)->deleteChildrenReferences();
-        //        getGui()->getCurveEditor()->removeNode(n);
-
+        (*it)->deleteReferences();
     }
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodesTrash.begin(); it!=_nodesTrash.end(); ++it) {
-        (*it)->deleteChildrenReferences();
+        (*it)->deleteReferences();
     }
     _nodes.clear();
     _nodesTrash.clear();
@@ -1768,8 +1766,12 @@ void NodeGraph::deleteNodePermanantly(const boost::shared_ptr<NodeGui>& n)
     
     ///now that we made the command dirty, delete the node everywhere in Natron
     getGui()->getApp()->deleteNode(n);
+
+    if (n->getNode()->isRotoNode()) {
+        getGui()->removeRotoInterface(n.get(),true);
+    }
     getGui()->getCurveEditor()->removeNode(n);
-    n->deleteChildrenReferences();
+    n->deleteReferences();
     if (_nodeSelected == n) {
         deselect();
     }

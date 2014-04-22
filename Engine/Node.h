@@ -138,6 +138,16 @@ public:
     bool isOpenFXNode() const;
     
     /**
+     * @brief Returns true if the node is either a roto or rotopaint node
+     **/
+    bool isRotoNode() const;
+    
+    /**
+     * @brief Returns true if the node is a rotopaint node
+     **/
+    bool isRotoPaintingNode() const;
+    
+    /**
      * @brief Forwarded to the live effect instance
      **/
     virtual int maximumInputs() const ;

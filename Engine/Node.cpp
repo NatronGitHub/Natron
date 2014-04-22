@@ -1142,6 +1142,24 @@ bool Node::isOpenFXNode() const
     return _imp->liveInstance->isOpenFX();
 }
 
+bool Node::isRotoNode() const
+{
+    ///Runs only in the main thread (checked by getName())
+    ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
+    QString name = getName().c_str();
+    return name.contains("roto",Qt::CaseInsensitive);
+}
+
+/**
+ * @brief Returns true if the node is a rotopaint node
+ **/
+bool Node::isRotoPaintingNode() const
+{
+    ///Runs only in the main thread (checked by getName())
+    QString name = getName().c_str();
+    return name.contains("rotopaint",Qt::CaseInsensitive);
+}
+
 const std::vector< boost::shared_ptr<KnobI> >& Node::getKnobs() const
 {
     ///MT-safe from EffectInstance::getKnobs()

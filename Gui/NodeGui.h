@@ -67,7 +67,7 @@ public:
     /**
      * @brief Called by NodeGraph::clearExceedingUndoRedoEvents when we want to delete a node.
      **/
-    void deleteChildrenReferences();
+    void deleteReferences();
     
     ~NodeGui() OVERRIDE;
     

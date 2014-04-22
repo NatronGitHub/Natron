@@ -232,7 +232,7 @@ QSize NodeGui::nodeSize(bool withPreview) {
 
 NodeGui::~NodeGui(){
     
-    deleteChildrenReferences();
+    deleteReferences();
     
     delete _selectedGradient;
     delete _defaultGradient;
@@ -633,6 +633,12 @@ void NodeGui::deactivate() {
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
         _graph->getGui()->deactivateViewerTab(viewer);
     }
+    
+    if (_internalNode->isRotoNode()) {
+        _graph->getGui()->removeRotoInterface(this, false);
+    }
+    
+    
     if(_internalNode->isOpenFXNode()){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->endInstanceEditAction();
@@ -977,7 +983,7 @@ void NodeGui::refreshOutputEdgeVisibility() {
     }
 }
 
-void NodeGui::deleteChildrenReferences()
+void NodeGui::deleteReferences()
 {
     for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
         Edge* e = it->second;
@@ -1007,5 +1013,4 @@ void NodeGui::deleteChildrenReferences()
         delete _settingsPanel;
         _settingsPanel = NULL;
     }
-
 }

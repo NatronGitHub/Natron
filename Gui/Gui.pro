@@ -71,6 +71,7 @@ SOURCES += \
     QtDecoder.cpp \
     QtEncoder.cpp \
     RenderingProgressDialog.cpp \
+    RotoGui.cpp \
     ScaleSliderQWidget.cpp \
     SequenceFileDialog.cpp \
     Shaders.cpp \
@@ -121,6 +122,7 @@ HEADERS += \
     QtDecoder.h \
     QtEncoder.h \
     RenderingProgressDialog.h \
+    RotoGui.h \
     ScaleSliderQWidget.h \
     SequenceFileDialog.h \
     Shaders.h \
@@ -189,7 +191,6 @@ HEADERS += \
     ../Engine/ProjectPrivate.h \
     ../Engine/ProjectSerialization.h \
     ../Engine/Rect.h \
-    ../Engine/SequenceParsing.h \
     ../Engine/Settings.h \
     ../Engine/Singleton.h \
     ../Engine/StandardPaths.h \

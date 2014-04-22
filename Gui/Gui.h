@@ -49,6 +49,7 @@ class DockablePanel;
 class NodeGraph;
 class CurveEditor;
 class Histogram;
+class RotoGui;
 
 //Natron engine
 class ViewerInstance;
@@ -267,6 +268,21 @@ public:
 
     const QString& getQtVersion() const;
 
+    /**
+     * @brief Make a new rotoscoping/painting interface for the given node.
+     * This will create new widgets and enrich the interface of the viewer tab.
+     **/
+    void createNewRotoInterface(NodeGui* n);
+    
+    /**
+     * @brief Set the RotoGui for the node n to be active on all viewers.
+     **/
+    void setRotoInterface(NodeGui* n);
+    
+    /**
+     * @brief Called by Gui::deactivateRotoInterface and by NodeGraph::deleteNodePermanantly
+     **/
+    void removeRotoInterface(NodeGui* n,bool permanantly);
     
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/

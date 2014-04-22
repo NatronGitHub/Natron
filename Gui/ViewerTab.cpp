@@ -23,6 +23,7 @@
 #include <QAbstractItemView>
 #include <QCheckBox>
 #include <QCoreApplication>
+#include <QToolBar>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
@@ -51,6 +52,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ClickableLabel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/RotoGui.h"
 
 using namespace Natron;
 
@@ -58,6 +60,9 @@ struct ViewerTabPrivate {
     
     /*OpenGL viewer*/
 	ViewerGL* viewer;
+    
+    QWidget* _viewerContainer;
+    QHBoxLayout* _viewerLayout;
     
     QVBoxLayout* _mainLayout;
     
@@ -114,6 +119,8 @@ struct ViewerTabPrivate {
 	/*frame seeker*/
     TimeLineGui* _timeLineGui;
     
+    std::map<NodeGui*,RotoGui*> _rotoNodes;
+    std::pair<NodeGui*,RotoGui*> _currentRoto;
     
     Gui* _gui;
     
@@ -124,11 +131,16 @@ struct ViewerTabPrivate {
     , _gui(gui)
     , _viewerNode(node)
     {
-        
+        _currentRoto.first = NULL;
+        _currentRoto.second = NULL;
     }
 };
 
-ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
+ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
+                     NodeGui* currentRoto,
+                     Gui* gui,
+                     ViewerInstance* node,
+                     QWidget* parent)
 : QWidget(parent)
 , _imp(new ViewerTabPrivate(gui,node))
 {
@@ -294,8 +306,15 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     /*=============================================*/
     
     /*OpenGL viewer*/
+    _imp->_viewerContainer = new QWidget(this);
+    _imp->_viewerLayout = new QHBoxLayout(_imp->_viewerContainer);
+    _imp->_viewerLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->_viewerLayout->setSpacing(0);
     _imp->viewer = new ViewerGL(this);
-    _imp->_mainLayout->addWidget(_imp->viewer);
+    
+    _imp->_viewerLayout->addWidget(_imp->viewer);
+    
+    _imp->_mainLayout->addWidget(_imp->_viewerContainer);
     /*=============================================*/
     /*info bbox & color*/
     _imp->_infosWidget = new InfoViewerWidget(_imp->viewer,this);
@@ -602,6 +621,14 @@ ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent)
     QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),_imp->_autoContrast,SLOT(setChecked(bool)));
     QObject::connect(_imp->_renderScaleCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(onRenderScaleComboIndexChanged(int)));
     QObject::connect(_imp->_activateRenderScale,SIGNAL(clicked(bool)),this,SLOT(onRenderScaleButtonClicked(bool)));
+    
+    
+    for (std::list<NodeGui*>::const_iterator it = existingRotoNodes.begin(); it!=existingRotoNodes.end(); ++it) {
+        createRotoInterface(*it);
+    }
+    if (currentRoto) {
+        setRotoInterface(currentRoto);
+    }
 }
 
 void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
@@ -913,6 +940,9 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
         return;
     }
 
+    if (_imp->_currentRoto.second) {
+        _imp->_currentRoto.second->drawOverlays(scaleX, scaleY);
+    }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
@@ -929,6 +959,12 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
     
     if (_imp->_gui->isClosing()) {
         return false;
+    }
+    
+    if (_imp->_currentRoto.second) {
+        if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
     }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
@@ -955,6 +991,13 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
     if (_imp->_gui->isClosing()) {
         return false;
     }
+    
+    if (_imp->_currentRoto.second) {
+        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
+    }
+    
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
         if ((*it)->isSettingsPanelVisible()) {
@@ -977,6 +1020,12 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
     
     if (_imp->_gui->isClosing()) {
         return false;
+    }
+    
+    if (_imp->_currentRoto.second) {
+        if (_imp->_currentRoto.second->penUp(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
     }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
@@ -1003,6 +1052,12 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
         return false;
     }
     
+    if (_imp->_currentRoto.second) {
+        if (_imp->_currentRoto.second->keyDown(scaleX, scaleY,e)) {
+            return true;
+        }
+    }
+    
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
         if ((*it)->isSettingsPanelVisible()) {
@@ -1026,6 +1081,12 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
     
     if (_imp->_gui->isClosing()) {
         return false;
+    }
+    
+    if (_imp->_currentRoto.second) {
+        if (_imp->_currentRoto.second->keyUp(scaleX, scaleY,e)) {
+            return true;
+        }
     }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
@@ -1271,4 +1332,100 @@ void ViewerTab::onRenderScaleButtonClicked(bool checked)
 void ViewerTab::setInfoBarResolution(const Format& f)
 {
     _imp->_infosWidget->setResolution(f);
+}
+
+void ViewerTab::createRotoInterface(NodeGui* n)
+{
+    RotoGui* roto = new RotoGui(n,this);
+    std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->_rotoNodes.insert(std::make_pair(n,roto));
+    assert(ret.second);
+    setRotoInterface(n);
+}
+
+
+void ViewerTab::setRotoInterface(NodeGui* n)
+{
+    assert(n);
+    std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.find(n);
+    if (it != _imp->_rotoNodes.end()) {
+        
+        ///remove any existing roto gui
+        if (_imp->_currentRoto.first != NULL) {
+            removeRotoInterface(_imp->_currentRoto.first, false);
+        }
+        
+        ///Add the widgets
+        QToolBar* toolBar = it->second->getToolBar();
+        _imp->_viewerLayout->insertWidget(0, toolBar);
+        int viewerIndex = _imp->_mainLayout->indexOf(_imp->viewer);
+        assert(viewerIndex >= 0);
+        _imp->_mainLayout->insertWidget(viewerIndex, it->second->getCurrentButtonsBar());
+        
+        QObject::connect(it->second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)));
+        _imp->_currentRoto.first = n;
+        _imp->_currentRoto.second = it->second;
+    }
+    
+}
+
+void ViewerTab::removeRotoInterface(NodeGui* n,bool permanantly)
+{
+    std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.find(n);
+    if (it != _imp->_rotoNodes.end()) {
+        
+        if (_imp->_currentRoto.first == n) {
+            QObject::disconnect(_imp->_currentRoto.second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)));
+            
+            ///Remove the widgets of the current roto node
+            assert(_imp->_viewerLayout->count() > 1);
+            _imp->_viewerLayout->removeItem(_imp->_viewerLayout->itemAt(0));
+            int buttonsBarIndex = _imp->_mainLayout->indexOf(_imp->_currentRoto.second->getCurrentButtonsBar());
+            assert(buttonsBarIndex >= 0);
+            _imp->_mainLayout->removeItem(_imp->_mainLayout->itemAt(buttonsBarIndex));
+            
+            ///If theres another roto node, set it as the current roto interface
+            std::map<NodeGui*,RotoGui*>::iterator newRoto = _imp->_rotoNodes.end();
+            for (std::map<NodeGui*,RotoGui*>::iterator it2 = _imp->_rotoNodes.end(); it2 != _imp->_rotoNodes.end(); ++it2) {
+                if (it2 != it) {
+                    newRoto = it2;
+                    break;
+                }
+            }
+            
+            if (newRoto != _imp->_rotoNodes.end()) {
+                setRotoInterface(newRoto->first);
+            }
+
+        }
+    
+        if (permanantly) {
+            delete it->second;
+            _imp->_rotoNodes.erase(it);
+        }
+    }
+}
+
+void ViewerTab::getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<NodeGui*,RotoGui*>* currentRoto) const
+{
+    *rotoNodes = _imp->_rotoNodes;
+    *currentRoto = _imp->_currentRoto;
+}
+
+void ViewerTab::onRotoRoleChanged(int previousRole,int newRole)
+{
+    RotoGui* roto = qobject_cast<RotoGui*>(sender());
+    if (roto) {
+        assert(roto == _imp->_currentRoto.second);
+        
+        ///Remove the previous buttons bar
+        int buttonsBarIndex = _imp->_mainLayout->indexOf(_imp->_currentRoto.second->getButtonsBar((RotoGui::Roto_Role)previousRole));
+        assert(buttonsBarIndex >= 0);
+        _imp->_mainLayout->removeItem(_imp->_mainLayout->itemAt(buttonsBarIndex));
+        
+        
+        ///Set the new buttons bar
+        int viewerIndex = _imp->_mainLayout->indexOf(_imp->viewer);
+        assert(viewerIndex >= 0);
+        _imp->_mainLayout->insertWidget(viewerIndex, _imp->_currentRoto.second->getButtonsBar((RotoGui::Roto_Role)newRole));
+    }
 }

@@ -25,6 +25,8 @@ class ViewerInstance;
 class Gui;
 class RectI;
 class Format;
+class RotoGui;
+class NodeGui;
 
 struct ViewerTabPrivate;
 class ViewerTab: public QWidget 
@@ -32,7 +34,11 @@ class ViewerTab: public QWidget
     Q_OBJECT
     
 public:
-    explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
+    explicit ViewerTab(const std::list<NodeGui*> existingRotoNodes,
+                       NodeGui* currentRoto,
+                       Gui* gui,
+                       ViewerInstance* node,
+                       QWidget* parent=0);
     
 	virtual ~ViewerTab() OVERRIDE;
     
@@ -110,6 +116,17 @@ public:
     
     void setInfoBarResolution(const Format& f);
     
+    void createRotoInterface(NodeGui* n);
+    
+    /**
+     * @brief Set the current roto interface
+     **/
+    void setRotoInterface(NodeGui* n);
+    
+    void removeRotoInterface(NodeGui* n,bool permanantly);
+    
+    void getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<NodeGui*,RotoGui*>* currentRoto) const;
+    
 public slots:
     
     void startPause(bool);
@@ -151,6 +168,8 @@ public slots:
     void onAutoContrastChanged(bool b);
 
     void onRenderScaleButtonClicked(bool checked);
+    
+    void onRotoRoleChanged(int previousRole,int newRole);
 
 private:
         

@@ -437,6 +437,11 @@ boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
     QObject::connect(nodeGui.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     assert(nodeGui);
+    
+    if (node->isRotoNode()) {
+        createNewRotoInterface(nodeGui.get());
+    }
+    
     return nodeGui;
 }
 
@@ -1108,7 +1113,17 @@ void Gui::minimize(){
 
 
 ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
-    ViewerTab* tab = new ViewerTab(this,viewer,_imp->_viewersPane);
+    std::map<NodeGui*,RotoGui*> rotoNodes;
+    std::list<NodeGui*> rotoNodesList;
+    std::pair<NodeGui*,RotoGui*> currentRoto;
+    if (!_imp->_viewerTabs.empty()) {
+        (*_imp->_viewerTabs.begin())->getRotoContext(&rotoNodes, &currentRoto);
+    }
+    for (std::map<NodeGui*,RotoGui*>::iterator it = rotoNodes.begin() ;it!=rotoNodes.end();++it) {
+        rotoNodesList.push_back(it->first);
+    }
+    
+    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,this,viewer,_imp->_viewersPane);
     QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),this,SLOT(onViewerImageChanged()));
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -2252,3 +2267,28 @@ void Gui::showOfxLog()
     lw.setWindowTitle(tr("OpenFX messages log"));
     lw.exec();
 }
+
+void Gui::createNewRotoInterface(NodeGui* n)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->createRotoInterface(n);
+    }
+}
+
+void Gui::removeRotoInterface(NodeGui* n,bool permanantly)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->removeRotoInterface(n, permanantly);
+    }
+}
+
+void Gui::setRotoInterface(NodeGui* n)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->setRotoInterface(n);
+    }
+}
+
