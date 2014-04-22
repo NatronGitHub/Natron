@@ -487,8 +487,12 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     int components = getElementsCountForComponents(getComponents());
 
     RectI srcRoI = roi;
-    srcRoI.intersect(srcRoD, &srcRoI); // interset srcRoI with the region of definition
+    srcRoI.intersect(srcRoD, &srcRoI); // intersect srcRoI with the region of definition
     srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
+    
+    width = srcRoI.width();
+    height = srcRoI.height();
+    
     RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
     // a few checks...
     // srcRoI must be inside srcRoD
@@ -602,7 +606,7 @@ void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int
     assert(level > 0);
     
     ///This is the portion we computed in buildMipMapLevel
-    RectI dstRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
+    RectI dstRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
     
     ///Even if the roi is this image's RoD, the
     ///resulting mipmap of that roi should fit into output.

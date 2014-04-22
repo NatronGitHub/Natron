@@ -233,8 +233,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
     RectI roi = found->second;
     
-    ///If the effect doesn't support the render scale, scale down the roi ourselves
-    if (supportsRenderScale() && mipMapLevel != 0) {
+    ///Convert to pixel coordinates (FIXME: take the par into account)
+    if (mipMapLevel != 0) {
         roi = roi.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
@@ -246,7 +246,6 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
                               byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
-
     return future.result();
 }
 
@@ -673,8 +672,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
                 assert(foundInputRoI != inputsRoi.end());
                 
-                ///
-                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+                ///convert to pixel coords
+                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
                 
                 ///notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
@@ -692,6 +691,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                                                              isRenderMadeInResponseToUserInteraction, // < user interaction ?
                                                              byPassCache, //< look-up the cache for existing images ?
                                                              NULL)); // < did we precompute any RoD to speed-up the call ?
+                        
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }
@@ -799,7 +799,6 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 if (!canonicalRectToRender.isNull()) {
                     Natron::Status st = render_public(time, scale, canonicalRectToRender,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction,useFullResImage ? image : downscaledImage);
-                    
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
                         image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
