@@ -162,6 +162,8 @@ namespace Natron {
         
         SequenceTime getTime() const {return this->_key._time;}
         
+        unsigned int getComponentsCount() const;
+        
         ImageComponents getComponents() const {return this->_components;}
         
         void setPixelAspect(double pa) { this->_key._pixelAspect = pa; }
@@ -171,6 +173,11 @@ namespace Natron {
         float* pixelAt(int x,int y);
         
         const float* pixelAt(int x,int y) const;
+        
+        /**
+         * @brief Same as getElementsCount(getComponents()) * getPixelRoD().width()
+         **/
+        unsigned int getRowElements() const;
         
         const char* getBitmapAt(int x,int y) const { return this->_bitmap.getBitmapAt(x,y); }
         

@@ -449,6 +449,16 @@ const float* Image::pixelAt(int x,int y) const {
     }
 }
 
+unsigned int Image::getComponentsCount() const
+{
+    return getElementsCountForComponents(getComponents());
+}
+
+unsigned int Image::getRowElements() const
+{
+    return getComponentsCount() * _pixelRod.width();
+}
+
 void Image::halveRoI(const RectI& roi,Natron::Image* output) const
 {
     ///handle case where there is only 1 column/row

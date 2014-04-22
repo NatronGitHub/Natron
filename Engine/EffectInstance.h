@@ -49,15 +49,15 @@ public:
     
     struct RenderRoIArgs
     {
-        SequenceTime time;
-        RenderScale scale;
-        unsigned int mipMapLevel;
-        int view;
-        RectI roi;
-        bool isSequentialRender;
-        bool isRenderUserInteraction;
-        bool byPassCache;
-        const RectI* preComputedRoD;
+        SequenceTime time; //< the time at which to render
+        RenderScale scale; //< the scale at which to render
+        unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
+        int view; //< the view to render
+        RectI roi; //< the region of interest (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
+        bool isSequentialRender; //< is this render part of a sequential render (playback or render on disk) ?
+        bool isRenderUserInteraction; // is this render due to user interaction ? (parameter tweek)
+        bool byPassCache; //< use the cache to look-up existing images ? (false when a refresh is forced)
+        const RectI* preComputedRoD; //<  pre-computed region of definition for this effect to speed-up the call to renderRoi
         
         RenderRoIArgs(SequenceTime time_,
                       RenderScale scale_,

@@ -683,7 +683,6 @@ ViewerInstance::renderViewer(SequenceTime time,
             }
             
         }
-        
         _node->notifyInputNIsFinishedRendering(inputIndex);
         
         

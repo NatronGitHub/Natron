@@ -404,8 +404,8 @@ namespace Natron {
                 }
                 
                 int dstY = dstRoD.y2 - y - 1;
-                const float *src_pixels = from + (srcY * (srcRoD.x2 - srcRoD.x1) * inPackingSize);
-                float *dst_pixels = to + (dstY * (dstRoD.x2 - dstRoD.x1) * outPackingSize);
+                const float *src_pixels = from + (srcRoD.y1 * (srcRoD.x2 - srcRoD.x1) * inPackingSize);
+                float *dst_pixels = to + (dstRoD.y1 * (dstRoD.x2 - dstRoD.x1) * outPackingSize);
                 /* go fowards from starting point to end of line: */
                 for (int x = rect.x1; x < rect.x2; ++x) {
                     int inCol = x * inPackingSize;

@@ -44,15 +44,15 @@ class OutputFile_Knob;
 
 
 struct EffectInstance::RenderArgs {
-    RectI _roi;
-    RoIMap _regionOfInterestResults;
-    SequenceTime _time;
-    RenderScale _scale;
-    unsigned int _mipMapLevel;
-    int _view;
-    bool _isSequentialRender;
-    bool _isRenderResponseToUserInteraction;
-    bool _byPassCache;
+    RectI _roi; //< The RoI in PIXEL coordinates
+    RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
+    SequenceTime _time; //< the time to render
+    RenderScale _scale; //< the scale to render
+    unsigned int _mipMapLevel; //< the mipmap level to render (redundant with scale)
+    int _view; //< the view to render
+    bool _isSequentialRender; //< is this sequential ?
+    bool _isRenderResponseToUserInteraction; //< is this a render due to user interaction ?
+    bool _byPassCache; //< use cache lookups  ?
     
 };
 
@@ -229,10 +229,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
     RoIMap::iterator found = inputsRoI.find(n);
     assert(found != inputsRoI.end());
+    
+    ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
     RectI roi = found->second;
     
     ///If the effect doesn't support the render scale, scale down the roi ourselves
-    if (!supportsRenderScale() && mipMapLevel != 0) {
+    if (supportsRenderScale() && mipMapLevel != 0) {
         roi = roi.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
@@ -403,7 +405,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
-            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, args.roi, args.view);
+            RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
+            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view);
             _imp->setLocalRenderArgs(args.roi,inputsRoI, args.time, args.view, args.scale,args.mipMapLevel,
                                      args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             
@@ -499,7 +502,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         int inputNbIdentity = cachedImgParams->getInputNbIdentity();
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
-            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, args.roi, args.view);
+            RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
+            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view);
             _imp->setLocalRenderArgs(args.roi,inputsRoI, args.time, args.view, args.scale,args.mipMapLevel, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
@@ -579,7 +583,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                                        bool byPassCache) {
     
     ///add the window to the project's available formats if the effect is a reader
-    if (isReader() && mipMapLevel != 0) {
+    if ( mipMapLevel == 0 && isReader()) {
         Format frmt;
         frmt.set(cachedImgParams->getRoD());
         ///FIXME: what about the pixel aspect ratio ?
@@ -620,11 +624,11 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         
         RectI &rectToRender = *it;
         
-        RectI upscaledRoI = rectToRender;
-        ///Upscale the RoI to a region in the unscaled image
-        if (useFullResImage) {
-            upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
-        }
+        ///Upscale the RoI to a region in the unscaled image so it is in canonical coordinates
+        ///this is actually not entirely true since we don't care about pixel aspect ratio here
+        RectI canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+
+
         
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
@@ -637,7 +641,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         ///the getRegionOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
         ///store it into the render args so the getImage() function can retrieve the results.
-        RoIMap inputsRoi = getRegionOfInterest_public(time, scale, rectToRender,view);
+        RoIMap inputsRoi = getRegionOfInterest_public(time, scale, canonicalRectToRender,view);
         
         /*we can set the render args*/
         RenderArgs args;
@@ -669,14 +673,25 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
                 assert(foundInputRoI != inputsRoi.end());
                 
+                ///
+                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+                
                 ///notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
                 _node->notifyInputNIsRendering(it2->first);
                 
                 for (U32 range = 0; range < it2->second.size(); ++range) {
                     for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
-                        boost::shared_ptr<Natron::Image> inputImg = inputEffect->renderRoI(RenderRoIArgs(f, scale,mipMapLevel
-                            ,view, foundInputRoI->second,isSequentialRender,isRenderMadeInResponseToUserInteraction,byPassCache,NULL));
+                        boost::shared_ptr<Natron::Image> inputImg =
+                        inputEffect->renderRoI(RenderRoIArgs(f, //< time
+                                                             scale, //< scale
+                                                             mipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                             view, //< view
+                                                             inputRoIPixelCoords, //< roi in pixel coordinates
+                                                             isSequentialRender, //< sequential render ?
+                                                             isRenderMadeInResponseToUserInteraction, // < user interaction ?
+                                                             byPassCache, //< look-up the cache for existing images ?
+                                                             NULL)); // < did we precompute any RoD to speed-up the call ?
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }
@@ -775,19 +790,19 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                upscaledRoI = rectToRender;
+                canonicalRectToRender = rectToRender;
                 if (useFullResImage) {
-                    upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
+                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+                    canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }
                 
-                if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render_public(time, scale, upscaledRoI,view,isSequentialRender,
+                if (!canonicalRectToRender.isNull()) {
+                    Natron::Status st = render_public(time, scale, canonicalRectToRender,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction,useFullResImage ? image : downscaledImage);
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
-                        image->downscale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                        image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
                     }
                     bool callEndRender = false;
                     {
@@ -820,18 +835,18 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                upscaledRoI = rectToRender;
+                canonicalRectToRender = rectToRender;
                 if (useFullResImage) {
-                    upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
+                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+                    canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }
                 
-                if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render_public(time,scale, upscaledRoI,view,isSequentialRender,
+                if (!canonicalRectToRender.isNull()) {
+                    Natron::Status st = render_public(time,scale, canonicalRectToRender,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
-                        image->downscale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                        image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
                     }
                     bool callEndRender = false;
                     {
@@ -863,19 +878,19 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 QMutexLocker lock(appPTR->getMutexForPlugin(pluginID().c_str()));
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                upscaledRoI = rectToRender;
+                canonicalRectToRender = rectToRender;
                 if (useFullResImage) {
-                    upscaledRoI = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    upscaledRoI.intersect(image->getPixelRoD(), &upscaledRoI);
+                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+                    canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }
                 
-                if (!upscaledRoI.isNull()) {
-                    Natron::Status st = render_public(time,scale, upscaledRoI,view,isSequentialRender,
+                if (!canonicalRectToRender.isNull()) {
+                    Natron::Status st = render_public(time,scale, canonicalRectToRender,view,isSequentialRender,
                                                isRenderMadeInResponseToUserInteraction, useFullResImage ? image : downscaledImage);
                     
                     ///copy the rectangle rendered in the full scale image to the downscaled output
                     if (useFullResImage) {
-                        image->downscale_mipmap(upscaledRoI,downscaledImage.get(), args._mipMapLevel);
+                        image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
                     }
                     bool callEndRender = false;
                     {
@@ -900,7 +915,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 }
             } break;
         }
-        
+        //appPTR->debugImage(downscaledImage.get(), QString(QString(getNode()->getName_mt_safe().c_str()) + ".png"));
         ///notify the node we've finished rendering
         _node->notifyRenderingEnded();
         

@@ -2165,11 +2165,16 @@ void Gui::debugImage(const Natron::Image* image,const QString& filename ) {
     const RectI& rod = image->getPixelRoD();
     QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
-    lut->to_byte_packed(output.bits(), image->pixelAt(0, 0), rod, rod, rod,
+    const float* from = image->pixelAt(rod.left(), rod.bottom());
+    
+    ///offset the pointer to 0,0
+    from -= ((rod.bottom() * image->getRowElements()) + rod.left() * image->getComponentsCount());
+    lut->to_byte_packed(output.bits(), from, rod, rod, rod,
                         Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,false);
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
+    std::cout << "DEBUG: writing image: " << realFileName.toStdString() << std::endl;
     output.save(realFileName);
 
 }
