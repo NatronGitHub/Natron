@@ -31,8 +31,8 @@ Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension )
     , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)
     , _defaultValues(dimension)
-    , _isDoingSetValue(false)
-    , _isDoingSetValueMutex(QMutex::Recursive)
+    , _setValueRecursionLevel(false)
+    , _setValueRecursionLevelMutex(QMutex::Recursive)
 {
     
 }
@@ -210,12 +210,12 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
     if (holder && holder->isDoingInteractAction() && reason != Natron::USER_EDITED) {
         
-        bool doingSetValue;
+        int setValueRecursionLevel;
         {
-            QMutexLocker l(&_isDoingSetValueMutex);
-            doingSetValue = _isDoingSetValue;
+            QMutexLocker l(&_setValueRecursionLevelMutex);
+            setValueRecursionLevel = _setValueRecursionLevel;
         }
-        if (!doingSetValue) {
+        if (!setValueRecursionLevel) {
             Variant vari;
             valueToVariant(v, &vari);
             _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
@@ -225,8 +225,8 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     }
     
     {
-        QMutexLocker l(&_isDoingSetValueMutex);
-        _isDoingSetValue = true;
+        QMutexLocker l(&_setValueRecursionLevelMutex);
+        ++_setValueRecursionLevel;
     }
 
     ///if the knob is slaved to another knob,return, because we don't want the
@@ -260,8 +260,9 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
         evaluateValueChange(dimension,reason);
     }
     {
-        QMutexLocker l(&_isDoingSetValueMutex);
-        _isDoingSetValue = false;
+        QMutexLocker l(&_setValueRecursionLevelMutex);
+        --_setValueRecursionLevel;
+        assert(_setValueRecursionLevel >= 0); 
     }
 
     

@@ -876,8 +876,8 @@ private:
     std::vector<T> _defaultValues;
     
     ///this flag is to avoid recursive setValue calls
-    bool _isDoingSetValue;
-    QMutex _isDoingSetValueMutex;
+    int _setValueRecursionLevel;
+    QMutex _setValueRecursionLevelMutex;
 
 
 };
