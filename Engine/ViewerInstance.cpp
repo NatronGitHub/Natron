@@ -41,8 +41,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Image.h"
 
-#include "Gui/Texture.h" /// ?
-
 using namespace Natron;
 using std::make_pair;
 using boost::shared_ptr;
@@ -411,9 +409,23 @@ ViewerInstance::renderViewer(SequenceTime time,
         pixelRoD = inputImage->getPixelRoD();
         isRodProjectFormat = cachedImgParams->isRodProjectFormat();
         
+        ///since we are going to render a new image, decrease the current memory use of the viewer by
+        ///the amount of the current image, and increase it after we rendered the new image.
+        bool registerMem = false;
         {
             QMutexLocker l(&_imp->lastRenderedImageMutex);
-            _imp->lastRenderedImage = inputImage;
+            if (_imp->lastRenderedImage != inputImage) {
+                if (_imp->lastRenderedImage) {
+                    unregisterPluginMemory(_imp->lastRenderedImage->size());
+                }
+                _imp->lastRenderedImage = inputImage;
+                registerMem = true;
+            }
+        }
+        if (registerMem) {
+            ///notify that the viewer is actually using that much memory.
+            ///It will never be freed unless we delete the node completely from the undo/redo stack.
+            registerPluginMemory(inputImage->size());
         }
         
     }  else {
@@ -619,18 +631,10 @@ ViewerInstance::renderViewer(SequenceTime time,
                 renderedCompletely = true;
             }
         }
-
         int inputIndex = activeInput();
         _node->notifyInputNIsRendering(inputIndex);
 
-        ///since we are going to render a new image, decrease the current memory use of the viewer by
-        ///the amount of the current image, and increase it after we rendered the new image.
-        {
-            QMutexLocker l(&_imp->lastRenderedImageMutex);
-            if (_imp->lastRenderedImage) {
-                unregisterPluginMemory(_imp->lastRenderedImage->size());
-            }
-        }
+      
         
         boost::shared_ptr<Natron::Image> lastRenderedImage;
         if (isInputImgCached) {
@@ -653,9 +657,24 @@ ViewerInstance::renderViewer(SequenceTime time,
                     
                     lastRenderedImage = activeInputToRender->renderRoI(
                     EffectInstance::RenderRoIArgs(time, scale,mipMapLevel,view,texRectClipped,isSequentialRender,true,byPassCache,&rod));
+                    
+                    ///since we are going to render a new image, decrease the current memory use of the viewer by
+                    ///the amount of the current image, and increase it after we rendered the new image.
+                    bool registerMem = false;
                     {
                         QMutexLocker l(&_imp->lastRenderedImageMutex);
-                        _imp->lastRenderedImage = lastRenderedImage;
+                        if (_imp->lastRenderedImage != lastRenderedImage) {
+                            if (_imp->lastRenderedImage) {
+                                unregisterPluginMemory(_imp->lastRenderedImage->size());
+                            }
+                            _imp->lastRenderedImage = lastRenderedImage;
+                            registerMem = true;
+                        }
+                    }
+                    if (registerMem && lastRenderedImage) {
+                        ///notify that the viewer is actually using that much memory.
+                        ///It will never be freed unless we delete the node completely from the undo/redo stack.
+                        registerPluginMemory(lastRenderedImage->size());
                     }
                 }
             } catch (...) {
@@ -675,10 +694,8 @@ ViewerInstance::renderViewer(SequenceTime time,
             return StatFailed;
         }
         
-        ///notify that the viewer is actually using that much memory.
-        ///It will never be freed unless we delete the node completely from the undo/redo stack.
-        registerPluginMemory(lastRenderedImage->size());
-
+        
+        
         if (aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             appPTR->removeFromViewerCache(params->cachedFrame);
