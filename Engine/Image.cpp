@@ -890,7 +890,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     
     RectI previousRoI = roi;
     ///Build all the mipmap levels until we reach the one we are interested in
-    for (unsigned int i = 0; i < level; ++i) {
+    for (unsigned int i = 1; i <= level; ++i) {
         
         ///Halve the closestPo2 rect
         RectI halvedRoI = roi.downscalePowerOfTwoLargestEnclosed(i);
