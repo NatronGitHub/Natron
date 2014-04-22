@@ -864,15 +864,6 @@ void Image::scale_box_generic(const RectI& roi,Natron::Image* output) const
     }
 }
 
-static RectI nextRectLevel(const RectI& r) {
-    RectI ret = r;
-    ret.x1 /= 2;
-    ret.y1 /= 2;
-    ret.x2 /= 2;
-    ret.y2 /= 2;
-    return ret;
-}
-
 void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int level) const
 {
     ///The output image data window
@@ -902,7 +893,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     for (unsigned int i = 0; i < level; ++i) {
         
         ///Halve the closestPo2 rect
-        RectI halvedRoI = nextRectLevel(roi_rounded);
+        RectI halvedRoI = roi_rounded.downscalePowerOfTwo(1);
         
         ///Allocate an image with half the size of the source image
         dstImg = new Natron::Image(getComponents(),halvedRoI,0);
