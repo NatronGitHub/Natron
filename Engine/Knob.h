@@ -780,7 +780,7 @@ public:
      * @brief Calls setValue with a reason of Natron::USER_EDITED.
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns A status according to the operation that was made to the keyframe.
-     * @see Natron::ValueChangedReturnCode
+     * @see ValueChangedReturnCode
      **/
     ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey);
     

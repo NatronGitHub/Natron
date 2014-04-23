@@ -205,7 +205,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
     }
 
-    Knob::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
+    KnobHelper::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
     
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
     if (holder && holder->isDoingInteractAction() && reason != Natron::USER_EDITED) {
