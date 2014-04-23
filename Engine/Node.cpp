@@ -1037,7 +1037,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(yZoomFactor) / std::log(2.)));
     
     int closestPowerOf2 = std::max(closestPowerOf2X,closestPowerOf2Y);
-    unsigned int mipMapLevel = std::min(std::log(closestPowerOf2) / std::log(2),5.);
+    unsigned int mipMapLevel = std::min(std::log((double)closestPowerOf2) / std::log(2.),5.);
     
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;

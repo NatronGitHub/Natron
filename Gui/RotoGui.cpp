@@ -224,25 +224,25 @@ void RotoGui::drawOverlays(double scaleX,double scaleY) const
 
 bool RotoGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
 {
-    
+    return false;
 }
 
 bool RotoGui::penMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
 {
-    
+    return false;
 }
 
 bool RotoGui::penUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
 {
-    
+    return false;
 }
 
 bool RotoGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
 {
-    
+    return false;
 }
 
 bool RotoGui::keyUp(double scaleX,double scaleY,QKeyEvent* e)
 {
-    
+    return false;
 }
