@@ -188,7 +188,7 @@ void File_Knob::animationRemoved_virtual(int dimension) {
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
 OutputFile_Knob::OutputFile_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob(holder, description, dimension)
+: Knob<std::string>(holder, description, dimension)
 , _isOutputImage(false)
 , _sequenceDialog(true)
 {
@@ -218,7 +218,7 @@ QString OutputFile_Knob::generateFileNameAtTime(SequenceTime time,int view) cons
 /***********************************PATH_KNOB*****************************************/
 
 Path_Knob::Path_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob(holder,description,dimension)
+: Knob<std::string>(holder,description,dimension)
 , _isMultiPath(false)
 {
     
