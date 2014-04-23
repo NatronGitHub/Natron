@@ -780,7 +780,8 @@ struct KnobHolder::KnobHolderPrivate
     , actionsRecursionLevel()
     , evaluateQueue()
     {
-        
+        ///Set local data on the main-thread to work-around the bug in Thread-Storage
+        actionsRecursionLevel.setLocalData(0);
     }
 };
 

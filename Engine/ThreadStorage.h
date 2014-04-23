@@ -27,7 +27,7 @@ class ThreadStorage : public QThreadStorage<T>
 public:
     inline bool hasLocalData() const
     {
-        return (QThread::currentThread() == qApp->thread()) || QThreadStorage<T>::hasLocalData();
+        return (QThread::currentThread() == qApp->thread() || QThreadStorage<T>::hasLocalData());
     }
 
     inline T& localData()
