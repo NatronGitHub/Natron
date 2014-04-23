@@ -11,9 +11,11 @@
 #include "Project.h"
 
 #include <fstream>
+#include <algorithm>
+
 #include <QtConcurrentRun>
 #include <QCoreApplication>
-#include <algorithm>
+#include <QTimer>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -39,6 +41,7 @@ Project::Project(AppInstance* appInstance)
     , _imp(new ProjectPrivate(this))
 {
     QObject::connect(_imp->timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeChanged(SequenceTime,int)));
+    QObject::connect(_imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()));
 }
 
 Project::~Project() {
@@ -304,15 +307,37 @@ void Project::triggerAutoSave() {
         return;
     }
     
+    _imp->autoSaveTimer->start(appPTR->getCurrentSettings()->getAutoSaveDelayMS());
+}
+    
+void Project::onAutoSaveTimerTriggered()
+{
+    assert(!appPTR->isBackground());
+    
+    ///check that all VideoEngine(s) are not working.
+    ///If so launch an auto-save, otherwise, restart the timer.
+    bool canAutoSave = true;
     {
-        ///do not autosave simultaneously
-        QMutexLocker l(&_imp->isSavingProjectMutex);
-        if (_imp->isSavingProject) {
-            return;
+        QMutexLocker l(&_imp->nodesLock);
+        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it!=_imp->currentNodes.end(); ++it) {
+            if ((*it)->isOutputNode()) {
+                Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>((*it)->getLiveInstance());
+                assert(effect);
+                if (effect->getVideoEngine()->isWorking()) {
+                    canAutoSave = false;
+                    break;
+                }
+            }
         }
     }
     
-    QtConcurrent::run(this,&Project::autoSave);
+    if (canAutoSave) {
+        QtConcurrent::run(this,&Project::autoSave);
+    } else {
+        ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
+        ///We don't use the user-provided timeout interval here because it could be an inapropriate value.
+        _imp->autoSaveTimer->start(2000);
+    }
 }
 
 bool Project::findAndTryLoadAutoSave() {

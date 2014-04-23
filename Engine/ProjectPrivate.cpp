@@ -11,6 +11,7 @@
 #include "ProjectPrivate.h"
 
 #include <QDebug>
+#include <QTimer>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -53,8 +54,10 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , isLoadingProject(false)
     , isSavingProjectMutex()
     , isSavingProject(false)
+    , autoSaveTimer(new QTimer())
 
 {
+    autoSaveTimer->setSingleShot(true);
 }
 
 

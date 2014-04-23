@@ -58,6 +58,16 @@ void Settings::initializeKnobs(){
     
     _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
     
+    _autoSaveDelay = Natron::createKnob<Int_Knob>(this, "Auto-save trigger delay");
+    _autoSaveDelay->setAnimationEnabled(false);
+    _autoSaveDelay->disableSlider();
+    _autoSaveDelay->setMinimum(0);
+    _autoSaveDelay->setMaximum(60);
+    _autoSaveDelay->setHintToolTip("The number of seconds after an event that " NATRON_APPLICATION_NAME " should wait before "
+                                   " auto-saving. Note that if a render is in progress, " NATRON_APPLICATION_NAME " will "
+                                   " wait until it is done to actually auto-save.");
+    _generalTab->addKnob(_autoSaveDelay);
+    
     _maxUndoRedoNodeGraph = Natron::createKnob<Int_Knob>(this, "Maximum undo/redo for the node graph");
     _maxUndoRedoNodeGraph->setAnimationEnabled(false);
     _maxUndoRedoNodeGraph->disableSlider();
@@ -235,6 +245,7 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
     _numberOfThreads->setDefaultValue(0,0);
@@ -275,6 +286,7 @@ void Settings::saveSettings(){
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    settings.setValue("AutoSaveDelay", _autoSaveDelay->getValue());
     settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
     settings.setValue("LinearColorPickers",_linearPickers->getValue());
     settings.setValue("Number of threads", _numberOfThreads->getValue());
@@ -325,6 +337,9 @@ void Settings::restoreSettings(){
     notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    if (settings.contains("AutoSaveDelay")) {
+        _autoSaveDelay->setValue(settings.value("AutoSaveDelay").toInt(),0);
+    }
     if (settings.contains("MaximumUndoRedoNodeGraph")) {
         _maxUndoRedoNodeGraph->setValue(settings.value("MaximumUndoRedoNodeGraph").toInt(), 0);
     }
@@ -645,4 +660,9 @@ bool Settings::isRenderInSeparatedProcessEnabled() const {
 int Settings::getMaximumUndoRedoNodeGraph() const
 {
     return _maxUndoRedoNodeGraph->getValue();
+}
+
+int Settings::getAutoSaveDelayMS() const
+{
+    return _autoSaveDelay->getValue() * 1000;
 }

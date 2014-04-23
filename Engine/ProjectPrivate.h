@@ -20,10 +20,12 @@ CLANG_DIAG_ON(deprecated)
 #include <QString>
 #include <QMutex>
 
+
 #include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFactory.h"
 
+class QTimer;
 class TimeLine;
 class NodeSerialization;
 class ProjectSerialization;
@@ -100,6 +102,8 @@ struct ProjectPrivate {
     
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
+    
+    boost::scoped_ptr<QTimer> autoSaveTimer;
     
     ProjectPrivate(Natron::Project* project);
     

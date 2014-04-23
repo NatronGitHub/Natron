@@ -96,6 +96,8 @@ public:
     
     int getMaximumUndoRedoNodeGraph() const;
     
+    int getAutoSaveDelayMS() const;
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -106,6 +108,7 @@ private:
 
     
     boost::shared_ptr<Tab_Knob> _generalTab;
+    boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;

@@ -213,6 +213,7 @@ public slots:
 
     void onTimeChanged(SequenceTime time,int reason);
 
+    void onAutoSaveTimerTriggered();
 signals:
     
     void mustCreateFormat();
