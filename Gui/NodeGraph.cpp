@@ -264,6 +264,7 @@ void NodeGraph::onProjectNodesCleared() {
     }
     _nodes.clear();
     _nodesTrash.clear();
+    _undoStack->clear();
 }
 
 void NodeGraph::resizeEvent(QResizeEvent* event){
