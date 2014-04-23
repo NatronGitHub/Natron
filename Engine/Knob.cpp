@@ -1009,7 +1009,11 @@ void KnobHolder::decrementRecursionLevel()
 
 int KnobHolder::getRecursionLevel() const
 {
-    return _imp->actionsRecursionLevel.localData();
+    if (_imp->actionsRecursionLevel.hasLocalData()) {
+        return _imp->actionsRecursionLevel.localData();
+    } else {
+        return 0;
+    }
 }
 
 /***************************STRING ANIMATION******************************************/
