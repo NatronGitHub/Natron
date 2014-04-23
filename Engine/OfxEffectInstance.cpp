@@ -627,7 +627,6 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     std::string inputclip;
     OfxTime inputTimeOfx = time;
     
-    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     
@@ -655,7 +654,6 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
 void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
                                             SequenceTime step,bool interactive,RenderScale scale,
                                             bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
-    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     bool useScaleOne = !supportsRenderScale();
@@ -668,7 +666,6 @@ void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last
 void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
                                           SequenceTime step,bool interactive,RenderScale scale,
                                           bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
-    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     bool useScaleOne = !supportsRenderScale();

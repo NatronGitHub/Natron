@@ -560,7 +560,8 @@ namespace Natron {
                      * If this warning is printed this means that the value computed by it->key()
                      * is different than the value stored prior to serialiazing this entry. In other words there're
                      * 2 possibilities:
-                     * 1) The key has changed since it has been added to the cache.
+                     * 1) The key has changed since it has been added to the cache: maybe you forgot to serialize some 
+                     * members of the key or you didn't save them correctly.
                      * 2) The hash key computation is unreliable and is depending upon changing or non-deterministic
                      * parameters which is wrong.
                      */

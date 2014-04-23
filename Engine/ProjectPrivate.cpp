@@ -64,6 +64,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
+    projectCreationTime = QDateTime::fromMSecsSinceEpoch(obj.getCreationDate());
+
+    
     /*we must restore the entries in the combobox before restoring the value*/
     std::vector<std::string> entries;
     
@@ -195,7 +198,6 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
     nodeCounters = obj.getNodeCounters();
     
-    projectCreationTime = QDateTime::fromMSecsSinceEpoch(obj.getCreationDate());
 
 }
     
