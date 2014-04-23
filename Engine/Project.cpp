@@ -297,6 +297,9 @@ void Project::autoSave(){
 
 void Project::triggerAutoSave() {
 
+    ///Should only be called in the main-thread, that is upon user interaction.
+    assert(QThread::currentThread() == qApp->thread());
+    
     if (appPTR->isBackground()) {
         return;
     }
@@ -973,7 +976,6 @@ void Project::setOrAddProjectFormat(const Format& frmt,bool skipAdd) {
     }
     if (formatSet) {
         emit formatChanged(dispW);
-        getApp()->triggerAutoSave();
     }
 
 
