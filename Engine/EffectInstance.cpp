@@ -1368,6 +1368,10 @@ void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime la
 }
 
 
+bool EffectInstance::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
+{
+    return _node->isSupportedComponent(inputNb, comp);
+}
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 : Natron::EffectInstance(node)

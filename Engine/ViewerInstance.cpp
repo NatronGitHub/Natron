@@ -1410,3 +1410,9 @@ ViewerInstance::getChannels() const
     QMutexLocker l(&_imp->viewerParamsMutex);
     return _imp->viewerParamsChannels;
 }
+
+void ViewerInstance::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+{
+    ///Viewer only supports RGBA for now.
+    comps->push_back(Natron::ImageComponentRGBA);
+}

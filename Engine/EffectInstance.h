@@ -197,6 +197,20 @@ public:
      **/
     virtual bool isInputOptional(int inputNb) const WARN_UNUSED_RETURN = 0;
     
+    /**
+     * @brief Routine called after the creation of an effect. This function must
+     * fill for the given input what image components we can feed it with.
+     * This function is also called to specify what image components this effect can output.
+     * In that case inputNb equals -1.
+     **/
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) = 0;
+    
+    /**
+     * @brief Returns true if the given input supports the given components. If inputNb equals -1
+     * then this function will check whether the effect can produce the given components.
+     **/
+    bool isSupportedComponent(int inputNb,Natron::ImageComponents comp) const;
+    
     
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'

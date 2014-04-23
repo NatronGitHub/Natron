@@ -66,7 +66,7 @@ public:
                                   bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                   boost::shared_ptr<Natron::Image> /*output*/) OVERRIDE;
 
-
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
 protected:
     
     

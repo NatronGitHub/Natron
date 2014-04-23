@@ -209,6 +209,8 @@ private:
         return QString::number(inputNb+1).toStdString();
     }
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL {return Natron::EffectInstance::FULLY_SAFE;}
+    
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     /*******************************************/
 
 

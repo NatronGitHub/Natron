@@ -1111,6 +1111,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     _rBox->setMaximum(maximums[0]);
     _rBox->setMinimum(minimums[0]);
+    _rBox->decimals(6);
     _rBox->setIncrement(0.1);
     
     ///set the copy/link actions in the right click menu
@@ -1129,6 +1130,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if (_dimension >= 3) {
         _gBox->setMaximum(maximums[1]);
         _gBox->setMinimum(minimums[1]);
+        _gBox->decimals(6);
         _gBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
@@ -1146,6 +1148,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         
         _bBox->setMaximum(maximums[2]);
         _bBox->setMinimum(minimums[2]);
+        _bBox->decimals(6);
         _bBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
@@ -1165,6 +1168,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if (_dimension >= 4) {
         _aBox->setMaximum(maximums[3]);
         _aBox->setMinimum(minimums[3]);
+        _aBox->decimals(6);
         _aBox->setIncrement(0.1);
         
         ///set the copy/link actions in the right click menu
@@ -1492,6 +1496,17 @@ void
 Color_KnobGui::showColorDialog()
 {
     QColorDialog dialog(_rBox->parentWidget());
+    double curR = 0,curG = 0,curB = 0;
+    curR = _rBox->value();
+    if (_dimension > 1) {
+        curG = _gBox->value();
+        curB = _bBox->value();
+    }
+    QColor curColor;
+    curColor.setRedF(curR);
+    curColor.setGreenF(curG);
+    curColor.setBlueF(curB);
+    dialog.setCurrentColor(curColor);
     if (dialog.exec()) {
         
         ///if only the first dimension is displayed, switch back to all dimensions

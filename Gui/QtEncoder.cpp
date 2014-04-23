@@ -229,4 +229,9 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
 }
 
 
+void QtWriter::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+{
+    ///QtWriter only supports RGBA for now.
+    comps->push_back(Natron::ImageComponentRGBA);
+}
 

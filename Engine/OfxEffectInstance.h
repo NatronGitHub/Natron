@@ -204,6 +204,8 @@ public:
     virtual void endSequenceRender(SequenceTime first,SequenceTime last,
                                      SequenceTime step,bool interactive,RenderScale scale,
                                    bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
+
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     /**

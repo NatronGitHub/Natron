@@ -492,3 +492,8 @@ Natron::EffectInstance::CachePolicy QtReader::getCachePolicy(SequenceTime time) 
     return ALWAYS_CACHE;
 }
 
+void QtReader::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+{
+    ///QtReader only supports RGBA for now.
+    comps->push_back(Natron::ImageComponentRGBA);
+}

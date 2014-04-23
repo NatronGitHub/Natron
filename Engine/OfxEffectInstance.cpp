@@ -1078,3 +1078,26 @@ void OfxEffectInstance::onSyncPrivateDataRequested()
     assert(QThread::currentThread() == qApp->thread());
     effectInstance()->syncPrivateDataAction();
 }
+
+
+
+void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
+{
+    if (inputNb >= 0) {
+        OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
+        assert(clip);
+        const std::vector<std::string>& supportedComps = clip->getSupportedComponents();
+        for (U32 i = 0; i < supportedComps.size(); ++i) {
+            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+        }
+    } else {
+        assert(inputNb == -1);
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(effectInstance()->getClip(kOfxImageEffectOutputClipName));
+        assert(clip);
+        const std::vector<std::string>& supportedComps = clip->getSupportedComponents();
+        for (U32 i = 0; i < supportedComps.size(); ++i) {
+            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+        }
+    }
+
+}

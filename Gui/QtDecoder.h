@@ -84,7 +84,7 @@ public:
         
     virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;
     
-    
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     
 private:
 

@@ -153,6 +153,12 @@ public:
     virtual int maximumInputs() const ;
 
     /**
+     * @brief Returns true if the given input supports the given components. If inputNb equals -1
+     * then this function will check whether the effect can produce the given components.
+     **/
+    bool isSupportedComponent(int inputNb,Natron::ImageComponents comp) const;
+    
+    /**
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.
      **/

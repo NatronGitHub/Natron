@@ -151,6 +151,10 @@ public:
     int getInputNb() const WARN_UNUSED_RETURN;
     
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
+    
+    static std::string natronsComponentsToOfxComponents(Natron::ImageComponents comp);
+    
+    static Natron::ImageComponents ofxComponentsToNatronComponents(const std::string& comp);
 
 private:
     

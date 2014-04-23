@@ -82,7 +82,9 @@ struct Node::Implementation {
         , inputsMutex()
         , inputs()
         , inputsQueue()
-        , liveInstance()
+        , liveInstance(0)
+        , inputsComponents()
+        , outputComponents()
         , inputLabels()
         , name()
         , deactivatedState()
@@ -122,7 +124,10 @@ struct Node::Implementation {
 
     Natron::EffectInstance*  liveInstance; //< the effect hosted by this node
 
-
+    ///These two are also protected by inputsMutex
+    std::vector< std::list<Natron::ImageComponents> > inputsComponents;
+    std::list<Natron::ImageComponents> outputComponents;
+    
     mutable QMutex nameMutex;
     std::vector<std::string> inputLabels; // inputs name
     std::string name; //node name set by the user
@@ -601,6 +606,16 @@ void Node::initializeInputs()
             }
             
         }
+        
+        ///Set the components the plug-in accepts
+        _imp->inputsComponents.resize(inputCount);
+        for (int i = 0; i < inputCount; ++i) {
+            _imp->inputsComponents[i].clear();
+            _imp->liveInstance->addAcceptedComponents(i, &_imp->inputsComponents[i]);
+        }
+        _imp->outputComponents.clear();
+        _imp->liveInstance->addAcceptedComponents(-1, &_imp->outputComponents);
+        
     }
     emit inputsInitialized();
 }
@@ -1392,6 +1407,23 @@ void Node::onMasterNodeDeactivated() {
 boost::shared_ptr<Natron::Node> Node::getMasterNode() const {
     QMutexLocker l(&_imp->masterNodeMutex);
     return _imp->masterNode;
+}
+
+bool Node::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if (inputNb >= 0) {
+        assert(inputNb < (int)_imp->inputsComponents.size());
+        std::list<Natron::ImageComponents>::const_iterator found =
+        std::find(_imp->inputsComponents[inputNb].begin(),_imp->inputsComponents[inputNb].end(),comp);
+        return found != _imp->inputsComponents[inputNb].end();
+    } else {
+        assert(inputNb == -1);
+        std::list<Natron::ImageComponents>::const_iterator found =
+        std::find(_imp->outputComponents.begin(),_imp->outputComponents.end(),comp);
+        return found != _imp->outputComponents.end();
+
+    }
 }
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)
