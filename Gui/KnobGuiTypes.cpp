@@ -1185,8 +1185,18 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxLayout->addWidget(_aLabel);
         boxLayout->addWidget(_aBox);
     }
-    
-    _slider = new ScaleSliderQWidget(minimums[0], maximums[0],_knob->getValue(), Natron::LINEAR_SCALE, boxContainers);
+
+    const std::vector<double>& displayMinimums = _knob->getDisplayMinimums();
+    const std::vector<double>& displayMaximums = _knob->getDisplayMaximums();
+    double slidermin = *std::min_element(displayMinimums.begin(), displayMinimums.end());
+    double slidermax = *std::max_element(displayMaximums.begin(), displayMaximums.end());
+    if (slidermin <= -std::numeric_limits<float>::max()) {
+        slidermin = 0.;
+    }
+    if (slidermax >= std::numeric_limits<float>::max()) {
+        slidermax = 1.;
+    }
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, _knob->getValue(), Natron::LINEAR_SCALE, boxContainers);
     boxLayout->addWidget(_slider);
     QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
     _slider->hide();
