@@ -1091,8 +1091,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     boxLayout->setContentsMargins(0, 0, 0, 0);
     boxLayout->setSpacing(1);
     
-    const std::vector<double>& minimums = _knob->getDisplayMinimums();
-    const std::vector<double>& maximums = _knob->getDisplayMaximums();
+    const std::vector<double>& minimums = _knob->getMinimums();
+    const std::vector<double>& maximums = _knob->getMaximums();
     
     _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));

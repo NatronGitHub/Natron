@@ -662,8 +662,8 @@ Color_Knob::Color_Knob(KnobHolder* holder, const std::string &description, int d
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
     for (int i = 0; i < dimension; ++i) {
-        _minimums[i] = 0.;
-        _maximums[i] = 1.;
+        _minimums[i] = -DBL_MAX;
+        _maximums[i] = DBL_MAX;
         _displayMins[i] = 0.;
         _displayMaxs[i] = 1.;
         
