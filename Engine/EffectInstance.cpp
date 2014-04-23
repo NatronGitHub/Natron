@@ -246,7 +246,16 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
                               byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
-    return future.result();
+    boost::shared_ptr<Natron::Image> inputImg = future.result();
+    unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
+    if (!supportsRenderScale() && inputImgMipMapLevel > 0) {
+        RectI upscaledRoD = inputImg->getPixelRoD().upscalePowerOfTwo(inputImgMipMapLevel);
+        boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0));
+        inputImg->upscale_mipmap(inputImg->getPixelRoD(), upscaledImg.get(), inputImgMipMapLevel);
+        return upscaledImg;
+    } else {
+        return inputImg;
+    }
 }
 
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat) {

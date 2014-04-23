@@ -646,7 +646,7 @@ void Image::upscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int l
     for (int y = 0; y < srcRod.height(); ++y) {
         const float *srcLineStart = src + y*srcRowSize;
         float *dstLineStart = dst + y*scale*dstRowSize;
-        for (int x = 0; x < srcRod.height(); ++x) {
+        for (int x = 0; x < srcRod.width(); ++x) {
             const float *srcPix = srcLineStart + x*components;
             float *dstPix = dstLineStart + x*scale*components;
             for (unsigned int j = 0; j < scale; ++j) {
