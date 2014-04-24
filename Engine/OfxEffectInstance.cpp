@@ -463,7 +463,7 @@ std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
     return formats;
 }
 
-Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat){
+Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat){
     if(!_initialized){
         return Natron::StatFailed;
     }
@@ -472,6 +472,7 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     effectInstance()->setClipsMipMapLevel(mipMapLevel);
+    effectInstance()->setClipsView(view);
 
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
@@ -482,6 +483,7 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
     
     effectInstance()->discardClipsMipMapLevel();
+    effectInstance()->discardClipsView();
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;

@@ -382,7 +382,7 @@ void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filenam
     
 }
 
-Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,const RenderScale& /*scale*/,RectI* rod,bool* isProjectFormat){
+Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,const RenderScale& /*scale*/,int /*view*/,RectI* rod,bool* isProjectFormat){
 
     *isProjectFormat = false;
     QMutexLocker l(&_lock);

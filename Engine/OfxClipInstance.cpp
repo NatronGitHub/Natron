@@ -198,7 +198,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             
             RenderScale scale;
             scale.x = scale.y = 1.;
-            Natron::Status st = n->getRegionOfDefinition_public(time,scale,&rod,&isProjectFormat);
+            Natron::Status st = n->getRegionOfDefinition_public(time,scale,view,&rod,&isProjectFormat);
             if (st == StatFailed) {
                 //assert(!"cannot compute ROD");
                 ret.x1 = kOfxFlagInfiniteMin;
@@ -392,7 +392,7 @@ void OfxClipInstance::setView(int view) {
     }
     args.view = view;
     assert(!_lastRenderArgs.localData().isViewValid);
-    _lastRenderArgs.localData().isViewValid =  true;
+    args.isViewValid =  true;
     _lastRenderArgs.setLocalData(args);
 }
 
@@ -406,7 +406,7 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     }
     args.mipMapLevel = mipMapLevel;
     assert(!_lastRenderArgs.localData().isMipMapLevelValid);
-    _lastRenderArgs.localData().isMipMapLevelValid = true;
+    args.isMipMapLevelValid = true;
     _lastRenderArgs.setLocalData(args);
 
 }

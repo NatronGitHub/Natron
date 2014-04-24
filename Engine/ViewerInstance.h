@@ -200,7 +200,7 @@ private:
     
     virtual std::string description() const OVERRIDE FINAL {return "The Viewer node can display the output of a node graph.";}
     
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,
                                                  RectI* rod,bool* isProjectFormat) OVERRIDE FINAL;
         
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;

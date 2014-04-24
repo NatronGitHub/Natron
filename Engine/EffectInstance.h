@@ -370,7 +370,7 @@ protected:
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,
                                                  RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
     
     
@@ -400,7 +400,7 @@ protected:
     
 public:
     
-    Natron::Status getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,
+    Natron::Status getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
                                          RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
     
     RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view) WARN_UNUSED_RETURN;

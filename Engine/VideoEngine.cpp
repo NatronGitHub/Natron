@@ -645,19 +645,21 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
         scale.x = scale.y = 1.;
         RectI rod;
         bool isProjectFormat;
-        stat = _tree.getOutput()->getRegionOfDefinition_public(time,scale, &rod,&isProjectFormat);
-        if(stat != StatFailed){
-            int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
-            for(int i = 0; i < viewsCount;++i){
-                // Do not catch exceptions: if an exception occurs here it is probably fatal, since
-                // it comes from Natron itself. All exceptions from plugins are already caught
-                // by the HostSupport library.
+        
+        int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
+        for(int i = 0; i < viewsCount;++i){
+            // Do not catch exceptions: if an exception occurs here it is probably fatal, since
+            // it comes from Natron itself. All exceptions from plugins are already caught
+            // by the HostSupport library.
+            stat = _tree.getOutput()->getRegionOfDefinition_public(time,scale,i, &rod,&isProjectFormat);
+            if(stat != StatFailed){
                 (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, scale,0,i ,rod,isSequentialRender,false,false,NULL));
+            } else {
+                break;
             }
         }
-        
     }
-//    
+//
 //    if (stat == StatFailed) {
 //        throw std::runtime_error("Render failed");
 //    }

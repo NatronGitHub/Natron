@@ -279,7 +279,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     }
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat) {
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat) {
     
     Format frmt;
     getRenderFormat(&frmt);
@@ -287,7 +287,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const Ren
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectI inputRod;
-            Status st = input->getRegionOfDefinition_public(time,scale, &inputRod,isProjectFormat);
+            Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,isProjectFormat);
             if (st == StatFailed) {
                 return st;
             }
@@ -455,7 +455,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 rod = *args.preComputedRoD;
             } else {
                 ///before allocating it we must fill the RoD of the image we want to render
-                if(getRegionOfDefinition_public(args.time,args.scale, &rod,&isProjectFormat) == StatFailed){
+                if(getRegionOfDefinition_public(args.time,args.scale,args.view, &rod,&isProjectFormat) == StatFailed){
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
@@ -1330,12 +1330,12 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
     return ret;
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,
+Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
                                             RectI* rod,bool* isProjectFormat)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    Natron::Status ret = getRegionOfDefinition(time, scale, rod, isProjectFormat);
+    Natron::Status ret = getRegionOfDefinition(time, scale,view ,rod, isProjectFormat);
     decrementRecursionLevel();
     return ret;
 }

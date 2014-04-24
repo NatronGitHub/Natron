@@ -267,7 +267,7 @@ ViewerInstance::maximumInputs() const
 }
 
 Natron::Status
-ViewerInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat)
+ViewerInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat)
 {
     // always running in the VideoEngine thread
     _imp->assertVideoEngine();
@@ -275,7 +275,7 @@ ViewerInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale
     ///Return the RoD of the active input
     EffectInstance* n = input_other_thread(activeInput());
     if (n) {
-        return n->getRegionOfDefinition_public(time,scale,rod,isProjectFormat);
+        return n->getRegionOfDefinition_public(time,scale,view,rod,isProjectFormat);
     } else {
         return StatFailed;
     }
@@ -429,7 +429,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         
     }  else {
-        Status stat = getRegionOfDefinition_public(time,scale, &rod,&isRodProjectFormat);
+        Status stat = getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
         if(stat == StatFailed){
 #ifdef NATRON_LOG
             Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());

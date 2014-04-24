@@ -1086,7 +1086,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(time,scale, &rod,&isProjectFormat);
+    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(time,scale,0, &rod,&isProjectFormat);
     if (stat == StatFailed) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();

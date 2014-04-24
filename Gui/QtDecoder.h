@@ -60,7 +60,7 @@ public:
     
     virtual std::string description() const OVERRIDE;
     
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,RectI* rod,bool* isProjectFormat) OVERRIDE;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat) OVERRIDE;
 	
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
