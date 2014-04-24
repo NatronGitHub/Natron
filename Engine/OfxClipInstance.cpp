@@ -387,11 +387,11 @@ void OfxClipInstance::setView(int view) {
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
+        assert(!_lastRenderArgs.localData().isViewValid);
     } else {
         args.mipMapLevel = 0;
     }
     args.view = view;
-    assert(!_lastRenderArgs.localData().isViewValid);
     args.isViewValid =  true;
     _lastRenderArgs.setLocalData(args);
 }
@@ -401,11 +401,11 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
+        assert(!_lastRenderArgs.localData().isMipMapLevelValid);
     } else {
         args.view = 0;
     }
     args.mipMapLevel = mipMapLevel;
-    assert(!_lastRenderArgs.localData().isMipMapLevelValid);
     args.isMipMapLevelValid = true;
     _lastRenderArgs.setLocalData(args);
 

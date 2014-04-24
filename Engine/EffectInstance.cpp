@@ -53,7 +53,20 @@ struct EffectInstance::RenderArgs {
     bool _isSequentialRender; //< is this sequential ?
     bool _isRenderResponseToUserInteraction; //< is this a render due to user interaction ?
     bool _byPassCache; //< use cache lookups  ?
+    bool _validArgs; //< are the args valid ?
     
+    RenderArgs()
+    : _roi()
+    , _regionOfInterestResults()
+    , _time(0)
+    , _scale()
+    , _mipMapLevel(0)
+    , _view(0)
+    , _isSequentialRender(false)
+    , _isRenderResponseToUserInteraction(false)
+    , _byPassCache(false)
+    , _validArgs(false)
+    {}
 };
 
 struct EffectInstance::Implementation {
@@ -86,28 +99,62 @@ struct EffectInstance::Implementation {
         duringInteractAction = b;
     }
     
-    void setLocalRenderArgs(const RectI& roi,
-                            const RoIMap& roiMap,
-                            SequenceTime time,
-                            int view,
-                            const RenderScale& scale,
-                            unsigned int mipMapLevel,
-                            bool sequential,
-                            bool userInteraction,
-                            bool bypassCache)
-    {
+    /**
+     * @brief Small helper class that set the render args and 
+     * invalidate them when it is destroyed.
+     **/
+    class ScopedRenderArgs {
+        
         RenderArgs args;
-        args._roi = roi;
-        args._regionOfInterestResults = roiMap;
-        args._time = time;
-        args._view = view;
-        args._scale = scale;
-        args._mipMapLevel = mipMapLevel;
-        args._isSequentialRender = sequential;
-        args._isRenderResponseToUserInteraction = userInteraction;
-        args._byPassCache = bypassCache;
-        renderArgs.setLocalData(args);
-    }
+        ThreadStorage<RenderArgs>* _dst;
+    public:
+        ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
+                         const RectI& roi,
+                         const RoIMap& roiMap,
+                         SequenceTime time,
+                         int view,
+                         const RenderScale& scale,
+                         unsigned int mipMapLevel,
+                         bool sequential,
+                         bool userInteraction,
+                         bool bypassCache)
+        : args()
+        , _dst(dst)
+        {
+            assert(_dst);
+            args._roi = roi;
+            args._regionOfInterestResults = roiMap;
+            args._time = time;
+            args._view = view;
+            args._scale = scale;
+            args._mipMapLevel = mipMapLevel;
+            args._isSequentialRender = sequential;
+            args._isRenderResponseToUserInteraction = userInteraction;
+            args._byPassCache = bypassCache;
+            args._validArgs = true;
+            _dst->setLocalData(args);
+        }
+        
+        ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,const RenderArgs& a)
+        : args(a)
+        , _dst(dst)
+        {
+            args._validArgs = true;
+            _dst->setLocalData(args);
+        }
+        
+        ~ScopedRenderArgs()
+        {
+            assert(_dst->hasLocalData());
+            args._validArgs = false;
+            _dst->setLocalData(args);
+        }
+        
+        /**
+         * @brief WARNING: Returns the args that have been passed to the constructor.
+         **/
+        const RenderArgs& getArgs() const { return args; }
+    };
     
 };
 
@@ -215,6 +262,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
     assert(_imp->renderArgs.hasLocalData());
+    assert(_imp->renderArgs.localData()._validArgs);
     
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
@@ -436,12 +484,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (identity) {
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
             RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view);
-            _imp->setLocalRenderArgs(args.roi,inputsRoI, args.time, args.view, args.scale,args.mipMapLevel,
-                                     args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
+            Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
+                                                        args.roi,
+                                                        inputsRoI,
+                                                        args.time,
+                                                        args.view,
+                                                        args.scale,
+                                                        args.mipMapLevel,
+                                                        args.isSequentialRender,
+                                                        args.isRenderUserInteraction,
+                                                        byPassCache);
             
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
             image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
-
+            
             ///if we bypass the cache, don't cache the result of isIdentity
             if (byPassCache) {
                 return image;
@@ -533,7 +589,16 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
             RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view);
-            _imp->setLocalRenderArgs(args.roi,inputsRoI, args.time, args.view, args.scale,args.mipMapLevel, args.isSequentialRender, args.isRenderUserInteraction, byPassCache);
+            Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
+                                                        args.roi,
+                                                        inputsRoI,
+                                                        args.time,
+                                                        args.view,
+                                                        args.scale,
+                                                        args.mipMapLevel,
+                                                        args.isSequentialRender,
+                                                        args.isRenderUserInteraction,
+                                                        byPassCache);
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
@@ -673,20 +738,23 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         RoIMap inputsRoi = getRegionOfInterest_public(time, scale, canonicalRectToRender,view);
         
         /*we can set the render args*/
-        RenderArgs args;
-        args._roi = rectToRender;
-        args._regionOfInterestResults = inputsRoi;
-        args._time = time;
-        args._view = view;
-        args._scale = scale;
-        args._mipMapLevel = mipMapLevel;
-        args._isSequentialRender = isSequentialRender;
-        args._isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
-        args._byPassCache = byPassCache;
-        _imp->renderArgs.setLocalData(args);
-         
-       
+        if (_imp->renderArgs.hasLocalData()) {
+            assert(!_imp->renderArgs.localData()._validArgs);
+        }
         
+        Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
+                                                    rectToRender,
+                                                    inputsRoi,
+                                                    time,
+                                                    view,
+                                                    scale,
+                                                    mipMapLevel,
+                                                    isSequentialRender,
+                                                    isRenderMadeInResponseToUserInteraction,
+                                                    byPassCache);
+        const RenderArgs& args = scopedArgs.getArgs();
+    
+       
         ///get the cached frames needed or the one we just computed earlier.
         const FramesNeededMap& framesNeeeded = cachedImgParams->getFramesNeeded();
         
@@ -969,7 +1037,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                                      boost::shared_ptr<Natron::Image> downscaledOutput,
                                                      boost::shared_ptr<Natron::Image> output)
 {
-    _imp->renderArgs.setLocalData(args);
+    Implementation::ScopedRenderArgs(&_imp->renderArgs,args);
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
     RectI rectToRender = downscaledOutput->getMinimalRect(roi);
     bool useFullResImage = !supportsRenderScale() && args._mipMapLevel != 0;
