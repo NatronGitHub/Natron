@@ -504,3 +504,19 @@ void OfxImageEffectInstance::setClipsView(int view)
         it->second->setView(view);
     }
 }
+
+void OfxImageEffectInstance::discardClipsMipMapLevel()
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->discardMipMapLevel();
+    }
+
+}
+
+void OfxImageEffectInstance::discardClipsView()
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->discardView();
+    }
+
+}

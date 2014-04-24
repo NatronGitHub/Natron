@@ -146,6 +146,12 @@ public:
     virtual void setView(int view) OVERRIDE FINAL;
     
     void setMipMapLevel(unsigned int mipMapLevel);
+    
+    ///Set the view stored in the thread-local storage to be invalid
+    void discardView();
+    
+    ///Set the mipmap level stored in the thread-local storage to be invalid
+    void discardMipMapLevel();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -165,8 +171,17 @@ private:
     
     struct LastRenderArgs
     {
+        bool isMipMapLevelValid;
         unsigned int mipMapLevel;
+        bool isViewValid;
         int view;
+        
+        LastRenderArgs()
+        : isMipMapLevelValid(false)
+        , mipMapLevel(0)
+        , isViewValid(false)
+        , view(0)
+        {}
     };
     
     Natron::ThreadStorage<LastRenderArgs> _lastRenderArgs; //< foreach render thread, the args

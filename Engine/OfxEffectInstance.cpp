@@ -480,6 +480,9 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
+    
+    effectInstance()->discardClipsMipMapLevel();
+    
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
@@ -522,6 +525,9 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, useScaleOne ? scaleOne : scale,
                                                         rectToOfxRect2D(renderWindow), inputRois);
+    
+    effectInstance()->discardClipsMipMapLevel();
+    effectInstance()->discardClipsView();
     
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         Natron::errorDialog(getNode()->getName_mt_safe(), "Failed to specify the region of interest from inputs.");
@@ -709,6 +715,10 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     
     stat = effect_->renderAction((OfxTime)time, field, ofxRoI,useScaleOne ? scaleOne : scale,
                                  isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
+    
+    effectInstance()->discardClipsMipMapLevel();
+    effectInstance()->discardClipsView();
+    
     if (stat != kOfxStatOK) {
         return StatFailed;
     } else {

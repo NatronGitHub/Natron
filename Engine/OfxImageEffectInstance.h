@@ -180,6 +180,10 @@ public:
     void setClipsMipMapLevel(unsigned int mipMapLevel);
 
     void setClipsView(int view);
+    
+    void discardClipsMipMapLevel();
+    
+    void discardClipsView();
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 

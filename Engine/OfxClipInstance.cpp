@@ -166,12 +166,12 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
         
-        unsigned int mipmapLevel = 0;
-        int view = 0;
-        if (_lastRenderArgs.hasLocalData()) {
-            mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
-            view = _lastRenderArgs.localData().view;
-        }
+        assert(_lastRenderArgs.hasLocalData());
+        assert(_lastRenderArgs.localData().isViewValid);
+        assert(_lastRenderArgs.localData().isMipMapLevelValid);
+        unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
+        int view = _lastRenderArgs.localData().view;
+        
         Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,mipmapLevel,view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
@@ -215,10 +215,6 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         }
         
     }
-//    else if(_nodeInstance && _nodeInstance->effectInstance()) {
-//        _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
-//        _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
-//    }
     else {
         // default value: should never happen
         assert(!"Cannot compute ROD the input is probably disconnected. The plug-in should have checked this before calling this function.");
@@ -241,13 +237,14 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
 {
     OfxPointD scale;
     scale.x = scale.y = 1.;
-    int view = 0;
-    if (_lastRenderArgs.hasLocalData()) {
-        unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
-        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.y = scale.x;
-        view = _lastRenderArgs.localData().view;
-    }
+    assert(_lastRenderArgs.hasLocalData());
+    assert(_lastRenderArgs.localData().isViewValid);
+    assert(_lastRenderArgs.localData().isMipMapLevelValid);
+    unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
+    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
+    int view = _lastRenderArgs.localData().view;
+    
     return getImageInternal(time, scale, view, optionalBounds);
 }
 
@@ -376,14 +373,13 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
 {
     OfxPointD scale;
-    if (_lastRenderArgs.hasLocalData()) {
-        unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
-        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.y = scale.x;
-        assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
-    } else {
-        scale.x = scale.y = 1.;
-    }
+    assert(_lastRenderArgs.hasLocalData());
+    assert(_lastRenderArgs.localData().isMipMapLevelValid);
+    unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
+    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
+    assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
+    
     return getImageInternal(time,scale,view,optionalBounds);
 }
 
@@ -395,6 +391,8 @@ void OfxClipInstance::setView(int view) {
         args.mipMapLevel = 0;
     }
     args.view = view;
+    assert(!_lastRenderArgs.localData().isViewValid);
+    _lastRenderArgs.localData().isViewValid =  true;
     _lastRenderArgs.setLocalData(args);
 }
 
@@ -407,6 +405,22 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
         args.view = 0;
     }
     args.mipMapLevel = mipMapLevel;
+    assert(!_lastRenderArgs.localData().isMipMapLevelValid);
+    _lastRenderArgs.localData().isMipMapLevelValid = true;
     _lastRenderArgs.setLocalData(args);
 
+}
+
+///Set the view stored in the thread-local storage to be invalid
+void OfxClipInstance::discardView()
+{
+    assert(_lastRenderArgs.hasLocalData());
+    _lastRenderArgs.localData().isViewValid = false;
+}
+
+///Set the mipmap level stored in the thread-local storage to be invalid
+void OfxClipInstance::discardMipMapLevel()
+{
+    assert(_lastRenderArgs.hasLocalData());
+    _lastRenderArgs.localData().isMipMapLevelValid = false;
 }
