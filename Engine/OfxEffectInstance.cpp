@@ -349,7 +349,7 @@ OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput()
 OfxClipInstance* OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const {
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
     assert(inputNo < (int)clips.size());
-    OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(clips[inputNo]->getName());
+    OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(clips[clips.size() - 1 - inputNo]->getName());
     assert(clip);
     return dynamic_cast<OfxClipInstance*>(clip);
 }
@@ -369,7 +369,15 @@ int OfxEffectInstance::maximumInputs() const {
 
 bool OfxEffectInstance::isInputOptional(int inputNb) const {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
+    assert(inputNb < (int)inputs.size());
     return inputs[inputs.size()-1-inputNb]->isOptional();
+}
+
+bool OfxEffectInstance::isInputMask(int inputNb) const
+{
+    MappedInputV inputs = inputClipsCopyWithoutOutput();
+    assert(inputNb < (int)inputs.size());
+    return inputs[inputs.size()-1-inputNb]->isMask();
 }
 
 /// the smallest RectI enclosing the given RectD

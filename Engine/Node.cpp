@@ -37,6 +37,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/ImageParams.h"
 
 using namespace Natron;
@@ -108,6 +109,9 @@ struct Node::Implementation {
         , knobsAgeMutex()
         , masterNodeMutex()
         , masterNode()
+        , enableMaskKnob()
+        , maskChannelKnob()
+        , invertMaskKnob()
     {
     }
     
@@ -168,7 +172,9 @@ struct Node::Implementation {
     mutable QMutex masterNodeMutex;
     boost::shared_ptr<Node> masterNode;
   
-
+    boost::shared_ptr<Bool_Knob> enableMaskKnob;
+    boost::shared_ptr<Choice_Knob> maskChannelKnob;
+    boost::shared_ptr<Bool_Knob> invertMaskKnob;
 };
 
 /**
@@ -218,8 +224,8 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
         _imp->liveInstance->initializeOverlayInteract();
     }
     
-    initializeKnobs();
     initializeInputs();
+    initializeKnobs();
 
     if (!nameSet) {
          getApp()->getProject()->initNodeCountersAndSetName(this);
@@ -527,6 +533,47 @@ void Node::initializeKnobs() {
     assert(QThread::currentThread() == qApp->thread());
     
     _imp->liveInstance->initializeKnobsPublic();
+    
+    ///If the effect has a mask, add additionnal mask controls
+    bool hasMask = false;
+    int inputsCount = maximumInputs();
+    for (int i = 0; i < inputsCount; ++i) {
+        if (_imp->liveInstance->isInputMask(i)) {
+            hasMask = true;
+            break;
+        }
+    }
+    if (hasMask) {
+        _imp->enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Mask");
+        _imp->enableMaskKnob->setDefaultValue(false, 0);
+        _imp->enableMaskKnob->turnOffNewLine();
+        _imp->enableMaskKnob->setName("enable_mask_natron");
+        _imp->enableMaskKnob->setAnimationEnabled(false);
+        _imp->enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
+                                      "Turning this off will fill with 1's the mask.");
+        
+        _imp->maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "");
+        std::vector<std::string> choices;
+        choices.push_back("None");
+        choices.push_back("Red");
+        choices.push_back("Green");
+        choices.push_back("Blue");
+        choices.push_back("Alpha");
+        _imp->maskChannelKnob->populateChoices(choices);
+        _imp->maskChannelKnob->setDefaultValue(4, 0);
+        _imp->maskChannelKnob->setAnimationEnabled(false);
+        _imp->maskChannelKnob->turnOffNewLine();
+        _imp->maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
+                                              "Setting this to None is the same as disabling the mask.");
+        _imp->maskChannelKnob->setName("mask_channel_natron");
+        
+        _imp->invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert");
+        _imp->invertMaskKnob->setDefaultValue(false, 0);
+        _imp->invertMaskKnob->setAnimationEnabled(false);
+        _imp->invertMaskKnob->setName("invert_mask_natron");
+        _imp->invertMaskKnob->setHintToolTip("Invert the use of the mask");
+    }
+    
     emit knobsInitialized();
 }
 
@@ -1423,6 +1470,83 @@ bool Node::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
         std::find(_imp->outputComponents.begin(),_imp->outputComponents.end(),comp);
         return found != _imp->outputComponents.end();
 
+    }
+}
+
+Natron::ImageComponents Node::findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const
+{
+    int compCount = getElementsCountForComponents(comp);
+
+    QMutexLocker l(&_imp->inputsMutex);
+    if (inputNb >= 0) {
+        assert(inputNb < (int)_imp->inputsComponents.size());
+        
+        
+        const std::list<Natron::ImageComponents>& comps = _imp->inputsComponents[inputNb];
+        if (comps.empty()) {
+            return Natron::ImageComponentNone;
+        }
+        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+            if (closestComp == comps.end()) {
+                closestComp = it;
+            } else {
+                if (std::abs(getElementsCountForComponents(*it) - compCount) <
+                    std::abs(getElementsCountForComponents(*closestComp) - compCount)) {
+                    closestComp = it;
+                }
+            }
+        }
+        assert(closestComp != comps.end());
+        return *closestComp;
+    } else {
+        assert(inputNb == -1);
+        const std::list<Natron::ImageComponents>& comps = _imp->outputComponents;
+        if (comps.empty()) {
+            return Natron::ImageComponentNone;
+        }
+        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+            if (closestComp == comps.end()) {
+                closestComp = it;
+            } else {
+                if (std::abs(getElementsCountForComponents(*it) - compCount) <
+                    std::abs(getElementsCountForComponents(*closestComp) - compCount)) {
+                    closestComp = it;
+                }
+            }
+        }
+        assert(closestComp != comps.end());
+        return *closestComp;
+    }
+}
+
+int Node::getMaskChannel() const
+{
+    if (!_imp->maskChannelKnob) {
+        return -1;
+    } else {
+        return _imp->maskChannelKnob->getValue() - 1;
+    }
+}
+
+
+bool Node::isMaskEnabled() const
+{
+    if (!_imp->enableMaskKnob) {
+        return false;
+    } else {
+        return _imp->enableMaskKnob->getValue();
+    }
+}
+
+
+bool Node::isMaskInverted() const
+{
+    if (!_imp->invertMaskKnob) {
+        return false;
+    } else {
+        return _imp->invertMaskKnob->getValue();
     }
 }
 

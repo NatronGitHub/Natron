@@ -248,6 +248,27 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
+    
+    ///if the plug-in doesn't support the image components
+    if (!isSupportedComponent(inputNb, inputImg->getComponents())) {
+        Natron::ImageComponents mappedComp = findClosestSupportedComponents(inputNb, inputImg->getComponents());
+        int channelForAlpha = getMaskChannel();
+        Natron::Image* remappedImg;
+        
+        if ((mappedComp == Natron::ImageComponentAlpha) && (channelForAlpha == -1 || !isMaskEnabled())) {
+            ///Set the mask to 0's everywhere
+            
+            remappedImg = new Natron::Image(mappedComp,inputImg->getRoD(),inputImg->getMipMapLevel());
+            remappedImg->defaultInitialize(1.,1.);
+        } else {
+            ///convert the fetched input image
+            bool invert = isInputMask(inputNb) && isMaskInverted();
+            remappedImg = inputImg->convertToFormat(mappedComp, channelForAlpha,invert);
+        }
+        
+        inputImg.reset(remappedImg);
+    }
+    
     if (!supportsRenderScale() && inputImgMipMapLevel > 0) {
         RectI upscaledRoD = inputImg->getPixelRoD().upscalePowerOfTwo(inputImgMipMapLevel);
         boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0));
@@ -1371,6 +1392,28 @@ void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime la
 bool EffectInstance::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
 {
     return _node->isSupportedComponent(inputNb, comp);
+}
+
+Natron::ImageComponents EffectInstance::findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const
+{
+    return _node->findClosestSupportedComponents(inputNb,comp);
+}
+
+int EffectInstance::getMaskChannel() const
+{
+    return _node->getMaskChannel();
+}
+
+
+bool EffectInstance::isMaskEnabled() const
+{
+    return _node->isMaskEnabled();
+}
+
+
+bool EffectInstance::isMaskInverted() const
+{
+    return _node->isMaskInverted();
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)

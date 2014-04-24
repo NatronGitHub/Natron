@@ -233,7 +233,7 @@ namespace Natron {
          * @brief Fills the entire image with the given R,G,B value and an alpha value.
          **/
         void defaultInitialize(float colorValue = 0.f,float alphaValue = 1.f){
-            fill(_bitmap.getRoD(),colorValue,alphaValue);
+            fill(_pixelRod,colorValue,alphaValue);
         }
         
         /**
@@ -267,6 +267,25 @@ namespace Natron {
         static double getScaleFromMipMapLevel(unsigned int level);
         
         static unsigned int getLevelFromScale(double s);
+        
+        /**
+         * @brief This function can be used to do the following conversion:
+         * 1) RGBA to RGB
+         * 2) RGBA to alpha
+         * 3) RGB to RGBA
+         * 4) RGB to alpha
+         * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
+         * fill the alpha. If it is -1 it indicates you want to clear the mask.
+         *
+         * @param invert If true the channels will be inverted when converting.
+         *
+         * WARNING: The bitmap is NOT copied when converting. This function is not meant to cache images
+         * that's why it allocates itself the return value.
+         * The caller is responsible for freeing the image afterwards.
+         **/
+        Natron::Image* convertToFormat(Natron::ImageComponents comp,int channelForAlpha,bool invert) const;
+        
+
         
     private:
         

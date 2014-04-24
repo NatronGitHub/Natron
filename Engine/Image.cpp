@@ -405,27 +405,23 @@ void Natron::Image::copy(const Natron::Image& other,const RectI& roi,bool copyBi
 
 void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
     ImageComponents comps = getComponents();
-    for (int i = rect.bottom(); i < rect.top();++i) {
-        float* dst = pixelAt(rect.left(),i);
-        for (int j = 0; j < rect.width();++j) {
-            switch (comps) {
-                case ImageComponentAlpha:
-                    dst[j * 4] = a;
-                    break;
-                case ImageComponentRGB:
-                    dst[j * 4] = r;
-                    dst[j * 4 + 1] = g;
-                    dst[j * 4 + 2] = b;
-                    break;
-                case ImageComponentRGBA:
-                    dst[j * 4] = r;
-                    dst[j * 4 + 1] = g;
-                    dst[j * 4 + 2] = b;
-                    dst[j * 4 + 3] = a;
-                    break;
-                case ImageComponentNone:
-                default:
-                    break;
+    if (comps == ImageComponentNone) {
+        return;
+    }
+    
+    float fillValue[4] = {r,g,b,a};
+    
+    int nComps = getElementsCountForComponents(comps);
+    int rowElems = (int)getRowElements();
+    float* dst = pixelAt(rect.x1, rect.y1);
+    for (int i = 0; i < rect.height();++i,dst += (rowElems - rect.width())) {
+        for (int j = 0; j < rect.width();++j,dst+=comps) {
+            for (int k = 0; k < nComps; ++k) {
+                if (comps == Natron::ImageComponentAlpha) {
+                    dst[k] = a;
+                } else {
+                    dst[k] = fillValue[k];
+                }
             }
         }
     }
@@ -961,4 +957,64 @@ Image::getLevelFromScale(double s)
 void Image::clearBitmap()
 {
     _bitmap.clear();
+}
+
+/**
+ * @brief This function can be used to do the following conversion:
+ * 1) RGBA to RGB
+ * 2) RGBA to alpha
+ * 3) RGB to RGBA
+ * 4) RGB to alpha
+ * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
+ * fill the alpha. If it is -1 it indicates you want to clear the mask.
+ *
+ * WARNING: The bitmap is NOT copied when converting. This function is not meant to cache images
+ * that's why it allocates itself the return value.
+ * The caller is responsible for freeing the image afterwards.
+ **/
+Natron::Image* Image::convertToFormat(Natron::ImageComponents comp,int channelForAlpha,bool invert) const
+{
+    assert(comp == Natron::ImageComponentRGBA || comp == Natron::ImageComponentRGB || comp == Natron::ImageComponentAlpha);
+    Natron::Image* output = new Natron::Image(comp,getRoD(),getMipMapLevel());
+    const RectI& r = getPixelRoD();
+    
+    float* dstPixels = output->pixelAt(r.x1, r.y1);
+
+    ///special case comp == alpha && channelForAlpha = -1 clear out the mask
+    if (comp == Natron::ImageComponentAlpha && channelForAlpha == -1) {
+        std::fill(dstPixels, dstPixels + r.area(), 0.);
+        return output;
+    }
+    
+    int dstComponents = getElementsCountForComponents(comp);
+    int srcComponents = getElementsCountForComponents(getComponents());
+    const float* srcPixels = pixelAt(r.x1, r.y1);
+    
+    assert(srcPixels);
+    assert(dstPixels);
+    
+    for (int y = 0; y < r.height(); ++y) {
+        for (int x = 0; x < r.width(); ++x,srcPixels += srcComponents,dstPixels += dstComponents) {
+            if (comp == Natron::ImageComponentAlpha) {
+                assert(channelForAlpha < srcComponents && channelForAlpha >= 0);
+                *dstPixels = srcPixels[channelForAlpha];
+                if (invert) {
+                    *dstPixels = 1. - *dstPixels;
+                }
+            } else {
+                for (int k = 0; k < dstComponents; ++k) {
+                    if (k < srcComponents) {
+                        dstPixels[k] = invert ? 1. - srcPixels[k] : srcPixels[k];
+                    } else {
+                        dstPixels[k] = k == 3 ? 1. :  0.;
+                        if (invert) {
+                            dstPixels[k] = 1. - dstPixels[k];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return output;
 }

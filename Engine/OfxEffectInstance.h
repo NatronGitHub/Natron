@@ -134,6 +134,8 @@ public:
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
 
+    virtual bool isInputMask(int inputNb) const WARN_UNUSED_RETURN;
+
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,
                                                  RectI* rod,bool* isProjectFormat) OVERRIDE WARN_UNUSED_RETURN;
 

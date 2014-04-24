@@ -159,6 +159,32 @@ public:
     bool isSupportedComponent(int inputNb,Natron::ImageComponents comp) const;
     
     /**
+     * @brief Returns the most appropriate components that can be supported by the inputNb.
+     * If inputNb equals -1 then this function will check the output components.
+     **/
+    Natron::ImageComponents findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const;
+    
+    /**
+     * @brief Returns the index of the channel to use to produce the mask.
+     * None = -1
+     * R = 0
+     * G = 1
+     * B = 2
+     * A = 3
+     **/
+    int getMaskChannel() const;
+    
+    /**
+     * @brief Returns whether masking is enabled or not
+     **/
+    bool isMaskEnabled() const;
+    
+    /**
+     * @brief Returns true if the mask should be used inverted
+     **/
+    bool isMaskInverted() const;
+    
+    /**
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.
      **/

@@ -198,6 +198,32 @@ public:
     virtual bool isInputOptional(int inputNb) const WARN_UNUSED_RETURN = 0;
     
     /**
+     * @brief Is inputNb a mask ? In which case the effect will have an additionnal mask parameter.
+     **/
+    virtual bool isInputMask(int /*inputNb*/) const WARN_UNUSED_RETURN { return false; };
+    
+    
+    /**
+     * @brief Returns the index of the channel to use to produce the mask.
+     * None = -1
+     * R = 0
+     * G = 1
+     * B = 2
+     * A = 3
+     **/
+    int getMaskChannel() const;
+    
+    /**
+     * @brief Returns whether masking is enabled or not
+     **/
+    bool isMaskEnabled() const;
+    
+    /**
+     * @brief Returns true if the mask should be used inverted
+     **/
+    bool isMaskInverted() const;
+    
+    /**
      * @brief Routine called after the creation of an effect. This function must
      * fill for the given input what image components we can feed it with.
      * This function is also called to specify what image components this effect can output.
@@ -211,6 +237,11 @@ public:
      **/
     bool isSupportedComponent(int inputNb,Natron::ImageComponents comp) const;
     
+    /**
+     * @brief Returns the most appropriate components that can be supported by the inputNb.
+     * If inputNb equals -1 then this function will check the output components.
+     **/
+    Natron::ImageComponents findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
