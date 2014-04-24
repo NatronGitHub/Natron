@@ -18,6 +18,7 @@
 // It uses an actual instance of the data.
 // That way, the ThreadStorage class can be destroyed before leaving the main thread.
 //
+// Of course, as a consequence the main thread always has "local data", which is just a global variable.
 
 namespace Natron {
 
@@ -25,6 +26,11 @@ template <class T>
 class ThreadStorage : public QThreadStorage<T>
 {
 public:
+    /// Is local storage present?
+    /// This *does not* mean that it was initialized.
+    /// For example, local data on the main thread is
+    /// always present by may not be initialized.
+    /// Do *not* use this to check if there is *valid* local data. You must store a flag in the local data for that purpose.
     inline bool hasLocalData() const
     {
         return (QThread::currentThread() == qApp->thread() || QThreadStorage<T>::hasLocalData());

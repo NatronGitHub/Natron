@@ -780,7 +780,7 @@ struct KnobHolder::KnobHolderPrivate
     , actionsRecursionLevel()
     , evaluateQueue()
     {
-        ///Set local data on the main-thread to work-around the bug in Thread-Storage
+        // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
         if (_app) {
             actionsRecursionLevel.setLocalData(0);
