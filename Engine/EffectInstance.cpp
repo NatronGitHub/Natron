@@ -261,8 +261,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
-    assert(_imp->renderArgs.hasLocalData());
-    assert(_imp->renderArgs.localData()._validArgs);
+    assert(_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs);
     
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
@@ -738,10 +737,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         RoIMap inputsRoi = getRegionOfInterest_public(time, scale, canonicalRectToRender,view);
         
         /*we can set the render args*/
-        if (_imp->renderArgs.hasLocalData()) {
-            assert(!_imp->renderArgs.localData()._validArgs);
-        }
-        
+        assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
+
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                     rectToRender,
                                                     inputsRoi,

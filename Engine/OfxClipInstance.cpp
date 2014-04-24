@@ -166,9 +166,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
         
-        assert(_lastRenderArgs.hasLocalData());
-        assert(_lastRenderArgs.localData().isViewValid);
-        assert(_lastRenderArgs.localData().isMipMapLevelValid);
+        assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
         unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
         int view = _lastRenderArgs.localData().view;
         
@@ -237,9 +235,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
 {
     OfxPointD scale;
     scale.x = scale.y = 1.;
-    assert(_lastRenderArgs.hasLocalData());
-    assert(_lastRenderArgs.localData().isViewValid);
-    assert(_lastRenderArgs.localData().isMipMapLevelValid);
+    assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
     unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
@@ -373,8 +369,7 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
 {
     OfxPointD scale;
-    assert(_lastRenderArgs.hasLocalData());
-    assert(_lastRenderArgs.localData().isMipMapLevelValid);
+    assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isMipMapLevelValid);
     unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
