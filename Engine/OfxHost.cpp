@@ -640,6 +640,8 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
         }
         for (unsigned int i = 0; i < nThreads; ++i) {
             threads[i]->wait();
+            assert(!threads[i]->isRunning());
+            assert(threads[i]->isFinished());
             delete threads[i];
         }
     }
