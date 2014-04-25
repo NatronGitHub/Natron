@@ -711,11 +711,11 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
     
     bool renderSucceeded = true;
 
-    bool useFullResImage = !supportsRenderScale() && mipMapLevel != 0;
+    bool useFullResImage = !supportsRenderScale() && (mipMapLevel != 0);
 
-    for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
-        RectI &rectToRender = *it;
+        const RectI &rectToRender = *it;
         
         ///Upscale the RoI to a region in the unscaled image so it is in canonical coordinates
         ///this is actually not entirely true since we don't care about pixel aspect ratio here
@@ -884,10 +884,10 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 QMutexLocker l(&getNode()->getRenderInstancesSharedMutex());
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                canonicalRectToRender = rectToRender;
+                RectI minimalRectToRender = downscaledImage->getMinimalRect(rectToRender);
+                canonicalRectToRender = minimalRectToRender;
                 if (useFullResImage) {
-                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+                    canonicalRectToRender = minimalRectToRender.upscalePowerOfTwo(mipMapLevel);
                     canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }
                 
@@ -916,7 +916,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                         renderSucceeded = false;
                     }
                     if (!aborted()) {
-                        downscaledImage->markForRendered(rectToRender);
+                        downscaledImage->markForRendered(minimalRectToRender);
                     }
                 }
             } break;
@@ -928,10 +928,10 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 QMutexLocker l(&getNode()->getFrameMutex(time));
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                canonicalRectToRender = rectToRender;
+                RectI minimalRectToRender = downscaledImage->getMinimalRect(rectToRender);
+                canonicalRectToRender = minimalRectToRender;
                 if (useFullResImage) {
-                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+                    canonicalRectToRender = minimalRectToRender.upscalePowerOfTwo(mipMapLevel);
                     canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }
                 
@@ -960,7 +960,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                         renderSucceeded = false;
                     }
                     if (!aborted()) {
-                        downscaledImage->markForRendered(rectToRender);
+                        downscaledImage->markForRendered(minimalRectToRender);
                     }
                 }
             } break;
@@ -971,10 +971,10 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
             {
                 QMutexLocker lock(appPTR->getMutexForPlugin(pluginID().c_str()));
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                canonicalRectToRender = rectToRender;
+                RectI minimalRectToRender = downscaledImage->getMinimalRect(rectToRender);
+                canonicalRectToRender = minimalRectToRender;
                 if (useFullResImage) {
-                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+                    canonicalRectToRender = minimalRectToRender.upscalePowerOfTwo(mipMapLevel);
                     canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }
                 
@@ -1004,7 +1004,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                         renderSucceeded = false;
                     }
                     if (!aborted()) {
-                        downscaledImage->markForRendered(rectToRender);
+                        downscaledImage->markForRendered(minimalRectToRender);
                     }
                 }
             } break;
