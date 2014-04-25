@@ -1420,16 +1420,17 @@ Color_KnobGui::updateGUI(int dimension)
             throw std::logic_error("wrong dimension");
     }
     
-    uchar r = Color::floatToInt<256>(_rBox->value());
+    
+    uchar r = Color::floatToInt<256>(Natron::Color::to_func_srgb(_rBox->value()));
     uchar g = r;
     uchar b = r;
     uchar a = 255;
     if (_dimension >= 3) {
-        g = Color::floatToInt<256>(_gBox->value());
-        b = Color::floatToInt<256>(_bBox->value());
+        g = Color::floatToInt<256>(Natron::Color::to_func_srgb(_gBox->value()));
+        b = Color::floatToInt<256>(Natron::Color::to_func_srgb(_bBox->value()));
     }
     if (_dimension >= 4) {
-        a = Color::floatToInt<256>(_aBox->value());
+        a = Color::floatToInt<256>(Natron::Color::to_func_srgb(_aBox->value()));
     }
     QColor color(r, g, b, a);
     updateLabel(color);
