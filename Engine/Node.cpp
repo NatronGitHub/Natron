@@ -1603,9 +1603,11 @@ bool InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber) 
         _activeInput = inputNumber;
     }
     if (!Node::connectInput(input, inputNumber)) {
-        QMutexLocker activeInputLocker(&_activeInputMutex);
-        _activeInput = oldActiveInput;
-        computeHash(); 
+        {
+            QMutexLocker activeInputLocker(&_activeInputMutex);
+            _activeInput = oldActiveInput;
+        }
+        computeHash();
     }
     tryAddEmptyInput();
     return true;
