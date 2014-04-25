@@ -458,10 +458,8 @@ unsigned int Image::getRowElements() const
 void Image::halveRoI(const RectI& roi,Natron::Image* output) const
 {
     ///handle case where there is only 1 column/row
-    int width = roi.width();
-    int height = roi.height();
-    if (width == 1 || height == 1) {
-        assert( !(width == 1 && height == 1) ); /// can't be 1x1
+    if (roi.width() == 1 || roi.height() == 1) {
+        assert( !(roi.width() == 1 && roi.height() == 1) ); /// can't be 1x1
         halve1DImage(roi,output);
         return;
     }
@@ -476,8 +474,8 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
            dstRoD.x2*2 <= roi.x2 &&
            dstRoD.y1*2 >= roi.y1 &&
            dstRoD.y2*2 <= roi.y2 &&
-           dstRoD.width()*2 <= width &&
-           dstRoD.height()*2 <= height);
+           dstRoD.width()*2 <= roi.width() &&
+           dstRoD.height()*2 <= roi.height());
     assert(getComponents() == output->getComponents());
     
     int components = getElementsCountForComponents(getComponents());
@@ -485,9 +483,6 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     RectI srcRoI = roi;
     srcRoI.intersect(srcRoD, &srcRoI); // intersect srcRoI with the region of definition
     srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
-    
-    width = srcRoI.width();
-    height = srcRoI.height();
     
     RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
     // a few checks...
@@ -509,10 +504,10 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     assert(srcRoI.width() == dstRoI.width()*2);
     assert(srcRoI.height() == dstRoI.height()*2);
 
-    //int srcWidth = srcRoI.width();
-    //int srcHeight = srcRoI.height();
-    int dstWidth = dstRoI.width();
-    int dstHeight = dstRoI.height();
+    int srcRoIWidth = srcRoI.width();
+    //int srcRoIHeight = srcRoI.height();
+    int dstRoIWidth = dstRoI.width();
+    int dstRoIHeight = dstRoI.height();
     const float* src = pixelAt(srcRoI.x1, srcRoI.y1);
     float* dst = output->pixelAt(dstRoI.x1, dstRoI.y1);
     
@@ -523,11 +518,11 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
     // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
     // This is the *good* way to code it, let the optimizer do the rest!
     // Please don't change this, and don't remove the comments.
-    for (int y = 0; y < dstHeight;
+    for (int y = 0; y < dstRoIHeight;
          ++y,
-         src += (srcRowSize+srcRowSize) - width*components, // two rows minus what was done on previous iteration
-         dst += (dstRowSize) - dstWidth*components) { // one row minus what was done on previous iteration
-        for (int x = 0; x < dstWidth;
+         src += (srcRowSize+srcRowSize) - srcRoIWidth*components, // two rows minus what was done on previous iteration
+         dst += (dstRowSize) - dstRoIWidth*components) { // one row minus what was done on previous iteration
+        for (int x = 0; x < dstRoIWidth;
              ++x,
              src += (components+components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components) { // one pixel minus what was done on previous iteration
