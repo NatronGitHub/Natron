@@ -279,7 +279,7 @@ void Settings::setDefaultValues() {
     }
     endKnobsValuesChanged(Natron::PLUGIN_EDITED);
 }
- 
+
 void Settings::saveSettings(){
     
     _wereChangesMadeSinceLastSave = false;
@@ -650,7 +650,15 @@ void Settings::restoreDefault() {
     if (!QFile::remove(settings.fileName())) {
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
-    setDefaultValues();
+    
+    beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        for (int j = 0; j < knobs[i]->getDimension();++j) {
+            knobs[i]->resetToDefaultValue(j);
+        }
+    }
+    endKnobsValuesChanged(Natron::PLUGIN_EDITED);
 }
 
 bool Settings::isRenderInSeparatedProcessEnabled() const {

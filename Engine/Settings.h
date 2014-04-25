@@ -103,7 +103,7 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     void setDefaultValues();
-    
+        
     bool tryLoadOpenColorIOConfig();
 
     
