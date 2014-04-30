@@ -591,8 +591,12 @@ template<typename T>
 void Knob<T>::evaluateAnimationChange()
 {
     //the holder cannot be a global holder(i.e: it cannot be tied application wide, e.g like Settings)
-    assert(getHolder()->getApp());
-    SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
+    SequenceTime time;
+    if (getHolder()->getApp()) {
+        time = getHolder()->getApp()->getTimeLine()->currentFrame();
+    } else {
+        time = 0;
+    }
 
     beginValueChange(Natron::PLUGIN_EDITED);
     bool hasEvaluatedOnce = false;
