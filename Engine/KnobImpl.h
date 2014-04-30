@@ -46,7 +46,13 @@ template<>
 std::string Knob<std::string>::getValue(int dimension) const
 {
     if (isAnimated(dimension)) {
-        return getValueAtTime(getHolder()->getApp()->getTimeLine()->currentFrame(), dimension);
+        SequenceTime time;
+        if (!getHolder()->getApp()) {
+            time = 0;
+        } else {
+            time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        }
+        return getValueAtTime(time, dimension);
     }
     
     if (dimension > (int)_values.size() || dimension < 0) {
@@ -69,7 +75,13 @@ template <typename T>
 T Knob<T>::getValue(int dimension) const
 {
     if (isAnimated(dimension)) {
-        return getValueAtTime(getHolder()->getApp()->getTimeLine()->currentFrame(), dimension);
+        SequenceTime time;
+        if (!getHolder()->getApp()) {
+            time = 0;
+        } else {
+            time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        }
+        return getValueAtTime(time, dimension);
     }
 
     if (dimension > (int)_values.size() || dimension < 0) {
