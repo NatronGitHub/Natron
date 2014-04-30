@@ -113,13 +113,17 @@ private:
     virtual void undo() OVERRIDE FINAL {
         boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
         fk->setFiles(_oldFiles);
-        fk->getHolder()->getApp()->getProject()->triggerAutoSave();
+        if (fk->getHolder()->getApp()) {
+            fk->getHolder()->getApp()->getProject()->triggerAutoSave();
+        }
     }
     
     virtual void redo() OVERRIDE FINAL {
         boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
         fk->setFiles(_newFiles);
-        fk->getHolder()->getApp()->getProject()->triggerAutoSave();
+        if (fk->getHolder()->getApp()) {
+            fk->getHolder()->getApp()->getProject()->triggerAutoSave();
+        }
     }
     
 };
