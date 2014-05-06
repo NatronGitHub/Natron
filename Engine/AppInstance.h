@@ -49,6 +49,8 @@ public:
     
     ~AppInstance();
     
+    virtual void aboutToQuit(){}
+    
     virtual void load(const QString& projectName = QString(),const QStringList& writers = QStringList());
     
     int getAppID() const;

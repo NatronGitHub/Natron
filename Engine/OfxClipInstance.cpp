@@ -25,6 +25,8 @@
 #include "Engine/Hash64.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
 
 using namespace Natron;
 
@@ -118,10 +120,15 @@ const std::string &OfxClipInstance::getFieldOrder() const
 //  Says whether the clip is actually connected at the moment.
 bool OfxClipInstance::getConnected() const
 {
-    if(_isOutput){
-        return _nodeInstance->hasOutputConnected();
-    }else{
-        return _nodeInstance->input_other_thread(getInputNb()) != NULL;
+    ///a roto brush is always connected
+    if (getName() == "Brush") {
+        return true;
+    } else {
+        if(_isOutput){
+            return _nodeInstance->hasOutputConnected();
+        }else{
+            return _nodeInstance->input_other_thread(getInputNb()) != NULL;
+        }
     }
 }
 
@@ -159,6 +166,24 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
     RectI rod;
+    
+    assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
+    unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
+    int view = _lastRenderArgs.localData().view;
+
+    
+    if (getName() == "Brush") {
+        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
+        assert(rotoCtx);
+        RectI rod;
+        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        ret.x1 = rod.x1;
+        ret.x2 = rod.x2;
+        ret.y1 = rod.y1;
+        ret.y2 = rod.y2;
+        return ret;
+    }
+    
     EffectInstance* n = getAssociatedNode();
     if (n) {
         bool isProjectFormat;
@@ -166,9 +191,6 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
         
-        assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
-        unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
-        int view = _lastRenderArgs.localData().view;
         
         Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,mipmapLevel,view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -359,6 +381,9 @@ int OfxClipInstance::getInputNb() const{
 
 Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 {
+    if (getName() == "Brush") {
+        return _nodeInstance;
+    }
     if(_isOutput) {
         return _nodeInstance;
     } else {

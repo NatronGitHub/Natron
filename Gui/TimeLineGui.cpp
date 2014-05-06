@@ -324,7 +324,7 @@ void TimeLineGui::paintGL()
         glCheckError();
 
 
-        QString mouseNumber(QString::number(std::floor(currentPosBtm.x())));
+        QString mouseNumber(QString::number(std::floor(currentPosBtm.x() + 0.5)));
         QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber)/2 ,
                                       currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
         QPointF mouseNumberPos = toTimeLineCoordinates(mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y());
@@ -459,7 +459,7 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
     }else{
         _imp->_state = DRAGGING_CURSOR;
         _imp->_gui->setUserScrubbingTimeline(true);
-        seek(c);
+        seek(std::floor(c + 0.5));
     }
     
 

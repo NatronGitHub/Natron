@@ -43,30 +43,30 @@
 #define kOfxParamPropControlPoints "OfxParamPropControlPoints"
 
 namespace {
-struct ControlPoint {
+struct BezierCP {
     double key;
     double value;
 };
-typedef std::vector<ControlPoint> ControlPointV;
+typedef std::vector<BezierCP> ControlPointV;
 struct ControlPoint_LessThan {
-    bool operator() (const ControlPoint & left, const ControlPoint & right)
+    bool operator() (const BezierCP & left, const BezierCP & right)
     {
         return left.key < right.key;
     }
 };
 struct ControlPoint_IsClose {
-    const ControlPoint& _refcp;
+    const BezierCP& _refcp;
     double _eps;
-    ControlPoint_IsClose(const ControlPoint& refcp, double eps) : _refcp(refcp), _eps(eps){}
+    ControlPoint_IsClose(const BezierCP& refcp, double eps) : _refcp(refcp), _eps(eps){}
 
-    bool operator() (const ControlPoint& cp) const {
+    bool operator() (const BezierCP& cp) const {
         return std::abs(cp.key - _refcp.key) < _eps;
     }
 };
 struct ControlPoint_MuchLessThan {
     double _eps;
     ControlPoint_MuchLessThan(double eps) : _eps(eps){}
-    bool operator() (const ControlPoint & left, const ControlPoint & right)
+    bool operator() (const BezierCP & left, const BezierCP & right)
     {
         return left.key < (right.key - _eps);
     }
@@ -634,7 +634,7 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
     std::stringstream name;
     name << kOfxParamPropControlPoints << '_' << curveIndex;
     std::string namestr = name.str();
-    ControlPoint cp = { key, value };
+    BezierCP cp = { key, value };
 
     if (!descProps.fetchProperty(namestr)) {
         // the property does not exist, create it

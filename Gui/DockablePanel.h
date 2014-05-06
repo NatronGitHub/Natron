@@ -37,6 +37,7 @@ class QLabel;
 class QUndoStack;
 class QUndoCommand;
 class FloatingWidget;
+class RotoPanel;
 namespace Natron{
     class Project;
     class Node;
@@ -118,7 +119,7 @@ public slots:
      the name externally.*/
     void onNameChanged(const QString& str);
     
-    /*initializes the knobs GUI*/
+    /*initializes the knobs GUI and also the roto context if any*/
     void initializeKnobs();
     
     /*Internal slot, not meant to be called externally.*/
@@ -155,6 +156,10 @@ signals:
     /*emitted when the panel is maximized*/
     void maximized();
     
+protected:
+    
+    virtual RotoPanel* initializeRotoPanel() {return NULL;}
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL {
@@ -162,8 +167,6 @@ private:
         QFrame::mousePressEvent(e);
     }
 
-    
-private:
     
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,bool onlyTopLevelKnobs);
     
@@ -236,6 +239,10 @@ public:
     void setSelected(bool s);
     
     bool isSelected() const {return _selected;}
+    
+private:
+    
+    virtual RotoPanel* initializeRotoPanel();
     
 public slots:
     

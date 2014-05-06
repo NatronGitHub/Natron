@@ -75,6 +75,7 @@ typedef OfxRangeD RangeD;
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
 #define kNodeGraphMoveNodeCommandCompressionID 4
+#define kRotoMoveControlPointsCompressionID 5
 
 
 #ifdef __NATRON_WIN32__

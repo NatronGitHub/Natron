@@ -39,6 +39,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/ImageParams.h"
+#include "Engine/RotoContext.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -112,6 +113,7 @@ struct Node::Implementation {
         , enableMaskKnob()
         , maskChannelKnob()
         , invertMaskKnob()
+        , rotoContext()
     {
     }
     
@@ -175,6 +177,8 @@ struct Node::Implementation {
     boost::shared_ptr<Bool_Knob> enableMaskKnob;
     boost::shared_ptr<Choice_Knob> maskChannelKnob;
     boost::shared_ptr<Bool_Knob> invertMaskKnob;
+    
+    boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
 };
 
 /**
@@ -215,10 +219,6 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _imp->liveInstance = func.second(thisShared);
-        if (!serialization.isNull() && serialization.getPluginID() == pluginID &&
-            majorVersion() == serialization.getPluginMajorVersion() && minorVersion() == serialization.getPluginMinorVersion()) {
-            loadKnobs(serialization);
-        }
     } else { //ofx plugin
         _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization);
         _imp->liveInstance->initializeOverlayInteract();
@@ -226,9 +226,20 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     
     initializeInputs();
     initializeKnobs();
-
+    
+    ///non OpenFX-plugin
+    if (func.first && !serialization.isNull() && serialization.getPluginID() == pluginID &&
+        majorVersion() == serialization.getPluginMajorVersion() && minorVersion() == serialization.getPluginMinorVersion()) {
+            loadKnobs(serialization);
+    }
+    
     if (!nameSet) {
          getApp()->getProject()->initNodeCountersAndSetName(this);
+    }
+    
+    ///Initialize the roto context if any
+    if (isRotoNode()) {
+        _imp->rotoContext.reset(new RotoContext(this));
     }
     
     computeHash(); 
@@ -535,44 +546,41 @@ void Node::initializeKnobs() {
     _imp->liveInstance->initializeKnobsPublic();
     
     ///If the effect has a mask, add additionnal mask controls
-    bool hasMask = false;
     int inputsCount = maximumInputs();
     for (int i = 0; i < inputsCount; ++i) {
-        if (_imp->liveInstance->isInputMask(i)) {
-            hasMask = true;
-            break;
+        if (_imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i)) {
+            std::string maskName = _imp->liveInstance->inputLabel(i);
+            _imp->enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, maskName);
+            _imp->enableMaskKnob->setDefaultValue(false, 0);
+            _imp->enableMaskKnob->turnOffNewLine();
+            _imp->enableMaskKnob->setName("enable_mask_natron_" + maskName);
+            _imp->enableMaskKnob->setAnimationEnabled(false);
+            _imp->enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
+                                                 "Turning this off will fill with 1's the mask.");
+            
+            _imp->maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "");
+            std::vector<std::string> choices;
+            choices.push_back("None");
+            choices.push_back("Red");
+            choices.push_back("Green");
+            choices.push_back("Blue");
+            choices.push_back("Alpha");
+            _imp->maskChannelKnob->populateChoices(choices);
+            _imp->maskChannelKnob->setDefaultValue(4, 0);
+            _imp->maskChannelKnob->setAnimationEnabled(false);
+            _imp->maskChannelKnob->turnOffNewLine();
+            _imp->maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
+                                                  "Setting this to None is the same as disabling the mask.");
+            _imp->maskChannelKnob->setName("mask_channel_natron_" + maskName);
+            
+            _imp->invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert");
+            _imp->invertMaskKnob->setDefaultValue(false, 0);
+            _imp->invertMaskKnob->setAnimationEnabled(false);
+            _imp->invertMaskKnob->setName("invert_mask_natron_" + maskName);
+            _imp->invertMaskKnob->setHintToolTip("Invert the use of the mask");
         }
     }
-    if (hasMask) {
-        _imp->enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Mask");
-        _imp->enableMaskKnob->setDefaultValue(false, 0);
-        _imp->enableMaskKnob->turnOffNewLine();
-        _imp->enableMaskKnob->setName("enable_mask_natron");
-        _imp->enableMaskKnob->setAnimationEnabled(false);
-        _imp->enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                      "Turning this off will fill with 1's the mask.");
-        
-        _imp->maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "");
-        std::vector<std::string> choices;
-        choices.push_back("None");
-        choices.push_back("Red");
-        choices.push_back("Green");
-        choices.push_back("Blue");
-        choices.push_back("Alpha");
-        _imp->maskChannelKnob->populateChoices(choices);
-        _imp->maskChannelKnob->setDefaultValue(4, 0);
-        _imp->maskChannelKnob->setAnimationEnabled(false);
-        _imp->maskChannelKnob->turnOffNewLine();
-        _imp->maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
-                                              "Setting this to None is the same as disabling the mask.");
-        _imp->maskChannelKnob->setName("mask_channel_natron");
-        
-        _imp->invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert");
-        _imp->invertMaskKnob->setDefaultValue(false, 0);
-        _imp->invertMaskKnob->setAnimationEnabled(false);
-        _imp->invertMaskKnob->setName("invert_mask_natron");
-        _imp->invertMaskKnob->setHintToolTip("Invert the use of the mask");
-    }
+    
     
     emit knobsInitialized();
 }
@@ -1220,6 +1228,11 @@ bool Node::isRotoPaintingNode() const
     ///Runs only in the main thread (checked by getName())
     QString name = getName().c_str();
     return name.contains("rotopaint",Qt::CaseInsensitive);
+}
+
+boost::shared_ptr<RotoContext> Node::getRotoContext() const
+{
+    return _imp->rotoContext;
 }
 
 const std::vector< boost::shared_ptr<KnobI> >& Node::getKnobs() const

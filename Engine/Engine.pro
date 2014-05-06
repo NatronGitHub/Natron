@@ -78,6 +78,7 @@ SOURCES += \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
     RotoContext.cpp \
+    RotoSerialization.cpp  \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
@@ -143,6 +144,7 @@ HEADERS += \
     ProjectSerialization.h \
     Rect.h \
     RotoContext.h \
+    RotoSerialization.h \
     Settings.h \
     Singleton.h \
     StandardPaths.h \

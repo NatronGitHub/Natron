@@ -121,13 +121,13 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     try{
         node->load(pluginID.toStdString(),node, serialization,dontLoadName);
     } catch (const std::exception& e) {
-        std::string title = std::string("Exception while creating node");
+        std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message);
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
-        std::string title = std::string("Exception while creating node");
+        std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString();
         qDebug() << message.c_str();
         errorDialog(title, message);

@@ -202,6 +202,10 @@ public:
      **/
     virtual bool isInputMask(int /*inputNb*/) const WARN_UNUSED_RETURN { return false; };
     
+    /**
+     * @brief Is the input a roto brush ?
+     **/
+    virtual bool isInputRotoBrush(int /*inputNb*/) const WARN_UNUSED_RETURN { return false; }
     
     /**
      * @brief Returns the index of the channel to use to produce the mask.
@@ -284,7 +288,7 @@ public:
                    const boost::shared_ptr<Image>& downscaledImage,
                    bool isSequentialRender,
                    bool isRenderMadeInResponseToUserInteraction,
-                   bool byPassCache = false);
+                   bool byPassCache );
 
 
     /**

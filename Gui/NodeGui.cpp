@@ -385,13 +385,17 @@ void NodeGui::initializeInputs()
     for(int i = 0; i < inputnb;++i){
         if(_inputEdges.find(i) == _inputEdges.end()){
             Edge* edge = new Edge(i,0.,thisShared,parentItem());
+            if (_internalNode->getLiveInstance()->isInputRotoBrush(i)) {
+                edge->setActive(false);
+                edge->hide();
+            }
             _inputEdges.insert(make_pair(i,edge));
         }
     }
     
     int emptyInputsCount = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
-        if(!it->second->hasSource()){
+        if(!it->second->hasSource() && it->second->isVisible()){
             ++emptyInputsCount;
         }
     }
@@ -415,7 +419,7 @@ void NodeGui::initializeInputs()
     double piDividedbyX = (double)(pi/(double)(emptyInputsCount+1));
     double angle = pi-piDividedbyX;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
-        if(!it->second->hasSource()){
+        if(!it->second->hasSource() && it->second->isVisible()){
             it->second->setAngle(angle);
             angle -= piDividedbyX;
             it->second->initLine();
@@ -566,7 +570,9 @@ void NodeGui::activate() {
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->addItem(it->second);
         it->second->setParentItem(parentItem());
-        it->second->setActive(true);
+        if (!_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
+            it->second->setActive(true);
+        }
     }
     if (_outputEdge) {
         _graph->scene()->addItem(_outputEdge);
@@ -587,6 +593,12 @@ void NodeGui::activate() {
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
         _graph->getGui()->activateViewerTab(viewer);
     }
+    
+    if (_internalNode->isRotoNode()) {
+        _graph->getGui()->setRotoInterface(this);
+    }
+    
+    
     if(_internalNode->isOpenFXNode()){
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->beginInstanceEditAction();

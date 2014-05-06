@@ -374,6 +374,9 @@ BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectI);
 Q_DECLARE_METATYPE(RectI)
 
 class RectD {
+    
+public:
+
     double x1; // left
     double y1; // bottom
     double x2; // right
@@ -390,7 +393,6 @@ class RectD {
         ar & boost::serialization::make_nvp("Top",y2);
         
     }
-public:
     
     RectD() : x1(0), y1(0), x2(0), y2(0) {}
     

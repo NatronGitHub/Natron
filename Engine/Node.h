@@ -36,6 +36,7 @@ class RenderTree;
 class Format;
 class NodeSerialization;
 class KnobHolder;
+class RotoContext;
 namespace Natron{
 
 class Image;
@@ -146,6 +147,11 @@ public:
      * @brief Returns true if the node is a rotopaint node
      **/
     bool isRotoPaintingNode() const;
+    
+    /**
+     * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
+     **/
+    boost::shared_ptr<RotoContext> getRotoContext() const;
     
     /**
      * @brief Forwarded to the live effect instance

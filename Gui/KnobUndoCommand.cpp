@@ -156,15 +156,14 @@ void PasteUndoCommand::redo()
     for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it) {
         if ((i == _dimensionToFetch && !_copyAnimation) || _copyAnimation) {
             if (isInt) {
-                isInt->setValue(it->toInt(), _targetDimension);
+                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
             } else if (isBool) {
-                isBool->setValue(it->toBool(), _targetDimension);
+                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(), _targetDimension);
+                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(), _targetDimension);
+                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
             }
-            break;
         }
         ++i;
     }

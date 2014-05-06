@@ -15,6 +15,8 @@
 #include <boost/scoped_ptr.hpp>
 #include <QObject>
 
+#include "Global/GlobalDefines.h"
+
 class QToolBar;
 class QWidget;
 class QIcon;
@@ -22,6 +24,8 @@ class QString;
 class QToolButton;
 class QKeyEvent;
 class QPointF;
+class ViewerTab;
+class QAction;
 
 class NodeGui;
 
@@ -62,7 +66,7 @@ public:
         
     };
     
-    RotoGui(NodeGui* node,QWidget* parent);
+    RotoGui(NodeGui* node,ViewerTab* parent);
     
     ~RotoGui();
     
@@ -100,7 +104,7 @@ public:
     
     bool keyUp(double scaleX,double scaleY,QKeyEvent* e);
     
-
+    bool isStickySelectionEnabled() const;
     
 signals:
     
@@ -113,9 +117,25 @@ public slots:
     
     void onToolActionTriggered();
     
+    void onAutoKeyingButtonClicked(bool);
+    
+    void onFeatherLinkButtonClicked(bool);
+    
+    void onRippleEditButtonClicked(bool);
+    
+    void onStickySelectionButtonClicked(bool);
+    
+    void onAddKeyFrameClicked();
+    
+    void onRemoveKeyFrameClicked();
+    
+    void onCurrentFrameChanged(SequenceTime,int);
+    
 private:
     
-    void createToolAction(QToolButton* toolGroup,const QIcon& icon,const QString& text,RotoGui::Roto_Tool tool);
+    void onActionTriggeredInternal(QAction* act);
+    
+    QAction* createToolAction(QToolButton* toolGroup,const QIcon& icon,const QString& text,RotoGui::Roto_Tool tool);
     
     struct RotoGuiPrivate;
     boost::scoped_ptr<RotoGuiPrivate> _imp;

@@ -651,7 +651,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 if (isInputImgCached) {
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
-                        activeInputToRender->renderRoI(time, scale,mipMapLevel, view, texRectClipped, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true);
+                        activeInputToRender->renderRoI(time, scale,mipMapLevel, view, texRectClipped, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true,byPassCache);
                     
                 } else {
                     

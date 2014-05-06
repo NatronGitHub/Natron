@@ -150,7 +150,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
         for (U32 i = 0; i < clips.size(); ++i) {
             if (clips[i]->getProps().findStringPropValueIndex(kOfxImageEffectPropSupportedComponents, kOfxImageComponentRGBA) == -1
-                && !clips[i]->isOptional()) {
+                && !clips[i]->isOptional() && !clips[i]->isMask()) {
+                appPTR->writeToOfxLog_mt_safe(QString(plugin->getDescriptor().getLabel().c_str())
+                                              + "RGBA components not supported by OFX plugin in context " + QString(context.c_str()));
                 throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
             }
         }
@@ -370,7 +372,14 @@ int OfxEffectInstance::maximumInputs() const {
 bool OfxEffectInstance::isInputOptional(int inputNb) const {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
-    return inputs[inputs.size()-1-inputNb]->isOptional();
+    if (inputs[inputs.size()-1-inputNb]->isOptional()) {
+        return true;
+    } else {
+        if (isInputRotoBrush(inputNb)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool OfxEffectInstance::isInputMask(int inputNb) const
@@ -378,6 +387,15 @@ bool OfxEffectInstance::isInputMask(int inputNb) const
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
     return inputs[inputs.size()-1-inputNb]->isMask();
+}
+
+bool OfxEffectInstance::isInputRotoBrush(int inputNb) const
+{
+    MappedInputV inputs = inputClipsCopyWithoutOutput();
+    assert(inputNb < (int)inputs.size());
+    
+    ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
+    return inputs[inputs.size()-1-inputNb]->getName() == "Brush";
 }
 
 /// the smallest RectI enclosing the given RectD
@@ -536,19 +554,19 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     }
     if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
-            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            if (inputNode && inputNode != this) {
+             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+            //if (inputNode && inputNode != this) {
                 RectI inputRoi;
                 ofxRectDToEnclosingRectI(it->second, &inputRoi);
                 ret.insert(std::make_pair(inputNode,inputRoi));
-            }
+            // }
         }
     } else if (stat == kOfxStatReplyDefault) {
         for (int i = 0; i < effectInstance()->getNClips(); ++i) {
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(effectInstance()->getNthClip(i))->getAssociatedNode();
-            if (inputNode && inputNode != this) {
+            // if (inputNode && inputNode != this) {
                 ret.insert(std::make_pair(inputNode, renderWindow));
-            }
+            //}
         }
     }
     return ret;
@@ -611,7 +629,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             for (int i = 0; i < nthClip ; ++i) {
                 OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
                 assert(clip);
-                if (!clip->isOutput() && !clip->isOptional()) {
+                if (!clip->isOutput() && !clip->isOptional() && clip->getName() != "Brush") {
                     double f,l;
                     clip->getFrameRange(f, l);
                     if (!firstValidClip) {

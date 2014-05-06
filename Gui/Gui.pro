@@ -72,6 +72,8 @@ SOURCES += \
     QtEncoder.cpp \
     RenderingProgressDialog.cpp \
     RotoGui.cpp \
+    RotoPanel.cpp \
+    RotoUndoCommand.cpp \
     ScaleSliderQWidget.cpp \
     SequenceFileDialog.cpp \
     Shaders.cpp \
@@ -123,6 +125,8 @@ HEADERS += \
     QtEncoder.h \
     RenderingProgressDialog.h \
     RotoGui.h \
+    RotoPanel.h \
+    RotoUndoCommand.h \
     ScaleSliderQWidget.h \
     SequenceFileDialog.h \
     Shaders.h \
@@ -137,7 +141,7 @@ HEADERS += \
     ToolButton.h \
     ViewerGL.h \
     ViewerTab.h \
-    ZoomContext.h \
+    ZoomContext.h
 
 
 RESOURCES += \

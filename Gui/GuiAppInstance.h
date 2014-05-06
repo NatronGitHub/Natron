@@ -30,6 +30,8 @@ public:
     
     virtual ~GuiAppInstance();
     
+    virtual void aboutToQuit() OVERRIDE FINAL;
+    
     virtual void load(const QString& projectName = QString(),const QStringList& writers = QStringList()) OVERRIDE FINAL;
     
     Gui* getGui() const WARN_UNUSED_RETURN;
@@ -75,6 +77,8 @@ public:
     void setViewersCurrentView(int view);
     
     void setUndoRedoStackLimit(int limit);
+    
+    bool isClosing() const;
 
 public slots:
     

@@ -64,6 +64,9 @@ struct ViewerTabPrivate {
     QWidget* _viewerContainer;
     QHBoxLayout* _viewerLayout;
     
+    QWidget* _viewerSubContainer;
+    QVBoxLayout* _viewerSubContainerLayout;
+    
     QVBoxLayout* _mainLayout;
     
 	/*Viewer Settings*/
@@ -171,7 +174,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_firstRowLayout->addWidget(_imp->_viewerChannels);
     
     _imp->_viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
-    _imp->_viewerChannels->addItem("RGB",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
+    _imp->_viewerChannels->addItem("RGB");
     _imp->_viewerChannels->addItem("R",QIcon(),QKeySequence(Qt::Key_R));
     _imp->_viewerChannels->addItem("G",QIcon(),QKeySequence(Qt::Key_G));
     _imp->_viewerChannels->addItem("B",QIcon(),QKeySequence(Qt::Key_B));
@@ -310,17 +313,27 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_viewerLayout = new QHBoxLayout(_imp->_viewerContainer);
     _imp->_viewerLayout->setContentsMargins(0, 0, 0, 0);
     _imp->_viewerLayout->setSpacing(0);
+    
+    _imp->_viewerSubContainer = new QWidget(_imp->_viewerContainer);
+    _imp->_viewerSubContainerLayout = new QVBoxLayout(_imp->_viewerSubContainer);
+    _imp->_viewerSubContainerLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->_viewerSubContainerLayout->setSpacing(0);
+    
     _imp->viewer = new ViewerGL(this);
     
-    _imp->_viewerLayout->addWidget(_imp->viewer);
+    _imp->_viewerSubContainerLayout->addWidget(_imp->viewer);
     
-    _imp->_mainLayout->addWidget(_imp->_viewerContainer);
-    /*=============================================*/
     /*info bbox & color*/
     _imp->_infosWidget = new InfoViewerWidget(_imp->viewer,this);
     //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
-    _imp->_mainLayout->addWidget(_imp->_infosWidget);
+    _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget);
     _imp->viewer->setInfoViewer(_imp->_infosWidget);
+    
+    _imp->_viewerLayout->addWidget(_imp->_viewerSubContainer);
+    
+    _imp->_mainLayout->addWidget(_imp->_viewerContainer);
+    /*=============================================*/
+    
     /*=============================================*/
     
     /*Player buttons*/
@@ -797,17 +810,40 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             QCoreApplication::postEvent(parentWidget(),ev);
         }
     }else if (event->key() == Qt::Key_Y) {
-        _imp->_viewerChannels->setCurrentIndex(0);
-    }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ) {
-        _imp->_viewerChannels->setCurrentIndex(1);
+        int currentIndex = _imp->_viewerChannels->activeIndex();
+        if (currentIndex == 0) {
+            _imp->_viewerChannels->setCurrentIndex(1);
+        } else {
+            _imp->_viewerChannels->setCurrentIndex(0);
+        }
     }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier) {
-        _imp->_viewerChannels->setCurrentIndex(2);
+        int currentIndex = _imp->_viewerChannels->activeIndex();
+        if (currentIndex == 2) {
+            _imp->_viewerChannels->setCurrentIndex(1);
+        } else {
+            _imp->_viewerChannels->setCurrentIndex(2);
+        }
     }else if (event->key() == Qt::Key_G) {
-        _imp->_viewerChannels->setCurrentIndex(3);
+        int currentIndex = _imp->_viewerChannels->activeIndex();
+        if (currentIndex == 3) {
+            _imp->_viewerChannels->setCurrentIndex(1);
+        } else {
+            _imp->_viewerChannels->setCurrentIndex(3);
+        }
     }else if (event->key() == Qt::Key_B) {
-        _imp->_viewerChannels->setCurrentIndex(4);
+        int currentIndex = _imp->_viewerChannels->activeIndex();
+        if (currentIndex == 4) {
+            _imp->_viewerChannels->setCurrentIndex(1);
+        } else {
+            _imp->_viewerChannels->setCurrentIndex(4);
+        }
     }else if (event->key() == Qt::Key_A) {
-        _imp->_viewerChannels->setCurrentIndex(5);
+        int currentIndex = _imp->_viewerChannels->activeIndex();
+        if (currentIndex == 5) {
+            _imp->_viewerChannels->setCurrentIndex(1);
+        } else {
+            _imp->_viewerChannels->setCurrentIndex(5);
+        }
     }else if (event->key() == Qt::Key_J) {
         startBackward(!_imp->play_Backward_Button->isDown());
     }
@@ -940,7 +976,7 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
         return;
     }
 
-    if (_imp->_currentRoto.second) {
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         _imp->_currentRoto.second->drawOverlays(scaleX, scaleY);
     }
     
@@ -1357,7 +1393,7 @@ void ViewerTab::setRotoInterface(NodeGui* n)
         ///Add the widgets
         QToolBar* toolBar = it->second->getToolBar();
         _imp->_viewerLayout->insertWidget(0, toolBar);
-        int viewerIndex = _imp->_mainLayout->indexOf(_imp->viewer);
+        int viewerIndex = _imp->_mainLayout->indexOf(_imp->_viewerContainer);
         assert(viewerIndex >= 0);
         _imp->_mainLayout->insertWidget(viewerIndex, it->second->getCurrentButtonsBar());
         
@@ -1392,6 +1428,9 @@ void ViewerTab::removeRotoInterface(NodeGui* n,bool permanantly)
                 }
             }
             
+            _imp->_currentRoto.first = 0;
+            _imp->_currentRoto.second = 0;
+            
             if (newRoto != _imp->_rotoNodes.end()) {
                 setRotoInterface(newRoto->first);
             }
@@ -1424,7 +1463,7 @@ void ViewerTab::onRotoRoleChanged(int previousRole,int newRole)
         
         
         ///Set the new buttons bar
-        int viewerIndex = _imp->_mainLayout->indexOf(_imp->viewer);
+        int viewerIndex = _imp->_mainLayout->indexOf(_imp->_viewerContainer);
         assert(viewerIndex >= 0);
         _imp->_mainLayout->insertWidget(viewerIndex, _imp->_currentRoto.second->getButtonsBar((RotoGui::Roto_Role)newRole));
     }

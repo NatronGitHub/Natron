@@ -1127,6 +1127,7 @@ void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
 
 void AppManager::quit(AppInstance* instance)
 {
+    instance->aboutToQuit();
     delete instance;
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.

@@ -30,11 +30,14 @@ struct GuiAppInstancePrivate {
     std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeGui> > _nodeMapping; //< a mapping between all nodes and their respective gui. FIXME: it should go away.
     std::list< boost::shared_ptr<ProcessHandler> > _activeBgProcesses;
     QMutex _activeBgProcessesMutex;
+    bool _isClosing;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _nodeMapping()
     , _activeBgProcesses()
     , _activeBgProcessesMutex()
+    , _isClosing(false)
     {
     }
 };
@@ -46,10 +49,21 @@ GuiAppInstance::GuiAppInstance(int appID)
 {
 }
 
-GuiAppInstance::~GuiAppInstance() {
-    
+void GuiAppInstance::aboutToQuit()
+{
+    _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
     delete _imp->_gui;
+}
+
+GuiAppInstance::~GuiAppInstance() {
+    
+    
+}
+
+bool GuiAppInstance::isClosing() const
+{
+    return _imp->_isClosing;
 }
 
 void GuiAppInstance::load(const QString& projectName,const QStringList& /*writers*/) {
@@ -112,6 +126,12 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool loa
     if (node->pluginID() == "Viewer") {
         _imp->_gui->createViewerGui(node);
     }
+    
+    ///must be done after the viewer gui has been created
+    if (node->isRotoNode()) {
+        _imp->_gui->createNewRotoInterface(nodegui.get());
+    }
+    
     
     nodegui->initializeInputs();
     nodegui->initializeKnobs();

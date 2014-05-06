@@ -85,7 +85,7 @@ CLANG_DIAG_ON(unused-private-field)
 #define PLUGIN_GROUP_MULTIVIEW "Views"
 #define PLUGIN_GROUP_OFX "OFX"
 #define PLUGIN_GROUP_TIME "Time"
-#define PLUGIN_GROUP_PAINT "Paint"
+#define PLUGIN_GROUP_PAINT "Draw"
 
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
 
@@ -254,9 +254,7 @@ struct GuiPrivate {
     QString _glewVersion;
     QString _qtVersion;
     QString _boostVersion;
-    
-    ///true when the destructor has been called
-    bool _isClosing;
+
     
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
@@ -343,7 +341,6 @@ struct GuiPrivate {
     , _glewVersion()
     , _qtVersion()
     , _boostVersion()
-    , _isClosing(false)
     {
         
     }
@@ -382,7 +379,6 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
 
 Gui::~Gui()
 {
-    _imp->_isClosing = true;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
     _imp->_viewerTabs.clear();
@@ -437,11 +433,6 @@ boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
     QObject::connect(nodeGui.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     assert(nodeGui);
-    
-    if (node->isRotoNode()) {
-        createNewRotoInterface(nodeGui.get());
-    }
-    
     return nodeGui;
 }
 
@@ -1376,6 +1367,7 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
         QPixmap readImagePix;
         appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, &readImagePix);
         createReaderAction->setIcon(QIcon(readImagePix));
+        createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut(QKeySequence(Qt::Key_R));
         imageMenu->addAction(createReaderAction);
         
@@ -1385,6 +1377,7 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
         QPixmap writeImagePix;
         appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, &writeImagePix);
         createWriterAction->setIcon(QIcon(writeImagePix));
+        createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut(QKeySequence(Qt::Key_W));
         imageMenu->addAction(createWriterAction);
     }
@@ -2200,7 +2193,7 @@ void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int l
 }
 
 bool Gui::isClosing() const {
-    return _imp->_isClosing;
+    return _imp->_appInstance->isClosing();
 }
 
 void Gui::setGlewVersion(const QString& version) {

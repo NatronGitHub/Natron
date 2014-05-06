@@ -36,6 +36,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/ThreadStorage.h"
 #include "Engine/Settings.h"
+#include "Engine/RotoContext.h"
 using namespace Natron;
 
 
@@ -253,12 +254,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 {
     
     EffectInstance* n  = input_other_thread(inputNb);
-    
-    //if the node is not connected, return a NULL pointer!
-    if(!n){
-        return boost::shared_ptr<Natron::Image>();
-    }
-
+   
+    boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
     assert(_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs);
@@ -274,7 +271,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     unsigned int mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;;
     RoIMap inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
     
-    RoIMap::iterator found = inputsRoI.find(n);
+    RoIMap::iterator found = inputsRoI.find(roto ? this : n);
     assert(found != inputsRoI.end());
     
     ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
@@ -283,6 +280,17 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///Convert to pixel coordinates (FIXME: take the par into account)
     if (mipMapLevel != 0) {
         roi = roi.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+    }
+    
+    
+    if (roto && isInputRotoBrush(inputNb)) {
+        return roto->renderMask(roi, hash(), time, view, mipMapLevel, byPassCache);
+    }
+    
+    
+    //if the node is not connected, return a NULL pointer!
+    if(!n){
+        return boost::shared_ptr<Natron::Image>();
     }
     
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
@@ -683,8 +691,9 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
-    
-    _node->addImageBeingRendered(image, time, view);
+    bool useFullResImage = !supportsRenderScale() && (mipMapLevel != 0);
+
+    _node->addImageBeingRendered(useFullResImage ? image : downscaledImage, time, view);
     
     ///We check what is left to render.
     
@@ -711,7 +720,6 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
     
     bool renderSucceeded = true;
 
-    bool useFullResImage = !supportsRenderScale() && (mipMapLevel != 0);
 
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
@@ -801,6 +809,13 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                     return true;
                 }
             }
+        }
+        
+        ///if the node has a roto context, pre-render the roto mask too
+        boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
+        if (rotoCtx) {
+            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, hash(), time, view, mipMapLevel, byPassCache);
+            inputImages.push_back(mask);
         }
         
         ///notify the node we're starting a render

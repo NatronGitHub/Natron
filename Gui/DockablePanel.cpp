@@ -44,6 +44,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
+#include "Gui/RotoPanel.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -314,6 +315,21 @@ void DockablePanel::initializeKnobs() {
     /// function called to create the gui for each knob. It can be called several times in a row
     /// without any damage
     initializeKnobVector(_holder->getKnobs(),true);
+    
+    RotoPanel* roto = initializeRotoPanel();
+    if (roto) {
+        std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.find(_defaultTabName);
+        assert(parentTab != _tabs.end());
+        QFormLayout* layout;
+        if (_useScrollAreasForTabs) {
+            layout = dynamic_cast<QFormLayout*>(dynamic_cast<QScrollArea*>(parentTab->second.first)->widget()->layout());
+        } else {
+            layout = dynamic_cast<QFormLayout*>(parentTab->second.first->layout());
+        }
+        assert(layout);
+        ClickableLabel* label = new ClickableLabel("",parentTab->second.first);
+        layout->addRow(label, roto);
+    }
 }
 
 
@@ -702,4 +718,11 @@ void NodeSettingsPanel::centerNode() {
     _nodeGUI->centerGraphOnIt();
 }
 
-
+RotoPanel* NodeSettingsPanel::initializeRotoPanel()
+{
+    if (_nodeGUI->getNode()->isRotoNode()) {
+        return new RotoPanel(_nodeGUI,this);
+    } else {
+        return NULL;
+    }
+}
