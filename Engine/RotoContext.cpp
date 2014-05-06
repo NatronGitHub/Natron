@@ -16,6 +16,10 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QThread>
+#include <QThreadPool>
+#include <QtConcurrentMap>
+
+#include <boost/bind.hpp>
 
 #include "Engine/Curve.h"
 #include "Engine/Interpolation.h"
@@ -28,6 +32,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Settings.h"
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
 struct BezierCP::BezierCPPrivate
@@ -628,7 +633,6 @@ struct Bezier::RotoSplinePrivate
     RectD boundingBox; //< the bounding box of the bezier
     bool isBoundingBoxValid; //< has the bounding box ever been computed ?
     
-    bool evaluated;
     
     RotoSplinePrivate(RotoContext* ctx)
     : context(ctx)
@@ -639,7 +643,6 @@ struct Bezier::RotoSplinePrivate
     , splineMutex()
     , boundingBox()
     , isBoundingBoxValid(false)
-    , evaluated(false)
     {
     }
 
@@ -708,18 +711,6 @@ Bezier::Bezier(RotoContext* ctx)
 Bezier::~Bezier()
 {
     
-}
-
-void Bezier::setEvaluated(bool eval)
-{
-    QMutexLocker l(&_imp->splineMutex);
-    _imp->evaluated = eval;
-}
-
-bool Bezier::mustEvaluate() const
-{
-    QMutexLocker l(&_imp->splineMutex);
-    return !_imp->evaluated;
 }
 
 
@@ -1551,6 +1542,7 @@ struct RotoContext::RotoContextPrivate
     bool featherLink;
     
     Natron::Node* node;
+    U64 age;
     
     RotoContextPrivate(Natron::Node* n )
     : rotoContextMutex()
@@ -1559,8 +1551,22 @@ struct RotoContext::RotoContextPrivate
     , rippleEdit(false)
     , featherLink(true)
     , node(n)
+    , age(0)
     {
         
+    }
+    
+    /**
+     * @brief Call this after any change to notify the mask has changed for the cache.
+     **/
+    void incrementRotoAge()
+    {
+        ///MT-safe: only called on the main-thread
+        assert(QThread::currentThread() == qApp->thread());
+        
+        QMutexLocker l(&rotoContextMutex);
+        ++age;
+
     }
 };
 
@@ -1573,6 +1579,7 @@ RotoContext::~RotoContext()
 {
     
 }
+
 
 void RotoContext::setAutoKeyingEnabled(bool enabled)
 {
@@ -1723,8 +1730,27 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
 
 void RotoContext::evaluateChange()
 {
+    _imp->incrementRotoAge();
     _imp->node->getLiveInstance()->evaluate_public(NULL, true);
 }
+
+void RotoContext::multiThreadFunctor(const RectI& roi,unsigned int mipmapLevel,int time,
+                               Natron::Image* output)
+{
+    int i = 0;
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = _imp->splines.begin(); it2!=_imp->splines.end(); ++it2,++i) {
+        
+        ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
+        ///Also render only finished bezier
+        if ((*it2)->isCurveFinished()) {
+            std::list< Point > points;
+            (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
+            fillPolygon_evenOdd(roi,points, output);
+        }
+    }
+
+}
+
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,SequenceTime time,
                                             int view,unsigned int mipmapLevel,bool byPassCache)
@@ -1735,29 +1761,14 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     
     ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
     ///the output image of the roto node and the mask image.
-    static const U64 maskMagicID = 0x12345678;
     Hash64 hash;
     hash.append(nodeHash);
-    hash.append(maskMagicID);
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        hash.append(_imp->age);
+    }
     hash.computeHash();
-    
-    size_t nbSplines;
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        nbSplines = _imp->splines.size();
-    }
-    
-    ///for each bezier if the age didn't change and the image is retrieved from the cache, we don't render it.
-    std::vector<bool> evaluateBeziers(nbSplines);
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        int i = 0;
-        for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->splines.begin(); it!= _imp->splines.end(); ++it,++i) {
-            evaluateBeziers[i] = (*it)->mustEvaluate();
-        }
-    }
 
-   
     Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel, view);
     boost::shared_ptr<const Natron::ImageParams> params;
     boost::shared_ptr<Natron::Image> image;
@@ -1799,27 +1810,42 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     RectI pixelRod = params->getPixelRoD();
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
-    std::list<RectI> rectsToRender = image->getRestToRender(clippedRoI);
-    for (std::list<RectI>::iterator it = rectsToRender.begin(); it!=rectsToRender.end(); ++it) {
-        {
-            QMutexLocker l(&_imp->rotoContextMutex);
+    
+    int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+    bool renderSingleThread = nbThreads == -1 ||
+    nbThreads == 1 ||
+    (nbThreads == 0 && QThread::idealThreadCount() == 1) ||
+    QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount();
+
+    std::list<RectI> restToRender = image->getRestToRender(clippedRoI);
+    
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (std::list<RectI>::iterator it = restToRender.begin(); it!=restToRender.end(); ++it) {
+        if (renderSingleThread) {
             int i = 0;
             for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = _imp->splines.begin(); it2!=_imp->splines.end(); ++it2,++i) {
                 
                 ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
                 ///Also render only finished bezier
-                if ((*it2)->isCurveFinished() && ((cached && evaluateBeziers[i]) || !cached)) {
+                if ((*it2)->isCurveFinished()) {
                     std::list< Point > points;
                     (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
-#pragma message WARN("Slice up the roi and use multi-threading as it can be fully multi-threaded")
                     fillPolygon_evenOdd(*it,points, image.get());
-                    
-                    if (!_imp->node->aborted()) {
-                        (*it2)->setEvaluated(true);
-                    }
                 }
             }
+            
+        } else {
+            if (nbThreads == 0) {
+                nbThreads = QThreadPool::globalInstance()->maxThreadCount();
+            }
+            
+            std::vector<RectI> splitRoI = RectI::splitRectIntoSmallerRect(*it, nbThreads);
+            QFuture<void> future = QtConcurrent::map(splitRoI,
+                                                     boost::bind(&RotoContext::multiThreadFunctor,this,_1, mipmapLevel, time, image.get()));
+            future.waitForFinished();
+            
         }
+
     }
     
     
@@ -1827,6 +1853,8 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     if(_imp->node->aborted()){
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
+    } else {
+         image->markForRendered(clippedRoI);
     }
     return image;
 }
@@ -1838,13 +1866,13 @@ namespace  {
     struct BresenhamData {
         
         ////These are public since they are local to the same function.
-        int minor;                  /// minor axis
+        int minorAxis;                  /// minor axis
         int d;                      /// decision variable
         int m, m1;                  /// slope and slope+1
         int incr1, incr2;           /// error increments
         
         BresenhamData()
-        : minor(INT_MIN) , d(0) , m(0) , m1(0) , incr1(0) , incr2(0)
+        : minorAxis(INT_MIN) , d(0) , m(0) , m1(0) , incr1(0) , incr2(0)
         {
             
         }
@@ -1854,8 +1882,8 @@ namespace  {
             int dx;
             ///ignore horizontal edges
             if (dy != 0.) {
-                minor = x1;
-                dx = x2 - minor;
+                minorAxis = x1;
+                dx = x2 - minorAxis;
                 if (dx < 0) {
                     m = dx / dy;
                     m1 = m - 1;
@@ -1876,20 +1904,20 @@ namespace  {
         {
             if (m1 > 0) {
                 if (d > 0) {
-                    minor += m1;
+                    minorAxis += m1;
                     d += incr1;
                 }
                 else {
-                    minor += m;
+                    minorAxis += m;
                     d += incr2;
                 }
             } else {
                 if (d >= 0) {
-                    minor += m1;
+                    minorAxis += m1;
                     d += incr1;
                 }
                 else {
-                    minor += m;
+                    minorAxis += m;
                     d += incr2;
                 }
             }
@@ -1939,7 +1967,7 @@ namespace  {
         sl->scanline = scanline;
         
         std::list<EdgePtr>::iterator itEdge = sl->edgelist.begin();
-        while (itEdge != sl->edgelist.end() && ((*itEdge)->bres.minor < ETE->bres.minor)) {
+        while (itEdge != sl->edgelist.end() && ((*itEdge)->bres.minorAxis < ETE->bres.minorAxis)) {
             ++itEdge;
         }
 
@@ -1994,8 +2022,39 @@ namespace  {
     
     static bool edgeX_SortFunctor(const EdgePtr& e1, const EdgePtr& e2)
     {
-        return e1->bres.minor < e2->bres.minor;
+        return e1->bres.minorAxis < e2->bres.minorAxis;
     }
+    
+#if 0
+    /**
+     * @brief Returns whether the segments S1 (p0,p1) and the segment S2 (p2,p3) intersect.
+     * If so, then the parameter intersection is set to the intersection point.
+     * This is used to remove from the polygon to fill the unused segments.
+     *
+     * EDIT: This is not used anymore since it is way too complicated to remove from the polygons the parts
+     * that do not intersect the roi. Instead we just don't render the pixels. We keep this function here
+     * in case we would need it.
+     **/
+    static bool segmentsIntersection(const Point& p0,const Point& p1,const Point& p2,const Point& p3,Point* intersection)
+    {
+        double d = (p0.first - p1.first) * (p2.second - p3.second) - (p0.second - p1.second) * (p2.first - p3.first);
+        if (d == 0)
+            return false;
+        intersection->first = ((p2.first - p3.first) * (p0.first * p1.second - p0.second * p1.first) - (p0.first - p1.first) *
+                     (p2.first * p3.second - p2.second * p3.first)) / d;
+        intersection->second = ((p2.second - p3.second) * (p0.first * p1.second - p0.second * p1.first) - (p0.second - p1.second) *
+                     (p2.first * p3.second - p2.second * p3.first)) / d;
+        if(p2.first == p3.first) {
+            if ( intersection->second < std::min(p0.second,p1.second) || intersection->second > std::max(p0.second,p1.second) )
+                return false;
+        }
+        if (intersection->first < std::min(p0.first,p1.first) || intersection->first > std::max(p0.first,p1.first))
+            return false;
+        if (intersection->first < std::min(p2.first,p3.first) || intersection->first > std::max(p2.first,p3.first))
+            return false;
+        return true;
+    }
+#endif
 }
 
 
@@ -2005,23 +2064,16 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
 {
     
     
-    ///remove points which are not contained in the roi
-    std::list<Point> pointsCpy;
-    for (std::list<Point>::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
-        if (it2->first >= roi.x1 && it2->first < roi.x2 && it2->second >= roi.y1 && it2->second < roi.y2) {
-            pointsCpy.push_back(*it2);
-        }
-    }
-    
-    if (pointsCpy.size() < 3) {
+    ///A polygon is at least a triangle
+    if (points.size() < 3) {
         return;
     }
     
     EdgeTable edgeTable;
     std::list<EdgePtr> activeEdgeTable;
-    std::vector<EdgePtr> edges(pointsCpy.size());
+    std::vector<EdgePtr> edges(points.size());
     
-    createETandAET(pointsCpy, &edgeTable, edges);
+    createETandAET(points, &edgeTable, edges);
     
     std::list<ScanLine>::iterator scanLineIT = edgeTable.scanlines.begin();  /// Current ScanLine
     
@@ -2038,7 +2090,7 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
             for (std::list<EdgePtr>::iterator entries = scanLineIT->edgelist.begin();entries != scanLineIT->edgelist.end();++entries) {
                 
                 std::list<EdgePtr>::iterator itAET = activeEdgeTable.begin();
-                while (itAET != activeEdgeTable.end() && ((*itAET)->bres.minor < (*entries)->bres.minor)) {
+                while (itAET != activeEdgeTable.end() && ((*itAET)->bres.minorAxis < (*entries)->bres.minorAxis)) {
                     ++itAET;
                 }
                 activeEdgeTable.insert(itAET, *entries);
@@ -2048,7 +2100,6 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
 
         
         float* dstPixels = output->pixelAt(dstRoD.x1, y);
-        assert(dstPixels);
         
         int comps = (int)output->getComponentsCount();
         
@@ -2067,8 +2118,8 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
         std::list<EdgePtr>::iterator itAET = activeEdgeTable.begin();
         while (itAET != activeEdgeTable.end() && itNextAET != activeEdgeTable.end()) {
             
-            int x = (*itAET)->bres.minor;
-            int end =  x + (*itNextAET)->bres.minor - (*itAET)->bres.minor;
+            int x = (*itAET)->bres.minorAxis;
+            int end =  x + (*itNextAET)->bres.minorAxis - (*itAET)->bres.minorAxis;
             
             ///fill pixels
             for (int xx = x; xx < end; ++xx) {
@@ -2079,13 +2130,15 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
                 if (xx == x) {
                     
                 } else if (xx == (end -1)) {
-                
+                    
                 }
-                
-                if (comps == 4) {
-                    dstPixels[xx * comps + 3] = val;
-                } else {
-                    dstPixels[xx] = val;
+                 
+                if (roi.contains(xx, y)) {
+                    if (comps == 4) {
+                        dstPixels[xx * comps + 3] = val;
+                    } else {
+                        dstPixels[xx] = val;
+                    }
                 }
             }
             
@@ -2114,6 +2167,4 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
         
         activeEdgeTable.sort(edgeX_SortFunctor);
     }
-    output->markForRendered(roi);
-    
    }

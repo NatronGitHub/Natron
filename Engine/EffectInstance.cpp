@@ -860,6 +860,9 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
             case FULLY_SAFE_FRAME: // the plugin will not perform any per frame SMP threading
             {
                 // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
+                if (nbThreads == 0) {
+                    nbThreads = QThreadPool::globalInstance()->maxThreadCount();
+                }
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, nbThreads);
                 // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,

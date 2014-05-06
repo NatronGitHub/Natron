@@ -131,12 +131,6 @@ public:
     
     
     /**
-     * @brief This should be called after any change made by the user so we now if we need to render the bezier.
-     **/
-    void setEvaluated(bool eval);
-    bool mustEvaluate() const;
-    
-    /**
      * @brief Adds a new control point to the curve. A feather point will be added, at the same position.
      * If auto keying is enabled and this is the first point and there's no keyframe a new keyframe will be set at the current time.
      *
@@ -322,7 +316,7 @@ public:
     
     virtual ~RotoContext();
   
-    
+       
     /**
      * @brief Turn on/off auto-keying
      **/
@@ -393,6 +387,9 @@ public slots:
     void onRippleEditChanged(bool enabled);
     
 private:
+    
+    void multiThreadFunctor(const RectI& roi,unsigned int mipmapLevel,int time,
+                            Natron::Image* output);
     
     struct RotoContextPrivate;
     boost::scoped_ptr<RotoContextPrivate> _imp;

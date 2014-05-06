@@ -308,6 +308,10 @@ public:
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
     
+    bool contains(double x,double y) const {
+        return x >= x1 && x < x2 && y >= y1 && y < y2;
+    }
+    
     void move(int dx,int dy) {
         x1 += dx;
         y1 += dy;

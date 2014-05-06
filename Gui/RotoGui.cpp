@@ -1054,11 +1054,11 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 ///we drag all the control points selected
                 if (_imp->isNearbySelectedCpsCrossHair(pos)) {
                     _imp->state = DRAGGING_CPS;
-                } else if (featherBarSel.first) {
-                    _imp->featherBarBeingDragged = featherBarSel;
-                    _imp->state = DRAGGING_FEATHER_BAR;
                 } else if (nearbyCP.first) {
                     _imp->handleControlPointSelection(nearbyCP);
+                }  else if (featherBarSel.first) {
+                    _imp->featherBarBeingDragged = featherBarSel;
+                    _imp->state = DRAGGING_FEATHER_BAR;
                 }
                 
             } else {
@@ -1112,7 +1112,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                         boost::shared_ptr<BezierCP> newCp = nearbyBezier->addControlPointAfterIndex(nearbyBezierCPIndex, nearbyBezierT);
                         boost::shared_ptr<BezierCP> newFp = nearbyBezier->getFeatherPointAtIndex(nearbyBezierCPIndex + 1);
                         _imp->handleControlPointSelection(std::make_pair(newCp,newFp));
-                        nearbyBezier->setEvaluated(false);
                         _imp->evaluateOnPenUp = true;
                     }
                     didSomething = true;
@@ -1140,7 +1139,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     assert(foundBezier != _imp->selectedBeziers.end());
                     _imp->selectedBeziers.erase(foundBezier);
                 }
-                nearbyBezier->setEvaluated(false);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1157,7 +1155,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 ///set the feather to be equal to the cp
                 fp->clone(*cp);
                 assert(nearbyBezier);
-                nearbyBezier->setEvaluated(false);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1168,7 +1165,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 std::find(_imp->selectedBeziers.begin(), _imp->selectedBeziers.end(), nearbyBezier);
                 if (foundBezier != _imp->selectedBeziers.end()) {
                     nearbyBezier->setCurveFinished(!nearbyBezier->isCurveFinished());
-                    nearbyBezier->setEvaluated(false);
                     _imp->evaluateOnPenUp = true;
                     didSomething = true;
                 } else {
@@ -1184,7 +1180,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 _imp->handleControlPointSelection(nearbyCP);
                 nearbyCP.first->smoothPoint(time);
                 nearbyCP.second->smoothPoint(time);
-                nearbyBezier->setEvaluated(false);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1198,7 +1193,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 _imp->handleControlPointSelection(nearbyCP);
                 nearbyCP.first->cuspPoint(time);
                 nearbyCP.second->cuspPoint(time);
-                nearbyBezier->setEvaluated(false);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1231,9 +1225,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                         y >= (pos.y() - cpSelectionTolerance) && y <= (pos.y() + cpSelectionTolerance)) {
                         if (it == cps.begin()) {
                             _imp->builtBezier.first->setCurveFinished(true);
-                            _imp->builtBezier.first->setEvaluated(false);
                             _imp->evaluateOnPenUp = true;
-                            
+        
                             _imp->builtBezier.first.reset();
                             _imp->builtBezier.second.first.reset();
                             _imp->builtBezier.second.second.reset();
@@ -1263,7 +1256,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 _imp->builtBezier.second.first = cp;
                 _imp->builtBezier.second.second = fp;
             }
-            _imp->builtBezier.first->setEvaluated(false);
             ///not need to set _imp->evaluateOnPenUp because the polygon is not closed anyway
             _imp->state = BUILDING_BEZIER_CP_TANGENT;
             didSomething = true;
@@ -1336,7 +1328,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         {
             for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it!=_imp->selectedCps.end(); ++it) {
                 int index;
-                it->first->getCurve()->setEvaluated(false);
                 if (it->first->isFeatherPoint()) {
                     if (_imp->selectedTool == SELECT_FEATHER_POINTS || _imp->selectedTool == SELECT_ALL) {
                         index = it->second->getCurve()->getControlPointIndex(it->second);
@@ -1384,7 +1375,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                 _imp->builtBezier.second.second->setLeftBezierStaticPosition(leftX - dx, leftY - dy);
                 _imp->builtBezier.second.second->setRightBezierStaticPosition(rightX + dx, rightY + dy);
             }
-            _imp->builtBezier.first->setEvaluated(false);
             ///not need to set _imp->evaluateOnPenUp = true because the polygon is not closed anyway
             didSomething = true;
         }   break;
@@ -1402,7 +1392,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
             dragTangent(time, *_imp->tangentBeingDragged, dx, dy, true,autoKeying);
             dragTangent(time, *counterPart, dx, dy, true,autoKeying);
             _imp->computeSelectedCpsBBOX();
-            _imp->tangentBeingDragged->getCurve()->setEvaluated(false);
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
@@ -1420,7 +1409,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
             dragTangent(time, *_imp->tangentBeingDragged, dx, dy, false,autoKeying);
             dragTangent(time, *counterPart, dx, dy, false,autoKeying);
             _imp->computeSelectedCpsBBOX();
-            _imp->tangentBeingDragged->getCurve()->setEvaluated(false);
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
@@ -1429,7 +1417,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
             ///drag the feather point targeted of the euclidean distance of dx,dy in the direction perpendicular to
             ///the derivative of the curve at the point
             _imp->dragFeatherPoint(time, dx, dy);
-            _imp->featherBarBeingDragged.first->getCurve()->setEvaluated(false);
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
