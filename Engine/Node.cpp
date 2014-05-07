@@ -201,6 +201,16 @@ Node::Node(AppInstance* app,LibraryBinary* plugin)
     QObject::connect(this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)));
 }
 
+void Node::createRotoContextConditionnally()
+{
+    assert(!_imp->rotoContext);
+    assert(_imp->liveInstance);
+    ///Initialize the roto context if any
+    if (isRotoNode()) {
+        _imp->rotoContext.reset(new RotoContext(this));
+    }
+}
+
 void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
                 const NodeSerialization& serialization,bool dontLoadName) {
     
@@ -219,6 +229,7 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
         _imp->liveInstance = func.second(thisShared);
+        createRotoContextConditionnally();
     } else { //ofx plugin
         _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization);
         _imp->liveInstance->initializeOverlayInteract();
@@ -226,6 +237,8 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     
     initializeInputs();
     initializeKnobs();
+    
+    
     
     ///non OpenFX-plugin
     if (func.first && !serialization.isNull() && serialization.getPluginID() == pluginID &&
@@ -237,10 +250,6 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
          getApp()->getProject()->initNodeCountersAndSetName(this);
     }
     
-    ///Initialize the roto context if any
-    if (isRotoNode()) {
-        _imp->rotoContext.reset(new RotoContext(this));
-    }
     
     computeHash(); 
     assert(_imp->liveInstance);
@@ -318,6 +327,12 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
             }
         }
     }
+    
+    ///now restore the roto context if the node has a roto context
+    if (serialization.hasRotoContext() && _imp->rotoContext) {
+        _imp->rotoContext->load(serialization.getRotoContext());
+    }
+    
     setKnobsAge(serialization.getKnobsAge());
 }
 
@@ -1216,7 +1231,8 @@ bool Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    QString name = getName().c_str();
+    
+    QString name = pluginID().c_str();
     return name.contains("roto",Qt::CaseInsensitive);
 }
 
@@ -1226,7 +1242,7 @@ bool Node::isRotoNode() const
 bool Node::isRotoPaintingNode() const
 {
     ///Runs only in the main thread (checked by getName())
-    QString name = getName().c_str();
+    QString name = pluginID().c_str();
     return name.contains("rotopaint",Qt::CaseInsensitive);
 }
 

@@ -60,6 +60,9 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
     
+    ///If the node can have a roto context, create it
+    void createRotoContextConditionnally();
+    
     ///called by Project::removeNode, never call this
     void removeReferences();
     

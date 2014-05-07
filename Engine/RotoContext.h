@@ -25,33 +25,64 @@
  * and/or the ending point of a bezier segment. (It would correspond to P0/P3).
  * The left bezier point/right bezier point we refer to in the functions below
  * are respectively the P2 and P1 point.
- * Not MT-safe by itself, but only used by RotoSpline which is MT-safe.
+ * 
+ * Note on multi-thread:
+ * All getters or const functions can be called in any thread, that is:
+ * - The GUI thread (main-thread)
+ * - The render thread (VideoEngine)
+ * - The serialization thread (when saving)
+ *
+ * Setters or non-const functions can exclusively be called in the main-thread (Gui thread) to ensure there is no
+ * race condition whatsoever.
+ 
+ * More-over the setters must be called ONLY by the Bezier class which is the class handling the thread safety.
+ * That's why non-const functions are private.
  **/
 namespace Natron {
 class Image;
 class Node;
 }
+namespace boost {
+    namespace serialization {
+        class access;
+    }
+}
+
 class RectI;
 class RectD;
 
 class Bezier;
+class BezierSerialization;
+
+struct BezierCPPrivate;
 class BezierCP
 {
+    ///This is the unique class allowed to call the setters.
+    friend class Bezier;
+    friend class boost::serialization::access;
+    
 public:
+    
+    ///Constructore used by the serialization
+    BezierCP();
+    
+    BezierCP(const BezierCP& other);
     
     BezierCP(Bezier* curve);
     
     virtual ~BezierCP();
     
-    virtual bool isFeatherPoint() const { return false; }
+    
+    //////Non const functions, meant to be called by the Bezier class which is MT-safe
+private:
     
     void clone(const BezierCP& other);
     
-    bool equalsAtTime(int time,const BezierCP& other) const;
-    
-    bool getPositionAtTime(int time,double* x,double* y) const;
-    
     void setPositionAtTime(int time,double x,double y);
+    
+    void setLeftBezierPointAtTime(int time,double x,double y);
+    
+    void setRightBezierPointAtTime(int time,double x,double y);
     
     void setStaticPosition(double x,double y);
     
@@ -59,16 +90,27 @@ public:
     
     void setRightBezierStaticPosition(double x,double y);
     
+    void removeKeyframe(int time);
+
+    void cuspPoint(int time,bool autoKeying,bool rippleEdit);
+    
+    void smoothPoint(int time,bool autoKeying,bool rippleEdit);
+    
+    
+    //////Const functions, fine if called by another class than the Bezier class, as long
+    //////as it remains on the main-thread (the setter thread).
+public:
+    
+    virtual bool isFeatherPoint() const { return false; }
+
+    bool equalsAtTime(int time,const BezierCP& other) const;
+    
+    bool getPositionAtTime(int time,double* x,double* y) const;
+    
     bool getLeftBezierPointAtTime(int time,double* x,double* y) const;
     
     bool getRightBezierPointAtTime(int time,double *x,double *y) const;
     
-    void setLeftBezierPointAtTime(int time,double x,double y);
-
-    void setRightBezierPointAtTime(int time,double x,double y);
-    
-    void removeKeyframe(int time);
-        
     bool hasKeyFrameAtTime(int time) const;
     
     void getKeyframeTimes(std::set<int>* times) const;
@@ -78,10 +120,6 @@ public:
     int getKeyframesCount() const;
     
     Bezier* getCurve() const;
-    
-    void cuspPoint(int time);
-    
-    void smoothPoint(int time);
     
     /**
      * @brief Returns whether a tangent handle is nearby the given coordinates.
@@ -95,8 +133,12 @@ public:
     
 private:
     
-    struct BezierCPPrivate;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+    
     boost::scoped_ptr<BezierCPPrivate> _imp;
+    
 };
 
 class FeatherPoint : public BezierCP
@@ -120,6 +162,8 @@ public:
  * has at least a minimum of 1 keyframe.
  **/
 class RotoContext;
+
+struct BezierPrivate;
 class Bezier
 {
     
@@ -184,14 +228,81 @@ public:
      * This function asserts that  auto-keying is  enabled.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void movePointByIndex(int index,double dx,double dy,bool forbidFeatherLink);
+    void movePointByIndex(int index,int time,double dx,double dy);
     
     /**
      * @brief Moves the feather point at the given index if any by the given dx and dy.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void moveFeatherByIndex(int index,double dx,double dy);
+    void moveFeatherByIndex(int index,int time,double dx,double dy);
+    
+    /**
+     * @brief Moves the left bezier point of the control point at the given index by the given deltas
+     * and at the given time.
+     * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     **/
+    void moveLeftBezierPoint(int index,int time,double dx,double dy);
+    
+    /**
+     * @brief Moves the right bezier point of the control point at the given index by the given deltas
+     * and at the given time.
+     * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     **/
+    void moveRightBezierPoint(int index,int time,double dx,double dy);
+    
+    /**
+     * @brief Provided for convenience. It set the left bezier point of the control point at the given index to
+     * the position given by (x,y) at the given time.
+     * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     * This function will also set the point of the feather point at the given x,y.
+     **/
+    void setLeftBezierPoint(int index,int time,double x,double y);
+    
+    /**
+     * @brief Provided for convenience. It set the right bezier point of the control point at the given index to
+     * the position given by (x,y) at the given time.
+     * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     * This function will also set the point of the feather point at the given x,y.
+     **/
+    void setRightBezierPoint(int index,int time,double x,double y);
+    
+    
+    /**
+     * @brief This function is a combinaison of setPosition + setLeftBezierPoint / setRightBeziePoint
+     * It only works for feather points!
+     **/
+    void setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    
+    /**
+     * @brief Set the left and right bezier point of the control point.
+     **/
+    void setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry);
+    
+    /**
+     * @brief Removes the feather point at the given index by making it equal the "true" control point.
+     **/
+    void removeFeatherAtIndex(int index);
+    
+    /**
+     * @brief Smooth the curvature of the bezier at the given index by expanding the tangents.
+     * This is also applied to the feather points.
+     * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     **/
+    void smoothPointAtIndex(int index,int time);
+    
+    /**
+     * @brief Cusps the curvature of the bezier at the given index by reducing the tangents.
+     * This is also applied to the feather points.
+     * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     **/
+    void cuspPointAtIndex(int index,int time);
     
     /**
      * @brief Set a new keyframe at the given time. If a keyframe already exists this function does nothing.
@@ -249,7 +360,7 @@ public:
      * if the first is a control point, or the other way around).
      **/
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-    isNearbyControlPoint(double x,double y,double acceptance) const;
+    isNearbyControlPoint(double x,double y,double acceptance,int* index) const;
     
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
@@ -293,10 +404,13 @@ public:
     
     static void rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& next,double *dx,double *dy);
     
+    void save(BezierSerialization* obj) const;
+    
+    void load(const BezierSerialization& obj);
+    
 private:
     
-    struct RotoSplinePrivate;
-    boost::scoped_ptr<RotoSplinePrivate> _imp;
+    boost::scoped_ptr<BezierPrivate> _imp;
 };
 
 
@@ -306,6 +420,8 @@ private:
  * all the splines data structures and their state.
  * This class is MT-safe.
  **/
+class RotoContextSerialization;
+struct RotoContextPrivate;
 class RotoContext : public QObject
 {
     Q_OBJECT
@@ -341,7 +457,7 @@ public:
     
     boost::shared_ptr<Bezier> makeBezier(double x,double y);
     
-    void removeBezier(const boost::shared_ptr<Bezier>& c);
+    void removeBezier(const Bezier* c);
     
     /**
      * @brief Returns a const ref to the bezier curves list. This can only be called from
@@ -378,6 +494,10 @@ public:
      **/
     void evaluateChange();
     
+    void save(RotoContextSerialization* obj) const;
+    
+    void load(const RotoContextSerialization& obj);
+    
 public slots:
     
     void onAutoKeyingChanged(bool enabled);
@@ -387,11 +507,7 @@ public slots:
     void onRippleEditChanged(bool enabled);
     
 private:
-    
-    void multiThreadFunctor(const RectI& roi,unsigned int mipmapLevel,int time,
-                            Natron::Image* output);
-    
-    struct RotoContextPrivate;
+        
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 

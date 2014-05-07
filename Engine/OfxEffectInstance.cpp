@@ -130,8 +130,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin());
         assert(effect_->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
         
-        ///before calling the createInstanceAction
+        getNode()->createRotoContextConditionnally();
         
+        ///before calling the createInstanceAction, load values
         if (serialization && !serialization->isNull()) {
             getNode()->loadKnobs(*serialization);
         }

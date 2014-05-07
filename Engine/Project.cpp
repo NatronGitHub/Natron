@@ -121,6 +121,8 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
         }
     } catch(const boost::archive::archive_exception& e) {
         throw std::runtime_error(std::string("Serialization error: ") + std::string(e.what()));
+    } catch(const std::exception& e) {
+        throw std::runtime_error(std::string("Failed to read the project file: ") + std::string(e.what()));
     }
     ifile.close();
 

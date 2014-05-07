@@ -144,6 +144,7 @@ HEADERS += \
     ProjectSerialization.h \
     Rect.h \
     RotoContext.h \
+    RotoContextPrivate.h \
     RotoSerialization.h \
     Settings.h \
     Singleton.h \
@@ -166,5 +167,5 @@ HEADERS += \
     ../Global/Macros.h \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
-    ../libs/SequenceParsing/SequenceParsing.h
+    ../libs/SequenceParsing/SequenceParsing.h \
 

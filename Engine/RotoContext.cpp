@@ -12,61 +12,37 @@
 #include "RotoContext.h"
 
 #include <algorithm>
-#include <list>
-#include <QMutex>
-#include <QCoreApplication>
-#include <QThread>
-#include <QThreadPool>
-#include <QtConcurrentMap>
+
 
 #include <boost/bind.hpp>
 
-#include "Engine/Curve.h"
+#include "Engine/RotoContextPrivate.h"
+
 #include "Engine/Interpolation.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
-#include "Engine/Rect.h"
 #include "Engine/Hash64.h"
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+#include "Engine/RotoSerialization.h"
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
-struct BezierCP::BezierCPPrivate
-{
-    Bezier* holder;
-    
-    ///the animation curves for the position in the 2D plane
-    Curve curveX,curveY;
-    double x,y; //< used when there is no keyframe
-    
-    ///the animation curves for the derivatives
-    Curve curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
-    double leftX,rightX,leftY,rightY; //< used when there is no keyframe
-    
-    BezierCPPrivate(Bezier* curve)
-    : holder(curve)
-    , curveX()
-    , curveY()
-    , x(0)
-    , y(0)
-    , curveLeftBezierX()
-    , curveRightBezierX()
-    , curveLeftBezierY()
-    , curveRightBezierY()
-    , leftX(0)
-    , rightX(0)
-    , leftY(0)
-    , rightY(0)
-    {
-        
-    }
-    
-};
 
+BezierCP::BezierCP()
+: _imp(new BezierCPPrivate(NULL))
+{
+    
+}
+
+BezierCP::BezierCP(const BezierCP& other)
+: _imp(new BezierCPPrivate(other._imp->holder))
+{
+    clone(other);
+}
 
 BezierCP::BezierCP(Bezier* curve)
 : _imp(new BezierCPPrivate(curve))
@@ -103,6 +79,8 @@ bool BezierCP::getPositionAtTime(int time,double* x,double* y) const
 
 void BezierCP::setPositionAtTime(int time,double x,double y)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     {
         KeyFrame k(time,x);
         _imp->curveX.addKeyFrame(k);
@@ -116,18 +94,24 @@ void BezierCP::setPositionAtTime(int time,double x,double y)
 
 void BezierCP::setStaticPosition(double x,double y)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     _imp->x = x;
     _imp->y = y;
 }
 
 void BezierCP::setLeftBezierStaticPosition(double x,double y)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     _imp->leftX = x;
     _imp->leftY = y;
 }
 
 void BezierCP::setRightBezierStaticPosition(double x,double y)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     _imp->rightX = x;
     _imp->rightY = y;
 }
@@ -156,6 +140,7 @@ bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
 
 bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
 {
+    
     KeyFrame k;
     if (_imp->curveRightBezierX.getKeyFrameWithTime(time, &k)) {
         bool ok;
@@ -178,6 +163,8 @@ bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
 
 void BezierCP::setLeftBezierPointAtTime(int time,double x,double y)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     {
         KeyFrame k(time,x);
         _imp->curveLeftBezierX.addKeyFrame(k);
@@ -190,6 +177,8 @@ void BezierCP::setLeftBezierPointAtTime(int time,double x,double y)
 
 void BezierCP::setRightBezierPointAtTime(int time,double x,double y)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     {
         KeyFrame k(time,x);
         _imp->curveRightBezierX.addKeyFrame(k);
@@ -202,6 +191,9 @@ void BezierCP::setRightBezierPointAtTime(int time,double x,double y)
 
 void BezierCP::removeKeyframe(int time)
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
     if (_imp->curveX.getKeyFramesCount() == 1) {
         _imp->x = _imp->curveX.getValueAt(time);
@@ -261,10 +253,7 @@ Bezier* BezierCP::getCurve() const
 int BezierCP::isNearbyTangent(int time,double x,double y,double acceptance) const
 {
     
-    
-    ///only called on the main-thread
-    assert(QThread::currentThread() == qApp->thread());
-    
+        
     double leftX,leftY,rightX,rightY;
     getLeftBezierPointAtTime(time, &leftX, &leftY);
     getRightBezierPointAtTime(time, &rightX, &rightY);
@@ -388,7 +377,7 @@ static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y
 }
 }
 
-void BezierCP::cuspPoint(int time)
+void BezierCP::cuspPoint(int time,bool autoKeying,bool rippleEdit)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -396,15 +385,27 @@ void BezierCP::cuspPoint(int time)
     double x,y,leftX,leftY,rightX,rightY;
     getPositionAtTime(time, &x, &y);
     getLeftBezierPointAtTime(time, &leftX, &leftY);
-    getRightBezierPointAtTime(time, &rightX, &rightY);
+    bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY);
     double newLeftX = leftX,newLeftY = leftY,newRightX = rightX,newRightY = rightY;
     cuspTangent(x, y, &newLeftX, &newLeftY);
     cuspTangent(x, y, &newRightX, &newRightY);
-    setLeftBezierPointAtTime(time, newLeftX, newLeftY);
-    setRightBezierPointAtTime(time, newRightX, newRightY);
+    
+    if (autoKeying || isOnKeyframe) {
+        setLeftBezierPointAtTime(time, newLeftX, newLeftY);
+        setRightBezierPointAtTime(time, newRightX, newRightY);
+    }
+    
+    if (rippleEdit) {
+        std::set<int> times;
+        getKeyframeTimes(&times);
+        for (std::set<int>::iterator it = times.begin(); it!=times.end(); ++it) {
+            setLeftBezierPointAtTime(*it, newLeftX, newLeftY);
+            setRightBezierPointAtTime(*it, newRightX, newRightY);
+        }
+    }
 }
 
-void BezierCP::smoothPoint(int time)
+void BezierCP::smoothPoint(int time,bool autoKeying,bool rippleEdit)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -412,25 +413,41 @@ void BezierCP::smoothPoint(int time)
     double x,y,leftX,leftY,rightX,rightY;
     getPositionAtTime(time, &x, &y);
     getLeftBezierPointAtTime(time, &leftX, &leftY);
-    getRightBezierPointAtTime(time, &rightX, &rightY);
+    bool isOnKeyframe = getRightBezierPointAtTime(time, &rightX, &rightY);
     
     smoothTangent(time,true,this,x, y, &leftX, &leftY);
     smoothTangent(time,false,this,x, y, &rightX, &rightY);
-    setLeftBezierPointAtTime(time, leftX, leftY);
-    setRightBezierPointAtTime(time, rightX, rightY);
+    
+    if (autoKeying || isOnKeyframe) {
+        setLeftBezierPointAtTime(time, leftX, leftY);
+        setRightBezierPointAtTime(time, rightX, rightY);
+    }
+    
+    if (rippleEdit) {
+        std::set<int> times;
+        getKeyframeTimes(&times);
+        for (std::set<int>::iterator it = times.begin(); it!=times.end(); ++it) {
+            setLeftBezierPointAtTime(*it, leftX, leftY);
+            setRightBezierPointAtTime(*it, rightX, rightY);
+        }
+    }
 }
 
 void BezierCP::clone(const BezierCP& other)
-{
-    ///only called on the main-thread
-    assert(QThread::currentThread() == qApp->thread());
-    
+{    
     _imp->curveX.clone(other._imp->curveX);
     _imp->curveY.clone(other._imp->curveY);
     _imp->curveLeftBezierX.clone(other._imp->curveLeftBezierX);
     _imp->curveLeftBezierY.clone(other._imp->curveLeftBezierY);
     _imp->curveRightBezierX.clone(other._imp->curveRightBezierX);
     _imp->curveRightBezierY.clone(other._imp->curveRightBezierY);
+    
+    _imp->x = other._imp->x;
+    _imp->y = other._imp->y;
+    _imp->leftX = other._imp->leftX;
+    _imp->leftY = other._imp->leftY;
+    _imp->rightX = other._imp->rightX;
+    _imp->rightY = other._imp->rightY;
 }
 
 bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
@@ -459,7 +476,6 @@ namespace  {
         DERIVATIVES_CHANGED = 0,
         CONTROL_POINT_CHANGED = 1
     };
-    typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
     
     typedef std::pair<double,double> Point;
     typedef std::pair<int,int> PointI;
@@ -516,21 +532,23 @@ namespace  {
         
         double incr = 1. / (double)(nbPointsPerSegment - 1);
         
+        Point cur;
         for (double t = 0.; t <= 1.; t += incr) {
-            Point p;
-            bezier(p,p0,p1,p2,p3,t);
-            points->push_back(p);
-            if (p.first < *xmin) {
-                *xmin = p.first;
+            
+            bezier(cur,p0,p1,p2,p3,t);
+            points->push_back(cur);
+            
+            if (cur.first < *xmin) {
+                *xmin = cur.first;
             }
-            if (p.first > *xmax) {
-                *xmax = p.first;
+            if (cur.first > *xmax) {
+                *xmax = cur.first;
             }
-            if (p.second < *ymin) {
-                *ymin = p.second;
+            if (cur.second < *ymin) {
+                *ymin = cur.second;
             }
-            if (p.second > *ymax) {
-                *ymax = p.second;
+            if (cur.second > *ymax) {
+                *ymax = cur.second;
             }
         }
         
@@ -618,92 +636,10 @@ namespace  {
     
 } //anonymous namespace
 
-struct Bezier::RotoSplinePrivate
-{
-    RotoContext* context;
-    
-    BezierCPs points; //< the control points of the curve
-    BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
-    bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
-    
-    bool activated;//< should the curve be visible/rendered ?
-    
-    mutable QMutex splineMutex;
-    
-    RectD boundingBox; //< the bounding box of the bezier
-    bool isBoundingBoxValid; //< has the bounding box ever been computed ?
-    
-    
-    RotoSplinePrivate(RotoContext* ctx)
-    : context(ctx)
-    , points()
-    , featherPoints()
-    , finished(false)
-    , activated(true)
-    , splineMutex()
-    , boundingBox()
-    , isBoundingBoxValid(false)
-    {
-    }
-
-    bool hasKeyframeAtTime(int time) const
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (points.empty()) {
-            return false;
-        } else {
-            KeyFrame k;
-            return points.front()->hasKeyFrameAtTime(time);
-        }
-    }
-    
-    bool hasKeyframeAtCurrentTime() const
-    {
-        return hasKeyframeAtTime(context->getTimelineCurrentTime());
-    }
-    
-    void getKeyframeTimes(std::set<int>* times) const
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (points.empty()) {
-            return ;
-        }
-        points.front()->getKeyframeTimes(times);
-    }
-    
-    BezierCPs::const_iterator atIndex(int index) const
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (index >= (int)points.size()) {
-            throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
-        }
-        
-        BezierCPs::const_iterator it = points.begin();
-        std::advance(it, index);
-        return it;
-    }
-    
-    BezierCPs::iterator atIndex(int index)
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (index >= (int)points.size()) {
-            throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
-        }
-        
-        BezierCPs::iterator it = points.begin();
-        std::advance(it, index);
-        return it;
-    }
-    
-};
 
 
 Bezier::Bezier(RotoContext* ctx)
-: _imp(new RotoSplinePrivate(ctx))
+: _imp(new BezierPrivate(ctx))
 {
     
 }
@@ -992,12 +928,11 @@ void Bezier::removeControlPointByIndex(int index)
 }
 
 
-void Bezier::movePointByIndex(int index,double dx,double dy,bool forbidFeatherLink)
+void Bezier::movePointByIndex(int index,int time,double dx,double dy)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    int time = _imp->context->getTimelineCurrentTime();
     bool autoKeying = _imp->context->isAutoKeyingEnabled();
     {
         QMutexLocker l(&_imp->splineMutex);
@@ -1016,8 +951,7 @@ void Bezier::movePointByIndex(int index,double dx,double dy,bool forbidFeatherLi
         (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF);
        
         bool fLinkEnabled = _imp->context->isFeatherLinkEnabled();
-        bool moveFeather = (fLinkEnabled || (!fLinkEnabled && (*it)->equalsAtTime(time, **itF)))
-        && !forbidFeatherLink;
+        bool moveFeather = (fLinkEnabled || (!fLinkEnabled && (*it)->equalsAtTime(time, **itF)));
     
         
         
@@ -1057,12 +991,11 @@ void Bezier::movePointByIndex(int index,double dx,double dy,bool forbidFeatherLi
 }
 
 
-void Bezier::moveFeatherByIndex(int index,double dx,double dy)
+void Bezier::moveFeatherByIndex(int index,int time,double dx,double dy)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    int time = _imp->context->getTimelineCurrentTime();
     bool autoKeying = _imp->context->isAutoKeyingEnabled();
     
     {
@@ -1100,11 +1033,352 @@ void Bezier::moveFeatherByIndex(int index,double dx,double dy)
     }
 }
 
+void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool featherLink = _imp->context->isFeatherLinkEnabled();
+    {
+    QMutexLocker l(&_imp->splineMutex);
+    
+        BezierCPs::iterator cp = _imp->atIndex(index);
+        assert(cp != _imp->points.end());
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        std::advance(fp, index);
+        
+        double x,y,xF,yF;
+        (*cp)->getLeftBezierPointAtTime(time, &x, &y);
+        bool isOnKeyframe = (*fp)->getLeftBezierPointAtTime(time, &xF, &yF);
+        
+        bool moveFeather = featherLink || (x == xF && y == yF);
+        
+        if (autoKeying || isOnKeyframe) {
+            (*cp)->setLeftBezierPointAtTime(time,x + dx, y + dy);
+            if (moveFeather) {
+                (*fp)->setLeftBezierPointAtTime(time, xF + dx, yF + dy);
+            }
+        } else {
+            ///this function is called when building a new bezier we must
+            ///move the static position if there is no keyframe, otherwise the
+            ///curve would never be built
+            (*cp)->setLeftBezierStaticPosition(x + dx, y + dy);
+            if (moveFeather) {
+                (*fp)->setLeftBezierStaticPosition(xF + dx, yF + dy);
+            }
+        }
+        
+        if (_imp->context->isRippleEditEnabled()) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
+                (*cp)->setLeftBezierPointAtTime(*it2, x + dx, y + dy);
+                if (moveFeather) {
+                    (*fp)->setLeftBezierPointAtTime(*it2, xF + dx, yF + dy);
+                }
+            }
+        }
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+}
+
+void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool featherLink = _imp->context->isFeatherLinkEnabled();
+    {
+    QMutexLocker l(&_imp->splineMutex);
+    
+    
+        BezierCPs::iterator cp = _imp->atIndex(index);
+        assert(cp != _imp->points.end());
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        std::advance(fp, index);
+        
+        double x,y,xF,yF;
+        (*cp)->getRightBezierPointAtTime(time, &x, &y);
+        bool isOnKeyframe = (*fp)->getRightBezierPointAtTime(time, &xF, &yF);
+        
+        bool moveFeather = featherLink || (x == xF && y == yF);
+        
+        if (autoKeying || isOnKeyframe) {
+            (*cp)->setRightBezierPointAtTime(time,x + dx, y + dy);
+            if (moveFeather) {
+                (*fp)->setRightBezierPointAtTime(time, xF + dx, yF + dy);
+            }
+        } else {
+            ///this function is called when building a new bezier we must
+            ///move the static position if there is no keyframe, otherwise the
+            ///curve would never be built
+            (*cp)->setRightBezierStaticPosition(x + dx, y + dy);
+            if (moveFeather) {
+                (*fp)->setRightBezierStaticPosition(xF + dx, yF + dy);
+            }
+        }
+        
+        if (_imp->context->isRippleEditEnabled()) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
+                (*cp)->setRightBezierPointAtTime(*it2, x + dx, y + dy);
+                if (moveFeather) {
+                    (*fp)->setRightBezierPointAtTime(*it2, xF + dx, yF + dy);
+                }
+            }
+        }
+        
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+}
+
+void Bezier::setLeftBezierPoint(int index,int time,double x,double y)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    {
+    QMutexLocker l(&_imp->splineMutex);
+    
+        BezierCPs::iterator cp = _imp->atIndex(index);
+        assert(cp != _imp->points.end());
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        std::advance(fp, index);
+        
+        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
+        
+        if (autoKeying || isOnKeyframe) {
+            (*cp)->setLeftBezierPointAtTime(time, x, y);
+            (*fp)->setLeftBezierPointAtTime(time, x, y);
+            
+        } else {
+            (*cp)->setLeftBezierStaticPosition(x, y);
+            (*fp)->setLeftBezierStaticPosition(x, y);
+        }
+        
+        if (_imp->context->isRippleEditEnabled()) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
+                (*cp)->setLeftBezierPointAtTime(*it2, x,y);
+                (*fp)->setLeftBezierPointAtTime(*it2,x,y);
+            }
+        }
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+}
+
+void Bezier::setRightBezierPoint(int index,int time,double x,double y)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    {
+        QMutexLocker l(&_imp->splineMutex);
+        
+        BezierCPs::iterator cp = _imp->atIndex(index);
+        assert(cp != _imp->points.end());
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        std::advance(fp, index);
+        
+        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
+        
+        if (autoKeying || isOnKeyframe) {
+            (*cp)->setRightBezierPointAtTime(time, x, y);
+            (*fp)->setRightBezierPointAtTime(time, x, y);
+            
+        } else {
+            (*cp)->setRightBezierStaticPosition(x, y);
+            (*fp)->setRightBezierStaticPosition(x, y);
+        }
+        
+        if (_imp->context->isRippleEditEnabled()) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
+                (*cp)->setRightBezierPointAtTime(*it2, x,y);
+                (*fp)->setRightBezierPointAtTime(*it2,x,y);
+            }
+        }
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+    
+}
+
+void Bezier::setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    
+    {
+        QMutexLocker l(&_imp->splineMutex);
+        
+        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
+        
+        if (index >= (int)_imp->featherPoints.size()) {
+            throw std::invalid_argument("Bezier::setPointAtIndex: Index out of range.");
+        }
+        
+        BezierCPs::iterator fp = feather ?  _imp->featherPoints.begin() : _imp->points.begin();
+        std::advance(fp, index);
+        
+        if (autoKeying || isOnKeyframe) {
+            (*fp)->setPositionAtTime(time, x, y);
+            (*fp)->setLeftBezierPointAtTime(time, lx, ly);
+            (*fp)->setRightBezierPointAtTime(time, rx, ry);
+        }
+        
+        if (rippleEdit) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
+                (*fp)->setPositionAtTime(*it2, x, y);
+                (*fp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                (*fp)->setRightBezierPointAtTime(*it2, rx, ry);
+                
+            }
+        }
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+}
+
+void Bezier::setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    
+    {
+        QMutexLocker l(&_imp->splineMutex);
+        
+        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
+        
+        if (autoKeying || isOnKeyframe) {
+            p.setLeftBezierPointAtTime(time, lx, ly);
+            p.setRightBezierPointAtTime(time, rx, ry);
+        }
+        
+        if (rippleEdit) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
+                p.setLeftBezierPointAtTime(*it2, lx, ly);
+                p.setRightBezierPointAtTime(*it2, rx, ry);
+                
+            }
+        }
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+
+}
+
+void Bezier::removeFeatherAtIndex(int index)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->splineMutex);
+    
+    if (index >= (int)_imp->points.size()) {
+        throw std::invalid_argument("Bezier::removeFeatherAtIndex: Index out of range.");
+    }
+    
+    BezierCPs::iterator cp = _imp->atIndex(index);
+    BezierCPs::iterator fp = _imp->featherPoints.begin();
+    std::advance(fp, index);
+    
+    assert(cp != _imp->points.end() && fp != _imp->featherPoints.end());
+    
+    (*fp)->clone(**cp);
+}
+
+
+void Bezier::smoothPointAtIndex(int index,int time)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    
+    {
+        QMutexLocker l(&_imp->splineMutex);
+        if (index >= (int)_imp->points.size()) {
+            throw std::invalid_argument("Bezier::smoothPointAtIndex: Index out of range.");
+        }
+        
+        BezierCPs::iterator cp = _imp->atIndex(index);
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        std::advance(fp, index);
+        
+        assert(cp != _imp->points.end() && fp != _imp->featherPoints.end());
+        (*cp)->smoothPoint(time,autoKeying,rippleEdit);
+        (*fp)->smoothPoint(time,autoKeying,rippleEdit);
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+}
+
+
+void Bezier::cuspPointAtIndex(int index,int time)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    
+    {
+        QMutexLocker l(&_imp->splineMutex);
+        if (index >= (int)_imp->points.size()) {
+            throw std::invalid_argument("Bezier::cuspPointAtIndex: Index out of range.");
+        }
+        
+        BezierCPs::iterator cp = _imp->atIndex(index);
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        std::advance(fp, index);
+        
+        assert(cp != _imp->points.end() && fp != _imp->featherPoints.end());
+        (*cp)->cuspPoint(time,autoKeying,rippleEdit);
+        (*fp)->cuspPoint(time,autoKeying,rippleEdit);
+        
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+}
 
 void Bezier::setKeyframe(int time)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    
     QMutexLocker l(&_imp->splineMutex);
     
     if (_imp->hasKeyframeAtTime(time)) {
@@ -1274,7 +1548,7 @@ const std::list< boost::shared_ptr<BezierCP> >& Bezier::getFeatherPoints() const
 }
 
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-Bezier::isNearbyControlPoint(double x,double y,double acceptance) const
+Bezier::isNearbyControlPoint(double x,double y,double acceptance,int* index) const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1293,6 +1567,7 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance) const
             BezierCPs::const_iterator itF = _imp->featherPoints.begin();
             std::advance(itF, i);
             fp = *itF;
+            *index = i;
             return std::make_pair(cp,fp);
         }
     }
@@ -1309,11 +1584,13 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance) const
                 BezierCPs::const_iterator it2 = _imp->points.begin();
                 std::advance(it2, i);
                 cp = *it2;
+                *index = i;
                 return std::make_pair(fp,cp);
             }
         }
     }
     ///empty pair
+    *index = -1;
     return std::make_pair(cp,fp);
 }
 
@@ -1530,45 +1807,53 @@ void Bezier::rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& n
     }
 
 }
+
+void Bezier::save(BezierSerialization* obj) const
+{
+    QMutexLocker l(&_imp->splineMutex);
+    
+    obj->_closed = _imp->finished;
+    obj->_activated = _imp->activated;
+    
+    assert(_imp->featherPoints.size() == _imp->points.size());
+    
+    
+    BezierCPs::const_iterator fp = _imp->featherPoints.begin();
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        BezierCP c,f;
+        c.clone(**it);
+        f.clone(**fp);
+        obj->_controlPoints.push_back(c);
+        obj->_featherPoints.push_back(f);
+    }
+}
+
+void Bezier::load(const BezierSerialization& obj)
+{
+    QMutexLocker l(&_imp->splineMutex);
+    _imp->finished = obj._closed;
+    _imp->activated = obj._activated;
+    
+    ///do not load broken serializations
+    if (obj._controlPoints.size() != obj._featherPoints.size()) {
+        return;
+    }
+    
+    std::list<BezierCP>::const_iterator itF = obj._featherPoints.begin();
+    for (std::list<BezierCP>::const_iterator it = obj._controlPoints.begin();it!=obj._controlPoints.end();++it,++itF)
+    {
+        boost::shared_ptr<BezierCP> cp(new BezierCP(this));
+        cp->clone(*it);
+        _imp->points.push_back(cp);
+        
+        boost::shared_ptr<BezierCP> fp(new BezierCP(this));
+        fp->clone(*itF);
+        _imp->featherPoints.push_back(fp);
+    }
+}
+
 ////////////////////////////////////RotoContext////////////////////////////////////
 
-struct RotoContext::RotoContextPrivate
-{
-    
-    mutable QMutex rotoContextMutex;
-    std::list< boost::shared_ptr<Bezier> > splines;
-    bool autoKeying;
-    bool rippleEdit;
-    bool featherLink;
-    
-    Natron::Node* node;
-    U64 age;
-    
-    RotoContextPrivate(Natron::Node* n )
-    : rotoContextMutex()
-    , splines()
-    , autoKeying(true)
-    , rippleEdit(false)
-    , featherLink(true)
-    , node(n)
-    , age(0)
-    {
-        
-    }
-    
-    /**
-     * @brief Call this after any change to notify the mask has changed for the cache.
-     **/
-    void incrementRotoAge()
-    {
-        ///MT-safe: only called on the main-thread
-        assert(QThread::currentThread() == qApp->thread());
-        
-        QMutexLocker l(&rotoContextMutex);
-        ++age;
-
-    }
-};
 
 RotoContext::RotoContext(Natron::Node* node)
 : _imp(new RotoContextPrivate(node))
@@ -1651,16 +1936,19 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y)
     return curve;
 }
 
-void RotoContext::removeBezier(const boost::shared_ptr<Bezier>& c)
+void RotoContext::removeBezier(const Bezier* c)
 {
     ///MT-safe: only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
     QMutexLocker l(&_imp->rotoContextMutex);
-    std::list< boost::shared_ptr<Bezier> >::iterator found =
-    std::find(_imp->splines.begin(), _imp->splines.end(), c);
-    assert(found != _imp->splines.end());
-    _imp->splines.erase(found);
+    for (std::list< boost::shared_ptr<Bezier> >::iterator found = _imp->splines.begin(); found != _imp->splines.end();++found) {
+        if (found->get() == c) {
+            _imp->splines.erase(found);
+            return;
+        }
+    }
+    assert(false);
 }
 
 const std::list< boost::shared_ptr<Bezier> >& RotoContext::getBeziers() const
@@ -1728,27 +2016,39 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
     }
 }
 
+void RotoContext::save(RotoContextSerialization* obj) const
+{
+    QMutexLocker l(&_imp->rotoContextMutex);
+    obj->_autoKeying = _imp->autoKeying;
+    obj->_featherLink = _imp->featherLink;
+    obj->_rippleEdit = _imp->rippleEdit;
+    
+    ///the age of the context is not serialized as the images are wiped from the cache anyway
+    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin(); it!= _imp->splines.end(); ++it) {
+        BezierSerialization b;
+        (*it)->save(&b);
+        obj->_beziers.push_back(b);
+    }
+}
+
+void RotoContext::load(const RotoContextSerialization& obj)
+{
+    QMutexLocker l(&_imp->rotoContextMutex);
+    _imp->autoKeying = obj._autoKeying;
+    _imp->featherLink = obj._featherLink;
+    _imp->rippleEdit = obj._rippleEdit;
+    
+    for (std::list<BezierSerialization>::const_iterator it = obj._beziers.begin(); it != obj._beziers.end(); ++it) {
+        boost::shared_ptr<Bezier> b(new Bezier(this));
+        b->load(*it);
+        _imp->splines.push_back(b);
+    }
+}
+
 void RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
     _imp->node->getLiveInstance()->evaluate_public(NULL, true);
-}
-
-void RotoContext::multiThreadFunctor(const RectI& roi,unsigned int mipmapLevel,int time,
-                               Natron::Image* output)
-{
-    int i = 0;
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = _imp->splines.begin(); it2!=_imp->splines.end(); ++it2,++i) {
-        
-        ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
-        ///Also render only finished bezier
-        if ((*it2)->isCurveFinished()) {
-            std::list< Point > points;
-            (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
-            fillPolygon_evenOdd(roi,points, output);
-        }
-    }
-
 }
 
 
@@ -1810,45 +2110,22 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     RectI pixelRod = params->getPixelRoD();
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
-    
-    int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-    bool renderSingleThread = nbThreads == -1 ||
-    nbThreads == 1 ||
-    (nbThreads == 0 && QThread::idealThreadCount() == 1) ||
-    QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount();
-
-    std::list<RectI> restToRender = image->getRestToRender(clippedRoI);
-    
+ 
     QMutexLocker l(&_imp->rotoContextMutex);
-    for (std::list<RectI>::iterator it = restToRender.begin(); it!=restToRender.end(); ++it) {
-        if (renderSingleThread) {
-            int i = 0;
-            for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = _imp->splines.begin(); it2!=_imp->splines.end(); ++it2,++i) {
-                
-                ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
-                ///Also render only finished bezier
-                if ((*it2)->isCurveFinished()) {
-                    std::list< Point > points;
-                    (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
-                    fillPolygon_evenOdd(*it,points, image.get());
-                }
-            }
-            
-        } else {
-            if (nbThreads == 0) {
-                nbThreads = QThreadPool::globalInstance()->maxThreadCount();
-            }
-            
-            std::vector<RectI> splitRoI = RectI::splitRectIntoSmallerRect(*it, nbThreads);
-            QFuture<void> future = QtConcurrent::map(splitRoI,
-                                                     boost::bind(&RotoContext::multiThreadFunctor,this,_1, mipmapLevel, time, image.get()));
-            future.waitForFinished();
-            
+    int i = 0;
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = _imp->splines.begin(); it2!=_imp->splines.end(); ++it2,++i) {
+        
+        ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
+        ///Also render only finished bezier
+        if ((*it2)->isCurveFinished()) {
+            std::list< Point > points;
+            (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
+            fillPolygon_evenOdd(clippedRoI,points, image.get());
         }
-
     }
     
-    
+
+
     ////////////////////////////////////
     if(_imp->node->aborted()){
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -1863,6 +2140,12 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
 
 namespace  {
  
+    /**
+     *     The object is assumed to be filled in scanline order, and thus the
+     *     algorithm used is an extension of Bresenham's line
+     *     drawing algorithm which assumes that y is always the
+     *     major axis.
+     **/
     struct BresenhamData {
         
         ////These are public since they are local to the same function.
@@ -1877,7 +2160,27 @@ namespace  {
             
         }
         
-        BresenhamData(double dy,double x1,double x2)
+        
+        /*
+         *  In scan converting polygons, we want to choose those pixels
+         *  which are inside the polygon.  Thus, we add .5 to the starting
+         *  x coordinate for both left and right edges.  Now we choose the
+         *  first pixel which is inside the pgon for the left edge and the
+         *  first pixel which is outside the pgon for the right edge.
+         *  Draw the left pixel, but not the right.
+         *
+         *  How to add .5 to the starting x coordinate:
+         *      If the edge is moving to the right, then subtract dy from the
+         *  error term from the general form of the algorithm.
+         *      If the edge is moving to the left, then add dy to the error term.
+         *
+         *  The reason for the difference between edges moving to the left
+         *  and edges moving to the right is simple:  If an edge is moving
+         *  to the right, then we want the algorithm to flip immediately.
+         *  If it is moving to the left, then we don't want it to flip until
+         *  we traverse an entire pixel.
+         */
+        BresenhamData(int dy,int x1,int x2)
         {
             int dx;
             ///ignore horizontal edges
@@ -1948,7 +2251,7 @@ namespace  {
         }
     } ;
 
-    static void insertEdgeInET(EdgeTable* ET,EdgePtr ETE,int scanline)
+    static void insertEdgeInET(EdgeTable* ET,const EdgePtr& ETE,int scanline)
     {
         std::list<ScanLine>::iterator itSLL = ET->scanlines.begin();
         while (itSLL != ET->scanlines.end() && itSLL->scanline < scanline)
@@ -1983,11 +2286,12 @@ namespace  {
         std::list< Point >::const_iterator next = points.begin();
         ++next;
         
+        
         int i = 0;
         for (std::list< Point >::const_iterator it = points.begin(); next!=points.end(); ++it,++next,++i) {
             
             PointI bottom,top;
-            bool curIsTop;
+            bool curIsTop,curIsLeft;
             if (next->second < it->second) {
                 curIsTop = true;
                 bottom.second = std::floor(next->second + 0.5);
@@ -2002,18 +2306,23 @@ namespace  {
                 bottom.first = std::floor(it->first + 0.5);
                 top.first = std::floor(next->first + 0.5);
             }
+            if (next->first < it->second) {
+                curIsLeft = false;
+            } else {
+                curIsLeft = true;
+            }
             
             ///horizontal edges are discarded
             if (bottom.second != top.second) {
                 pETEs[i].reset(new EdgeTableEntry);
-                pETEs[i]->ymax = top.second - 1;  /// -1 so we don't get last scanline
-                int dy = top.second - bottom.second;
-                pETEs[i]->bres = BresenhamData(dy, bottom.first, top.first);
+                pETEs[i]->ymax = /*curIsTop ? std::ceil(it->second) -1 : std::ceil(next->second) - 1;*/top.second - 1;  /// -1 so we don't get last scanline
+                int dy = std::ceil(std::abs(next->second - it->second));
+                pETEs[i]->bres = BresenhamData(dy,curIsLeft ? std::floor(it->first) : std::ceil(it->first),
+                                               curIsLeft ? std::ceil(next->first) : std::floor(next->first));// bottom.first, top.first);
+                insertEdgeInET(ET, pETEs[i], curIsTop ? std::floor(next->second + 0.5) : std::floor(it->second + 0.5));
                 
-                insertEdgeInET(ET, pETEs[i], bottom.second);
-                
-                ET->ymax = std::max(ET->ymax, curIsTop ? top.second : bottom.second);
-                ET->ymin = std::min(ET->ymin, curIsTop ? top.second : bottom.second);
+                ET->ymax = std::max<int>(ET->ymax, curIsTop ? std::ceil(it->second) : std::ceil(next->second));
+                ET->ymin = std::min<int>(ET->ymin, curIsTop ? std::floor(next->second) : std::floor(it->second));
             }
         }
         
@@ -2062,7 +2371,10 @@ namespace  {
 
 void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >& points,Natron::Image* output)
 {
-    
+    ///An optimization could be made to actually clip the points of the polygon the the RoI first.
+    ///That would make a lot less points to process. For now we just discard the pixels outside the roi.
+    ///see http://coitweb.uncc.edu/~krs/courses/4120-5120/lectures/raster2.pdf , the algorithm of
+    ///Liang-Barsky for an explanation on how to clip the polygon.
     
     ///A polygon is at least a triangle
     if (points.size() < 3) {
@@ -2079,7 +2391,7 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
     
     const RectI& dstRoD = output->getPixelRoD();
     
-    for (int y = edgeTable.ymin; y < edgeTable.ymax; ++y) {
+    for (int y = edgeTable.ymin; y <= edgeTable.ymax; ++y) {
         
         if (_imp->node->aborted()) {
             return;
@@ -2125,14 +2437,7 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
             for (int xx = x; xx < end; ++xx) {
                 
                 double val = 1.;
-                ///if xx = x or xx = end -1 we are crossing one of the edge, we need to apply antialiasing.
-                ///we do this with the bresenham distance to the center of the pixel.
-                if (xx == x) {
-                    
-                } else if (xx == (end -1)) {
-                    
-                }
-                 
+                
                 if (roi.contains(xx, y)) {
                     if (comps == 4) {
                         dstPixels[xx * comps + 3] = val;

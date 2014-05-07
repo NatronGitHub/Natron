@@ -15,8 +15,12 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/RotoSerialization.h"
+#include "Engine/RotoContext.h"
+
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
 : _isNull(true)
+, _hasRotoContext(false)
 , _node()
 , _app(NULL)
 {
@@ -59,6 +63,14 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {
             _masterNodeName = masterNode->getName_mt_safe();
+        }
+        
+        boost::shared_ptr<RotoContext> roto = n->getRotoContext();
+        if (roto) {
+            _hasRotoContext = true;
+            roto->save(&_rotoContext);
+        } else {
+            _hasRotoContext = false;
         }
         
         _isNull = false;

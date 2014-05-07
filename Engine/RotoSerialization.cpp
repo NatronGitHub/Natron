@@ -10,7 +10,3 @@
 */
 
 #include "RotoSerialization.h"
-
-RotoSerialization::RotoSerialization()
-{
-}

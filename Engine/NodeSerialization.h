@@ -25,6 +25,11 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/version.hpp>
 
 #include "Engine/KnobSerialization.h"
+#include "Engine/RotoSerialization.h"
+
+
+#define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
+
 namespace Natron {
     class Node;
 }
@@ -41,7 +46,7 @@ public:
     NodeSerialization(const boost::shared_ptr<Natron::Node>& n);
     
     ////Used to deserialize
-    NodeSerialization(AppInstance* app) : _isNull(true) , _node(), _app(app) {}
+    NodeSerialization(AppInstance* app) : _isNull(true) , _hasRotoContext(false), _node(), _app(app) {}
     
     ~NodeSerialization(){ _knobsValues.clear(); _inputs.clear(); }
     
@@ -64,6 +69,10 @@ public:
     const std::string& getMasterNodeName() const { return _masterNodeName; }
     
     boost::shared_ptr<Natron::Node> getNode() const { return _node; }
+    
+    bool hasRotoContext() const { return _hasRotoContext; }
+    
+    const RotoContextSerialization& getRotoContext() const {  return _rotoContext; }
 private:
 
     bool _isNull;
@@ -77,6 +86,8 @@ private:
     std::string _masterNodeName;
     
     std::vector<std::string> _inputs;
+    bool _hasRotoContext;
+    RotoContextSerialization _rotoContext;
     
     boost::shared_ptr<Natron::Node> _node;
     AppInstance* _app;
@@ -98,10 +109,16 @@ private:
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
         
+        
+        ar & boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
+        if (_hasRotoContext) {
+            ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
+        }
+        
     }
     
     template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
+    void load(Archive & ar, const unsigned int version)
     {
         assert(_app);
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
@@ -119,13 +136,22 @@ private:
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
         _isNull = false;
         
+        if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {
+            ar & boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
+            if (_hasRotoContext) {
+                ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
+            }
+        }
+        
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     
 };
 
-BOOST_CLASS_VERSION(NodeSerialization, 1)
+
+
+BOOST_CLASS_VERSION(NodeSerialization, NODE_SERIALIZATION_V_INTRODUCES_ROTO)
 
 
 #endif // NODESERIALIZATION_H

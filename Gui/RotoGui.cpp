@@ -50,18 +50,17 @@ static const double pi=3.14159265358979323846264338327950288419717;
 ///the feather point and its associated control point
 typedef std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > SelectedCP;
 typedef std::list< SelectedCP > SelectedCPs;
-
-///A pointer to a bezier + a pointer to the last cp/fp that was added
-typedef std::pair<boost::shared_ptr<Bezier>,std::pair< boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > BuiltBezier;
     
 typedef std::list< boost::shared_ptr<Bezier> > SelectedBeziers;
-
+    
 enum EventState
 {
     NONE = 0,
     DRAGGING_CPS,
     SELECTING,
     BUILDING_BEZIER_CP_TANGENT,
+    BUILDING_ELLIPSE,
+    BUILDING_RECTANGLE,
     DRAGGING_LEFT_TANGENT,
     DRAGGING_RIGHT_TANGENT,
     DRAGGING_FEATHER_BAR
@@ -119,13 +118,14 @@ struct RotoGui::RotoGuiPrivate
     QRectF selectionRectangle;
     
     
-    BuiltBezier builtBezier; //< the bezier currently being built
+    boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
     
     boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
                                                      //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged;
     
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
+    bool evaluateOnKeyUp ; //< if true the next key up will call context->evaluateChange()
     
     RotoGuiPrivate(NodeGui* n,ViewerTab* tab)
     : node(n)
@@ -154,6 +154,7 @@ struct RotoGui::RotoGuiPrivate
     , tangentBeingDragged()
     , featherBarBeingDragged()
     , evaluateOnPenUp(false)
+    , evaluateOnKeyUp(false)
     {
         if (n->getNode()->isRotoPaintingNode()) {
             type = ROTOPAINTING;
@@ -379,8 +380,8 @@ void RotoGui::onActionTriggeredInternal(QAction* act)
     _imp->selectedCpsBbox.setTopRight(QPointF(0,0));
     
     ///clear all selection if we were building a new bezier
-    if (previousRole == BEZIER_EDITION_ROLE && _imp->selectedTool == DRAW_BEZIER && _imp->builtBezier.first) {
-        _imp->builtBezier.first->setCurveFinished(true);
+    if (previousRole == BEZIER_EDITION_ROLE && _imp->selectedTool == DRAW_BEZIER && _imp->builtBezier) {
+        _imp->builtBezier->setCurveFinished(true);
         _imp->clearSelection();
     }
     
@@ -433,8 +434,8 @@ void RotoGui::RotoGuiPrivate::drawSelectedCp(int time,const boost::shared_ptr<Be
     cp->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
     cp->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
     
-    bool drawLeftHandle = leftDerivX != x && leftDerivY != y;
-    bool drawRightHandle = rightDerivX != x && rightDerivY != y;
+    bool drawLeftHandle = leftDerivX != x || leftDerivY != y;
+    bool drawRightHandle = rightDerivX != x || rightDerivY != y;
     glBegin(GL_POINTS);
     if (drawLeftHandle) {
         if (colorLeftTangent) {
@@ -943,19 +944,18 @@ static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool 
         rightY += dy;
     }
     double alpha = left ? std::atan2(y - leftY,x - leftX) : std::atan2(y - rightY,x - rightX);
+    
     if (left) {
         rightX = std::cos(alpha) * dist;
         rightY = std::sin(alpha) * dist;
         if (autoKeying || isOnKeyframe) {
-            p.setLeftBezierPointAtTime(time, leftX, leftY);
-            p.setRightBezierPointAtTime(time,x + rightX,y + rightY);
+            p.getCurve()->setPointLeftAndRightIndex(p, time, leftX, leftY, x + rightX, y + rightY);
         }
     } else {
         leftX = std::cos(alpha) * dist;
         leftY = std::sin(alpha) * dist;
         if (autoKeying || isOnKeyframe) {
-            p.setLeftBezierPointAtTime(time, x + leftX, y + leftY);
-            p.setRightBezierPointAtTime(time, rightX, rightY);
+            p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
         }
     }
     
@@ -1029,13 +1029,14 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
     _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
 
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
+    int nearbyCpIndex = -1;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
     if (nearbyBezier) {
         /////////////////CONTROL POINT SELECTION
         //////Check if the point is nearby a control point of a selected bezier
         ///Find out if the user selected a control point
         
-        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance);
+        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,&nearbyCpIndex);
 
     }
     switch (_imp->selectedTool) {
@@ -1104,10 +1105,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 std::find(_imp->selectedBeziers.begin(), _imp->selectedBeziers.end(), nearbyBezier);
                 if (foundBezier != _imp->selectedBeziers.end()) {
                     ///check that the point is not too close to an existing point
-                    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
-                    nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance);
-                    if (nb.first) {
-                        _imp->handleControlPointSelection(nb);
+                    if (nearbyCP.first) {
+                        _imp->handleControlPointSelection(nearbyCP);
                     } else {
                         boost::shared_ptr<BezierCP> newCp = nearbyBezier->addControlPointAfterIndex(nearbyBezierCPIndex, nearbyBezierT);
                         boost::shared_ptr<BezierCP> newFp = nearbyBezier->getFeatherPointAtIndex(nearbyBezierCPIndex + 1);
@@ -1133,12 +1132,17 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 } else if (cpCount == 0) {
                     
                     ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeBezier(nearbyBezier);
+                    _imp->context->removeBezier(nearbyBezier.get());
                     SelectedBeziers::iterator foundBezier =
                     std::find(_imp->selectedBeziers.begin(), _imp->selectedBeziers.end(), nearbyBezier);
                     assert(foundBezier != _imp->selectedBeziers.end());
                     _imp->selectedBeziers.erase(foundBezier);
                 }
+                SelectedCPs::iterator foundSelected = std::find(_imp->selectedCps.begin(), _imp->selectedCps.end(), nearbyCP);
+                if (foundSelected != _imp->selectedCps.end()) {
+                    _imp->selectedCps.erase(foundSelected);
+                }
+                
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1148,13 +1152,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             _imp->selectedCps.clear();
             _imp->showCpsBbox = false;
             if (nearbyCP.first) {
-                _imp->handleControlPointSelection(nearbyCP);
-                BezierCP* cp = nearbyCP.first->isFeatherPoint() ? nearbyCP.second.get() : nearbyCP.first.get();
-                BezierCP* fp = nearbyCP.first->isFeatherPoint() ? nearbyCP.first.get() : nearbyCP.second.get();
-                assert(cp && fp);
-                ///set the feather to be equal to the cp
-                fp->clone(*cp);
                 assert(nearbyBezier);
+                _imp->handleControlPointSelection(nearbyCP);
+                nearbyBezier->removeFeatherAtIndex(nearbyCpIndex);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1176,10 +1176,10 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             ///clear control points selections
             _imp->selectedCps.clear();
             _imp->showCpsBbox = false;
-            if (nearbyCP.first && _imp->context->isAutoKeyingEnabled()) {
+            if (nearbyCP.first) {
+                assert(nearbyBezier);
                 _imp->handleControlPointSelection(nearbyCP);
-                nearbyCP.first->smoothPoint(time);
-                nearbyCP.second->smoothPoint(time);
+                nearbyBezier->smoothPointAtIndex(nearbyCpIndex, time);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1191,8 +1191,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             _imp->showCpsBbox = false;
             if (nearbyCP.first && _imp->context->isAutoKeyingEnabled()) {
                 _imp->handleControlPointSelection(nearbyCP);
-                nearbyCP.first->cuspPoint(time);
-                nearbyCP.second->cuspPoint(time);
+                assert(nearbyBezier);
+                nearbyBezier->cuspPointAtIndex(nearbyCpIndex, time);
                 _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
@@ -1201,7 +1201,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         {
             
             _imp->clearSelection();
-            if (!_imp->builtBezier.first) {
+            if (!_imp->builtBezier) {
                 ///make a new curve
                 boost::shared_ptr<Bezier> newCurve = _imp->context->makeBezier(pos.x(), pos.y());
                 _imp->selectedBeziers.push_back(newCurve);
@@ -1209,14 +1209,14 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 boost::shared_ptr<BezierCP> fp = newCurve->getFeatherPointAtIndex(0);
                 assert(cp && fp);
                 _imp->selectedCps.push_back(std::make_pair(cp,fp));
-                _imp->builtBezier = std::make_pair(newCurve, std::make_pair(cp,fp));
+                _imp->builtBezier = newCurve;
             } else {
                 
-                _imp->selectedBeziers.push_back(_imp->builtBezier.first);
+                _imp->selectedBeziers.push_back(_imp->builtBezier);
 
                 ///if the user clicked on a control point of the bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve
-                const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->builtBezier.first->getControlPoints();
+                const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->builtBezier->getControlPoints();
                 int i = 0;
                 for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it,++i) {
                     double x,y;
@@ -1224,19 +1224,17 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     if (x >= (pos.x() - cpSelectionTolerance) && x <= (pos.x() + cpSelectionTolerance) &&
                         y >= (pos.y() - cpSelectionTolerance) && y <= (pos.y() + cpSelectionTolerance)) {
                         if (it == cps.begin()) {
-                            _imp->builtBezier.first->setCurveFinished(true);
+                            _imp->builtBezier->setCurveFinished(true);
                             _imp->evaluateOnPenUp = true;
         
-                            _imp->builtBezier.first.reset();
-                            _imp->builtBezier.second.first.reset();
-                            _imp->builtBezier.second.second.reset();
+                            _imp->builtBezier.reset();
                             
                             _imp->selectedCps.clear();
                             onActionTriggeredInternal(_imp->selectAllAction);
                             
                             
                         } else {
-                            boost::shared_ptr<BezierCP> fp = _imp->builtBezier.first->getFeatherPointAtIndex(i);
+                            boost::shared_ptr<BezierCP> fp = _imp->builtBezier->getFeatherPointAtIndex(i);
                             assert(fp);
                             _imp->handleControlPointSelection(std::make_pair(*it, fp));
                         }
@@ -1246,15 +1244,13 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 }
                 
                 ///continue the curve being built
-                _imp->builtBezier.first->addControlPoint(pos.x(), pos.y());
-                int lastIndex = _imp->builtBezier.first->getControlPointsCount() - 1;
+                _imp->builtBezier->addControlPoint(pos.x(), pos.y());
+                int lastIndex = _imp->builtBezier->getControlPointsCount() - 1;
                 assert(lastIndex > 0);
-                boost::shared_ptr<BezierCP> cp = _imp->builtBezier.first->getControlPointAtIndex(lastIndex);
-                boost::shared_ptr<BezierCP> fp = _imp->builtBezier.first->getFeatherPointAtIndex(lastIndex);
+                boost::shared_ptr<BezierCP> cp = _imp->builtBezier->getControlPointAtIndex(lastIndex);
+                boost::shared_ptr<BezierCP> fp = _imp->builtBezier->getFeatherPointAtIndex(lastIndex);
                 assert(cp && fp);
                 _imp->selectedCps.push_back(std::make_pair(cp,fp));
-                _imp->builtBezier.second.first = cp;
-                _imp->builtBezier.second.second = fp;
             }
             ///not need to set _imp->evaluateOnPenUp because the polygon is not closed anyway
             _imp->state = BUILDING_BEZIER_CP_TANGENT;
@@ -1264,11 +1260,33 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             
             break;
         case DRAW_ELLIPSE:
+        {
+            _imp->clearSelection();
+            _imp->builtBezier = _imp->context->makeBezier(pos.x(), pos.y());
+            _imp->builtBezier->getControlPointAtIndex(0);
+            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
+            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
+            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
+            _imp->builtBezier->setCurveFinished(true);
+            _imp->evaluateOnPenUp = true;
+            _imp->selectedBeziers.push_back(_imp->builtBezier);
+            _imp->state = BUILDING_ELLIPSE;
+            didSomething = true;
             
-            break;
+        }   break;
         case DRAW_RECTANGLE:
-            
-            break;
+        {
+            _imp->clearSelection();
+            boost::shared_ptr<Bezier> curve = _imp->context->makeBezier(pos.x(), pos.y());
+            curve->addControlPoint(pos.x(), pos.y());
+            curve->addControlPoint(pos.x(), pos.y());
+            curve->addControlPoint(pos.x(), pos.y());
+            curve->setCurveFinished(true);
+            _imp->evaluateOnPenUp = true;
+            _imp->selectedBeziers.push_back(curve);
+            _imp->state = BUILDING_RECTANGLE;
+            didSomething = true;
+        }   break;
         default:
             assert(false);
             break;
@@ -1295,9 +1313,10 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         
         if (_imp->state != DRAGGING_CPS) {
             for (SelectedBeziers::const_iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
+                int index = -1;
                 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
-                (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol);
-                if (nb.first) {
+                (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol,&index);
+                if (index != -1) {
                     _imp->viewer->setCursor(QCursor(Qt::CrossCursor));
                     cursorSet = true;
                     break;
@@ -1332,14 +1351,13 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                     if (_imp->selectedTool == SELECT_FEATHER_POINTS || _imp->selectedTool == SELECT_ALL) {
                         index = it->second->getCurve()->getControlPointIndex(it->second);
                         assert(index != -1);
-                        it->first->getCurve()->moveFeatherByIndex(index, dx, dy);
+                        it->first->getCurve()->moveFeatherByIndex(index,time, dx, dy);
                     }
                 } else {
-                    bool forbidFeather = _imp->selectedTool == SELECT_POINTS;
                     if (_imp->selectedTool == SELECT_POINTS || _imp->selectedTool == SELECT_ALL) {
                         index = it->first->getCurve()->getControlPointIndex(it->first);
                         assert(index != -1);
-                        it->first->getCurve()->movePointByIndex(index, dx, dy,forbidFeather);
+                        it->first->getCurve()->movePointByIndex(index,time, dx, dy);
                     }
                 }
             }
@@ -1354,29 +1372,66 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         }   break;
         case BUILDING_BEZIER_CP_TANGENT:
         {
-            assert(_imp->builtBezier.first && _imp->builtBezier.second.first && _imp->builtBezier.second.second);
-            double leftX,leftY,rightX,rightY;
-            _imp->builtBezier.second.first->getLeftBezierPointAtTime(time, &leftX, &leftY);
-            _imp->builtBezier.second.first->getRightBezierPointAtTime(time, &rightX, &rightY);
-            if (_imp->context->isAutoKeyingEnabled()) {
-                _imp->builtBezier.second.first->setLeftBezierPointAtTime(time, leftX - dx, leftY - dy);
-                _imp->builtBezier.second.first->setRightBezierPointAtTime(time, rightX + dx, rightY + dy);
-            } else {
-                _imp->builtBezier.second.first->setLeftBezierStaticPosition(leftX - dx, leftY - dy);
-                _imp->builtBezier.second.first->setRightBezierStaticPosition(rightX + dx, rightY + dy);
-            }
-            
-            _imp->builtBezier.second.second->getLeftBezierPointAtTime(time, &leftX, &leftY);
-            _imp->builtBezier.second.second->getRightBezierPointAtTime(time, &rightX, &rightY);
-            if (_imp->context->isAutoKeyingEnabled()) {
-                _imp->builtBezier.second.second->setLeftBezierPointAtTime(time, leftX - dx, leftY - dy);
-                _imp->builtBezier.second.second->setRightBezierPointAtTime(time, rightX + dx, rightY + dy);
-            } else {
-                _imp->builtBezier.second.second->setLeftBezierStaticPosition(leftX - dx, leftY - dy);
-                _imp->builtBezier.second.second->setRightBezierStaticPosition(rightX + dx, rightY + dy);
-            }
-            ///not need to set _imp->evaluateOnPenUp = true because the polygon is not closed anyway
+            assert(_imp->builtBezier);
+            int lastIndex = _imp->builtBezier->getControlPointsCount() - 1;
+            assert(lastIndex >= 0);
+            _imp->builtBezier->moveLeftBezierPoint(lastIndex ,time, -dx, -dy);
+            _imp->builtBezier->moveRightBezierPoint(lastIndex, time, dx, dy);
+            ///no need to set _imp->evaluateOnPenUp = true because the polygon is not closed anyway
             didSomething = true;
+        }   break;
+        case BUILDING_ELLIPSE:
+        {
+            assert(_imp->builtBezier);
+            
+            boost::shared_ptr<BezierCP> top = _imp->builtBezier->getControlPointAtIndex(0);
+            boost::shared_ptr<BezierCP> right = _imp->builtBezier->getControlPointAtIndex(1);
+            boost::shared_ptr<BezierCP> bottom = _imp->builtBezier->getControlPointAtIndex(2);
+            boost::shared_ptr<BezierCP> left = _imp->builtBezier->getControlPointAtIndex(3);
+            
+            //top only moves by x
+            _imp->builtBezier->movePointByIndex(0,time, dx / 2., 0);
+            
+            //right
+            _imp->builtBezier->movePointByIndex(1,time, dx, dy / 2.);
+            
+            //bottom
+            _imp->builtBezier->movePointByIndex(2,time, dx / 2., dy );
+            
+            //left only moves by y
+            _imp->builtBezier->movePointByIndex(3,time, 0, dy / 2.);
+            
+            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
+            top->getPositionAtTime(time, &topX, &topY);
+            right->getPositionAtTime(time, &rightX, &rightY);
+            bottom->getPositionAtTime(time, &btmX, &btmY);
+            left->getPositionAtTime(time, &leftX, &leftY);
+            
+            _imp->builtBezier->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
+            _imp->builtBezier->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
+            
+            _imp->builtBezier->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
+            _imp->builtBezier->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
+            
+            _imp->builtBezier->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
+            _imp->builtBezier->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
+            
+            _imp->builtBezier->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
+            _imp->builtBezier->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
+            
+
+            didSomething = true;
+            _imp->evaluateOnPenUp = true;
+        }   break;
+        case BUILDING_RECTANGLE:
+        {
+            assert(_imp->selectedBeziers.size() == 1);
+            boost::shared_ptr<Bezier>& curve = _imp->selectedBeziers.front();
+            curve->movePointByIndex(1,time, dx, 0);
+            curve->movePointByIndex(2,time, dx, dy);
+            curve->movePointByIndex(3,time, 0, dy);
+            didSomething = true;
+            _imp->evaluateOnPenUp = true;
         }   break;
         case DRAGGING_LEFT_TANGENT:
         {
@@ -1440,18 +1495,75 @@ bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewpor
     _imp->featherBarBeingDragged.first.reset();
     _imp->featherBarBeingDragged.second.reset();
     _imp->state = NONE;
+    
+    if (_imp->selectedTool == DRAW_ELLIPSE || _imp->selectedTool == DRAW_RECTANGLE) {
+        _imp->selectedCps.clear();
+        onActionTriggeredInternal(_imp->selectAllAction);
+    }
+    
     return true;
 }
 
 bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 {
+    bool didSomething = false;
     _imp->modifiers = QtEnumConvert::fromQtModifiers(e->modifiers());
-    return false;
+    if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
+        ///if control points are selected, delete them, otherwise delete the selected beziers
+        if (!_imp->selectedCps.empty()) {
+            for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it != _imp->selectedCps.end(); ++it) {
+                Bezier* curve = it->first->getCurve();
+                if (it->first->isFeatherPoint()) {
+                    curve->removeControlPointByIndex(curve->getControlPointIndex(it->second));
+                } else {
+                    curve->removeControlPointByIndex(curve->getControlPointIndex(it->first));
+                }
+                int cpCount = curve->getControlPointsCount();
+                if (cpCount == 1) {
+                    curve->setCurveFinished(false);
+                } else if (cpCount == 0) {
+                    
+                    ///clear the shared pointer so the bezier gets deleted
+                    _imp->context->removeBezier(curve);
+                    for (SelectedBeziers::iterator fb = _imp->selectedBeziers.begin(); fb != _imp->selectedBeziers.end(); ++fb) {
+                        if (fb->get() == curve) {
+                            _imp->selectedBeziers.erase(fb);
+                            break;
+                        }
+                    }
+                }
+                
+            }
+            _imp->selectedCps.clear();
+            _imp->context->evaluateChange();
+            didSomething = true;
+        } else if (!_imp->selectedBeziers.empty()) {
+            while (!_imp->selectedBeziers.empty()) {
+                Bezier* b = _imp->selectedBeziers.front().get();
+                _imp->context->removeBezier(b);
+                for (SelectedBeziers::iterator fb = _imp->selectedBeziers.begin(); fb != _imp->selectedBeziers.end(); ++fb) {
+                    if (fb->get() == b) {
+                        _imp->selectedBeziers.erase(fb);
+                        break;
+                    }
+                }
+            }
+            _imp->context->evaluateChange();
+            didSomething = true;
+        }
+        
+    }
+    
+    return didSomething;
 }
 
 bool RotoGui::keyUp(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 {
     _imp->modifiers = QtEnumConvert::fromQtModifiers(e->modifiers());
+    if (_imp->evaluateOnKeyUp) {
+        _imp->context->evaluateChange();
+        _imp->evaluateOnKeyUp = false;
+    }
     return false;
 }
 
@@ -1641,13 +1753,18 @@ void RotoGui::RotoGuiPrivate::dragFeatherPoint(int time,double dx,double dy)
     }
     double newDx = std::cos(alpha) * dragDistance;
     double newDy = std::sin(alpha) * dragDistance;
+
     if (context->isAutoKeyingEnabled() || isOnKeyframe) {
+        int index = fp->getCurve()->getFeatherPointIndex(fp);
         double leftX,leftY,rightX,rightY;
-        fp->setPositionAtTime(time, xF + newDx, yF + newDy);
+        
         fp->getLeftBezierPointAtTime(time, &leftX, &leftY);
         fp->getRightBezierPointAtTime(time, &rightX, &rightY);
-        fp->setLeftBezierPointAtTime(time, leftX + newDx, leftY + newDy);
-        fp->setRightBezierPointAtTime(time, rightX + newDx, rightY + newDy);
+
+        fp->getCurve()->setPointAtIndex(true, index, time, xF + newDx, yF + newDy,
+                                        leftX + newDx, leftY + newDy,
+                                        rightX + newDx, rightX + newDy);
+        
     }
     
 }
