@@ -2006,13 +2006,15 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
 {
     QMutexLocker l(&_imp->rotoContextMutex);
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin(); it!=_imp->splines.end(); ++it) {
-        RectD splineRoD = (*it)->getBoundingBox(time);
-        RectI splineRoDI;
-        splineRoDI.x1 = std::floor(splineRoD.x1);
-        splineRoDI.y1 = std::floor(splineRoD.y1);
-        splineRoDI.x2 = std::ceil(splineRoD.x2);
-        splineRoDI.y2 = std::ceil(splineRoD.y2);
-        rod->merge(splineRoDI);
+        if ((*it)->isActivated() && (*it)->isCurveFinished()) {
+            RectD splineRoD = (*it)->getBoundingBox(time);
+            RectI splineRoDI;
+            splineRoDI.x1 = std::floor(splineRoD.x1);
+            splineRoDI.y1 = std::floor(splineRoD.y1);
+            splineRoDI.x2 = std::ceil(splineRoD.x2);
+            splineRoDI.y2 = std::ceil(splineRoD.y2);
+            rod->merge(splineRoDI);
+        }
     }
 }
 
@@ -2117,7 +2119,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         
         ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
         ///Also render only finished bezier
-        if ((*it2)->isCurveFinished()) {
+        if ((*it2)->isCurveFinished() && (*it2)->isActivated()) {
             std::list< Point > points;
             (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
             fillPolygon_evenOdd(clippedRoI,points, image.get());

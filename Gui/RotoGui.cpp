@@ -60,6 +60,7 @@ enum EventState
     SELECTING,
     BUILDING_BEZIER_CP_TANGENT,
     BUILDING_ELLIPSE,
+    BULDING_ELLIPSE_CENTER,
     BUILDING_RECTANGLE,
     DRAGGING_LEFT_TANGENT,
     DRAGGING_RIGHT_TANGENT,
@@ -1270,7 +1271,12 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             _imp->builtBezier->setCurveFinished(true);
             _imp->evaluateOnPenUp = true;
             _imp->selectedBeziers.push_back(_imp->builtBezier);
-            _imp->state = BUILDING_ELLIPSE;
+            
+            if (_imp->modifiers.testFlag(Natron::ControlModifier)) {
+                _imp->state = BULDING_ELLIPSE_CENTER;
+            } else {
+                _imp->state = BUILDING_ELLIPSE;
+            }
             didSomething = true;
             
         }   break;
@@ -1422,6 +1428,45 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
 
             didSomething = true;
             _imp->evaluateOnPenUp = true;
+        }   break;
+        case BULDING_ELLIPSE_CENTER:
+        {
+            assert(_imp->builtBezier);
+            
+            boost::shared_ptr<BezierCP> top = _imp->builtBezier->getControlPointAtIndex(0);
+            boost::shared_ptr<BezierCP> right = _imp->builtBezier->getControlPointAtIndex(1);
+            boost::shared_ptr<BezierCP> bottom = _imp->builtBezier->getControlPointAtIndex(2);
+            boost::shared_ptr<BezierCP> left = _imp->builtBezier->getControlPointAtIndex(3);
+            
+            //top only moves by x
+            _imp->builtBezier->movePointByIndex(0,time, 0, dy);
+            
+            //right
+            _imp->builtBezier->movePointByIndex(1,time, dx , 0);
+            
+            //bottom
+            _imp->builtBezier->movePointByIndex(2,time, 0., -dy );
+            
+            //left only moves by y
+            _imp->builtBezier->movePointByIndex(3,time, -dx, 0);
+            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
+            top->getPositionAtTime(time, &topX, &topY);
+            right->getPositionAtTime(time, &rightX, &rightY);
+            bottom->getPositionAtTime(time, &btmX, &btmY);
+            left->getPositionAtTime(time, &leftX, &leftY);
+            
+            _imp->builtBezier->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
+            _imp->builtBezier->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
+            
+            _imp->builtBezier->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
+            _imp->builtBezier->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
+            
+            _imp->builtBezier->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
+            _imp->builtBezier->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
+            
+            _imp->builtBezier->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
+            _imp->builtBezier->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
+            didSomething = true;
         }   break;
         case BUILDING_RECTANGLE:
         {
