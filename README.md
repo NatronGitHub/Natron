@@ -13,6 +13,9 @@ The project source code repository is https://github.com/MrKepzie/Natron
 Features
 --------
 
+- 32 bits floating point linear colour processing pipeline.
+- Colorspace management handled by the famous open-source OpenColorIO library.
+- Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO.
 - Support for many free and open-source OpenFX plugins: 
  * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
  * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
@@ -32,25 +35,44 @@ Features
 - OpenFX: Currently almost all features of OpenFX v1.3 are supported
   (see Documentation/ofxActionsSupported.rtf and
   Documentation/ofxPropSupported.rtf in the source distribution)
-  
-- Linear 32-bits floating point workflow: all images are internally stored with linear colors
-and with floating point values for best results.
-  
-- A minimum of OpenGL 1.5 is required, hence most graphics cards should be supported, 
-platforms not supporting GLSL are also supported
-- Fast Viewer interaction with no delay 
-- Overlays interaction on the viewer
-- Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
-- Multi-rendering (simultaneously) is possible as well as  several viewers running playback simultaneously
-- It is possible to separate on any number of screens the graphical user interface so that each viewer/graph editor belongs to one screen
-- Several projects can be opened simultaneously in separate windows
-- Auto-save support.
+
+- Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user
+interface.  It is possible to separate on any number of screens the graphical user interface.
+
+- Performances:  Never wait for anything to be rendered, in Natron anything you do produces
+real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e:
+the render pipeline can be computed at lower res to speed-up rendering).
+
+- Multi-task: Natron can render multiple graphs at the same time, it can also be used
+as a background process in command-line mode without any display support (e.g: for render farm purpose).
+
+- Recover easily from bugs: Natron sometimes crashes. Fear not, an  auto-save system
+detects inactivity and saves your work for yourself. Also Natron provides the option to render
+a graph in a separate process, meaning that any crash in the main application
+would not crash the ongoing render (and the other way around).
+
 - Project format written in XML and easily editable by human.
-- The project saves also the layout of the application.
-- Command line tool for execution of project files. The command line version is executable from ssh on a computer without any display.
-- Animation support via a curve editor
-- OpenColorIO support via the plug-ins located in  [OpenFX-IO](https://github.com/MrKepzie/openfx-io)
-- OpenImageIO support via the plug-ins located in  [OpenFX-IO](https://github.com/MrKepzie/openfx-io)
+
+- Fast & interactive Viewer - Smooth & accurate  zooming/panning even for very large image sizes (
+tested on 27k x 30k images).
+
+- Real-time playback: Natron offers  a real-time playback with best performances thanks to its
+RAM/Disk cache technology. Once a frame is rendered, it can be reproduced instantly afterwards, even
+for large image sizes.
+
+- Low hardware requirements: All you need is an x86 64 bits or 32 bits processor, at least
+3 GB of RAM and a graphic card that supports OpenGL 2.0 or OpenGL 1.5 with some extensions.
+
+- Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes
+with a very accurate and intuitive curve editor.
+
+- Command line tool for execution of project files. The command line version is executable
+ from ssh on a computer without any display. Hence it is possible to use a render farm
+  to render Natron's projects. 
+  
+- Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate
+the views at any time with the SplitViews node. Note that currently Natron does not allow to split the 
+nodes settings for each view, this will be implemented in the future.
 
 Requirements
 ------------
@@ -74,19 +96,26 @@ Planned features
 
 ### Features planned for next major version
 
-- Dopesheet
-- Rotopainting/scoping nodes
-- Python scripting
+- Mask edition via a rotoscoping node: We're half way through the development of this feature.
+- Chroma keyer: This feature is implemented and usable.
 
 ### Features planned for future versions
 
 - Node-graph enhancements: "global view" + magnetic grid + pre-comps
-- Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
-- Meta-data support as well as per-plugin meta-data support by the node-graph
-- Graphical user interface colours customisation
-- OpenGL rendering support to make processing nodes even faster
-- 3D models viewer + renderer (using libQGLViewer)
-- And many more features that are in the list but that I can't think off the top of my head!
+
+- Python scripting: Natron will be entirely scriptable, to operate with the node graph faster and
+also to allow Natron to be used as a command-line tool only.
+
+- Dope sheet: Well this is time we implement this, it can be very tedious to organise image sequences 
+without this very useful tool.
+
+- Presets: As the scripting will be implemented, it will be easy for us to add Node presets that you can
+share with others.
+
+- Templates: Template nodes are an aggregation of several nodes put together as a graph that act
+like a simple node. Share your templates and save time re-using them as part of other graphs.
+
+- Deep data: Support for deep data (multiple samples per pixel)
 
 Contributing
 ------------

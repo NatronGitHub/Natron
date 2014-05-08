@@ -19,6 +19,8 @@
 
 #include <QObject>
 
+#include "Engine/Rect.h"
+
 #include "Global/GlobalDefines.h"
 
 namespace Natron {
@@ -334,19 +336,21 @@ public:
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
     void evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
-                                    int nbPointsPerSegment,std::list<std::pair<double,double> >* points) const;
+                                    int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
+                                    RectD* bbox = NULL) const;
     
     /**
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points) const;
+    void evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
+                                                 RectD* bbox = NULL) const;
     
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCastelJau will be returned,
      * otherwise if it has never been called, evaluateAtTime_DeCastelJau will be called to compute the bounding box.
      **/
-    const RectD& getBoundingBox(int time) const;
+    RectD getBoundingBox(int time) const;
     
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
@@ -434,11 +438,13 @@ public:
     void getOverlayColor(double* color) const;
     void setOverlayColor(const double* color);
     
+    bool getInverted(int time) const;
+    
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
     boost::shared_ptr<Int_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
-    
+    boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
     
 private:
     
@@ -511,9 +517,15 @@ public:
                              Natron::Image* output);
     
     /**
-     * @brief Return the region of definition of all the shapes in the context.
+     * @brief Returns the region of definition of the shape unioned to the region of definition of the node
+     * or the project format.
      **/
-    void getMaskRegionOfDefinition(int time,int view,RectI* rod) const;
+    void getMaskRegionOfDefinition(int time,unsigned int mipmapLevel,int view,RectI* rod) const;
+    
+    /**
+     * @brief Returns the region of definition of all the shapes in the context.
+     **/
+    void getRealRegionOfDefinition(int time,unsigned int mipmapLevel,int view,RectI* rod) const;
     
     /**
      * @brief Render the mask formed by all the shapes contained in the context within the roi.

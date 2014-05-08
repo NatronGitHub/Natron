@@ -497,8 +497,9 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             std::list<std::pair<double,double> > points;
             (*it)->evaluateAtTime_DeCastelJau(time,0, 100, &points);
             
-            //placeholder color
-            glColor4f(0.851643,0.196936,0.196936,1.);
+            double curveColor[4];
+            (*it)->getOverlayColor(curveColor);
+            glColor4dv(curveColor);
             
             glBegin(GL_LINE_STRIP);
             for (std::list<std::pair<double,double> >::const_iterator it2 = points.begin(); it2!=points.end(); ++it2) {
@@ -592,8 +593,8 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                             glColor3f(0.2, 1., 0.);
                             colorChanged = true;
                         } else {
-                            //placeholder color
-                            glColor4f(0.851643,0.196936,0.196936,1.);
+                           
+                            glColor4dv(curveColor);
                         }
                         
                         ///draw a link between the feather point and the control point.
@@ -634,8 +635,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                                     glColor3f(0.2, 1., 0.);
                                     colorChanged = true;
                                 } else {
-                                    //placeholder color
-                                    glColor4f(0.851643,0.196936,0.196936,1.);
+                                    glColor4dv(curveColor);
                                 }
                                 
                                 

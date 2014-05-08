@@ -429,7 +429,9 @@ void KnobHelper::setAllDimensionsEnabled(bool b)
     for (U32 i = 0; i < _imp->_enabled.size(); ++i) {
         _imp->_enabled[i] = b;
     }
-    _signalSlotHandler->s_enabledChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_enabledChanged();
+    }
 }
 
 void KnobHelper::setSecret(bool b)

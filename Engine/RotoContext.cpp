@@ -25,6 +25,7 @@
 #include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Settings.h"
+#include "Engine/Format.h"
 #include "Engine/RotoSerialization.h"
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
@@ -499,7 +500,7 @@ namespace  {
     
     static void
     evalBezierSegment(const BezierCP& first,const BezierCP& last,int time,unsigned int mipMapLevel,int nbPointsPerSegment,
-                      std::list< Point >* points,double *xmin,double *xmax,double *ymin,double *ymax)
+                      std::list< Point >* points,RectD* bbox = NULL)
     {
         Point p0,p1,p2,p3;
         
@@ -535,18 +536,21 @@ namespace  {
             bezier(cur,p0,p1,p2,p3,t);
             points->push_back(cur);
             
-            if (cur.first < *xmin) {
-                *xmin = cur.first;
+            if (bbox) {
+                if (cur.first < bbox->x1) {
+                    bbox->x1 = cur.first;
+                }
+                if (cur.first >= bbox->x2) {
+                    bbox->x2 = cur.first + 1;
+                }
+                if (cur.second < bbox->y1) {
+                    bbox->y1 = cur.second;
+                }
+                if (cur.second >= bbox->y2) {
+                    bbox->y2 = cur.second;
+                }
             }
-            if (cur.first > *xmax) {
-                *xmax = cur.first;
-            }
-            if (cur.second < *ymin) {
-                *ymin = cur.second;
-            }
-            if (cur.second > *ymax) {
-                *ymax = cur.second;
-            }
+            
         }
         
     }
@@ -812,7 +816,6 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     BezierCPs::iterator itF = _imp->featherPoints.begin();
     std::advance(itF, index + 1);
     _imp->featherPoints.insert(itF, fp);
-
     
     ///If auto-keying is enabled, set a new keyframe
     int currentTime = _imp->context->getTimelineCurrentTime();
@@ -1455,13 +1458,10 @@ int Bezier::getKeyframesCount() const
 
 
 void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
-                                        int nbPointsPerSegment,std::list<std::pair<double,double> >* points) const
+                                        int nbPointsPerSegment,std::list<std::pair<double,double> >* points,RectD* bbox) const
 {
     QMutexLocker l(&_imp->splineMutex);
-    _imp->boundingBox.x1 = INT_MAX;
-    _imp->boundingBox.x2 = INT_MIN;
-    _imp->boundingBox.y1 = INT_MAX;
-    _imp->boundingBox.y2 = INT_MIN;
+ 
     for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
         BezierCPs::const_iterator next = it;
         ++next;
@@ -1472,12 +1472,12 @@ void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
                 break;
             }
         }
-        evalBezierSegment(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,
-                          &_imp->boundingBox.x1,&_imp->boundingBox.x2,&_imp->boundingBox.y1,&_imp->boundingBox.y2);
+        evalBezierSegment(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
     }
 }
 
-void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points) const
+void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
+                                                     RectD* bbox) const
 {
     QMutexLocker l(&_imp->splineMutex);
     BezierCPs::const_iterator itCp = _imp->points.begin();
@@ -1495,31 +1495,39 @@ void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSeg
             }
         }
         if (areSegmentDifferents(time, **itCp, **nextCp, **it, **next)) {
-            evalBezierSegment(*(*it),*(*next), time,0, nbPointsPerSegment, points,
-                              &_imp->boundingBox.x1,&_imp->boundingBox.x2,&_imp->boundingBox.y1,&_imp->boundingBox.y2);
+            evalBezierSegment(*(*it),*(*next), time,0, nbPointsPerSegment, points,bbox);
         }
     }
-    if (_imp->boundingBox.isNull()) {
-        _imp->boundingBox.x2 = _imp->boundingBox.x1 + 1;
-        _imp->boundingBox.y2 = _imp->boundingBox.y1 + 1;
-    }
-    _imp->isBoundingBoxValid = true;
-
 }
 
-const RectD& Bezier::getBoundingBox(int time) const
+RectD Bezier::getBoundingBox(int time) const
 {
-    QMutexLocker l(&_imp->splineMutex);
-    if (!_imp->isBoundingBoxValid) {
-        std::list<Point> pts;
-        l.unlock();
-        evaluateAtTime_DeCastelJau(time,0, 100,&pts);
-        evaluateFeatherPointsAtTime_DeCastelJau(time, 100, &pts);
-        l.relock();
-        assert(_imp->isBoundingBoxValid);
+    std::list<Point> pts;
+    RectD bbox;
+    bbox.x1 = INT_MAX;
+    bbox.x2 = INT_MIN;
+    bbox.y1 = INT_MAX;
+    bbox.y2 = INT_MIN;
+    evaluateAtTime_DeCastelJau(time,0, 50,&pts,&bbox);
+    evaluateFeatherPointsAtTime_DeCastelJau(time, 50, &pts,&bbox);
+    
+    if (bbox.x1 == INT_MAX) {
+        bbox.x1 = 0;
     }
-    return _imp->boundingBox;
-
+    if (bbox.x2 == INT_MIN) {
+        bbox.x2 = 1;
+    }
+    if (bbox.y1 == INT_MAX) {
+        bbox.y1 = 0;
+    }
+    if (bbox.y2 == INT_MIN) {
+        bbox.y2 = 1;
+    }
+    if (bbox.isNull()) {
+        bbox.x2 = bbox.x1 + 1;
+        bbox.y2 = bbox.y1 + 1;
+    }
+    return bbox;
 }
 
 const std::list< boost::shared_ptr<BezierCP> >& Bezier::getControlPoints() const
@@ -1806,6 +1814,7 @@ void Bezier::save(BezierSerialization* obj) const
     obj->_opacity.initialize(_imp->opacity);
     obj->_feather.initialize(_imp->feather);
     obj->_featherFallOff.initialize(_imp->featherFallOff);
+    obj->_inverted.initialize(_imp->inverted);
     memcpy(obj->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
     assert(_imp->featherPoints.size() == _imp->points.size());
     
@@ -1828,6 +1837,7 @@ void Bezier::load(const BezierSerialization& obj)
     _imp->opacity->clone(obj._opacity.getKnob());
     _imp->feather->clone(obj._feather.getKnob());
     _imp->featherFallOff->clone(obj._featherFallOff.getKnob());
+    _imp->inverted->clone(obj._inverted.getKnob());
     memcpy(_imp->overlayColor, obj._overlayColor, sizeof(double) * 4);
     
     if (obj._controlPoints.size() != obj._featherPoints.size()) {
@@ -1851,23 +1861,28 @@ void Bezier::load(const BezierSerialization& obj)
 
 double Bezier::getOpacity(int time) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    ///MT-safe thanks to Knob
     return _imp->opacity->getValueAtTime(time);
 }
 
 
 int Bezier::getFeatherDistance(int time) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    ///MT-safe thanks to Knob
     return _imp->feather->getValueAtTime(time);
 }
 
 double Bezier::getFeatherFallOff(int time) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    ///MT-safe thanks to Knob
     return _imp->featherFallOff->getValueAtTime(time);
 }
 
+bool Bezier::getInverted(int time) const
+{
+    ///MT-safe thanks to Knob
+    return _imp->inverted->getValueAtTime(time);
+}
 
 void Bezier::getOverlayColor(double* color) const
 {
@@ -1887,7 +1902,7 @@ boost::shared_ptr<Bool_Knob> Bezier::getActivatedKnob() const { return _imp->act
 boost::shared_ptr<Int_Knob> Bezier::getFeatherKnob() const { return _imp->feather; }
 boost::shared_ptr<Double_Knob> Bezier::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
 boost::shared_ptr<Double_Knob> Bezier::getOpacityKnob() const { return _imp->opacity; }
-
+boost::shared_ptr<Bool_Knob> Bezier::getInvertedKnob() const { return _imp->inverted; }
 
 
 ////////////////////////////////////RotoContext////////////////////////////////////
@@ -2040,9 +2055,31 @@ void RotoContext::onRippleEditChanged(bool enabled)
 }
 
 
-void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) const
+void RotoContext::getMaskRegionOfDefinition(int time,unsigned int mipmapLevel,int view,RectI* rod) const
+{
+   
+    getRealRegionOfDefinition(time, mipmapLevel, view, rod);
+    
+    bool isProjectFormat;
+    RectI nodeRoD;
+    RenderScale scale;
+    scale.x = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
+    scale.y = scale.x;
+    Natron::Status stat = _imp->node->getLiveInstance()->getRegionOfDefinition_public(time, scale, view, &nodeRoD, &isProjectFormat);
+    if (stat == Natron::StatFailed) {
+        ///use the project format
+        Format f;
+        _imp->node->getLiveInstance()->getRenderFormat(&f);
+        rod->merge(dynamic_cast<const RectI&>(f));
+    } else {
+        rod->merge(nodeRoD);
+    }
+}
+
+void RotoContext::getRealRegionOfDefinition(int time,unsigned int /*mipmapLevel*/,int /*view*/,RectI* rod) const
 {
     QMutexLocker l(&_imp->rotoContextMutex);
+    
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin(); it!=_imp->splines.end(); ++it) {
         if ((*it)->isActivated(time) && (*it)->isCurveFinished()) {
             RectD splineRoD = (*it)->getBoundingBox(time);
@@ -2083,6 +2120,12 @@ void RotoContext::load(const RotoContextSerialization& obj)
         b->load(*it);
         _imp->splines.push_back(b);
     }
+    
+    _imp->activated->setAllDimensionsEnabled(false);
+    _imp->opacity->setAllDimensionsEnabled(false);
+    _imp->feather->setAllDimensionsEnabled(false);
+    _imp->featherFallOff->setAllDimensionsEnabled(false);
+    _imp->inverted->setAllDimensionsEnabled(false);
 }
 
 void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
@@ -2094,6 +2137,7 @@ void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
         _imp->opacity->setAllDimensionsEnabled(true);
         _imp->featherFallOff->setAllDimensionsEnabled(true);
         _imp->feather->setAllDimensionsEnabled(true);
+        _imp->inverted->setAllDimensionsEnabled(true);
     }
 
    
@@ -2103,17 +2147,20 @@ void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
     boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
     boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
     boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
+    boost::shared_ptr<KnobI> inverted = b->getInvertedKnob();
     
     _imp->activated->clone(activated);
     _imp->feather->clone(feather);
     _imp->featherFallOff->clone(featherFallOff);
     _imp->opacity->clone(opacity);
+    _imp->inverted->clone(inverted);
 
     ///link this bezier knobs to the context
     activated->slaveTo(0, _imp->activated, 0);
     feather->slaveTo(0, _imp->feather, 0);
     featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
     opacity->slaveTo(0, _imp->opacity, 0);
+    inverted->slaveTo(0, _imp->inverted, 0);
         
     ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
     ///(maybe black or something)
@@ -2122,7 +2169,7 @@ void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
         _imp->opacity->setDirty(true);
         _imp->feather->setDirty(true);
         _imp->featherFallOff->setDirty(true);
-        
+        _imp->inverted->setDirty(true);
     }
     
     std::list<boost::shared_ptr<Bezier> >::iterator it = std::find(_imp->selectedBeziers.begin(),_imp->selectedBeziers.end(),b);
@@ -2142,17 +2189,20 @@ void RotoContext::unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& 
     boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
     boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
     boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
+    boost::shared_ptr<KnobI> inverted = b->getInvertedKnob();
     
     activated->unSlave(0);
     feather->unSlave(0);
     featherFallOff->unSlave(0);
     opacity->unSlave(0);
+    inverted->unSlave(0);
     
     if (_imp->selectedBeziers.size() <= 1) {
         _imp->activated->setDirty(false);
         _imp->opacity->setDirty(false);
         _imp->feather->setDirty(false);
         _imp->featherFallOff->setDirty(false);
+        _imp->inverted->setDirty(false);
     }
     
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
@@ -2161,6 +2211,7 @@ void RotoContext::unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& 
         _imp->opacity->setAllDimensionsEnabled(false);
         _imp->featherFallOff->setAllDimensionsEnabled(false);
         _imp->feather->setAllDimensionsEnabled(false);
+        _imp->inverted->setAllDimensionsEnabled(false);
     }
 }
 
@@ -2169,7 +2220,6 @@ void RotoContext::evaluateChange()
     _imp->incrementRotoAge();
     _imp->node->getLiveInstance()->evaluate_public(NULL, true);
 }
-
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,SequenceTime time,
                                             int view,unsigned int mipmapLevel,bool byPassCache)
@@ -2194,6 +2244,9 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     
     bool cached = Natron::getImageFromCache(key, &params, &image);
    
+    ///If there's only 1 shape to render and this shape is inverted, initialize the image
+    ///with the invert instead of the default fill value to speed up rendering
+    bool didInitializeInverted = false;
     if (cached) {
         if (cached && byPassCache) {
             ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
@@ -2205,7 +2258,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         
     } else {
         RectI rod;
-        getMaskRegionOfDefinition(time, view, &rod);
+        getMaskRegionOfDefinition(time,mipmapLevel, view, &rod);
         
         Natron::ImageComponents maskComps = Natron::ImageComponentAlpha;
         
@@ -2221,7 +2274,18 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             image->clearBitmap();
         } else if (!cached) {
             ///fill the image of 0s
-            image->defaultInitialize(0,0);
+            if (_imp->splines.size() == 1)
+            {
+                boost::shared_ptr<Bezier>& curve = _imp->splines.front();
+                if (curve->isCurveFinished() && curve->isActivated(time) && curve->getInverted(time)) {
+                    didInitializeInverted = true;
+                    image->defaultInitialize(0,curve->getOpacity(time));
+                }
+            }
+            if (!didInitializeInverted) {
+                image->defaultInitialize(0,0);
+            }
+            
         }
     }
     
@@ -2239,7 +2303,16 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         if ((*it2)->isCurveFinished() && (*it2)->isActivated(time)) {
             std::list< Point > points;
             (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
-            fillPolygon_evenOdd(clippedRoI,points,(*it2)->getOpacity(time), image.get());
+            
+            double opacity = (*it2)->getOpacity(time);
+            bool inverted = (*it2)->getInverted(time);
+            ///if the shape is inverted, fill the image with the inverse before actually rendering the polygon
+            bool preFillInvert = inverted && ((i != 0) || (i == 0 && !didInitializeInverted));
+            if (preFillInvert) {
+                image->fill(pixelRod,0.,opacity);
+            }
+            
+            fillPolygon_evenOdd(clippedRoI,points,inverted ? 1. - opacity : opacity, image.get());
         }
     }
     

@@ -69,6 +69,7 @@ private:
         ar & boost::serialization::make_nvp("Opacity",_opacity);
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+        ar & boost::serialization::make_nvp("Inverted",_inverted);
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -93,6 +94,7 @@ private:
         ar & boost::serialization::make_nvp("Opacity",_opacity);
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+        ar & boost::serialization::make_nvp("Inverted",_inverted);
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -107,7 +109,7 @@ private:
     KnobSerialization _opacity;
     KnobSerialization _feather;
     KnobSerialization _featherFallOff;
-
+    KnobSerialization _inverted;
     double _overlayColor[4];
 };
 
