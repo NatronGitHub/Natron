@@ -14,12 +14,10 @@
         <file>Resources/Images/maximize.png</file>
         <file>Resources/Images/minimize.png</file>
         <file>Resources/Images/nextIncr.png</file>
-        <file>Resources/Images/nextKF.png</file>
         <file>Resources/Images/open-file.png</file>
         <file>Resources/Images/play.png</file>
         <file>Resources/Images/pressed_combobox.png</file>
         <file>Resources/Images/previousIncr.png</file>
-        <file>Resources/Images/prevKF.png</file>
         <file>Resources/Images/refresh.png</file>
         <file>Resources/Images/rewind.png</file>
         <file>Resources/Images/RGBAchannels.png</file>
@@ -89,5 +87,9 @@
         <file>Resources/Images/renderScale_checked.png</file>
         <file>Resources/Images/checkbox_dirty_checked.png</file>
         <file>Resources/Images/checkbox_dirty_unchecked.png</file>
+        <file>Resources/Images/addKF.png</file>
+        <file>Resources/Images/nextKF.png</file>
+        <file>Resources/Images/prevKF.png</file>
+        <file>Resources/Images/removeKF.png</file>
     </qresource>
 </RCC>

@@ -117,7 +117,7 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 break;
             case NATRON_PIXMAP_PLAYER_NEXT_KEY:
                 img.load(NATRON_IMAGES_PATH"nextKF.png");
-                *pix = QPixmap::fromImage(img).scaled(20,20);
+                *pix = QPixmap::fromImage(img).scaled(15,15);
                 break;
             case NATRON_PIXMAP_PLAYER_PREVIOUS_INCR:
                 img.load(NATRON_IMAGES_PATH"previousIncr.png");
@@ -125,7 +125,15 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 break;
             case NATRON_PIXMAP_PLAYER_PREVIOUS_KEY:
                 img.load(NATRON_IMAGES_PATH"prevKF.png");
-                *pix = QPixmap::fromImage(img).scaled(20,20);
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_ADD_KEYFRAME:
+                img.load(NATRON_IMAGES_PATH"addKF.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_REMOVE_KEYFRAME:
+                img.load(NATRON_IMAGES_PATH"removeKF.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
                 break;
             case NATRON_PIXMAP_PLAYER_REWIND:
                 img.load(NATRON_IMAGES_PATH"rewind.png");

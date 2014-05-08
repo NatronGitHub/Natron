@@ -1378,42 +1378,48 @@ void Bezier::setKeyframe(int time)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    
-    QMutexLocker l(&_imp->splineMutex);
-    
-    if (_imp->hasKeyframeAtTime(time)) {
-        return;
-    }
-    
-    assert(_imp->points.size() == _imp->featherPoints.size());
-    
-    BezierCPs::iterator itF = _imp->featherPoints.begin();
-    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++itF) {
-        double x,y;
-        double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
+
+    {
+        QMutexLocker l(&_imp->splineMutex);
         
-        {
-            (*it)->getPositionAtTime(time, &x, &y);
-            (*it)->setPositionAtTime(time, x, y);
-            
-            (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-            (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
-            (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
-            (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
+        if (_imp->hasKeyframeAtTime(time)) {
+            l.unlock();
+            emit keyframeSet(time);
+            return;
         }
         
-        {
-            (*itF)->getPositionAtTime(time, &x, &y);
-            (*itF)->setPositionAtTime(time, x, y);
+        assert(_imp->points.size() == _imp->featherPoints.size());
+        
+        BezierCPs::iterator itF = _imp->featherPoints.begin();
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++itF) {
+            double x,y;
+            double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
             
-            (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-            (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
-            (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
-            (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
-
-
+            {
+                (*it)->getPositionAtTime(time, &x, &y);
+                (*it)->setPositionAtTime(time, x, y);
+                
+                (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
+                (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
+                (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
+            }
+            
+            {
+                (*itF)->getPositionAtTime(time, &x, &y);
+                (*itF)->setPositionAtTime(time, x, y);
+                
+                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
+                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+                (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
+                (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
+                
+                
+            }
         }
     }
+    emit keyframeSet(time);
+
 }
 
 
@@ -1422,20 +1428,22 @@ void Bezier::removeKeyframe(int time)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    QMutexLocker l(&_imp->splineMutex);
-    
-    if (!_imp->hasKeyframeAtTime(time)) {
-        return;
+    {
+        QMutexLocker l(&_imp->splineMutex);
+        
+        if (!_imp->hasKeyframeAtTime(time)) {
+            return;
+        }
+        
+        assert(_imp->featherPoints.size() == _imp->points.size());
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+            (*it)->removeKeyframe(time);
+            (*fp)->removeKeyframe(time);
+        }
     }
-    
-    assert(_imp->featherPoints.size() == _imp->points.size());
-    
-    BezierCPs::iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
-        (*it)->removeKeyframe(time);
-        (*fp)->removeKeyframe(time);
-    }
-
+    emit keyframeRemoved(time);
 }
 
 
@@ -1858,6 +1866,37 @@ void Bezier::load(const BezierSerialization& obj)
     }
 }
 
+void Bezier::getKeyframeTimes(std::set<int> *times) const
+{
+    QMutexLocker l(&_imp->splineMutex);
+    _imp->getKeyframeTimes(times);
+}
+
+int Bezier::getPreviousKeyframeTime(int time) const
+{
+    std::set<int> times;
+    QMutexLocker l(&_imp->splineMutex);
+    _imp->getKeyframeTimes(&times);
+    for (std::set<int>::reverse_iterator it = times.rbegin(); it!=times.rend(); ++it) {
+        if (*it < time) {
+            return *it;
+        }
+    }
+    return INT_MIN;
+}
+
+int Bezier::getNextKeyframeTime(int time) const
+{
+    std::set<int> times;
+    QMutexLocker l(&_imp->splineMutex);
+    _imp->getKeyframeTimes(&times);
+    for (std::set<int>::iterator it = times.begin(); it!=times.end(); ++it) {
+        if (*it > time) {
+            return *it;
+        }
+    }
+    return INT_MAX;
+}
 
 double Bezier::getOpacity(int time) const
 {
@@ -2176,6 +2215,8 @@ void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
     if (it == _imp->selectedBeziers.end()) {
         _imp->selectedBeziers.push_back(b);
     }
+    
+    emit selectionChanged();
 }
 
 void RotoContext::unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b)
@@ -2213,6 +2254,65 @@ void RotoContext::unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& 
         _imp->feather->setAllDimensionsEnabled(false);
         _imp->inverted->setAllDimensionsEnabled(false);
     }
+    
+    emit selectionChanged();
+}
+
+void RotoContext::setKeyframeOnSelectedCurves()
+{
+    int time = getTimelineCurrentTime();
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
+        (*it)->setKeyframe(time);
+    }
+}
+
+void RotoContext::removeKeyframeOnSelectedCurves()
+{
+    int time = getTimelineCurrentTime();
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
+        (*it)->removeKeyframe(time);
+    }
+}
+
+void RotoContext::goToPreviousKeyframe()
+{
+    int time = getTimelineCurrentTime();
+    
+    int minimum = INT_MIN;
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
+        int t = (*it)->getPreviousKeyframeTime(time);
+        if (t != INT_MIN && t > minimum) {
+            minimum = t;
+        }
+    }
+    
+    if (minimum != INT_MIN) {
+        _imp->node->getApp()->getTimeLine()->seekFrame(minimum, NULL);
+    }
+}
+
+void RotoContext::goToNextKeyframe()
+{
+    int time = getTimelineCurrentTime();
+    
+    int maximum = INT_MAX;
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
+        int t = (*it)->getNextKeyframeTime(time);
+        if (t != INT_MAX && t < maximum) {
+            maximum = t;
+        }
+    }
+    
+    if (maximum != INT_MAX) {
+        _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL);
+    }
+}
+
+const std::list< boost::shared_ptr<Bezier> >& RotoContext::getSelectedCurves() const
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->selectedBeziers;
 }
 
 void RotoContext::evaluateChange()

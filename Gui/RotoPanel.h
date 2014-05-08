@@ -12,16 +12,39 @@
 
 #include <QWidget>
 
+#include "Global/GlobalDefines.h"
+
 class NodeGui;
 
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
+    
+    Q_OBJECT
+    
 public:
     
     RotoPanel(NodeGui* n,QWidget* parent = 0);
     
     virtual ~RotoPanel();
+    
+public slots:
+    
+    void onGoToPrevKeyframeButtonClicked();
+    
+    void onGoToNextKeyframeButtonClicked();
+    
+    void onAddKeyframeButtonClicked();
+    
+    void onRemoveKeyframeButtonClicked();
+    
+    void onSelectionChanged();
+    
+    void onSelectedBezierKeyframeSet(int time);
+    
+    void onSelectedBezierKeyframeRemoved(int time);
+    
+    void onTimeChanged(SequenceTime time,int reason);
     
 private:
     

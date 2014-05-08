@@ -171,8 +171,10 @@ public:
 class RotoContext;
 
 struct BezierPrivate;
-class Bezier
+class Bezier : public QObject
 {
+    
+    Q_OBJECT
     
 public:
     
@@ -416,6 +418,20 @@ public:
     
     void load(const BezierSerialization& obj);
     
+    void getKeyframeTimes(std::set<int> *times) const;
+    
+    /**
+     * @brief Get the nearest previous keyframe from the given time.
+     * If nothing was found INT_MIN is returned.
+     **/
+    int getPreviousKeyframeTime(int time) const;
+    
+    /**
+     * @brief Get the nearest next keyframe from the given time.
+     * If nothing was found INT_MAX is returned.
+     **/
+    int getNextKeyframeTime(int time) const;
+    
     /**
      * @brief The opacity of the curve
      **/
@@ -445,6 +461,12 @@ public:
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    
+signals:
+    
+    void keyframeSet(int time);
+    
+    void keyframeRemoved(int time);
     
 private:
     
@@ -550,6 +572,24 @@ public:
     void linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b);
     
     void unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b);
+    
+    void setKeyframeOnSelectedCurves();
+    
+    void removeKeyframeOnSelectedCurves();
+    
+    void goToPreviousKeyframe();
+    
+    void goToNextKeyframe();
+    
+    /**
+     * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
+     **/
+    const std::list< boost::shared_ptr<Bezier> >& getSelectedCurves() const;
+    
+signals:
+    
+    void selectionChanged();
+    
     
 public slots:
     

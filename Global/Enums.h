@@ -174,6 +174,9 @@ namespace Natron{
         NATRON_PIXMAP_COMBOBOX,
         NATRON_PIXMAP_COMBOBOX_PRESSED,
         
+        NATRON_PIXMAP_ADD_KEYFRAME,
+        NATRON_PIXMAP_REMOVE_KEYFRAME,
+        
         NATRON_PIXMAP_APP_ICON
     };
 

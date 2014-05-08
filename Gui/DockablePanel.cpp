@@ -327,8 +327,7 @@ void DockablePanel::initializeKnobs() {
             layout = dynamic_cast<QFormLayout*>(parentTab->second.first->layout());
         }
         assert(layout);
-        ClickableLabel* label = new ClickableLabel("",parentTab->second.first);
-        layout->addRow(label, roto);
+        layout->addRow(roto);
     }
 }
 
