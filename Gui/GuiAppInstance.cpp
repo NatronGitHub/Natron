@@ -32,12 +32,25 @@ struct GuiAppInstancePrivate {
     QMutex _activeBgProcessesMutex;
     bool _isClosing;
     
+    //////////////
+    ////This one is a little tricky:
+    ////If the GUI is showing a dialog, then when the exec loop of the dialog returns, it will
+    ////immediately process events that were triggered meanwhile. That means that if the dialog
+    ////is popped after a request made inside a plugin action, then it may trigger another action
+    ////like, say, overlay focus gain on the viewer. If this boolean is true we then don't do any
+    ////check on the recursion level of actions. This is a limitation of using the main "qt" thread
+    ////as the main "action" thread.
+    bool _showingDialog;
+    mutable QMutex _showingDialogMutex;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _nodeMapping()
     , _activeBgProcesses()
     , _activeBgProcessesMutex()
     , _isClosing(false)
+    , _showingDialog(false)
+    , _showingDialogMutex()
     {
     }
 };
@@ -219,21 +232,63 @@ void GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui>& n)
 }
 
 void GuiAppInstance::errorDialog(const std::string& title,const std::string& message) const {
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
     _imp->_gui->errorDialog(title, message);
-}
-
-void GuiAppInstance::warningDialog(const std::string& title,const std::string& message) const {
-    _imp->_gui->warningDialog(title, message);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
     
 }
 
+void GuiAppInstance::warningDialog(const std::string& title,const std::string& message) const {
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    _imp->_gui->warningDialog(title, message);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+
+}
+
 void GuiAppInstance::informationDialog(const std::string& title,const std::string& message) const {
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
     _imp->_gui->informationDialog(title, message);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+
 }
 
 Natron::StandardButton GuiAppInstance::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
                                                    Natron::StandardButton defaultButton) const {
-    return _imp->_gui->questionDialog(title, message,buttons,defaultButton);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    Natron::StandardButton ret =  _imp->_gui->questionDialog(title, message,buttons,defaultButton);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+
+    return ret;
+}
+
+bool GuiAppInstance::isShowingDialog() const
+{
+    QMutexLocker l(&_imp->_showingDialogMutex);
+    return _imp->_showingDialog;
 }
 
 void GuiAppInstance::loadProjectGui(boost::archive::xml_iarchive& archive) const {

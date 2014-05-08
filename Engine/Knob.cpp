@@ -997,6 +997,10 @@ void KnobHolder::checkIfRenderNeeded()
 void KnobHolder::assertActionIsNotRecursive() const
 {
     int recursionLvl = getRecursionLevel();
+    
+    if (getApp() && getApp()->isShowingDialog()) {
+        return;
+    }
     assert(recursionLvl == 0);
     if (recursionLvl != 0) {
         throw std::runtime_error("A non-recursive action has been called recursively.");

@@ -108,6 +108,7 @@ public:
                                                    int /*firstFrame*/,int /*lastFrame*/,
                                                    const boost::shared_ptr<ProcessHandler>& /*process*/) {}
 
+    virtual bool isShowingDialog() const { return false; }
 public slots:
     
     void quit();

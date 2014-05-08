@@ -79,6 +79,8 @@ public:
     void setUndoRedoStackLimit(int limit);
     
     bool isClosing() const;
+    
+    virtual bool isShowingDialog() const OVERRIDE FINAL;
 
 public slots:
     
