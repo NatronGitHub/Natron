@@ -23,6 +23,15 @@ void AnimatedCheckBox::setReadOnly(bool readOnly)
     this->readOnly = readOnly;
     style()->unpolish(this);
     style()->polish(this);
+    repaint();
+}
+
+void AnimatedCheckBox::setDirty(bool b)
+{
+    dirty = b;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
 }
 
 void AnimatedCheckBox::mousePressEvent(QMouseEvent* e)

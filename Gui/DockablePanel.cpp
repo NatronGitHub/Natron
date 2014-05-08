@@ -721,7 +721,7 @@ void NodeSettingsPanel::centerNode() {
 RotoPanel* NodeSettingsPanel::initializeRotoPanel()
 {
     if (_nodeGUI->getNode()->isRotoNode()) {
-        return new RotoPanel(_nodeGUI,this);
+        return new RotoPanel(_nodeGUI.get(),this);
     } else {
         return NULL;
     }

@@ -327,6 +327,15 @@ public:
         
     }
     
+    ///Doing the empty param constructor + this function is the same
+    ///as calling the constructore above
+    void initialize(const boost::shared_ptr<KnobI>& knob)
+    {
+        _knob = knob;
+        _typeName = knob->typeName();
+        _dimension = knob->getDimension();
+    }
+    
     ///Constructor used to deserialize: It will try to deserialize the next knob in the archive
     ///into a knob of the holder. If it couldn't find a knob with the same name as it was serialized
     ///this the deserialization will not succeed.

@@ -211,6 +211,9 @@ ComboBox[readOnly="true"][pressed="true"]{
     background-color: %4;
     color: %8;
 }
+ComboBox[dirty="true"]{
+    background-color: black;
+}
 
 TabWidget{background-color: %2;}
 
@@ -426,6 +429,9 @@ SpinBox[animation="1"] {
 SpinBox[animation="2"] {
     background-color: %7;
 }
+SpinBox[dirty="true"] {
+    background-color: black;
+}
 
 LineEdit[animation="0"] {
     background-color: %3;
@@ -436,6 +442,10 @@ LineEdit[animation="1"] {
 LineEdit[animation="2"] {
     background-color: %7;
 }
+LineEdit[dirty="true"] {
+    background-color: black;
+}
+
 
 AnimatingTextEdit[animation="0"] {
     background-color: %3;
@@ -453,6 +463,9 @@ AnimatingTextEdit[readOnlyNatron="true"]{
 AnimatingTextEdit:read-only{
     background-color: %3;
     color:%8;
+}
+AnimatingTextEdit[dirty="true"] {
+    background-color: black;
 }
 
 QTextEdit{
@@ -501,4 +514,10 @@ AnimatedCheckBox[readOnly="true"]::indicator:checked{
 }
 AnimatedCheckBox[readOnly="true"]::indicator:unchecked{
     image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
+}
+AnimatedCheckBox[dirty="true"]::indicator:checked{
+    image: url(:/Resources/Images/checkbox_dirty_checked.png);
+}
+AnimatedCheckBox[dirty="true"]::indicator:unchecked{
+    image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
 }

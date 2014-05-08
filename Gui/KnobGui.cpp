@@ -130,6 +130,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
     QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SIGNAL(keyFrameRemoved()));
     QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
+    QObject::connect(handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -438,7 +439,7 @@ void KnobGui::createAnimationMenu(){
         QAction* pasteAction = new QAction(tr("Paste animation"),_imp->animationMenu);
         QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
         _imp->animationMenu->addAction(pasteAction);
-        if (!copyAnimation || isClipBoardEmpty) {
+        if (!copyAnimation || isClipBoardEmpty || !isEnabled) {
             pasteAction->setEnabled(false);
         }
     }
@@ -1168,4 +1169,9 @@ void KnobGui::onSetValueUsingUndoStack(const Variant& v,int dim) {
     }
 
 
+}
+
+void KnobGui::onSetDirty(bool d)
+{
+    setDirty(d);
 }

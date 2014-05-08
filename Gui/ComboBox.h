@@ -40,6 +40,7 @@ class ComboBox : public QFrame
     
     Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
 
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     
     QHBoxLayout* _mainLayout;
     ClickableLabel* _currentText;
@@ -58,6 +59,8 @@ class ComboBox : public QFrame
     int animation;
     
     bool readOnly;
+    
+    bool dirty;
 public:
     
     explicit ComboBox(QWidget* parent = 0);
@@ -104,6 +107,10 @@ public:
     void clear();
     
     QString getCurrentIndexText() const;
+    
+    bool getDirty() const { return dirty; }
+    
+    void setDirty(bool b);
     
 public slots:
     

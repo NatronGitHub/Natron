@@ -20,24 +20,7 @@
 #include <QObject>
 
 #include "Global/GlobalDefines.h"
-/**
- * @class A Bezier is an animated control point of a Bezier. It is the starting point
- * and/or the ending point of a bezier segment. (It would correspond to P0/P3).
- * The left bezier point/right bezier point we refer to in the functions below
- * are respectively the P2 and P1 point.
- * 
- * Note on multi-thread:
- * All getters or const functions can be called in any thread, that is:
- * - The GUI thread (main-thread)
- * - The render thread (VideoEngine)
- * - The serialization thread (when saving)
- *
- * Setters or non-const functions can exclusively be called in the main-thread (Gui thread) to ensure there is no
- * race condition whatsoever.
- 
- * More-over the setters must be called ONLY by the Bezier class which is the class handling the thread safety.
- * That's why non-const functions are private.
- **/
+
 namespace Natron {
 class Image;
 class Node;
@@ -50,10 +33,32 @@ namespace boost {
 
 class RectI;
 class RectD;
+class Bool_Knob;
+class Double_Knob;
+class Int_Knob;
 
 class Bezier;
 class BezierSerialization;
 
+
+/**
+ * @class A Bezier is an animated control point of a Bezier. It is the starting point
+ * and/or the ending point of a bezier segment. (It would correspond to P0/P3).
+ * The left bezier point/right bezier point we refer to in the functions below
+ * are respectively the P2 and P1 point.
+ *
+ * Note on multi-thread:
+ * All getters or const functions can be called in any thread, that is:
+ * - The GUI thread (main-thread)
+ * - The render thread (VideoEngine)
+ * - The serialization thread (when saving)
+ *
+ * Setters or non-const functions can exclusively be called in the main-thread (Gui thread) to ensure there is no
+ * race condition whatsoever.
+ 
+ * More-over the setters must be called ONLY by the Bezier class which is the class handling the thread safety.
+ * That's why non-const functions are private.
+ **/
 struct BezierCPPrivate;
 class BezierCP
 {
@@ -317,8 +322,7 @@ public:
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
      **/
-    void setActivated(bool activated);
-    bool isActivated() const;
+    bool isActivated(int time) const;
     
     /**
      * @brief Returns the number of keyframes for this spline.
@@ -408,6 +412,34 @@ public:
     
     void load(const BezierSerialization& obj);
     
+    /**
+     * @brief The opacity of the curve
+     **/
+    double getOpacity(int time) const;
+    
+    /**
+     * @brief The distance of the feather is the distance from the control point to the feather point plus
+     * the feather distance returned by this function.
+     **/
+    int getFeatherDistance(int time) const;
+    
+    /**
+     * @brief The fall-off rate: 0.5 means half color is faded at half distance.
+     **/
+    double getFeatherFallOff(int time) const;
+    
+    /**
+     * @brief The color that the GUI should use to draw the overlay of the shape
+     **/
+    void getOverlayColor(double* color) const;
+    void setOverlayColor(const double* color);
+    
+    boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
+    boost::shared_ptr<Int_Knob> getFeatherKnob() const;
+    boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
+    boost::shared_ptr<Double_Knob> getOpacityKnob() const;
+    
+    
 private:
     
     boost::scoped_ptr<BezierPrivate> _imp;
@@ -475,7 +507,8 @@ public:
      * @brief Render the polygon formed by the list of points in the alpha channel of the output image.
      * The output image must be large enough to contain the polygon.
      **/
-    void fillPolygon_evenOdd(const RectI& roi,const std::list<std::pair<double,double> >& points,Natron::Image* output);
+    void fillPolygon_evenOdd(const RectI& roi,const std::list<std::pair<double,double> >& points,double opacity,
+                             Natron::Image* output);
     
     /**
      * @brief Return the region of definition of all the shapes in the context.
@@ -497,6 +530,14 @@ public:
     void save(RotoContextSerialization* obj) const;
     
     void load(const RotoContextSerialization& obj);
+    
+    /**
+     * @brief This must be called by the GUI whenever this bezier is selected so that the GUI knob values
+     * actually reflect the values of this bezier.
+     **/
+    void linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b);
+    
+    void unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b);
     
 public slots:
     

@@ -28,6 +28,7 @@ class QPaintEvent;
 LineEdit::LineEdit(QWidget* parent)
 : QLineEdit(parent)
 , animation(0)
+, dirty(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect,0);
 }
@@ -75,6 +76,13 @@ void LineEdit::dragLeaveEvent(QDragLeaveEvent* e) {
 
 void LineEdit::setAnimation(int v) {
     animation = v;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+void LineEdit::setDirty(bool b){
+    dirty = b;
     style()->unpolish(this);
     style()->polish(this);
     repaint();

@@ -274,6 +274,16 @@ public:
     virtual bool getIsSecret() const = 0;
     
     /**
+     * @brief When dirty, the knob is actually representing several elements that do not hold the same value.
+     * For example for the roto node, a knob actually represent the value of the opacity of the selected curve.
+     * If they're multiple curves selected,then the value of the knob is dirty
+     * since we have no means to know the specifics values for each curve.
+     * This is purely a GUI stuff and should only be called when the GUI is created. This is here just for means to
+     * notify the GUI.
+     **/
+    virtual void setDirty(bool d) = 0;
+    
+    /**
      * @brief Call this to change the knob name. The name is not the text label displayed on
      * the GUI but what Natron uses internally to identify knobs from each other. By default the
      * name is the same as the description(i.e: the text label).
@@ -455,6 +465,7 @@ public:
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
     void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
+    void s_setDirty(bool b) { emit dirty(b); }
     
 public slots:
     
@@ -529,6 +540,9 @@ signals:
     ///Emitted whenever the GUI should set the value using the undo stack. This is
     ///only to address the problem of interacts that should use the undo/redo stack.
     void setValueWithUndoStack(Variant v,int dim);
+    
+    ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
+    void dirty(bool);
 };
 
 ///Skins the API of KnobI by implementing most of the functions in a non templated manner.
@@ -625,6 +639,8 @@ public:
     virtual void setSecret(bool b) OVERRIDE FINAL;
     
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setDirty(bool d) OVERRIDE FINAL;
     
     virtual void setName(const std::string& name) OVERRIDE FINAL;
     
@@ -817,7 +833,7 @@ public:
     /**
      * @brief Set a default value for the particular dimension.
      **/
-    void setDefaultValue(const T& v,int dimension);
+    void setDefaultValue(const T& v,int dimension = 0);
     
     
     //////////////////////////////////////////////////////////////////////

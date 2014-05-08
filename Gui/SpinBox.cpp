@@ -36,6 +36,7 @@ LineEdit(parent)
 ,_currentDelta(0)
 ,_hasChangedSinceLastValidation(false)
 ,_valueAfterLastValidation(0)
+,dirty(false)
 {
     switch (_type) {
         case DOUBLE_SPINBOX:
@@ -286,6 +287,13 @@ void SpinBox::setMinimum(double b){
 
 void SpinBox::setAnimation(int i){
     animation = i;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+void SpinBox::setDirty(bool d) {
+    dirty = d;
     style()->unpolish(this);
     style()->polish(this);
     repaint();

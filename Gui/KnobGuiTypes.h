@@ -117,6 +117,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     
@@ -163,6 +165,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
 
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
     
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
 
@@ -225,6 +229,8 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
@@ -268,6 +274,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL {}
 
     virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL {}
 
@@ -311,6 +319,8 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
 
@@ -413,6 +423,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL {}
     
     virtual void setReadOnly(bool /*readOnly*/,int /*dimension*/) OVERRIDE FINAL {}
+    
+    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL {}
 
     virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL {}
 
@@ -502,6 +514,8 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
 
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
     
@@ -540,10 +554,10 @@ class AnimatingTextEdit : public QTextEdit {
     Q_OBJECT
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
-
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 public:
     
-    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent) , animation(0) , readOnlyNatron(false) , _hasChanged(false) {}
+    AnimatingTextEdit(QWidget* parent = 0) : QTextEdit(parent) , animation(0) , readOnlyNatron(false) , _hasChanged(false) , dirty(false) {}
     
     virtual ~AnimatingTextEdit(){}
     
@@ -554,6 +568,10 @@ public:
     bool isReadOnlyNatron() const { return readOnlyNatron; }
     
     void setReadOnlyNatron(bool ro);
+    
+    bool getDirty() const { return dirty; }
+    
+    void setDirty(bool b);
 signals:
     
     void editingFinished();
@@ -568,6 +586,7 @@ private:
     int animation;
     bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
     bool _hasChanged;
+    bool dirty;
 
 };
 
@@ -606,6 +625,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
     
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevel level) OVERRIDE FINAL;
     
@@ -655,6 +676,8 @@ private:
     virtual void setEnabled()  OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL {}
 
     virtual bool eventFilter(QObject *target, QEvent *event) OVERRIDE FINAL;
     
@@ -706,6 +729,8 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    
+    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL {}
     
     virtual void setReadOnly(bool /*readOnly*/,int /*dimension*/) OVERRIDE FINAL {}
     

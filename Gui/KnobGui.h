@@ -199,6 +199,8 @@ public slots:
     void onKnobSlavedChanged(int dimension,bool b);
 
     void onSetValueUsingUndoStack(const Variant& v,int dim);
+    
+    void onSetDirty(bool d);
 signals:
     
     void knobUndoneChange();
@@ -249,9 +251,9 @@ private:
 
     virtual void setEnabled() = 0;
     
-
-    
     virtual void setReadOnly(bool readOnly,int dimension) = 0;
+    
+    virtual void setDirty(bool dirty) = 0;
     
     /**
      * @brief Must fill the horizontal layout with all the widgets composing the knob.

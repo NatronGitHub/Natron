@@ -491,7 +491,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
     glEnable(GL_POINT_SMOOTH);
     for (std::list< boost::shared_ptr<Bezier> >::const_iterator it = beziers.begin(); it!=beziers.end(); ++it) {
         
-        if ((*it)->isActivated()) {
+        if ((*it)->isActivated(time)) {
             
             ///draw the bezier
             std::list<std::pair<double,double> > points;
@@ -817,12 +817,17 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
         assert(false);
     }
 
+    int time = context->getTimelineCurrentTime();
+    
     const std::list<boost::shared_ptr<Bezier> >& curves = context->getBeziers();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
-        SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
-        selectedCps.insert(selectedCps.end(), points.begin(), points.end());
-        if (!points.empty()) {
-            selectedBeziers.push_back(*it);
+        if ((*it)->isActivated(time)) {
+            SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
+            selectedCps.insert(selectedCps.end(), points.begin(), points.end());
+            if (!points.empty()) {
+                selectedBeziers.push_back(*it);
+                context->linkBezierToContextKnobs(*it);
+            }
         }
     }
     
@@ -835,6 +840,9 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
 
 void RotoGui::RotoGuiPrivate::clearSelection()
 {
+    for (SelectedBeziers::iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
+        context->unlinkBezierFromContextKnobs(*it);
+    }
     selectedBeziers.clear();
     selectedCps.clear();
     showCpsBbox = false;
@@ -893,9 +901,13 @@ void RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezi
         
         ///clear previous selection if the SHIFT modifier isn't held
         if (!modifiers.testFlag(Natron::ShiftModifier)) {
+            for (SelectedBeziers::iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
+                context->unlinkBezierFromContextKnobs(*it);
+            }
             selectedBeziers.clear();
         }
         selectedBeziers.push_back(curve);
+        context->linkBezierToContextKnobs(curve);
     }
 
 }
@@ -1133,6 +1145,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 } else if (cpCount == 0) {
                     
                     ///clear the shared pointer so the bezier gets deleted
+                    _imp->context->unlinkBezierFromContextKnobs(nearbyBezier);
                     _imp->context->removeBezier(nearbyBezier.get());
                     SelectedBeziers::iterator foundBezier =
                     std::find(_imp->selectedBeziers.begin(), _imp->selectedBeziers.end(), nearbyBezier);
@@ -1201,11 +1214,12 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         case DRAW_BEZIER:
         {
             
-            _imp->clearSelection();
+            
             if (!_imp->builtBezier) {
                 ///make a new curve
+                _imp->clearSelection();
                 boost::shared_ptr<Bezier> newCurve = _imp->context->makeBezier(pos.x(), pos.y());
-                _imp->selectedBeziers.push_back(newCurve);
+                _imp->handleBezierSelection(newCurve);
                 boost::shared_ptr<BezierCP> cp = newCurve->getControlPointAtIndex(0);
                 boost::shared_ptr<BezierCP> fp = newCurve->getFeatherPointAtIndex(0);
                 assert(cp && fp);
@@ -1213,8 +1227,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 _imp->builtBezier = newCurve;
             } else {
                 
-                _imp->selectedBeziers.push_back(_imp->builtBezier);
-
+                _imp->handleBezierSelection(_imp->builtBezier);
+                
+                
                 ///if the user clicked on a control point of the bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve
                 const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->builtBezier->getControlPoints();
@@ -1270,8 +1285,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             _imp->builtBezier->addControlPoint(pos.x(), pos.y());
             _imp->builtBezier->setCurveFinished(true);
             _imp->evaluateOnPenUp = true;
-            _imp->selectedBeziers.push_back(_imp->builtBezier);
-            
+            _imp->handleBezierSelection(_imp->builtBezier);
             if (_imp->modifiers.testFlag(Natron::ControlModifier)) {
                 _imp->state = BULDING_ELLIPSE_CENTER;
             } else {
@@ -1289,7 +1303,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             curve->addControlPoint(pos.x(), pos.y());
             curve->setCurveFinished(true);
             _imp->evaluateOnPenUp = true;
-            _imp->selectedBeziers.push_back(curve);
+            _imp->handleBezierSelection(curve);
             _imp->state = BUILDING_RECTANGLE;
             didSomething = true;
         }   break;
@@ -1570,8 +1584,12 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
                     
                     ///clear the shared pointer so the bezier gets deleted
                     _imp->context->removeBezier(curve);
+                    if (curve == _imp->builtBezier.get()) {
+                        _imp->builtBezier.reset();
+                    }
                     for (SelectedBeziers::iterator fb = _imp->selectedBeziers.begin(); fb != _imp->selectedBeziers.end(); ++fb) {
                         if (fb->get() == curve) {
+                            _imp->context->unlinkBezierFromContextKnobs(*fb);
                             _imp->selectedBeziers.erase(fb);
                             break;
                         }
@@ -1586,8 +1604,12 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
             while (!_imp->selectedBeziers.empty()) {
                 Bezier* b = _imp->selectedBeziers.front().get();
                 _imp->context->removeBezier(b);
+                if (b == _imp->builtBezier.get()) {
+                    _imp->builtBezier.reset();
+                }
                 for (SelectedBeziers::iterator fb = _imp->selectedBeziers.begin(); fb != _imp->selectedBeziers.end(); ++fb) {
                     if (fb->get() == b) {
+                        _imp->context->unlinkBezierFromContextKnobs(*fb);
                         _imp->selectedBeziers.erase(fb);
                         break;
                     }

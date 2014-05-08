@@ -514,6 +514,11 @@ bool KnobHelper::isEnabled(int dimension) const
     return _imp->_enabled[dimension];
 }
 
+void KnobHelper::setDirty(bool d)
+{
+    _signalSlotHandler->s_setDirty(d);
+}
+
 void KnobHelper::setEvaluateOnChange(bool b)
 {
     _imp->_EvaluateOnChange = b;
@@ -570,10 +575,14 @@ bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(other);
     assert(helper);
     
-    QObject::connect(helper->_signalSlotHandler.get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(), SLOT(onMasterChanged(int)));
-    _signalSlotHandler->s_valueChanged(dimension);
-    if (reason == Natron::PLUGIN_EDITED) {
-        _signalSlotHandler->s_knobSlaved(dimension,true);
+    if (helper->_signalSlotHandler && _signalSlotHandler) {
+        QObject::connect(helper->_signalSlotHandler.get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(), SLOT(onMasterChanged(int)));
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_valueChanged(dimension);
+        if (reason == Natron::PLUGIN_EDITED) {
+            _signalSlotHandler->s_knobSlaved(dimension,true);
+        }
     }
     return true;
 

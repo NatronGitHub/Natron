@@ -36,6 +36,7 @@ ComboBox::ComboBox(QWidget* parent)
 , pressed(false)
 , animation(0)
 , readOnly(false)
+, dirty(false)
 {
     
     _mainLayout = new QHBoxLayout(this);
@@ -414,5 +415,14 @@ void ComboBox::setAnimation(int i){
     style()->unpolish(this);
     style()->polish(this);
     repaint();
+}
+
+void ComboBox::setDirty(bool b)
+{
+    dirty = b;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+
 }
 

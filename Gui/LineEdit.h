@@ -29,6 +29,7 @@ class LineEdit : public QLineEdit {
     
     Q_OBJECT
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 
 public:
     explicit LineEdit(QWidget* parent = 0);
@@ -37,6 +38,10 @@ public:
     int getAnimation() const { return animation; }
     
     void setAnimation(int v) ;
+    
+    bool getDirty() const { return dirty; }
+    
+    void setDirty(bool b);
     
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
@@ -51,6 +56,7 @@ private:
     
     
     int animation;
+    bool dirty;
 };
 
 

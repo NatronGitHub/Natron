@@ -15,8 +15,7 @@
 #include "Engine/RotoContextPrivate.h"
 
 #include <boost/serialization/split_member.hpp>
-
-#include "Engine/CurveSerialization.h"
+#include "Engine/KnobSerialization.h"
 
 template<class Archive>
 void BezierCP::serialize(Archive & ar, const unsigned int version)
@@ -67,6 +66,13 @@ private:
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
         ar & boost::serialization::make_nvp("Activated",_activated);
+        ar & boost::serialization::make_nvp("Opacity",_opacity);
+        ar & boost::serialization::make_nvp("Feather",_feather);
+        ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+        ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
+        ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
+        ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
+        ar & boost::serialization::make_nvp("OC.a",_overlayColor[3]);
     }
     
     template<class Archive>
@@ -84,13 +90,25 @@ private:
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
         ar & boost::serialization::make_nvp("Activated",_activated);
+        ar & boost::serialization::make_nvp("Opacity",_opacity);
+        ar & boost::serialization::make_nvp("Feather",_feather);
+        ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+        ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
+        ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
+        ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
+        ar & boost::serialization::make_nvp("OC.a",_overlayColor[3]);
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
     
     std::list< BezierCP > _controlPoints,_featherPoints;
     bool _closed;
-    bool _activated;
+    KnobSerialization _activated;
+    KnobSerialization _opacity;
+    KnobSerialization _feather;
+    KnobSerialization _featherFallOff;
+
+    double _overlayColor[4];
 };
 
 class RotoContextSerialization

@@ -6,8 +6,25 @@
 
 #include "RotoPanel.h"
 
-RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>& n,QWidget* parent)
+struct RotoPanelPrivate
+{
+    NodeGui* node;
+    
+    RotoPanelPrivate(NodeGui*  n)
+    : node(n)
+    {
+        
+    }
+};
+
+RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
 : QWidget(parent)
+, _imp(new RotoPanelPrivate(n))
+{
+    
+}
+
+RotoPanel::~RotoPanel()
 {
     
 }

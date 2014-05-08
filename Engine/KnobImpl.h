@@ -47,7 +47,7 @@ std::string Knob<std::string>::getValue(int dimension) const
 {
     if (isAnimated(dimension)) {
         SequenceTime time;
-        if (!getHolder()->getApp()) {
+        if (!getHolder() || !getHolder()->getApp()) {
             time = 0;
         } else {
             time = getHolder()->getApp()->getTimeLine()->currentFrame();
@@ -76,7 +76,7 @@ T Knob<T>::getValue(int dimension) const
 {
     if (isAnimated(dimension)) {
         SequenceTime time;
-        if (!getHolder()->getApp()) {
+        if (!getHolder() || !getHolder()->getApp()) {
             time = 0;
         } else {
             time = getHolder()->getApp()->getTimeLine()->currentFrame();
@@ -383,15 +383,19 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason)
 
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
-    QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
-                        SLOT(onMasterChanged(int)));
-    resetMaster(dimension);
-
-    _signalSlotHandler->s_valueChanged(dimension);
-    if (reason == Natron::PLUGIN_EDITED) {
-        _signalSlotHandler->s_knobSlaved(dimension, false);
+    if (helper->getSignalSlotHandler() && _signalSlotHandler) {
+        QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
+                            SLOT(onMasterChanged(int)));
     }
-
+    resetMaster(dimension);
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_valueChanged(dimension);
+        if (reason == Natron::PLUGIN_EDITED) {
+            _signalSlotHandler->s_knobSlaved(dimension, false);
+        }
+    }
+    
 }
 
 template<>
@@ -721,11 +725,13 @@ void Knob<std::string>::cloneValues(const boost::shared_ptr<KnobI>& other)
 template<typename T>
 void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
 {
-    assert(getDimension() == other->getDimension());
+    assert(other && getDimension() == other->getDimension());
     cloneValues(other);
     for (int i = 0; i < getDimension();++i) {
         getCurve(i)->clone(*other->getCurve(i));
-        _signalSlotHandler->s_valueChanged(i);
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_valueChanged(i);
+        }
         setEnabled(i, other->isEnabled(i));
     }
     cloneExtraData(other);

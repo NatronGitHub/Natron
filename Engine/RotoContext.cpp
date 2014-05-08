@@ -20,13 +20,10 @@
 
 #include "Engine/Interpolation.h"
 #include "Engine/AppInstance.h"
-#include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
-#include "Engine/AppManager.h"
-#include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/RotoSerialization.h"
 
@@ -1438,19 +1435,11 @@ void Bezier::removeKeyframe(int time)
 
 }
 
-void Bezier::setActivated(bool activated)
-{
-    ///only called on the main-thread
-    assert(QThread::currentThread() == qApp->thread());
-    
-    QMutexLocker l(&_imp->splineMutex);
-    _imp->activated = activated;
-}
 
-bool Bezier::isActivated() const
+bool Bezier::isActivated(int time) const
 {
     QMutexLocker l(&_imp->splineMutex);
-    return _imp->activated;
+    return _imp->activated->getValueAtTime(time);
 }
 
 int Bezier::getKeyframesCount() const
@@ -1813,8 +1802,11 @@ void Bezier::save(BezierSerialization* obj) const
     QMutexLocker l(&_imp->splineMutex);
     
     obj->_closed = _imp->finished;
-    obj->_activated = _imp->activated;
-    
+    obj->_activated.initialize(_imp->activated);
+    obj->_opacity.initialize(_imp->opacity);
+    obj->_feather.initialize(_imp->feather);
+    obj->_featherFallOff.initialize(_imp->featherFallOff);
+    memcpy(obj->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
     assert(_imp->featherPoints.size() == _imp->points.size());
     
     
@@ -1832,10 +1824,14 @@ void Bezier::load(const BezierSerialization& obj)
 {
     QMutexLocker l(&_imp->splineMutex);
     _imp->finished = obj._closed;
-    _imp->activated = obj._activated;
+    _imp->activated->clone(obj._activated.getKnob());
+    _imp->opacity->clone(obj._opacity.getKnob());
+    _imp->feather->clone(obj._feather.getKnob());
+    _imp->featherFallOff->clone(obj._featherFallOff.getKnob());
+    memcpy(_imp->overlayColor, obj._overlayColor, sizeof(double) * 4);
     
-    ///do not load broken serializations
     if (obj._controlPoints.size() != obj._featherPoints.size()) {
+        ///do not load broken serialization objects
         return;
     }
     
@@ -1846,11 +1842,53 @@ void Bezier::load(const BezierSerialization& obj)
         cp->clone(*it);
         _imp->points.push_back(cp);
         
-        boost::shared_ptr<BezierCP> fp(new BezierCP(this));
+        boost::shared_ptr<BezierCP> fp(new FeatherPoint(this));
         fp->clone(*itF);
         _imp->featherPoints.push_back(fp);
     }
 }
+
+
+double Bezier::getOpacity(int time) const
+{
+    QMutexLocker l(&_imp->splineMutex);
+    return _imp->opacity->getValueAtTime(time);
+}
+
+
+int Bezier::getFeatherDistance(int time) const
+{
+    QMutexLocker l(&_imp->splineMutex);
+    return _imp->feather->getValueAtTime(time);
+}
+
+double Bezier::getFeatherFallOff(int time) const
+{
+    QMutexLocker l(&_imp->splineMutex);
+    return _imp->featherFallOff->getValueAtTime(time);
+}
+
+
+void Bezier::getOverlayColor(double* color) const
+{
+    QMutexLocker l(&_imp->splineMutex);
+    memcpy(color, _imp->overlayColor, sizeof(double) * 4);
+}
+
+void Bezier::setOverlayColor(const double *color)
+{
+    ///MT-safe: only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->splineMutex);
+    memcpy(_imp->overlayColor, color, sizeof(double) * 4);
+}
+
+boost::shared_ptr<Bool_Knob> Bezier::getActivatedKnob() const { return _imp->activated; }
+boost::shared_ptr<Int_Knob> Bezier::getFeatherKnob() const { return _imp->feather; }
+boost::shared_ptr<Double_Knob> Bezier::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
+boost::shared_ptr<Double_Knob> Bezier::getOpacityKnob() const { return _imp->opacity; }
+
+
 
 ////////////////////////////////////RotoContext////////////////////////////////////
 
@@ -2006,7 +2044,7 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
 {
     QMutexLocker l(&_imp->rotoContextMutex);
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin(); it!=_imp->splines.end(); ++it) {
-        if ((*it)->isActivated() && (*it)->isCurveFinished()) {
+        if ((*it)->isActivated(time) && (*it)->isCurveFinished()) {
             RectD splineRoD = (*it)->getBoundingBox(time);
             RectI splineRoDI;
             splineRoDI.x1 = std::floor(splineRoD.x1);
@@ -2044,6 +2082,85 @@ void RotoContext::load(const RotoContextSerialization& obj)
         boost::shared_ptr<Bezier> b(new Bezier(this));
         b->load(*it);
         _imp->splines.push_back(b);
+    }
+}
+
+void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
+{
+    
+    if (_imp->selectedBeziers.empty()) {
+        ///enable the knobs
+        _imp->activated->setAllDimensionsEnabled(true);
+        _imp->opacity->setAllDimensionsEnabled(true);
+        _imp->featherFallOff->setAllDimensionsEnabled(true);
+        _imp->feather->setAllDimensionsEnabled(true);
+    }
+
+   
+
+    ///first-off set the context knobs to the value of this bezier
+    boost::shared_ptr<KnobI> activated = b->getActivatedKnob();
+    boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
+    boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
+    boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
+    
+    _imp->activated->clone(activated);
+    _imp->feather->clone(feather);
+    _imp->featherFallOff->clone(featherFallOff);
+    _imp->opacity->clone(opacity);
+
+    ///link this bezier knobs to the context
+    activated->slaveTo(0, _imp->activated, 0);
+    feather->slaveTo(0, _imp->feather, 0);
+    featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
+    opacity->slaveTo(0, _imp->opacity, 0);
+        
+    ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
+    ///(maybe black or something)
+    if (_imp->selectedBeziers.size() > 0) {
+        _imp->activated->setDirty(true);
+        _imp->opacity->setDirty(true);
+        _imp->feather->setDirty(true);
+        _imp->featherFallOff->setDirty(true);
+        
+    }
+    
+    std::list<boost::shared_ptr<Bezier> >::iterator it = std::find(_imp->selectedBeziers.begin(),_imp->selectedBeziers.end(),b);
+    if (it == _imp->selectedBeziers.end()) {
+        _imp->selectedBeziers.push_back(b);
+    }
+}
+
+void RotoContext::unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b)
+{
+    std::list<boost::shared_ptr<Bezier> >::iterator it = std::find(_imp->selectedBeziers.begin(),_imp->selectedBeziers.end(),b);
+    assert(it != _imp->selectedBeziers.end());
+    _imp->selectedBeziers.erase(it);
+    
+    ///first-off set the context knobs to the value of this bezier
+    boost::shared_ptr<KnobI> activated = b->getActivatedKnob();
+    boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
+    boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
+    boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
+    
+    activated->unSlave(0);
+    feather->unSlave(0);
+    featherFallOff->unSlave(0);
+    opacity->unSlave(0);
+    
+    if (_imp->selectedBeziers.size() <= 1) {
+        _imp->activated->setDirty(false);
+        _imp->opacity->setDirty(false);
+        _imp->feather->setDirty(false);
+        _imp->featherFallOff->setDirty(false);
+    }
+    
+    ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
+    if (_imp->selectedBeziers.empty()) {
+        _imp->activated->setAllDimensionsEnabled(false);
+        _imp->opacity->setAllDimensionsEnabled(false);
+        _imp->featherFallOff->setAllDimensionsEnabled(false);
+        _imp->feather->setAllDimensionsEnabled(false);
     }
 }
 
@@ -2119,10 +2236,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         
         ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
         ///Also render only finished bezier
-        if ((*it2)->isCurveFinished() && (*it2)->isActivated()) {
+        if ((*it2)->isCurveFinished() && (*it2)->isActivated(time)) {
             std::list< Point > points;
             (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
-            fillPolygon_evenOdd(clippedRoI,points, image.get());
+            fillPolygon_evenOdd(clippedRoI,points,(*it2)->getOpacity(time), image.get());
         }
     }
     
@@ -2291,7 +2408,7 @@ namespace  {
         
         int i = 0;
         for (std::list< Point >::const_iterator it = points.begin(); next!=points.end(); ++it,++next,++i) {
-            
+#pragma message WARN("Buggy: Can't figure out right now how to properly convert the float edges to integer")
             PointI bottom,top;
             bool curIsTop,curIsLeft;
             if (next->second < it->second) {
@@ -2370,12 +2487,15 @@ namespace  {
 
 
 
-
-void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >& points,Natron::Image* output)
+#pragma message WARN("Polygon fill not anti-aliased yet + a bit buggy on edges. Also feather not supported yet.")
+void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >& points,double opacity,
+                                      Natron::Image* output)
 {
-    ///An optimization could be made to actually clip the points of the polygon the the RoI first.
-    ///That would make a lot less points to process. For now we just discard the pixels outside the roi.
-    ///see http://coitweb.uncc.edu/~krs/courses/4120-5120/lectures/raster2.pdf , the algorithm of
+    ///An optimization could be made to actually clip the points of the polygon to the RoI first.
+    ///That would make a lot less points to process and enable possible multi-threading
+    ///For now we just discard the pixels outside the roi which makes it irrelevant for multi-threading as we would render
+    ///several times the same part of a polygon.
+    ///See http://coitweb.uncc.edu/~krs/courses/4120-5120/lectures/raster2.pdf , the algorithm of
     ///Liang-Barsky for an explanation on how to clip the polygon.
     
     ///A polygon is at least a triangle
@@ -2438,7 +2558,7 @@ void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >&
             ///fill pixels
             for (int xx = x; xx < end; ++xx) {
                 
-                double val = 1.;
+                double val = opacity;
                 
                 if (roi.contains(xx, y)) {
                     if (comps == 4) {

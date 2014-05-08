@@ -8,14 +8,24 @@
 #define ROTOPANEL_H
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <QWidget>
 
 class NodeGui;
+
+struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
 public:
-    RotoPanel(const boost::shared_ptr<NodeGui>& n,QWidget* parent = 0);
+    
+    RotoPanel(NodeGui* n,QWidget* parent = 0);
+    
+    virtual ~RotoPanel();
+    
+private:
+    
+    boost::scoped_ptr<RotoPanelPrivate> _imp;
 };
 
 #endif // ROTOPANEL_H

@@ -23,9 +23,9 @@ class SpinBox : public LineEdit
 {
     Q_OBJECT
 
-    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
 
-    
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 public:
     
     enum SPINBOX_TYPE{INT_SPINBOX = 0,DOUBLE_SPINBOX};
@@ -49,7 +49,10 @@ public:
     int getAnimation() const { return animation; }
     
     QMenu* getRightClickMenu();
+    
+    void setDirty(bool d) ;
 
+    bool getDirty() const { return dirty; }
 private:
     
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
@@ -92,6 +95,7 @@ private:
     int _currentDelta; // accumulates the deltas from wheelevents
     bool _hasChangedSinceLastValidation;
     double _valueAfterLastValidation;
+    bool dirty;
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

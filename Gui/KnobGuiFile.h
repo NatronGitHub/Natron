@@ -70,6 +70,8 @@ private:
 
     virtual void setEnabled() OVERRIDE FINAL;
     
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
+    
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
@@ -118,6 +120,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
 
     virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
 
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     
@@ -168,6 +172,8 @@ private:
     virtual void _show() OVERRIDE FINAL;
     
     virtual void setEnabled() OVERRIDE FINAL;
+    
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
     
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     

@@ -267,6 +267,13 @@ void Int_KnobGui::setReadOnly(bool readOnly,int dimension) {
     }
 }
 
+void Int_KnobGui::setDirty(bool dirty)
+{
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setDirty(dirty);
+    }
+}
+
 boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const { return _knob; }
 
 //==========================BOOL_KNOB_GUI======================================
@@ -347,6 +354,11 @@ void Bool_KnobGui::setEnabled()
 
 void Bool_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _checkBox->setReadOnly(readOnly);
+}
+
+void Bool_KnobGui::setDirty(bool dirty)
+{
+    _checkBox->setDirty(dirty);
 }
 
 boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const { return _knob; }
@@ -620,6 +632,13 @@ void Double_KnobGui::setReadOnly(bool readOnly,int dimension) {
     }
 }
 
+void Double_KnobGui::setDirty(bool dirty)
+{
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setDirty(dirty);
+    }
+}
+
 boost::shared_ptr<KnobI> Double_KnobGui::getKnob() const { return _knob; }
 //=============================BUTTON_KNOB_GUI===================================
 
@@ -765,6 +784,11 @@ void Choice_KnobGui::setEnabled()
 void Choice_KnobGui::setReadOnly(bool readOnly,int /*dimension*/)
 {
     _comboBox->setReadOnly(readOnly);
+}
+
+void Choice_KnobGui::setDirty(bool dirty)
+{
+    _comboBox->setDirty(dirty);
 }
 
 boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const { return _knob; }
@@ -1756,6 +1780,18 @@ void Color_KnobGui::setReadOnly(bool readOnly,int dimension) {
     }
 }
 
+void Color_KnobGui::setDirty(bool dirty)
+{
+    _rBox->setDirty(dirty);
+    if (_dimension > 1) {
+        _gBox->setDirty(dirty);
+        _bBox->setDirty(dirty);
+    }
+    if (_dimension > 3) {
+        _aBox->setDirty(dirty);
+    }
+}
+
 boost::shared_ptr<KnobI> Color_KnobGui::getKnob() const { return _knob; }
 //=============================STRING_KNOB_GUI===================================
 
@@ -1769,6 +1805,14 @@ void AnimatingTextEdit::setAnimation(int v) {
 void AnimatingTextEdit::setReadOnlyNatron(bool ro) {
     setReadOnly(ro);
     readOnlyNatron = ro;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+void AnimatingTextEdit::setDirty(bool b)
+{
+    dirty = b;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
@@ -1998,6 +2042,16 @@ bool String_KnobGui::showDescriptionLabel() const {
         return false;
     } else {
         return true;
+    }
+}
+
+void String_KnobGui::setDirty(bool dirty)
+{
+    if (_textEdit) {
+        _textEdit->setDirty(dirty);
+    } else {
+        assert(_lineEdit);
+        _lineEdit->setDirty(dirty);
     }
 }
 

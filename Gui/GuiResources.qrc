@@ -87,5 +87,7 @@
         <file>Resources/Images/writeImage.png</file>
         <file>Resources/Images/renderScale.png</file>
         <file>Resources/Images/renderScale_checked.png</file>
+        <file>Resources/Images/checkbox_dirty_checked.png</file>
+        <file>Resources/Images/checkbox_dirty_unchecked.png</file>
     </qresource>
 </RCC>

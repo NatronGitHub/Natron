@@ -19,10 +19,11 @@ class AnimatedCheckBox : public QCheckBox
     Q_OBJECT
     Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool readOnly READ getReadOnly WRITE setReadOnly)
-
-    int animation;
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     
+    int animation;
     bool readOnly;
+    bool dirty;
 public:
     AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) , readOnly(false) {}
 
@@ -38,6 +39,9 @@ public:
     
     bool getReadOnly() const { return readOnly; }
     
+    bool getDirty() const { return dirty; }
+    
+    void setDirty(bool b);
 private:
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;

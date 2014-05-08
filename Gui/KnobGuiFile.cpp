@@ -232,6 +232,11 @@ void File_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _lineEdit->setReadOnly(readOnly);
 }
 
+void File_KnobGui::setDirty(bool dirty)
+{
+    _lineEdit->setDirty(dirty);
+}
+
 boost::shared_ptr<KnobI> File_KnobGui::getKnob() const { return _knob; }
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
@@ -361,6 +366,12 @@ void OutputFile_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _lineEdit->setReadOnly(readOnly);
 }
 
+void OutputFile_KnobGui::setDirty(bool dirty)
+{
+    _lineEdit->setDirty(dirty);
+}
+
+
 boost::shared_ptr<KnobI> OutputFile_KnobGui::getKnob() const { return _knob; }
 //============================PATH_KNOB_GUI====================================
 Path_KnobGui::Path_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
@@ -489,6 +500,11 @@ void Path_KnobGui::setEnabled() {
 void Path_KnobGui::setReadOnly(bool readOnly,int /*dimension*/) {
     _openFileButton->setEnabled(!readOnly);
     _lineEdit->setReadOnly(readOnly);
+}
+
+void Path_KnobGui::setDirty(bool dirty)
+{
+    _lineEdit->setDirty(dirty);
 }
 
 boost::shared_ptr<KnobI> Path_KnobGui::getKnob() const { return _knob; }
