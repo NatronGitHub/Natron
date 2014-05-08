@@ -2061,16 +2061,23 @@ void ViewerGL::keyPressEvent(QKeyEvent* event)
     }
     
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    bool accept = false;
     if(event->isAutoRepeat()){
         if(_imp->viewerTab->notifyOverlaysKeyRepeat(scale,scale,event)){
+            accept = true;
             updateGL();
         }
     }else{
         if(_imp->viewerTab->notifyOverlaysKeyDown(scale,scale,event)){
+            accept = true;
             updateGL();
         }
     }
-    QGLWidget::keyPressEvent(event);
+    if (accept) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
 }
 
 
