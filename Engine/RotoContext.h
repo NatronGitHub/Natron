@@ -14,14 +14,22 @@
 
 #include <list>
 #include <set>
+#include <string>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <QObject>
+#include <QMutex>
 
 #include "Engine/Rect.h"
 
 #include "Global/GlobalDefines.h"
+
+#define kRotoLayerBaseName "Layer"
+#define kRotoBezierBaseName "Bezier"
+#define kRotoBSplineBaseName "B-Spline"
+#define kRotoEllipseBaseName "Ellipse"
+#define kRotoRectangleBaseName "Rectangle"
 
 namespace Natron {
 class Image;
@@ -40,6 +48,7 @@ class Double_Knob;
 class Int_Knob;
 
 class Bezier;
+class RotoItemSerialization;
 class BezierSerialization;
 
 
@@ -160,6 +169,187 @@ public:
     virtual bool isFeatherPoint() const { return true; }
 };
 
+
+/**
+ * @class A base class for all items made by the roto context
+ **/
+class RotoContext;
+class RotoLayer;
+struct RotoItemPrivate;
+class RotoItem
+{
+    
+public:
+    
+    RotoItem(RotoContext* context,const std::string& name,RotoLayer* parent = NULL);
+    
+    virtual ~RotoItem();
+    
+    ///only callable on the main-thread
+    void setName(const std::string& name);
+    
+    std::string getName_mt_safe() const;
+
+    ///only callable on the main-thread
+    void setParentLayer(RotoLayer* layer);
+    
+    ///MT-safe
+    RotoLayer* getParentLayer() const;
+    
+    ///only callable from the main-thread
+    void setGloballyActivated(bool a);
+    
+    ///MT-safe
+    bool isGloballyActivated() const;
+    
+    /**
+     * @brief Returns at which hierarchy level the item is.
+     * The base layer is 0.
+     * All items into that base layer are on level 1.
+     * etc...
+     **/
+    int getHierarchyLevel() const;
+    
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const;
+    
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization& obj);
+    
+protected:
+    
+    RotoContext* getContext() const;
+    
+    mutable QMutex itemMutex;
+    
+private:
+    
+    boost::scoped_ptr<RotoItemPrivate> _imp;
+};
+
+/**
+ * @brief Base class for all drawable items
+ **/
+struct RotoDrawableItemPrivate;
+class RotoDrawableItem : public RotoItem
+{
+public:
+    
+    RotoDrawableItem(RotoContext* context,const std::string& name,RotoLayer* parent);
+    
+    virtual ~RotoDrawableItem();
+    
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization& obj) OVERRIDE;
+    
+    /**
+     * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
+     * If isGloballyActivated() returns false, this function will return false aswell.
+     **/
+    bool isActivated(int time) const;
+    
+    /**
+     * @brief The opacity of the curve
+     **/
+    double getOpacity(int time) const;
+    
+    /**
+     * @brief The distance of the feather is the distance from the control point to the feather point plus
+     * the feather distance returned by this function.
+     **/
+    int getFeatherDistance(int time) const;
+    
+    /**
+     * @brief The fall-off rate: 0.5 means half color is faded at half distance.
+     **/
+    double getFeatherFallOff(int time) const;
+    
+    /**
+     * @brief The color that the GUI should use to draw the overlay of the shape
+     **/
+    void getOverlayColor(double* color) const;
+    void setOverlayColor(const double* color);
+    
+    bool getInverted(int time) const;
+    
+    boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
+    boost::shared_ptr<Int_Knob> getFeatherKnob() const;
+    boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
+    boost::shared_ptr<Double_Knob> getOpacityKnob() const;
+    boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    
+    
+private:
+    
+    boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
+};
+
+/**
+ * @class A RotoLayer is a group of RotoItem. This allows the context to sort
+ * and build hierarchies of layers.
+ **/
+struct RotoLayerPrivate;
+class RotoLayer : public RotoItem
+{
+    
+public:
+    
+    RotoLayer(RotoContext* context,const std::string& name,RotoLayer* parent);
+    
+    virtual ~RotoLayer();
+    
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization& obj) OVERRIDE;
+    
+    ///only callable on the main-thread
+    ///No check is done to figure out if the item already exists in this layer
+    ///this is up to the caller responsability
+    void addItem(const boost::shared_ptr<RotoItem>& item);
+    
+    ///only callable on the main-thread
+    void removeItem(const RotoItem* item);
+    
+    ///only callable on the main-thread
+    const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
+    
+    ///MT-safe
+    std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
+    
+private:
+    
+    boost::scoped_ptr<RotoLayerPrivate> _imp;
+};
+
 /**
  * @class This class represents a bezier curve.
  * Note that the bezier also supports feather points.
@@ -168,19 +358,19 @@ public:
  * The curve supports animation, and by default once the first control point is added the curve
  * has at least a minimum of 1 keyframe.
  **/
-class RotoContext;
+
 
 struct BezierPrivate;
-class Bezier : public QObject
+class Bezier : public QObject, public RotoDrawableItem
 {
     
     Q_OBJECT
     
 public:
     
-    Bezier(RotoContext* context);
+    Bezier(RotoContext* context,const std::string& name,RotoLayer* parent);
     
-    ~Bezier();
+    virtual ~Bezier();
     
     
     /**
@@ -323,10 +513,6 @@ public:
      **/
     void removeKeyframe(int time);
     
-    /**
-     * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
-     **/
-    bool isActivated(int time) const;
     
     /**
      * @brief Returns the number of keyframes for this spline.
@@ -414,9 +600,19 @@ public:
     
     static void rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& next,double *dx,double *dy);
     
-    void save(BezierSerialization* obj) const;
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
     
-    void load(const BezierSerialization& obj);
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization& obj) OVERRIDE;
     
     void getKeyframeTimes(std::set<int> *times) const;
     
@@ -432,35 +628,6 @@ public:
      **/
     int getNextKeyframeTime(int time) const;
     
-    /**
-     * @brief The opacity of the curve
-     **/
-    double getOpacity(int time) const;
-    
-    /**
-     * @brief The distance of the feather is the distance from the control point to the feather point plus
-     * the feather distance returned by this function.
-     **/
-    int getFeatherDistance(int time) const;
-    
-    /**
-     * @brief The fall-off rate: 0.5 means half color is faded at half distance.
-     **/
-    double getFeatherFallOff(int time) const;
-    
-    /**
-     * @brief The color that the GUI should use to draw the overlay of the shape
-     **/
-    void getOverlayColor(double* color) const;
-    void setOverlayColor(const double* color);
-    
-    bool getInverted(int time) const;
-    
-    boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
-    boost::shared_ptr<Int_Knob> getFeatherKnob() const;
-    boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
-    boost::shared_ptr<Double_Knob> getOpacityKnob() const;
-    boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
     
 signals:
     
@@ -515,15 +682,24 @@ public:
     
     int getTimelineCurrentTime() const;
     
-    boost::shared_ptr<Bezier> makeBezier(double x,double y);
+    /**
+     * @brief Add a new layer to the currently selected layer.
+     **/
+    boost::shared_ptr<RotoLayer> addLayer();
+    
+    /**
+     * @brief Make a new bezier curve and append it into the currently selected layer. 
+     * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
+     **/
+    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string& baseName);
     
     void removeBezier(const Bezier* c);
     
     /**
-     * @brief Returns a const ref to the bezier curves list. This can only be called from
+     * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
      **/
-    const std::list< boost::shared_ptr<Bezier> >& getBeziers() const;
+    const std::list< boost::shared_ptr<RotoLayer> >& getLayers() const;
     
     /**
      * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
@@ -542,24 +718,21 @@ public:
      * @brief Returns the region of definition of the shape unioned to the region of definition of the node
      * or the project format.
      **/
-    void getMaskRegionOfDefinition(int time,unsigned int mipmapLevel,int view,RectI* rod) const;
-    
-    /**
-     * @brief Returns the region of definition of all the shapes in the context.
-     **/
-    void getRealRegionOfDefinition(int time,unsigned int mipmapLevel,int view,RectI* rod) const;
+    void getMaskRegionOfDefinition(int time,int view,RectI* rod) const;
     
     /**
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
      **/
-    boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,U64 nodeHash,SequenceTime time,
+    boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                                 int view,unsigned int mipmapLevel,bool byPassCache);
     
     /**
      * @brief To be called when a change was made to trigger a new render.
      **/
     void evaluateChange();
+    
+    U64 getAge();
     
     void save(RotoContextSerialization* obj) const;
     
@@ -570,26 +743,41 @@ public:
      * actually reflect the values of this bezier.
      **/
     void linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b);
-    
     void unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b);
     
+    ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
     
+    ///only callable on main-thread
     void removeKeyframeOnSelectedCurves();
     
+    ///only callable on main-thread
     void goToPreviousKeyframe();
     
+    ///only callable on main-thread
     void goToNextKeyframe();
     
     /**
      * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
      **/
-    const std::list< boost::shared_ptr<Bezier> >& getSelectedCurves() const;
+    std::list< boost::shared_ptr<Bezier> > getSelectedCurves() const;
+    
+    /**
+     * @brief Returns a list of all the curves in the order in which they should be rendered.
+     * Non-active curves will not be inserted into the list.
+     * MT-safe
+     **/
+    std::list< boost::shared_ptr<Bezier> > getCurvesByRenderOrder() const;
+    
+    boost::shared_ptr<RotoLayer> getLayerByName(const std::string& n) const;
+    
+    boost::shared_ptr<RotoItem> getItemByName(const std::string& n) const;
     
 signals:
     
     void selectionChanged();
     
+    void restorationComplete();
     
 public slots:
     
@@ -600,7 +788,13 @@ public slots:
     void onRippleEditChanged(bool enabled);
     
 private:
-        
+    
+    /**
+     * @brief First searches through the selected layer which one is the deepest in the hierarchy.
+     * If nothing is found, it searches through the selected items and find the deepest selected item's layer
+     **/
+    RotoLayer* findDeepestSelectedLayer() const;
+    
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 

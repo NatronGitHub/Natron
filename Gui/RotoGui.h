@@ -131,6 +131,8 @@ public slots:
     
     void onCurrentFrameChanged(SequenceTime,int);
     
+    void restoreSelectionFromContext();
+    
 private:
     
     void onActionTriggeredInternal(QAction* act);

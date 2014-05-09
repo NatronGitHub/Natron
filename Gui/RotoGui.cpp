@@ -291,7 +291,10 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     _imp->bezierEditionTool->setText("Bezier");
     QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier", DRAW_BEZIER);
-    createToolAction(_imp->bezierEditionTool, QIcon(), "B-Spline", DRAW_B_SPLINE);
+    
+    ////B-splines are not implemented yet
+    //createToolAction(_imp->bezierEditionTool, QIcon(), "B-Spline", DRAW_B_SPLINE);
+    
     createToolAction(_imp->bezierEditionTool, QIcon(), "Ellipse", DRAW_ELLIPSE);
     createToolAction(_imp->bezierEditionTool, QIcon(), "Rectangle", DRAW_RECTANGLE);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
@@ -302,6 +305,8 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
 
     QObject::connect(_imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onCurrentFrameChanged(SequenceTime,int)));
+    
+    restoreSelectionFromContext();
 }
 
 RotoGui::~RotoGui()
@@ -472,7 +477,7 @@ void RotoGui::RotoGuiPrivate::drawSelectedCp(int time,const boost::shared_ptr<Be
 
 void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
 {
-    const std::list< boost::shared_ptr<Bezier> >& beziers = _imp->context->getBeziers();
+    std::list< boost::shared_ptr<Bezier> > beziers = _imp->context->getCurvesByRenderOrder();
     int time = _imp->context->getTimelineCurrentTime();
     
     std::pair<double,double> pixelScale;
@@ -816,18 +821,14 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
         ///this function can only be called if the current selected tool is one of the 3 aforementioned
         assert(false);
     }
-
-    int time = context->getTimelineCurrentTime();
     
-    const std::list<boost::shared_ptr<Bezier> >& curves = context->getBeziers();
+    std::list<boost::shared_ptr<Bezier> > curves = context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
-        if ((*it)->isActivated(time)) {
-            SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
-            selectedCps.insert(selectedCps.end(), points.begin(), points.end());
-            if (!points.empty()) {
-                selectedBeziers.push_back(*it);
-                context->linkBezierToContextKnobs(*it);
-            }
+        SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
+        selectedCps.insert(selectedCps.end(), points.begin(), points.end());
+        if (!points.empty()) {
+            selectedBeziers.push_back(*it);
+            context->linkBezierToContextKnobs(*it);
         }
     }
     
@@ -1219,7 +1220,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             _imp->clearSelection();
             if (!_imp->builtBezier) {
                 
-                boost::shared_ptr<Bezier> newCurve = _imp->context->makeBezier(pos.x(), pos.y());
+                boost::shared_ptr<Bezier> newCurve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoBezierBaseName);
                 _imp->handleBezierSelection(newCurve);
                 boost::shared_ptr<BezierCP> cp = newCurve->getControlPointAtIndex(0);
                 boost::shared_ptr<BezierCP> fp = newCurve->getFeatherPointAtIndex(0);
@@ -1279,7 +1280,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         case DRAW_ELLIPSE:
         {
             _imp->clearSelection();
-            _imp->builtBezier = _imp->context->makeBezier(pos.x(), pos.y());
+            _imp->builtBezier = _imp->context->makeBezier(pos.x(), pos.y(),kRotoEllipseBaseName);
             _imp->builtBezier->getControlPointAtIndex(0);
             _imp->builtBezier->addControlPoint(pos.x(), pos.y());
             _imp->builtBezier->addControlPoint(pos.x(), pos.y());
@@ -1298,7 +1299,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         case DRAW_RECTANGLE:
         {
             _imp->clearSelection();
-            boost::shared_ptr<Bezier> curve = _imp->context->makeBezier(pos.x(), pos.y());
+            boost::shared_ptr<Bezier> curve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoRectangleBaseName);
             curve->addControlPoint(pos.x(), pos.y());
             curve->addControlPoint(pos.x(), pos.y());
             curve->addControlPoint(pos.x(), pos.y());
@@ -1637,7 +1638,7 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
     } else if (e->key() == Qt::Key_A && e->modifiers().testFlag(Qt::ControlModifier)) {
         ///if no bezier are selected, select all beziers
         if (_imp->selectedBeziers.empty()) {
-            const std::list<boost::shared_ptr<Bezier> >& bez = _imp->context->getBeziers();
+            std::list<boost::shared_ptr<Bezier> > bez = _imp->context->getCurvesByRenderOrder();
             for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = bez.begin(); it!=bez.end(); ++it) {
                 _imp->context->linkBezierToContextKnobs(*it);
                 _imp->selectedBeziers.push_back(*it);
@@ -1923,4 +1924,9 @@ void RotoGui::onRemoveKeyFrameClicked()
 void RotoGui::onCurrentFrameChanged(SequenceTime /*time*/,int)
 {
     _imp->computeSelectedCpsBBOX();
+}
+
+void RotoGui::restoreSelectionFromContext()
+{
+    _imp->selectedBeziers = _imp->context->getSelectedCurves();
 }

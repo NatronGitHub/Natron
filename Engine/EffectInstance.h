@@ -288,7 +288,8 @@ public:
                    const boost::shared_ptr<Image>& downscaledImage,
                    bool isSequentialRender,
                    bool isRenderMadeInResponseToUserInteraction,
-                   bool byPassCache );
+                   bool byPassCache,
+                   U64 nodeHash);
 
 
     /**
@@ -687,7 +688,8 @@ private:
                            const boost::shared_ptr<Image>& downscaledImage,
                            bool isSequentialRender,
                            bool isRenderMadeInResponseToUserInteraction,
-                           bool byPassCache);
+                           bool byPassCache,
+                           U64 nodeHash);
     
     /**
      * @brief Must be implemented to evaluate a value change

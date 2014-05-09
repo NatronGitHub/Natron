@@ -12,7 +12,7 @@
 #include "RotoContext.h"
 
 #include <algorithm>
-
+#include <sstream>
 
 #include <boost/bind.hpp>
 
@@ -466,6 +466,342 @@ bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
     return false;
 }
 
+////////////////////////////////////RotoItem////////////////////////////////////
+
+RotoItem::RotoItem(RotoContext* context,const std::string& name,RotoLayer* parent)
+: itemMutex()
+, _imp(new RotoItemPrivate(context,name,parent))
+{
+    
+}
+
+RotoItem::~RotoItem()
+{
+    
+}
+
+void RotoItem::setParentLayer(RotoLayer* layer)
+{
+    ///called on the main-thread only
+    assert(QThread::currentThread() == qApp->thread());
+    
+    QMutexLocker l(&itemMutex);
+    _imp->parentLayer = layer;
+}
+
+RotoLayer* RotoItem::getParentLayer() const
+{
+    QMutexLocker l(&itemMutex);
+    return _imp->parentLayer;
+}
+
+void RotoItem::setGloballyActivated(bool a)
+{
+    QMutexLocker l(&itemMutex);
+    _imp->globallyActivated = a;
+}
+
+bool RotoItem::isGloballyActivated() const
+{
+    QMutexLocker l(&itemMutex);
+    return _imp->globallyActivated;
+}
+
+int RotoItem::getHierarchyLevel() const
+{
+    int ret = 0;
+    
+    RotoLayer* parent;
+    
+    {
+        QMutexLocker l(&itemMutex);
+        parent = _imp->parentLayer;
+    }
+    while (parent) {
+        parent = parent->getParentLayer();
+        ++ret;
+    }
+    return ret;
+}
+
+RotoContext* RotoItem::getContext() const
+{
+    return _imp->context;
+}
+
+void RotoItem::setName(const std::string& name)
+{
+    ///called on the main-thread only
+    assert(QThread::currentThread() == qApp->thread());
+    
+    QMutexLocker l(&itemMutex);
+    _imp->name = name;
+}
+
+std::string RotoItem::getName_mt_safe() const
+{
+    QMutexLocker l(&itemMutex);
+    return _imp->name;
+}
+
+void RotoItem::save(RotoItemSerialization *obj) const
+{
+    
+    RotoLayer* parent = 0;
+    {
+        QMutexLocker l(&itemMutex);
+        obj->activated = _imp->globallyActivated;
+        obj->name = _imp->name;
+        parent = _imp->parentLayer;
+    }
+    if (parent) {
+        obj->parentLayerName = parent->getName_mt_safe();
+    }
+}
+
+void RotoItem::load(const RotoItemSerialization &obj)
+{
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->globallyActivated = obj.activated;
+        _imp->name = obj.name;
+    }
+    boost::shared_ptr<RotoLayer> parent = getContext()->getLayerByName(obj.parentLayerName);
+    
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->parentLayer = parent.get();
+    }
+    
+}
+
+////////////////////////////////////RotoDrawableItem////////////////////////////////////
+
+RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,RotoLayer* parent)
+: RotoItem(context,name,parent)
+, _imp(new RotoDrawableItemPrivate())
+{
+    
+}
+
+RotoDrawableItem::~RotoDrawableItem()
+{
+    
+}
+
+static void serializeRotoKnob(const boost::shared_ptr<KnobI>& knob,KnobSerialization* serialization)
+{
+    std::pair<int, boost::shared_ptr<KnobI> > master = knob->getMaster(0);
+    bool wasSlaved = false;
+    if (master.second) {
+        wasSlaved = true;
+        knob->unSlave(0);
+    }
+    
+    serialization->initialize(knob);
+    
+    if (wasSlaved) {
+        knob->slaveTo(0, master.second, master.first);
+    }
+}
+
+void RotoDrawableItem::save(RotoItemSerialization *obj) const
+{
+    RotoDrawableItemSerialization* s = dynamic_cast<RotoDrawableItemSerialization*>(obj);
+    assert(s);
+    
+    {
+        QMutexLocker l(&itemMutex);
+        serializeRotoKnob(_imp->activated, &s->_activated);
+        serializeRotoKnob(_imp->feather, &s->_feather);
+        serializeRotoKnob(_imp->opacity, &s->_opacity);
+        serializeRotoKnob(_imp->featherFallOff, &s->_featherFallOff);
+        serializeRotoKnob(_imp->inverted, &s->_inverted);
+        memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
+        
+        
+    }
+    RotoItem::save(obj);
+}
+
+void RotoDrawableItem::load(const RotoItemSerialization &obj)
+{
+    const RotoDrawableItemSerialization& s = dynamic_cast<const RotoDrawableItemSerialization&>(obj);
+    
+    
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->activated->clone(s._activated.getKnob());
+        _imp->opacity->clone(s._opacity.getKnob());
+        _imp->feather->clone(s._feather.getKnob());
+        _imp->featherFallOff->clone(s._featherFallOff.getKnob());
+        _imp->inverted->clone(s._inverted.getKnob());
+        memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
+    }
+    RotoItem::load(obj);
+}
+
+bool RotoDrawableItem::isActivated(int time) const
+{
+    if (!isGloballyActivated()) {
+        return false;
+    } else {
+        return _imp->activated->getValueAtTime(time);
+    }
+}
+
+double RotoDrawableItem::getOpacity(int time) const
+{
+    ///MT-safe thanks to Knob
+    return _imp->opacity->getValueAtTime(time);
+}
+
+
+int RotoDrawableItem::getFeatherDistance(int time) const
+{
+    ///MT-safe thanks to Knob
+    return _imp->feather->getValueAtTime(time);
+}
+
+double RotoDrawableItem::getFeatherFallOff(int time) const
+{
+    ///MT-safe thanks to Knob
+    return _imp->featherFallOff->getValueAtTime(time);
+}
+
+bool RotoDrawableItem::getInverted(int time) const
+{
+    ///MT-safe thanks to Knob
+    return _imp->inverted->getValueAtTime(time);
+}
+
+void RotoDrawableItem::getOverlayColor(double* color) const
+{
+    QMutexLocker l(&itemMutex);
+    memcpy(color, _imp->overlayColor, sizeof(double) * 4);
+}
+
+void RotoDrawableItem::setOverlayColor(const double *color)
+{
+    ///MT-safe: only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&itemMutex);
+    memcpy(_imp->overlayColor, color, sizeof(double) * 4);
+}
+
+boost::shared_ptr<Bool_Knob> RotoDrawableItem::getActivatedKnob() const { return _imp->activated; }
+boost::shared_ptr<Int_Knob> RotoDrawableItem::getFeatherKnob() const { return _imp->feather; }
+boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
+boost::shared_ptr<Double_Knob> RotoDrawableItem::getOpacityKnob() const { return _imp->opacity; }
+boost::shared_ptr<Bool_Knob> RotoDrawableItem::getInvertedKnob() const { return _imp->inverted; }
+
+
+////////////////////////////////////Layer////////////////////////////////////
+
+RotoLayer::RotoLayer(RotoContext* context,const std::string& n,RotoLayer* parent)
+: RotoItem(context,n,parent)
+, _imp(new RotoLayerPrivate())
+{
+    
+}
+
+RotoLayer::~RotoLayer()
+{
+    
+}
+
+void RotoLayer::save(RotoItemSerialization *obj) const
+{
+    RotoLayerSerialization* s = dynamic_cast<RotoLayerSerialization*>(obj);
+    assert(s);
+    RotoItems items;
+    {
+        QMutexLocker l(&itemMutex);
+        items = _imp->items;
+    }
+    
+    for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        Bezier* b = dynamic_cast<Bezier*>(it->get());
+        RotoLayer* layer = dynamic_cast<RotoLayer*>(it->get());
+        boost::shared_ptr<RotoItemSerialization> childSerialization;
+        if (b) {
+            childSerialization.reset(new BezierSerialization);
+            b->save(childSerialization.get());
+        } else
+        {
+            assert(layer);
+            childSerialization.reset(new RotoLayerSerialization);
+            layer->save(childSerialization.get());
+        }
+        assert(childSerialization);
+        s->children.push_back(childSerialization);
+    }
+
+    
+    RotoItem::save(obj);
+}
+
+void RotoLayer::load(const RotoItemSerialization &obj)
+{
+    
+    const RotoLayerSerialization& s = dynamic_cast<const RotoLayerSerialization&>(obj);
+    {
+        for (std::list<boost::shared_ptr<RotoItemSerialization> >::const_iterator it = s.children.begin(); it!=s.children.end(); ++it) {
+            BezierSerialization* b = dynamic_cast<BezierSerialization*>(it->get());
+            RotoLayerSerialization* l = dynamic_cast<RotoLayerSerialization*>(it->get());
+            if (b) {
+                boost::shared_ptr<Bezier> bezier(new Bezier(getContext(),kRotoBezierBaseName,this));
+                bezier->load(*b);
+                
+                QMutexLocker l(&itemMutex);
+                _imp->items.push_back(bezier);
+            } else if (l) {
+                boost::shared_ptr<RotoLayer> layer = getContext()->addLayer();
+                layer->load(*l);
+                
+                QMutexLocker l(&itemMutex);
+                _imp->items.push_back(layer);
+            }
+        }
+        
+    }
+    RotoItem::load(obj);
+}
+
+void RotoLayer::addItem(const boost::shared_ptr<RotoItem>& item)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->items.push_back(item);
+    
+}
+
+void RotoLayer::removeItem(const RotoItem* item)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    for (RotoItems::iterator it = _imp->items.begin(); it!=_imp->items.end();++it)
+    {
+        if (it->get() == item) {
+            _imp->items.erase(it);
+        }
+    }
+}
+
+const RotoItems& RotoLayer::getItems() const
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->items;
+}
+
+
+RotoItems RotoLayer::getItems_mt_safe() const
+{
+    QMutexLocker l(&itemMutex);
+    return _imp->items;
+}
+
 ////////////////////////////////////Bezier////////////////////////////////////
 
 namespace  {
@@ -639,8 +975,9 @@ namespace  {
 
 
 
-Bezier::Bezier(RotoContext* ctx)
-: _imp(new BezierPrivate(ctx))
+Bezier::Bezier(RotoContext* ctx,const std::string& name,RotoLayer* parent)
+: RotoDrawableItem(ctx,name,parent)
+, _imp(new BezierPrivate())
 {
     
 }
@@ -657,15 +994,15 @@ boost::shared_ptr<BezierCP> Bezier::addControlPoint(double x,double y)
     assert(QThread::currentThread() == qApp->thread());
     boost::shared_ptr<BezierCP> p;
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         assert(!_imp->finished);
         
-        bool autoKeying = _imp->context->isAutoKeyingEnabled();
+        bool autoKeying = getContext()->isAutoKeyingEnabled();
         int keyframeTime;
         ///if the curve is empty make a new keyframe at the current timeline's time
         ///otherwise re-use the time at which the keyframe was set on the first control point
         if (_imp->points.empty()) {
-            keyframeTime = _imp->context->getTimelineCurrentTime();
+            keyframeTime = getContext()->getTimelineCurrentTime();
         } else {
             ///there must be at least 1 keyframe!
             keyframeTime = _imp->points.front()->getKeyframeTime(0);
@@ -703,7 +1040,7 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
         
     if (index >= (int)_imp->points.size()) {
         throw std::invalid_argument("Spline control point index out of range.");
@@ -818,8 +1155,8 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     _imp->featherPoints.insert(itF, fp);
     
     ///If auto-keying is enabled, set a new keyframe
-    int currentTime = _imp->context->getTimelineCurrentTime();
-    if (!_imp->hasKeyframeAtTime(currentTime) && _imp->context->isAutoKeyingEnabled()) {
+    int currentTime = getContext()->getTimelineCurrentTime();
+    if (!_imp->hasKeyframeAtTime(currentTime) && getContext()->isAutoKeyingEnabled()) {
         l.unlock();
         setKeyframe(currentTime);
     }
@@ -828,7 +1165,7 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
 
 int Bezier::getControlPointsCount() const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     return (int)_imp->points.size();
 }
 
@@ -838,9 +1175,9 @@ int Bezier::isPointOnCurve(double x,double y,double acceptance,double *t,bool* f
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    int time = _imp->context->getTimelineCurrentTime();
+    int time = getContext()->getTimelineCurrentTime();
     
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
     ///special case: if the curve has only 1 control point, just check if the point
     ///is nearby that sole control point
@@ -903,13 +1240,13 @@ void Bezier::setCurveFinished(bool finished)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     _imp->finished = finished;
 }
 
 bool Bezier::isCurveFinished() const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     return _imp->finished;
 }
 
@@ -918,7 +1255,7 @@ void Bezier::removeControlPointByIndex(int index)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     BezierCPs::iterator it = _imp->atIndex(index);
     _imp->points.erase(it);
     
@@ -933,9 +1270,9 @@ void Bezier::movePointByIndex(int index,int time,double dx,double dy)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         BezierCPs::iterator it = _imp->atIndex(index);
         double x,y,leftX,leftY,rightX,rightY;
         bool isOnKeyframe = (*it)->getPositionAtTime(time, &x, &y);
@@ -950,7 +1287,7 @@ void Bezier::movePointByIndex(int index,int time,double dx,double dy)
         (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF);
         (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF);
        
-        bool fLinkEnabled = _imp->context->isFeatherLinkEnabled();
+        bool fLinkEnabled = getContext()->isFeatherLinkEnabled();
         bool moveFeather = (fLinkEnabled || (!fLinkEnabled && (*it)->equalsAtTime(time, **itF)));
     
         
@@ -969,7 +1306,7 @@ void Bezier::movePointByIndex(int index,int time,double dx,double dy)
             }
         }
         
-        if (_imp->context->isRippleEditEnabled()) {
+        if (getContext()->isRippleEditEnabled()) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -996,10 +1333,10 @@ void Bezier::moveFeatherByIndex(int index,int time,double dx,double dy)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
     
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         
         BezierCPs::iterator itF = _imp->featherPoints.begin();
         std::advance(itF, index);
@@ -1018,7 +1355,7 @@ void Bezier::moveFeatherByIndex(int index,int time,double dx,double dy)
             (*itF)->setRightBezierPointAtTime(time, rightXF + dx, rightYF + dy);
         }
         
-        if (_imp->context->isRippleEditEnabled()) {
+        if (getContext()->isRippleEditEnabled()) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1038,10 +1375,10 @@ void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
-    bool featherLink = _imp->context->isFeatherLinkEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool featherLink = getContext()->isFeatherLinkEnabled();
     {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
         BezierCPs::iterator cp = _imp->atIndex(index);
         assert(cp != _imp->points.end());
@@ -1070,7 +1407,7 @@ void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
             }
         }
         
-        if (_imp->context->isRippleEditEnabled()) {
+        if (getContext()->isRippleEditEnabled()) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1091,10 +1428,10 @@ void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
-    bool featherLink = _imp->context->isFeatherLinkEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool featherLink = getContext()->isFeatherLinkEnabled();
     {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
     
         BezierCPs::iterator cp = _imp->atIndex(index);
@@ -1124,7 +1461,7 @@ void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
             }
         }
         
-        if (_imp->context->isRippleEditEnabled()) {
+        if (getContext()->isRippleEditEnabled()) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1146,9 +1483,9 @@ void Bezier::setLeftBezierPoint(int index,int time,double x,double y)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
         BezierCPs::iterator cp = _imp->atIndex(index);
         assert(cp != _imp->points.end());
@@ -1167,7 +1504,7 @@ void Bezier::setLeftBezierPoint(int index,int time,double x,double y)
             (*fp)->setLeftBezierStaticPosition(x, y);
         }
         
-        if (_imp->context->isRippleEditEnabled()) {
+        if (getContext()->isRippleEditEnabled()) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1186,9 +1523,9 @@ void Bezier::setRightBezierPoint(int index,int time,double x,double y)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         
         BezierCPs::iterator cp = _imp->atIndex(index);
         assert(cp != _imp->points.end());
@@ -1207,7 +1544,7 @@ void Bezier::setRightBezierPoint(int index,int time,double x,double y)
             (*fp)->setRightBezierStaticPosition(x, y);
         }
         
-        if (_imp->context->isRippleEditEnabled()) {
+        if (getContext()->isRippleEditEnabled()) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1227,11 +1564,11 @@ void Bezier::setPointAtIndex(bool feather,int index,int time,double x,double y,d
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
-    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         
         bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
         
@@ -1269,11 +1606,11 @@ void Bezier::setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
-    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         
         bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
         
@@ -1302,7 +1639,7 @@ void Bezier::removeFeatherAtIndex(int index)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
     if (index >= (int)_imp->points.size()) {
         throw std::invalid_argument("Bezier::removeFeatherAtIndex: Index out of range.");
@@ -1323,11 +1660,11 @@ void Bezier::smoothPointAtIndex(int index,int time)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
-    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         if (index >= (int)_imp->points.size()) {
             throw std::invalid_argument("Bezier::smoothPointAtIndex: Index out of range.");
         }
@@ -1351,11 +1688,11 @@ void Bezier::cuspPointAtIndex(int index,int time)
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
-    bool autoKeying = _imp->context->isAutoKeyingEnabled();
-    bool rippleEdit = _imp->context->isRippleEditEnabled();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         if (index >= (int)_imp->points.size()) {
             throw std::invalid_argument("Bezier::cuspPointAtIndex: Index out of range.");
         }
@@ -1380,7 +1717,7 @@ void Bezier::setKeyframe(int time)
     assert(QThread::currentThread() == qApp->thread());
 
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         
         if (_imp->hasKeyframeAtTime(time)) {
             l.unlock();
@@ -1429,7 +1766,7 @@ void Bezier::removeKeyframe(int time)
     assert(QThread::currentThread() == qApp->thread());
     
     {
-        QMutexLocker l(&_imp->splineMutex);
+        QMutexLocker l(&itemMutex);
         
         if (!_imp->hasKeyframeAtTime(time)) {
             return;
@@ -1447,15 +1784,9 @@ void Bezier::removeKeyframe(int time)
 }
 
 
-bool Bezier::isActivated(int time) const
-{
-    QMutexLocker l(&_imp->splineMutex);
-    return _imp->activated->getValueAtTime(time);
-}
-
 int Bezier::getKeyframesCount() const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     if (_imp->points.empty()) {
         return 0;
     } else {
@@ -1468,7 +1799,7 @@ int Bezier::getKeyframesCount() const
 void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
                                         int nbPointsPerSegment,std::list<std::pair<double,double> >* points,RectD* bbox) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
  
     for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
         BezierCPs::const_iterator next = it;
@@ -1487,7 +1818,7 @@ void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
 void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
                                                      RectD* bbox) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     BezierCPs::const_iterator itCp = _imp->points.begin();
     for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++itCp) {
         BezierCPs::const_iterator next = it;
@@ -1557,9 +1888,9 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance,int* index) con
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    int time = _imp->context->getTimelineCurrentTime();
+    int time = getContext()->getTimelineCurrentTime();
     
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     boost::shared_ptr<BezierCP> cp,fp;
     int i = 0;
     for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++i) {
@@ -1603,7 +1934,7 @@ int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
     int i = 0;
     for (BezierCPs::const_iterator it = _imp->points.begin();it!=_imp->points.end();++it,++i)
@@ -1619,7 +1950,7 @@ int Bezier::getFeatherPointIndex(const boost::shared_ptr<BezierCP>& fp) const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     
     int i = 0;
     for (BezierCPs::const_iterator it = _imp->featherPoints.begin();it!=_imp->featherPoints.end();++it,++i)
@@ -1634,7 +1965,7 @@ int Bezier::getFeatherPointIndex(const boost::shared_ptr<BezierCP>& fp) const
 
 boost::shared_ptr<BezierCP> Bezier::getControlPointAtIndex(int index) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     if (index >= (int)_imp->points.size()) {
         return boost::shared_ptr<BezierCP>();
     }
@@ -1646,7 +1977,7 @@ boost::shared_ptr<BezierCP> Bezier::getControlPointAtIndex(int index) const
 
 boost::shared_ptr<BezierCP> Bezier::getFeatherPointAtIndex(int index) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     if (index >= (int)_imp->featherPoints.size()) {
         return boost::shared_ptr<BezierCP>();
     }
@@ -1664,9 +1995,9 @@ Bezier::controlPointsWithinRect(double l,double r,double b,double t,double accep
     
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker locker(&_imp->splineMutex);
+    QMutexLocker locker(&itemMutex);
     
-    int time = _imp->context->getTimelineCurrentTime();
+    int time = getContext()->getTimelineCurrentTime();
     
     int i = 0;
     if (mode == 0 || mode == 1) {
@@ -1813,69 +2144,67 @@ void Bezier::rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& n
 
 }
 
-void Bezier::save(BezierSerialization* obj) const
+void Bezier::save(RotoItemSerialization* obj) const
 {
-    QMutexLocker l(&_imp->splineMutex);
-    
-    obj->_closed = _imp->finished;
-    obj->_activated.initialize(_imp->activated);
-    obj->_opacity.initialize(_imp->opacity);
-    obj->_feather.initialize(_imp->feather);
-    obj->_featherFallOff.initialize(_imp->featherFallOff);
-    obj->_inverted.initialize(_imp->inverted);
-    memcpy(obj->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
-    assert(_imp->featherPoints.size() == _imp->points.size());
-    
-    
-    BezierCPs::const_iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
-        BezierCP c,f;
-        c.clone(**it);
-        f.clone(**fp);
-        obj->_controlPoints.push_back(c);
-        obj->_featherPoints.push_back(f);
+    BezierSerialization* s = dynamic_cast<BezierSerialization*>(obj);
+    {
+        QMutexLocker l(&itemMutex);
+        
+        s->_closed = _imp->finished;
+        
+        assert(_imp->featherPoints.size() == _imp->points.size());
+        
+        
+        BezierCPs::const_iterator fp = _imp->featherPoints.begin();
+        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+            BezierCP c,f;
+            c.clone(**it);
+            f.clone(**fp);
+            s->_controlPoints.push_back(c);
+            s->_featherPoints.push_back(f);
+        }
     }
+    RotoDrawableItem::save(obj);
 }
 
-void Bezier::load(const BezierSerialization& obj)
+void Bezier::load(const RotoItemSerialization& obj)
 {
-    QMutexLocker l(&_imp->splineMutex);
-    _imp->finished = obj._closed;
-    _imp->activated->clone(obj._activated.getKnob());
-    _imp->opacity->clone(obj._opacity.getKnob());
-    _imp->feather->clone(obj._feather.getKnob());
-    _imp->featherFallOff->clone(obj._featherFallOff.getKnob());
-    _imp->inverted->clone(obj._inverted.getKnob());
-    memcpy(_imp->overlayColor, obj._overlayColor, sizeof(double) * 4);
-    
-    if (obj._controlPoints.size() != obj._featherPoints.size()) {
-        ///do not load broken serialization objects
-        return;
-    }
-    
-    std::list<BezierCP>::const_iterator itF = obj._featherPoints.begin();
-    for (std::list<BezierCP>::const_iterator it = obj._controlPoints.begin();it!=obj._controlPoints.end();++it,++itF)
+    const BezierSerialization& s = dynamic_cast<const BezierSerialization&>(obj);
     {
-        boost::shared_ptr<BezierCP> cp(new BezierCP(this));
-        cp->clone(*it);
-        _imp->points.push_back(cp);
+        QMutexLocker l(&itemMutex);
+        _imp->finished = s._closed;
         
-        boost::shared_ptr<BezierCP> fp(new FeatherPoint(this));
-        fp->clone(*itF);
-        _imp->featherPoints.push_back(fp);
+        
+        if (s._controlPoints.size() != s._featherPoints.size()) {
+            ///do not load broken serialization objects
+            return;
+        }
+        
+        std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
+        for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin();it!=s._controlPoints.end();++it,++itF)
+        {
+            boost::shared_ptr<BezierCP> cp(new BezierCP(this));
+            cp->clone(*it);
+            _imp->points.push_back(cp);
+            
+            boost::shared_ptr<BezierCP> fp(new FeatherPoint(this));
+            fp->clone(*itF);
+            _imp->featherPoints.push_back(fp);
+        }
     }
+    RotoDrawableItem::load(obj);
 }
 
 void Bezier::getKeyframeTimes(std::set<int> *times) const
 {
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     _imp->getKeyframeTimes(times);
 }
 
 int Bezier::getPreviousKeyframeTime(int time) const
 {
     std::set<int> times;
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     _imp->getKeyframeTimes(&times);
     for (std::set<int>::reverse_iterator it = times.rbegin(); it!=times.rend(); ++it) {
         if (*it < time) {
@@ -1888,7 +2217,7 @@ int Bezier::getPreviousKeyframeTime(int time) const
 int Bezier::getNextKeyframeTime(int time) const
 {
     std::set<int> times;
-    QMutexLocker l(&_imp->splineMutex);
+    QMutexLocker l(&itemMutex);
     _imp->getKeyframeTimes(&times);
     for (std::set<int>::iterator it = times.begin(); it!=times.end(); ++it) {
         if (*it > time) {
@@ -1898,51 +2227,6 @@ int Bezier::getNextKeyframeTime(int time) const
     return INT_MAX;
 }
 
-double Bezier::getOpacity(int time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->opacity->getValueAtTime(time);
-}
-
-
-int Bezier::getFeatherDistance(int time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->feather->getValueAtTime(time);
-}
-
-double Bezier::getFeatherFallOff(int time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->featherFallOff->getValueAtTime(time);
-}
-
-bool Bezier::getInverted(int time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->inverted->getValueAtTime(time);
-}
-
-void Bezier::getOverlayColor(double* color) const
-{
-    QMutexLocker l(&_imp->splineMutex);
-    memcpy(color, _imp->overlayColor, sizeof(double) * 4);
-}
-
-void Bezier::setOverlayColor(const double *color)
-{
-    ///MT-safe: only called on the main-thread
-    assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker l(&_imp->splineMutex);
-    memcpy(_imp->overlayColor, color, sizeof(double) * 4);
-}
-
-boost::shared_ptr<Bool_Knob> Bezier::getActivatedKnob() const { return _imp->activated; }
-boost::shared_ptr<Int_Knob> Bezier::getFeatherKnob() const { return _imp->feather; }
-boost::shared_ptr<Double_Knob> Bezier::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
-boost::shared_ptr<Double_Knob> Bezier::getOpacityKnob() const { return _imp->opacity; }
-boost::shared_ptr<Bool_Knob> Bezier::getInvertedKnob() const { return _imp->inverted; }
-
 
 ////////////////////////////////////RotoContext////////////////////////////////////
 
@@ -1950,11 +2234,50 @@ boost::shared_ptr<Bool_Knob> Bezier::getInvertedKnob() const { return _imp->inve
 RotoContext::RotoContext(Natron::Node* node)
 : _imp(new RotoContextPrivate(node))
 {
+    ////Add the base layer
+    addLayer();
 }
 
 RotoContext::~RotoContext()
 {
     
+}
+
+boost::shared_ptr<RotoLayer> RotoContext::addLayer()
+{
+    int no;
+    
+    QMutexLocker l(&_imp->rotoContextMutex);
+    std::map<std::string, int>::iterator it = _imp->itemCounters.find(kRotoLayerBaseName);
+    if (it != _imp->itemCounters.end()) {
+        ++it->second;
+        no = it->second;
+    } else {
+        _imp->itemCounters.insert(std::make_pair(kRotoLayerBaseName, 1));
+        no = 1;
+    }
+    std::stringstream ss;
+    ss << kRotoLayerBaseName << ' ' << no;
+    
+    RotoLayer* deepestLayer = findDeepestSelectedLayer();
+    
+    RotoLayer* parentLayer = 0;
+    if (!deepestLayer) {
+        ///find out if there's a base layer, if so add to the base layer,
+        ///otherwise create the base layer
+        if (!_imp->layers.empty()) {
+            parentLayer = _imp->layers.front().get();
+        }
+    } else {
+        parentLayer = deepestLayer;
+    }
+    
+    boost::shared_ptr<RotoLayer> item(new RotoLayer(this,ss.str(),parentLayer));
+    if (parentLayer) {
+        parentLayer->addItem(item);
+    }
+    _imp->layers.push_back(item);
+    return item;
 }
 
 
@@ -2018,13 +2341,46 @@ int RotoContext::getTimelineCurrentTime() const
     return _imp->node->getApp()->getTimeLine()->currentFrame();
 }
 
-boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y)
+boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::string& baseName)
 {
-    boost::shared_ptr<Bezier> curve(new Bezier(this));
+    RotoLayer* parentLayer = 0;
+    std::stringstream ss;
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        int no;
+        std::map<std::string, int>::iterator it = _imp->itemCounters.find(baseName);
+        if (it != _imp->itemCounters.end()) {
+            ++it->second;
+            no = it->second;
+        } else {
+            _imp->itemCounters.insert(std::make_pair(baseName, 1));
+            no = 1;
+        }
+        
+        ss << baseName << ' ' << no;
+        
+        RotoLayer* deepestLayer = findDeepestSelectedLayer();
+        
+        
+        if (!deepestLayer) {
+            ///if there is no base layer, create one
+            if (_imp->layers.empty()) {
+                addLayer();
+            }
+            parentLayer = _imp->layers.front().get();
+            
+        } else {
+            parentLayer = deepestLayer;
+        }
+        
+    }
+    assert(parentLayer);
+    boost::shared_ptr<Bezier> curve(new Bezier(this,ss.str(),parentLayer));
     curve->addControlPoint(x, y);
+    if (parentLayer) {
+        parentLayer->addItem(curve);
+    }
     
-    QMutexLocker l(&_imp->rotoContextMutex);
-    _imp->splines.push_back(curve);
     return curve;
 }
 
@@ -2034,20 +2390,16 @@ void RotoContext::removeBezier(const Bezier* c)
     assert(QThread::currentThread() == qApp->thread());
     
     QMutexLocker l(&_imp->rotoContextMutex);
-    for (std::list< boost::shared_ptr<Bezier> >::iterator found = _imp->splines.begin(); found != _imp->splines.end();++found) {
-        if (found->get() == c) {
-            _imp->splines.erase(found);
-            return;
-        }
-    }
-    assert(false);
+    RotoLayer* layer = c->getParentLayer();
+    assert(layer);
+    layer->removeItem(c);
 }
 
-const std::list< boost::shared_ptr<Bezier> >& RotoContext::getBeziers() const
+const std::list< boost::shared_ptr<RotoLayer> >& RotoContext::getLayers() const
 {
     ///MT-safe: only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->splines;
+    return _imp->layers;
 }
 
 boost::shared_ptr<Bezier>  RotoContext::isNearbyBezier(double x,double y,double acceptance,int* index,double* t,bool* feather) const
@@ -2056,14 +2408,21 @@ boost::shared_ptr<Bezier>  RotoContext::isNearbyBezier(double x,double y,double 
     assert(QThread::currentThread() == qApp->thread());
 
     QMutexLocker l(&_imp->rotoContextMutex);
-    for (std::list< boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin();it!=_imp->splines.end();++it) {
-        double param;
-        int i = (*it)->isPointOnCurve(x, y, acceptance, &param,feather);
-        if (i != -1) {
-            *index = i;
-            *t = param;
-            return *it;
+    for (std::list< boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin();it!=_imp->layers.end();++it) {
+        const RotoItems& items = (*it)->getItems();
+        for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+            boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(*it2);
+            if (b) {
+                double param;
+                int i = b->isPointOnCurve(x, y, acceptance, &param,feather);
+                if (i != -1) {
+                    *index = i;
+                    *t = param;
+                    return b;
+                }
+            }
         }
+        
     }
     
     return boost::shared_ptr<Bezier>();
@@ -2094,40 +2453,24 @@ void RotoContext::onRippleEditChanged(bool enabled)
 }
 
 
-void RotoContext::getMaskRegionOfDefinition(int time,unsigned int mipmapLevel,int view,RectI* rod) const
-{
-   
-    getRealRegionOfDefinition(time, mipmapLevel, view, rod);
-    
-    bool isProjectFormat;
-    RectI nodeRoD;
-    RenderScale scale;
-    scale.x = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
-    scale.y = scale.x;
-    Natron::Status stat = _imp->node->getLiveInstance()->getRegionOfDefinition_public(time, scale, view, &nodeRoD, &isProjectFormat);
-    if (stat == Natron::StatFailed) {
-        ///use the project format
-        Format f;
-        _imp->node->getLiveInstance()->getRenderFormat(&f);
-        rod->merge(dynamic_cast<const RectI&>(f));
-    } else {
-        rod->merge(nodeRoD);
-    }
-}
-
-void RotoContext::getRealRegionOfDefinition(int time,unsigned int /*mipmapLevel*/,int /*view*/,RectI* rod) const
+void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) const
 {
     QMutexLocker l(&_imp->rotoContextMutex);
     
-    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin(); it!=_imp->splines.end(); ++it) {
-        if ((*it)->isActivated(time) && (*it)->isCurveFinished()) {
-            RectD splineRoD = (*it)->getBoundingBox(time);
-            RectI splineRoDI;
-            splineRoDI.x1 = std::floor(splineRoD.x1);
-            splineRoDI.y1 = std::floor(splineRoD.y1);
-            splineRoDI.x2 = std::ceil(splineRoD.x2);
-            splineRoDI.y2 = std::ceil(splineRoD.y2);
-            rod->merge(splineRoDI);
+    for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
+        RotoItems items = (*it)->getItems_mt_safe();
+        for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+            Bezier* b = dynamic_cast<Bezier*>(it2->get());
+            if (b && b->isActivated(time) && b->isCurveFinished()) {
+                RectD splineRoD = b->getBoundingBox(time);
+                RectI splineRoDI;
+                splineRoDI.x1 = std::floor(splineRoD.x1);
+                splineRoDI.y1 = std::floor(splineRoD.y1);
+                splineRoDI.x2 = std::ceil(splineRoD.x2);
+                splineRoDI.y2 = std::ceil(splineRoD.y2);
+                rod->merge(splineRoDI);
+                
+            }
         }
     }
 }
@@ -2139,150 +2482,281 @@ void RotoContext::save(RotoContextSerialization* obj) const
     obj->_featherLink = _imp->featherLink;
     obj->_rippleEdit = _imp->rippleEdit;
     
+    ///There must always be the base layer
+    assert(!_imp->layers.empty());
+    
+    ///Serializing this layer will recursively serialize everything
+    _imp->layers.front()->save(dynamic_cast<RotoItemSerialization*>(&obj->_baseLayer));
+    
     ///the age of the context is not serialized as the images are wiped from the cache anyway
-    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = _imp->splines.begin(); it!= _imp->splines.end(); ++it) {
-        BezierSerialization b;
-        (*it)->save(&b);
-        obj->_beziers.push_back(b);
+
+    ///Serialize the selection
+    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+        obj->_selectedItems.push_back((*it)->getName_mt_safe());
+    }
+}
+
+static void linkItemsKnobsRecursively(RotoContext* ctx,const boost::shared_ptr<RotoLayer>& layer)
+{
+    const RotoItems& items = layer->getItems();
+    for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        
+        if (isBezier) {
+            ctx->linkBezierToContextKnobs(isBezier);
+        } else if (isLayer) {
+            linkItemsKnobsRecursively(ctx, isLayer);
+        }
     }
 }
 
 void RotoContext::load(const RotoContextSerialization& obj)
 {
-    QMutexLocker l(&_imp->rotoContextMutex);
+    
+    assert(QThread::currentThread() == qApp->thread());
+    ///no need to lock here, when this is called the main-thread is the only active thread
+    
     _imp->autoKeying = obj._autoKeying;
     _imp->featherLink = obj._featherLink;
     _imp->rippleEdit = obj._rippleEdit;
-    
-    for (std::list<BezierSerialization>::const_iterator it = obj._beziers.begin(); it != obj._beziers.end(); ++it) {
-        boost::shared_ptr<Bezier> b(new Bezier(this));
-        b->load(*it);
-        _imp->splines.push_back(b);
-    }
     
     _imp->activated->setAllDimensionsEnabled(false);
     _imp->opacity->setAllDimensionsEnabled(false);
     _imp->feather->setAllDimensionsEnabled(false);
     _imp->featherFallOff->setAllDimensionsEnabled(false);
     _imp->inverted->setAllDimensionsEnabled(false);
+    
+    assert(_imp->layers.size() == 1);
+    
+    boost::shared_ptr<RotoLayer> baseLayer = _imp->layers.front();
+    
+    baseLayer->load(obj._baseLayer);
+
+    
+    for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it!=obj._selectedItems.end(); ++it) {
+        
+        boost::shared_ptr<RotoItem> item = getItemByName(*it);
+        
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+        if (isBezier) {
+            linkBezierToContextKnobs(isBezier);
+        } else if (isLayer) {
+            linkItemsKnobsRecursively(this, isLayer);
+        }
+        
+        if (item) {
+            _imp->selectedItems.push_back(item);
+        }
+    }
+    
 }
 
 void RotoContext::linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b)
 {
     
-    if (_imp->selectedBeziers.empty()) {
-        ///enable the knobs
-        _imp->activated->setAllDimensionsEnabled(true);
-        _imp->opacity->setAllDimensionsEnabled(true);
-        _imp->featherFallOff->setAllDimensionsEnabled(true);
-        _imp->feather->setAllDimensionsEnabled(true);
-        _imp->inverted->setAllDimensionsEnabled(true);
-    }
-
-   
-
-    ///first-off set the context knobs to the value of this bezier
-    boost::shared_ptr<KnobI> activated = b->getActivatedKnob();
-    boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
-    boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
-    boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
-    boost::shared_ptr<KnobI> inverted = b->getInvertedKnob();
-    
-    _imp->activated->clone(activated);
-    _imp->feather->clone(feather);
-    _imp->featherFallOff->clone(featherFallOff);
-    _imp->opacity->clone(opacity);
-    _imp->inverted->clone(inverted);
-
-    ///link this bezier knobs to the context
-    activated->slaveTo(0, _imp->activated, 0);
-    feather->slaveTo(0, _imp->feather, 0);
-    featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
-    opacity->slaveTo(0, _imp->opacity, 0);
-    inverted->slaveTo(0, _imp->inverted, 0);
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
         
-    ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
-    ///(maybe black or something)
-    if (_imp->selectedBeziers.size() > 0) {
-        _imp->activated->setDirty(true);
-        _imp->opacity->setDirty(true);
-        _imp->feather->setDirty(true);
-        _imp->featherFallOff->setDirty(true);
-        _imp->inverted->setDirty(true);
+       
+        
+        if (_imp->selectedItems.empty()) {
+            ///enable the knobs
+            _imp->activated->setAllDimensionsEnabled(true);
+            _imp->opacity->setAllDimensionsEnabled(true);
+            _imp->featherFallOff->setAllDimensionsEnabled(true);
+            _imp->feather->setAllDimensionsEnabled(true);
+            _imp->inverted->setAllDimensionsEnabled(true);
+        }
+        
+        
+        
+        ///first-off set the context knobs to the value of this bezier
+        boost::shared_ptr<KnobI> activated = b->getActivatedKnob();
+        boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
+        boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
+        boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
+        boost::shared_ptr<KnobI> inverted = b->getInvertedKnob();
+        
+        _imp->activated->clone(activated);
+        _imp->feather->clone(feather);
+        _imp->featherFallOff->clone(featherFallOff);
+        _imp->opacity->clone(opacity);
+        _imp->inverted->clone(inverted);
+        
+        ///link this bezier knobs to the context
+        activated->slaveTo(0, _imp->activated, 0);
+        feather->slaveTo(0, _imp->feather, 0);
+        featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
+        opacity->slaveTo(0, _imp->opacity, 0);
+        inverted->slaveTo(0, _imp->inverted, 0);
+        
+        ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
+        ///(maybe black or something)
+        if (_imp->selectedItems.size() > 0) {
+            _imp->activated->setDirty(true);
+            _imp->opacity->setDirty(true);
+            _imp->feather->setDirty(true);
+            _imp->featherFallOff->setDirty(true);
+            _imp->inverted->setDirty(true);
+        }
+        
+        std::list<boost::shared_ptr<RotoItem> >::iterator it = std::find(_imp->selectedItems.begin(),_imp->selectedItems.end(),b);
+        if (it == _imp->selectedItems.end()) {
+            _imp->selectedItems.push_back(b);
+        }
     }
-    
-    std::list<boost::shared_ptr<Bezier> >::iterator it = std::find(_imp->selectedBeziers.begin(),_imp->selectedBeziers.end(),b);
-    if (it == _imp->selectedBeziers.end()) {
-        _imp->selectedBeziers.push_back(b);
-    }
-    
     emit selectionChanged();
 }
 
 void RotoContext::unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b)
 {
-    std::list<boost::shared_ptr<Bezier> >::iterator it = std::find(_imp->selectedBeziers.begin(),_imp->selectedBeziers.end(),b);
-    assert(it != _imp->selectedBeziers.end());
-    _imp->selectedBeziers.erase(it);
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
     
-    ///first-off set the context knobs to the value of this bezier
-    boost::shared_ptr<KnobI> activated = b->getActivatedKnob();
-    boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
-    boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
-    boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
-    boost::shared_ptr<KnobI> inverted = b->getInvertedKnob();
-    
-    activated->unSlave(0);
-    feather->unSlave(0);
-    featherFallOff->unSlave(0);
-    opacity->unSlave(0);
-    inverted->unSlave(0);
-    
-    if (_imp->selectedBeziers.size() <= 1) {
-        _imp->activated->setDirty(false);
-        _imp->opacity->setDirty(false);
-        _imp->feather->setDirty(false);
-        _imp->featherFallOff->setDirty(false);
-        _imp->inverted->setDirty(false);
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        std::list<boost::shared_ptr<RotoItem> >::iterator it = std::find(_imp->selectedItems.begin(),_imp->selectedItems.end(),b);
+        assert(it != _imp->selectedItems.end());
+        _imp->selectedItems.erase(it);
+        
+        ///first-off set the context knobs to the value of this bezier
+        boost::shared_ptr<KnobI> activated = b->getActivatedKnob();
+        boost::shared_ptr<KnobI> feather = b->getFeatherKnob();
+        boost::shared_ptr<KnobI> featherFallOff = b->getFeatherFallOffKnob();
+        boost::shared_ptr<KnobI> opacity = b->getOpacityKnob();
+        boost::shared_ptr<KnobI> inverted = b->getInvertedKnob();
+        
+        activated->unSlave(0);
+        feather->unSlave(0);
+        featherFallOff->unSlave(0);
+        opacity->unSlave(0);
+        inverted->unSlave(0);
+        
+        if (_imp->selectedItems.size() <= 1) {
+            _imp->activated->setDirty(false);
+            _imp->opacity->setDirty(false);
+            _imp->feather->setDirty(false);
+            _imp->featherFallOff->setDirty(false);
+            _imp->inverted->setDirty(false);
+        }
+        
+        ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
+        if (_imp->selectedItems.empty()) {
+            _imp->activated->setAllDimensionsEnabled(false);
+            _imp->opacity->setAllDimensionsEnabled(false);
+            _imp->featherFallOff->setAllDimensionsEnabled(false);
+            _imp->feather->setAllDimensionsEnabled(false);
+            _imp->inverted->setAllDimensionsEnabled(false);
+        }
     }
-    
-    ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
-    if (_imp->selectedBeziers.empty()) {
-        _imp->activated->setAllDimensionsEnabled(false);
-        _imp->opacity->setAllDimensionsEnabled(false);
-        _imp->featherFallOff->setAllDimensionsEnabled(false);
-        _imp->feather->setAllDimensionsEnabled(false);
-        _imp->inverted->setAllDimensionsEnabled(false);
-    }
-    
     emit selectionChanged();
+}
+
+static void addOrRemoveKeyRecursively(RotoLayer* isLayer,int time,bool add)
+{
+    const RotoItems& items= isLayer->getItems();
+    for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+        RotoLayer* layer = dynamic_cast<RotoLayer*>(it2->get());
+        Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
+        if (isBezier) {
+            if (add) {
+                isBezier->setKeyframe(time);
+            } else if (layer) {
+                isBezier->removeKeyframe(time);
+            }
+        } else if (isLayer) {
+            addOrRemoveKeyRecursively(layer,time, add);
+        }
+    }
 }
 
 void RotoContext::setKeyframeOnSelectedCurves()
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     int time = getTimelineCurrentTime();
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
-        (*it)->setKeyframe(time);
+    
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier) {
+            isBezier->setKeyframe(time);
+        } else if (isLayer) {
+            addOrRemoveKeyRecursively(isLayer,time, true);
+        }
     }
 }
 
 void RotoContext::removeKeyframeOnSelectedCurves()
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     int time = getTimelineCurrentTime();
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
-        (*it)->removeKeyframe(time);
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier) {
+            isBezier->removeKeyframe(time);
+        } else if (isLayer) {
+            addOrRemoveKeyRecursively(isLayer,time, false);
+        }
+    }
+}
+
+static void findOutNearestKeyframeRecursively(RotoLayer* layer,bool previous,int time,int* nearest)
+{
+    const RotoItems& items = layer->getItems();
+    for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        RotoLayer* layer = dynamic_cast<RotoLayer*>(it->get());
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier) {
+            if (previous) {
+                int t = isBezier->getPreviousKeyframeTime(time);
+                if (t != INT_MIN && t > *nearest) {
+                    *nearest = t;
+                }
+            } else if (layer) {
+                int t = isBezier->getNextKeyframeTime(time);
+                if (t != INT_MAX && t < *nearest) {
+                    *nearest = t;
+                }
+            }
+        } else {
+            findOutNearestKeyframeRecursively(layer, previous,time,nearest);
+        }
     }
 }
 
 void RotoContext::goToPreviousKeyframe()
 {
-    int time = getTimelineCurrentTime();
     
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
+    int time = getTimelineCurrentTime();
     int minimum = INT_MIN;
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
-        int t = (*it)->getPreviousKeyframeTime(time);
-        if (t != INT_MIN && t > minimum) {
-            minimum = t;
+    
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+            RotoLayer* layer = dynamic_cast<RotoLayer*>(it->get());
+            Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+            if (isBezier) {
+                int t = isBezier->getPreviousKeyframeTime(time);
+                if (t != INT_MIN && t > minimum) {
+                    minimum = t;
+                }
+            } else {
+                findOutNearestKeyframeRecursively(layer, true,time,&minimum);
+            }
         }
     }
     
@@ -2293,26 +2767,152 @@ void RotoContext::goToPreviousKeyframe()
 
 void RotoContext::goToNextKeyframe()
 {
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    
     int time = getTimelineCurrentTime();
     
     int maximum = INT_MAX;
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it = _imp->selectedBeziers.begin(); it!=_imp->selectedBeziers.end(); ++it) {
-        int t = (*it)->getNextKeyframeTime(time);
-        if (t != INT_MAX && t < maximum) {
-            maximum = t;
-        }
-    }
     
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+            RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+            Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+            if (isBezier) {
+                int t = isBezier->getNextKeyframeTime(time);
+                if (t != INT_MAX && t < maximum) {
+                    maximum = t;
+                }
+            } else {
+                findOutNearestKeyframeRecursively(isLayer, false,time,&maximum);
+            }
+            
+        }
+    
+    }
     if (maximum != INT_MAX) {
         _imp->node->getApp()->getTimeLine()->seekFrame(maximum, NULL);
     }
 }
 
-const std::list< boost::shared_ptr<Bezier> >& RotoContext::getSelectedCurves() const
+static void appendToSelectedCurvesRecursively(std::list< boost::shared_ptr<Bezier> > * curves,RotoLayer* isLayer,int time,bool onlyActives)
+{
+    RotoItems items = isLayer->getItems_mt_safe();
+    for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        RotoLayer* layer = dynamic_cast<RotoLayer*>(it->get());
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        if (isBezier) {
+            if (!onlyActives || isBezier->isActivated(time))
+            {
+                curves->push_back(isBezier);
+            }
+            
+        } else if (layer && layer->isGloballyActivated()) {
+            appendToSelectedCurvesRecursively(curves, layer,time,onlyActives);
+        }
+    }
+}
+
+std::list< boost::shared_ptr<Bezier> > RotoContext::getSelectedCurves() const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->selectedBeziers;
+    std::list< boost::shared_ptr<Bezier> >   ret;
+    int time = getTimelineCurrentTime();
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+            RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+            boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            if (isBezier) {
+                ret.push_back(isBezier);
+            } else {
+                appendToSelectedCurvesRecursively(&ret, isLayer,time,false);
+            }
+            
+        }
+
+    }
+    
+    return ret;
+}
+
+
+std::list< boost::shared_ptr<Bezier> > RotoContext::getCurvesByRenderOrder() const
+{
+    std::list< boost::shared_ptr<Bezier> > ret;
+    int time = getTimelineCurrentTime();
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        if (!_imp->layers.empty()) {
+            appendToSelectedCurvesRecursively(&ret, _imp->layers.front().get(),time,true);
+        }
+    }
+    return ret;
+}
+
+boost::shared_ptr<RotoLayer> RotoContext::getLayerByName(const std::string& n) const
+{
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
+        if ((*it)->getName_mt_safe() == n) {
+            return *it;
+        }
+    }
+    return boost::shared_ptr<RotoLayer>();
+}
+
+static void findItemRecursively(const std::string& n,const boost::shared_ptr<RotoLayer>& layer,boost::shared_ptr<RotoItem>* ret)
+{
+    if (layer->getName_mt_safe() == n) {
+        *ret = boost::dynamic_pointer_cast<RotoItem>(layer);
+    } else {
+        const RotoItems& items = layer->getItems();
+        for (RotoItems::const_iterator it2 = items.begin(); it2!=items.end(); ++it2) {
+            boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it2);
+            if ((*it2)->getName_mt_safe() == n) {
+                *ret = *it2;
+                return;
+            } else if (isLayer) {
+                findItemRecursively(n, isLayer, ret);
+            }
+
+        }
+    }
+}
+
+boost::shared_ptr<RotoItem> RotoContext::getItemByName(const std::string& n) const
+{
+    boost::shared_ptr<RotoItem> ret;
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
+        findItemRecursively(n, *it, &ret);
+    }
+    return ret;
+}
+
+RotoLayer* RotoContext::findDeepestSelectedLayer() const
+{
+    assert(!_imp->rotoContextMutex.tryLock());
+    
+    int minLevel = -1;
+    RotoLayer* minLayer = 0;
+    for (std::list< boost::shared_ptr<RotoItem> >::const_iterator it = _imp->selectedItems.begin();
+         it != _imp->selectedItems.end(); ++it) {
+        int lvl = (*it)->getHierarchyLevel();
+        if (lvl > minLevel) {
+            RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+            if (isLayer) {
+                minLayer = isLayer;
+            } else {
+                minLayer = (*it)->getParentLayer();
+            }
+            minLevel = lvl;
+        }
+    }
+    
+    return minLayer;
 }
 
 void RotoContext::evaluateChange()
@@ -2321,21 +2921,24 @@ void RotoContext::evaluateChange()
     _imp->node->getLiveInstance()->evaluate_public(NULL, true);
 }
 
-boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,SequenceTime time,
+U64 RotoContext::getAge()
+{
+    QMutexLocker l(&_imp->rotoContextMutex);
+    return _imp->age;
+}
+
+boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                             int view,unsigned int mipmapLevel,bool byPassCache)
 {
     
 
-    
+    std::list< boost::shared_ptr<Bezier> > splines = getCurvesByRenderOrder();
     
     ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
     ///the output image of the roto node and the mask image.
     Hash64 hash;
     hash.append(nodeHash);
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        hash.append(_imp->age);
-    }
+    hash.append(ageToRender);
     hash.computeHash();
 
     Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel, view);
@@ -2358,7 +2961,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         
     } else {
         RectI rod;
-        getMaskRegionOfDefinition(time,mipmapLevel, view, &rod);
+        getMaskRegionOfDefinition(time, view, &rod);
+        
+        assert(!nodeRoD.isNull());
+        rod.merge(nodeRoD);
         
         Natron::ImageComponents maskComps = Natron::ImageComponentAlpha;
         
@@ -2374,9 +2980,9 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             image->clearBitmap();
         } else if (!cached) {
             ///fill the image of 0s
-            if (_imp->splines.size() == 1)
+            if (splines.size() == 1)
             {
-                boost::shared_ptr<Bezier>& curve = _imp->splines.front();
+                boost::shared_ptr<Bezier>& curve = splines.front();
                 if (curve->isCurveFinished() && curve->isActivated(time) && curve->getInverted(time)) {
                     didInitializeInverted = true;
                     image->defaultInitialize(0,curve->getOpacity(time));
@@ -2396,7 +3002,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
  
     QMutexLocker l(&_imp->rotoContextMutex);
     int i = 0;
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = _imp->splines.begin(); it2!=_imp->splines.end(); ++it2,++i) {
+    for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = splines.begin(); it2!=splines.end(); ++it2,++i) {
         
         ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
         ///Also render only finished bezier

@@ -10,6 +10,7 @@
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QPixmap>
+#include <QTreeView>
 
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
@@ -41,6 +42,8 @@ struct RotoPanelPrivate
     Button* nextKeyframe;
     Button* addKeyframe;
     Button* removeKeyframe;
+    
+    QTreeView* tree;
     
     std::list< boost::shared_ptr<Bezier> > selectedCurves;
     
@@ -121,6 +124,12 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     QObject::connect(_imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     
+    _imp->tree = new QTreeView(this);
+    _imp->mainLayout->addWidget(_imp->tree);
+    
+    ///refresh selection
+    onSelectionChanged();
+
 }
 
 RotoPanel::~RotoPanel()

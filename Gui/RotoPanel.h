@@ -51,4 +51,5 @@ private:
     boost::scoped_ptr<RotoPanelPrivate> _imp;
 };
 
+
 #endif // ROTOPANEL_H

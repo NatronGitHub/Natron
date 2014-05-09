@@ -55,6 +55,8 @@ struct EffectInstance::RenderArgs {
     bool _isRenderResponseToUserInteraction; //< is this a render due to user interaction ?
     bool _byPassCache; //< use cache lookups  ?
     bool _validArgs; //< are the args valid ?
+    U64 _nodeHash;
+    U64 _rotoAge;
     
     RenderArgs()
     : _roi()
@@ -67,6 +69,8 @@ struct EffectInstance::RenderArgs {
     , _isRenderResponseToUserInteraction(false)
     , _byPassCache(false)
     , _validArgs(false)
+    , _nodeHash(0)
+    , _rotoAge(0)
     {}
 };
 
@@ -118,7 +122,9 @@ struct EffectInstance::Implementation {
                          unsigned int mipMapLevel,
                          bool sequential,
                          bool userInteraction,
-                         bool bypassCache)
+                         bool bypassCache,
+                         U64 nodeHash,
+                         U64 rotoAge)
         : args()
         , _dst(dst)
         {
@@ -132,6 +138,8 @@ struct EffectInstance::Implementation {
             args._isSequentialRender = sequential;
             args._isRenderResponseToUserInteraction = userInteraction;
             args._byPassCache = bypassCache;
+            args._nodeHash = nodeHash;
+            args._rotoAge = rotoAge;
             args._validArgs = true;
             _dst->setLocalData(args);
         }
@@ -264,12 +272,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///the image if it's missing from the cache.
     
     RectI currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
-    RectI precomputedRoD;
     bool isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
     bool isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
     bool byPassCache = _imp->renderArgs.localData()._byPassCache;
     unsigned int mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;;
     RoIMap inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
+
     
     RoIMap::iterator found = inputsRoI.find(roto ? this : n);
     assert(found != inputsRoI.end());
@@ -284,7 +292,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
     
     if (roto && isInputRotoBrush(inputNb)) {
-        return roto->renderMask(roi, hash(), time, view, mipMapLevel, byPassCache);
+        U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
+        U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
+        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time, view, mipMapLevel, byPassCache);
     }
     
     
@@ -298,7 +308,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     QThreadPool::globalInstance()->reserveThread();
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
                 RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
-                              byPassCache, precomputedRoD.isNull() ? NULL : &precomputedRoD));
+                              byPassCache, NULL));
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
@@ -437,10 +447,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         byPassCache = true;
     }
     
+    U64 nodeHash = hash();
+    
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
 
-    Natron::ImageKey key = Natron::Image::makeKey(hash(), args.time,args.mipMapLevel ,args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel ,args.view);
     
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -500,7 +512,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         args.mipMapLevel,
                                                         args.isSequentialRender,
                                                         args.isRenderUserInteraction,
-                                                        byPassCache);
+                                                        byPassCache,
+                                                        nodeHash,
+                                                        0);
             
             ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
             image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
@@ -605,7 +619,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         args.mipMapLevel,
                                                         args.isSequentialRender,
                                                         args.isRenderUserInteraction,
-                                                        byPassCache);
+                                                        byPassCache,
+                                                        nodeHash,
+                                                        0);
             return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view);
         }
         
@@ -643,7 +659,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
     bool success = renderRoIInternal(args.time, args.scale,args.mipMapLevel, args.view, args.roi, cachedImgParams, image,
-                                     downscaledImage,args.isSequentialRender,args.isRenderUserInteraction ,byPassCache);
+                                     downscaledImage,args.isSequentialRender,args.isRenderUserInteraction ,byPassCache,nodeHash);
     
     if(aborted() || !success){
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -667,8 +683,9 @@ void EffectInstance::renderRoI(SequenceTime time,const RenderScale& scale,unsign
                                const boost::shared_ptr<Image>& downscaledImage,
                                bool isSequentialRender,
                                bool isRenderMadeInResponseToUserInteraction,
-                               bool byPassCache) {
-    bool success = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache);
+                               bool byPassCache,
+                               U64 nodeHash) {
+    bool success = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash);
     if (!success) {
         throw std::runtime_error("Rendering Failed");
     }
@@ -681,7 +698,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                                        const boost::shared_ptr<Image>& downscaledImage,
                                        bool isSequentialRender,
                                        bool isRenderMadeInResponseToUserInteraction,
-                                       bool byPassCache) {
+                                       bool byPassCache,
+                                       U64 nodeHash) {
     
     ///add the window to the project's available formats if the effect is a reader
     if ( mipMapLevel == 0 && isReader()) {
@@ -717,6 +735,10 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
     }
 #endif
+    
+    
+    boost::shared_ptr<RotoContext> rotoContext = _node->getRotoContext();
+    U64 rotoAge = rotoContext ? rotoContext->getAge() : 0;
     
     bool renderSucceeded = true;
 
@@ -756,7 +778,9 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                                                     mipMapLevel,
                                                     isSequentialRender,
                                                     isRenderMadeInResponseToUserInteraction,
-                                                    byPassCache);
+                                                    byPassCache,
+                                                    nodeHash,
+                                                    rotoAge);
         const RenderArgs& args = scopedArgs.getArgs();
     
        
@@ -814,7 +838,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         ///if the node has a roto context, pre-render the roto mask too
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
-            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, hash(), time, view, mipMapLevel, byPassCache);
+            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, nodeHash,rotoAge,
+                                                                        cachedImgParams->getRoD() ,time, view, mipMapLevel, byPassCache);
             inputImages.push_back(mask);
         }
         

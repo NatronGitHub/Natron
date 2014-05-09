@@ -176,7 +176,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
         assert(rotoCtx);
         RectI rod;
-        rotoCtx->getRealRegionOfDefinition(time,mipmapLevel, view, &rod);
+        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
         ret.x1 = rod.x1;
         ret.x2 = rod.x2;
         ret.y1 = rod.y1;

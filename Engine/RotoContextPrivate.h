@@ -12,6 +12,8 @@
 #define ROTOCONTEXTPRIVATE_H
 
 #include <list>
+#include <map>
+#include <string>
 #include <boost/shared_ptr.hpp>
 
 #include <QMutex>
@@ -65,15 +67,105 @@ typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
 
 struct BezierPrivate
 {
-    RotoContext* context;
     
     BezierCPs points; //< the control points of the curve
     BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
- 
+    
+    BezierPrivate()
+    : points()
+    , featherPoints()
+    , finished(false)
+    {
+    }
+    
+    bool hasKeyframeAtTime(int time) const
+    {
+        // PRIVATE - should not lock
+        
+        if (points.empty()) {
+            return false;
+        } else {
+            KeyFrame k;
+            return points.front()->hasKeyFrameAtTime(time);
+        }
+    }
+    
+    void getKeyframeTimes(std::set<int>* times) const
+    {
+        // PRIVATE - should not lock
+       
+        if (points.empty()) {
+            return ;
+        }
+        points.front()->getKeyframeTimes(times);
+    }
+    
+    BezierCPs::const_iterator atIndex(int index) const
+    {
+        // PRIVATE - should not lock
+        
+        if (index >= (int)points.size()) {
+            throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
+        }
+        
+        BezierCPs::const_iterator it = points.begin();
+        std::advance(it, index);
+        return it;
+    }
+    
+    BezierCPs::iterator atIndex(int index)
+    {
+        // PRIVATE - should not lock
+        
+        if (index >= (int)points.size()) {
+            throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
+        }
+        
+        BezierCPs::iterator it = points.begin();
+        std::advance(it, index);
+        return it;
+    }
+};
+
+class RotoLayer;
+struct RotoItemPrivate
+{
+    RotoContext* context;
+    std::string name;
+    RotoLayer* parentLayer;
+    
+    ////This controls whether the item (and all its children if it is a layer)
+    ////should be visible/rendered or not at any time.
+    ////This is different from the "activated" knob for RotoDrawableItem's which in that
+    ////case allows to define a life-time
+    bool globallyActivated;
+    
+    RotoItemPrivate(RotoContext* context,const std::string& n,RotoLayer* parent)
+    : context(context)
+    , name(n)
+    , parentLayer(parent)
+    , globallyActivated(true)
+    {}
+};
+
+typedef std::list< boost::shared_ptr<RotoItem> > RotoItems;
+
+struct RotoLayerPrivate
+{
+    RotoItems items;
+    
+    RotoLayerPrivate()
+    : items()
+    {
+        
+    }
+};
+
+struct RotoDrawableItemPrivate
+{
     double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
     
-    mutable QMutex splineMutex;
     
     boost::shared_ptr<Double_Knob> opacity; //< opacity of the rendered shape between 0 and 1
     boost::shared_ptr<Int_Knob> feather;//< number of pixels to add to the feather distance (from the feather point), between -100 and 100
@@ -82,13 +174,8 @@ struct BezierPrivate
     boost::shared_ptr<Bool_Knob> activated; //< should the curve be visible/rendered ? (animable)
     boost::shared_ptr<Bool_Knob> inverted; //< invert the rendering
     
-    BezierPrivate(RotoContext* ctx)
-    : context(ctx)
-    , points()
-    , featherPoints()
-    , finished(false)
-    , splineMutex()
-    , opacity(new Double_Knob(NULL,"Opacity",1))
+    RotoDrawableItemPrivate()
+    : opacity(new Double_Knob(NULL,"Opacity",1))
     , feather(new Int_Knob(NULL,"Feather",1))
     , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1))
     , activated(new Bool_Knob(NULL,"Activated",1))
@@ -110,66 +197,13 @@ struct BezierPrivate
         overlayColor[3] = 1.;
         
     }
-    
-    bool hasKeyframeAtTime(int time) const
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (points.empty()) {
-            return false;
-        } else {
-            KeyFrame k;
-            return points.front()->hasKeyFrameAtTime(time);
-        }
-    }
-    
-    bool hasKeyframeAtCurrentTime() const
-    {
-        return hasKeyframeAtTime(context->getTimelineCurrentTime());
-    }
-    
-    void getKeyframeTimes(std::set<int>* times) const
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (points.empty()) {
-            return ;
-        }
-        points.front()->getKeyframeTimes(times);
-    }
-    
-    BezierCPs::const_iterator atIndex(int index) const
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (index >= (int)points.size()) {
-            throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
-        }
-        
-        BezierCPs::const_iterator it = points.begin();
-        std::advance(it, index);
-        return it;
-    }
-    
-    BezierCPs::iterator atIndex(int index)
-    {
-        // PRIVATE - should not lock
-        assert(!splineMutex.tryLock());
-        if (index >= (int)points.size()) {
-            throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
-        }
-        
-        BezierCPs::iterator it = points.begin();
-        std::advance(it, index);
-        return it;
-    }
 };
 
 struct RotoContextPrivate
 {
     
     mutable QMutex rotoContextMutex;
-    std::list< boost::shared_ptr<Bezier> > splines;
+    std::list< boost::shared_ptr<RotoLayer> > layers;
     bool autoKeying;
     bool rippleEdit;
     bool featherLink;
@@ -185,18 +219,24 @@ struct RotoContextPrivate
     boost::shared_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
     boost::shared_ptr<Bool_Knob> inverted;
     
-    ///This keeps track  of the bezier linked to the context knobs
-    std::list<boost::shared_ptr<Bezier> > selectedBeziers;
+    ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
+    ////to give a unique default name to each shape
+    std::map<std::string, int> itemCounters;
+    
+    
+    ///This keeps track  of the items linked to the context knobs
+    std::list<boost::shared_ptr<RotoItem> > selectedItems;
     
     RotoContextPrivate(Natron::Node* n )
     : rotoContextMutex()
-    , splines()
+    , layers()
     , autoKeying(true)
     , rippleEdit(false)
     , featherLink(true)
     , node(n)
     , age(0)
     {
+        
         assert(n && n->getLiveInstance());
         Natron::EffectInstance* effect = n->getLiveInstance();
         opacity = Natron::createKnob<Double_Knob>(effect, "Opacity");
@@ -244,6 +284,7 @@ struct RotoContextPrivate
         ++age;
     }
     
+  
 };
 
 

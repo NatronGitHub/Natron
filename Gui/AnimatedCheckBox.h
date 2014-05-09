@@ -25,7 +25,8 @@ class AnimatedCheckBox : public QCheckBox
     bool readOnly;
     bool dirty;
 public:
-    AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) , readOnly(false) {}
+    
+    AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) , readOnly(false) , dirty(false) {}
 
     virtual ~AnimatedCheckBox() OVERRIDE {}
 

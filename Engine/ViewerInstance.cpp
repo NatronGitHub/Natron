@@ -353,7 +353,8 @@ ViewerInstance::renderViewer(SequenceTime time,
     }
     
     
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(activeInputToRender->hash(), time, mipMapLevel,view);
+    U64 inputNodeHash = activeInputToRender->hash();
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
     RectI rod,pixelRoD;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
@@ -651,7 +652,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 if (isInputImgCached) {
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
-                        activeInputToRender->renderRoI(time, scale,mipMapLevel, view, texRectClipped, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true,byPassCache);
+                        activeInputToRender->renderRoI(time, scale,mipMapLevel, view, texRectClipped, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true,byPassCache,inputNodeHash);
                     
                 } else {
                     
@@ -668,7 +669,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                                 unregisterPluginMemory(_imp->lastRenderedImage->size());
                             }
                             _imp->lastRenderedImage = lastRenderedImage;
-                            registerMem = true;
+                            registerMem = true;  
                         }
                     }
                     if (registerMem && lastRenderedImage) {
