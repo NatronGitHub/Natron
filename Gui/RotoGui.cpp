@@ -174,7 +174,7 @@ struct RotoGui::RotoGuiPrivate
     
     void clearBeziersSelection();
     
-    void onCurveLockedChangedRecursive(const RotoItem* item,bool* ret);
+    void onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem>& item,bool* ret);
     
     bool removeBezierFromSelection(const Bezier* b);
     
@@ -319,7 +319,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
                      this, SLOT(onCurrentFrameChanged(SequenceTime,int)));
     QObject::connect(_imp->context.get(), SIGNAL(refreshViewerOverlays()), this, SLOT(onRefreshAsked()));
     QObject::connect(_imp->context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)));
-    QObject::connect(_imp->context.get(), SIGNAL(itemLockedChanged(RotoItem*)), this, SLOT(onCurveLockedChanged(RotoItem*)));
+    QObject::connect(_imp->context.get(), SIGNAL(itemLockedChanged()), this, SLOT(onCurveLockedChanged()));
     restoreSelectionFromContext();
 }
 
@@ -517,7 +517,11 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             (*it)->evaluateAtTime_DeCastelJau(time,0, 100, &points);
             
             double curveColor[4];
-            (*it)->getOverlayColor(curveColor);
+            if (!(*it)->isLockedRecursive()) {
+                (*it)->getOverlayColor(curveColor);
+            } else {
+                curveColor[0] = 0.8;curveColor[1] = 0.8;curveColor[2] = 0.8;curveColor[3] = 1.;
+            }
             glColor4dv(curveColor);
             
             glBegin(GL_LINE_STRIP);
@@ -1960,31 +1964,42 @@ void RotoGui::onRefreshAsked()
     _imp->viewer->redraw();
 }
 
-void RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const RotoItem* item,bool* ret)
+void RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem>& item,bool* ret)
 {
-    const Bezier* b = dynamic_cast<const Bezier*>(item);
-    const RotoLayer* layer = dynamic_cast<const RotoLayer*>(item);
+    boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(item);
+    boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
     if (b) {
-        
-        for (SelectedBeziers::iterator fb = selectedBeziers.begin(); fb != selectedBeziers.end(); ++fb) {
-            if (fb->get() == b) {
-                context->deselect(*fb,RotoContext::OVERLAY_INTERACT);
-                selectedBeziers.erase(fb);
-                *ret = true;
+        if (item->getLocked()) {
+            for (SelectedBeziers::iterator fb = selectedBeziers.begin(); fb != selectedBeziers.end(); ++fb) {
+                if (fb->get() == b.get()) {
+                    selectedBeziers.erase(fb);
+                    *ret = true;
+                }
+            }
+        } else {
+            ///Explanation: This change has been made in result to a user click on the settings panel.
+            ///We have to reselect the bezier overlay hence put a reason different of OVERLAY_INTERACT
+            SelectedBeziers::iterator found = std::find(selectedBeziers.begin(),selectedBeziers.end(),b);
+            if (found == selectedBeziers.end()) {
+                selectedBeziers.push_back(b);
+                context->select(b, RotoContext::SETTINGS_PANEL);
+                *ret  = true;
             }
         }
-
+        
 
     } else if (layer) {
         const std::list<boost::shared_ptr<RotoItem> >& items = layer->getItems();
         for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
-            onCurveLockedChangedRecursive(it->get(), ret);
+            onCurveLockedChangedRecursive(*it, ret);
         }
     }
 }
 
-void RotoGui::onCurveLockedChanged(RotoItem* item)
+void RotoGui::onCurveLockedChanged()
 {
+    boost::shared_ptr<RotoItem> item = _imp->context->getLastItemLocked();
+    assert(item);
     bool changed = false;
     if (item) {
         _imp->onCurveLockedChangedRecursive(item, &changed);

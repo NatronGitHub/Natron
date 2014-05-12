@@ -181,8 +181,12 @@ ComboBox {
     border:1px solid black;
 }
 
-ClickableLabel[dirty="false"][animation="0"]{
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
     background-color: %2;
+    color: %5;
+}
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
+    background-color: %3;
     color: %5;
 }
 ClickableLabel[dirty="true"][animation="0"]{

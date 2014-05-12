@@ -42,13 +42,15 @@ ComboBox::ComboBox(QWidget* parent)
     setFrameShape(QFrame::Box);
     
     _currentText = new ClickableLabel("",this);
-    _currentText->setObjectName("ComboBoxLabel"); 
+    _currentText->setSunken(true);
+    _currentText->setObjectName("ComboBoxLabel");
     setCurrentIndex(-1);
     _mainLayout->addWidget(_currentText);
     _currentText->setFixedHeight(fontMetrics().height() + 8);
 
     
     _dropDownIcon = new ClickableLabel("",this);
+    _dropDownIcon->setSunken(true);
     _dropDownIcon->setObjectName("ComboBoxDropDownLabel");
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);

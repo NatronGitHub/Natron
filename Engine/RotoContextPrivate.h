@@ -277,6 +277,7 @@ struct RotoContextPrivate
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
     
     boost::shared_ptr<RotoItem> lastInsertedItem;
+    boost::shared_ptr<RotoItem> lastLockedItem;
     
     RotoContextPrivate(Natron::Node* n )
     : rotoContextMutex()

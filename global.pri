@@ -94,6 +94,7 @@ unix {
      CONFIG += link_pkgconfig
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
+     cairo:     PKGCONFIG += cairo
      !macx {
          LIBS +=  -lGLU -ldl
      }

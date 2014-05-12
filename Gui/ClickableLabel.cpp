@@ -63,3 +63,12 @@ void ClickableLabel::setDirty(bool b)
     style()->polish(this);
     repaint();
 }
+
+void ClickableLabel::setSunken(bool s)
+{
+    sunkenStyle = s;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+
+}

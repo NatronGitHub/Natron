@@ -628,6 +628,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                     TreeItems::iterator found = _imp->findItem(selected[i]);
                     assert(found != _imp->items.end());
                     found->rotoItem->setLocked(locked,true);
+                    _imp->context->setLastItemLocked(found->rotoItem);
                     _imp->setChildrenLockedRecursively(locked, found->treeItem);
                 }
                 
@@ -674,8 +675,16 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                     assert(found != _imp->items.end());
                     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
                     if (drawable) {
+                        boost::shared_ptr<Bool_Knob> invertedKnob = drawable->getInvertedKnob();
+                        inverted = !invertedKnob->getValueAtTime(time);
+                        bool isOnKeyframe = invertedKnob->getKeyFrameIndex(0, time) != -1;
                         inverted = !drawable->getInverted(time);
-                        drawable->getInvertedKnob()->setValueAtTime(time, inverted, 0);
+                        
+                        if (_imp->context->isAutoKeyingEnabled() || isOnKeyframe) {
+                            invertedKnob->setValueAtTime(time, inverted, 0);
+                        } else {
+                            invertedKnob->setValue(inverted, 0);
+                        }
                         found->treeItem->setIcon(4, inverted ? _imp->iconInverted : _imp->iconUninverted);
                     }
                 }
@@ -706,7 +715,13 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                             TreeItems::iterator found = _imp->findItem(selected[i]);
                             assert(found != _imp->items.end());
                             drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                            drawable->getInterpolationKnob()->setValueAtTime(time, index, 0);
+                            boost::shared_ptr<Choice_Knob> interpolationKnob = drawable->getInterpolationKnob();
+                            bool isOnKeyframe = interpolationKnob->getKeyFrameIndex(0, time) != -1;
+                            if (_imp->context->isAutoKeyingEnabled() || isOnKeyframe) {
+                                interpolationKnob->setValueAtTime(time, index, 0);
+                            } else {
+                                interpolationKnob->setValue(index, 0);
+                            }
                             found->treeItem->setText(5, interpName(index));
                         }
                         if (!selected.empty()) {

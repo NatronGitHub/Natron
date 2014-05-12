@@ -20,6 +20,7 @@ class ClickableLabel : public QLabel
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
+    Q_PROPERTY( bool sunkenStyle READ isSunken WRITE setSunken)
 public:
 
     ClickableLabel(const QString &text, QWidget *parent):
@@ -27,7 +28,8 @@ public:
     _toggled(false) ,
     dirty(false) ,
     readOnly(false),
-    animation(0)
+    animation(0),
+    sunkenStyle(false)
     {}
 
     virtual ~ClickableLabel() OVERRIDE {}
@@ -50,6 +52,10 @@ public:
     bool isReadOnly() const { return readOnly; }
     
     void setReadOnly(bool readOnly) ;
+    
+    bool isSunken() const { return sunkenStyle; }
+    
+    void setSunken(bool s);
 
 signals:
     void clicked(bool);
@@ -64,6 +70,7 @@ private:
     bool dirty;
     bool readOnly;
     int animation;
+    bool sunkenStyle;
 };
 
 #endif // NATRON_GUI_CLICKABLELABEL_H_

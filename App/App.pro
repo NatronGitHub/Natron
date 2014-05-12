@@ -7,7 +7,7 @@ TARGET = Natron
 TEMPLATE = app
 CONFIG += app
 CONFIG += moc
-CONFIG += boost glew opengl qt expat
+CONFIG += boost glew opengl qt expat cairo
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 

@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include <boost/bind.hpp>
+#include <cairo/cairo.h>
 
 #include "Engine/RotoContextPrivate.h"
 
@@ -494,7 +495,6 @@ RotoItem::RotoItem(RotoContext* context,const std::string& name,RotoLayer* paren
 : itemMutex()
 , _imp(new RotoItemPrivate(context,name,parent))
 {
-    QObject::connect(this,SIGNAL(lockedChanged()),context,SLOT(onItemLockedChanged()));
 }
 
 RotoItem::~RotoItem()
@@ -604,7 +604,6 @@ void RotoItem::setLocked(bool l,bool lockChildren){
     } else {
         setLocked_recursive(l);
     }
-    emit lockedChanged();
 }
 
 bool RotoItem::getLocked() const
@@ -1874,7 +1873,6 @@ void Bezier::setKeyframe(int time)
     assert(QThread::currentThread() == qApp->thread());
 
     {
-        QMutexLocker l(&itemMutex);
         
         ///Add a keyframe for the interpolation
         boost::shared_ptr<Choice_Knob> interpolation = getInterpolationKnob();
@@ -1890,12 +1888,13 @@ void Bezier::setKeyframe(int time)
             dynamic_cast<KnobI*>(interpolation.get())->slaveTo(0, master.second, master.first);
         }
 
-        
+        QMutexLocker l(&itemMutex);
         if (_imp->hasKeyframeAtTime(time)) {
             l.unlock();
             emit keyframeSet(time);
             return;
         }
+        
         
         assert(_imp->points.size() == _imp->featherPoints.size());
         
@@ -1944,6 +1943,7 @@ void Bezier::removeKeyframe(int time)
             return;
         }
         
+        l.unlock();
         ///remove a keyframe on the interpolation
         ///Add a keyframe for the interpolation
         boost::shared_ptr<KnobI> interp = getInterpolationKnob();
@@ -1960,7 +1960,7 @@ void Bezier::removeKeyframe(int time)
             interp->slaveTo(0, master.second, master.first);
         }
 
-        
+        l.relock();
         
         assert(_imp->featherPoints.size() == _imp->points.size());
         
@@ -2066,10 +2066,22 @@ const std::list< boost::shared_ptr<BezierCP> >& Bezier::getControlPoints() const
     return _imp->points;
 }
 
+std::list< boost::shared_ptr<BezierCP> > Bezier::getControlPoints_mt_safe() const
+{
+    QMutexLocker l(&itemMutex);
+    return _imp->points;
+}
+
 const std::list< boost::shared_ptr<BezierCP> >& Bezier::getFeatherPoints() const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    return _imp->featherPoints;
+}
+
+std::list< boost::shared_ptr<BezierCP> > Bezier::getFeatherPoints_mt_safe() const
+{
+    QMutexLocker l(&itemMutex);
     return _imp->featherPoints;
 }
 
@@ -2854,7 +2866,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<Bezier>& b)
                 foundBezier = true;
             }
         }
-
+        if (foundBezier) {
+            return;
+        }
         
         if (nbBeziers == 0) {
             ///enable the knobs
@@ -2902,9 +2916,8 @@ void RotoContext::selectInternal(const boost::shared_ptr<Bezier>& b)
             _imp->interpolation->setDirty(true);
         }
         
-        if (!foundBezier) {
-            _imp->selectedItems.push_back(b);
-        }
+        _imp->selectedItems.push_back(b);
+
     }
 }
 
@@ -2963,6 +2976,20 @@ void RotoContext::deselectInternal(const boost::shared_ptr<Bezier>& b)
 
 }
 
+void RotoContext::setLastItemLocked(const boost::shared_ptr<RotoItem> &item)
+{
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        _imp->lastLockedItem = item;
+    }
+    emit itemLockedChanged();
+}
+
+boost::shared_ptr<RotoItem> RotoContext::getLastItemLocked() const
+{
+    QMutexLocker l(&_imp->rotoContextMutex);
+    return _imp->lastLockedItem;
+}
 
 static void addOrRemoveKeyRecursively(RotoLayer* isLayer,int time,bool add)
 {
@@ -3239,7 +3266,7 @@ void RotoContext::onItemLockedChanged()
 {
     RotoItem* item = qobject_cast<RotoItem*>(sender());
     if (item) {
-        emit itemLockedChanged(item);
+        emit itemLockedChanged();
     }
 }
 
@@ -3295,20 +3322,6 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
 
         if (cached && byPassCache) {
             image->clearBitmap();
-        } else if (!cached) {
-            ///fill the image of 0s
-            if (splines.size() == 1)
-            {
-                boost::shared_ptr<Bezier>& curve = splines.front();
-                if (curve->isCurveFinished() && curve->isActivated(time) && curve->getInverted(time)) {
-                    didInitializeInverted = true;
-                    image->defaultInitialize(0,curve->getOpacity(time));
-                }
-            }
-            if (!didInitializeInverted) {
-                image->defaultInitialize(0,0);
-            }
-            
         }
     }
     
@@ -3319,26 +3332,89 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
  
     QMutexLocker l(&_imp->rotoContextMutex);
     int i = 0;
+    
+    ////Allocate the cairo temporary buffer
+    cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());
+    if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
+        appPTR->removeFromNodeCache(image);
+        return image;
+    }
+    cairo_t* cr = cairo_create(cairoImg);
+    
+    
     for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = splines.begin(); it2!=splines.end(); ++it2,++i) {
         
         ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
         ///Also render only finished bezier
         if ((*it2)->isCurveFinished() && (*it2)->isActivated(time)) {
-            std::list< Point > points;
-            (*it2)->evaluateAtTime_DeCastelJau(time,mipmapLevel, 100, &points);
+            
+            
+            BezierCPs cps = (*it2)->getControlPoints_mt_safe();
+            if (cps.empty()) {
+                continue;
+            }
             
             double opacity = (*it2)->getOpacity(time);
             bool inverted = (*it2)->getInverted(time);
-            ///if the shape is inverted, fill the image with the inverse before actually rendering the polygon
-            bool preFillInvert = inverted && ((i != 0) || (i == 0 && !didInitializeInverted));
-            if (preFillInvert) {
-                image->fill(pixelRod,0.,opacity);
+            if (inverted) {
+                cairo_set_source_rgba(cr, 1.,1.,1., opacity);
+                cairo_paint(cr);
             }
             
-            fillPolygon_evenOdd(clippedRoI,points,inverted ? 1. - opacity : opacity, image.get());
+            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
+            cairo_new_path(cr);
+            BezierCPs::iterator point = cps.begin();
+            double initialX,initialY;
+            (*point)->getPositionAtTime(time, &initialX, &initialY);
+            cairo_move_to(cr, initialX, initialY);
+            
+            BezierCPs::iterator nextPoint = point;
+            ++nextPoint;
+            while (point != cps.end()) {
+                if (nextPoint == cps.end()) {
+                    nextPoint = cps.begin();
+                }
+                
+                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
+                (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
+                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
+                (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
+                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+                
+                ++point;
+                ++nextPoint;
+            }
+            
+            cairo_fill(cr);
         }
     }
     
+    ///A call to cairo_surface_flush() is required before accessing the pixel data
+    ///to ensure that all pending drawing operations are finished.
+    cairo_surface_flush(cairoImg);
+    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
+    unsigned char* srcPix = cdata;
+    int stride = cairo_image_surface_get_stride(cairoImg);
+    
+    int comps = (int)image->getComponentsCount();
+    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
+        
+        float* dstPix = image->pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        assert(dstPix);
+        
+        for (int x = 0; x < pixelRod.width(); ++x) {
+            if (comps == 1) {
+                dstPix[x] = srcPix[x] / 255.f;
+            } else {
+                assert(comps == 4);
+                dstPix[x * 4 + 3] = srcPix[x] / 255.f;
+            }
+        }
+    }
+    
+    cairo_destroy(cr);
+    ////Free the buffer used by Cairo
+    cairo_surface_destroy(cairoImg);
 
 
     ////////////////////////////////////

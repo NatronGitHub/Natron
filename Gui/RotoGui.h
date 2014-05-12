@@ -136,7 +136,7 @@ public slots:
     
     void onRefreshAsked();
     
-    void onCurveLockedChanged(RotoItem* item);
+    void onCurveLockedChanged();
     
     void onSelectionChanged(int reason);
     

@@ -236,9 +236,6 @@ public:
      **/
     virtual void load(const RotoItemSerialization& obj);
     
-signals:
-    
-    void lockedChanged();
     
 protected:
     
@@ -588,12 +585,13 @@ public:
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
      **/
     const std::list< boost::shared_ptr<BezierCP> >& getControlPoints() const;
+    std::list< boost::shared_ptr<BezierCP> > getControlPoints_mt_safe() const;
     
     /**
      * @brief Returns a const ref to the feather points of the bezier curve. This can only ever be called on the main thread.
      **/
     const std::list< boost::shared_ptr<BezierCP> >& getFeatherPoints() const;
-    
+    std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
     /**
      * @brief Returns a pointer to a nearby control point if any. This function  also returns the feather point
      * The first member is the actual point nearby, and the second the counter part (i.e: either the feather point
@@ -761,6 +759,7 @@ public:
     void fillPolygon_evenOdd(const RectI& roi,const std::list<std::pair<double,double> >& points,double opacity,
                              Natron::Image* output);
     
+    
     /**
      * @brief Returns the region of definition of the shape unioned to the region of definition of the node
      * or the project format.
@@ -834,6 +833,9 @@ public:
     
     boost::shared_ptr<Choice_Knob> getInterpolationKnob() const;
     
+    void setLastItemLocked(const boost::shared_ptr<RotoItem>& item);
+    boost::shared_ptr<RotoItem> getLastItemLocked() const;
+    
 signals:
     
     /**
@@ -850,7 +852,7 @@ signals:
     
     void refreshViewerOverlays();
 
-    void itemLockedChanged(RotoItem* item);
+    void itemLockedChanged();
     
 public slots:
     
