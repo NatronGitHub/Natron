@@ -313,11 +313,13 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
         (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
     }
 
-    if (reason != Natron::USER_EDITED) {
-        _signalSlotHandler->s_keyFrameSet(time,dimension);
+    if (_signalSlotHandler) {
+        if (reason != Natron::USER_EDITED) {
+            _signalSlotHandler->s_keyFrameSet(time,dimension);
+        }
+        _signalSlotHandler->s_updateSlaves(dimension);
     }
-
-    _signalSlotHandler->s_updateSlaves(dimension);
+   
     return ret;
 
 }
@@ -358,35 +360,38 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
 }
 
 template<typename T>
-void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason)
+void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState)
 {
     assert(isSlave(dimension));
-    ///clone the master
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    {
-        Knob<int>* isInt = dynamic_cast<Knob<int>* >(master.second.get());
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master.second.get());
-        Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master.second.get());
-        assert(isInt || isBool || isDouble); //< other data types aren't supported
-        QWriteLocker l1(&_valueMutex);
-        if (isInt) {
-            _values[dimension] =  isInt->getValue(master.first);
-        } else if (isBool) {
-            _values[dimension] =  isBool->getValue(master.first);
-        } else if (isDouble) {
-            _values[dimension] =  isDouble->getValue(master.first);
+
+    if (copyState) {
+        ///clone the master
+        {
+            Knob<int>* isInt = dynamic_cast<Knob<int>* >(master.second.get());
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master.second.get());
+            Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master.second.get());
+            assert(isInt || isBool || isDouble); //< other data types aren't supported
+            QWriteLocker l1(&_valueMutex);
+            if (isInt) {
+                _values[dimension] =  isInt->getValue(master.first);
+            } else if (isBool) {
+                _values[dimension] =  isBool->getValue(master.first);
+            } else if (isDouble) {
+                _values[dimension] =  isDouble->getValue(master.first);
+            }
         }
+        getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
+        
+        cloneExtraData(master.second);
     }
-    getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
-
-    cloneExtraData(master.second);
-
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
-
+    
     if (helper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
                             SLOT(onMasterChanged(int)));
     }
+    
     resetMaster(dimension);
     
     if (_signalSlotHandler) {
@@ -399,28 +404,30 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason)
 }
 
 template<>
-void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason)
+void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState)
 {
     assert(isSlave(dimension));
-    ///clone the master
+    
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master.second.get());
-        assert(isString); //< other data types aren't supported
-        QWriteLocker l1(&_valueMutex);
-        _values[dimension] =  isString->getValue(master.first);
 
+    if (copyState) {
+        ///clone the master
+        {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master.second.get());
+            assert(isString); //< other data types aren't supported
+            QWriteLocker l1(&_valueMutex);
+            _values[dimension] =  isString->getValue(master.first);
+            
+        }
+        getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
+        
+        cloneExtraData(master.second);
     }
-    getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
-
-    cloneExtraData(master.second);
-
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
-
     QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
                         SLOT(onMasterChanged(int)));
     resetMaster(dimension);
-
+    
     _signalSlotHandler->s_valueChanged(dimension);
     if (reason == Natron::PLUGIN_EDITED) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
@@ -608,7 +615,7 @@ void Knob<T>::evaluateAnimationChange()
 {
     //the holder cannot be a global holder(i.e: it cannot be tied application wide, e.g like Settings)
     SequenceTime time;
-    if (getHolder()->getApp()) {
+    if (getHolder() && getHolder()->getApp()) {
         time = getHolder()->getApp()->getTimeLine()->currentFrame();
     } else {
         time = 0;

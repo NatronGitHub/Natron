@@ -71,6 +71,9 @@ enum EventState
 
 struct RotoGui::RotoGuiPrivate
 {
+    
+    RotoGui* publicInterface;
+    
     NodeGui* node;
     ViewerGL* viewer;
     
@@ -128,8 +131,9 @@ struct RotoGui::RotoGuiPrivate
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
     bool evaluateOnKeyUp ; //< if true the next key up will call context->evaluateChange()
     
-    RotoGuiPrivate(NodeGui* n,ViewerTab* tab)
-    : node(n)
+    RotoGuiPrivate(RotoGui* pub,NodeGui* n,ViewerTab* tab)
+    : publicInterface(pub)
+    , node(n)
     , viewer(tab->getViewer())
     , context()
     , type(ROTOSCOPING)
@@ -165,6 +169,14 @@ struct RotoGui::RotoGuiPrivate
     }
     
     void clearSelection();
+    
+    void clearCPSSelection();
+    
+    void clearBeziersSelection();
+    
+    void onCurveLockedChangedRecursive(const RotoItem* item,bool* ret);
+    
+    bool removeBezierFromSelection(const Bezier* b);
     
     void refreshSelectionRectangle(const QPointF& pos);
     
@@ -211,7 +223,7 @@ QAction* RotoGui::createToolAction(QToolButton* toolGroup,const QIcon& icon,cons
 }
 
 RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
-: _imp(new RotoGuiPrivate(node,parent))
+: _imp(new RotoGuiPrivate(this,node,parent))
 {
     assert(parent);
     
@@ -305,14 +317,16 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
 
     QObject::connect(_imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onCurrentFrameChanged(SequenceTime,int)));
-    
+    QObject::connect(_imp->context.get(), SIGNAL(refreshViewerOverlays()), this, SLOT(onRefreshAsked()));
+    QObject::connect(_imp->context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)));
+    QObject::connect(_imp->context.get(), SIGNAL(itemLockedChanged(RotoItem*)), this, SLOT(onCurveLockedChanged(RotoItem*)));
     restoreSelectionFromContext();
 }
 
 RotoGui::~RotoGui()
 {
     
-}
+} 
 
 QWidget* RotoGui::getButtonsBar(RotoGui::Roto_Role role) const
 {
@@ -824,25 +838,51 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
     
     std::list<boost::shared_ptr<Bezier> > curves = context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
-        SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
-        selectedCps.insert(selectedCps.end(), points.begin(), points.end());
-        if (!points.empty()) {
-            selectedBeziers.push_back(*it);
-            context->linkBezierToContextKnobs(*it);
+        
+        if (!(*it)->isLockedRecursive()) {
+            SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
+            selectedCps.insert(selectedCps.end(), points.begin(), points.end());
+            if (!points.empty()) {
+                selectedBeziers.push_back(*it);
+            }
         }
     }
+    context->select(curves, RotoContext::OVERLAY_INTERACT);
     
     computeSelectedCpsBBOX();
 }
 
 void RotoGui::RotoGuiPrivate::clearSelection()
 {
-    for (SelectedBeziers::iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
-        context->unlinkBezierFromContextKnobs(*it);
-    }
-    selectedBeziers.clear();
+    clearBeziersSelection();
+    clearCPSSelection();
+    
+}
+void RotoGui::RotoGuiPrivate::clearCPSSelection()
+{
     selectedCps.clear();
     showCpsBbox = false;
+    selectedCpsBbox.setTopLeft(QPointF(0,0));
+    selectedCpsBbox.setTopRight(QPointF(0,0));
+}
+
+void RotoGui::RotoGuiPrivate::clearBeziersSelection()
+{
+
+    context->deselect(selectedBeziers, RotoContext::OVERLAY_INTERACT);
+    selectedBeziers.clear();
+}
+
+bool RotoGui::RotoGuiPrivate::removeBezierFromSelection(const Bezier* b)
+{
+    for (SelectedBeziers::iterator fb = selectedBeziers.begin(); fb != selectedBeziers.end(); ++fb) {
+        if (fb->get() == b) {
+            context->deselect(*fb,RotoContext::OVERLAY_INTERACT);
+            selectedBeziers.erase(fb);
+            return true;
+        }
+    }
+    return false;
 }
 
 static void handleControlPointMaximum(int time,const BezierCP& p,double* l,double *b,double *r,double *t)
@@ -902,13 +942,10 @@ void RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezi
         
         ///clear previous selection if the SHIFT modifier isn't held
         if (!modifiers.testFlag(Natron::ShiftModifier)) {
-            for (SelectedBeziers::iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
-                context->unlinkBezierFromContextKnobs(*it);
-            }
-            selectedBeziers.clear();
+            clearBeziersSelection();
         }
         selectedBeziers.push_back(curve);
-        context->linkBezierToContextKnobs(curve);
+        context->select(curve,RotoContext::OVERLAY_INTERACT);
     }
 
 }
@@ -1047,8 +1084,11 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         /////////////////CONTROL POINT SELECTION
         //////Check if the point is nearby a control point of a selected bezier
         ///Find out if the user selected a control point
-        
-        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,&nearbyCpIndex);
+        if (nearbyBezier->isLockedRecursive()) {
+            nearbyBezier.reset();
+        } else {
+            nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,&nearbyCpIndex);
+        }
 
     }
     switch (_imp->selectedTool) {
@@ -1144,12 +1184,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 } else if (cpCount == 0) {
                     
                     ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->unlinkBezierFromContextKnobs(nearbyBezier);
                     _imp->context->removeBezier(nearbyBezier.get());
-                    SelectedBeziers::iterator foundBezier =
-                    std::find(_imp->selectedBeziers.begin(), _imp->selectedBeziers.end(), nearbyBezier);
-                    assert(foundBezier != _imp->selectedBeziers.end());
-                    _imp->selectedBeziers.erase(foundBezier);
+                    _imp->removeBezierFromSelection(nearbyBezier.get());
                 }
                 SelectedCPs::iterator foundSelected = std::find(_imp->selectedCps.begin(), _imp->selectedCps.end(), nearbyCP);
                 if (foundSelected != _imp->selectedCps.end()) {
@@ -1590,13 +1626,7 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
                     if (curve == _imp->builtBezier.get()) {
                         _imp->builtBezier.reset();
                     }
-                    for (SelectedBeziers::iterator fb = _imp->selectedBeziers.begin(); fb != _imp->selectedBeziers.end(); ++fb) {
-                        if (fb->get() == curve) {
-                            _imp->context->unlinkBezierFromContextKnobs(*fb);
-                            _imp->selectedBeziers.erase(fb);
-                            break;
-                        }
-                    }
+                    _imp->removeBezierFromSelection(curve);
                 }
                 
             }
@@ -1612,20 +1642,14 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
                 if (b == _imp->builtBezier.get()) {
                     _imp->builtBezier.reset();
                 }
-                for (SelectedBeziers::iterator fb = _imp->selectedBeziers.begin(); fb != _imp->selectedBeziers.end(); ++fb) {
-                    if (fb->get() == b) {
-                        _imp->context->unlinkBezierFromContextKnobs(*fb);
-                        _imp->selectedBeziers.erase(fb);
-                        break;
-                    }
-                }
+                _imp->removeBezierFromSelection(b);
             }
             _imp->node->getNode()->getApp()->triggerAutoSave();
             _imp->context->evaluateChange();
             didSomething = true;
         }
         
-    } else if (e->key() == Qt::Key_Return) {
+    } else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
         if (_imp->selectedTool == DRAW_BEZIER && _imp->builtBezier && !_imp->builtBezier->isCurveFinished()) {
             _imp->builtBezier->setCurveFinished(true);
             _imp->builtBezier.reset();
@@ -1640,7 +1664,7 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
         if (_imp->selectedBeziers.empty()) {
             std::list<boost::shared_ptr<Bezier> > bez = _imp->context->getCurvesByRenderOrder();
             for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = bez.begin(); it!=bez.end(); ++it) {
-                _imp->context->linkBezierToContextKnobs(*it);
+                _imp->context->select(*it,RotoContext::OVERLAY_INTERACT);
                 _imp->selectedBeziers.push_back(*it);
             }
         } else {
@@ -1929,4 +1953,53 @@ void RotoGui::onCurrentFrameChanged(SequenceTime /*time*/,int)
 void RotoGui::restoreSelectionFromContext()
 {
     _imp->selectedBeziers = _imp->context->getSelectedCurves();
+}
+
+void RotoGui::onRefreshAsked()
+{
+    _imp->viewer->redraw();
+}
+
+void RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const RotoItem* item,bool* ret)
+{
+    const Bezier* b = dynamic_cast<const Bezier*>(item);
+    const RotoLayer* layer = dynamic_cast<const RotoLayer*>(item);
+    if (b) {
+        
+        for (SelectedBeziers::iterator fb = selectedBeziers.begin(); fb != selectedBeziers.end(); ++fb) {
+            if (fb->get() == b) {
+                context->deselect(*fb,RotoContext::OVERLAY_INTERACT);
+                selectedBeziers.erase(fb);
+                *ret = true;
+            }
+        }
+
+
+    } else if (layer) {
+        const std::list<boost::shared_ptr<RotoItem> >& items = layer->getItems();
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+            onCurveLockedChangedRecursive(it->get(), ret);
+        }
+    }
+}
+
+void RotoGui::onCurveLockedChanged(RotoItem* item)
+{
+    bool changed = false;
+    if (item) {
+        _imp->onCurveLockedChangedRecursive(item, &changed);
+    }
+    if (changed) {
+        _imp->viewer->redraw();
+    }
+    
+}
+
+void RotoGui::onSelectionChanged(int reason)
+{
+    if ((RotoContext::SelectionReason)reason != RotoContext::OVERLAY_INTERACT) {
+ 
+        _imp->selectedBeziers = _imp->context->getSelectedCurves();
+        _imp->viewer->redraw();
+    }
 }

@@ -308,6 +308,42 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_APPLICATION_ICON_PATH);
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_INVERTED:
+                img.load(NATRON_IMAGES_PATH"inverted.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_UNINVERTED:
+                img.load(NATRON_IMAGES_PATH"uninverted.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_VISIBLE:
+                img.load(NATRON_IMAGES_PATH"visible.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_UNVISIBLE:
+                img.load(NATRON_IMAGES_PATH"unvisible.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_LOCKED:
+                img.load(NATRON_IMAGES_PATH"locked.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_UNLOCKED:
+                img.load(NATRON_IMAGES_PATH"unlocked.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_LAYER:
+                img.load(NATRON_IMAGES_PATH"layer.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_BEZIER:
+                img.load(NATRON_IMAGES_PATH"bezier.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
+            case NATRON_PIXMAP_CURVE:
+                img.load(NATRON_IMAGES_PATH"curve.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
             default:
                 assert(!"Missing image.");
         }

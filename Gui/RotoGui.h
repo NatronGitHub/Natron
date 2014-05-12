@@ -26,6 +26,7 @@ class QKeyEvent;
 class QPointF;
 class ViewerTab;
 class QAction;
+class RotoItem;
 
 class NodeGui;
 
@@ -132,6 +133,12 @@ public slots:
     void onCurrentFrameChanged(SequenceTime,int);
     
     void restoreSelectionFromContext();
+    
+    void onRefreshAsked();
+    
+    void onCurveLockedChanged(RotoItem* item);
+    
+    void onSelectionChanged(int reason);
     
 private:
     

@@ -34,13 +34,9 @@ class ComboBox : public QFrame
  private:
     Q_OBJECT
     
-    Q_PROPERTY( bool pressed READ isPressed WRITE setPressed)
     
-    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     
-    Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
 
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     
     QHBoxLayout* _mainLayout;
     ClickableLabel* _currentText;
@@ -50,17 +46,11 @@ class ComboBox : public QFrame
     
     int _maximumTextSize;
     
-    bool pressed;
-    
     std::vector<int> _separators;
     std::vector<QAction*> _actions;
     MenuWithToolTips* _menu;
 
-    int animation;
-    
-    bool readOnly;
-    
-    bool dirty;
+
 public:
     
     explicit ComboBox(QWidget* parent = 0);
@@ -95,11 +85,7 @@ public:
     void setItemShortcut(int index,const QKeySequence& sequence);
     
     void setItemIcon(int index,const QIcon& icon);
-    
-    bool isPressed() const {return pressed;}
-    
-    void setPressed(bool b) {pressed = b;}
-    
+        
     void setMaximumWidthFromText(const QString& str);
     
     int activeIndex() const;
@@ -108,10 +94,12 @@ public:
     
     QString getCurrentIndexText() const;
     
-    bool getDirty() const { return dirty; }
     
     void setDirty(bool b);
-    
+    void setAnimation(int i);
+    void setReadOnly(bool readOnly) ;
+
+
 public slots:
     
     ///Changes the current index AND emits the signal void currentIndexChanged(int)
@@ -127,13 +115,8 @@ public slots:
     ///Same as setCurrentText but no signal will be emitted.
     void setCurrentText_no_emit(const QString& text);
     
-    void setAnimation(int i);
     
-    int getAnimation() const { return animation; }
     
-    void setReadOnly(bool readOnly) ;
-    
-    bool isReadOnly() const { return readOnly; }
     
 signals:
     

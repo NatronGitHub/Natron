@@ -17,9 +17,18 @@ CLANG_DIAG_ON(deprecated)
 class ClickableLabel : public QLabel
 {
     Q_OBJECT
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
 public:
 
-    ClickableLabel(const QString &text, QWidget *parent): QLabel(text, parent), _toggled(false) {}
+    ClickableLabel(const QString &text, QWidget *parent):
+    QLabel(text, parent),
+    _toggled(false) ,
+    dirty(false) ,
+    readOnly(false),
+    animation(0)
+    {}
 
     virtual ~ClickableLabel() OVERRIDE {}
 
@@ -27,8 +36,20 @@ public:
         _toggled = b;
     }
     
+    void setDirty(bool b);
+    
+    bool getDirty() const { return dirty; }
+    
     ///Updates the text as setText does but also keeps the current color info
     void setText_overload(const QString& str);
+    
+    int getAnimation() const { return animation; }
+
+    void setAnimation(int i);
+
+    bool isReadOnly() const { return readOnly; }
+    
+    void setReadOnly(bool readOnly) ;
 
 signals:
     void clicked(bool);
@@ -40,6 +61,9 @@ private:
     
 private:
     bool _toggled;
+    bool dirty;
+    bool readOnly;
+    int animation;
 };
 
 #endif // NATRON_GUI_CLICKABLELABEL_H_

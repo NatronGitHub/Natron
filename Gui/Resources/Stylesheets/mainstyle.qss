@@ -12,9 +12,9 @@ QLabel {
 }
 
 
-QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel {
+/*QLabel#ComboBoxLabel,QLabel#ComboBoxDropDownLabel {
     background-color: %3;
-}
+}*/
 
 
 NodeSettingsPanel[_selected="true"] {
@@ -176,43 +176,42 @@ QHeaderView:section{
     selection-color: %1;
 }
 
-ComboBox[pressed="false"][animation="0"]{
-    background-color: %3;
+ComboBox {
+    border-radius : 5px;
     border:1px solid black;
-    border-radius : 5px;
 }
-ComboBox[pressed="true"][animation="0"]{
-    background-color: %4;
-    border-radius : 5px;
+
+ClickableLabel[dirty="false"][animation="0"]{
+    background-color: %2;
+    color: %5;
 }
-ComboBox[pressed="false"][animation="1"]{
-    background-color: %6;
-    border:1px solid black;
-    border-radius : 5px;
-}
-ComboBox[pressed="true"][animation="1"]{
-    background-color: %6;
-    border-radius : 5px;
-}
-ComboBox[pressed="false"][animation="2"]{
-    background-color: %7;
-    border:1px solid black;
-    border-radius : 5px;
-}
-ComboBox[pressed="true"][animation="2"]{
-    background-color: %7;
-    border-radius : 5px;
-}
-ComboBox[readOnly="true"][pressed="false"]{
-    background-color: %3;
-    color: %8;
-}
-ComboBox[readOnly="true"][pressed="true"]{
-    background-color: %4;
-    color: %8;
-}
-ComboBox[dirty="true"]{
+ClickableLabel[dirty="true"][animation="0"]{
     background-color: black;
+    color: %5;
+}
+ClickableLabel[dirty="false"][animation="1"]{
+    background-color: %6;
+    color: %5;
+}
+ClickableLabel[dirty="true"][animation="1"]{
+    background-color: black;
+    color: %6;
+}
+ClickableLabel[dirty="false"][animation="2"]{
+    background-color: %7;
+    color: %5;
+}
+ClickableLabel[dirty="true"][animation="2"]{
+    background-color: black;
+    color: %7;
+}
+ClickableLabel[readOnly="true"][dirty="false"]{
+    background-color: %2;
+    color : %8;
+}
+ClickableLabel[readOnly="true"][dirty="true"]{
+    background-color: black;
+    color : %8;
 }
 
 TabWidget{background-color: %2;}

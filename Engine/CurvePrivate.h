@@ -29,6 +29,7 @@ struct CurvePrivate{
     enum CurveType{
         DOUBLE_CURVE = 0, //< the values held by the keyframes can be any real
         INT_CURVE, //< the values held by the keyframes can only be integers
+        INT_CURVE_CONSTANT_INTERP,//< same as INT_CURVE but interpolation is restricted to KEYFRAME_CONSTANT
         BOOL_CURVE, //< the values held by the keyframes can be either 0 or 1
         STRING_CURVE //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
                      // and times

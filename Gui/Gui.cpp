@@ -2192,9 +2192,6 @@ void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int l
     dialog->show();
 }
 
-bool Gui::isClosing() const {
-    return _imp->_appInstance->isClosing();
-}
 
 void Gui::setGlewVersion(const QString& version) {
     _imp->_glewVersion = version;

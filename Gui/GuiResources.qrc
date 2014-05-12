@@ -91,5 +91,14 @@
         <file>Resources/Images/nextKF.png</file>
         <file>Resources/Images/prevKF.png</file>
         <file>Resources/Images/removeKF.png</file>
+        <file>Resources/Images/curve.png</file>
+        <file>Resources/Images/inverted.png</file>
+        <file>Resources/Images/layer.png</file>
+        <file>Resources/Images/locked.png</file>
+        <file>Resources/Images/uninverted.png</file>
+        <file>Resources/Images/unlocked.png</file>
+        <file>Resources/Images/bezier.png</file>
+        <file>Resources/Images/unvisible.png</file>
+        <file>Resources/Images/visible.png</file>
     </qresource>
 </RCC>

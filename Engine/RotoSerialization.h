@@ -49,6 +49,7 @@ public:
     : name()
     , activated(false)
     , parentLayerName()
+    , locked(false)
     {
         
     }
@@ -65,6 +66,7 @@ private:
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("Activated",activated);
         ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
+        ar & boost::serialization::make_nvp("Locked",locked);
     }
     
     template<class Archive>
@@ -74,6 +76,7 @@ private:
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("Activated",activated);
         ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
+        ar & boost::serialization::make_nvp("Locked",locked);
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -81,6 +84,7 @@ private:
     std::string name;
     bool activated;
     std::string parentLayerName;
+    bool locked;
     
 };
 
@@ -118,6 +122,7 @@ private:
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
         ar & boost::serialization::make_nvp("Inverted",_inverted);
+        ar & boost::serialization::make_nvp("Interpolation",_interpolation);
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -140,6 +145,7 @@ private:
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
         ar & boost::serialization::make_nvp("Inverted",_inverted);
+        ar & boost::serialization::make_nvp("Interpolation",_interpolation);
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -153,6 +159,7 @@ private:
     KnobSerialization _feather;
     KnobSerialization _featherFallOff;
     KnobSerialization _inverted;
+    KnobSerialization _interpolation;
     double _overlayColor[4];
     
 };
@@ -345,6 +352,7 @@ private:
         ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
         ar & boost::serialization::make_nvp("FeatherLink",_featherLink);
         ar & boost::serialization::make_nvp("Selection",_selectedItems);
+        ar & boost::serialization::make_nvp("Counters",_itemCounters);
     }
     
     template<class Archive>
@@ -357,6 +365,7 @@ private:
         ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
         ar & boost::serialization::make_nvp("FeatherLink",_featherLink);
         ar & boost::serialization::make_nvp("Selection",_selectedItems);
+        ar & boost::serialization::make_nvp("Counters",_itemCounters);
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -366,6 +375,7 @@ private:
     bool _autoKeying;
     bool _rippleEdit;
     bool _featherLink;
+    std::map<std::string,int> _itemCounters;
 };
 
 #endif // ROTOSERIALIZATION_H

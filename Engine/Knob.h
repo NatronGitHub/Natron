@@ -375,7 +375,7 @@ protected:
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
      * the dimension was really slaved.
      **/
-    virtual void unSlave(int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) = 0;
     
 public:
     
@@ -393,7 +393,7 @@ public:
     /**
      * @brief Calls unSlave with a value changed reason of Natron::PLUGIN_EDITED.
      **/
-    void unSlave(int dimension);
+    void unSlave(int dimension,bool copyState);
     
     /**
      * @brief Calls unSlave with a value changed reason of Natron::USER_EDITED.
@@ -781,7 +781,7 @@ private:
      **/
     bool setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
     
-    virtual void unSlave(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
     
 public:
     

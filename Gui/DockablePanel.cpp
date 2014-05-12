@@ -232,9 +232,6 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
 
 void DockablePanel::onLineEditNameEditingFinished() {
     
-    if (_gui->isClosing()) {
-        return;
-    }
     
     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
     if (effect) {

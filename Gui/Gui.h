@@ -251,9 +251,7 @@ public:
     void updateLastSequenceOpenedPath(const QString& path);
     
     void updateLastSequenceSavedPath(const QString& path);
-    
-    bool isClosing() const;
-    
+        
     void setUndoRedoStackLimit(int limit);
     
     void setGlewVersion(const QString& version);

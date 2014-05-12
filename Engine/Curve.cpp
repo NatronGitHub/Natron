@@ -167,7 +167,7 @@ Curve::Curve(KnobI *owner)
         try {
             Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
             if (k) {
-                _imp->type = CurvePrivate::INT_CURVE;
+                _imp->type = CurvePrivate::INT_CURVE_CONSTANT_INTERP;
             }
         } catch (const std::bad_cast& e) {
         }
@@ -260,7 +260,9 @@ bool Curve::addKeyFrame(KeyFrame key)
 {
     
     QWriteLocker l(&_imp->_lock);
-    if (_imp->type == CurvePrivate::BOOL_CURVE || _imp->type == CurvePrivate::STRING_CURVE) {
+    
+    if (_imp->type == CurvePrivate::BOOL_CURVE || _imp->type == CurvePrivate::STRING_CURVE ||
+        _imp->type == CurvePrivate::INT_CURVE_CONSTANT_INTERP) {
         key.setInterpolation(Natron::KEYFRAME_CONSTANT);
     }
     

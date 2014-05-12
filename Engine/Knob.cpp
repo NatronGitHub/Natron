@@ -88,14 +88,14 @@ void KnobI::onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI>&  other,
     slaveTo(dimension, other, otherDimension, Natron::USER_EDITED);
 }
 
-void KnobI::unSlave(int dimension)
+void KnobI::unSlave(int dimension,bool copyState)
 {
-    unSlave(dimension, Natron::PLUGIN_EDITED);
+    unSlave(dimension, Natron::PLUGIN_EDITED,copyState);
 }
 
 void KnobI::onKnobUnSlaved(int dimension)
 {
-    unSlave(dimension, Natron::USER_EDITED);
+    unSlave(dimension, Natron::USER_EDITED,true);
 }
 
 
@@ -930,7 +930,7 @@ void KnobHolder::unslaveAllKnobs() {
     for (U32 i = 0; i < thisKnobs.size(); ++i) {
         for (int j = 0; j < thisKnobs[i]->getDimension(); ++j) {
             if (thisKnobs[i]->isSlave(j)) {
-                thisKnobs[i]->unSlave(j);
+                thisKnobs[i]->unSlave(j,true);
             }
         }
     }

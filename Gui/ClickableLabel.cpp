@@ -5,7 +5,7 @@
 
 #include "ClickableLabel.h"
 #include <QEvent>
-
+#include <QStyle>
 void ClickableLabel::mousePressEvent(QMouseEvent *e) {
     if (isEnabled()) {
         _toggled = !_toggled;
@@ -37,4 +37,29 @@ void ClickableLabel::setText_overload(const QString& str) {
         setText(str);
     }
 
+}
+
+void ClickableLabel::setReadOnly(bool readOnly)
+{
+    
+    this->readOnly = readOnly;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+void ClickableLabel::setAnimation(int i){
+    animation = i;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
+
+
+void ClickableLabel::setDirty(bool b)
+{
+    dirty = b;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
 }

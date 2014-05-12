@@ -33,10 +33,6 @@ ComboBox::ComboBox(QWidget* parent)
 #if IS_MAXIMUMTEXTSIZE_USEFUL
 , _maximumTextSize(0)
 #endif
-, pressed(false)
-, animation(0)
-, readOnly(false)
-, dirty(false)
 {
     
     _mainLayout = new QHBoxLayout(this);
@@ -83,9 +79,7 @@ void ComboBox::mousePressEvent(QMouseEvent* e){
         QPixmap pixC;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
         _dropDownIcon->setPixmap(pixC);
-        setPressed(true);
-        style()->unpolish(this);
-        style()->polish(this);
+        setDirty(true);
         createMenu();
         QFrame::mousePressEvent(e);
 
@@ -96,9 +90,7 @@ void ComboBox::mouseReleaseEvent(QMouseEvent* e){
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
-    setPressed(false);
-    style()->unpolish(this);
-    style()->polish(this);
+    setDirty(false);
     QFrame::mouseReleaseEvent(e);
 }
 
@@ -111,7 +103,7 @@ void ComboBox::createMenu(){
                 break;
             }
         }
-        _actions[i]->setEnabled(!readOnly);
+        _actions[i]->setEnabled(!_currentText->isReadOnly());
         _menu->addAction(_actions[i]);
     }
     QAction* triggered = _menu->exec(this->mapToGlobal(QPoint(0,height())));
@@ -125,22 +117,11 @@ void ComboBox::createMenu(){
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
-    setPressed(false);
-    style()->unpolish(this);
-    style()->polish(this);
+    setDirty(false);
     
 }
 
-void ComboBox::setReadOnly(bool readOnly)
-{
 
-    this->readOnly = readOnly;
-    _currentText->setEnabled(!readOnly);
-    _dropDownIcon->setEnabled(!readOnly);
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
-}
 
 
 int ComboBox::count() const{
@@ -410,19 +391,23 @@ void ComboBox::enableItem(int index){
     _actions[index]->setEnabled(true);
 }
 
+void ComboBox::setReadOnly(bool readOnly)
+{
+    
+    _currentText->setEnabled(!readOnly);
+    _dropDownIcon->setEnabled(!readOnly);
+    _currentText->setReadOnly(readOnly);
+    _dropDownIcon->setReadOnly(readOnly);
+}
+
 void ComboBox::setAnimation(int i){
-    animation = i;
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
+    _currentText->setAnimation(i);
+    _dropDownIcon->setAnimation(i);
 }
 
 void ComboBox::setDirty(bool b)
 {
-    dirty = b;
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
-
+    _currentText->setDirty(b);
+    _dropDownIcon->setDirty(b);
 }
 

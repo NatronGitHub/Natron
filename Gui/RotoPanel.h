@@ -14,8 +14,10 @@
 
 #include "Global/GlobalDefines.h"
 
+class QTreeWidgetItem;
+class QWidget;
 class NodeGui;
-
+class RotoItem;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
@@ -28,6 +30,9 @@ public:
     
     virtual ~RotoPanel();
     
+    void onTreeOutOfFocusEvent();
+    
+    
 public slots:
     
     void onGoToPrevKeyframeButtonClicked();
@@ -38,7 +43,8 @@ public slots:
     
     void onRemoveKeyframeButtonClicked();
     
-    void onSelectionChanged();
+    ///This gets called when the selection changes internally in the RotoContext
+    void onSelectionChanged(int reason);
     
     void onSelectedBezierKeyframeSet(int time);
     
@@ -46,7 +52,39 @@ public slots:
     
     void onTimeChanged(SequenceTime time,int reason);
     
+    ///A new item has been created internally
+    void onItemInserted();
+    
+    ///An item was removed by the user
+    void onItemRemoved(RotoItem* item);
+    
+    ///An item had its interpolation changed
+    void onRotoItemInterpolationChanged();
+    
+    ///An item had its inverted state changed
+    void onRotoItemInversionChanged();
+    
+    ///The user changed the current item in the tree
+    void onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem* previous);
+    
+    ///An item content was changed
+    void onItemChanged(QTreeWidgetItem* item,int column);
+    
+    ///An item was clicked
+    void onItemClicked(QTreeWidgetItem* item,int column);
+    
+    ///An item was double clicked
+    void onItemDoubleClicked(QTreeWidgetItem* item,int column);
+    
+    ///Connected to QApplication::focusChanged to deal with an issue of the QTreeWidget
+    void onFocusChanged(QWidget* old,QWidget*);
+    
+    ///This gets called when the selection in the tree has changed
+    void onItemSelectionChanged();
+
 private:
+    
+    void onSelectionChangedInternal();
     
     boost::scoped_ptr<RotoPanelPrivate> _imp;
 };

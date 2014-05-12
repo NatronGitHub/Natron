@@ -20,6 +20,7 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QMetaType>
 
 #include "Engine/Rect.h"
 
@@ -46,6 +47,7 @@ class RectD;
 class Bool_Knob;
 class Double_Knob;
 class Int_Knob;
+class Choice_Knob;
 
 class Bezier;
 class RotoItemSerialization;
@@ -176,8 +178,9 @@ public:
 class RotoContext;
 class RotoLayer;
 struct RotoItemPrivate;
-class RotoItem
+class RotoItem : public QObject
 {
+    Q_OBJECT
     
 public:
     
@@ -197,10 +200,19 @@ public:
     RotoLayer* getParentLayer() const;
     
     ///only callable from the main-thread
-    void setGloballyActivated(bool a);
+    void setGloballyActivated(bool a,bool setChildren);
     
     ///MT-safe
     bool isGloballyActivated() const;
+    
+    void isDeactivatedRecursive(bool* ret) const;
+    
+    void setLocked(bool l,bool lockChildren);
+    bool getLocked() const;
+    
+    bool isLockedRecursive() const;
+    
+    void emitLockedChanged();
     
     /**
      * @brief Returns at which hierarchy level the item is.
@@ -224,6 +236,10 @@ public:
      **/
     virtual void load(const RotoItemSerialization& obj);
     
+signals:
+    
+    void lockedChanged();
+    
 protected:
     
     RotoContext* getContext() const;
@@ -232,8 +248,13 @@ protected:
     
 private:
     
+    void setGloballyActivated_recursive(bool a);
+    void setLocked_recursive(bool locked);
+    
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
+
+Q_DECLARE_METATYPE(RotoItem*);
 
 /**
  * @brief Base class for all drawable items
@@ -241,7 +262,11 @@ private:
 struct RotoDrawableItemPrivate;
 class RotoDrawableItem : public RotoItem
 {
+    
+    Q_OBJECT
+    
 public:
+    
     
     RotoDrawableItem(RotoContext* context,const std::string& name,RotoLayer* parent);
     
@@ -284,6 +309,17 @@ public:
     double getFeatherFallOff(int time) const;
     
     /**
+     * @brief Get the interpolation type at the given keyframe.
+     * 0 = Smooth
+     * 1 = Horizontal
+     * 2 = Linear
+     * 3 = Constant
+     * 4 = Catmull-Rom
+     * 5 = Cubic
+     **/
+    int getInterpolation(int time) const;
+    
+    /**
      * @brief The color that the GUI should use to draw the overlay of the shape
      **/
     void getOverlayColor(double* color) const;
@@ -296,7 +332,15 @@ public:
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    boost::shared_ptr<Choice_Knob> getInterpolationKnob() const;
     
+signals:
+    
+    void interpolationChanged();
+    
+    void inversionChanged();
+    
+    void overlayColorChanged();
     
 private:
     
@@ -361,7 +405,7 @@ private:
 
 
 struct BezierPrivate;
-class Bezier : public QObject, public RotoDrawableItem
+class Bezier : public RotoDrawableItem
 {
     
     Q_OBJECT
@@ -693,7 +737,7 @@ public:
      **/
     boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string& baseName);
     
-    void removeBezier(const Bezier* c);
+    void removeBezier(Bezier* c);
     
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
@@ -738,12 +782,20 @@ public:
     
     void load(const RotoContextSerialization& obj);
     
+    enum SelectionReason {
+        OVERLAY_INTERACT = 0, ///when the user presses an interact
+        SETTINGS_PANEL, ///when the user interacts with the settings panel
+        OTHER ///when the project loader restores the selection
+    };
+    
     /**
      * @brief This must be called by the GUI whenever this bezier is selected so that the GUI knob values
      * actually reflect the values of this bezier.
      **/
-    void linkBezierToContextKnobs(const boost::shared_ptr<Bezier>& b);
-    void unlinkBezierFromContextKnobs(const boost::shared_ptr<Bezier>& b);
+    void select(const boost::shared_ptr<Bezier>& b,RotoContext::SelectionReason reason);
+    void select(const std::list<boost::shared_ptr<Bezier> > & beziers,RotoContext::SelectionReason reason);
+    void deselect(const boost::shared_ptr<Bezier>& b,RotoContext::SelectionReason reason);
+    void deselect(const std::list<boost::shared_ptr<Bezier> >& beziers,RotoContext::SelectionReason reason);
     
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
@@ -773,11 +825,29 @@ public:
     
     boost::shared_ptr<RotoItem> getItemByName(const std::string& n) const;
     
+    boost::shared_ptr<RotoItem> getLastInsertedItem() const;
+    
+    boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    
+    boost::shared_ptr<Choice_Knob> getInterpolationKnob() const;
+    
 signals:
     
-    void selectionChanged();
+    /**
+     * Emitted when the selection is changed. The integer corresponds to the
+     * RotoContext::SelectionReason enum.
+     **/
+    void selectionChanged(int);
     
     void restorationComplete();
+    
+    void itemInserted();
+    
+    void itemRemoved(RotoItem*);
+    
+    void refreshViewerOverlays();
+
+    void itemLockedChanged(RotoItem* item);
     
 public slots:
     
@@ -787,7 +857,12 @@ public slots:
     
     void onRippleEditChanged(bool enabled);
     
+    void onItemLockedChanged();
+        
 private:
+    
+    void selectInternal(const boost::shared_ptr<Bezier>& b);
+    void deselectInternal(const boost::shared_ptr<Bezier>& b);
     
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

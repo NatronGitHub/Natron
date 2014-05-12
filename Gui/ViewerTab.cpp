@@ -61,6 +61,8 @@ struct ViewerTabPrivate {
     /*OpenGL viewer*/
 	ViewerGL* viewer;
     
+    GuiAppInstance* app;
+    
     QWidget* _viewerContainer;
     QHBoxLayout* _viewerLayout;
     
@@ -130,7 +132,8 @@ struct ViewerTabPrivate {
     ViewerInstance* _viewerNode;// < pointer to the internal node
 
     ViewerTabPrivate(Gui* gui,ViewerInstance* node)
-    : _currentViewIndex(0)
+    : app(gui->getApp())
+    , _currentViewIndex(0)
     , _gui(gui)
     , _viewerNode(node)
     {
@@ -301,7 +304,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
                                "Tells the viewer what view should be displayed.");
     _imp->_secondRowLayout->addWidget(_imp->_viewsComboBox);
     _imp->_viewsComboBox->hide();
-    int viewsCount = _imp->_gui->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
+    int viewsCount = _imp->app->getProject()->getProjectViewsCount(); //getProjectViewsCount
     updateViewsMenu(viewsCount);
     
     _imp->_secondRowLayout->addStretch();
@@ -574,7 +577,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     /*=================================================*/
     
     /*frame seeker*/
-    _imp->_timeLineGui = new TimeLineGui(_imp->_gui->getApp()->getTimeLine(),_imp->_gui,this);
+    _imp->_timeLineGui = new TimeLineGui(_imp->app->getTimeLine(),_imp->_gui,this);
     _imp->_timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _imp->_mainLayout->addWidget(_imp->_timeLineGui);
     /*================================================*/
@@ -604,7 +607,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(_imp->lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
     QObject::connect(_imp->loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
-    QObject::connect(_imp->_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
+    QObject::connect(_imp->app->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
     QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
                      SLOT(onCachedFrameAdded(SequenceTime)));
@@ -942,7 +945,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
 }
 bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::MouseButtonPress) {
-        _imp->_gui->selectNode(_imp->_gui->getApp()->getNodeGui(_imp->_viewerNode->getNode()));
+        _imp->_gui->selectNode(_imp->app->getNodeGui(_imp->_viewerNode->getNode()));
         
     }
     return QWidget::eventFilter(target, event);
@@ -966,13 +969,13 @@ void ViewerTab::showView(int view){
     QMutexLocker l(&_imp->_currentViewMutex);
     _imp->_currentViewIndex = view;
     abortRendering();
-    bool isAutoPreview = _imp->_gui->getApp()->getProject()->isAutoPreviewEnabled();
+    bool isAutoPreview = _imp->app->getProject()->isAutoPreviewEnabled();
     _imp->_viewerNode->refreshAndContinueRender(isAutoPreview);
 }
 
 
 void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return;
     }
 
@@ -993,7 +996,7 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
 
 bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     
@@ -1024,7 +1027,7 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
 
 bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     
@@ -1054,7 +1057,7 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
 
 bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     
@@ -1084,7 +1087,7 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
 
 bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     
@@ -1115,7 +1118,7 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
 
 bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     
@@ -1147,7 +1150,7 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
 
 bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
@@ -1172,7 +1175,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e
 
 bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
     
-    if (_imp->_gui->isClosing()) {
+    if (_imp->app->isClosing()) {
         return false;
     }
     bool ret = false;
@@ -1194,7 +1197,8 @@ bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
 
 bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
     
-    if (_imp->_gui->isClosing()) {
+    
+    if (_imp->app->isClosing()) {
         return false;
     }
     bool ret = false;

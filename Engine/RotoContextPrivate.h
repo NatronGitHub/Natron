@@ -141,12 +141,19 @@ struct RotoItemPrivate
     ////case allows to define a life-time
     bool globallyActivated;
     
+    ////A locked item should not be modifiable by the GUI
+    bool locked;
+    
     RotoItemPrivate(RotoContext* context,const std::string& n,RotoLayer* parent)
     : context(context)
     , name(n)
     , parentLayer(parent)
     , globallyActivated(true)
+    , locked(false)
     {}
+    
+    
+
 };
 
 typedef std::list< boost::shared_ptr<RotoItem> > RotoItems;
@@ -173,6 +180,7 @@ struct RotoDrawableItemPrivate
                                                    //alpha value is half the original value when at half distance from the feather distance
     boost::shared_ptr<Bool_Knob> activated; //< should the curve be visible/rendered ? (animable)
     boost::shared_ptr<Bool_Knob> inverted; //< invert the rendering
+    boost::shared_ptr<Choice_Knob> interpolation; //< interpolation of the control points
     
     RotoDrawableItemPrivate()
     : opacity(new Double_Knob(NULL,"Opacity",1))
@@ -180,17 +188,57 @@ struct RotoDrawableItemPrivate
     , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1))
     , activated(new Bool_Knob(NULL,"Activated",1))
     , inverted(new Bool_Knob(NULL,"Inverted",1))
+    , interpolation(new Choice_Knob(NULL,"Interpolation",1))
     {
         opacity->populate();
         opacity->setDefaultValue(1.);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(opacity));
+            opacity->setSignalSlotHandler(handler);
+        }
+        
         feather->populate();
         feather->setDefaultValue(0);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(feather));
+            feather->setSignalSlotHandler(handler);
+        }
+
         featherFallOff->populate();
         featherFallOff->setDefaultValue(0.5);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(featherFallOff));
+            featherFallOff->setSignalSlotHandler(handler);
+        }
+        
         activated->populate();
         activated->setDefaultValue(true);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(activated));
+            activated->setSignalSlotHandler(handler);
+        }
+
         inverted->populate();
         inverted->setDefaultValue(false);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(inverted));
+            inverted->setSignalSlotHandler(handler);
+        }
+        interpolation->populate();
+        std::vector<std::string> choices;
+        choices.push_back("Smooth");
+        choices.push_back("Horizontal");
+        choices.push_back("Linear");
+        choices.push_back("Constant");
+        choices.push_back("Catmull-Rom");
+        choices.push_back("Cubic");
+        interpolation->populateChoices(choices);
+        interpolation->setDefaultValue(0);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(interpolation));
+            interpolation->setSignalSlotHandler(handler);
+        }
+        
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;
         overlayColor[2] = 0.196936;
@@ -218,6 +266,7 @@ struct RotoContextPrivate
     boost::shared_ptr<Double_Knob> featherFallOff;
     boost::shared_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
     boost::shared_ptr<Bool_Knob> inverted;
+    boost::shared_ptr<Choice_Knob> interpolation;
     
     ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
     ////to give a unique default name to each shape
@@ -226,6 +275,8 @@ struct RotoContextPrivate
     
     ///This keeps track  of the items linked to the context knobs
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
+    
+    boost::shared_ptr<RotoItem> lastInsertedItem;
     
     RotoContextPrivate(Natron::Node* n )
     : rotoContextMutex()
@@ -270,6 +321,20 @@ struct RotoContextPrivate
                                  "outside the shape will be set to 1 and everything inside the shape will be set to 0.");
         inverted->setDefaultValue(false);
         inverted->setAllDimensionsEnabled(false);
+        
+        interpolation = Natron::createKnob<Choice_Knob>(effect, "Interpolation");
+        interpolation->setHintToolTip("Controls the interpolation of the selected shape(s) movement at the selected keyframe."
+                                      " You can change the interpolation at each keyframe to change the pace of the movements.");
+        std::vector<std::string> choices;
+        choices.push_back("Smooth");
+        choices.push_back("Horizontal");
+        choices.push_back("Linear");
+        choices.push_back("Constant");
+        choices.push_back("Catmull-Rom");
+        choices.push_back("Cubic");
+        interpolation->populateChoices(choices);
+        interpolation->setDefaultValue(0);
+        interpolation->setAllDimensionsEnabled(false);
     }
     
     /**
