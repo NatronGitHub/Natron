@@ -114,7 +114,7 @@ private:
     
     void smoothPoint(int time,bool autoKeying,bool rippleEdit);
     
-    
+    void setInterpolation(Natron::KeyframeType type);
     //////Const functions, fine if called by another class than the Bezier class, as long
     //////as it remains on the main-thread (the setter thread).
 public:
@@ -672,6 +672,9 @@ public:
      **/
     int getNextKeyframeTime(int time) const;
     
+public slots:
+    
+    void onInterpolationChanged();
     
 signals:
     

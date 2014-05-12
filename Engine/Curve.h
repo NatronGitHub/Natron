@@ -231,6 +231,8 @@ public:
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameInterpolation(Natron::KeyframeType interp,int index,int* newIndex = NULL);
+    
+    void setCurveInterpolation(Natron::KeyframeType interp);
 
     std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
     
@@ -278,6 +280,8 @@ private:
     bool hasYRange() const;
 
     bool mustClamp() const;
+    
+    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeType type);
 
 private:
     boost::scoped_ptr<CurvePrivate> _imp;

@@ -466,6 +466,16 @@ bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
     return false;
 }
 
+void BezierCP::setInterpolation(Natron::KeyframeType type)
+{
+    _imp->curveX.setCurveInterpolation(type);
+    _imp->curveY.setCurveInterpolation(type);
+    _imp->curveLeftBezierX.setCurveInterpolation(type);
+    _imp->curveLeftBezierY.setCurveInterpolation(type);
+    _imp->curveRightBezierX.setCurveInterpolation(type);
+    _imp->curveRightBezierY.setCurveInterpolation(type);
+}
+
 ////////////////////////////////////RotoItem////////////////////////////////////
 namespace {
     class RotoMetaTypesRegistration
@@ -762,13 +772,13 @@ void RotoDrawableItem::load(const RotoItemSerialization &obj)
     
     
     {
-        QMutexLocker l(&itemMutex);
         _imp->activated->clone(s._activated.getKnob());
         _imp->opacity->clone(s._opacity.getKnob());
         _imp->feather->clone(s._feather.getKnob());
         _imp->featherFallOff->clone(s._featherFallOff.getKnob());
         _imp->inverted->clone(s._inverted.getKnob());
         _imp->interpolation->clone(s._interpolation.getKnob());
+        QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
     }
     RotoItem::load(obj);
@@ -833,6 +843,8 @@ void RotoDrawableItem::setOverlayColor(const double *color)
     }
     emit overlayColorChanged();
 }
+
+
 
 boost::shared_ptr<Bool_Knob> RotoDrawableItem::getActivatedKnob() const { return _imp->activated; }
 boost::shared_ptr<Int_Knob> RotoDrawableItem::getFeatherKnob() const { return _imp->feather; }
@@ -1124,7 +1136,7 @@ Bezier::Bezier(RotoContext* ctx,const std::string& name,RotoLayer* parent)
 : RotoDrawableItem(ctx,name,parent)
 , _imp(new BezierPrivate())
 {
-    
+    QObject::connect(this,SIGNAL(interpolationChanged()),this,SLOT(onInterpolationChanged()));
 }
 
 Bezier::~Bezier()
@@ -2405,6 +2417,40 @@ int Bezier::getNextKeyframeTime(int time) const
     return INT_MAX;
 }
 
+void Bezier::onInterpolationChanged()
+{
+    int time = getContext()->getTimelineCurrentTime();
+    int interp = getInterpolation(time);
+    Natron::KeyframeType type;
+    switch (interp) {
+        case 0:
+            type = Natron::KEYFRAME_SMOOTH;
+            break;
+        case 1:
+            type = Natron::KEYFRAME_HORIZONTAL;
+            break;
+        case 2:
+            type = Natron::KEYFRAME_LINEAR;
+            break;
+        case 3:
+            type = Natron::KEYFRAME_CONSTANT;
+            break;
+        case 4:
+            type = Natron::KEYFRAME_CATMULL_ROM;
+            break;
+        case 5:
+            type = Natron::KEYFRAME_CUBIC;
+            break;
+        default:
+            break;
+    }
+    QMutexLocker l(&itemMutex);
+    BezierCPs::iterator fp = _imp->featherPoints.begin();
+    for (BezierCPs::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it,++fp) {
+        (*it)->setInterpolation(type);
+        (*fp)->setInterpolation(type);
+    }
+}
 
 ////////////////////////////////////RotoContext////////////////////////////////////
 

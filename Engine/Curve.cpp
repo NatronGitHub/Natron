@@ -921,18 +921,14 @@ KeyFrame Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index,i
         assert(it != _imp->keyFrames.end());
         
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ((_imp->type == CurvePrivate::STRING_CURVE || _imp->type == CurvePrivate::BOOL_CURVE)
-            && interp != Natron::KEYFRAME_CONSTANT) {
+        if ((_imp->type == CurvePrivate::STRING_CURVE || _imp->type == CurvePrivate::BOOL_CURVE ||
+             _imp->type == CurvePrivate::INT_CURVE_CONSTANT_INTERP) && interp != Natron::KEYFRAME_CONSTANT) {
             return *it;
         }
         
         
         if (interp != it->getInterpolation()) {
-            KeyFrame newKey(*it);
-            newKey.setInterpolation(interp);
-            it = addKeyFrameNoUpdate(newKey).first;
-            evaluateCurveChanged(KEYFRAME_CHANGED,it);
-            evaluateAnimation = true;
+            it = setKeyframeInterpolation_internal(it, interp);
         }
         if (newIndex) {
             *newIndex = std::distance(_imp->keyFrames.begin(),it);
@@ -943,6 +939,43 @@ KeyFrame Curve::setKeyFrameInterpolation(Natron::KeyframeType interp,int index,i
         _imp->owner->evaluateAnimationChange();
     }
     return ret;
+}
+
+void Curve::setCurveInterpolation(Natron::KeyframeType interp)
+{
+    bool evaluateAnimation = false;
+
+    {
+        QWriteLocker l(&_imp->_lock);
+        ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
+        if ((_imp->type == CurvePrivate::STRING_CURVE || _imp->type == CurvePrivate::BOOL_CURVE ||
+             _imp->type == CurvePrivate::INT_CURVE_CONSTANT_INTERP) && interp != Natron::KEYFRAME_CONSTANT) {
+            return;
+        }
+        for (int i = 0; i < (int)_imp->keyFrames.size(); ++i)
+        {
+            KeyFrameSet::iterator it = _imp->keyFrames.begin();
+            std::advance(it, i);
+            if (interp != it->getInterpolation()) {
+                it = setKeyframeInterpolation_internal(it, interp);
+                evaluateAnimation = true;
+            }
+        }
+    }
+    if (evaluateAnimation && _imp->owner) {
+        _imp->owner->evaluateAnimationChange();
+    }
+}
+
+KeyFrameSet::iterator Curve::setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeType interp)
+{
+    ///private should not be locked
+    assert(it != _imp->keyFrames.end());
+    KeyFrame newKey(*it);
+    newKey.setInterpolation(interp);
+    it = addKeyFrameNoUpdate(newKey).first;
+    evaluateCurveChanged(KEYFRAME_CHANGED,it);
+    return it;
 }
 
 KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason, KeyFrameSet::iterator key)
