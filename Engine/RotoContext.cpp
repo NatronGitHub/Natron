@@ -3270,6 +3270,14 @@ void RotoContext::onItemLockedChanged()
     }
 }
 
+static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
+{
+    if (mipmapLevel != 0) {
+        int pot = (1 << mipmapLevel);
+        x /= pot;
+        y /= pot;
+    }
+}
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                             int view,unsigned int mipmapLevel,bool byPassCache)
@@ -3293,7 +3301,6 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
    
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
-    bool didInitializeInverted = false;
     if (cached) {
         if (cached && byPassCache) {
             ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
@@ -3340,7 +3347,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         return image;
     }
     cairo_t* cr = cairo_create(cairoImg);
-    
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     
     for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = splines.begin(); it2!=splines.end(); ++it2,++i) {
         
@@ -3350,6 +3357,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             
             
             BezierCPs cps = (*it2)->getControlPoints_mt_safe();
+            BezierCPs fps = (*it2)->getFeatherPoints_mt_safe();
+            
+            assert(cps.size() == fps.size());
+            
             if (cps.empty()) {
                 continue;
             }
@@ -3361,15 +3372,27 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 cairo_paint(cr);
             }
             
-            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
-            cairo_new_path(cr);
+            
             BezierCPs::iterator point = cps.begin();
-            double initialX,initialY;
-            (*point)->getPositionAtTime(time, &initialX, &initialY);
-            cairo_move_to(cr, initialX, initialY);
+            BezierCPs::iterator fpoint = fps.begin();
+
             
             BezierCPs::iterator nextPoint = point;
             ++nextPoint;
+            BezierCPs::iterator nextFPoint = fpoint;
+            ++nextFPoint;
+
+            
+            double initialX,initialY;
+            (*point)->getPositionAtTime(time, &initialX, &initialY);
+            adjustToPointToScale(mipmapLevel,initialX,initialY);
+            
+            ////first pass, fill the internal bezier
+            
+            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
+            cairo_new_path(cr);
+            cairo_move_to(cr, initialX, initialY);
+        
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {
                     nextPoint = cps.begin();
@@ -3379,6 +3402,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
                 (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
                 (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
+                
+                adjustToPointToScale(mipmapLevel,rightX,rightY);
+                adjustToPointToScale(mipmapLevel,nextX,nextY);
+                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
                 cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
                 
                 ++point;
@@ -3386,8 +3413,97 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             }
             
             cairo_fill(cr);
+            
+            
+            ////second pass, fill the feather edge
+            cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+            if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+                cairo_pattern_destroy(mesh);
+                continue;
+            }
+            cairo_set_source(cr, mesh);
+
+            point = cps.begin();
+            nextPoint = point;
+            ++nextPoint;
+            
+            while (point != cps.end()) {
+                if (nextPoint == cps.end()) {
+                    nextPoint = cps.begin();
+                    nextFPoint = fps.begin();
+                }
+                
+                Point p0,p1,p2,p3;
+                (*point)->getPositionAtTime(time, &p0.first, &p0.second);
+                adjustToPointToScale(mipmapLevel,p0.first,p0.second);
+                (*fpoint)->getPositionAtTime(time, &p3.first, &p3.second);
+                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
+                ///linear interpolation for now
+                p1 = p0;
+                p2 = p3;
+                
+                ///move to the initial point
+                cairo_mesh_pattern_begin_patch(mesh);
+                cairo_mesh_pattern_move_to(mesh, p0.first, p0.second);
+                
+                ///make the 1st bezier segment
+                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                
+                ///make the 2nd bezier segment
+                p0 = p3;
+                (*fpoint)->getRightBezierPointAtTime(time, &p1.first, &p1.second);
+                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
+                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2.first, &p2.second);
+                adjustToPointToScale(mipmapLevel,p2.first,p2.second);
+                (*nextFPoint)->getPositionAtTime(time, &p3.first, &p3.second);
+                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                
+                ///make the 3rd bezier segment
+                p0 = p3;
+                p1 = p0;
+                (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
+                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
+                p2 = p3;
+                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                
+                ///make the last bezier segment to close the pattern
+                p0 = p3;
+                (*nextPoint)->getLeftBezierPointAtTime(time, &p1.first, &p1.second);
+                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
+                (*point)->getRightBezierPointAtTime(time, &p2.first, &p2.second);
+                adjustToPointToScale(mipmapLevel,p2.first,p2.second);
+                (*point)->getPositionAtTime(time, &p3.first, &p3.second);
+                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                
+                ///Set the 4 corners color
+                
+                ///inner is full color
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                
+                ///outter is faded
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                
+                ///inner is full color
+                cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+                
+                cairo_mesh_pattern_end_patch(mesh);
+                
+                ++point;
+                ++nextPoint;
+                ++fpoint;
+                ++nextFPoint;
+                
+            }
+            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+            cairo_fill(cr);
+            cairo_pattern_destroy(mesh);
         }
     }
+    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
     
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
