@@ -752,13 +752,6 @@ public:
      **/
     boost::shared_ptr<Bezier> isNearbyBezier(double x,double y,double acceptance,int* index,double* t,bool *feather) const;
     
-    /**
-     * @brief Render the polygon formed by the list of points in the alpha channel of the output image.
-     * The output image must be large enough to contain the polygon.
-     **/
-    void fillPolygon_evenOdd(const RectI& roi,const std::list<std::pair<double,double> >& points,double opacity,
-                             Natron::Image* output);
-    
     
     /**
      * @brief Returns the region of definition of the shape unioned to the region of definition of the node

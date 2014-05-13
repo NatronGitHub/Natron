@@ -207,6 +207,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->splineLayout->setSpacing(0);
     
     _imp->splineLabel = new ClickableLabel("Spline keyframe:",_imp->splineContainer);
+    _imp->splineLabel->setSunken(false);
     _imp->splineLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->splineLabel);
     

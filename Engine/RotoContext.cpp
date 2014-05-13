@@ -3279,6 +3279,17 @@ static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
     }
 }
 
+static void expandToFeatherDistance(const Point& point,Point* featherPoint,int featherDistance)
+{
+    if (featherDistance != 0) {
+        double dx = (featherPoint->first - point.first);
+        double dy = (featherPoint->second - point.second);
+        double dist = sqrt(dx * dx + dy * dy);
+        featherPoint->first = (dx * (dist + featherDistance)) / dist + point.first;
+        featherPoint->second = (dy * (dist + featherDistance)) / dist + point.second;
+    }
+}
+
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                             int view,unsigned int mipmapLevel,bool byPassCache)
 {
@@ -3377,7 +3388,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             ++nextFPoint;
 
             
-            ////1st pass, fill the feather edge
+            ////1st pass, define the feather edge pattern
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
             if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
                 cairo_pattern_destroy(mesh);
@@ -3387,60 +3398,73 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             double fallOff = (*it2)->getFeatherFallOff(time);
             double fallOffInverse = 1. / fallOff;
             
+            int featherDist = (*it2)->getFeatherDistance(time);
+            if (mipmapLevel != 0) {
+                featherDist /= (1 << mipmapLevel);
+            }
+            
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {
                     nextPoint = cps.begin();
                     nextFPoint = fps.begin();
                 }
                 
-                Point p0,p1,p2,p3;
+                Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Left,p1Right,p2p3,p3p2,p2Left,p2Right,p3Left;
                 (*point)->getPositionAtTime(time, &p0.first, &p0.second);
                 adjustToPointToScale(mipmapLevel,p0.first,p0.second);
-                (*fpoint)->getPositionAtTime(time, &p3.first, &p3.second);
-                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
-                ///linear interpolation for now
-                p1.first = (2. * fallOff * p0.first + fallOffInverse * p3.first) / (2. * fallOff + fallOffInverse);
-                p1.second = (2. * fallOff * p0.second + fallOffInverse * p3.second) / (2. * fallOff + fallOffInverse);
-                p2.first = (p0.first * fallOff + 2. * fallOffInverse * p3.first) / (fallOff + 2. * fallOffInverse);
-                p2.second = (p0.second * fallOff + 2. * fallOffInverse * p3.second) /(fallOff + 2. * fallOffInverse);
+                
+                (*fpoint)->getPositionAtTime(time, &p1.first, &p1.second);
+                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
+                
+                (*nextFPoint)->getPositionAtTime(time, &p2.first, &p2.second);
+                adjustToPointToScale(mipmapLevel, p2.first, p2.second);
+                
+                (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
+                adjustToPointToScale(mipmapLevel, p3.first, p3.second);
+                
+                (*point)->getRightBezierPointAtTime(time, &p0Right.first, &p0Right.second);
+                adjustToPointToScale(mipmapLevel, p0Right.first, p0Right.second);
+                
+                (*fpoint)->getRightBezierPointAtTime(time, &p1Right.first, &p1Right.second);
+                adjustToPointToScale(mipmapLevel, p1Right.first, p1Right.second);
+                
+                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.first, &p2Left.second);
+                adjustToPointToScale(mipmapLevel, p2Left.first, p2Left.second);
+                
+                (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.first, &p3Left.second);
+                adjustToPointToScale(mipmapLevel, p3Left.first,p3Left.second);
+                
+                expandToFeatherDistance(p0, &p1, featherDist);
+                expandToFeatherDistance(p3, &p2, featherDist);
+                expandToFeatherDistance(p0Right, &p1Right, featherDist);
+                expandToFeatherDistance(p3Left, &p2Left, featherDist);
+                
+                ///linear interpolation
+                p0p1.first = (2. * fallOff * p0.first + fallOffInverse * p1.first) / (2. * fallOff + fallOffInverse);
+                p0p1.second = (2. * fallOff * p0.second + fallOffInverse * p1.second) / (2. * fallOff + fallOffInverse);
+                p1p0.first = (p0.first * fallOff + 2. * fallOffInverse * p1.first) / (fallOff + 2. * fallOffInverse);
+                p1p0.second = (p0.second * fallOff + 2. * fallOffInverse * p1.second) /(fallOff + 2. * fallOffInverse);
+                
+                p2p3.first = (p3.first * fallOff + 2. * fallOffInverse * p2.first) / (fallOff + 2. * fallOffInverse);
+                p2p3.second = (p3.second * fallOff + 2. * fallOffInverse * p2.second) / (fallOff + 2. * fallOffInverse);
+                p3p2.first = (2. * fallOff * p3.first + fallOffInverse * p2.first) / (2. * fallOff + fallOffInverse);
+                p3p2.second = (2. * fallOff * p3.second + fallOffInverse * p2.second) / (2. * fallOff + fallOffInverse);
                 
                 ///move to the initial point
                 cairo_mesh_pattern_begin_patch(mesh);
                 cairo_mesh_pattern_move_to(mesh, p0.first, p0.second);
                 
                 ///make the 1st bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p0p1.first,p0p1.second,p1p0.first,p1p0.second,p1.first,p1.second);
                 
                 ///make the 2nd bezier segment
-                p0 = p3;
-                (*fpoint)->getRightBezierPointAtTime(time, &p1.first, &p1.second);
-                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
-                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2.first, &p2.second);
-                adjustToPointToScale(mipmapLevel,p2.first,p2.second);
-                (*nextFPoint)->getPositionAtTime(time, &p3.first, &p3.second);
-                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
-                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p1Right.first,p1Right.second,p2Left.first,p2Left.second,p2.first,p2.second);
                 
                 ///make the 3rd bezier segment
-                p0 = p3;
-                (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
-                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
-                p1.first = (p3.first * fallOff + 2. * fallOffInverse * p0.first) / (fallOff + 2. * fallOffInverse);
-                p1.second = (p3.second * fallOff + 2. * fallOffInverse * p0.second) / (fallOff + 2. * fallOffInverse);
-                p2.first = (2. * fallOff * p3.first + fallOffInverse * p0.first) / (2. * fallOff + fallOffInverse);
-                p2.second = (2. * fallOff * p3.second + fallOffInverse * p0.second) / (2. * fallOff + fallOffInverse);
-                
-                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.first,p2p3.second,p3p2.first,p3p2.second,p3.first,p3.second);
                 
                 ///make the last bezier segment to close the pattern
-                p0 = p3;
-                (*nextPoint)->getLeftBezierPointAtTime(time, &p1.first, &p1.second);
-                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
-                (*point)->getRightBezierPointAtTime(time, &p2.first, &p2.second);
-                adjustToPointToScale(mipmapLevel,p2.first,p2.second);
-                (*point)->getPositionAtTime(time, &p3.first, &p3.second);
-                adjustToPointToScale(mipmapLevel,p3.first,p3.second);
-                cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p3Left.first,p3Left.second,p0Right.first,p0Right.second,p0.first,p0.second);
                 
                 ///Set the 4 corners color
                 
@@ -3468,34 +3492,60 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             
         
             
-            double initialX,initialY;
+            Point initFp,initCp;
         
             ///2nd pass, draw the feather using the pattern previously defined
             fpoint = fps.begin();
             nextFPoint = fpoint;
             ++nextFPoint;
-            (*fpoint)->getPositionAtTime(time, &initialX, &initialY);
+            point = cps.begin();
+            nextPoint = point;
+            ++nextPoint;
+
+            (*fpoint)->getPositionAtTime(time, &initFp.first, &initFp.second);
+            adjustToPointToScale(mipmapLevel, initFp.first, initFp.second);
+            (*point)->getPositionAtTime(time,&initCp.first,&initCp.second);
+            adjustToPointToScale(mipmapLevel, initCp.first, initCp.second);
+            expandToFeatherDistance(initCp, &initFp, featherDist);
             
             cairo_new_path(cr);
-            cairo_move_to(cr, initialX, initialY);
+            cairo_move_to(cr, initFp.first, initFp.second);
             
             while (fpoint != fps.end()) {
                 if (nextFPoint == fps.end()) {
+                    nextPoint = cps.begin();
                     nextFPoint = fps.begin();
                 }
                 
-                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
-                (*fpoint)->getRightBezierPointAtTime(time, &rightX, &rightY);
-                (*nextFPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-                (*nextFPoint)->getPositionAtTime(time, &nextX, &nextY);
+                Point rightF,nextLeftF,nextF,rightP,nextLeftP,nextP;
+
+                (*fpoint)->getRightBezierPointAtTime(time, &rightF.first, &rightF.second);
+                adjustToPointToScale(mipmapLevel, rightF.first, rightF.second);
+                (*point)->getRightBezierPointAtTime(time, &rightP.first, &rightP.second);
+                adjustToPointToScale(mipmapLevel, rightP.first, rightP.second);
                 
-                adjustToPointToScale(mipmapLevel,rightX,rightY);
-                adjustToPointToScale(mipmapLevel,nextX,nextY);
-                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
-                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+                
+                (*nextFPoint)->getLeftBezierPointAtTime(time, &nextLeftF.first, &nextLeftF.second);
+                adjustToPointToScale(mipmapLevel, nextLeftF.first, nextLeftF.second);
+                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftP.first, &nextLeftP.second);
+                adjustToPointToScale(mipmapLevel, nextLeftP.first, nextLeftP.second);
+                
+                (*nextFPoint)->getPositionAtTime(time, &nextF.first, &nextF.second);
+                adjustToPointToScale(mipmapLevel, nextF.first, nextF.second);
+                (*nextPoint)->getPositionAtTime(time, &nextP.first, &nextP.second);
+                adjustToPointToScale(mipmapLevel, nextP.first, nextP.second);
+                
+                
+                expandToFeatherDistance(rightP, &rightF, featherDist);
+                expandToFeatherDistance(nextLeftP, &nextLeftF, featherDist);
+                expandToFeatherDistance(nextP, &nextF, featherDist);
+                
+                cairo_curve_to(cr,rightF.first,rightF.second,nextLeftF.first,nextLeftF.second,nextF.first,nextF.second);
                 
                 ++fpoint;
+                ++point;
                 ++nextFPoint;
+                ++nextPoint;
             }
 
             
@@ -3509,13 +3559,13 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             nextPoint = point;
             ++nextPoint;
             
-            (*point)->getPositionAtTime(time, &initialX, &initialY);
-            adjustToPointToScale(mipmapLevel,initialX,initialY);
+            (*point)->getPositionAtTime(time, &initCp.first,&initCp.second);
+            adjustToPointToScale(mipmapLevel,initCp.first,initCp.second);
             
             
             cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
             cairo_new_path(cr);
-            cairo_move_to(cr, initialX, initialY);
+            cairo_move_to(cr, initCp.first,initCp.second);
         
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {
@@ -3582,344 +3632,3 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     }
     return image;
 }
-
-//////////////////////////////////////////RENDERING///////////////////////////////
-
-namespace  {
- 
-    /**
-     *     The object is assumed to be filled in scanline order, and thus the
-     *     algorithm used is an extension of Bresenham's line
-     *     drawing algorithm which assumes that y is always the
-     *     major axis.
-     **/
-    struct BresenhamData {
-        
-        ////These are public since they are local to the same function.
-        int minorAxis;                  /// minor axis
-        int d;                      /// decision variable
-        int m, m1;                  /// slope and slope+1
-        int incr1, incr2;           /// error increments
-        
-        BresenhamData()
-        : minorAxis(INT_MIN) , d(0) , m(0) , m1(0) , incr1(0) , incr2(0)
-        {
-            
-        }
-        
-        
-        /*
-         *  In scan converting polygons, we want to choose those pixels
-         *  which are inside the polygon.  Thus, we add .5 to the starting
-         *  x coordinate for both left and right edges.  Now we choose the
-         *  first pixel which is inside the pgon for the left edge and the
-         *  first pixel which is outside the pgon for the right edge.
-         *  Draw the left pixel, but not the right.
-         *
-         *  How to add .5 to the starting x coordinate:
-         *      If the edge is moving to the right, then subtract dy from the
-         *  error term from the general form of the algorithm.
-         *      If the edge is moving to the left, then add dy to the error term.
-         *
-         *  The reason for the difference between edges moving to the left
-         *  and edges moving to the right is simple:  If an edge is moving
-         *  to the right, then we want the algorithm to flip immediately.
-         *  If it is moving to the left, then we don't want it to flip until
-         *  we traverse an entire pixel.
-         */
-        BresenhamData(int dy,int x1,int x2)
-        {
-            int dx;
-            ///ignore horizontal edges
-            if (dy != 0.) {
-                minorAxis = x1;
-                dx = x2 - minorAxis;
-                if (dx < 0) {
-                    m = dx / dy;
-                    m1 = m - 1;
-                    incr1 = -2 * dx + 2 * dy * m1;
-                    incr2 = -2 * dx + 2 * dy * m;
-                    d = 2 * m * dy - 2 * dx - 2 * dy;
-                } else {
-                    m = dx / dy;
-                    m1 = m + 1;
-                    incr1 = 2 * dx - 2 * dy * m1;
-                    incr2 = 2 * dx - 2 * dy * m;
-                    d = -2 * m * dy + 2 * dx;
-                }
-            }
-        }
-        
-        void bresIncr()
-        {
-            if (m1 > 0) {
-                if (d > 0) {
-                    minorAxis += m1;
-                    d += incr1;
-                }
-                else {
-                    minorAxis += m;
-                    d += incr2;
-                }
-            } else {
-                if (d >= 0) {
-                    minorAxis += m1;
-                    d += incr1;
-                }
-                else {
-                    minorAxis += m;
-                    d += incr2;
-                }
-            }
-        }
-    };
-    
-    struct EdgeTableEntry {
-        int ymax;                   /// ycoord at which we exit this edge
-        BresenhamData bres;              /// Bresenham info to run the edge
-    } ;
-    
-    typedef boost::shared_ptr<EdgeTableEntry> EdgePtr;
-    
-    struct ScanLine {
-        int scanline;               /// the scanline represented
-        std::list<EdgePtr> edgelist;   /// edge list
-    } ;
-    
-    struct EdgeTable {
-        int ymax;                   /// ymax for the polygon
-        int ymin;                   /// ymin for the polygon
-        std::list<ScanLine> scanlines;     /// list of scanlines
-        
-        EdgeTable()
-        : ymax(INT_MIN)
-        , ymin(INT_MAX)
-        {
-        }
-    } ;
-
-    static void insertEdgeInET(EdgeTable* ET,const EdgePtr& ETE,int scanline)
-    {
-        std::list<ScanLine>::iterator itSLL = ET->scanlines.begin();
-        while (itSLL != ET->scanlines.end() && itSLL->scanline < scanline)
-        {
-            ++itSLL;
-        }
-        
-        ScanLine* sl;
-        if (itSLL == ET->scanlines.end() || itSLL->scanline > scanline) {
-            ScanLine sTmp;
-            std::list<ScanLine>::iterator inserted = ET->scanlines.insert(itSLL,sTmp);
-            sl = &(*inserted);
-        } else {
-            sl = &(*itSLL);
-        }
-        sl->scanline = scanline;
-        
-        std::list<EdgePtr>::iterator itEdge = sl->edgelist.begin();
-        while (itEdge != sl->edgelist.end() && ((*itEdge)->bres.minorAxis < ETE->bres.minorAxis)) {
-            ++itEdge;
-        }
-
-        sl->edgelist.insert(itEdge, ETE);
-        
-    }
-    
-    static void createETandAET(const std::list< Point >& points, EdgeTable * ET,std::vector<EdgePtr>& pETEs)
-    {
-        if (points.size() < 2)
-            return;
-        
-        std::list< Point >::const_iterator next = points.begin();
-        ++next;
-        
-        
-        int i = 0;
-        for (std::list< Point >::const_iterator it = points.begin(); next!=points.end(); ++it,++next,++i) {
-#pragma message WARN("Buggy: Can't figure out right now how to properly convert the float edges to integer")
-            PointI bottom,top;
-            bool curIsTop,curIsLeft;
-            if (next->second < it->second) {
-                curIsTop = true;
-                bottom.second = std::floor(next->second + 0.5);
-                top.second = std::floor(it->second + 0.5);
-                bottom.first = std::floor(next->first + 0.5);
-                top.first = std::floor(it->first + 0.5);
-
-            } else {
-                curIsTop = false;
-                bottom.second = std::floor(it->second + 0.5);
-                top.second = std::floor(next->second + 0.5);
-                bottom.first = std::floor(it->first + 0.5);
-                top.first = std::floor(next->first + 0.5);
-            }
-            if (next->first < it->second) {
-                curIsLeft = false;
-            } else {
-                curIsLeft = true;
-            }
-            
-            ///horizontal edges are discarded
-            if (bottom.second != top.second) {
-                pETEs[i].reset(new EdgeTableEntry);
-                pETEs[i]->ymax = /*curIsTop ? std::ceil(it->second) -1 : std::ceil(next->second) - 1;*/top.second - 1;  /// -1 so we don't get last scanline
-                int dy = std::ceil(std::abs(next->second - it->second));
-                pETEs[i]->bres = BresenhamData(dy,curIsLeft ? std::floor(it->first) : std::ceil(it->first),
-                                               curIsLeft ? std::ceil(next->first) : std::floor(next->first));// bottom.first, top.first);
-                insertEdgeInET(ET, pETEs[i], curIsTop ? std::floor(next->second + 0.5) : std::floor(it->second + 0.5));
-                
-                ET->ymax = std::max<int>(ET->ymax, curIsTop ? std::ceil(it->second) : std::ceil(next->second));
-                ET->ymin = std::min<int>(ET->ymin, curIsTop ? std::floor(next->second) : std::floor(it->second));
-            }
-        }
-        
-        
-    }
-    
-    static bool edgeX_SortFunctor(const EdgePtr& e1, const EdgePtr& e2)
-    {
-        return e1->bres.minorAxis < e2->bres.minorAxis;
-    }
-    
-#if 0
-    /**
-     * @brief Returns whether the segments S1 (p0,p1) and the segment S2 (p2,p3) intersect.
-     * If so, then the parameter intersection is set to the intersection point.
-     * This is used to remove from the polygon to fill the unused segments.
-     *
-     * EDIT: This is not used anymore since it is way too complicated to remove from the polygons the parts
-     * that do not intersect the roi. Instead we just don't render the pixels. We keep this function here
-     * in case we would need it.
-     **/
-    static bool segmentsIntersection(const Point& p0,const Point& p1,const Point& p2,const Point& p3,Point* intersection)
-    {
-        double d = (p0.first - p1.first) * (p2.second - p3.second) - (p0.second - p1.second) * (p2.first - p3.first);
-        if (d == 0)
-            return false;
-        intersection->first = ((p2.first - p3.first) * (p0.first * p1.second - p0.second * p1.first) - (p0.first - p1.first) *
-                     (p2.first * p3.second - p2.second * p3.first)) / d;
-        intersection->second = ((p2.second - p3.second) * (p0.first * p1.second - p0.second * p1.first) - (p0.second - p1.second) *
-                     (p2.first * p3.second - p2.second * p3.first)) / d;
-        if(p2.first == p3.first) {
-            if ( intersection->second < std::min(p0.second,p1.second) || intersection->second > std::max(p0.second,p1.second) )
-                return false;
-        }
-        if (intersection->first < std::min(p0.first,p1.first) || intersection->first > std::max(p0.first,p1.first))
-            return false;
-        if (intersection->first < std::min(p2.first,p3.first) || intersection->first > std::max(p2.first,p3.first))
-            return false;
-        return true;
-    }
-#endif
-}
-
-
-
-#pragma message WARN("Polygon fill not anti-aliased yet + a bit buggy on edges. Also feather not supported yet.")
-void RotoContext::fillPolygon_evenOdd(const RectI& roi,const std::list< Point >& points,double opacity,
-                                      Natron::Image* output)
-{
-    ///An optimization could be made to actually clip the points of the polygon to the RoI first.
-    ///That would make a lot less points to process and enable possible multi-threading
-    ///For now we just discard the pixels outside the roi which makes it irrelevant for multi-threading as we would render
-    ///several times the same part of a polygon.
-    ///See http://coitweb.uncc.edu/~krs/courses/4120-5120/lectures/raster2.pdf , the algorithm of
-    ///Liang-Barsky for an explanation on how to clip the polygon.
-    
-    ///A polygon is at least a triangle
-    if (points.size() < 3) {
-        return;
-    }
-    
-    EdgeTable edgeTable;
-    std::list<EdgePtr> activeEdgeTable;
-    std::vector<EdgePtr> edges(points.size());
-    
-    createETandAET(points, &edgeTable, edges);
-    
-    std::list<ScanLine>::iterator scanLineIT = edgeTable.scanlines.begin();  /// Current ScanLine
-    
-    const RectI& dstRoD = output->getPixelRoD();
-    
-    for (int y = edgeTable.ymin; y <= edgeTable.ymax; ++y) {
-        
-        if (_imp->node->aborted()) {
-            return;
-        }
-        
-        ///load into the active edge table the scan-line edges sorted by increasing x
-        if (scanLineIT != edgeTable.scanlines.end() && y == scanLineIT->scanline) {
-            for (std::list<EdgePtr>::iterator entries = scanLineIT->edgelist.begin();entries != scanLineIT->edgelist.end();++entries) {
-                
-                std::list<EdgePtr>::iterator itAET = activeEdgeTable.begin();
-                while (itAET != activeEdgeTable.end() && ((*itAET)->bres.minorAxis < (*entries)->bres.minorAxis)) {
-                    ++itAET;
-                }
-                activeEdgeTable.insert(itAET, *entries);
-            }
-            ++scanLineIT;
-        }
-
-        
-        float* dstPixels = output->pixelAt(dstRoD.x1, y);
-        
-        int comps = (int)output->getComponentsCount();
-        
-        ///only RGBA or Alpha supported
-        assert(comps == 4 || comps == 1);
-        
-        ///move to x = 0
-        dstPixels -= (dstRoD.x1 * comps);
-        
-        std::list<EdgePtr>::iterator itPrevAET = activeEdgeTable.begin();
-        --itPrevAET;
-        std::list<EdgePtr>::iterator itNextAET = activeEdgeTable.begin();
-        ++itNextAET;
-        
-        std::list<EdgePtr> toDelete;
-        std::list<EdgePtr>::iterator itAET = activeEdgeTable.begin();
-        while (itAET != activeEdgeTable.end() && itNextAET != activeEdgeTable.end()) {
-            
-            int x = (*itAET)->bres.minorAxis;
-            int end =  x + (*itNextAET)->bres.minorAxis - (*itAET)->bres.minorAxis;
-            
-            ///fill pixels
-            for (int xx = x; xx < end; ++xx) {
-                
-                double val = opacity;
-                
-                if (roi.contains(xx, y)) {
-                    if (comps == 4) {
-                        dstPixels[xx * comps + 3] = val;
-                    } else {
-                        dstPixels[xx] = val;
-                    }
-                }
-            }
-            
-            ///do this twice, for even and odd edges
-            for (int i = 0; i < 2 ; ++i) {
-                assert(itAET != activeEdgeTable.end());
-                if ((*itAET)->ymax == y) {
-                    //Mark to remove any edge from the active edge table for which the maximum y value is equal to the scanline.
-                    toDelete.push_back(*itAET);
-                    
-                } else {
-                    (*itAET)->bres.bresIncr();
-                }
-                ++itPrevAET;
-                ++itAET;
-                ++itNextAET;
-            }
-        }
-        
-        ///Actually remove
-        for (std::list<EdgePtr>::iterator itDel = toDelete.begin(); itDel != toDelete.end(); ++itDel) {
-            std::list<EdgePtr>::iterator found = std::find(activeEdgeTable.begin(),activeEdgeTable.end(),*itDel);
-            assert(found != activeEdgeTable.end());
-            activeEdgeTable.erase(found);
-        }
-        
-        activeEdgeTable.sort(edgeX_SortFunctor);
-    }
-   }
