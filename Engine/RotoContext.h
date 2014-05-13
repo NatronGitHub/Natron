@@ -793,6 +793,8 @@ public:
     void deselect(const std::list<boost::shared_ptr<Bezier> >& beziers,RotoContext::SelectionReason reason);
     void deselect(const std::list<boost::shared_ptr<RotoItem> >& items,RotoContext::SelectionReason reason);
     
+    void clearSelection(RotoContext::SelectionReason reason);
+    
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
     

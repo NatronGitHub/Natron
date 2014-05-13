@@ -2402,40 +2402,45 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
     
     ///MT-safe: only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    
-    QMutexLocker l(&_imp->rotoContextMutex);
-    std::map<std::string, int>::iterator it = _imp->itemCounters.find(kRotoLayerBaseName);
-    if (it != _imp->itemCounters.end()) {
-        ++it->second;
-        no = it->second;
-    } else {
-        _imp->itemCounters.insert(std::make_pair(kRotoLayerBaseName, 1));
-        no = 1;
-    }
-    std::stringstream ss;
-    ss << kRotoLayerBaseName << ' ' << no;
-    
-    RotoLayer* deepestLayer = findDeepestSelectedLayer();
-    
-    RotoLayer* parentLayer = 0;
-    if (!deepestLayer) {
-        ///find out if there's a base layer, if so add to the base layer,
-        ///otherwise create the base layer
-        if (!_imp->layers.empty()) {
-            parentLayer = _imp->layers.front().get();
+    boost::shared_ptr<RotoLayer> item;
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        std::map<std::string, int>::iterator it = _imp->itemCounters.find(kRotoLayerBaseName);
+        if (it != _imp->itemCounters.end()) {
+            ++it->second;
+            no = it->second;
+        } else {
+            _imp->itemCounters.insert(std::make_pair(kRotoLayerBaseName, 1));
+            no = 1;
         }
-    } else {
-        parentLayer = deepestLayer;
+        std::stringstream ss;
+        ss << kRotoLayerBaseName << ' ' << no;
+        
+        RotoLayer* deepestLayer = findDeepestSelectedLayer();
+        
+        RotoLayer* parentLayer = 0;
+        if (!deepestLayer) {
+            ///find out if there's a base layer, if so add to the base layer,
+            ///otherwise create the base layer
+            if (!_imp->layers.empty()) {
+                parentLayer = _imp->layers.front().get();
+            }
+        } else {
+            parentLayer = deepestLayer;
+        }
+        
+        item.reset(new RotoLayer(this,ss.str(),parentLayer));
+        if (parentLayer) {
+            parentLayer->addItem(item);
+        }
+        _imp->layers.push_back(item);
+        
+        _imp->lastInsertedItem = item;
     }
-    
-    boost::shared_ptr<RotoLayer> item(new RotoLayer(this,ss.str(),parentLayer));
-    if (parentLayer) {
-        parentLayer->addItem(item);
-    }
-    _imp->layers.push_back(item);
-    
-    _imp->lastInsertedItem = item;
     emit itemInserted();
+    
+    clearSelection(RotoContext::OTHER);
+    select(item, RotoContext::OTHER);
     return item;
 }
 
@@ -2555,6 +2560,10 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
     }
     _imp->lastInsertedItem = curve;
     emit itemInserted();
+    
+    clearSelection(RotoContext::OTHER);
+    select(curve, RotoContext::OTHER);
+    
     return curve;
 }
 
@@ -2819,6 +2828,17 @@ void RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> >& items,
         QMutexLocker l(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
             deselectInternal(*it);
+        }
+    }
+    emit selectionChanged((int)reason);
+}
+
+void RotoContext::clearSelection(RotoContext::SelectionReason reason)
+{
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        while (!_imp->selectedItems.empty()) {
+            deselectInternal(_imp->selectedItems.front());
         }
     }
     emit selectionChanged((int)reason);

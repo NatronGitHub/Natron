@@ -13,7 +13,6 @@
 
 #include <QString>
 #include <QToolBar>
-#include <QToolButton>
 #include <QWidget>
 #include <QAction>
 #include <QRectF>
@@ -96,9 +95,9 @@ struct RotoGui::RotoGuiPrivate
     QWidget* pointsEditionButtonsBar;
     QWidget* bezierEditionButtonsBar;
     
-    QToolButton* selectTool;
-    QToolButton* pointsEditionTool;
-    QToolButton* bezierEditionTool;
+    RotoToolButton* selectTool;
+    RotoToolButton* pointsEditionTool;
+    RotoToolButton* bezierEditionTool;
     
     QAction* selectAllAction;
     
@@ -200,6 +199,35 @@ struct RotoGui::RotoGuiPrivate
     void dragFeatherPoint(int time,double dx,double dy);
 };
 
+RotoToolButton::RotoToolButton(QWidget* parent)
+: QToolButton(parent)
+{
+    
+}
+
+
+void RotoToolButton::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QAction* curAction = defaultAction();
+        QList<QAction*> allAction = actions();
+        
+        for (int i = 0; i < allAction.size(); ++i) {
+            if (allAction[i] == curAction) {
+                int next = (i == (allAction.size() - 1)) ? 0 : i+1;
+                setDefaultAction(allAction[next]);
+                emit triggered(allAction[next]);
+                break;
+            }
+        }
+    } else if (event->button() == Qt::RightButton) {
+        showMenu();
+    } else {
+        QToolButton::mousePressEvent(event);
+    }
+}
+
+
 QAction* RotoGui::createToolAction(QToolButton* toolGroup,const QIcon& icon,const QString& text,RotoGui::Roto_Tool tool)
 {
     
@@ -272,20 +300,20 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     _imp->pointsEditionButtonsBar = _imp->selectionButtonsBar;
     _imp->bezierEditionButtonsBar = new QWidget(parent);
     
-    _imp->selectTool = new QToolButton(_imp->toolbar);
+    _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
+    QObject::connect(_imp->selectTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(), "Select all", SELECT_ALL);
     createToolAction(_imp->selectTool, QIcon(), "Select points", SELECT_POINTS);
     createToolAction(_imp->selectTool, QIcon(), "Select curves", SELECT_CURVES);
     createToolAction(_imp->selectTool, QIcon(), "Select feather points", SELECT_FEATHER_POINTS);
     _imp->selectTool->setDown(false);
-    _imp->selectTool->setIcon(_imp->selectAllAction->icon());
-    _imp->selectTool->setToolTip(_imp->selectAllAction->text());
-    _imp->selectTool->setText(_imp->selectAllAction->text());
+    _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->toolbar->addWidget(_imp->selectTool);
     
-    _imp->pointsEditionTool = new QToolButton(_imp->toolbar);
+    _imp->pointsEditionTool = new RotoToolButton(_imp->toolbar);
     _imp->pointsEditionTool->setPopupMode(QToolButton::InstantPopup);
+    QObject::connect(_imp->pointsEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->pointsEditionTool->setText("Add points");
     QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(), "Add points", ADD_POINTS);
     createToolAction(_imp->pointsEditionTool, QIcon(), "Remove points", REMOVE_POINTS);
@@ -294,13 +322,12 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     createToolAction(_imp->pointsEditionTool, QIcon(), "Open/Close curve", OPEN_CLOSE_CURVE);
     createToolAction(_imp->pointsEditionTool, QIcon(), "Remove feather", REMOVE_FEATHER_POINTS);
     _imp->pointsEditionTool->setDown(false);
-    _imp->pointsEditionTool->setIcon(addPtsAct->icon());
-    _imp->pointsEditionTool->setToolTip(addPtsAct->text());
-    _imp->pointsEditionTool->setText(addPtsAct->text());
+    _imp->pointsEditionTool->setDefaultAction(addPtsAct);
     _imp->toolbar->addWidget(_imp->pointsEditionTool);
     
-    _imp->bezierEditionTool = new QToolButton(_imp->toolbar);
+    _imp->bezierEditionTool = new RotoToolButton(_imp->toolbar);
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
+    QObject::connect(_imp->bezierEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->bezierEditionTool->setText("Bezier");
     QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier", DRAW_BEZIER);
     
@@ -313,7 +340,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     
     ////////////Default action is to make a new bezier
     _imp->selectedRole = _imp->selectTool;
-    onActionTriggeredInternal(drawBezierAct);
+    onToolActionTriggered(drawBezierAct);
 
     QObject::connect(_imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onCurrentFrameChanged(SequenceTime,int)));
@@ -361,7 +388,15 @@ QToolBar* RotoGui::getToolBar() const
     return _imp->toolbar;
 }
 
-void RotoGui::onActionTriggeredInternal(QAction* act)
+void RotoGui::onToolActionTriggered()
+{
+    QAction* act = qobject_cast<QAction*>(sender());
+    if (act) {
+        onToolActionTriggered(act);
+    }
+}
+
+void RotoGui::onToolActionTriggered(QAction* act)
 {
     QPoint data = act->data().toPoint();
     Roto_Role actionRole = (Roto_Role)data.y();
@@ -408,22 +443,9 @@ void RotoGui::onActionTriggeredInternal(QAction* act)
     
     assert(toolButton);
     toolButton->setDown(true);
-    toolButton->setIcon(act->icon());
-    toolButton->setToolTip(act->text());
-    
-#pragma message WARN("Remove when icons will be added")
-    toolButton->setText(act->text());
+    toolButton->setDefaultAction(act);
     _imp->selectedRole = toolButton;
     _imp->selectedTool = (Roto_Tool)data.x();
-
-}
-
-void RotoGui::onToolActionTriggered()
-{
-    QAction* act = qobject_cast<QAction*>(sender());
-    if (act) {
-        onActionTriggeredInternal(act);
-    }
 }
 
 RotoGui::Roto_Role RotoGui::getCurrentRole() const
@@ -872,8 +894,7 @@ void RotoGui::RotoGuiPrivate::clearCPSSelection()
 
 void RotoGui::RotoGuiPrivate::clearBeziersSelection()
 {
-
-    context->deselect(selectedBeziers, RotoContext::OVERLAY_INTERACT);
+    context->clearSelection(RotoContext::OVERLAY_INTERACT);
     selectedBeziers.clear();
 }
 
@@ -1257,11 +1278,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         {
             
             ///make a new curve
-            _imp->clearSelection();
             if (!_imp->builtBezier) {
                 
                 boost::shared_ptr<Bezier> newCurve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoBezierBaseName);
-                _imp->handleBezierSelection(newCurve);
                 boost::shared_ptr<BezierCP> cp = newCurve->getControlPointAtIndex(0);
                 boost::shared_ptr<BezierCP> fp = newCurve->getFeatherPointAtIndex(0);
                 assert(cp && fp);
@@ -1288,7 +1307,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                             _imp->builtBezier.reset();
                             
                             _imp->selectedCps.clear();
-                            onActionTriggeredInternal(_imp->selectAllAction);
+                            onToolActionTriggered(_imp->selectAllAction);
                             
                             
                         } else {
@@ -1319,7 +1338,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case DRAW_ELLIPSE:
         {
-            _imp->clearSelection();
             _imp->builtBezier = _imp->context->makeBezier(pos.x(), pos.y(),kRotoEllipseBaseName);
             _imp->builtBezier->getControlPointAtIndex(0);
             _imp->builtBezier->addControlPoint(pos.x(), pos.y());
@@ -1338,7 +1356,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         }   break;
         case DRAW_RECTANGLE:
         {
-            _imp->clearSelection();
             boost::shared_ptr<Bezier> curve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoRectangleBaseName);
             curve->addControlPoint(pos.x(), pos.y());
             curve->addControlPoint(pos.x(), pos.y());
@@ -1600,7 +1617,7 @@ bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewpor
     
     if (_imp->selectedTool == DRAW_ELLIPSE || _imp->selectedTool == DRAW_RECTANGLE) {
         _imp->selectedCps.clear();
-        onActionTriggeredInternal(_imp->selectAllAction);
+        onToolActionTriggered(_imp->selectAllAction);
     }
     
     return true;
@@ -1656,7 +1673,7 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
             _imp->builtBezier->setCurveFinished(true);
             _imp->builtBezier.reset();
             _imp->selectedCps.clear();
-            onActionTriggeredInternal(_imp->selectAllAction);
+            onToolActionTriggered(_imp->selectAllAction);
             _imp->node->getNode()->getApp()->triggerAutoSave();
             _imp->context->evaluateChange();
             didSomething = true;

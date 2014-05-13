@@ -14,6 +14,7 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <QObject>
+#include <QToolButton>
 
 #include "Global/GlobalDefines.h"
 
@@ -29,6 +30,25 @@ class QAction;
 class RotoItem;
 
 class NodeGui;
+
+
+class RotoToolButton : public QToolButton
+{
+    
+    Q_OBJECT
+    
+public:
+    
+    RotoToolButton(QWidget* parent);
+    
+    virtual ~RotoToolButton() {}
+    
+private:
+    
+    virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
+
+    
+};
 
 class RotoGui : public QObject
 {
@@ -118,6 +138,8 @@ public slots:
     
     void onToolActionTriggered();
     
+    void onToolActionTriggered(QAction* act);
+    
     void onAutoKeyingButtonClicked(bool);
     
     void onFeatherLinkButtonClicked(bool);
@@ -139,10 +161,9 @@ public slots:
     void onCurveLockedChanged();
     
     void onSelectionChanged(int reason);
-    
+        
 private:
     
-    void onActionTriggeredInternal(QAction* act);
     
     QAction* createToolAction(QToolButton* toolGroup,const QIcon& icon,const QString& text,RotoGui::Roto_Tool tool);
     
