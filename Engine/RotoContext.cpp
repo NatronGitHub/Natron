@@ -3311,15 +3311,9 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         }
         
     } else {
-        RectI rod;
-        getMaskRegionOfDefinition(time, view, &rod);
-        
-        assert(!nodeRoD.isNull());
-        rod.merge(nodeRoD);
-        
         Natron::ImageComponents maskComps = Natron::ImageComponentAlpha;
         
-        params = Natron::Image::makeParams(0, rod,mipmapLevel,FALSE,
+        params = Natron::Image::makeParams(0, nodeRoD,mipmapLevel,FALSE,
                                                     maskComps,
                                                     -1, time,
                                                     std::map<int, std::vector<RangeD> >());
@@ -3383,49 +3377,15 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             ++nextFPoint;
 
             
-            double initialX,initialY;
-            (*point)->getPositionAtTime(time, &initialX, &initialY);
-            adjustToPointToScale(mipmapLevel,initialX,initialY);
-            
-            ////first pass, fill the internal bezier
-            
-            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
-            cairo_new_path(cr);
-            cairo_move_to(cr, initialX, initialY);
-        
-            while (point != cps.end()) {
-                if (nextPoint == cps.end()) {
-                    nextPoint = cps.begin();
-                }
-                
-                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
-                (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
-                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-                (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
-                
-                adjustToPointToScale(mipmapLevel,rightX,rightY);
-                adjustToPointToScale(mipmapLevel,nextX,nextY);
-                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
-                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
-                
-                ++point;
-                ++nextPoint;
-            }
-            
-            cairo_fill(cr);
-            
-            
-            ////second pass, fill the feather edge
+            ////1st pass, fill the feather edge
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
             if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
                 cairo_pattern_destroy(mesh);
                 continue;
             }
-            cairo_set_source(cr, mesh);
-
-            point = cps.begin();
-            nextPoint = point;
-            ++nextPoint;
+            
+            double fallOff = (*it2)->getFeatherFallOff(time);
+            double fallOffInverse = 1. / fallOff;
             
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {
@@ -3439,8 +3399,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 (*fpoint)->getPositionAtTime(time, &p3.first, &p3.second);
                 adjustToPointToScale(mipmapLevel,p3.first,p3.second);
                 ///linear interpolation for now
-                p1 = p0;
-                p2 = p3;
+                p1.first = (2. * fallOff * p0.first + fallOffInverse * p3.first) / (2. * fallOff + fallOffInverse);
+                p1.second = (2. * fallOff * p0.second + fallOffInverse * p3.second) / (2. * fallOff + fallOffInverse);
+                p2.first = (p0.first * fallOff + 2. * fallOffInverse * p3.first) / (fallOff + 2. * fallOffInverse);
+                p2.second = (p0.second * fallOff + 2. * fallOffInverse * p3.second) /(fallOff + 2. * fallOffInverse);
                 
                 ///move to the initial point
                 cairo_mesh_pattern_begin_patch(mesh);
@@ -3461,10 +3423,13 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 
                 ///make the 3rd bezier segment
                 p0 = p3;
-                p1 = p0;
                 (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
                 adjustToPointToScale(mipmapLevel,p3.first,p3.second);
-                p2 = p3;
+                p1.first = (p3.first * fallOff + 2. * fallOffInverse * p0.first) / (fallOff + 2. * fallOffInverse);
+                p1.second = (p3.second * fallOff + 2. * fallOffInverse * p0.second) / (fallOff + 2. * fallOffInverse);
+                p2.first = (2. * fallOff * p3.first + fallOffInverse * p0.first) / (2. * fallOff + fallOffInverse);
+                p2.second = (2. * fallOff * p3.second + fallOffInverse * p0.second) / (2. * fallOff + fallOffInverse);
+                
                 cairo_mesh_pattern_curve_to(mesh, p1.first, p1.second, p2.first, p2.second, p3.first, p3.second);
                 
                 ///make the last bezier segment to close the pattern
@@ -3499,9 +3464,84 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 
             }
             assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+            cairo_set_source(cr, mesh);
+            
+        
+            
+            double initialX,initialY;
+        
+            ///2nd pass, draw the feather using the pattern previously defined
+            fpoint = fps.begin();
+            nextFPoint = fpoint;
+            ++nextFPoint;
+            (*fpoint)->getPositionAtTime(time, &initialX, &initialY);
+            
+            cairo_new_path(cr);
+            cairo_move_to(cr, initialX, initialY);
+            
+            while (fpoint != fps.end()) {
+                if (nextFPoint == fps.end()) {
+                    nextFPoint = fps.begin();
+                }
+                
+                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
+                (*fpoint)->getRightBezierPointAtTime(time, &rightX, &rightY);
+                (*nextFPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
+                (*nextFPoint)->getPositionAtTime(time, &nextX, &nextY);
+                
+                adjustToPointToScale(mipmapLevel,rightX,rightY);
+                adjustToPointToScale(mipmapLevel,nextX,nextY);
+                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
+                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+                
+                ++fpoint;
+                ++nextFPoint;
+            }
+
+            
             cairo_fill(cr);
             cairo_pattern_destroy(mesh);
+            
+            
+            ////3rd pass, fill the internal bezier
+
+            point = cps.begin();
+            nextPoint = point;
+            ++nextPoint;
+            
+            (*point)->getPositionAtTime(time, &initialX, &initialY);
+            adjustToPointToScale(mipmapLevel,initialX,initialY);
+            
+            
+            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
+            cairo_new_path(cr);
+            cairo_move_to(cr, initialX, initialY);
+        
+            while (point != cps.end()) {
+                if (nextPoint == cps.end()) {
+                    nextPoint = cps.begin();
+                }
+                
+                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
+                (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
+                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
+                (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
+                
+                adjustToPointToScale(mipmapLevel,rightX,rightY);
+                adjustToPointToScale(mipmapLevel,nextX,nextY);
+                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
+                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+                
+                ++point;
+                ++nextPoint;
+            }
+            
+            cairo_fill(cr);
+            
+            
+           
         }
+        
     }
     assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
     

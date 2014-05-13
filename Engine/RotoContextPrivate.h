@@ -205,7 +205,7 @@ struct RotoDrawableItemPrivate
         }
 
         featherFallOff->populate();
-        featherFallOff->setDefaultValue(0.5);
+        featherFallOff->setDefaultValue(1.);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(featherFallOff));
             featherFallOff->setSignalSlotHandler(handler);
@@ -304,11 +304,10 @@ struct RotoContextPrivate
         feather->setDefaultValue(0);
         feather->setAllDimensionsEnabled(false);
         featherFallOff = Natron::createKnob<Double_Knob>(effect, "Feather fall-off");
-        featherFallOff->setHintToolTip("Controls the rate at which the feather is applied on the selected shape(s)."
-                                       " 0 means no fading (i.e: 1's only), 1 means sharp fading (i.e: 0's only)");
-        featherFallOff->setMinimum(0.);
-        featherFallOff->setMaximum(1.);
-        featherFallOff->setDefaultValue(0.5);
+        featherFallOff->setHintToolTip("Controls the rate at which the feather is applied on the selected shape(s).");
+        featherFallOff->setMinimum(0.2);
+        featherFallOff->setMaximum(5.);
+        featherFallOff->setDefaultValue(1.);
         featherFallOff->setAllDimensionsEnabled(false);
         activated = Natron::createKnob<Bool_Knob>(effect,"Activated");
         activated->setHintToolTip("Controls whether the selected shape(s) should be visible and rendered or not."
