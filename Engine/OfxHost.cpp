@@ -233,23 +233,23 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
             if (found != contexts.end()) {
                 context = *found;
             } else {
-                found = contexts.find(kOfxImageEffectContextGeneral);
-                if(found != contexts.end()){
+                found = contexts.find(kOfxImageEffectContextPaint);
+                if (found != contexts.end()) {
                     context = *found;
-                }else{
-                    found = contexts.find(kOfxImageEffectContextFilter);
-                    if(found != contexts.end()){
+                } else {
+                    found = contexts.find(kOfxImageEffectContextGeneral);
+                    if (found != contexts.end()) {
                         context = *found;
-                    }else{
-                        found = contexts.find(kOfxImageEffectContextGenerator);
-                        if(found != contexts.end()){
+                    } else {
+                        found = contexts.find(kOfxImageEffectContextFilter);
+                        if (found != contexts.end()) {
                             context = *found;
-                        }else{
-                            found = contexts.find(kOfxImageEffectContextTransition);
-                            if(found != contexts.end()){
+                        } else {
+                            found = contexts.find(kOfxImageEffectContextGenerator);
+                            if (found != contexts.end()) {
                                 context = *found;
-                            }else{
-                                context = kOfxImageEffectContextPaint;
+                            } else {
+                                kOfxImageEffectContextTransition;
                             }
                         }
                     }

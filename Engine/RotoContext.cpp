@@ -2561,20 +2561,18 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
 void RotoContext::removeItemRecursively(RotoItem* item)
 {
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item);
-    Bezier* isBezier = dynamic_cast<Bezier*>(item);
+    boost::shared_ptr<RotoItem> foundSelected;
+    for (std::list< boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+        if (it->get() == item) {
+            foundSelected = *it;
+            break;
+        }
+    }
+    if (foundSelected) {
+        deselectInternal(foundSelected);
+    }
     
-    if (isBezier) {
-        boost::shared_ptr<RotoItem> foundSelected;
-        for (std::list< boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
-            if (it->get() == item) {
-                foundSelected = *it;
-                break;
-            }
-        }
-        if (foundSelected) {
-            deselectInternal(boost::dynamic_pointer_cast<Bezier>(foundSelected));
-        }
-    } else if (isLayer) {
+    if (isLayer) {
         const RotoItems& items = isLayer->getItems();
         for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
             removeItemRecursively(it->get());
@@ -3295,6 +3293,7 @@ static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
     }
 }
 
+#pragma message WARN("This is broken, we should instead use left and right derivatives directions because if feather == cp it doesn't work")
 static void expandToFeatherDistance(const Point& point,Point* featherPoint,int featherDistance)
 {
     if (featherDistance != 0) {
@@ -3422,7 +3421,6 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             if (mipmapLevel != 0) {
                 featherDist /= (1 << mipmapLevel);
             }
-            
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {
                     nextPoint = cps.begin();
