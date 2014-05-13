@@ -114,7 +114,6 @@ private:
     
     void smoothPoint(int time,bool autoKeying,bool rippleEdit);
     
-    void setInterpolation(Natron::KeyframeType type);
     //////Const functions, fine if called by another class than the Bezier class, as long
     //////as it remains on the main-thread (the setter thread).
 public:
@@ -304,17 +303,7 @@ public:
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
      **/
     double getFeatherFallOff(int time) const;
-    
-    /**
-     * @brief Get the interpolation type at the given keyframe.
-     * 0 = Smooth
-     * 1 = Horizontal
-     * 2 = Linear
-     * 3 = Constant
-     * 4 = Catmull-Rom
-     * 5 = Cubic
-     **/
-    int getInterpolation(int time) const;
+
     
     /**
      * @brief The color that the GUI should use to draw the overlay of the shape
@@ -329,11 +318,8 @@ public:
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
-    boost::shared_ptr<Choice_Knob> getInterpolationKnob() const;
     
 signals:
-    
-    void interpolationChanged();
     
     void inversionChanged();
     
@@ -669,10 +655,7 @@ public:
      * If nothing was found INT_MAX is returned.
      **/
     int getNextKeyframeTime(int time) const;
-    
-public slots:
-    
-    void onInterpolationChanged();
+        
     
 signals:
     
@@ -738,7 +721,11 @@ public:
      **/
     boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string& baseName);
     
-    void removeBezier(Bezier* c);
+    /**
+     * @brief Removes the given item from the context. This also removes the item from the selection
+     * if it was selected. If the item has children, this will also remove all the children.
+     **/
+    void removeItem(RotoItem* item);
     
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
@@ -771,10 +758,15 @@ public:
      **/
     void evaluateChange();
     
+    /**
+     *@brief Returns the age of the roto context
+     **/
     U64 getAge();
     
+    ///Serialization
     void save(RotoContextSerialization* obj) const;
     
+    ///Deserialization
     void load(const RotoContextSerialization& obj);
     
     enum SelectionReason {
@@ -784,13 +776,22 @@ public:
     };
     
     /**
-     * @brief This must be called by the GUI whenever this bezier is selected so that the GUI knob values
-     * actually reflect the values of this bezier.
+     * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
-    void select(const boost::shared_ptr<Bezier>& b,RotoContext::SelectionReason reason);
+    void select(const boost::shared_ptr<RotoItem>& b,RotoContext::SelectionReason reason);
+    
+    ///for convenience
     void select(const std::list<boost::shared_ptr<Bezier> > & beziers,RotoContext::SelectionReason reason);
-    void deselect(const boost::shared_ptr<Bezier>& b,RotoContext::SelectionReason reason);
+    void select(const std::list<boost::shared_ptr<RotoItem> > & items,RotoContext::SelectionReason reason);
+    
+    /**
+     * @brief This must be called by the GUI whenever an item is deselected. This is recursive for layers.
+     **/
+    void deselect(const boost::shared_ptr<RotoItem>& b,RotoContext::SelectionReason reason);
+    
+    ///for convenience
     void deselect(const std::list<boost::shared_ptr<Bezier> >& beziers,RotoContext::SelectionReason reason);
+    void deselect(const std::list<boost::shared_ptr<RotoItem> >& items,RotoContext::SelectionReason reason);
     
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
@@ -809,6 +810,12 @@ public:
      **/
     std::list< boost::shared_ptr<Bezier> > getSelectedCurves() const;
     
+    
+    /**
+     * @brief Returns a const ref to the selected items. This can only be called on the main thread.
+     **/
+    const std::list< boost::shared_ptr<RotoItem> >& getSelectedItems() const;
+    
     /**
      * @brief Returns a list of all the curves in the order in which they should be rendered.
      * Non-active curves will not be inserted into the list.
@@ -824,10 +831,12 @@ public:
     
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
     
-    boost::shared_ptr<Choice_Knob> getInterpolationKnob() const;
     
     void setLastItemLocked(const boost::shared_ptr<RotoItem>& item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
+    
+    RotoLayer* getDeepestSelectedLayer() const;
+
     
 signals:
     
@@ -859,8 +868,10 @@ public slots:
         
 private:
     
-    void selectInternal(const boost::shared_ptr<Bezier>& b);
-    void deselectInternal(const boost::shared_ptr<Bezier>& b);
+    void selectInternal(const boost::shared_ptr<RotoItem>& b);
+    void deselectInternal(const boost::shared_ptr<RotoItem>& b);
+    
+     void removeItemRecursively(RotoItem* item);
     
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

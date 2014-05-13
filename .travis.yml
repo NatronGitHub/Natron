@@ -24,7 +24,7 @@ before_install:
 
 # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
 install:
-  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb
+  - sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev
 # OpenFX
   - if [ "$CC" = "gcc" ]; then make -C libs/OpenFX/Examples BITS=64; fi
   - if [ "$CC" = "gcc" ]; then make -C libs/OpenFX/Support/Plugins BITS=64; fi

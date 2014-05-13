@@ -1764,13 +1764,13 @@ void NodeGraph::deleteNodePermanantly(const boost::shared_ptr<NodeGui>& n)
         _nodesTrash.erase(it);
     }
     
-    
-    ///now that we made the command dirty, delete the node everywhere in Natron
-    getGui()->getApp()->deleteNode(n);
-
     if (n->getNode()->isRotoNode()) {
         getGui()->removeRotoInterface(n.get(),true);
     }
+    ///now that we made the command dirty, delete the node everywhere in Natron
+    getGui()->getApp()->deleteNode(n);
+
+    
     getGui()->getCurveEditor()->removeNode(n);
     n->deleteReferences();
     if (_nodeSelected == n) {

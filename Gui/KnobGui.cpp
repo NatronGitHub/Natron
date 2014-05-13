@@ -192,7 +192,10 @@ void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWi
 
 void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     _imp->animationMenu = new QMenu(layout->parentWidget());
-    _imp->animationButton = new AnimationButton(this,"A",layout->parentWidget());
+    QPixmap pix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
+    _imp->animationButton = new AnimationButton(this,QIcon(pix),"",layout->parentWidget());
+    _imp->animationButton->setFixedSize(20, 20);
     _imp->animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
     QObject::connect(_imp->animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_imp->animationButton);

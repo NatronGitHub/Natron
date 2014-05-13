@@ -43,6 +43,10 @@ public slots:
     
     void onRemoveKeyframeButtonClicked();
     
+    void onAddLayerButtonClicked();
+    
+    void onRemoveItemButtonClicked();
+    
     ///This gets called when the selection changes internally in the RotoContext
     void onSelectionChanged(int reason);
     
@@ -57,9 +61,6 @@ public slots:
     
     ///An item was removed by the user
     void onItemRemoved(RotoItem* item);
-    
-    ///An item had its interpolation changed
-    void onRotoItemInterpolationChanged();
     
     ///An item had its inverted state changed
     void onRotoItemInversionChanged();

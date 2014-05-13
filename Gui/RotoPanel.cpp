@@ -49,17 +49,16 @@ public:
     
 private:
     
-    virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL
+    virtual void mouseReleaseEvent(QMouseEvent* event) OVERRIDE FINAL
     {
         QModelIndex index = indexAt(event->pos());
-        if (index.isValid() && index.column() != 0 && selectedItems().size() > 1) {
-            QTreeWidgetItem* item = itemAt(event->pos());
-            if (item) {
-                emit itemClicked(item, index.column());
-            }
-            
+        QTreeWidgetItem* item = itemAt(event->pos());
+        QList<QTreeWidgetItem*> selection = selectedItems();
+        
+        if (index.isValid() && index.column() != 0 && selection.contains(item)) {
+            emit itemClicked(item, index.column());
         } else {
-            QTreeWidget::mousePressEvent(event);
+            QTreeWidget::mouseReleaseEvent(event);
         }
     }
 };
@@ -78,34 +77,7 @@ struct TreeItem
 typedef std::list< TreeItem > TreeItems;
 
 
-static QString interpName(int interp)
-{
-    switch (interp) {
-        case 0:
-            return "Smooth";
-            break;
-        case 1:
-            return "Horizontal";
-            break;
-        case 2:
-            return "Linear";
-            break;
-        case 3:
-            return "Constant";
-            break;
-        case 4:
-            return "Catmull-Rom";
-            break;
-        case 5:
-            return "Cubic";
-            break;
-        default:
-            return "";
-            break;
-    }
-}
-
-typedef std::list< boost::shared_ptr<Bezier> > SelectedCurves;
+typedef std::list< boost::shared_ptr<RotoItem> > SelectedItems;
 
 struct RotoPanelPrivate
 {
@@ -129,13 +101,18 @@ struct RotoPanelPrivate
     Button* addKeyframe;
     Button* removeKeyframe;
     
-    QIcon iconLayer,iconBezier,iconVisible,iconUnvisible,iconLocked,iconUnlocked,iconInverted,iconUninverted,iconCurve,iconWheel;
+    QWidget* buttonContainer;
+    QHBoxLayout* buttonLayout;
+    Button* addLayerButton;
+    Button* removeItemButton;
+    
+    QIcon iconLayer,iconBezier,iconVisible,iconUnvisible,iconLocked,iconUnlocked,iconInverted,iconUninverted,iconWheel;
     
     TreeWidget* tree;
     QTreeWidgetItem* treeHeader;
     
     
-    SelectedCurves selectedCurves;
+    SelectedItems selectedItems;
     
     TreeItems items;
     
@@ -269,12 +246,12 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     QObject::connect(_imp->tree, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)), this,
                      SLOT(onCurrentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)));
     QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()));
-    ///4 columns: Name - Visible - Locked - Overlay color - Inverted - Interpolation
-    _imp->tree->setColumnCount(6);
+    ///4 columns: Name - Visible - Locked - Overlay color - Inverted
+    _imp->tree->setColumnCount(5);
     _imp->treeHeader = new QTreeWidgetItem;
     _imp->treeHeader->setText(0, "Name");
     
-    QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixCurve,pixWheel;
+    QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
     appPTR->getIcon(NATRON_PIXMAP_BEZIER, &pixBezier);
     appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixVisible);
@@ -283,12 +260,10 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, &pixUnlocked);
     appPTR->getIcon(NATRON_PIXMAP_INVERTED, &pixInverted);
     appPTR->getIcon(NATRON_PIXMAP_UNINVERTED, &pixUninverted);
-    appPTR->getIcon(NATRON_PIXMAP_CURVE, &pixCurve);
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &pixWheel);
     
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);
-    _imp->iconCurve.addPixmap(pixCurve);
     _imp->iconInverted.addPixmap(pixInverted);
     _imp->iconUninverted.addPixmap(pixUninverted);
     _imp->iconVisible.addPixmap(pixVisible);
@@ -301,7 +276,6 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->treeHeader->setIcon(2, _imp->iconLocked);
     _imp->treeHeader->setIcon(3, _imp->iconWheel);
     _imp->treeHeader->setIcon(4, _imp->iconUninverted);
-    _imp->treeHeader->setIcon(5, _imp->iconCurve);
     _imp->tree->setHeaderItem(_imp->treeHeader);
     
     _imp->tree->setColumnWidth(1, 25);
@@ -310,6 +284,25 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->tree->setColumnWidth(4, 25);
 
     _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
+    
+    _imp->buttonContainer = new QWidget(this);
+    _imp->buttonLayout = new QHBoxLayout(_imp->buttonContainer);
+    _imp->buttonLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->buttonLayout->setSpacing(0);
+    
+    _imp->addLayerButton = new Button("+",_imp->buttonContainer);
+    _imp->addLayerButton->setToolTip("Add a new layer");
+    _imp->buttonLayout->addWidget(_imp->addLayerButton);
+    QObject::connect(_imp->addLayerButton, SIGNAL(clicked(bool)), this, SLOT(onAddLayerButtonClicked()));
+    
+    _imp->removeItemButton = new Button("-",_imp->buttonContainer);
+    _imp->removeItemButton->setToolTip("Remove selected items");
+    _imp->buttonLayout->addWidget(_imp->removeItemButton);
+    QObject::connect(_imp->removeItemButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveItemButtonClicked()));
+    
+    _imp->buttonLayout->addStretch();
+    
+    _imp->mainLayout->addWidget(_imp->buttonContainer);
     
     _imp->buildTreeFromContext();
     
@@ -346,21 +339,33 @@ void RotoPanel::onRemoveKeyframeButtonClicked()
 void RotoPanel::onSelectionChangedInternal()
 {
     ///disconnect previous selection
-    for (SelectedCurves::const_iterator it = _imp->selectedCurves.begin(); it!=_imp->selectedCurves.end(); ++it) {
-        QObject::disconnect(it->get(), SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
-        QObject::disconnect(it->get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+    for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier) {
+            QObject::disconnect(isBezier, SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
+            QObject::disconnect(isBezier, SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+        }
     }
-    _imp->selectedCurves.clear();
+    _imp->selectedItems.clear();
     
     ///connect new selection
-    const std::list<boost::shared_ptr<Bezier> >& curves = _imp->context->getSelectedCurves();
-    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
-        _imp->selectedCurves.push_back(*it);
-        QObject::connect((*it).get(), SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
-        QObject::connect((*it).get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+    int selectedBeziersCount = 0;
+    const std::list<boost::shared_ptr<RotoItem> >& items = _imp->context->getSelectedItems();
+    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        _imp->selectedItems.push_back(*it);
+        const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
+        const RotoLayer* isLayer = dynamic_cast<const RotoLayer*>(it->get());
+        if (isBezier) {
+            QObject::connect(isBezier, SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
+            QObject::connect(isBezier, SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+            ++selectedBeziersCount;
+        } else if (isLayer && !isLayer->getItems().empty()) {
+            ++selectedBeziersCount;
+        }
+        
     }
     
-    bool enabled = !_imp->selectedCurves.empty();
+    bool enabled = selectedBeziersCount > 0;
     
     _imp->splineLabel->setEnabled(enabled);
     _imp->currentKeyframe->setEnabled(enabled);
@@ -388,9 +393,12 @@ void RotoPanel::onSelectionChanged(int reason)
     _imp->tree->clearSelection();
     ///now update the selection according to the selected curves
     ///Note that layers will not be selected because this is called when the user clicks on a overlay on the viewer
-    for (SelectedCurves::const_iterator it = _imp->selectedCurves.begin(); it!=_imp->selectedCurves.end(); ++it) {
+    for (SelectedItems::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
         TreeItems::iterator found = _imp->findItem(it->get());
-        assert(found != _imp->items.end());
+        if (found == _imp->items.end()) {
+            _imp->selectedItems.erase(it);
+            break;
+        }
         found->treeItem->setSelected(true);
     }
     _imp->tree->blockSignals(false);
@@ -412,8 +420,11 @@ void RotoPanel::onSelectedBezierKeyframeRemoved(int time)
 void RotoPanelPrivate::updateSplinesInfosGUI(int time)
 {
     std::set<int> keyframes;
-    for (SelectedCurves::const_iterator it = selectedCurves.begin(); it!=selectedCurves.end(); ++it) {
-        (*it)->getKeyframeTimes(&keyframes);
+    for (SelectedItems::const_iterator it = selectedItems.begin(); it!=selectedItems.end(); ++it) {
+        const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
+        if (isBezier) {
+            isBezier->getKeyframeTimes(&keyframes);
+        }
     }
     totalKeyframes->setValue((double)keyframes.size());
     
@@ -449,12 +460,11 @@ void RotoPanelPrivate::updateSplinesInfosGUI(int time)
         }
     }
     
-    ///Refresh the interpolation + inverted state
+    ///Refresh the  inverted state
     for (TreeItems::iterator it = items.begin(); it != items.end(); ++it) {
         RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
         if (drawable) {
             it->treeItem->setIcon(4,drawable->getInverted(time) ? iconInverted : iconUninverted);
-            it->treeItem->setText(5,interpName(drawable->getInterpolation(time)));
         }
     }
 }
@@ -505,9 +515,7 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         treeItem->setIcon(0, iconBezier);
         treeItem->setIcon(3,QIcon(p));
         treeItem->setIcon(4, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        treeItem->setText(5, interpName(drawable->getInterpolation(time)));
         
-        QObject::connect(drawable,SIGNAL(interpolationChanged()), publicInterface, SLOT(onRotoItemInterpolationChanged()));
         QObject::connect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
         
     } else {
@@ -530,12 +538,14 @@ void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
     if (drawable) {
 
-        QObject::disconnect(drawable,SIGNAL(interpolationChanged()), publicInterface, SLOT(onRotoItemInterpolationChanged()));
         QObject::disconnect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
         
     }
     
+    ///deleting the item will emit a selection change which would lead to a deadlock
+    tree->blockSignals(true);
     delete it->treeItem;
+    tree->blockSignals(false);
     items.erase(it);
 }
 
@@ -565,17 +575,7 @@ void RotoPanelPrivate::buildTreeFromContext()
     
 }
 
-void RotoPanel::onRotoItemInterpolationChanged()
-{
-    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
-    if (item) {
-        int time = _imp->context->getTimelineCurrentTime();
-        TreeItems::iterator it = _imp->findItem(item);
-        if (it != _imp->items.end()) {
-            it->treeItem->setText(5, interpName(item->getInterpolation(time)));
-        }
-    }
-}
+
 
 void RotoPanel::onRotoItemInversionChanged()
 {
@@ -587,17 +587,6 @@ void RotoPanel::onRotoItemInversionChanged()
             it->treeItem->setIcon(4, item->getInverted(time)  ? _imp->iconInverted : _imp->iconUninverted);
         }
     }
-}
-
-static void createMenuAction(QMenu* menu,int index,int currentIndex)
-{
-    QAction* act = new QAction(menu);
-    act->setCheckable(true);
-    act->setChecked(currentIndex == index);
-    act->setData(QVariant(index));
-    act->setText(interpName(index));
-    menu->addAction(act);
-
 }
 
 void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
@@ -695,45 +684,6 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 }
                 
                 
-            }
-                break;
-                ///show menu for interpolation
-            case 5:
-            {
-                RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
-                if (drawable) {
-                    int interp = drawable->getInterpolation(time);
-                    QMenu menu(this);
-                    for (int j = 0; j < 5; ++j ) {
-                        createMenuAction(&menu,j,interp);
-                    }
-                    QAction* ret = menu.exec(QCursor::pos());
-                    if (ret) {
-                        int index = ret->data().toInt();
-                        
-                        QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                        for (int i = 0; i < selected.size(); ++i) {
-                            TreeItems::iterator found = _imp->findItem(selected[i]);
-                            assert(found != _imp->items.end());
-                            drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                            boost::shared_ptr<Choice_Knob> interpolationKnob = drawable->getInterpolationKnob();
-                            bool isOnKeyframe = interpolationKnob->getKeyFrameIndex(0, time) != -1;
-                            if (_imp->context->isAutoKeyingEnabled() || isOnKeyframe) {
-                                interpolationKnob->setValueAtTime(time, index, 0);
-                            } else {
-                                interpolationKnob->setValue(index, 0);
-                            }
-                            found->treeItem->setText(5, interpName(index));
-                        }
-                        if (!selected.empty()) {
-                            _imp->context->getInterpolationKnob()->setValueAtTime(time, index, 0);
-                        }
-                        
-                    }
-                }
-                
-                
-                
             }   break;
             case 0:
             default:
@@ -812,16 +762,13 @@ void RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLa
 {
     const std::list<boost::shared_ptr<RotoItem> >& children = layer->getItems();
     for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it!=children.end(); ++it) {
-        boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
         boost::shared_ptr<RotoLayer> l = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        if (bezier) {
-            SelectedCurves::iterator found = std::find(selectedCurves.begin(), selectedCurves.end(), bezier);
-            if (found == selectedCurves.end()) {
-                context->select(bezier, RotoContext::SETTINGS_PANEL);
-                selectedCurves.push_back(bezier);
-            }
-            
-        } else if (l) {
+        SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), *it);
+        if (found == selectedItems.end()) {
+            context->select(*it, RotoContext::SETTINGS_PANEL);
+            selectedItems.push_back(*it);
+        }
+        if (l) {
             insertSelectionRecursively(l);
         }
     }
@@ -830,32 +777,44 @@ void RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLa
 void RotoPanel::onItemSelectionChanged()
 {
     ///disconnect previous selection
-    for (SelectedCurves::const_iterator it = _imp->selectedCurves.begin(); it!=_imp->selectedCurves.end(); ++it) {
-        QObject::disconnect(it->get(), SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
-        QObject::disconnect(it->get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+    for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
+        const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
+        if (isBezier) {
+            QObject::disconnect(isBezier, SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
+            QObject::disconnect(isBezier, SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+        }
     }
-    _imp->context->deselect(_imp->selectedCurves, RotoContext::SETTINGS_PANEL);
-    _imp->selectedCurves.clear();
+    _imp->context->deselect(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
+    _imp->selectedItems.clear();
     
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
     
+    int selectedBeziersCount = 0;
     for (int i = 0; i < selectedItems.size(); ++i) {
         TreeItems::iterator it = _imp->findItem(selectedItems[i]);
         assert(it != _imp->items.end());
         boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
         boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
         if (bezier) {
-            SelectedCurves::iterator found = std::find(_imp->selectedCurves.begin(), _imp->selectedCurves.end(), bezier);
-            if (found == _imp->selectedCurves.end()) {
-                _imp->selectedCurves.push_back(bezier);
+            SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), bezier);
+            if (found == _imp->selectedItems.end()) {
+                _imp->selectedItems.push_back(bezier);
+                ++selectedBeziersCount;
             }
         } else if (layer) {
+            if (!layer->getItems().empty()) {
+                ++selectedBeziersCount;
+            }
+            SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), it->rotoItem);
+            if (found == _imp->selectedItems.end()) {
+                _imp->selectedItems.push_back(it->rotoItem);
+            }
             _imp->insertSelectionRecursively(layer);
         }
     }
-    _imp->context->select(_imp->selectedCurves, RotoContext::SETTINGS_PANEL);
+    _imp->context->select(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
     
-    bool enabled = !_imp->selectedCurves.empty();
+    bool enabled = selectedBeziersCount > 0;
     
     _imp->splineLabel->setEnabled(enabled);
     _imp->currentKeyframe->setEnabled(enabled);
@@ -871,4 +830,25 @@ void RotoPanel::onItemSelectionChanged()
     ///update the splines info GUI
     _imp->updateSplinesInfosGUI(time);
 
+}
+
+void RotoPanel::onAddLayerButtonClicked()
+{
+    boost::shared_ptr<RotoLayer> layer = _imp->context->addLayer();
+    _imp->tree->clearSelection();
+    TreeItems::iterator it = _imp->findItem(layer.get());
+    assert(it != _imp->items.end());
+}
+
+void RotoPanel::onRemoveItemButtonClicked()
+{
+    _imp->selectedItems.clear();
+    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    for (int i = 0; i < selectedItems.size(); ++i) {
+        TreeItems::iterator it = _imp->findItem(selectedItems[i]);
+        if (it != _imp->items.end()) {
+            _imp->context->removeItem(it->rotoItem.get());
+        }
+    }
+    _imp->context->evaluateChange();
 }

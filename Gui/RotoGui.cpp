@@ -1188,8 +1188,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 } else if (cpCount == 0) {
                     
                     ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeBezier(nearbyBezier.get());
-                    _imp->removeBezierFromSelection(nearbyBezier.get());
+                    _imp->context->removeItem(nearbyBezier.get());
+
                 }
                 SelectedCPs::iterator foundSelected = std::find(_imp->selectedCps.begin(), _imp->selectedCps.end(), nearbyCP);
                 if (foundSelected != _imp->selectedCps.end()) {
@@ -1626,11 +1626,10 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
                 } else if (cpCount == 0) {
                     
                     ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeBezier(curve);
+                    _imp->context->removeItem(curve);
                     if (curve == _imp->builtBezier.get()) {
                         _imp->builtBezier.reset();
                     }
-                    _imp->removeBezierFromSelection(curve);
                 }
                 
             }
@@ -1642,11 +1641,10 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
         } else if (!_imp->selectedBeziers.empty()) {
             while (!_imp->selectedBeziers.empty()) {
                 Bezier* b = _imp->selectedBeziers.front().get();
-                _imp->context->removeBezier(b);
+                _imp->context->removeItem(b);
                 if (b == _imp->builtBezier.get()) {
                     _imp->builtBezier.reset();
                 }
-                _imp->removeBezierFromSelection(b);
             }
             _imp->node->getNode()->getApp()->triggerAutoSave();
             _imp->context->evaluateChange();
