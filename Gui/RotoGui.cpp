@@ -92,9 +92,6 @@ struct RotoGui::RotoGuiPrivate
     Button* removeKeyframeButton;
     
     
-    QWidget* pointsEditionButtonsBar;
-    QWidget* bezierEditionButtonsBar;
-    
     RotoToolButton* selectTool;
     RotoToolButton* pointsEditionTool;
     RotoToolButton* bezierEditionTool;
@@ -138,8 +135,6 @@ struct RotoGui::RotoGuiPrivate
     , type(ROTOSCOPING)
     , toolbar(0)
     , selectionButtonsBar(0)
-    , pointsEditionButtonsBar(0)
-    , bezierEditionButtonsBar(0)
     , selectTool(0)
     , pointsEditionTool(0)
     , bezierEditionTool(0)
@@ -205,8 +200,12 @@ RotoToolButton::RotoToolButton(QWidget* parent)
     
 }
 
+void RotoToolButton::mousePressEvent(QMouseEvent* /*event*/)
+{
+    
+}
 
-void RotoToolButton::mousePressEvent(QMouseEvent* event)
+void RotoToolButton::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         handleSelection();
@@ -306,11 +305,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     _imp->removeKeyframeButton = new Button(QIcon(),"- keyframe",_imp->selectionButtonsBar);
     QObject::connect(_imp->removeKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyFrameClicked()));
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
-    
-    ///points edition bar is the same as the selection buttons bar
-    _imp->pointsEditionButtonsBar = _imp->selectionButtonsBar;
-    _imp->bezierEditionButtonsBar = new QWidget(parent);
-    
+        
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->selectTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
@@ -376,10 +371,10 @@ QWidget* RotoGui::getButtonsBar(RotoGui::Roto_Role role) const
             return _imp->selectionButtonsBar;
             break;
         case POINTS_EDITION_ROLE:
-            return _imp->pointsEditionButtonsBar;
+            return _imp->selectionButtonsBar;
             break;
         case BEZIER_EDITION_ROLE:
-            return _imp->bezierEditionButtonsBar;
+            return _imp->selectionButtonsBar;
             break;
         default:
             assert(false);
@@ -568,7 +563,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             
             ///draw the feather points
             std::list<std::pair<double,double> > featherPoints;
-            (*it)->evaluateFeatherPointsAtTime_DeCastelJau(time, 100, &featherPoints);
+            (*it)->evaluateFeatherPointsAtTime_DeCastelJau(time,0, 100, &featherPoints,false);
             
             if (!featherPoints.empty()) {
                 glLineStipple(2, 0xAAAA);

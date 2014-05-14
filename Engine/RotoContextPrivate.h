@@ -19,6 +19,10 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QThread>
+
+#include <cairo/cairo.h>
+
+
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -322,7 +326,8 @@ struct RotoContextPrivate
     }
     
    
-    
+    void renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> >& splines,
+                        unsigned int mipmapLevel,int time);
         
     
 };

@@ -47,6 +47,7 @@ public:
 private:
     
     virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* event) OVERRIDE FINAL;
 
     
 };

@@ -15,7 +15,6 @@
 #include <sstream>
 
 #include <boost/bind.hpp>
-#include <cairo/cairo.h>
 
 #include "Engine/RotoContextPrivate.h"
 
@@ -1971,8 +1970,8 @@ void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
     }
 }
 
-void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
-                                                     RectD* bbox) const
+void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
+                                                     std::list<std::pair<double,double> >* points,bool evaluateIfEqual,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
     BezierCPs::const_iterator itCp = _imp->points.begin();
@@ -1989,9 +1988,13 @@ void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSeg
                 break;
             }
         }
-        if (areSegmentDifferents(time, **itCp, **nextCp, **it, **next)) {
-            evalBezierSegment(*(*it),*(*next), time,0, nbPointsPerSegment, points,bbox);
+        if (!evaluateIfEqual && !areSegmentDifferents(time, **itCp, **nextCp, **it, **next))
+        {
+            continue;
         }
+
+        evalBezierSegment(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
+        
     }
 }
 
@@ -2004,7 +2007,7 @@ RectD Bezier::getBoundingBox(int time) const
     bbox.y1 = INT_MAX;
     bbox.y2 = INT_MIN;
     evaluateAtTime_DeCastelJau(time,0, 50,&pts,&bbox);
-    evaluateFeatherPointsAtTime_DeCastelJau(time, 50, &pts,&bbox);
+    evaluateFeatherPointsAtTime_DeCastelJau(time,0,50, &pts,&bbox);
     
     if (bbox.x1 == INT_MAX) {
         bbox.x1 = 0;
@@ -2557,7 +2560,9 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
         if (!deepestLayer) {
             ///if there is no base layer, create one
             if (_imp->layers.empty()) {
+                l.unlock();
                 addLayer();
+                l.relock();
             }
             parentLayer = _imp->layers.front().get();
             
@@ -3327,16 +3332,142 @@ static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
     }
 }
 
-#pragma message WARN("This is broken, we should instead use left and right derivatives directions because if feather == cp it doesn't work")
-static void expandToFeatherDistance(const Point& point,Point* featherPoint,int featherDistance)
+static void precomputePointInPolygonTables(const std::list<Point>& polygon,std::vector<double>* constants,std::vector<double>* multiples)
 {
-    if (featherDistance != 0) {
-        double dx = (featherPoint->first - point.first);
-        double dy = (featherPoint->second - point.second);
-        double dist = sqrt(dx * dx + dy * dy);
-        featherPoint->first = (dx * (dist + featherDistance)) / dist + point.first;
-        featherPoint->second = (dy * (dist + featherDistance)) / dist + point.second;
+    assert(constants->size() == multiples->size() && constants->size() == polygon.size());
+    
+    std::list<Point>::const_iterator next = polygon.begin();
+    ++next;
+    int i = 0;
+    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++i) {
+        if (next == polygon.end()) {
+            next = polygon.begin();
+        }
+        if(it->second == next->second) {
+            constants->at(i) = next->first;
+            multiples->at(i) = 0;
+        } else {
+            constants->at(i) = next->first - (next->second * it->first) / (it->second - next->second) +
+            (next->second * next->first) / (it->second - next->second);
+            multiples->at(i) = (it->first - next->first) / (it->second - next->second);
+        }
     }
+}
+
+static bool pointInPolygon(const Point& p,const std::list<Point>& polygon,
+                           const std::vector<double>& constants,
+                           const std::vector<double>& multiples,
+                           const RectD& featherPolyBBox) {
+
+    assert(constants.size() == multiples.size() && constants.size() == polygon.size());
+    
+    ///first check if the point lies inside the bounding box
+    if (p.first < featherPolyBBox.x1 || p.first >= featherPolyBBox.x2 || p.second < featherPolyBBox.y1 || p.second >= featherPolyBBox.y2) {
+        return false;
+    }
+    
+    bool odd = false;
+    std::list<Point>::const_iterator next = polygon.begin();
+    ++next;
+    std::vector<double>::const_iterator cIt = constants.begin(); ++cIt;
+    std::vector<double>::const_iterator mIt = multiples.begin(); ++mIt;
+    
+    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++cIt,++mIt) {
+        if (next == polygon.end()) {
+            cIt = constants.begin();
+            mIt = multiples.begin();
+            next = polygon.begin();
+        }
+        if ((next->second < p.second && it->second >= p.second) ||
+            (it->second < p.second && next->second >= p.second)) {
+            odd ^= ((p.second * *mIt + *cIt) < p.first);
+        }
+    }
+    return odd;
+}
+
+/**
+ * @brief Computes the location of the feather extent relative to the current feather point position and
+ * the given feather distance.
+ * In the case the control point and the feather point of the bezier are distinct, this function just makes use
+ * of Thales theorem.
+ * If the feather point and the control point are equal then this function computes the left and right derivative
+ * of the bezier at that point to determine the direction in which the extent is. 
+ * @returns The delta from the given feather point to apply to find out the extent position.
+ * 
+ * Note that the delta will be applied to fp.
+ **/
+static Point expandToFeatherDistance(const Point& cp, //< the point
+                                     Point* fp, //< the feather point
+                                     int featherDistance, //< feather distance
+                                     const std::list<Point>& featherPolygon, //< the polygon of the bezier
+                                     const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
+                                     const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
+                                     const RectD& featherPolyBBox, //< helper to speed-up pointInPolygon computations
+                                     int time, //< time
+                                     BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
+                                     BezierCPs::const_iterator curFp, //< iterator pointing to fp
+                                     BezierCPs::const_iterator nextFp) //< iterator pointing after curFp
+{
+    Point ret;
+    if (featherDistance != 0) {
+        
+        ///shortcut when the feather point is different than the control point
+        if (cp.first != fp->first && cp.second != fp->second) {
+            double dx = (fp->first - cp.first);
+            double dy = (fp->second - cp.second);
+            double dist = sqrt(dx * dx + dy * dy);
+            ret.first = (dx * (dist + featherDistance)) / dist;
+            ret.second = (dy * (dist + featherDistance)) / dist;
+            fp->first =  ret.first + cp.first;
+            fp->second =  ret.second + cp.second;
+        } else {
+            //compute derivatives to determine the feather extent
+            double leftX,leftY,rightX,rightY;
+            Bezier::leftDerivativeAtPoint(time, **curFp, **prevFp, &leftX, &leftY);
+            Bezier::rightDerivativeAtPoint(time, **curFp, **nextFp, &rightX, &rightY);
+            
+            ///compute the angle of the tangents
+            double leftAlpha,rightAlpha,alpha;
+            if (leftX == 0) {
+                leftAlpha = leftY < 0 ? - pi / 2. : pi / 2.;
+            } else {
+                leftAlpha = std::atan2(leftY,leftX) + pi / 2.;
+            }
+            if (rightX == 0) {
+                rightAlpha = rightY < 0 ? - pi / 2. : pi / 2.;
+            } else {
+                rightAlpha = std::atan2(rightY,rightX) + pi / 2.;
+            }
+            
+            ///this is the angle of the bisector of the tangents
+            alpha = (leftAlpha + rightAlpha) / 2.;
+            
+            ///retrieve the position of the extent of the feather
+            ///To retrieve the extent which is in not inside the polygon we test the 2 points
+            Point extent;
+            ret.first = std::cos(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
+            ret.second = std::sin(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
+            extent.first = ret.first + cp.first;
+            extent.second = ret.second + cp.second;
+            
+            bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
+            if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
+                *fp = extent;
+            } else {
+                ret.first = std::cos(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
+                ret.second = std::sin(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
+                extent.first = ret.first + cp.first;
+                extent.second = ret.second + cp.second;
+                inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
+                *fp = extent;
+            }
+        }
+    } else {
+        ret.first = ret.second = 0;
+    }
+    return ret;
+    
 }
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
@@ -3392,7 +3523,6 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     roi.intersect(pixelRod, &clippedRoI);
  
     QMutexLocker l(&_imp->rotoContextMutex);
-    int i = 0;
     
     ////Allocate the cairo temporary buffer
     cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());
@@ -3401,14 +3531,78 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         return image;
     }
     cairo_t* cr = cairo_create(cairoImg);
+    
+    ///We could also propose the user to render a mask to SVG
+    _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
+   
+    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
+    unsigned char* srcPix = cdata;
+    int stride = cairo_image_surface_get_stride(cairoImg);
+    
+    int comps = (int)image->getComponentsCount();
+    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
+        
+        float* dstPix = image->pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        assert(dstPix);
+        
+        for (int x = 0; x < pixelRod.width(); ++x) {
+            if (comps == 1) {
+                dstPix[x] = srcPix[x] / 255.f;
+            } else {
+                assert(comps == 4);
+                dstPix[x * 4 + 3] = srcPix[x] / 255.f;
+            }
+        }
+    }
+    
+    cairo_destroy(cr);
+    ////Free the buffer used by Cairo
+    cairo_surface_destroy(cairoImg);
+
+
+    ////////////////////////////////////
+    if(_imp->node->aborted()){
+        //if render was aborted, remove the frame from the cache as it contains only garbage
+        appPTR->removeFromNodeCache(image);
+    } else {
+         image->markForRendered(clippedRoI);
+    }
+    return image;
+}
+
+void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> >& splines,
+                                         unsigned int mipmapLevel,int time)
+{
+    ///Maybe all beziers could have a specific blending mode ?
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = splines.begin(); it2!=splines.end(); ++it2,++i) {
+    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         
-        ///render the bezier ONLY if the image is not cached OR if the image is cached but the bezier has changed.
-        ///Also render only finished bezier
+        ///render the bezier only if finished (closed) and activated
         if ((*it2)->isCurveFinished() && (*it2)->isActivated(time)) {
             
+            
+            double fallOff = (*it2)->getFeatherFallOff(time);
+            double fallOffInverse = 1. / fallOff;
+            int featherDist = (*it2)->getFeatherDistance(time);
+            double opacity = (*it2)->getOpacity(time);
+            bool inverted = (*it2)->getInverted(time);
+            
+            ///here is the polygon of the feather bezier
+            ///This is used only if the feather distance is different of 0 and the feather points equal
+            ///the control points in order to still be able to apply the feather distance.
+            std::list<Point> featherPolygon;
+            std::vector<double> multiples,constants;
+            RectD featherPolyBBox;
+            if (featherDist != 0) {
+                (*it2)->evaluateFeatherPointsAtTime_DeCastelJau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
+                assert(!featherPolygon.empty());
+                
+                multiples.resize(featherPolygon.size());
+                constants.resize(featherPolygon.size());
+                precomputePointInPolygonTables(featherPolygon, &constants, &multiples);
+            }
+        
             
             BezierCPs cps = (*it2)->getControlPoints_mt_safe();
             BezierCPs fps = (*it2)->getFeatherPoints_mt_safe();
@@ -3419,8 +3613,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 continue;
             }
             
-            double opacity = (*it2)->getOpacity(time);
-            bool inverted = (*it2)->getInverted(time);
+            
             if (inverted) {
                 cairo_set_source_rgba(cr, 1.,1.,1., opacity);
                 cairo_paint(cr);
@@ -3430,16 +3623,17 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             BezierCPs::iterator point = cps.begin();
             BezierCPs::iterator fpoint = fps.begin();
             
-//            BezierCPs::iterator prevPoint = cps.end();
-//            --prevPoint;
-//            BezierCPs::iterator prevFPoint = fps.end();
-//            --prevFPoint;
+            BezierCPs::iterator prevPoint = cps.end();
+            --prevPoint;
             
             BezierCPs::iterator nextPoint = point;
             ++nextPoint;
             BezierCPs::iterator nextFPoint = fpoint;
             ++nextFPoint;
-
+            
+            BezierCPs::iterator nextNextPoint = nextPoint;
+            ++nextNextPoint;
+            
             
             ////1st pass, define the feather edge pattern
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
@@ -3448,14 +3642,25 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 continue;
             }
             
-            double fallOff = (*it2)->getFeatherFallOff(time);
-            double fallOffInverse = 1. / fallOff;
-            
-            int featherDist = (*it2)->getFeatherDistance(time);
             if (mipmapLevel != 0) {
                 featherDist /= (1 << mipmapLevel);
             }
+            
+            ///This is a vector of feather points that we compute during
+            ///the first pass to avoid recompute them when we do the actual
+            ///path rendering.
+            ///The points are interpreted as a triplet <prev right point,cur left point,cur>
+            std::vector<Point> preComputedFeatherPoints(cps.size() * 3);
+            std::vector<Point>::iterator preFillIt = preComputedFeatherPoints.begin();
+            
             while (point != cps.end()) {
+                
+                if (prevPoint == cps.end()) {
+                    prevPoint = cps.begin();
+                }
+                if (nextNextPoint == cps.end()) {
+                    nextNextPoint = cps.begin();
+                }
                 if (nextPoint == cps.end()) {
                     nextPoint = cps.begin();
                     nextFPoint = fps.begin();
@@ -3465,31 +3670,51 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 (*point)->getPositionAtTime(time, &p0.first, &p0.second);
                 adjustToPointToScale(mipmapLevel,p0.first,p0.second);
                 
-                (*fpoint)->getPositionAtTime(time, &p1.first, &p1.second);
-                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
-                
-                (*nextFPoint)->getPositionAtTime(time, &p2.first, &p2.second);
-                adjustToPointToScale(mipmapLevel, p2.first, p2.second);
-                
-                (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
-                adjustToPointToScale(mipmapLevel, p3.first, p3.second);
-                
                 (*point)->getRightBezierPointAtTime(time, &p0Right.first, &p0Right.second);
                 adjustToPointToScale(mipmapLevel, p0Right.first, p0Right.second);
                 
                 (*fpoint)->getRightBezierPointAtTime(time, &p1Right.first, &p1Right.second);
                 adjustToPointToScale(mipmapLevel, p1Right.first, p1Right.second);
+
+                (*fpoint)->getPositionAtTime(time, &p1.first, &p1.second);
+                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
                 
-                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.first, &p2Left.second);
-                adjustToPointToScale(mipmapLevel, p2Left.first, p2Left.second);
+                (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
+                adjustToPointToScale(mipmapLevel, p3.first, p3.second);
                 
                 (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.first, &p3Left.second);
                 adjustToPointToScale(mipmapLevel, p3Left.first,p3Left.second);
                 
-                expandToFeatherDistance(p0, &p1, featherDist);
-                expandToFeatherDistance(p3, &p2, featherDist);
-                expandToFeatherDistance(p0Right, &p1Right, featherDist);
-                expandToFeatherDistance(p3Left, &p2Left, featherDist);
+                (*nextFPoint)->getPositionAtTime(time, &p2.first, &p2.second);
+                adjustToPointToScale(mipmapLevel, p2.first, p2.second);
+                
+                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.first, &p2Left.second);
+                adjustToPointToScale(mipmapLevel, p2Left.first, p2Left.second);
+                
+                
+                
+                Point fpExpansionP1 = expandToFeatherDistance(p0, &p1, featherDist,featherPolygon,
+                                                            constants,multiples,featherPolyBBox,time,prevPoint,point,nextPoint);
+                Point fpExpansionP2 = expandToFeatherDistance(p3, &p2, featherDist,featherPolygon,
+                                        constants,multiples,featherPolyBBox,time,point,nextPoint,nextNextPoint);
+                
+                
+                ///we also have to expand the  p1Right and p2left derivatives but this is easier since
+                ///we now it's the same deltas that we computed for p1 and p2
+                if (featherDist != 0) {
+                    p1Right.first = p0Right.first + fpExpansionP1.first;
+                    p1Right.second = p0Right.second + fpExpansionP1.second;
+                    
+                    p2Left.first = p3Left.first + fpExpansionP2.first;
+                    p2Left.second = p3Left.second + fpExpansionP2.second;
+                }
+                
+                ///This completes the previous iteration's triplet
+                *preFillIt++ = p1Right;
+                
+                ///This makes up the new triplet
+                *preFillIt++ = p2Left;
+                *preFillIt++ = p2;
                 
                 ///linear interpolation
                 p0p1.first = (2. * fallOff * p0.first + fallOffInverse * p1.first) / (2. * fallOff + fallOffInverse);
@@ -3533,92 +3758,59 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 
                 cairo_mesh_pattern_end_patch(mesh);
                 
+                ++prevPoint;
                 ++point;
                 ++nextPoint;
+                ++nextNextPoint;
                 ++fpoint;
                 ++nextFPoint;
                 
             }
             assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
             cairo_set_source(cr, mesh);
-            
-        
-            
-            Point initFp,initCp;
-        
+    
             ///2nd pass, draw the feather using the pattern previously defined
-            fpoint = fps.begin();
-            nextFPoint = fpoint;
-            ++nextFPoint;
-            point = cps.begin();
-            nextPoint = point;
-            ++nextPoint;
+            preFillIt = preComputedFeatherPoints.begin();
+            
 
-            (*fpoint)->getPositionAtTime(time, &initFp.first, &initFp.second);
-            adjustToPointToScale(mipmapLevel, initFp.first, initFp.second);
-            (*point)->getPositionAtTime(time,&initCp.first,&initCp.second);
-            adjustToPointToScale(mipmapLevel, initCp.first, initCp.second);
-            expandToFeatherDistance(initCp, &initFp, featherDist);
+            Point initFp = *preComputedFeatherPoints.rbegin();
+
             
             cairo_new_path(cr);
             cairo_move_to(cr, initFp.first, initFp.second);
             
-            while (fpoint != fps.end()) {
-                if (nextFPoint == fps.end()) {
-                    nextPoint = cps.begin();
-                    nextFPoint = fps.begin();
-                }
+            while (preFillIt != preComputedFeatherPoints.end()) {
                 
-                Point rightF,nextLeftF,nextF,rightP,nextLeftP,nextP;
+                Point right,nextLeft,next;
+                right = *preFillIt++;
+                assert(preFillIt != preComputedFeatherPoints.end());
+                nextLeft = *preFillIt++;
+                assert(preFillIt != preComputedFeatherPoints.end());
+                next = *preFillIt++;
 
-                (*fpoint)->getRightBezierPointAtTime(time, &rightF.first, &rightF.second);
-                adjustToPointToScale(mipmapLevel, rightF.first, rightF.second);
-                (*point)->getRightBezierPointAtTime(time, &rightP.first, &rightP.second);
-                adjustToPointToScale(mipmapLevel, rightP.first, rightP.second);
+                cairo_curve_to(cr,right.first,right.second,nextLeft.first,nextLeft.second,next.first,next.second);
                 
-                
-                (*nextFPoint)->getLeftBezierPointAtTime(time, &nextLeftF.first, &nextLeftF.second);
-                adjustToPointToScale(mipmapLevel, nextLeftF.first, nextLeftF.second);
-                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftP.first, &nextLeftP.second);
-                adjustToPointToScale(mipmapLevel, nextLeftP.first, nextLeftP.second);
-                
-                (*nextFPoint)->getPositionAtTime(time, &nextF.first, &nextF.second);
-                adjustToPointToScale(mipmapLevel, nextF.first, nextF.second);
-                (*nextPoint)->getPositionAtTime(time, &nextP.first, &nextP.second);
-                adjustToPointToScale(mipmapLevel, nextP.first, nextP.second);
-                
-                
-                expandToFeatherDistance(rightP, &rightF, featherDist);
-                expandToFeatherDistance(nextLeftP, &nextLeftF, featherDist);
-                expandToFeatherDistance(nextP, &nextF, featherDist);
-                
-                cairo_curve_to(cr,rightF.first,rightF.second,nextLeftF.first,nextLeftF.second,nextF.first,nextF.second);
-                
-                ++fpoint;
-                ++point;
-                ++nextFPoint;
-                ++nextPoint;
             }
-
+            
             
             cairo_fill(cr);
-            cairo_pattern_destroy(mesh);
             
             
             ////3rd pass, fill the internal bezier
-
+            
             point = cps.begin();
             nextPoint = point;
             ++nextPoint;
             
+            Point initCp;
+
             (*point)->getPositionAtTime(time, &initCp.first,&initCp.second);
             adjustToPointToScale(mipmapLevel,initCp.first,initCp.second);
-            
             
             cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
             cairo_new_path(cr);
             cairo_move_to(cr, initCp.first,initCp.second);
-        
+            
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {
                     nextPoint = cps.begin();
@@ -3637,11 +3829,11 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                 ++point;
                 ++nextPoint;
             }
-            
+
             cairo_fill(cr);
+            cairo_pattern_destroy(mesh);
+
             
-            
-           
         }
         
     }
@@ -3650,37 +3842,4 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
     cairo_surface_flush(cairoImg);
-    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
-    unsigned char* srcPix = cdata;
-    int stride = cairo_image_surface_get_stride(cairoImg);
-    
-    int comps = (int)image->getComponentsCount();
-    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
-        
-        float* dstPix = image->pixelAt(pixelRod.x1, pixelRod.y1 + y);
-        assert(dstPix);
-        
-        for (int x = 0; x < pixelRod.width(); ++x) {
-            if (comps == 1) {
-                dstPix[x] = srcPix[x] / 255.f;
-            } else {
-                assert(comps == 4);
-                dstPix[x * 4 + 3] = srcPix[x] / 255.f;
-            }
-        }
-    }
-    
-    cairo_destroy(cr);
-    ////Free the buffer used by Cairo
-    cairo_surface_destroy(cairoImg);
-
-
-    ////////////////////////////////////
-    if(_imp->node->aborted()){
-        //if render was aborted, remove the frame from the cache as it contains only garbage
-        appPTR->removeFromNodeCache(image);
-    } else {
-         image->markForRendered(clippedRoI);
-    }
-    return image;
 }

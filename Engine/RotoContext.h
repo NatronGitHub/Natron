@@ -562,8 +562,7 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCastelJau(int time,int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
-                                                 RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<std::pair<double,double> >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
     
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCastelJau will be returned,
@@ -884,6 +883,7 @@ private:
      * If nothing is found, it searches through the selected items and find the deepest selected item's layer
      **/
     RotoLayer* findDeepestSelectedLayer() const;
+
     
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
