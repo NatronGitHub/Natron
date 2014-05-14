@@ -209,9 +209,21 @@ RotoToolButton::RotoToolButton(QWidget* parent)
 void RotoToolButton::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        QAction* curAction = defaultAction();
+        handleSelection();
+    } else if (event->button() == Qt::RightButton) {
+        showMenu();
+    } else {
+        QToolButton::mousePressEvent(event);
+    }
+}
+
+void RotoToolButton::handleSelection()
+{
+    QAction* curAction = defaultAction();
+    if (!isDown()) {
+        emit triggered(curAction);
+    } else {
         QList<QAction*> allAction = actions();
-        
         for (int i = 0; i < allAction.size(); ++i) {
             if (allAction[i] == curAction) {
                 int next = (i == (allAction.size() - 1)) ? 0 : i+1;
@@ -220,20 +232,19 @@ void RotoToolButton::mousePressEvent(QMouseEvent* event)
                 break;
             }
         }
-    } else if (event->button() == Qt::RightButton) {
-        showMenu();
-    } else {
-        QToolButton::mousePressEvent(event);
     }
 }
 
-
-QAction* RotoGui::createToolAction(QToolButton* toolGroup,const QIcon& icon,const QString& text,RotoGui::Roto_Tool tool)
+QAction* RotoGui::createToolAction(QToolButton* toolGroup,
+                                   const QIcon& icon,
+                                   const QString& text,
+                                   const QKeySequence& shortcut,
+                                   RotoGui::Roto_Tool tool)
 {
     
 #pragma message WARN("Change constructor when icons will be added")
     QAction *action = new QAction(icon,text,toolGroup);
-    action->setToolTip(text);
+    action->setToolTip(text + "<p><b>Keyboard shortcut:" + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
     
     QPoint data;
     data.setX((int)tool);
@@ -303,10 +314,11 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->selectTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
-    _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(), "Select all", SELECT_ALL);
-    createToolAction(_imp->selectTool, QIcon(), "Select points", SELECT_POINTS);
-    createToolAction(_imp->selectTool, QIcon(), "Select curves", SELECT_CURVES);
-    createToolAction(_imp->selectTool, QIcon(), "Select feather points", SELECT_FEATHER_POINTS);
+    QKeySequence selectShortCut(Qt::Key_Q);
+    _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(), "Select all",selectShortCut, SELECT_ALL);
+    createToolAction(_imp->selectTool, QIcon(), "Select points",selectShortCut, SELECT_POINTS);
+    createToolAction(_imp->selectTool, QIcon(), "Select curves", selectShortCut,SELECT_CURVES);
+    createToolAction(_imp->selectTool, QIcon(), "Select feather points", selectShortCut,SELECT_FEATHER_POINTS);
     _imp->selectTool->setDown(false);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->toolbar->addWidget(_imp->selectTool);
@@ -315,12 +327,13 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     _imp->pointsEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->pointsEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->pointsEditionTool->setText("Add points");
-    QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(), "Add points", ADD_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove points", REMOVE_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Cusp points", CUSP_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Smooth points", SMOOTH_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Open/Close curve", OPEN_CLOSE_CURVE);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove feather", REMOVE_FEATHER_POINTS);
+    QKeySequence pointsEditionShortcut(Qt::Key_D);
+    QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(), "Add points",pointsEditionShortcut, ADD_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove points", pointsEditionShortcut,REMOVE_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Cusp points", pointsEditionShortcut,CUSP_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Smooth points", pointsEditionShortcut,SMOOTH_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Open/Close curve", pointsEditionShortcut,OPEN_CLOSE_CURVE);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove feather", pointsEditionShortcut,REMOVE_FEATHER_POINTS);
     _imp->pointsEditionTool->setDown(false);
     _imp->pointsEditionTool->setDefaultAction(addPtsAct);
     _imp->toolbar->addWidget(_imp->pointsEditionTool);
@@ -329,13 +342,14 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent)
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->bezierEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->bezierEditionTool->setText("Bezier");
-    QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier", DRAW_BEZIER);
+    QKeySequence editBezierShortcut(Qt::Key_V);
+    QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier",editBezierShortcut, DRAW_BEZIER);
     
     ////B-splines are not implemented yet
     //createToolAction(_imp->bezierEditionTool, QIcon(), "B-Spline", DRAW_B_SPLINE);
     
-    createToolAction(_imp->bezierEditionTool, QIcon(), "Ellipse", DRAW_ELLIPSE);
-    createToolAction(_imp->bezierEditionTool, QIcon(), "Rectangle", DRAW_RECTANGLE);
+    createToolAction(_imp->bezierEditionTool, QIcon(), "Ellipse",editBezierShortcut, DRAW_ELLIPSE);
+    createToolAction(_imp->bezierEditionTool, QIcon(), "Rectangle", editBezierShortcut,DRAW_RECTANGLE);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
     
     ////////////Default action is to make a new bezier
@@ -1702,6 +1716,12 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
             _imp->computeSelectedCpsBBOX();
         }
         didSomething = true;
+    } else if (e->key() == Qt::Key_Q) {
+        _imp->selectTool->handleSelection();
+    } else if (e->key() == Qt::Key_V) {
+        _imp->bezierEditionTool->handleSelection();
+    } else if (e->key() == Qt::Key_D) {
+        _imp->pointsEditionTool->handleSelection();
     }
     
     return didSomething;

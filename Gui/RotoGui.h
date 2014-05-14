@@ -43,6 +43,7 @@ public:
     
     virtual ~RotoToolButton() {}
     
+    void handleSelection();
 private:
     
     virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
@@ -165,7 +166,11 @@ public slots:
 private:
     
     
-    QAction* createToolAction(QToolButton* toolGroup,const QIcon& icon,const QString& text,RotoGui::Roto_Tool tool);
+    QAction* createToolAction(QToolButton* toolGroup,
+                              const QIcon& icon,
+                              const QString& text,
+                              const QKeySequence& shortcut,
+                              RotoGui::Roto_Tool tool);
     
     struct RotoGuiPrivate;
     boost::scoped_ptr<RotoGuiPrivate> _imp;
