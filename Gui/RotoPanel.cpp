@@ -19,6 +19,8 @@
 #include <QCursor>
 #include <QMouseEvent>
 #include <QApplication>
+#include <QDataStream>
+#include <QByteArray>
 
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
@@ -39,13 +41,16 @@ using namespace Natron;
 class TreeWidget: public QTreeWidget
 {
     
+    RotoPanel* _panel;
+    
 public:
     
-    TreeWidget(QWidget* parent): QTreeWidget(parent) {
+    TreeWidget(RotoPanel* panel,QWidget* parent): QTreeWidget(parent) , _panel(panel) {
     
     }
     
     virtual ~TreeWidget(){}
+    
     
 private:
     
@@ -61,6 +66,18 @@ private:
             QTreeWidget::mouseReleaseEvent(event);
         }
     }
+    
+    virtual void dragMoveEvent(QDragMoveEvent * event) OVERRIDE FINAL;
+    
+    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
+    
+    bool dragAndDropHandler(const QMimeData* mime,
+                            const QPoint& pos,
+                            RotoLayer*& newParentLayer,
+                            QTreeWidgetItem*& newParentItem,
+                            int& insertIndex,
+                            QTreeWidgetItem*& dropped,
+                            boost::shared_ptr<RotoItem>& droppedRotoItem);
 };
 
 
@@ -232,9 +249,11 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     QObject::connect(_imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     
-    _imp->tree = new TreeWidget(this);
+    _imp->tree = new TreeWidget(this,this);
     _imp->tree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
     _imp->tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    _imp->tree->setDragDropMode(QAbstractItemView::InternalMove);
+    _imp->tree->setDragEnabled(true);
     _imp->tree->setExpandsOnDoubleClick(false);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
 
@@ -314,6 +333,15 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
 RotoPanel::~RotoPanel()
 {
     
+}
+
+boost::shared_ptr<RotoItem> RotoPanel::getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const
+{
+    TreeItems::iterator it =_imp->findItem(treeItem);
+    if (it != _imp->items.end()) {
+        return it->rotoItem;
+    }
+    return boost::shared_ptr<RotoItem>();
 }
 
 void RotoPanel::onGoToPrevKeyframeButtonClicked()
@@ -496,7 +524,7 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         tree->addTopLevelItem(treeItem);
     }
     items.push_back(TreeItem(treeItem,item));
-    //treeItem->setFlags(treeItem->flags() | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
+
     treeItem->setText(0, item->getName_mt_safe().c_str());
     treeItem->setIcon(1, item->isGloballyActivated() ? iconVisible : iconUnvisible);
     treeItem->setIcon(2, item->getLocked() ? iconLocked : iconUnlocked);
@@ -851,4 +879,206 @@ void RotoPanel::onRemoveItemButtonClicked()
         }
     }
     _imp->context->evaluateChange();
+}
+
+static void isLayerAParent_recursive(RotoLayer* layer,RotoItem* item,bool* ret)
+{
+    RotoLayer* parent = item->getParentLayer();
+    if (!parent) {
+        return;
+    } else {
+        if (layer == parent) {
+            *ret = true;
+            return;
+        } else {
+            isLayerAParent_recursive(layer, parent, ret);
+        }
+    }
+}
+
+void TreeWidget::dragMoveEvent(QDragMoveEvent * event)
+{
+    const QMimeData* mime = event->mimeData();
+    RotoLayer* newParentLayer = 0;
+    QTreeWidgetItem* newParentItem = 0;
+    int insertIndex = -1;
+    QTreeWidgetItem* dropped;
+    boost::shared_ptr<RotoItem> droppedRotoItem;
+    
+    bool ret = dragAndDropHandler(mime, event->pos(), newParentLayer, newParentItem, insertIndex,dropped,droppedRotoItem);
+    
+    QTreeWidget::dragMoveEvent(event);
+    
+    if (!ret) {
+        event->setAccepted(ret);
+    }
+}
+
+
+bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
+                                    const QPoint& pos,
+                                    RotoLayer*& newParentLayer,
+                                    QTreeWidgetItem*& newParentItem,
+                                    int& insertIndex,
+                                    QTreeWidgetItem*& dropped,
+                                    boost::shared_ptr<RotoItem>& droppedRotoItem)
+{
+    newParentLayer = 0;
+    newParentItem = 0;
+    insertIndex = -1;
+    
+    if (mime->hasFormat("application/x-qabstractitemmodeldatalist")) {
+        QByteArray encoded = mime->data("application/x-qabstractitemmodeldatalist");
+        QDataStream stream(&encoded,QIODevice::ReadOnly);
+        
+        DropIndicatorPosition position = dropIndicatorPosition();
+        
+        while (!stream.atEnd())
+        {
+            int row, col;
+            QMap<int,QVariant> roleDataMap;
+            
+            stream >> row >> col >> roleDataMap;
+            
+            QMap<int, QVariant>::Iterator it = roleDataMap.find(0);
+            if (it != roleDataMap.end()) {
+                
+                ///The target item
+                QTreeWidgetItem* into = itemAt(pos);
+                
+                if (!into) {
+                    return false;
+                }
+                
+                boost::shared_ptr<RotoItem> intoRotoItem = _panel->getRotoItemForTreeItem(into);
+                QList<QTreeWidgetItem*> foundDropped = findItems(it.value().toString(),Qt::MatchExactly | Qt::MatchRecursive,0);
+                assert(!foundDropped.empty());
+                
+                ///the dropped item
+                dropped = foundDropped[0];
+                droppedRotoItem = _panel->getRotoItemForTreeItem(dropped);
+                assert(into && dropped && intoRotoItem && droppedRotoItem);
+                
+                ///Is the target item a layer ?
+                RotoLayer* isIntoALayer = dynamic_cast<RotoLayer*>(intoRotoItem.get());
+     
+                ///Determine into which layer the item should be inserted.
+                switch (position) {
+                    case QAbstractItemView::AboveItem:
+                    {
+                        newParentLayer = intoRotoItem->getParentLayer();
+                        if (newParentLayer) {
+                            newParentItem = into->parent();
+                            ///find the target item index into its parent layer and insert the item above it
+                            const std::list<boost::shared_ptr<RotoItem> >& children = intoRotoItem->getParentLayer()->getItems();
+                            std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
+                            std::find(children.begin(),children.end(),intoRotoItem);
+                            assert(found != children.end());
+                            int index = std::distance(children.begin(), found);
+                            
+                            ///if the dropped item is already into the children and after the found index don't decrement
+                            found = std::find(children.begin(),children.end(),droppedRotoItem);
+                            if (found != children.end() && std::distance(children.begin(), found) > index) {
+                                insertIndex = index;
+                            } else {
+                                insertIndex = index == 0 ? 0 : index - 1;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }   break;
+                    case QAbstractItemView::BelowItem:
+                    {
+                        RotoLayer* intoParentLayer = intoRotoItem->getParentLayer();
+                        bool isTargetLayerAParent = false;
+                        if (isIntoALayer) {
+                            isLayerAParent_recursive(isIntoALayer, droppedRotoItem.get(), &isTargetLayerAParent);
+                        }
+                        if (!intoParentLayer || isTargetLayerAParent) {
+                            ///insert at the begining of the layer
+                            insertIndex = 0;
+                            newParentLayer = isIntoALayer;
+                            newParentItem = into;
+                        } else {
+                            ///find the target item index into its parent layer and insert the item after it
+                            const std::list<boost::shared_ptr<RotoItem> >& children = intoParentLayer->getItems();
+                            std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
+                            std::find(children.begin(),children.end(),intoRotoItem);
+                            assert(found != children.end());
+                            int index = std::distance(children.begin(), found);
+                            
+                            ///if the dropped item is already into the children and before the found index don't decrement
+                            found = std::find(children.begin(),children.end(),droppedRotoItem);
+                            if (found != children.end() && std::distance(children.begin(), found) < index) {
+                                insertIndex = index;
+                            } else {
+                                insertIndex = index + 1;
+                            }
+                            
+                            newParentLayer = intoParentLayer;
+                            newParentItem = into->parent();
+                        }
+                    }   break;
+                    case QAbstractItemView::OnItem:
+                    {
+                        if (isIntoALayer) {
+                            ///insert at the end of the layer
+                            const std::list<boost::shared_ptr<RotoItem> >& children = isIntoALayer->getItems();
+                            ///check if the item is already in that layer
+                            std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
+                            std::find(children.begin(), children.end(), droppedRotoItem);
+                            if (found != children.end()) {
+                                insertIndex =  children.empty() ? 0 : (int)children.size() -1; // minus one because we're going to remove the item from it
+                            } else {
+                                insertIndex = (int)children.size();
+                            }
+                            
+                            newParentLayer = isIntoALayer;
+                            newParentItem = into;
+                        } else {
+                            ///dropping an item on another item which is not a layer is not accepted
+                            return false;
+                        }
+                    }   break;
+                    case QAbstractItemView::OnViewport:
+                    default:
+                        //do nothing we don't accept it
+                        return false;
+                } // switch
+            } //  if (it != roleDataMap.end())
+        } // while (!stream.atEnd())
+    } //if (mime->hasFormat("application/x-qabstractitemmodeldatalist"))
+    return true;
+}
+
+void TreeWidget::dropEvent(QDropEvent* event)
+{
+    RotoLayer* newParentLayer = 0;
+    QTreeWidgetItem* newParentItem = 0;
+    int insertIndex = -1;
+    QTreeWidgetItem* dropped = 0;
+    boost::shared_ptr<RotoItem> droppedRotoItem;
+    
+    const QMimeData* mime = event->mimeData();
+    bool accepted = dragAndDropHandler(mime,event->pos(), newParentLayer, newParentItem, insertIndex,dropped,droppedRotoItem);
+    event->setAccepted(accepted);
+    
+    if (accepted) {
+        assert(newParentLayer && newParentItem && insertIndex != -1);
+        ///remove the dropped item from its current layer
+        QTreeWidgetItem* droppedOldParent = dropped->parent();
+        if (droppedOldParent) {
+            droppedOldParent->removeChild(dropped);
+        }
+        RotoLayer* oldParentLayer = droppedRotoItem->getParentLayer();
+        if (oldParentLayer) {
+            oldParentLayer->removeItem(droppedRotoItem.get());
+        }
+        
+        assert(newParentItem);
+        newParentItem->insertChild(insertIndex,dropped);
+        newParentLayer->insertItem(droppedRotoItem, insertIndex);
+        droppedRotoItem->setParentLayer(newParentLayer);
+    }
+    
 }

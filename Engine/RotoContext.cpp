@@ -914,14 +914,28 @@ void RotoLayer::addItem(const boost::shared_ptr<RotoItem>& item)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&itemMutex);
     _imp->items.push_back(item);
     
+}
+
+void RotoLayer::insertItem(const boost::shared_ptr<RotoItem>& item,int index)
+{
+    ///only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&itemMutex);
+    RotoItems::iterator it = _imp->items.begin();
+    std::advance(it, index);
+    
+    ///insert before the iterator
+    _imp->items.insert(it, item);
 }
 
 void RotoLayer::removeItem(const RotoItem* item)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&itemMutex);
     for (RotoItems::iterator it = _imp->items.begin(); it!=_imp->items.end();++it)
     {
         if (it->get() == item) {

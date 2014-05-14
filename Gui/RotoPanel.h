@@ -32,6 +32,7 @@ public:
     
     void onTreeOutOfFocusEvent();
     
+    boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
     
 public slots:
     

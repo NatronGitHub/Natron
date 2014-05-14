@@ -363,6 +363,10 @@ public:
     ///this is up to the caller responsability
     void addItem(const boost::shared_ptr<RotoItem>& item);
     
+    ///Inserts the item into the layer before the indicated index.
+    ///The same restrictions as addItem are applied.
+    void insertItem(const boost::shared_ptr<RotoItem>& item,int index);
+    
     ///only callable on the main-thread
     void removeItem(const RotoItem* item);
     
