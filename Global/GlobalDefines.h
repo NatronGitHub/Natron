@@ -46,6 +46,10 @@ Q_DECLARE_METATYPE(SequenceTime)
 
 typedef OfxPointD RenderScale;
 
+namespace Natron {
+typedef OfxPointD Point;
+}
+
 typedef OfxRGBAColourF RGBAColourF;
 
 typedef OfxRangeD RangeD;

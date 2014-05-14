@@ -28,6 +28,8 @@
 #include "Engine/Format.h"
 #include "Engine/RotoSerialization.h"
 
+using namespace Natron;
+
 ////////////////////////////////////ControlPoint////////////////////////////////////
 
 BezierCP::BezierCP()
@@ -966,14 +968,11 @@ namespace  {
         CONTROL_POINT_CHANGED = 1
     };
     
-    typedef std::pair<double,double> Point;
-    typedef std::pair<int,int> PointI;
-    
     void
     lerp(Point& dest, const Point& a, const Point& b, const float t)
     {
-        dest.first = a.first + (b.first - a.first) * t;
-        dest.second = a.second + (b.second - a.second) * t;
+        dest.x = a.x + (b.x - a.x) * t;
+        dest.y = a.y + (b.y - a.y) * t;
     }
     
     static void
@@ -996,27 +995,27 @@ namespace  {
         Point p0,p1,p2,p3;
         
         try {
-            first.getPositionAtTime(time, &p0.first, &p0.second);
-            first.getRightBezierPointAtTime(time, &p1.first, &p1.second);
-            last.getPositionAtTime(time, &p3.first, &p3.second);
-            last.getLeftBezierPointAtTime(time, &p2.first, &p2.second);
+            first.getPositionAtTime(time, &p0.x, &p0.y);
+            first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
+            last.getPositionAtTime(time, &p3.x, &p3.y);
+            last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
         } catch (const std::exception& e) {
             assert(false);
         }
         
         if (mipMapLevel > 0) {
             int pot = 1 << mipMapLevel;
-            p0.first /= pot;
-            p0.second /= pot;
+            p0.x /= pot;
+            p0.y /= pot;
             
-            p1.first /= pot;
-            p1.second /= pot;
+            p1.x /= pot;
+            p1.y /= pot;
             
-            p2.first /= pot;
-            p2.second /= pot;
+            p2.x /= pot;
+            p2.y /= pot;
             
-            p3.first /= pot;
-            p3.second /= pot;
+            p3.x /= pot;
+            p3.y /= pot;
         }
         
         double incr = 1. / (double)(nbPointsPerSegment - 1);
@@ -1028,17 +1027,17 @@ namespace  {
             points->push_back(cur);
             
             if (bbox) {
-                if (cur.first < bbox->x1) {
-                    bbox->x1 = cur.first;
+                if (cur.x < bbox->x1) {
+                    bbox->x1 = cur.x;
                 }
-                if (cur.first >= bbox->x2) {
-                    bbox->x2 = cur.first + 1;
+                if (cur.x >= bbox->x2) {
+                    bbox->x2 = cur.x + 1;
                 }
-                if (cur.second < bbox->y1) {
-                    bbox->y1 = cur.second;
+                if (cur.y < bbox->y1) {
+                    bbox->y1 = cur.y;
                 }
-                if (cur.second >= bbox->y2) {
-                    bbox->y2 = cur.second;
+                if (cur.y >= bbox->y2) {
+                    bbox->y2 = cur.y;
                 }
             }
             
@@ -1058,10 +1057,10 @@ namespace  {
                            double x,double y,double acceptance,double *param)
     {
         Point p0,p1,p2,p3;
-        first.getPositionAtTime(time, &p0.first, &p0.second);
-        first.getRightBezierPointAtTime(time, &p1.first, &p1.second);
-        last.getPositionAtTime(time, &p3.first, &p3.second);
-        last.getLeftBezierPointAtTime(time, &p2.first, &p2.second);
+        first.getPositionAtTime(time, &p0.x, &p0.y);
+        first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
+        last.getPositionAtTime(time, &p3.x, &p3.y);
+        last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
         
         ///Use 100 points to make the segment
         double incr = 1. / (double)(100 - 1);
@@ -1074,7 +1073,7 @@ namespace  {
         for (double t = 0.; t <= 1.; t += incr) {
             Point p;
             bezier(p,p0,p1,p2,p3,t);
-            double dist = (p.first - x) * (p.first - x) + (p.second - y) * (p.second - y);
+            double dist = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
             if (dist < minDistance) {
                 minDistance = dist;
                 tForMin = t;
@@ -1227,10 +1226,10 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     for (std::set<int>::iterator it = existingKeyframes.begin(); it!=existingKeyframes.end(); ++it) {
         
         Point p0,p1,p2,p3;
-        (*prev)->getPositionAtTime(*it, &p0.first, &p0.second);
-        (*prev)->getRightBezierPointAtTime(*it, &p1.first, &p1.second);
-        (*next)->getPositionAtTime(*it, &p3.first, &p3.second);
-        (*next)->getLeftBezierPointAtTime(*it, &p2.first, &p2.second);
+        (*prev)->getPositionAtTime(*it, &p0.x, &p0.y);
+        (*prev)->getRightBezierPointAtTime(*it, &p1.x, &p1.y);
+        (*next)->getPositionAtTime(*it, &p3.x, &p3.y);
+        (*next)->getLeftBezierPointAtTime(*it, &p2.x, &p2.y);
         
         
         Point dst;
@@ -1243,30 +1242,30 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
         lerp(dst,p0p1_p1p2,p1p2_p2p3,t);
 
         //update prev and next inner control points
-        (*prev)->setRightBezierPointAtTime(*it, p0p1.first, p0p1.second);
-        (*prevF)->setRightBezierPointAtTime(*it, p0p1.first, p0p1.second);
+        (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
+        (*prevF)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
         
-        (*next)->setLeftBezierPointAtTime(*it, p2p3.first, p2p3.second);
-        (*nextF)->setLeftBezierPointAtTime(*it, p2p3.first, p2p3.second);
+        (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+        (*nextF)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
         
-        p->setPositionAtTime(*it,dst.first,dst.second);
+        p->setPositionAtTime(*it,dst.x,dst.y);
         ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-        p->setLeftBezierPointAtTime(*it, p0p1_p1p2.first,p0p1_p1p2.second);
-        p->setRightBezierPointAtTime(*it, p1p2_p2p3.first, p1p2_p2p3.second);
+        p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x,p0p1_p1p2.y);
+        p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
 
-        fp->setPositionAtTime(*it, dst.first, dst.second);
-        fp->setLeftBezierPointAtTime(*it,p0p1_p1p2.first,p0p1_p1p2.second);
-        fp->setRightBezierPointAtTime(*it, p1p2_p2p3.first, p1p2_p2p3.second);
+        fp->setPositionAtTime(*it, dst.x, dst.y);
+        fp->setLeftBezierPointAtTime(*it,p0p1_p1p2.x,p0p1_p1p2.y);
+        fp->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
     }
     
     ///if there's no keyframes
     if (existingKeyframes.empty()) {
         Point p0,p1,p2,p3;
         
-        (*prev)->getPositionAtTime(0, &p0.first, &p0.second);
-        (*prev)->getRightBezierPointAtTime(0, &p1.first, &p1.second);
-        (*next)->getPositionAtTime(0, &p3.first, &p3.second);
-        (*next)->getLeftBezierPointAtTime(0, &p2.first, &p2.second);
+        (*prev)->getPositionAtTime(0, &p0.x, &p0.y);
+        (*prev)->getRightBezierPointAtTime(0, &p1.x, &p1.y);
+        (*next)->getPositionAtTime(0, &p3.x, &p3.y);
+        (*next)->getLeftBezierPointAtTime(0, &p2.x, &p2.y);
 
         
         Point dst;
@@ -1279,20 +1278,20 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
         lerp(dst,p0p1_p1p2,p1p2_p2p3,t);
 
         //update prev and next inner control points
-        (*prev)->setRightBezierStaticPosition(p0p1.first, p0p1.second);
-        (*prevF)->setRightBezierStaticPosition(p0p1.first, p0p1.second);
+        (*prev)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
+        (*prevF)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
         
-        (*next)->setLeftBezierStaticPosition(p2p3.first, p2p3.second);
-        (*nextF)->setLeftBezierStaticPosition(p2p3.first, p2p3.second);
+        (*next)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
+        (*nextF)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
 
-        p->setStaticPosition(dst.first,dst.second);
+        p->setStaticPosition(dst.x,dst.y);
         ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-        p->setLeftBezierStaticPosition(p0p1_p1p2.first,p0p1_p1p2.second);
-        p->setRightBezierStaticPosition(p1p2_p2p3.first, p1p2_p2p3.second);
+        p->setLeftBezierStaticPosition(p0p1_p1p2.x,p0p1_p1p2.y);
+        p->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
         
-        fp->setStaticPosition(dst.first, dst.second);
-        fp->setLeftBezierStaticPosition(p0p1_p1p2.first,p0p1_p1p2.second);
-        fp->setRightBezierStaticPosition(p1p2_p2p3.first, p1p2_p2p3.second);
+        fp->setStaticPosition(dst.x, dst.y);
+        fp->setLeftBezierStaticPosition(p0p1_p1p2.x,p0p1_p1p2.y);
+        fp->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
     }
     
     
@@ -1952,7 +1951,7 @@ int Bezier::getKeyframesCount() const
 
 
 void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
-                                        int nbPointsPerSegment,std::list<std::pair<double,double> >* points,RectD* bbox) const
+                                        int nbPointsPerSegment,std::list< Natron::Point >* points,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
  
@@ -1971,7 +1970,7 @@ void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
 }
 
 void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
-                                                     std::list<std::pair<double,double> >* points,bool evaluateIfEqual,RectD* bbox) const
+                                                     std::list< Natron::Point >* points,bool evaluateIfEqual,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
     BezierCPs::const_iterator itCp = _imp->points.begin();
@@ -2238,13 +2237,13 @@ void Bezier::leftDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& pr
     assert(!p.equalsAtTime(time, prev));
     bool p0equalsP1,p1equalsP2,p2equalsP3;
     Point p0,p1,p2,p3;
-    prev.getPositionAtTime(time, &p0.first, &p0.second);
-    prev.getRightBezierPointAtTime(time, &p1.first, &p1.second);
-    p.getLeftBezierPointAtTime(time, &p2.first, &p2.second);
-    p.getPositionAtTime(time, &p3.first, &p3.second);
-    p0equalsP1 = p0.first == p1.first && p0.second == p1.second;
-    p1equalsP2 = p1.first == p2.first && p1.second == p2.second;
-    p2equalsP3 = p2.first == p3.first && p2.second == p3.second;
+    prev.getPositionAtTime(time, &p0.x, &p0.y);
+    prev.getRightBezierPointAtTime(time, &p1.x, &p1.y);
+    p.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+    p.getPositionAtTime(time, &p3.x, &p3.y);
+    p0equalsP1 = p0.x == p1.x && p0.y == p1.y;
+    p1equalsP2 = p1.x == p2.x && p1.y == p2.y;
+    p2equalsP3 = p2.x == p3.x && p2.y == p3.y;
     int degree = 3;
     if (p0equalsP1) {
         --degree;
@@ -2259,17 +2258,17 @@ void Bezier::leftDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& pr
     
     ///derivatives for t == 1.
     if (degree == 1) {
-        *dx = p3.first - p0.first;
-        *dy = p3.second - p0.second;
+        *dx = p3.x - p0.x;
+        *dy = p3.y - p0.y;
     } else if (degree == 2) {
         if (p0equalsP1) {
             p1 = p2;
         }
-        *dx = 2. * (p3.first - p1.first);
-        *dy = 2. * (p3.second - p1.second);
+        *dx = 2. * (p3.x - p1.x);
+        *dy = 2. * (p3.y - p1.y);
     } else {
-        *dx = 3. * (p3.first - p2.first);
-        *dy = 3. * (p3.second - p2.second);
+        *dx = 3. * (p3.x - p2.x);
+        *dy = 3. * (p3.y - p2.y);
     }
 }
 
@@ -2279,13 +2278,13 @@ void Bezier::rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& n
     assert(!p.equalsAtTime(time, next));
     bool p0equalsP1,p1equalsP2,p2equalsP3;
     Point p0,p1,p2,p3;
-    p.getPositionAtTime(time, &p0.first, &p0.second);
-    p.getRightBezierPointAtTime(time, &p1.first, &p1.second);
-    next.getLeftBezierPointAtTime(time, &p2.first, &p2.second);
-    next.getPositionAtTime(time, &p3.first, &p3.second);
-    p0equalsP1 = p0.first == p1.first && p0.second == p1.second;
-    p1equalsP2 = p1.first == p2.first && p1.second == p2.second;
-    p2equalsP3 = p2.first == p3.first && p2.second == p3.second;
+    p.getPositionAtTime(time, &p0.x, &p0.y);
+    p.getRightBezierPointAtTime(time, &p1.x, &p1.y);
+    next.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+    next.getPositionAtTime(time, &p3.x, &p3.y);
+    p0equalsP1 = p0.x == p1.x && p0.y == p1.y;
+    p1equalsP2 = p1.x == p2.x && p1.y == p2.y;
+    p2equalsP3 = p2.x == p3.x && p2.y == p3.y;
     int degree = 3;
     if (p0equalsP1) {
         --degree;
@@ -2300,17 +2299,17 @@ void Bezier::rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& n
     
     ///derivatives for t == 0.
     if (degree == 1) {
-        *dx = p3.first - p0.first;
-        *dy = p3.second - p0.second;
+        *dx = p3.x - p0.x;
+        *dy = p3.y - p0.y;
     } else if (degree == 2) {
         if (p0equalsP1) {
             p1 = p2;
         }
-        *dx = 2. * (p1.first - p0.first);
-        *dy = 2. * (p1.second - p0.second);
+        *dx = 2. * (p1.x - p0.x);
+        *dy = 2. * (p1.y - p0.y);
     } else {
-        *dx = 3. * (p1.first - p0.first);
-        *dy = 3. * (p1.second - p0.second);
+        *dx = 3. * (p1.x - p0.x);
+        *dy = 3. * (p1.y - p0.y);
     }
 
 }
@@ -2396,6 +2395,145 @@ int Bezier::getNextKeyframeTime(int time) const
         }
     }
     return INT_MAX;
+}
+
+void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
+                                           std::vector<double>* constants,std::vector<double>* multiples)
+{
+    assert(constants->size() == multiples->size() && constants->size() == polygon.size());
+    
+    std::list<Point>::const_iterator next = polygon.begin();
+    ++next;
+    int i = 0;
+    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++i) {
+        if (next == polygon.end()) {
+            next = polygon.begin();
+        }
+        if(it->y == next->y) {
+            constants->at(i) = next->x;
+            multiples->at(i) = 0;
+        } else {
+            constants->at(i) = next->x - (next->y * it->x) / (it->y - next->y) +
+            (next->y * next->x) / (it->y - next->y);
+            multiples->at(i) = (it->x - next->x) / (it->y - next->y);
+        }
+    }
+}
+
+bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
+                           const std::vector<double>& constants,
+                           const std::vector<double>& multiples,
+                           const RectD& featherPolyBBox) {
+    
+    assert(constants.size() == multiples.size() && constants.size() == polygon.size());
+    
+    ///first check if the point lies inside the bounding box
+    if (p.x < featherPolyBBox.x1 || p.x >= featherPolyBBox.x2 || p.y < featherPolyBBox.y1 || p.y >= featherPolyBBox.y2) {
+        return false;
+    }
+    
+    bool odd = false;
+    std::list<Point>::const_iterator next = polygon.begin();
+    ++next;
+    std::vector<double>::const_iterator cIt = constants.begin(); ++cIt;
+    std::vector<double>::const_iterator mIt = multiples.begin(); ++mIt;
+    
+    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++cIt,++mIt) {
+        if (next == polygon.end()) {
+            cIt = constants.begin();
+            mIt = multiples.begin();
+            next = polygon.begin();
+        }
+        if ((next->y < p.y && it->y >= p.y) ||
+            (it->y < p.y && next->y >= p.y)) {
+            odd ^= ((p.y * *mIt + *cIt) < p.x);
+        }
+    }
+    return odd;
+}
+
+/**
+ * @brief Computes the location of the feather extent relative to the current feather point position and
+ * the given feather distance.
+ * In the case the control point and the feather point of the bezier are distinct, this function just makes use
+ * of Thales theorem.
+ * If the feather point and the control point are equal then this function computes the left and right derivative
+ * of the bezier at that point to determine the direction in which the extent is.
+ * @returns The delta from the given feather point to apply to find out the extent position.
+ *
+ * Note that the delta will be applied to fp.
+ **/
+Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
+                                      Point* fp, //< the feather point
+                                      int featherDistance, //< feather distance
+                                      const std::list<Point>& featherPolygon, //< the polygon of the bezier
+                                      const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
+                                      const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
+                                      const RectD& featherPolyBBox, //< helper to speed-up pointInPolygon computations
+                                      int time, //< time
+                                      BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
+                                      BezierCPs::const_iterator curFp, //< iterator pointing to fp
+                                      BezierCPs::const_iterator nextFp) //< iterator pointing after curFp
+{
+    Point ret;
+    if (featherDistance != 0) {
+        
+        ///shortcut when the feather point is different than the control point
+        if (cp.x != fp->x && cp.y != fp->y) {
+            double dx = (fp->x - cp.x);
+            double dy = (fp->y - cp.y);
+            double dist = sqrt(dx * dx + dy * dy);
+            ret.x = (dx * (dist + featherDistance)) / dist;
+            ret.y = (dy * (dist + featherDistance)) / dist;
+            fp->x =  ret.x + cp.x;
+            fp->y =  ret.y + cp.y;
+        } else {
+            //compute derivatives to determine the feather extent
+            double leftX,leftY,rightX,rightY;
+            Bezier::leftDerivativeAtPoint(time, **curFp, **prevFp, &leftX, &leftY);
+            Bezier::rightDerivativeAtPoint(time, **curFp, **nextFp, &rightX, &rightY);
+            
+            ///compute the angle of the tangents
+            double leftAlpha,rightAlpha,alpha;
+            if (leftX == 0) {
+                leftAlpha = leftY < 0 ? - pi / 2. : pi / 2.;
+            } else {
+                leftAlpha = std::atan2(leftY,leftX) + pi / 2.;
+            }
+            if (rightX == 0) {
+                rightAlpha = rightY < 0 ? - pi / 2. : pi / 2.;
+            } else {
+                rightAlpha = std::atan2(rightY,rightX) + pi / 2.;
+            }
+            
+            ///this is the angle of the bisector of the tangents
+            alpha = (leftAlpha + rightAlpha) / 2.;
+            
+            ///retrieve the position of the extent of the feather
+            ///To retrieve the extent which is in not inside the polygon we test the 2 points
+            Point extent;
+            ret.x = std::cos(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
+            ret.y = std::sin(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
+            extent.x = ret.x + cp.x;
+            extent.y = ret.y + cp.y;
+            
+            bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
+            if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
+                *fp = extent;
+            } else {
+                ret.x = std::cos(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
+                ret.y = std::sin(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
+                extent.x = ret.x + cp.x;
+                extent.y = ret.y + cp.y;
+                inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
+                *fp = extent;
+            }
+        }
+    } else {
+        ret.x = ret.y = 0;
+    }
+    return ret;
+    
 }
 
 ////////////////////////////////////RotoContext////////////////////////////////////
@@ -3332,143 +3470,7 @@ static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
     }
 }
 
-static void precomputePointInPolygonTables(const std::list<Point>& polygon,std::vector<double>* constants,std::vector<double>* multiples)
-{
-    assert(constants->size() == multiples->size() && constants->size() == polygon.size());
-    
-    std::list<Point>::const_iterator next = polygon.begin();
-    ++next;
-    int i = 0;
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++i) {
-        if (next == polygon.end()) {
-            next = polygon.begin();
-        }
-        if(it->second == next->second) {
-            constants->at(i) = next->first;
-            multiples->at(i) = 0;
-        } else {
-            constants->at(i) = next->first - (next->second * it->first) / (it->second - next->second) +
-            (next->second * next->first) / (it->second - next->second);
-            multiples->at(i) = (it->first - next->first) / (it->second - next->second);
-        }
-    }
-}
 
-static bool pointInPolygon(const Point& p,const std::list<Point>& polygon,
-                           const std::vector<double>& constants,
-                           const std::vector<double>& multiples,
-                           const RectD& featherPolyBBox) {
-
-    assert(constants.size() == multiples.size() && constants.size() == polygon.size());
-    
-    ///first check if the point lies inside the bounding box
-    if (p.first < featherPolyBBox.x1 || p.first >= featherPolyBBox.x2 || p.second < featherPolyBBox.y1 || p.second >= featherPolyBBox.y2) {
-        return false;
-    }
-    
-    bool odd = false;
-    std::list<Point>::const_iterator next = polygon.begin();
-    ++next;
-    std::vector<double>::const_iterator cIt = constants.begin(); ++cIt;
-    std::vector<double>::const_iterator mIt = multiples.begin(); ++mIt;
-    
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++cIt,++mIt) {
-        if (next == polygon.end()) {
-            cIt = constants.begin();
-            mIt = multiples.begin();
-            next = polygon.begin();
-        }
-        if ((next->second < p.second && it->second >= p.second) ||
-            (it->second < p.second && next->second >= p.second)) {
-            odd ^= ((p.second * *mIt + *cIt) < p.first);
-        }
-    }
-    return odd;
-}
-
-/**
- * @brief Computes the location of the feather extent relative to the current feather point position and
- * the given feather distance.
- * In the case the control point and the feather point of the bezier are distinct, this function just makes use
- * of Thales theorem.
- * If the feather point and the control point are equal then this function computes the left and right derivative
- * of the bezier at that point to determine the direction in which the extent is. 
- * @returns The delta from the given feather point to apply to find out the extent position.
- * 
- * Note that the delta will be applied to fp.
- **/
-static Point expandToFeatherDistance(const Point& cp, //< the point
-                                     Point* fp, //< the feather point
-                                     int featherDistance, //< feather distance
-                                     const std::list<Point>& featherPolygon, //< the polygon of the bezier
-                                     const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
-                                     const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
-                                     const RectD& featherPolyBBox, //< helper to speed-up pointInPolygon computations
-                                     int time, //< time
-                                     BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
-                                     BezierCPs::const_iterator curFp, //< iterator pointing to fp
-                                     BezierCPs::const_iterator nextFp) //< iterator pointing after curFp
-{
-    Point ret;
-    if (featherDistance != 0) {
-        
-        ///shortcut when the feather point is different than the control point
-        if (cp.first != fp->first && cp.second != fp->second) {
-            double dx = (fp->first - cp.first);
-            double dy = (fp->second - cp.second);
-            double dist = sqrt(dx * dx + dy * dy);
-            ret.first = (dx * (dist + featherDistance)) / dist;
-            ret.second = (dy * (dist + featherDistance)) / dist;
-            fp->first =  ret.first + cp.first;
-            fp->second =  ret.second + cp.second;
-        } else {
-            //compute derivatives to determine the feather extent
-            double leftX,leftY,rightX,rightY;
-            Bezier::leftDerivativeAtPoint(time, **curFp, **prevFp, &leftX, &leftY);
-            Bezier::rightDerivativeAtPoint(time, **curFp, **nextFp, &rightX, &rightY);
-            
-            ///compute the angle of the tangents
-            double leftAlpha,rightAlpha,alpha;
-            if (leftX == 0) {
-                leftAlpha = leftY < 0 ? - pi / 2. : pi / 2.;
-            } else {
-                leftAlpha = std::atan2(leftY,leftX) + pi / 2.;
-            }
-            if (rightX == 0) {
-                rightAlpha = rightY < 0 ? - pi / 2. : pi / 2.;
-            } else {
-                rightAlpha = std::atan2(rightY,rightX) + pi / 2.;
-            }
-            
-            ///this is the angle of the bisector of the tangents
-            alpha = (leftAlpha + rightAlpha) / 2.;
-            
-            ///retrieve the position of the extent of the feather
-            ///To retrieve the extent which is in not inside the polygon we test the 2 points
-            Point extent;
-            ret.first = std::cos(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
-            ret.second = std::sin(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
-            extent.first = ret.first + cp.first;
-            extent.second = ret.second + cp.second;
-            
-            bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
-            if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
-                *fp = extent;
-            } else {
-                ret.first = std::cos(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
-                ret.second = std::sin(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
-                extent.first = ret.first + cp.first;
-                extent.second = ret.second + cp.second;
-                inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
-                *fp = extent;
-            }
-        }
-    } else {
-        ret.first = ret.second = 0;
-    }
-    return ret;
-    
-}
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                             int view,unsigned int mipmapLevel,bool byPassCache)
@@ -3600,7 +3602,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
                 multiples.resize(featherPolygon.size());
                 constants.resize(featherPolygon.size());
-                precomputePointInPolygonTables(featherPolygon, &constants, &multiples);
+                Bezier::precomputePointInPolygonTables(featherPolygon, &constants, &multiples);
             }
         
             
@@ -3666,47 +3668,47 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     nextFPoint = fps.begin();
                 }
                 
-                Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Left,p1Right,p2p3,p3p2,p2Left,p2Right,p3Left;
-                (*point)->getPositionAtTime(time, &p0.first, &p0.second);
-                adjustToPointToScale(mipmapLevel,p0.first,p0.second);
+                Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Left,p1Right,p2p3,p3p2,p2Left,p3Left;
+                (*point)->getPositionAtTime(time, &p0.x, &p0.y);
+                adjustToPointToScale(mipmapLevel,p0.x,p0.y);
                 
-                (*point)->getRightBezierPointAtTime(time, &p0Right.first, &p0Right.second);
-                adjustToPointToScale(mipmapLevel, p0Right.first, p0Right.second);
+                (*point)->getRightBezierPointAtTime(time, &p0Right.x, &p0Right.y);
+                adjustToPointToScale(mipmapLevel, p0Right.x, p0Right.y);
                 
-                (*fpoint)->getRightBezierPointAtTime(time, &p1Right.first, &p1Right.second);
-                adjustToPointToScale(mipmapLevel, p1Right.first, p1Right.second);
+                (*fpoint)->getRightBezierPointAtTime(time, &p1Right.x, &p1Right.y);
+                adjustToPointToScale(mipmapLevel, p1Right.x, p1Right.y);
 
-                (*fpoint)->getPositionAtTime(time, &p1.first, &p1.second);
-                adjustToPointToScale(mipmapLevel,p1.first,p1.second);
+                (*fpoint)->getPositionAtTime(time, &p1.x, &p1.y);
+                adjustToPointToScale(mipmapLevel,p1.x,p1.y);
                 
-                (*nextPoint)->getPositionAtTime(time, &p3.first, &p3.second);
-                adjustToPointToScale(mipmapLevel, p3.first, p3.second);
+                (*nextPoint)->getPositionAtTime(time, &p3.x, &p3.y);
+                adjustToPointToScale(mipmapLevel, p3.x, p3.y);
                 
-                (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.first, &p3Left.second);
-                adjustToPointToScale(mipmapLevel, p3Left.first,p3Left.second);
+                (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.x, &p3Left.y);
+                adjustToPointToScale(mipmapLevel, p3Left.x,p3Left.y);
                 
-                (*nextFPoint)->getPositionAtTime(time, &p2.first, &p2.second);
-                adjustToPointToScale(mipmapLevel, p2.first, p2.second);
+                (*nextFPoint)->getPositionAtTime(time, &p2.x, &p2.y);
+                adjustToPointToScale(mipmapLevel, p2.x, p2.y);
                 
-                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.first, &p2Left.second);
-                adjustToPointToScale(mipmapLevel, p2Left.first, p2Left.second);
+                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.x, &p2Left.y);
+                adjustToPointToScale(mipmapLevel, p2Left.x, p2Left.y);
                 
                 
                 
-                Point fpExpansionP1 = expandToFeatherDistance(p0, &p1, featherDist,featherPolygon,
+                Point fpExpansionP1 = Bezier::expandToFeatherDistance(p0, &p1, featherDist,featherPolygon,
                                                             constants,multiples,featherPolyBBox,time,prevPoint,point,nextPoint);
-                Point fpExpansionP2 = expandToFeatherDistance(p3, &p2, featherDist,featherPolygon,
+                Point fpExpansionP2 = Bezier::expandToFeatherDistance(p3, &p2, featherDist,featherPolygon,
                                         constants,multiples,featherPolyBBox,time,point,nextPoint,nextNextPoint);
                 
                 
                 ///we also have to expand the  p1Right and p2left derivatives but this is easier since
                 ///we now it's the same deltas that we computed for p1 and p2
                 if (featherDist != 0) {
-                    p1Right.first = p0Right.first + fpExpansionP1.first;
-                    p1Right.second = p0Right.second + fpExpansionP1.second;
+                    p1Right.x = p0Right.x + fpExpansionP1.x;
+                    p1Right.y = p0Right.y + fpExpansionP1.y;
                     
-                    p2Left.first = p3Left.first + fpExpansionP2.first;
-                    p2Left.second = p3Left.second + fpExpansionP2.second;
+                    p2Left.x = p3Left.x + fpExpansionP2.x;
+                    p2Left.y = p3Left.y + fpExpansionP2.y;
                 }
                 
                 ///This completes the previous iteration's triplet
@@ -3717,31 +3719,31 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 *preFillIt++ = p2;
                 
                 ///linear interpolation
-                p0p1.first = (2. * fallOff * p0.first + fallOffInverse * p1.first) / (2. * fallOff + fallOffInverse);
-                p0p1.second = (2. * fallOff * p0.second + fallOffInverse * p1.second) / (2. * fallOff + fallOffInverse);
-                p1p0.first = (p0.first * fallOff + 2. * fallOffInverse * p1.first) / (fallOff + 2. * fallOffInverse);
-                p1p0.second = (p0.second * fallOff + 2. * fallOffInverse * p1.second) /(fallOff + 2. * fallOffInverse);
+                p0p1.x = (2. * fallOff * p0.x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
+                p0p1.y = (2. * fallOff * p0.y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
+                p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+                p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) /(fallOff + 2. * fallOffInverse);
                 
-                p2p3.first = (p3.first * fallOff + 2. * fallOffInverse * p2.first) / (fallOff + 2. * fallOffInverse);
-                p2p3.second = (p3.second * fallOff + 2. * fallOffInverse * p2.second) / (fallOff + 2. * fallOffInverse);
-                p3p2.first = (2. * fallOff * p3.first + fallOffInverse * p2.first) / (2. * fallOff + fallOffInverse);
-                p3p2.second = (2. * fallOff * p3.second + fallOffInverse * p2.second) / (2. * fallOff + fallOffInverse);
+                p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+                p3p2.x = (2. * fallOff * p3.x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
+                p3p2.y = (2. * fallOff * p3.y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
                 
                 ///move to the initial point
                 cairo_mesh_pattern_begin_patch(mesh);
-                cairo_mesh_pattern_move_to(mesh, p0.first, p0.second);
+                cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
                 
                 ///make the 1st bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p0p1.first,p0p1.second,p1p0.first,p1p0.second,p1.first,p1.second);
+                cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
                 
                 ///make the 2nd bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p1Right.first,p1Right.second,p2Left.first,p2Left.second,p2.first,p2.second);
+                cairo_mesh_pattern_curve_to(mesh, p1Right.x,p1Right.y,p2Left.x,p2Left.y,p2.x,p2.y);
                 
                 ///make the 3rd bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p2p3.first,p2p3.second,p3p2.first,p3p2.second,p3.first,p3.second);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,p3.x,p3.y);
                 
                 ///make the last bezier segment to close the pattern
-                cairo_mesh_pattern_curve_to(mesh, p3Left.first,p3Left.second,p0Right.first,p0Right.second,p0.first,p0.second);
+                cairo_mesh_pattern_curve_to(mesh, p3Left.x,p3Left.y,p0Right.x,p0Right.y,p0.x,p0.y);
                 
                 ///Set the 4 corners color
                 
@@ -3777,7 +3779,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
 
             
             cairo_new_path(cr);
-            cairo_move_to(cr, initFp.first, initFp.second);
+            cairo_move_to(cr, initFp.x, initFp.y);
             
             while (preFillIt != preComputedFeatherPoints.end()) {
                 
@@ -3788,7 +3790,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 assert(preFillIt != preComputedFeatherPoints.end());
                 next = *preFillIt++;
 
-                cairo_curve_to(cr,right.first,right.second,nextLeft.first,nextLeft.second,next.first,next.second);
+                cairo_curve_to(cr,right.x,right.y,nextLeft.x,nextLeft.y,next.x,next.y);
                 
             }
             
@@ -3804,12 +3806,12 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             
             Point initCp;
 
-            (*point)->getPositionAtTime(time, &initCp.first,&initCp.second);
-            adjustToPointToScale(mipmapLevel,initCp.first,initCp.second);
+            (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
+            adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
             
             cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
             cairo_new_path(cr);
-            cairo_move_to(cr, initCp.first,initCp.second);
+            cairo_move_to(cr, initCp.x,initCp.y);
             
             while (point != cps.end()) {
                 if (nextPoint == cps.end()) {

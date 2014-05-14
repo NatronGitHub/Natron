@@ -555,14 +555,14 @@ public:
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
     void evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
-                                    int nbPointsPerSegment,std::list<std::pair<double,double> >* points,
+                                    int nbPointsPerSegment,std::list<Natron::Point>* points,
                                     RectD* bbox = NULL) const;
     
     /**
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<std::pair<double,double> >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
     
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCastelJau will be returned,
@@ -630,6 +630,40 @@ public:
     static void leftDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& prev,double *dx,double *dy);
     
     static void rightDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& next,double *dx,double *dy);
+    
+    /**
+     * @brief Computes the location of the feather extent relative to the current feather point position and
+     * the given feather distance.
+     * In the case the control point and the feather point of the bezier are distinct, this function just makes use
+     * of Thales theorem.
+     * If the feather point and the control point are equal then this function computes the left and right derivative
+     * of the bezier at that point to determine the direction in which the extent is.
+     * @returns The delta from the given feather point to apply to find out the extent position.
+     *
+     * Note that the delta will be applied to fp.
+     **/
+    static Natron::Point expandToFeatherDistance(const Natron::Point& cp, //< the point
+                                         Natron::Point* fp, //< the feather point
+                                         int featherDistance, //< feather distance
+                                         const std::list<Natron::Point>& featherPolygon, //< the polygon of the bezier
+                                         const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
+                                         const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
+                                         const RectD& featherPolyBBox, //< helper to speed-up pointInPolygon computations
+                                         int time, //< time
+                                         std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
+                                         std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
+                                         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
+    
+    
+    static void precomputePointInPolygonTables(const std::list<Natron::Point>& polygon,
+                                               std::vector<double>* constants,
+                                               std::vector<double>* multiples);
+
+    
+    static bool pointInPolygon(const Natron::Point& p,const std::list<Natron::Point>& polygon,
+                               const std::vector<double>& constants,
+                               const std::vector<double>& multiples,
+                               const RectD& featherPolyBBox);
     
     /**
      * @brief Must be implemented by the derived class to save the state into

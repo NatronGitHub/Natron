@@ -40,6 +40,7 @@
 #define kXHairSelectedCpsBox 8
 #define kTangentHandleSelectionTolerance 8
 
+using namespace Natron;
 
 namespace {
     
@@ -544,7 +545,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
         if ((*it)->isActivated(time)) {
             
             ///draw the bezier
-            std::list<std::pair<double,double> > points;
+            std::list< Point > points;
             (*it)->evaluateAtTime_DeCastelJau(time,0, 100, &points);
             
             double curveColor[4];
@@ -556,21 +557,21 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             glColor4dv(curveColor);
             
             glBegin(GL_LINE_STRIP);
-            for (std::list<std::pair<double,double> >::const_iterator it2 = points.begin(); it2!=points.end(); ++it2) {
-                glVertex2f(it2->first, it2->second);
+            for (std::list<Point >::const_iterator it2 = points.begin(); it2!=points.end(); ++it2) {
+                glVertex2f(it2->x, it2->y);
             }
             glEnd();
             
             ///draw the feather points
-            std::list<std::pair<double,double> > featherPoints;
+            std::list< Point > featherPoints;
             (*it)->evaluateFeatherPointsAtTime_DeCastelJau(time,0, 100, &featherPoints,false);
             
             if (!featherPoints.empty()) {
                 glLineStipple(2, 0xAAAA);
                 glEnable(GL_LINE_STIPPLE);
                 glBegin(GL_LINE_STRIP);
-                for (std::list<std::pair<double,double> >::const_iterator it2 = featherPoints.begin(); it2!=featherPoints.end(); ++it2) {
-                    glVertex2f(it2->first, it2->second);
+                for (std::list<Point >::const_iterator it2 = featherPoints.begin(); it2!=featherPoints.end(); ++it2) {
+                    glVertex2f(it2->x, it2->y);
                 }
                 glEnd();
                 glDisable(GL_LINE_STIPPLE);
