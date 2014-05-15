@@ -12,9 +12,11 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Project.h"
 #include "Engine/Node.h"

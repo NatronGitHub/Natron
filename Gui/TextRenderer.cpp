@@ -10,11 +10,13 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
 #include <QtCore/QHash>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
