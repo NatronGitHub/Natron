@@ -84,6 +84,7 @@ DockablePanel::DockablePanel(Gui* gui
 ,_defaultTabName(defaultTab)
 ,_useScrollAreasForTabs(useScrollAreasForTabs)
 ,_mode(headerMode)
+,_isClosed(false)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -576,11 +577,18 @@ void DockablePanel::showHelp(){
     QToolTip::showText(QCursor::pos(), _helpButton->toolTip());
 }
 
+void DockablePanel::setClosed(bool c)
+{
+    setVisible(!c);
+    _isClosed = c;
+}
+
 void DockablePanel::closePanel() {
     if (_floating) {
         floatPanel();
     }
     close();
+    _isClosed = true;
     getGui()->getApp()->redrawAllViewers();
     
 }
