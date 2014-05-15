@@ -26,8 +26,8 @@ using std::pair;
 
 /***********************************FILE_KNOB*****************************************/
 
-File_Knob::File_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: AnimatingString_KnobHelper(holder, description, dimension)
+File_Knob::File_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
 , _isInputImage(false)
 {
 }
@@ -187,8 +187,8 @@ void File_Knob::animationRemoved_virtual(int dimension) {
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
-OutputFile_Knob::OutputFile_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob<std::string>(holder, description, dimension)
+OutputFile_Knob::OutputFile_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<std::string>(holder, description, dimension,declaredByPlugin)
 , _isOutputImage(false)
 , _sequenceDialog(true)
 {
@@ -217,8 +217,8 @@ QString OutputFile_Knob::generateFileNameAtTime(SequenceTime time,int view) cons
 
 /***********************************PATH_KNOB*****************************************/
 
-Path_Knob::Path_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob<std::string>(holder,description,dimension)
+Path_Knob::Path_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<std::string>(holder,description,dimension,declaredByPlugin)
 , _isMultiPath(false)
 {
     

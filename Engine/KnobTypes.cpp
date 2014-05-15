@@ -24,8 +24,8 @@ using std::make_pair;
 using std::pair;
 
 /******************************INT_KNOB**************************************/
-Int_Knob::Int_Knob(KnobHolder* holder, const std::string &description, int dimension):
-Knob<int>(holder, description, dimension)
+Int_Knob::Int_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<int>(holder, description, dimension,declaredByPlugin)
 , _dimensionNames(dimension)
 , _minimums(dimension)
 , _maximums(dimension)
@@ -231,8 +231,8 @@ const std::string& Int_Knob::typeName() const
 }
 /******************************BOOL_KNOB**************************************/
 
-Bool_Knob::Bool_Knob(KnobHolder* holder, const std::string &description, int dimension):
-Knob<bool>(holder, description, dimension)
+Bool_Knob::Bool_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<bool>(holder, description, dimension,declaredByPlugin)
 {}
 
 bool Bool_Knob::canAnimate() const
@@ -255,8 +255,8 @@ const std::string& Bool_Knob::typeName() const
 /******************************DOUBLE_KNOB**************************************/
 
 
-Double_Knob::Double_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob<double>(holder, description, dimension)
+Double_Knob::Double_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<double>(holder, description, dimension,declaredByPlugin)
 , _dimensionNames(dimension)
 , _minimums(dimension)
 , _maximums(dimension)
@@ -488,8 +488,8 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
 
 /******************************BUTTON_KNOB**************************************/
 
-Button_Knob::Button_Knob(KnobHolder*  holder, const std::string &description, int dimension):
-Knob<bool>(holder, description, dimension)
+Button_Knob::Button_Knob(KnobHolder*  holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<bool>(holder, description, dimension,declaredByPlugin)
 , _renderButton(false)
 {
     setIsPersistant(false);
@@ -515,8 +515,8 @@ const std::string& Button_Knob::typeName() const
 
 /******************************CHOICE_KNOB**************************************/
 
-Choice_Knob::Choice_Knob(KnobHolder* holder, const std::string &description, int dimension):
-Knob<int>(holder, description, dimension)
+Choice_Knob::Choice_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<int>(holder, description, dimension,declaredByPlugin)
 {
     
 }
@@ -564,62 +564,10 @@ const std::string &Choice_Knob::getActiveEntryText() const
     return _entries[activeIndex];
 }
 
-/******************************TABLE_KNOB**************************************/
-//
-//Table_Knob::Table_Knob(KnobHolder *holder, const std::string &description, int dimension)
-//: Knob(holder,description,dimension)
-//{
-//    
-//}
-//
-//void Table_Knob::appendRow(const std::string& key,const std::vector<std::string> &choices){
-//    if((int)_entries.size() == getDimension()){
-//        return;
-//    }
-//    _entries.insert(std::make_pair(key, choices));
-//    if((int)_entries.size() == getDimension()){
-//        emit populated();
-//    }
-//}
-//
-//const Table_Knob::TableEntries& Table_Knob::getRows() const{
-//    return _entries;
-//}
-//
-//void Table_Knob::setRows(const Table_Knob::TableEntries& rows){
-//    _entries = rows;
-//    emit populated();
-//}
-//
-//bool Table_Knob::canAnimate() const{
-//    return canAnimateStatic();
-//}
-//
-//void Table_Knob::setVerticalHeaders(const std::string& keyHeader,const std::string& choicesHeader){
-//    _keyHeader = keyHeader;
-//    _choicesHeader = choicesHeader;
-//}
-//
-//void Table_Knob::getVerticalHeaders(std::string* keyHeader,std::string* choicesHeader){
-//    *keyHeader = _keyHeader;
-//    *choicesHeader = _choicesHeader;
-//}
-//
-//
-//const std::string Table_Knob::_typeNameStr("Table");
-//
-//const std::string& Table_Knob::typeNameStatic() {
-//    return _typeNameStr;
-//}
-//
-//const std::string& Table_Knob::typeName() const {
-//    return  typeNameStatic();
-//}
-//
 /******************************SEPARATOR_KNOB**************************************/
 
-Separator_Knob::Separator_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob<bool>(holder, description, dimension)
+Separator_Knob::Separator_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
     
 }
@@ -650,8 +598,8 @@ const std::string& Separator_Knob::typeName() const
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
 
-Color_Knob::Color_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob<double>(holder, description, dimension)
+Color_Knob::Color_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<double>(holder, description, dimension,declaredByPlugin)
 , _allDimensionsEnabled(true)
 , _dimensionNames(dimension)
 , _minimums(dimension)
@@ -841,8 +789,8 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, cons
 /******************************STRING_KNOB**************************************/
 
 
-String_Knob::String_Knob(KnobHolder* holder, const std::string &description, int dimension):
-AnimatingString_KnobHelper(holder, description, dimension)
+String_Knob::String_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
 , _multiLine(false)
 , _isLabel(false)
 , _isCustom(false)
@@ -874,8 +822,8 @@ const std::string& String_Knob::typeName() const
 
 /******************************GROUP_KNOB**************************************/
 
-Group_Knob::Group_Knob(KnobHolder* holder, const std::string &description, int dimension):
-Knob<bool>(holder, description, dimension)
+Group_Knob::Group_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
     
 }
@@ -916,8 +864,8 @@ const std::vector< boost::shared_ptr<KnobI> > &Group_Knob::getChildren() const
 
 /******************************TAB_KNOB**************************************/
 
-Tab_Knob::Tab_Knob(KnobHolder* holder, const std::string &description, int dimension):
-Knob<bool>(holder, description, dimension)
+Tab_Knob::Tab_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<bool>(holder, description, dimension,declaredByPlugin)
 {
     
 }
@@ -954,8 +902,8 @@ void Tab_Knob::addKnob(boost::shared_ptr<KnobI> k)
 /******************************Parametric_Knob**************************************/
 
 
-Parametric_Knob::Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension)
-: Knob<double>(holder,description,dimension)
+Parametric_Knob::Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<double>(holder,description,dimension,declaredByPlugin)
 , _curvesMutex()
 , _curves(dimension)
 , _curvesColor(dimension)

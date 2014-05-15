@@ -162,8 +162,9 @@ struct KnobHelper::KnobHelperPrivate {
     Natron::ValueChangedReason _beginEndReason;
     std::vector<int> _dimensionChanged; //< all the dimension changed during the begin end
     
+    bool _declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
     
-    KnobHelperPrivate(KnobHelper* publicInterface,KnobHolder*  holder,int dimension,const std::string& description)
+    KnobHelperPrivate(KnobHelper* publicInterface,KnobHolder*  holder,int dimension,const std::string& description,bool declaredByPlugin)
     : _publicInterface(publicInterface)
     , _holder(holder)
     , _description(description)
@@ -187,14 +188,15 @@ struct KnobHelper::KnobHelperPrivate {
     , _betweenBeginEndCount(0)
     , _beginEndReason(Natron::PROJECT_LOADING)
     , _dimensionChanged()
+    , _declaredByPlugin(declaredByPlugin)
     {
     }
     
 };
 
-KnobHelper::KnobHelper(KnobHolder* holder,const std::string& description,int dimension)
+KnobHelper::KnobHelper(KnobHolder* holder,const std::string& description,int dimension,bool declaredByPlugin)
 : _signalSlotHandler()
-, _imp(new KnobHelperPrivate(this,holder,dimension,description))
+, _imp(new KnobHelperPrivate(this,holder,dimension,description,declaredByPlugin))
 {
 }
 
@@ -207,6 +209,11 @@ KnobHelper::~KnobHelper()
     if (_imp->_holder) {
         _imp->_holder->removeKnob(this);
     }
+}
+
+bool KnobHelper::isDeclaredByPlugin() const
+{
+    return _imp->_declaredByPlugin;
 }
 
 void KnobHelper::populate() {
@@ -1043,8 +1050,8 @@ void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI>& 
     }
 }
 AnimatingString_KnobHelper::AnimatingString_KnobHelper(KnobHolder* holder,
-                                                       const std::string &description, int dimension)
-: Knob<std::string>(holder,description,dimension)
+                                                       const std::string &description, int dimension,bool declaredByPlugin)
+: Knob<std::string>(holder,description,dimension,declaredByPlugin)
 , _animation(new StringAnimationManager(this))
 {
     

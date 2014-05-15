@@ -619,7 +619,7 @@ void RotoPanel::onRotoItemInversionChanged()
 
 void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
 {
-
+#pragma message WARN("Make this an  undo/redo command")                    
     TreeItems::iterator it = _imp->findItem(item);
     if (it != _imp->items.end()) {
         int time = _imp->context->getTimelineCurrentTime();
@@ -862,6 +862,7 @@ void RotoPanel::onItemSelectionChanged()
 
 void RotoPanel::onAddLayerButtonClicked()
 {
+#pragma message WARN("Make this an  undo/redo command")
     boost::shared_ptr<RotoLayer> layer = _imp->context->addLayer();
     _imp->tree->clearSelection();
     TreeItems::iterator it = _imp->findItem(layer.get());
@@ -870,6 +871,7 @@ void RotoPanel::onAddLayerButtonClicked()
 
 void RotoPanel::onRemoveItemButtonClicked()
 {
+#pragma message WARN("Make this an  undo/redo command")
     _imp->selectedItems.clear();
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
@@ -1064,6 +1066,7 @@ void TreeWidget::dropEvent(QDropEvent* event)
     event->setAccepted(accepted);
     
     if (accepted) {
+#pragma message WARN("Make this an  undo/redo command")
         assert(newParentLayer && newParentItem && insertIndex != -1);
         ///remove the dropped item from its current layer
         QTreeWidgetItem* droppedOldParent = dropped->parent();

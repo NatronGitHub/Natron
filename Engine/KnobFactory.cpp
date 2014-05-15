@@ -26,7 +26,7 @@ using std::pair;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelper* (*KnobBuilder)(KnobHolder*  holder, const std::string &description, int dimension);
+typedef KnobHelper* (*KnobBuilder)(KnobHolder*  holder, const std::string &description, int dimension,bool declaredByPlugin);
 
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory()
@@ -51,7 +51,7 @@ void KnobFactory::loadKnobPlugins()
         if (plugins[i]->loadFunctions(functions)) {
             std::pair<bool, KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
             if (builder.first) {
-                boost::shared_ptr<KnobHelper> knob(builder.second((KnobHolder*)NULL, "", 1));
+                boost::shared_ptr<KnobHelper> knob(builder.second((KnobHolder*)NULL, "", 1,false));
                 _loadedKnobs.insert(make_pair(knob->typeName(), plugins[i]));
             }
         } else {
@@ -95,7 +95,7 @@ void KnobFactory::loadBultinKnobs()
 
 boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
                               KnobHolder*  holder,
-                              const std::string &description, int dimension) const
+                              const std::string &description, int dimension,bool declaredByPlugin) const
 {
 
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(id);
@@ -107,7 +107,7 @@ boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
             return boost::shared_ptr<KnobHelper>();
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        boost::shared_ptr<KnobHelper> knob(builder(holder, description, dimension));
+        boost::shared_ptr<KnobHelper> knob(builder(holder, description, dimension,declaredByPlugin));
         if (!knob) {
             boost::shared_ptr<KnobHelper>();
         }

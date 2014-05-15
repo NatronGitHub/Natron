@@ -39,11 +39,11 @@ class Int_Knob: public QObject, public Knob<int>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Int_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Int_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Int_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Int_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     void disableSlider();
     
@@ -115,11 +115,11 @@ class Bool_Knob:  public Knob<bool>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Bool_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Bool_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Bool_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Bool_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
@@ -152,11 +152,11 @@ public:
         NORMALIZATION_Y ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
     };
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Double_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Double_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Double_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Double_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin );
     
     
     void disableSlider();
@@ -265,11 +265,11 @@ class Button_Knob: public Knob<bool>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Button_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Button_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Button_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Button_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     static const std::string& typeNameStatic();
     
@@ -296,11 +296,11 @@ class Choice_Knob: public QObject,public Knob<int>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Choice_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Choice_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Choice_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Choice_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     /*Must be called right away after the constructor.*/
     void populateChoices(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
@@ -333,52 +333,6 @@ private:
     std::vector<std::string> _entriesHelp;
     static const std::string _typeNameStr;
 };
-/*****************************TABLE_KNOB**************************************/
-//class Table_Knob: public Knob
-//{
-//    Q_OBJECT
-//public:
-//    
-//    typedef std::map<std::string,std::vector<std::string> > TableEntries;
-//
-//    
-//    static Knob *BuildKnob(KnobHolder *holder, const std::string &description, int dimension) {
-//        return new Table_Knob(holder, description, dimension);
-//    }
-//    
-//    ///The dimension parameter here define the number of cells in the table.
-//    Table_Knob(KnobHolder *holder, const std::string &description, int dimension);
-//    
-//    ///append a new cell to the table up to 'dimension' cells.
-//    ///Any row appended after the size reached the dimension of the table will be discarded.
-//    void appendRow(const std::string& key,const std::vector<std::string> &choices);
-//    
-//    const TableEntries& getRows() const;
-//    
-//    void setRows(const Table_Knob::TableEntries& rows);
-//    
-//    static bool canAnimateStatic() { return false; }
-//    
-//    static const std::string& typeNameStatic();
-//    
-//    void setVerticalHeaders(const std::string& keyHeader,const std::string& choicesHeader);
-//    
-//    void getVerticalHeaders(std::string* keyHeader,std::string* choicesHeader);
-//    
-//signals:
-//    
-//    void populated();
-//    
-//private:
-//    virtual bool canAnimate() const OVERRIDE FINAL;
-//    
-//    virtual const std::string& typeName() const OVERRIDE FINAL;
-//    
-//    
-//    TableEntries _entries;
-//    std::string _keyHeader,_choicesHeader;
-//    static const std::string _typeNameStr;
-//};
 
 /******************************SEPARATOR_KNOB**************************************/
 
@@ -387,11 +341,11 @@ class Separator_Knob: public Knob<bool>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Separator_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Separator_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Separator_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Separator_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     static const std::string& typeNameStatic();
     
@@ -418,12 +372,12 @@ class Color_Knob:  public QObject, public Knob<double>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Color_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Color_Knob(holder, description, dimension,declaredByPlugin);
     }
     
     
-    Color_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Color_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
 
     const std::vector<double> &getMinimums() const;
 
@@ -492,11 +446,11 @@ class String_Knob: public AnimatingString_KnobHelper
 public:
     
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new String_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new String_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    String_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    String_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     virtual ~String_Knob();
     
@@ -547,11 +501,11 @@ class Group_Knob:  public QObject, public Knob<bool>
     std::vector< boost::shared_ptr<KnobI> > _children;
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Group_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Group_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Group_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Group_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     void addKnob(boost::shared_ptr<KnobI> k);
     
@@ -576,11 +530,11 @@ class Tab_Knob :  public QObject,public Knob<bool>
     Q_OBJECT
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Tab_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Tab_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Tab_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Tab_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
     
     void addKnob(boost::shared_ptr<KnobI> k);
     
@@ -615,11 +569,11 @@ class Parametric_Knob :  public QObject, public Knob<double>
     
 public:
     
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension) {
-        return new Parametric_Knob(holder, description, dimension);
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Parametric_Knob(holder, description, dimension,declaredByPlugin);
     }
     
-    Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension);
+    Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin );
     
     void setCurveColor(int dimension,double r,double g,double b);
     
