@@ -10,7 +10,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
