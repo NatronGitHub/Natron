@@ -15,10 +15,12 @@
 #include <vector>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
-CLANG_DIAG_ON(deprecated)
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 

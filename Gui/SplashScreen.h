@@ -14,10 +14,12 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 #include <QPixmap>
 #include <QString>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 class SplashScreen : public QWidget
 {
