@@ -12,6 +12,7 @@
 #ifndef ZOOMCONTEXT_H
 #define ZOOMCONTEXT_H
 
+#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QPointF>

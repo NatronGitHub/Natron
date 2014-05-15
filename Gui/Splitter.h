@@ -13,6 +13,7 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
+#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QSplitter>
