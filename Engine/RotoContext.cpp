@@ -2054,7 +2054,7 @@ std::list< boost::shared_ptr<BezierCP> > Bezier::getFeatherPoints_mt_safe() cons
 }
 
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-Bezier::isNearbyControlPoint(double x,double y,double acceptance,int* index) const
+Bezier::isNearbyControlPoint(double x,double y,double acceptance,ControlPointSelectionPref pref,int* index) const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2062,39 +2062,55 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance,int* index) con
     
     QMutexLocker l(&itemMutex);
     boost::shared_ptr<BezierCP> cp,fp;
-    int i = 0;
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++i) {
-        double pX,pY;
-        (*it)->getPositionAtTime(time, &pX, &pY);
-        if (pX >= (x - acceptance) && pX <= (x + acceptance) && pY >= (y - acceptance) && pY <= (y + acceptance)) {
-            cp =  *it;
-            
-            ///find the equivalent feather point
-            BezierCPs::const_iterator itF = _imp->featherPoints.begin();
-            std::advance(itF, i);
-            fp = *itF;
-            *index = i;
-            return std::make_pair(cp,fp);
-        }
+    
+    switch (pref) {
+        case FEATHER_FIRST:
+        {
+            BezierCPs::const_iterator itF = _imp->findFeatherPointNearby(x, y, acceptance, time, index);
+            if (itF != _imp->featherPoints.end()) {
+                fp = *itF;
+                BezierCPs::const_iterator it = _imp->points.begin();
+                std::advance(it, *index);
+                cp = *it;
+                return std::make_pair(fp, cp);
+            } else {
+                BezierCPs::const_iterator it = _imp->findControlPointNearby(x, y, acceptance, time, index);
+                if (it != _imp->points.end()) {
+                    cp = *it;
+                    itF = _imp->featherPoints.begin();
+                    std::advance(itF, *index);
+                    fp = *itF;
+                    return std::make_pair(cp, fp);
+                }
+            }
+        }  break;
+        case CONTROL_POINT_FIRST:
+        case WHATEVER_FIRST:
+        default:
+        {
+            BezierCPs::const_iterator it = _imp->findControlPointNearby(x, y, acceptance, time, index);
+            if (it != _imp->points.end()) {
+                cp = *it;
+                BezierCPs::const_iterator itF = _imp->featherPoints.begin();
+                std::advance(itF, *index);
+                fp = *itF;
+                return std::make_pair(cp, fp);
+            } else {
+                BezierCPs::const_iterator itF = _imp->findFeatherPointNearby(x, y, acceptance, time, index);
+                if (itF != _imp->featherPoints.end()) {
+                    fp = *itF;
+                    it = _imp->points.begin();
+                    std::advance(it, *index);
+                    cp = *it;
+                    return std::make_pair(fp, cp);
+                }
+            }
+
+        }   break;
+
+        
     }
     
-    if (!cp && !fp) {
-        i = 0;
-        for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++i) {
-            double pX,pY;
-            (*it)->getPositionAtTime(time, &pX, &pY);
-            if (pX >= (x - acceptance) && pX <= (x + acceptance) && pY >= (y - acceptance) && pY <= (y + acceptance)) {
-                fp =  *it;
-                
-                ///find the equivalent control point
-                BezierCPs::const_iterator it2 = _imp->points.begin();
-                std::advance(it2, i);
-                cp = *it2;
-                *index = i;
-                return std::make_pair(fp,cp);
-            }
-        }
-    }
     ///empty pair
     *index = -1;
     return std::make_pair(cp,fp);
@@ -2258,17 +2274,17 @@ void Bezier::leftDerivativeAtPoint(int time,const BezierCP& p,const BezierCP& pr
     
     ///derivatives for t == 1.
     if (degree == 1) {
-        *dx = p3.x - p0.x;
-        *dy = p3.y - p0.y;
+        *dx = p0.x - p3.x;
+        *dy = p0.y - p3.y;
     } else if (degree == 2) {
         if (p0equalsP1) {
             p1 = p2;
         }
-        *dx = 2. * (p3.x - p1.x);
-        *dy = 2. * (p3.y - p1.y);
+        *dx = 2. * (p1.x - p3.x);
+        *dy = 2. * (p1.y - p3.y);
     } else {
-        *dx = 3. * (p3.x - p2.x);
-        *dy = 3. * (p3.y - p2.y);
+        *dx = 3. * (p2.x - p3.x);
+        *dy = 3. * (p2.y - p3.y);
     }
 }
 
@@ -2409,21 +2425,22 @@ void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
         if (next == polygon.end()) {
             next = polygon.begin();
         }
-        if(it->y == next->y) {
-            constants->at(i) = next->x;
+        if (it->y == next->y) {
+            constants->at(i) = 0;
             multiples->at(i) = 0;
         } else {
-            constants->at(i) = next->x - (next->y * it->x) / (it->y - next->y) +
-            (next->y * next->x) / (it->y - next->y);
-            multiples->at(i) = (it->x - next->x) / (it->y - next->y);
+            double multiplier = (next->x - it->x) / (next->y - it->y);
+            constants->at(i) = - it->y * multiplier;
+            multiples->at(i) = multiplier;
         }
     }
 }
 
 bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
-                           const std::vector<double>& constants,
-                           const std::vector<double>& multiples,
-                           const RectD& featherPolyBBox) {
+                            const std::vector<double>& constants,
+                            const std::vector<double>& multiples,
+                            const RectD& featherPolyBBox,
+                            double tolerance) {
     
     assert(constants.size() == multiples.size() && constants.size() == polygon.size());
     
@@ -2435,18 +2452,16 @@ bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
     bool odd = false;
     std::list<Point>::const_iterator next = polygon.begin();
     ++next;
-    std::vector<double>::const_iterator cIt = constants.begin(); ++cIt;
-    std::vector<double>::const_iterator mIt = multiples.begin(); ++mIt;
+    std::vector<double>::const_iterator cIt = constants.begin();
+    std::vector<double>::const_iterator mIt = multiples.begin();
     
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++cIt,++mIt) {
+    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++next,++cIt,++mIt) {
         if (next == polygon.end()) {
-            cIt = constants.begin();
-            mIt = multiples.begin();
             next = polygon.begin();
         }
         if ((next->y < p.y && it->y >= p.y) ||
             (it->y < p.y && next->y >= p.y)) {
-            odd ^= ((p.y * *mIt + *cIt) < p.x);
+            odd ^= (std::abs((p.y * *mIt + *cIt) - p.x) < tolerance);
         }
     }
     return odd;
@@ -2465,7 +2480,7 @@ bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
  **/
 Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
                                       Point* fp, //< the feather point
-                                      int featherDistance, //< feather distance
+                                      double featherDistance, //< feather distance
                                       const std::list<Point>& featherPolygon, //< the polygon of the bezier
                                       const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
                                       const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
@@ -2489,43 +2504,40 @@ Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
             fp->y =  ret.y + cp.y;
         } else {
             //compute derivatives to determine the feather extent
-            double leftX,leftY,rightX,rightY;
+            double leftX,leftY,rightX,rightY,norm;
             Bezier::leftDerivativeAtPoint(time, **curFp, **prevFp, &leftX, &leftY);
             Bezier::rightDerivativeAtPoint(time, **curFp, **nextFp, &rightX, &rightY);
-            
-            ///compute the angle of the tangents
-            double leftAlpha,rightAlpha,alpha;
-            if (leftX == 0) {
-                leftAlpha = leftY < 0 ? - pi / 2. : pi / 2.;
+            norm = sqrt((rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY));
+  
+            ///normalize derivatives by their norm
+            if (norm != 0) {
+                ret.x = -((rightY - leftY) / norm) * featherDistance;
+                ret.y = ((rightX - leftX) / norm) * featherDistance;
             } else {
-                leftAlpha = std::atan2(leftY,leftX) + pi / 2.;
-            }
-            if (rightX == 0) {
-                rightAlpha = rightY < 0 ? - pi / 2. : pi / 2.;
-            } else {
-                rightAlpha = std::atan2(rightY,rightX) + pi / 2.;
+                ///both derivatives are the same, use the direction of the left one
+                norm = sqrt((leftX - cp.x) * (leftX - cp.x) + (leftY - cp.y) * (leftY - cp.y));
+                if (norm != 0) {
+                    ret.x = -((leftY - cp.y) / norm) * featherDistance;
+                    ret.y = ((leftX - cp.x) / norm) * featherDistance;
+                } else {
+                    ///both derivatives and control point are equal, just use 0
+                    ret.x = ret.y = 0;
+                }
             }
             
-            ///this is the angle of the bisector of the tangents
-            alpha = (leftAlpha + rightAlpha) / 2.;
             
             ///retrieve the position of the extent of the feather
             ///To retrieve the extent which is in not inside the polygon we test the 2 points
             Point extent;
-            ret.x = std::cos(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
-            ret.y = std::sin(featherDistance < 0 ? alpha + pi : alpha) * featherDistance;
-            extent.x = ret.x + cp.x;
-            extent.y = ret.y + cp.y;
+            extent.x = cp.x + ret.x;
+            extent.y = cp.y + ret.y;
             
             bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
             if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
                 *fp = extent;
             } else {
-                ret.x = std::cos(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
-                ret.y = std::sin(featherDistance < 0 ? alpha : alpha + pi) * featherDistance;
-                extent.x = ret.x + cp.x;
-                extent.y = ret.y + cp.y;
-                inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
+                extent.x = cp.x - ret.x;
+                extent.y = cp.y - ret.y;
                 *fp = extent;
             }
         }
@@ -3586,26 +3598,11 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             
             double fallOff = (*it2)->getFeatherFallOff(time);
             double fallOffInverse = 1. / fallOff;
-            int featherDist = (*it2)->getFeatherDistance(time);
+            double featherDist = (double)(*it2)->getFeatherDistance(time);
             double opacity = (*it2)->getOpacity(time);
             bool inverted = (*it2)->getInverted(time);
             
-            ///here is the polygon of the feather bezier
-            ///This is used only if the feather distance is different of 0 and the feather points equal
-            ///the control points in order to still be able to apply the feather distance.
-            std::list<Point> featherPolygon;
-            std::vector<double> multiples,constants;
-            RectD featherPolyBBox;
-            if (featherDist != 0) {
-                (*it2)->evaluateFeatherPointsAtTime_DeCastelJau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
-                assert(!featherPolygon.empty());
-                
-                multiples.resize(featherPolygon.size());
-                constants.resize(featherPolygon.size());
-                Bezier::precomputePointInPolygonTables(featherPolygon, &constants, &multiples);
-            }
         
-            
             BezierCPs cps = (*it2)->getControlPoints_mt_safe();
             BezierCPs fps = (*it2)->getFeatherPoints_mt_safe();
             
@@ -3624,188 +3621,18 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             
             BezierCPs::iterator point = cps.begin();
             BezierCPs::iterator fpoint = fps.begin();
-            
-            BezierCPs::iterator prevPoint = cps.end();
-            --prevPoint;
-            
+
             BezierCPs::iterator nextPoint = point;
             ++nextPoint;
             BezierCPs::iterator nextFPoint = fpoint;
             ++nextFPoint;
-            
-            BezierCPs::iterator nextNextPoint = nextPoint;
-            ++nextNextPoint;
-            
-            
-            ////1st pass, define the feather edge pattern
-            cairo_pattern_t* mesh = cairo_pattern_create_mesh();
-            if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
-                cairo_pattern_destroy(mesh);
-                continue;
-            }
-            
-            if (mipmapLevel != 0) {
-                featherDist /= (1 << mipmapLevel);
-            }
-            
-            ///This is a vector of feather points that we compute during
-            ///the first pass to avoid recompute them when we do the actual
-            ///path rendering.
-            ///The points are interpreted as a triplet <prev right point,cur left point,cur>
-            std::vector<Point> preComputedFeatherPoints(cps.size() * 3);
-            std::vector<Point>::iterator preFillIt = preComputedFeatherPoints.begin();
-            
-            while (point != cps.end()) {
-                
-                if (prevPoint == cps.end()) {
-                    prevPoint = cps.begin();
-                }
-                if (nextNextPoint == cps.end()) {
-                    nextNextPoint = cps.begin();
-                }
-                if (nextPoint == cps.end()) {
-                    nextPoint = cps.begin();
-                    nextFPoint = fps.begin();
-                }
-                
-                Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Left,p1Right,p2p3,p3p2,p2Left,p3Left;
-                (*point)->getPositionAtTime(time, &p0.x, &p0.y);
-                adjustToPointToScale(mipmapLevel,p0.x,p0.y);
-                
-                (*point)->getRightBezierPointAtTime(time, &p0Right.x, &p0Right.y);
-                adjustToPointToScale(mipmapLevel, p0Right.x, p0Right.y);
-                
-                (*fpoint)->getRightBezierPointAtTime(time, &p1Right.x, &p1Right.y);
-                adjustToPointToScale(mipmapLevel, p1Right.x, p1Right.y);
-
-                (*fpoint)->getPositionAtTime(time, &p1.x, &p1.y);
-                adjustToPointToScale(mipmapLevel,p1.x,p1.y);
-                
-                (*nextPoint)->getPositionAtTime(time, &p3.x, &p3.y);
-                adjustToPointToScale(mipmapLevel, p3.x, p3.y);
-                
-                (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.x, &p3Left.y);
-                adjustToPointToScale(mipmapLevel, p3Left.x,p3Left.y);
-                
-                (*nextFPoint)->getPositionAtTime(time, &p2.x, &p2.y);
-                adjustToPointToScale(mipmapLevel, p2.x, p2.y);
-                
-                (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.x, &p2Left.y);
-                adjustToPointToScale(mipmapLevel, p2Left.x, p2Left.y);
-                
-                
-                
-                Point fpExpansionP1 = Bezier::expandToFeatherDistance(p0, &p1, featherDist,featherPolygon,
-                                                            constants,multiples,featherPolyBBox,time,prevPoint,point,nextPoint);
-                Point fpExpansionP2 = Bezier::expandToFeatherDistance(p3, &p2, featherDist,featherPolygon,
-                                        constants,multiples,featherPolyBBox,time,point,nextPoint,nextNextPoint);
-                
-                
-                ///we also have to expand the  p1Right and p2left derivatives but this is easier since
-                ///we now it's the same deltas that we computed for p1 and p2
-                if (featherDist != 0) {
-                    p1Right.x = p0Right.x + fpExpansionP1.x;
-                    p1Right.y = p0Right.y + fpExpansionP1.y;
-                    
-                    p2Left.x = p3Left.x + fpExpansionP2.x;
-                    p2Left.y = p3Left.y + fpExpansionP2.y;
-                }
-                
-                ///This completes the previous iteration's triplet
-                *preFillIt++ = p1Right;
-                
-                ///This makes up the new triplet
-                *preFillIt++ = p2Left;
-                *preFillIt++ = p2;
-                
-                ///linear interpolation
-                p0p1.x = (2. * fallOff * p0.x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
-                p0p1.y = (2. * fallOff * p0.y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
-                p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
-                p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) /(fallOff + 2. * fallOffInverse);
-                
-                p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
-                p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
-                p3p2.x = (2. * fallOff * p3.x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
-                p3p2.y = (2. * fallOff * p3.y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
-                
-                ///move to the initial point
-                cairo_mesh_pattern_begin_patch(mesh);
-                cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-                
-                ///make the 1st bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
-                
-                ///make the 2nd bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p1Right.x,p1Right.y,p2Left.x,p2Left.y,p2.x,p2.y);
-                
-                ///make the 3rd bezier segment
-                cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,p3.x,p3.y);
-                
-                ///make the last bezier segment to close the pattern
-                cairo_mesh_pattern_curve_to(mesh, p3Left.x,p3Left.y,p0Right.x,p0Right.y,p0.x,p0.y);
-                
-                ///Set the 4 corners color
-                
-                ///inner is full color
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
-                
-                ///outter is faded
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
-                
-                ///inner is full color
-                cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
-                assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-                
-                cairo_mesh_pattern_end_patch(mesh);
-                
-                ++prevPoint;
-                ++point;
-                ++nextPoint;
-                ++nextNextPoint;
-                ++fpoint;
-                ++nextFPoint;
-                
-            }
-            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-            cairo_set_source(cr, mesh);
-    
-            ///2nd pass, draw the feather using the pattern previously defined
-            preFillIt = preComputedFeatherPoints.begin();
-            
-
-            Point initFp = *preComputedFeatherPoints.rbegin();
 
             
-            cairo_new_path(cr);
-            cairo_move_to(cr, initFp.x, initFp.y);
-            
-            while (preFillIt != preComputedFeatherPoints.end()) {
-                
-                Point right,nextLeft,next;
-                right = *preFillIt++;
-                assert(preFillIt != preComputedFeatherPoints.end());
-                nextLeft = *preFillIt++;
-                assert(preFillIt != preComputedFeatherPoints.end());
-                next = *preFillIt++;
-
-                cairo_curve_to(cr,right.x,right.y,nextLeft.x,nextLeft.y,next.x,next.y);
-                
-            }
             
             
-            cairo_fill(cr);
-            
-            
-            ////3rd pass, fill the internal bezier
-            
-            point = cps.begin();
-            nextPoint = point;
-            ++nextPoint;
-            
+            ////1st pass, fill the internal bezier
             Point initCp;
-
+            
             (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
             adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
             
@@ -3831,8 +3658,288 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 ++point;
                 ++nextPoint;
             }
-
+            
             cairo_fill(cr);
+            
+            ///reset iterators
+            point = cps.begin();
+            nextPoint = point;
+            ++nextPoint;
+            
+            ////2nd pass, define the feather edge pattern
+            cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+            if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+                cairo_pattern_destroy(mesh);
+                continue;
+            }
+            
+            if (mipmapLevel != 0) {
+                featherDist /= (1 << mipmapLevel);
+            }
+            
+            if (featherDist != 0) {
+                
+                ///here is the polygon of the feather bezier
+                ///This is used only if the feather distance is different of 0 and the feather points equal
+                ///the control points in order to still be able to apply the feather distance.
+                std::list<Point> featherPolygon;
+                std::vector<double> multiples,constants;
+                RectD featherPolyBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
+                
+                (*it2)->evaluateFeatherPointsAtTime_DeCastelJau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
+                assert(!featherPolygon.empty());
+                
+                multiples.resize(featherPolygon.size());
+                constants.resize(featherPolygon.size());
+                Bezier::precomputePointInPolygonTables(featherPolygon, &constants, &multiples);
+                
+  
+                std::list<Point> featherContour;
+                
+                std::list<Point>::iterator cur = featherPolygon.begin();
+                std::list<Point>::iterator next = cur;
+                ++next;
+                std::list<Point>::iterator prev = featherPolygon.end();
+                --prev;
+                
+                double absFeatherDist = std::abs(featherDist);
+                
+                Point p1 = *cur;
+                double norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
+                assert(norm != 0);
+                double dx = - ((next->y - prev->y) / norm) * absFeatherDist;
+                double dy = ((next->x - prev->x) / norm) * absFeatherDist;
+                p1.x = cur->x + dx;
+                p1.y = cur->y + dy;
+                
+                bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
+                if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
+                    p1.x = cur->x - dx;
+                    p1.y = cur->y - dy;
+                }
+                
+                Point origin = p1;
+                featherContour.push_back(p1);
+                
+                ++prev; ++next; ++cur;
+                
+                for (;;++prev,++cur,++next) {
+                    if (next == featherPolygon.end()) {
+                        next = featherPolygon.begin();
+                    }
+                    if (prev == featherPolygon.end()) {
+                        prev = featherPolygon.begin();
+                    }
+                    bool mustStop = false;
+                    if (cur == featherPolygon.end()) {
+                        mustStop = true;
+                        cur = featherPolygon.begin();
+                    }
+                    
+                    ///skip it
+                    if (cur->x == prev->x && cur->y == prev->y) {
+                        continue;
+                    }
+                    
+                    Point p2,p0p1,p1p0,p2p3,p3p2;
+                
+                    if (!mustStop) {
+                        norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
+                        assert(norm != 0);
+                        dx = - ((next->y - prev->y) / norm) *  absFeatherDist;
+                        dy = ((next->x - prev->x) / norm) *  absFeatherDist;
+                        p2.x = cur->x + dx;
+                        p2.y = cur->y + dy;
+                        
+                        inside = Bezier::pointInPolygon(p2, featherPolygon, constants, multiples, featherPolyBBox);
+                        if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
+                            p2.x = cur->x - dx;
+                            p2.y = cur->y - dy;
+                        }
+                    } else {
+                        p2 = origin;
+                    }
+                    featherContour.push_back(p2);
+                    
+                    ///linear interpolation
+                    p0p1.x = (2. * fallOff * prev->x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
+                    p0p1.y = (2. * fallOff * prev->y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
+                    p1p0.x = (prev->x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+                    p1p0.y = (prev->y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
+                    
+                    p2p3.x = (cur->x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                    p2p3.y = (cur->y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+                    p3p2.x = (2. * fallOff * cur->x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
+                    p3p2.y = (2. * fallOff * cur->y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
+
+                    
+                    ///move to the initial point
+                    cairo_mesh_pattern_begin_patch(mesh);
+                    cairo_mesh_pattern_move_to(mesh, prev->x,prev->y);
+                    cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
+                    cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+                    cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,cur->x,cur->y);
+                    cairo_mesh_pattern_line_to(mesh, prev->x, prev->y);
+                    ///Set the 4 corners color
+                    ///inner is full color
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    ///outter is faded
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                    ///inner is full color
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+                    
+                    cairo_mesh_pattern_end_patch(mesh);
+                    
+                    if (mustStop) {
+                        break;
+                    }
+                    
+                    p1 = p2;
+                }
+                
+                cairo_new_path(cr);
+                std::list<Point>::iterator featherContourIT = featherContour.begin();
+                
+                cairo_move_to(cr, featherContourIT->x, featherContourIT->y);
+                ++featherContourIT;
+                while (featherContourIT != featherContour.end()) {
+                    cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
+                    ++featherContourIT;
+                }
+           
+            } else {
+                ///This is a vector of feather points that we compute during
+                ///the first pass to avoid recompute them when we do the actual
+                ///path rendering.
+                ///The points are interpreted as a triplet <prev right point,cur left point,cur>
+                std::vector<Point> preComputedFeatherPoints(cps.size() * 3);
+                std::vector<Point>::iterator preFillIt = preComputedFeatherPoints.begin();
+                
+                if (featherDist) {
+                    while (point != cps.end()) {
+
+                        if (nextPoint == cps.end()) {
+                            nextPoint = cps.begin();
+                            nextFPoint = fps.begin();
+                        }
+                        
+                        Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Right,p2p3,p3p2,p2Left,p3Left;
+                        (*point)->getPositionAtTime(time, &p0.x, &p0.y);
+                        adjustToPointToScale(mipmapLevel,p0.x,p0.y);
+                        
+                        (*point)->getRightBezierPointAtTime(time, &p0Right.x, &p0Right.y);
+                        adjustToPointToScale(mipmapLevel, p0Right.x, p0Right.y);
+                        
+                        (*fpoint)->getRightBezierPointAtTime(time, &p1Right.x, &p1Right.y);
+                        adjustToPointToScale(mipmapLevel, p1Right.x, p1Right.y);
+                        
+                        (*fpoint)->getPositionAtTime(time, &p1.x, &p1.y);
+                        adjustToPointToScale(mipmapLevel,p1.x,p1.y);
+                        
+                        (*nextPoint)->getPositionAtTime(time, &p3.x, &p3.y);
+                        adjustToPointToScale(mipmapLevel, p3.x, p3.y);
+                        
+                        (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.x, &p3Left.y);
+                        adjustToPointToScale(mipmapLevel, p3Left.x,p3Left.y);
+                        
+                        (*nextFPoint)->getPositionAtTime(time, &p2.x, &p2.y);
+                        adjustToPointToScale(mipmapLevel, p2.x, p2.y);
+                        
+                        (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.x, &p2Left.y);
+                        adjustToPointToScale(mipmapLevel, p2Left.x, p2Left.y);
+                        
+                    
+                        ///This completes the previous iteration's triplet
+                        *preFillIt++ = p1Right;
+                        
+                        ///This makes up the new triplet
+                        *preFillIt++ = p2Left;
+                        *preFillIt++ = p2;
+                        
+                        ///linear interpolation
+                        p0p1.x = (2. * fallOff * p0.x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
+                        p0p1.y = (2. * fallOff * p0.y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
+                        p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+                        p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) /(fallOff + 2. * fallOffInverse);
+                        
+                        p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                        p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+                        p3p2.x = (2. * fallOff * p3.x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
+                        p3p2.y = (2. * fallOff * p3.y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
+                        
+                        ///move to the initial point
+                        cairo_mesh_pattern_begin_patch(mesh);
+                        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+                        
+                        ///make the 1st bezier segment
+                        cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
+                        
+                        ///make the 2nd bezier segment
+                        cairo_mesh_pattern_curve_to(mesh, p1Right.x,p1Right.y,p2Left.x,p2Left.y,p2.x,p2.y);
+                        
+                        ///make the 3rd bezier segment
+                        cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,p3.x,p3.y);
+                        
+                        ///make the last bezier segment to close the pattern
+                        cairo_mesh_pattern_curve_to(mesh, p3Left.x,p3Left.y,p0Right.x,p0Right.y,p0.x,p0.y);
+                        
+                        ///Set the 4 corners color
+                        
+                        ///inner is full color
+                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                        
+                        ///outter is faded
+                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
+                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                        
+                        ///inner is full color
+                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+                        
+                        cairo_mesh_pattern_end_patch(mesh);
+                        
+                        ++point;
+                        ++nextPoint;
+                        ++fpoint;
+                        ++nextFPoint;
+                        
+                    }
+                }
+                ///2nd pass, draw the feather using the pattern previously defined
+                preFillIt = preComputedFeatherPoints.begin();
+                
+                
+                Point initFp = *preComputedFeatherPoints.rbegin();
+                
+                
+                cairo_new_path(cr);
+                cairo_move_to(cr, initFp.x, initFp.y);
+                
+                while (preFillIt != preComputedFeatherPoints.end()) {
+                    
+                    Point right,nextLeft,next;
+                    right = *preFillIt++;
+                    assert(preFillIt != preComputedFeatherPoints.end());
+                    nextLeft = *preFillIt++;
+                    assert(preFillIt != preComputedFeatherPoints.end());
+                    next = *preFillIt++;
+                    
+                    cairo_curve_to(cr,right.x,right.y,nextLeft.x,nextLeft.y,next.x,next.y);
+                    
+                }
+                
+
+            }
+            
+            
+            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+            cairo_set_source(cr, mesh);
+    
+                       ///paint with the feather with the pattern as a mask
+            cairo_mask(cr, mesh);
+            
             cairo_pattern_destroy(mesh);
 
             

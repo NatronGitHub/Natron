@@ -294,8 +294,8 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
                                       Natron::StandardButton defaultButton = Natron::NoButton);
 
 template <class K>
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder, const std::string &description, int dimension = 1){
-    return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension);
+    boost::shared_ptr<K> createKnob(KnobHolder*  holder, const std::string &description, int dimension = 1,bool declaredByPlugin = true){
+    return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension,declaredByPlugin);
 }
     
 inline bool getImageFromCache(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,

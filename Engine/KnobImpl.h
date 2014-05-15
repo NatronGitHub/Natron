@@ -26,8 +26,8 @@
 ///template specializations
 
 template <typename T>
-Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension )
-    : KnobHelper(holder,description,dimension)
+Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension,bool declaredByPlugin )
+    : KnobHelper(holder,description,dimension,declaredByPlugin)
     , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)
     , _defaultValues(dimension)

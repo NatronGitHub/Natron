@@ -558,9 +558,20 @@ public:
         KEYFRAME_ADDED
     };
     
-    KnobHelper(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    /**
+     * @brief Creates a new Knob that belongs to the given holder, with the given description.
+     * The name of the knob will be equal to the description, you can change it by calling setName()
+     * The dimension parameter indicates how many dimension the knob should have.
+     * If declaredByPlugin is false then Natron will never call onKnobValueChanged on the holder.
+     **/
+    KnobHelper(KnobHolder*  holder,const std::string& description,int dimension = 1,bool declaredByPlugin = true);
     
     virtual ~KnobHelper();
+    
+    /**
+     * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
+     **/
+    bool isDeclaredByPlugin() const;
     
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.
@@ -745,7 +756,7 @@ public:
      * its interface) and with the given dimension. The dimension parameter is used for example for the
      * Color_Knob which has 4 doubles (r,g,b,a), hence 4 dimensions.
      **/
-    Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
+    Knob(KnobHolder*  holder,const std::string& description,int dimension = 1,bool declaredByPlugin = true);
     
     virtual ~Knob() {}
     
@@ -903,7 +914,7 @@ class AnimatingString_KnobHelper : public Knob<std::string>
 {
 public:
     
-    AnimatingString_KnobHelper(KnobHolder* holder, const std::string &description, int dimension);
+    AnimatingString_KnobHelper(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true);
     
     virtual ~AnimatingString_KnobHelper();
     

@@ -130,6 +130,36 @@ struct BezierPrivate
         std::advance(it, index);
         return it;
     }
+    
+    BezierCPs::const_iterator findControlPointNearby(double x,double y,double acceptance,int time,int* index) const
+    {
+         // PRIVATE - should not lock
+        int i = 0;
+        for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it,++i) {
+            double pX,pY;
+            (*it)->getPositionAtTime(time, &pX, &pY);
+            if (pX >= (x - acceptance) && pX <= (x + acceptance) && pY >= (y - acceptance) && pY <= (y + acceptance)) {
+                *index = i;
+                return it;
+            }
+        }
+        return points.end();
+    }
+    
+    BezierCPs::const_iterator findFeatherPointNearby(double x,double y,double acceptance,int time,int* index) const
+    {
+         // PRIVATE - should not lock
+        int i = 0;
+        for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it,++i) {
+            double pX,pY;
+            (*it)->getPositionAtTime(time, &pX, &pY);
+            if (pX >= (x - acceptance) && pX <= (x + acceptance) && pY >= (y - acceptance) && pY <= (y + acceptance)) {
+                *index = i;
+                return it;
+            }
+        }
+        return featherPoints.end();
+    }
 };
 
 class RotoLayer;
@@ -186,11 +216,11 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<Bool_Knob> inverted; //< invert the rendering
     
     RotoDrawableItemPrivate()
-    : opacity(new Double_Knob(NULL,"Opacity",1))
-    , feather(new Int_Knob(NULL,"Feather",1))
-    , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1))
-    , activated(new Bool_Knob(NULL,"Activated",1))
-    , inverted(new Bool_Knob(NULL,"Inverted",1))
+    : opacity(new Double_Knob(NULL,"Opacity",1,false))
+    , feather(new Int_Knob(NULL,"Feather",1,false))
+    , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1,false))
+    , activated(new Bool_Knob(NULL,"Activated",1,false))
+    , inverted(new Bool_Knob(NULL,"Inverted",1,false))
     {
         opacity->populate();
         opacity->setDefaultValue(1.);
@@ -279,32 +309,32 @@ struct RotoContextPrivate
         
         assert(n && n->getLiveInstance());
         Natron::EffectInstance* effect = n->getLiveInstance();
-        opacity = Natron::createKnob<Double_Knob>(effect, "Opacity");
+        opacity = Natron::createKnob<Double_Knob>(effect, "Opacity",1,false);
         opacity->setHintToolTip("Controls the opacity of the selected shape(s).");
         opacity->setMinimum(0.);
         opacity->setMaximum(1.);
         opacity->setDefaultValue(1.);
         opacity->setAllDimensionsEnabled(false);
-        feather = Natron::createKnob<Int_Knob>(effect,"Feather");
+        feather = Natron::createKnob<Int_Knob>(effect,"Feather",1,false);
         feather->setHintToolTip("Controls the distance of feather (in pixels) to add around the selected shape(s)");
         feather->setMinimum(-100);
         feather->setMaximum(100);
         feather->setDefaultValue(0);
         feather->setAllDimensionsEnabled(false);
-        featherFallOff = Natron::createKnob<Double_Knob>(effect, "Feather fall-off");
+        featherFallOff = Natron::createKnob<Double_Knob>(effect, "Feather fall-off",1,false);
         featherFallOff->setHintToolTip("Controls the rate at which the feather is applied on the selected shape(s).");
         featherFallOff->setMinimum(0.2);
         featherFallOff->setMaximum(5.);
         featherFallOff->setDefaultValue(1.);
         featherFallOff->setAllDimensionsEnabled(false);
-        activated = Natron::createKnob<Bool_Knob>(effect,"Activated");
+        activated = Natron::createKnob<Bool_Knob>(effect,"Activated",1,false);
         activated->setHintToolTip("Controls whether the selected shape(s) should be visible and rendered or not."
                                   "Note that you can animate this parameter so you can activate/deactive the shape "
                                   "throughout the time.");
         activated->turnOffNewLine();
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
-        inverted = Natron::createKnob<Bool_Knob>(effect, "Inverted");
+        inverted = Natron::createKnob<Bool_Knob>(effect, "Inverted",1,false);
         inverted->setHintToolTip("Controls whether the selected shape(s) should be inverted. When inverted everything "
                                  "outside the shape will be set to 1 and everything inside the shape will be set to 0.");
         inverted->setDefaultValue(false);

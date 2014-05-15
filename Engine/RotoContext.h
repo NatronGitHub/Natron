@@ -581,13 +581,20 @@ public:
      **/
     const std::list< boost::shared_ptr<BezierCP> >& getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
+    
+    enum ControlPointSelectionPref
+    {
+        FEATHER_FIRST = 0,
+        CONTROL_POINT_FIRST,
+        WHATEVER_FIRST
+    };
     /**
      * @brief Returns a pointer to a nearby control point if any. This function  also returns the feather point
      * The first member is the actual point nearby, and the second the counter part (i.e: either the feather point
      * if the first is a control point, or the other way around).
      **/
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-    isNearbyControlPoint(double x,double y,double acceptance,int* index) const;
+    isNearbyControlPoint(double x,double y,double acceptance,ControlPointSelectionPref pref,int* index) const;
     
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
@@ -644,7 +651,7 @@ public:
      **/
     static Natron::Point expandToFeatherDistance(const Natron::Point& cp, //< the point
                                          Natron::Point* fp, //< the feather point
-                                         int featherDistance, //< feather distance
+                                         double featherDistance, //< feather distance
                                          const std::list<Natron::Point>& featherPolygon, //< the polygon of the bezier
                                          const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
                                          const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
@@ -653,8 +660,7 @@ public:
                                          std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                          std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
                                          std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
-    
-    
+        
     static void precomputePointInPolygonTables(const std::list<Natron::Point>& polygon,
                                                std::vector<double>* constants,
                                                std::vector<double>* multiples);
@@ -663,7 +669,8 @@ public:
     static bool pointInPolygon(const Natron::Point& p,const std::list<Natron::Point>& polygon,
                                const std::vector<double>& constants,
                                const std::vector<double>& multiples,
-                               const RectD& featherPolyBBox);
+                               const RectD& featherPolyBBox,
+                               double tolerance = 0.1);
     
     /**
      * @brief Must be implemented by the derived class to save the state into

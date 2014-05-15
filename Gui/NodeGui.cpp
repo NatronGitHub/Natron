@@ -674,13 +674,13 @@ void NodeGui::initializeKnobs(){
 
 void NodeGui::setVisibleSettingsPanel(bool b){
     if(_settingsPanel){
-        _settingsPanel->setVisible(b);
+        _settingsPanel->setClosed(!b);
     }
 }
 
 bool NodeGui::isSettingsPanelVisible() const{
     if(_settingsPanel){
-        return _settingsPanel->isVisible();
+        return !_settingsPanel->isClosed();
     }else{
         return false;
     }

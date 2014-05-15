@@ -68,8 +68,8 @@ public:
     
     ///function called by EffectInstance to create a knob
     template <class K>
-    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1){
-        return appPTR->getKnobFactory().createKnob<K>(getLiveInstance(),description,dimension);
+    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1,bool declaredByPlugin = true){
+        return appPTR->getKnobFactory().createKnob<K>(getLiveInstance(),description,dimension,declaredByPlugin);
     }
     
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have

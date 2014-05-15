@@ -400,7 +400,7 @@ public:
     
     RectD() : x1(0), y1(0), x2(0), y2(0) {}
     
-    RectD(double l, double b, double r, double t) : x1(l), y1(b), x2(r), y2(t) { assert((x2>= x1) && (y2>=y1)); }
+    RectD(double l, double b, double r, double t) : x1(l), y1(b), x2(r), y2(t) { /*assert((x2>= x1) && (y2>=y1));*/ }
     
     RectD(const RectD &b):x1(b.x1),y1(b.y1),x2(b.x2),y2(b.y2) { assert((x2>= x1) && (y2>=y1)); }
     
@@ -429,7 +429,7 @@ public:
         y1 = b;
         x2 = r;
         y2 = t;
-        assert((x2>= x1) && (y2>=y1));
+        /*assert((x2>= x1) && (y2>=y1));*/
     }
     
     

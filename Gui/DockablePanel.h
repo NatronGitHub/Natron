@@ -106,6 +106,8 @@ public:
     
     QWidget* getHeaderWidget() const;
 
+    bool isClosed() const { return _isClosed; }
+    
 public slots:
     
     /*Internal slot, not meant to be called externally.*/
@@ -138,6 +140,8 @@ public slots:
     void onLineEditNameEditingFinished();
     
     void floatPanel();
+    
+    void setClosed(bool c);
 signals:
     
     /*emitted when the panel is clicked*/
@@ -217,6 +221,8 @@ private:
     bool _useScrollAreasForTabs;
     
     HeaderMode _mode;
+    
+    bool _isClosed;
 };
 
 class NodeSettingsPanel : public DockablePanel
