@@ -11,8 +11,10 @@
 
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Variant.h"
 #include "Engine/Curve.h"

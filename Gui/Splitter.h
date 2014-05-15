@@ -13,8 +13,12 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QSplitter>
 #include <QMutex>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 /**
  * @class A thread-safe wrapper over QSplitter

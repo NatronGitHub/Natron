@@ -16,8 +16,10 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include <boost/shared_ptr.hpp>
 

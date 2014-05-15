@@ -17,6 +17,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
 #include <QtCore/QRectF>
 #include <QtCore/QTimer>
@@ -26,6 +27,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMutex>
 #include <QAction>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>

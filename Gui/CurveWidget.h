@@ -17,10 +17,12 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
 #include <QMetaType>
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>

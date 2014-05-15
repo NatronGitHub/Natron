@@ -22,6 +22,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
@@ -39,6 +40,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QComboBox>
 #include <QListView>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 #include "Global/QtCompat.h"

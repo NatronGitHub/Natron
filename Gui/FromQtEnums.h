@@ -16,9 +16,11 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <Qt>
 #include <QMessageBox>
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"

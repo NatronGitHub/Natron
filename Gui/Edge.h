@@ -14,10 +14,12 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include <boost/shared_ptr.hpp>
-#include "Global/Macros.h"
 
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
