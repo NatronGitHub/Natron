@@ -12,11 +12,14 @@ env:
 # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
 # we use the irie/boost ppa for that purpose
 
+# the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
+
 # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
 
 before_install:
   - git submodule update --init --recursive
   - sudo add-apt-repository -y ppa:irie/boost
+  - sudo add-apt-repository -y ppa:xorg-edgers/ppa 
   - if [ "$CC" = "gcc" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
   - if [ "$CC" = "gcc" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
   - if [ "$CC" = "gcc" ]; then git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive) ; fi
