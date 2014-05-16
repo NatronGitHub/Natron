@@ -1935,7 +1935,7 @@ void RotoGui::RotoGuiPrivate::dragFeatherPoint(int time,double dx,double dy)
     RectD featherBBox;
     p->getCurve()->evaluateFeatherPointsAtTime_DeCastelJau(time, 0, 50 , &featherPolygon, true,&featherBBox);
     std::vector<double> constants(featherPolygon.size()),multipliers(featherPolygon.size());
-    
+    Bezier::precomputePointInPolygonTables(featherPolygon, &constants, &multipliers);
     Point delta = Bezier::expandToFeatherDistance(controlPoint, &featherPoint,dragDistance, featherPolygon, constants, multipliers, featherBBox, time, prev, cur, next);
     
     if (context->isAutoKeyingEnabled() || isOnKeyframe) {

@@ -669,8 +669,7 @@ public:
     static bool pointInPolygon(const Natron::Point& p,const std::list<Natron::Point>& polygon,
                                const std::vector<double>& constants,
                                const std::vector<double>& multiples,
-                               const RectD& featherPolyBBox,
-                               double tolerance = 0.1);
+                               const RectD& featherPolyBBox);
     
     /**
      * @brief Must be implemented by the derived class to save the state into

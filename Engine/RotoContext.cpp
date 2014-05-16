@@ -1952,16 +1952,14 @@ void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
                                         int nbPointsPerSegment,std::list< Natron::Point >* points,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
- 
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-        BezierCPs::const_iterator next = it;
-        ++next;
+    BezierCPs::const_iterator next = _imp->points.begin();
+    ++next;
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++next) {
         if (next == _imp->points.end()) {
-            if (_imp->finished) {
-                next = _imp->points.begin();
-            }  else {
+            if (!_imp->finished) {
                 break;
             }
+            next = _imp->points.begin();
         }
         evalBezierSegment(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
     }
@@ -1972,18 +1970,20 @@ void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMa
 {
     QMutexLocker l(&itemMutex);
     BezierCPs::const_iterator itCp = _imp->points.begin();
-    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++itCp) {
-        BezierCPs::const_iterator next = it;
-        BezierCPs::const_iterator nextCp = itCp;
-        ++nextCp;
-        ++next;
+    BezierCPs::const_iterator next = _imp->featherPoints.begin();
+    ++next;
+    BezierCPs::const_iterator nextCp = itCp;
+    ++nextCp;
+    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++itCp,++next,++nextCp) {
+        
+        if (next == _imp->featherPoints.end()) {
+            next = _imp->featherPoints.begin();
+        }
         if (nextCp == _imp->points.end()) {
-            if (_imp->finished) {
-                nextCp = _imp->points.begin();
-                next = _imp->featherPoints.begin();
-            }  else {
+            if (!_imp->finished) {
                 break;
             }
+            nextCp = _imp->points.begin();
         }
         if (!evaluateIfEqual && !areSegmentDifferents(time, **itCp, **nextCp, **it, **next))
         {
@@ -2416,20 +2416,20 @@ void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
 {
     assert(constants->size() == multiples->size() && constants->size() == polygon.size());
     
-    std::list<Point>::const_iterator next = polygon.begin();
-    ++next;
-    int i = 0;
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++i) {
-        if (next == polygon.end()) {
-            next = polygon.begin();
+    std::list<Point>::const_iterator i = polygon.begin();
+    ++i;
+    int index = 0;
+    for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++index) {
+        if (i == polygon.end()) {
+            i = polygon.begin();
         }
-        if (it->y == next->y) {
-            constants->at(i) = 0;
-            multiples->at(i) = 0;
+        if (i->y == j->y) {
+            constants->at(index) = j->x;
+            multiples->at(index) = 0;
         } else {
-            double multiplier = (next->x - it->x) / (next->y - it->y);
-            constants->at(i) = - it->y * multiplier;
-            multiples->at(i) = multiplier;
+            double multiplier = (j->x - i->x) / (j->y - i->y);
+            constants->at(index) = i->x - i->y * multiplier;
+            multiples->at(index) = multiplier;
         }
     }
 }
@@ -2437,8 +2437,7 @@ void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
 bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
                             const std::vector<double>& constants,
                             const std::vector<double>& multiples,
-                            const RectD& featherPolyBBox,
-                            double tolerance) {
+                            const RectD& featherPolyBBox) {
     
     assert(constants.size() == multiples.size() && constants.size() == polygon.size());
     
@@ -2448,18 +2447,18 @@ bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
     }
     
     bool odd = false;
-    std::list<Point>::const_iterator next = polygon.begin();
-    ++next;
+    std::list<Point>::const_iterator i = polygon.begin();
+    ++i;
     std::vector<double>::const_iterator cIt = constants.begin();
     std::vector<double>::const_iterator mIt = multiples.begin();
     
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++next,++cIt,++mIt) {
-        if (next == polygon.end()) {
-            next = polygon.begin();
+    for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++cIt,++mIt) {
+        if (i == polygon.end()) {
+            i = polygon.begin();
         }
-        if ((next->y <= p.y && it->y >= p.y) ||
-            (it->y <= p.y && next->y >= p.y)) {
-            odd ^= (std::abs((p.y * *mIt + *cIt) - p.x) < tolerance);
+        if (((i->y > p.y) != (j->y > p.y)) &&
+            (p.x < (p.y * *mIt + *cIt))) {
+            odd = !odd;
         }
     }
     return odd;
@@ -2509,14 +2508,14 @@ Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
   
             ///normalize derivatives by their norm
             if (norm != 0) {
-                ret.x = -((rightY - leftY) / norm) * featherDistance;
-                ret.y = ((rightX - leftX) / norm) * featherDistance;
+                ret.x = -((rightY - leftY) / norm);
+                ret.y = ((rightX - leftX) / norm);
             } else {
                 ///both derivatives are the same, use the direction of the left one
                 norm = sqrt((leftX - cp.x) * (leftX - cp.x) + (leftY - cp.y) * (leftY - cp.y));
                 if (norm != 0) {
-                    ret.x = -((leftY - cp.y) / norm) * featherDistance;
-                    ret.y = ((leftX - cp.x) / norm) * featherDistance;
+                    ret.x = -((leftY - cp.y) / norm);
+                    ret.y = ((leftX - cp.x) / norm) ;
                 } else {
                     ///both derivatives and control point are equal, just use 0
                     ret.x = ret.y = 0;
@@ -2526,17 +2525,21 @@ Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
             
             ///retrieve the position of the extent of the feather
             ///To retrieve the extent which is in not inside the polygon we test the 2 points
+            
+            ///Note that we're testing with a normalized vector because the polygon could be 1 pixel thin
+            ///and the test would yield wrong results. We multiply by the distance once we've done the test.
             Point extent;
             extent.x = cp.x + ret.x;
             extent.y = cp.y + ret.y;
             
             bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
             if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
-                *fp = extent;
+                //*fp = extent;
+                fp->x = cp.x + ret.x * featherDistance;
+                fp->y = cp.y + ret.y * featherDistance;
             } else {
-                extent.x = cp.x - ret.x;
-                extent.y = cp.y - ret.y;
-                *fp = extent;
+                fp->x = cp.x - ret.x * featherDistance;
+                fp->y = cp.y - ret.y * featherDistance;
             }
         }
     } else {
@@ -3709,15 +3712,18 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 Point p1 = *cur;
                 double norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
                 assert(norm != 0);
-                double dx = - ((next->y - prev->y) / norm) * absFeatherDist;
-                double dy = ((next->x - prev->x) / norm) * absFeatherDist;
+                double dx = - ((next->y - prev->y) / norm);
+                double dy = ((next->x - prev->x) / norm);
                 p1.x = bezIT->x + dx;
                 p1.y = bezIT->y + dy;
                 
                 bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
-                    p1.x = bezIT->x - dx;
-                    p1.y = bezIT->y - dy;
+                    p1.x = bezIT->x - dx * absFeatherDist;
+                    p1.y = bezIT->y - dy * absFeatherDist;
+                } else {
+                    p1.x = bezIT->x + dx * absFeatherDist;
+                    p1.y = bezIT->y + dy * absFeatherDist;
                 }
                 
                 Point origin = p1;
@@ -3754,15 +3760,18 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     if (!mustStop) {
                         norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
                         assert(norm != 0);
-                        dx = - ((next->y - prev->y) / norm) *  absFeatherDist;
-                        dy = ((next->x - prev->x) / norm) *  absFeatherDist;
-                        p2.x = bezIT->x + dx;
-                        p2.y = bezIT->y + dy;
+                        dx = - ((next->y - prev->y) / norm);
+                        dy = ((next->x - prev->x) / norm);
+                        p2.x = cur->x + dx;
+                        p2.y = cur->y + dy;
                         
                         inside = Bezier::pointInPolygon(p2, featherPolygon, constants, multiples, featherPolyBBox);
                         if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
-                            p2.x = bezIT->x - dx;
-                            p2.y = bezIT->y - dy;
+                            p2.x = cur->x - dx * absFeatherDist;
+                            p2.y = cur->y - dy * absFeatherDist;
+                        } else {
+                            p2.x = cur->x + dx * absFeatherDist;
+                            p2.y = cur->y + dy * absFeatherDist;
                         }
                     } else {
                         p2 = origin;
