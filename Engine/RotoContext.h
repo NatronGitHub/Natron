@@ -510,6 +510,8 @@ public:
      **/
     void setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry);
     
+    void clonePoint(BezierCP& p,const BezierCP& to) const;
+    
     /**
      * @brief Removes the feather point at the given index by making it equal the "true" control point.
      **/

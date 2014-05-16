@@ -26,6 +26,7 @@
 #include "Gui/SpinBox.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/NodeGui.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
@@ -1087,4 +1088,11 @@ void TreeWidget::dropEvent(QDropEvent* event)
         droppedRotoItem->setParentLayer(newParentLayer);
     }
     
+}
+
+void RotoPanel::pushUndoCommand(QUndoCommand* cmd)
+{
+    NodeSettingsPanel* panel = _imp->node->getSettingPanel();
+    assert(panel);
+    panel->pushUndoCommand(cmd);
 }

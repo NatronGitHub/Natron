@@ -26,10 +26,12 @@
 
 #include "Gui/FromQtEnums.h"
 #include "Gui/NodeGui.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/RotoUndoCommand.h"
 
 #include "Global/GLIncludes.h"
 
@@ -96,7 +98,7 @@ struct RotoGui::RotoGuiPrivate
     RotoToolButton* selectTool;
     RotoToolButton* pointsEditionTool;
     RotoToolButton* bezierEditionTool;
-    
+
     QAction* selectAllAction;
     
     Roto_Tool selectedTool;
@@ -393,6 +395,21 @@ RotoGui::Roto_Tool RotoGui::getSelectedTool() const
     return _imp->selectedTool;
 }
 
+void RotoGui::setCurrentTool(RotoGui::Roto_Tool tool)
+{
+    QList<QAction*> actions = _imp->selectTool->actions();
+    actions.append(_imp->pointsEditionTool->actions());
+    actions.append(_imp->bezierEditionTool->actions());
+    for (int i = 0; i < actions.size(); ++i) {
+        QPoint data = actions[i]->data().toPoint();
+        if ((RotoGui::Roto_Tool)data.x() == tool) {
+            onToolActionTriggered(actions[i]);
+            return;
+        }
+    }
+    assert(false);
+}
+
 QToolBar* RotoGui::getToolBar() const
 {
     return _imp->toolbar;
@@ -678,6 +695,8 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                         glVertex2f(xF, yF);
                         glVertex2f(beyondX, beyondY);
                         glEnd();
+                        
+                        glColor3d(0.85, 0.67, 0.);
                         
                     } else {
                         ///if the feather point is identical to the control point
@@ -1458,24 +1477,8 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     bool didSomething = false;
     switch (_imp->state) {
         case DRAGGING_CPS:
-#pragma message WARN("Make this a mergeable undo/redo command")
         {
-            for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it!=_imp->selectedCps.end(); ++it) {
-                int index;
-                if (it->first->isFeatherPoint()) {
-                    if (_imp->selectedTool == SELECT_FEATHER_POINTS || _imp->selectedTool == SELECT_ALL) {
-                        index = it->second->getCurve()->getControlPointIndex(it->second);
-                        assert(index != -1);
-                        it->first->getCurve()->moveFeatherByIndex(index,time, dx, dy);
-                    }
-                } else {
-                    if (_imp->selectedTool == SELECT_POINTS || _imp->selectedTool == SELECT_ALL) {
-                        index = it->first->getCurve()->getControlPointIndex(it->first);
-                        assert(index != -1);
-                        it->first->getCurve()->movePointByIndex(index,time, dx, dy);
-                    }
-                }
-            }
+            pushUndoCommand(new MoveControlPointsUndoCommand(this,dx,dy,time));
             _imp->evaluateOnPenUp = true;
             _imp->computeSelectedCpsBBOX();
             didSomething = true;
@@ -1650,6 +1653,13 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     }
     _imp->lastMousePos = pos;
     return didSomething;
+}
+
+void RotoGui::evaluate()
+{
+    _imp->viewer->redraw();
+    _imp->context->evaluateChange();
+    _imp->node->getNode()->getApp()->triggerAutoSave();
 }
 
 bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
@@ -2089,4 +2099,37 @@ void RotoGui::onSelectionChanged(int reason)
         _imp->selectedBeziers = _imp->context->getSelectedCurves();
         _imp->viewer->redraw();
     }
+}
+
+void RotoGui::setSelection(const std::list<boost::shared_ptr<Bezier> >& selectedBeziers,
+                  const std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >& selectedCps)
+{
+    _imp->selectedBeziers = selectedBeziers;
+    _imp->context->select(_imp->selectedBeziers,RotoContext::OVERLAY_INTERACT);
+    _imp->selectedCps = selectedCps;
+    _imp->computeSelectedCpsBBOX();
+}
+
+void RotoGui::getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
+                  std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >* selectedCps)
+{
+    *selectedBeziers = _imp->selectedBeziers;
+    *selectedCps = _imp->selectedCps;
+}
+
+void RotoGui::pushUndoCommand(QUndoCommand* cmd)
+{
+    NodeSettingsPanel* panel = _imp->node->getSettingPanel();
+    assert(panel);
+    panel->pushUndoCommand(cmd);
+}
+
+QString RotoGui::getNodeName() const
+{
+    return _imp->node->getNode()->getName().c_str();
+}
+
+const RotoContext* RotoGui::getContext()
+{
+    return _imp->context.get();
 }

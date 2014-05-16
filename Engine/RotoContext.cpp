@@ -1799,6 +1799,12 @@ void Bezier::setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,
 
 }
 
+void Bezier::clonePoint(BezierCP& p,const BezierCP& to) const
+{
+    QMutexLocker l(&itemMutex);
+    p.clone(to);
+}
+
 void Bezier::removeFeatherAtIndex(int index)
 {
     ///only called on the main-thread

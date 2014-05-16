@@ -18,13 +18,14 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
-
+class Bezier;
 class BezierCP;
+class RotoGui;
 class MoveControlPointsUndoCommand : public QUndoCommand
 {
 public:
     
-    MoveControlPointsUndoCommand();
+    MoveControlPointsUndoCommand(RotoGui* roto,double dx,double dy,int time);
     
     virtual ~MoveControlPointsUndoCommand();
     
@@ -37,8 +38,17 @@ public:
     virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
     
 private:
+        
+    bool _firstRedoCalled; //< false by default
+    RotoGui* _roto;
+    double _dx,_dy;
+    bool _featherLinkEnabled;
+    bool _rippleEditEnabled;
+    int _selectedTool; //< corresponds to the RotoGui::Roto_Tool enum
+    int _time; //< the time at which the change was made
+    std::list<boost::shared_ptr<Bezier> > _selectedCurves;
     
-    std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > > selectedPoints;
+    std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints;
 };
 
 #endif // ROTOUNDOCOMMAND_H

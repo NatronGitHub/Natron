@@ -22,6 +22,7 @@ CLANG_DIAG_ON(uninitialized)
 class QTreeWidgetItem;
 class QWidget;
 class NodeGui;
+class QUndoCommand;
 class RotoItem;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
@@ -39,6 +40,7 @@ public:
     
     boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
     
+    void pushUndoCommand(QUndoCommand* cmd);
 public slots:
     
     void onGoToPrevKeyframeButtonClicked();

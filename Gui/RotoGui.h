@@ -13,7 +13,7 @@
 #define ROTOGUI_H
 
 #include <boost/scoped_ptr.hpp>
-
+#include <boost/shared_ptr.hpp>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -34,10 +34,11 @@ class QPointF;
 class ViewerTab;
 class QAction;
 class RotoItem;
-
+class QUndoCommand;
 class NodeGui;
-
-
+class Bezier;
+class BezierCP;
+class RotoContext;
 class RotoToolButton : public QToolButton
 {
     
@@ -114,6 +115,8 @@ public:
      **/
     RotoGui::Roto_Tool getSelectedTool() const;
     
+    void setCurrentTool(RotoGui::Roto_Tool tool);
+    
     QToolBar* getToolBar() const;
     
     /**
@@ -134,6 +137,34 @@ public:
     bool keyUp(double scaleX,double scaleY,QKeyEvent* e);
     
     bool isStickySelectionEnabled() const;
+    
+    /**
+     * @brief Set the selection to be the given beziers and the given control points. 
+     * This can only be called on the main-thread.
+     **/
+    void setSelection(const std::list<boost::shared_ptr<Bezier> >& selectedBeziers,
+                      const std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >& selectedCps);
+    
+    void getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
+                      std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >* selectedCps);
+    
+    /**
+     * @brief For undo/redo purpose, calling this will do 3 things:
+     * Refresh overlays
+     * Trigger a new render
+     * Trigger an auto-save
+     * Never call this upon the *first* redo() call, we do this already in the user event methods.
+     **/
+    void evaluate();
+    
+    void pushUndoCommand(QUndoCommand* cmd);
+    
+    QString getNodeName() const;
+    
+    /**
+     * @brief This pointer is not meant to be stored away
+     **/
+    const RotoContext* getContext();
     
 signals:
     
