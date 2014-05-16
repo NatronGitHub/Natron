@@ -1314,8 +1314,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 _imp->builtBezier = newCurve;
             } else {
                 
+                _imp->clearCPSSelection();
                 _imp->handleBezierSelection(_imp->builtBezier);
-                
                 
                 ///if the user clicked on a control point of the bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve

@@ -690,6 +690,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
             {
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
                 bool inverted = false;
+                bool invertedSet = false;
                 for (int i = 0; i < selected.size(); ++i) {
                     TreeItems::iterator found = _imp->findItem(selected[i]);
                     assert(found != _imp->items.end());
@@ -699,7 +700,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                         inverted = !invertedKnob->getValueAtTime(time);
                         bool isOnKeyframe = invertedKnob->getKeyFrameIndex(0, time) != -1;
                         inverted = !drawable->getInverted(time);
-                        
+                        invertedSet = true;
                         if (_imp->context->isAutoKeyingEnabled() || isOnKeyframe) {
                             invertedKnob->setValueAtTime(time, inverted, 0);
                         } else {
@@ -708,7 +709,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                         found->treeItem->setIcon(4, inverted ? _imp->iconInverted : _imp->iconUninverted);
                     }
                 }
-                if (!selected.empty()) {
+                if (!selected.empty() && invertedSet) {
                     _imp->context->getInvertedKnob()->setValueAtTime(time, inverted, 0);
                 
                 }
