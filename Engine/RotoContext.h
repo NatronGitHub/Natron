@@ -179,7 +179,6 @@ class RotoLayer;
 struct RotoItemPrivate;
 class RotoItem : public QObject
 {
-    Q_OBJECT
     
 public:
     
@@ -210,9 +209,7 @@ public:
     bool getLocked() const;
     
     bool isLockedRecursive() const;
-    
-    void emitLockedChanged();
-    
+        
     /**
      * @brief Returns at which hierarchy level the item is.
      * The base layer is 0.
@@ -882,7 +879,7 @@ public:
     
     RotoLayer* getDeepestSelectedLayer() const;
 
-    
+    void onItemLockedChanged(RotoItem* item);
 signals:
     
     /**
@@ -909,7 +906,6 @@ public slots:
     
     void onRippleEditChanged(bool enabled);
     
-    void onItemLockedChanged();
         
 private:
     

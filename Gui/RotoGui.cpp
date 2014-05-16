@@ -1666,6 +1666,7 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 #pragma message WARN("Make this an  undo/redo command")
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->selectedCps.empty()) {
+            std::list < Bezier* > beziersToRemove;
             for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it != _imp->selectedCps.end(); ++it) {
                 Bezier* curve = it->first->getCurve();
                 if (it->first->isFeatherPoint()) {
@@ -1677,15 +1678,17 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
                 if (cpCount == 1) {
                     curve->setCurveFinished(false);
                 } else if (cpCount == 0) {
-                    
-                    ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeItem(curve);
+                    beziersToRemove.push_back(curve);
                     if (curve == _imp->builtBezier.get()) {
                         _imp->builtBezier.reset();
                     }
                 }
-                
             }
+            for (std::list < Bezier* > ::iterator it = beziersToRemove.begin(); it != beziersToRemove.end(); ++it) {
+                ///clear the shared pointer so the bezier gets deleted
+                _imp->context->removeItem(*it);
+            }
+            
             _imp->selectedCps.clear();
             _imp->computeSelectedCpsBBOX();
             _imp->node->getNode()->getApp()->triggerAutoSave();

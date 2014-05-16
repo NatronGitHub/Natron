@@ -580,8 +580,11 @@ void RotoItem::isDeactivatedRecursive(bool* ret) const
 void RotoItem::setLocked_recursive(bool locked)
 {
     {
-        QMutexLocker m(&itemMutex);
-        _imp->locked = locked;
+        {
+            QMutexLocker m(&itemMutex);
+            _imp->locked = locked;
+        }
+        getContext()->onItemLockedChanged(this);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems& children = layer->getItems();
@@ -596,8 +599,11 @@ void RotoItem::setLocked(bool l,bool lockChildren){
     ///called on the main-thread only
     assert(QThread::currentThread() == qApp->thread());
     if (!lockChildren) {
-        QMutexLocker m(&itemMutex);
-        _imp->locked = l;
+        {
+            QMutexLocker m(&itemMutex);
+            _imp->locked = l;
+        }
+        getContext()->onItemLockedChanged(this);
     } else {
         setLocked_recursive(l);
     }
@@ -1407,7 +1413,14 @@ void Bezier::removeControlPointByIndex(int index)
     assert(QThread::currentThread() == qApp->thread());
     
     QMutexLocker l(&itemMutex);
-    BezierCPs::iterator it = _imp->atIndex(index);
+    
+    BezierCPs::iterator it;
+    try {
+        it = _imp->atIndex(index);
+    } catch (...) {
+        ///attempt to remove an unexsiting point
+        return;
+    }
     _imp->points.erase(it);
     
     BezierCPs::iterator itF = _imp->featherPoints.begin();
@@ -3022,11 +3035,12 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
     assert(!_imp->rotoContextMutex.tryLock());
     
-    int nbBeziers = 0;
+    int nbUnlockedBeziers = 0;
     bool foundItem = false;
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        if (dynamic_cast<Bezier*>(it->get())) {
-            ++nbBeziers;
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier && !isBezier->isLockedRecursive()) {
+            ++nbUnlockedBeziers;
         }
         if (it->get() == item.get()) {
             foundItem = true;
@@ -3045,7 +3059,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
     if (isBezier) {
         
-        ++nbBeziers;
+        if (!isBezier->isLockedRecursive()) {
+            ++nbUnlockedBeziers;
+        }
         ///first-off set the context knobs to the value of this bezier
         boost::shared_ptr<KnobI> activated = isBezier->getActivatedKnob();
         boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
@@ -3073,7 +3089,7 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         }
     }
     
-    if (nbBeziers > 0) {
+    if (nbUnlockedBeziers > 0) {
         ///enable the knobs
         _imp->activated->setAllDimensionsEnabled(true);
         _imp->opacity->setAllDimensionsEnabled(true);
@@ -3084,7 +3100,7 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
     ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
     ///(maybe black or something)
-    if (nbBeziers >= 2) {
+    if (nbUnlockedBeziers >= 2) {
         _imp->activated->setDirty(true);
         _imp->opacity->setDirty(true);
         _imp->feather->setDirty(true);
@@ -3138,14 +3154,15 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
             deselectInternal(*it);
         }
     }
-    int nbBeziers = 0;
+    int nbBeziersUnLockedBezier = 0;
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        if (dynamic_cast<Bezier*>(it->get())) {
-            ++nbBeziers;
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier && !isBezier->isLockedRecursive()) {
+            ++nbBeziersUnLockedBezier;
         }
     }
     
-    if (nbBeziers <= 1) {
+    if (nbBeziersUnLockedBezier <= 1) {
         _imp->activated->setDirty(false);
         _imp->opacity->setDirty(false);
         _imp->feather->setDirty(false);
@@ -3154,7 +3171,7 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
     }
     
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
-    if (nbBeziers == 0) {
+    if (nbBeziersUnLockedBezier == 0) {
         _imp->activated->setAllDimensionsEnabled(false);
         _imp->opacity->setAllDimensionsEnabled(false);
         _imp->featherFallOff->setAllDimensionsEnabled(false);
@@ -3466,12 +3483,43 @@ U64 RotoContext::getAge()
     return _imp->age;
 }
 
-void RotoContext::onItemLockedChanged()
+void RotoContext::onItemLockedChanged(RotoItem* item)
 {
-    RotoItem* item = qobject_cast<RotoItem*>(sender());
-    if (item) {
-        emit itemLockedChanged();
+    assert(item);
+    ///refresh knobs
+    int nbBeziersUnLockedBezier = 0;
+    
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        
+        for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+            Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+            if (isBezier && !isBezier->isLockedRecursive()) {
+                ++nbBeziersUnLockedBezier;
+            }
+        }
+        
     }
+    bool dirty = nbBeziersUnLockedBezier > 1;
+    bool enabled = nbBeziersUnLockedBezier > 0;
+    
+    _imp->activated->setDirty(dirty);
+    _imp->opacity->setDirty(dirty);
+    _imp->feather->setDirty(dirty);
+    _imp->featherFallOff->setDirty(dirty);
+    _imp->inverted->setDirty(dirty);
+    
+    _imp->activated->setAllDimensionsEnabled(enabled);
+    _imp->opacity->setAllDimensionsEnabled(enabled);
+    _imp->featherFallOff->setAllDimensionsEnabled(enabled);
+    _imp->feather->setAllDimensionsEnabled(enabled);
+    _imp->inverted->setAllDimensionsEnabled(enabled);
+    
+    
+    
+    
+    emit itemLockedChanged();
+    
 }
 
 static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)

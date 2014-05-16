@@ -207,6 +207,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::DOUBLE_SPINBOX);
     _imp->currentKeyframe->setEnabled(false);
+    _imp->currentKeyframe->setReadOnly(true);
     _imp->currentKeyframe->setToolTip("The current keyframe for the selected shape(s)");
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
     
@@ -216,6 +217,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::INT_SPINBOX);
     _imp->totalKeyframes->setEnabled(false);
+    _imp->totalKeyframes->setReadOnly(true);
     _imp->totalKeyframes->setToolTip("The keyframe count for all the shapes.");
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
     
@@ -645,8 +647,8 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 for (int i = 0; i < selected.size(); ++i) {
                     TreeItems::iterator found = _imp->findItem(selected[i]);
                     assert(found != _imp->items.end());
-                    found->rotoItem->setLocked(locked,true);
                     _imp->context->setLastItemLocked(found->rotoItem);
+                    found->rotoItem->setLocked(locked,true);
                     _imp->setChildrenLockedRecursively(locked, found->treeItem);
                 }
                 

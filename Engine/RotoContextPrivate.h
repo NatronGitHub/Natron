@@ -109,7 +109,7 @@ struct BezierPrivate
     {
         // PRIVATE - should not lock
         
-        if (index >= (int)points.size()) {
+        if (index >= (int)points.size() || index < 0) {
             throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
         }
         
@@ -122,7 +122,7 @@ struct BezierPrivate
     {
         // PRIVATE - should not lock
         
-        if (index >= (int)points.size()) {
+        if (index >= (int)points.size() || index < 0) {
             throw std::out_of_range("RotoSpline::atIndex: non-existent control point");
         }
         
