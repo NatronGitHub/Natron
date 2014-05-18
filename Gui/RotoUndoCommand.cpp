@@ -273,7 +273,6 @@ void RemovePointUndoCommand::redo()
     }
     
     std::list<Bezier*> toRemove;
-    std::list<BezierPtr> toSelect;
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
         
         ///Remove in decreasing order so indexes don't get messed up
@@ -289,13 +288,6 @@ void RemovePointUndoCommand::redo()
                     toRemove.push_back(it->curve.get());
                 }
             }
-            if (cpCount > 0) {
-                std::list<BezierPtr>::iterator foundSelect = std::find(toSelect.begin(), toSelect.end(), it->curve);
-                if (foundSelect == toSelect.end()) {
-                    toSelect.push_back(it->curve);
-                }
-            }
-            
         }
     }
    
@@ -305,7 +297,7 @@ void RemovePointUndoCommand::redo()
 
 
 
-    _roto->setSelection(toSelect,SelectedCpList());
+    _roto->setSelection(BezierPtr(),std::make_pair(CpPtr(), CpPtr()));
     _roto->evaluate(_firstRedoCalled);
     _firstRedoCalled = true;
 
@@ -357,7 +349,7 @@ void RemoveCurveUndoCommand::redo()
         _roto->removeCurve(it->curve.get());
     }
     _roto->evaluate(_firstRedoCalled);
-    
+    _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
     _firstRedoCalled = true;
     setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
 }
