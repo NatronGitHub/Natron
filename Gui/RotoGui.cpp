@@ -1289,16 +1289,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case DRAW_ELLIPSE:
         {
-#pragma message WARN("Make this an undo/redo command")
-            _imp->builtBezier = _imp->context->makeBezier(pos.x(), pos.y(),kRotoEllipseBaseName);
-            _imp->builtBezier->getControlPointAtIndex(0);
-            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-            _imp->builtBezier->setCurveFinished(true);
-            _imp->evaluateOnPenUp = true;
-            _imp->handleBezierSelection(_imp->builtBezier);
-            if (_imp->modifiers.testFlag(Natron::ControlModifier)) {
+            bool fromCenter = _imp->modifiers.testFlag(Natron::ControlModifier);
+            pushUndoCommand(new MakeEllipseUndoCommand(this,true,fromCenter,pos.x(),pos.y(),time));
+            if (fromCenter) {
                 _imp->state = BULDING_ELLIPSE_CENTER;
             } else {
                 _imp->state = BUILDING_ELLIPSE;
@@ -1308,13 +1301,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         }   break;
         case DRAW_RECTANGLE:
         {
-            boost::shared_ptr<Bezier> curve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoRectangleBaseName);
-            curve->addControlPoint(pos.x(), pos.y());
-            curve->addControlPoint(pos.x(), pos.y());
-            curve->addControlPoint(pos.x(), pos.y());
-            curve->setCurveFinished(true);
+            pushUndoCommand(new MakeRectangleUndoCommand(this,true,pos.x(),pos.y(),time));
             _imp->evaluateOnPenUp = true;
-            _imp->handleBezierSelection(curve);
             _imp->state = BUILDING_RECTANGLE;
             didSomething = true;
         }   break;
@@ -1394,96 +1382,20 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         }   break;
         case BUILDING_ELLIPSE:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            assert(_imp->builtBezier);
+            pushUndoCommand(new MakeEllipseUndoCommand(this,false,false,dx,dy,time));
             
-            boost::shared_ptr<BezierCP> top = _imp->builtBezier->getControlPointAtIndex(0);
-            boost::shared_ptr<BezierCP> right = _imp->builtBezier->getControlPointAtIndex(1);
-            boost::shared_ptr<BezierCP> bottom = _imp->builtBezier->getControlPointAtIndex(2);
-            boost::shared_ptr<BezierCP> left = _imp->builtBezier->getControlPointAtIndex(3);
-            
-            //top only moves by x
-            _imp->builtBezier->movePointByIndex(0,time, dx / 2., 0);
-            
-            //right
-            _imp->builtBezier->movePointByIndex(1,time, dx, dy / 2.);
-            
-            //bottom
-            _imp->builtBezier->movePointByIndex(2,time, dx / 2., dy );
-            
-            //left only moves by y
-            _imp->builtBezier->movePointByIndex(3,time, 0, dy / 2.);
-            
-            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-            top->getPositionAtTime(time, &topX, &topY);
-            right->getPositionAtTime(time, &rightX, &rightY);
-            bottom->getPositionAtTime(time, &btmX, &btmY);
-            left->getPositionAtTime(time, &leftX, &leftY);
-            
-            _imp->builtBezier->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
-            _imp->builtBezier->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
-            
-            _imp->builtBezier->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
-            
-            _imp->builtBezier->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
-            _imp->builtBezier->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
-            
-            _imp->builtBezier->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
-            
-
             didSomething = true;
             _imp->evaluateOnPenUp = true;
         }   break;
         case BULDING_ELLIPSE_CENTER:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            assert(_imp->builtBezier);
-            
-            boost::shared_ptr<BezierCP> top = _imp->builtBezier->getControlPointAtIndex(0);
-            boost::shared_ptr<BezierCP> right = _imp->builtBezier->getControlPointAtIndex(1);
-            boost::shared_ptr<BezierCP> bottom = _imp->builtBezier->getControlPointAtIndex(2);
-            boost::shared_ptr<BezierCP> left = _imp->builtBezier->getControlPointAtIndex(3);
-            
-            //top only moves by x
-            _imp->builtBezier->movePointByIndex(0,time, 0, dy);
-            
-            //right
-            _imp->builtBezier->movePointByIndex(1,time, dx , 0);
-            
-            //bottom
-            _imp->builtBezier->movePointByIndex(2,time, 0., -dy );
-            
-            //left only moves by y
-            _imp->builtBezier->movePointByIndex(3,time, -dx, 0);
-            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-            top->getPositionAtTime(time, &topX, &topY);
-            right->getPositionAtTime(time, &rightX, &rightY);
-            bottom->getPositionAtTime(time, &btmX, &btmY);
-            left->getPositionAtTime(time, &leftX, &leftY);
-            
-            _imp->builtBezier->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
-            _imp->builtBezier->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
-            
-            _imp->builtBezier->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
-            
-            _imp->builtBezier->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
-            _imp->builtBezier->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
-            
-            _imp->builtBezier->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
+            pushUndoCommand(new MakeEllipseUndoCommand(this,false,true,dx,dy,time));
+            _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case BUILDING_RECTANGLE:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            assert(_imp->selectedBeziers.size() == 1);
-            boost::shared_ptr<Bezier>& curve = _imp->selectedBeziers.front();
-            curve->movePointByIndex(1,time, dx, 0);
-            curve->movePointByIndex(2,time, dx, dy);
-            curve->movePointByIndex(3,time, 0, dy);
+            pushUndoCommand(new MakeRectangleUndoCommand(this,false,dx,dy,time));
             didSomething = true;
             _imp->evaluateOnPenUp = true;
         }   break;
@@ -1557,7 +1469,6 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
     bool didSomething = false;
     _imp->modifiers = QtEnumConvert::fromQtModifiers(e->modifiers());
     if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
-#pragma message WARN("Make this an  undo/redo command")
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->selectedCps.empty()) {
             pushUndoCommand(new RemovePointUndoCommand(this,_imp->selectedCps));
@@ -1568,13 +1479,11 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
         }
         
     } else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
-#pragma message WARN("Make this an  undo/redo command")                            
         if (_imp->selectedTool == DRAW_BEZIER && _imp->builtBezier && !_imp->builtBezier->isCurveFinished()) {
-            _imp->builtBezier->setCurveFinished(true);
+            pushUndoCommand(new OpenCloseUndoCommand(this,_imp->builtBezier));
             _imp->builtBezier.reset();
             _imp->selectedCps.clear();
-            onToolActionTriggered(_imp->selectAllAction);
-            _imp->node->getNode()->getApp()->triggerAutoSave();
+             onToolActionTriggered(_imp->selectAllAction);
             _imp->context->evaluateChange();
             didSomething = true;
         }
@@ -1886,6 +1795,11 @@ void RotoGui::setBuiltBezier(const boost::shared_ptr<Bezier>& curve)
 {
     assert(curve);
     _imp->builtBezier = curve;
+}
+
+boost::shared_ptr<Bezier> RotoGui::getBezierBeingBuild() const
+{
+    return  _imp->builtBezier;
 }
 
 void RotoGui::pushUndoCommand(QUndoCommand* cmd)

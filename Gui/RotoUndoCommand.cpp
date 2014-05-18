@@ -795,6 +795,7 @@ SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,const boost::shared_p
 , _firstRedoCalled(false)
 , _curve(curve)
 , _time(time)
+, _count(1)
 , _cusp(cusp)
 , _oldPoint()
 , _newPoint(point)
@@ -826,15 +827,18 @@ void SmoothCuspUndoCommand::redo()
     
     _curve->clonePoint(*_oldPoint.first, *_newPoint.first);
     _curve->clonePoint(*_oldPoint.second, *_newPoint.second);
-#pragma message WARN("Merge correctly")
-    int index = _curve->getControlPointIndex(_newPoint.first->isFeatherPoint() ? _newPoint.second : _newPoint.first);
-    assert(index != -1);
     
-    if (_cusp) {
-        _curve->cuspPointAtIndex(index, _time);
-    } else {
-        _curve->smoothPointAtIndex(index, _time);
+    for (int i = 0; i < _count; ++i) {
+        int index = _curve->getControlPointIndex(_newPoint.first->isFeatherPoint() ? _newPoint.second : _newPoint.first);
+        assert(index != -1);
+        
+        if (_cusp) {
+            _curve->cuspPointAtIndex(index, _time);
+        } else {
+            _curve->smoothPointAtIndex(index, _time);
+        }
     }
+    
     
     _roto->evaluate(_firstRedoCalled);
     _roto->setSelection(_curve, _newPoint);
@@ -863,6 +867,7 @@ bool SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
         sCmd->_cusp != _cusp || sCmd->_time != _time) {
         return false;
     }
+    ++_count;
     return true;
 }
 
@@ -992,5 +997,245 @@ bool MakeBezierUndoCommand::mergeWith(const QUndoCommand *other)
         _dy += sCmd->_dy;
     }
     
+    return true;
+}
+
+//////////////////////////////
+
+
+MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,bool create,bool fromCenter,double dx,double dy,int time)
+: QUndoCommand()
+, _firstRedoCalled(false)
+, _roto(roto)
+, _newCurve()
+, _curve()
+, _create(create)
+, _fromCenter(fromCenter)
+, _x(dx)
+, _y(dy)
+, _dx(create ? 0 : dx)
+, _dy(create ? 0 : dy)
+, _time(time)
+{
+    if (!_create) {
+        _curve = _roto->getBezierBeingBuild();
+    }
+    
+}
+
+MakeEllipseUndoCommand::~MakeEllipseUndoCommand()
+{
+    
+}
+
+void MakeEllipseUndoCommand::undo() {
+    
+    _roto->removeCurve(_curve.get());
+    _roto->evaluate(true);
+    _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
+    setText(QString("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+void MakeEllipseUndoCommand::redo()
+{
+    if (_firstRedoCalled) {
+        _curve->clone(*_newCurve);
+        _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve);
+        _roto->evaluate(true);
+    } else {
+        if (_create) {
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName);
+            _curve->addControlPoint(_x,_y);
+            _curve->addControlPoint(_x,_y);
+            _curve->addControlPoint(_x,_y);
+            _curve->setCurveFinished(true);
+            _newCurve.reset(new Bezier(*_curve));
+        } else {
+            boost::shared_ptr<BezierCP> top = _curve->getControlPointAtIndex(0);
+            boost::shared_ptr<BezierCP> right = _curve->getControlPointAtIndex(1);
+            boost::shared_ptr<BezierCP> bottom = _curve->getControlPointAtIndex(2);
+            boost::shared_ptr<BezierCP> left = _curve->getControlPointAtIndex(3);
+            if (_fromCenter) {
+                
+                
+                //top only moves by x
+                _curve->movePointByIndex(0,_time, 0, _dy);
+                
+                //right
+                _curve->movePointByIndex(1,_time, _dx , 0);
+                
+                //bottom
+                _curve->movePointByIndex(2,_time, 0., -_dy );
+                
+                //left only moves by y
+                _curve->movePointByIndex(3,_time, -_dx, 0);
+                double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
+                top->getPositionAtTime(_time, &topX, &topY);
+                right->getPositionAtTime(_time, &rightX, &rightY);
+                bottom->getPositionAtTime(_time, &btmX, &btmY);
+                left->getPositionAtTime(_time, &leftX, &leftY);
+                
+                _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
+                _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);
+                
+                _curve->setLeftBezierPoint(1, _time,  rightX, (rightY + topY) / 2.);
+                _curve->setRightBezierPoint(1, _time, rightX, (rightY + btmY) / 2.);
+                
+                _curve->setLeftBezierPoint(2, _time,  (rightX + btmX) / 2., btmY);
+                _curve->setRightBezierPoint(2, _time, (leftX + btmX) / 2., btmY);
+                
+                _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
+                _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
+
+            } else {
+
+                
+                //top only moves by x
+                _curve->movePointByIndex(0,_time, _dx / 2., 0);
+                
+                //right
+                _curve->movePointByIndex(1,_time, _dx, _dy / 2.);
+                
+                //bottom
+                _curve->movePointByIndex(2,_time, _dx / 2., _dy );
+                
+                //left only moves by y
+                _curve->movePointByIndex(3,_time, 0, _dy / 2.);
+                
+                double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
+                top->getPositionAtTime(_time, &topX, &topY);
+                right->getPositionAtTime(_time, &rightX, &rightY);
+                bottom->getPositionAtTime(_time, &btmX, &btmY);
+                left->getPositionAtTime(_time, &leftX, &leftY);
+                
+                _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
+                _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);
+                
+                _curve->setLeftBezierPoint(1, _time,  rightX, (rightY + topY) / 2.);
+                _curve->setRightBezierPoint(1, _time, rightX, (rightY + btmY) / 2.);
+                
+                _curve->setLeftBezierPoint(2, _time,  (rightX + btmX) / 2., btmY);
+                _curve->setRightBezierPoint(2, _time, (leftX + btmX) / 2., btmY);
+                
+                _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
+                _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
+                
+
+            }
+        }
+        _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->
+                                                              getItemByName(_curve->getParentLayer()->getName_mt_safe()));
+        _indexInLayer = _parentLayer->getChildIndex(_curve);
+    }
+    _roto->setBuiltBezier(_curve);
+    _firstRedoCalled = true;
+    _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
+    setText(QString("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+int MakeEllipseUndoCommand::id() const
+{
+    return kRotoMakeEllipseCompressionID;
+}
+
+bool MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const MakeEllipseUndoCommand* sCmd = dynamic_cast<const MakeEllipseUndoCommand*>(other);
+    if (!sCmd) {
+        return false;
+    }
+    if (sCmd->_curve != _curve || sCmd->_create) {
+        return false;
+    }
+    _newCurve->clone(*sCmd->_curve);
+    _dx += sCmd->_dx;
+    _dy += sCmd->_dy;
+    return true;
+}
+
+////////////////////////////////////
+
+
+MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,bool create,double dx,double dy,int time)
+: QUndoCommand()
+, _firstRedoCalled(false)
+, _roto(roto)
+, _parentLayer()
+, _indexInLayer(-1)
+, _newCurve()
+, _curve()
+, _create(create)
+, _x(dx)
+, _y(dy)
+, _dx(create ? 0 : dx)
+, _dy(create ? 0 : dy)
+, _time(time)
+{
+    if (!_create) {
+        _curve = _roto->getBezierBeingBuild();
+    }
+}
+
+MakeRectangleUndoCommand::~MakeRectangleUndoCommand()
+{
+    
+}
+
+void MakeRectangleUndoCommand::undo()
+{
+    _roto->removeCurve(_curve.get());
+    _roto->evaluate(true);
+    _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
+    setText(QString("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+void MakeRectangleUndoCommand::redo()
+{
+    
+    if (_firstRedoCalled) {
+        _curve->clone(*_newCurve);
+        _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve);
+        _roto->evaluate(true);
+    } else {
+        if (_create) {
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName);
+            _curve->addControlPoint(_x,_y);
+            _curve->addControlPoint(_x,_y);
+            _curve->addControlPoint(_x,_y);
+            _curve->setCurveFinished(true);
+            _newCurve.reset(new Bezier(*_curve));
+        } else {
+            _curve->movePointByIndex(1,_time, _dx, 0);
+            _curve->movePointByIndex(2,_time, _dx, _dy);
+            _curve->movePointByIndex(3,_time, 0, _dy);
+        }
+        _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->
+                                                              getItemByName(_curve->getParentLayer()->getName_mt_safe()));
+        _indexInLayer = _parentLayer->getChildIndex(_curve);
+        
+    }
+    _roto->setBuiltBezier(_curve);
+    _firstRedoCalled = true;
+    _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
+    setText(QString("Build Rectangle %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+int MakeRectangleUndoCommand::id() const
+{
+    return kRotoMakeRectangleCompressionID;
+}
+
+bool MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const MakeRectangleUndoCommand* sCmd = dynamic_cast<const MakeRectangleUndoCommand*>(other);
+    if (!sCmd) {
+        return false;
+    }
+    if (sCmd->_curve != _curve || sCmd->_create) {
+        return false;
+    }
+    _newCurve->clone(*sCmd->_curve);
+    _dx += sCmd->_dx;
+    _dy += sCmd->_dy;
     return true;
 }

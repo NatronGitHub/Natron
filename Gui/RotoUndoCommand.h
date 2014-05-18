@@ -294,6 +294,7 @@ private:
     bool _firstRedoCalled;
     boost::shared_ptr<Bezier> _curve;
     int _time;
+    int _count;
     bool _cusp;
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > _oldPoint,_newPoint;
 };
@@ -332,6 +333,69 @@ private:
     double _dx,_dy;
     int _time;
     int _lastPointAdded;
+};
+
+
+class MakeEllipseUndoCommand: public QUndoCommand
+{
+    
+    
+public:
+    
+    MakeEllipseUndoCommand(RotoGui* roto,bool create,bool fromCenter,double dx,double dy,int time);
+    
+    virtual ~MakeEllipseUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+    virtual int id() const OVERRIDE FINAL;
+    
+    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    
+private:
+    bool _firstRedoCalled;
+    RotoGui* _roto;
+    boost::shared_ptr<RotoLayer> _parentLayer;
+    int _indexInLayer;
+    boost::shared_ptr<Bezier> _newCurve,_curve;
+    bool _create;
+    bool _fromCenter;
+    double _x,_y;
+    double _dx,_dy;
+    int _time;
+};
+
+
+class MakeRectangleUndoCommand: public QUndoCommand
+{
+    
+    
+public:
+    
+    MakeRectangleUndoCommand(RotoGui* roto,bool create,double dx,double dy,int time);
+    
+    virtual ~MakeRectangleUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+    virtual int id() const OVERRIDE FINAL;
+    
+    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    
+private:
+    bool _firstRedoCalled;
+    RotoGui* _roto;
+    boost::shared_ptr<RotoLayer> _parentLayer;
+    int _indexInLayer;
+    boost::shared_ptr<Bezier> _newCurve,_curve;
+    bool _create;
+    double _x,_y;
+    double _dx,_dy;
+    int _time;
 };
 
 #endif // ROTOUNDOCOMMAND_H

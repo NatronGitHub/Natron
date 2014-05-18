@@ -152,6 +152,8 @@ public:
     
     void setBuiltBezier(const boost::shared_ptr<Bezier>& curve);
     
+    boost::shared_ptr<Bezier> getBezierBeingBuild() const;
+    
     /**
      * @brief For undo/redo purpose, calling this will do 3 things:
      * Refresh overlays
