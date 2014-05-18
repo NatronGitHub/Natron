@@ -494,9 +494,9 @@ void MoveTangentUndoCommand::redo()
     
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
+        _roto->evaluate(true);
     }
     
-    _roto->evaluate(_firstRedoCalled);
     
     _firstRedoCalled = true;
     
@@ -660,8 +660,10 @@ void MoveFeatherBarUndoCommand::redo()
                                         rightX + delta.x, rightY + delta.y);
         
     }
+    if (_firstRedoCalled) {
+        _roto->evaluate(true);
+    }
     
-    _roto->evaluate(_firstRedoCalled);
     _roto->setSelection(_curve, _newPoint);
     
     _firstRedoCalled = true;

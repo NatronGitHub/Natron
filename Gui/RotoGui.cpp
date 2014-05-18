@@ -1491,16 +1491,20 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         {
             assert(_imp->tangentBeingDragged);
             pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->tangentBeingDragged,true));
+            _imp->evaluateOnPenUp = true;
+            didSomething = true;
         }   break;
         case DRAGGING_RIGHT_TANGENT:
         {
             assert(_imp->tangentBeingDragged);
             pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->tangentBeingDragged,false));
+            _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case DRAGGING_FEATHER_BAR:
         {
             pushUndoCommand(new MoveFeatherBarUndoCommand(this,dx,dy,_imp->featherBarBeingDragged,time));
+            _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case NONE:
