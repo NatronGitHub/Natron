@@ -1039,42 +1039,6 @@ void RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost:
 
 }
 
-namespace {
-
-static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying)
-{
-    double leftX,leftY,rightX,rightY,x,y;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY);
-    p.getRightBezierPointAtTime(time, &rightX, &rightY);
-    p.getPositionAtTime(time, &x, &y);
-    double dist = left ?  sqrt((rightX - x) * (rightX - x) + (rightY - y) * (rightY - y))
-    : sqrt((leftX - x) * (leftX - x) + (leftY - y) * (leftY - y));
-    if (left) {
-        leftX += dx;
-        leftY += dy;
-    } else {
-        rightX += dx;
-        rightY += dy;
-    }
-    double alpha = left ? std::atan2(y - leftY,x - leftX) : std::atan2(y - rightY,x - rightX);
-    
-    if (left) {
-        rightX = std::cos(alpha) * dist;
-        rightY = std::sin(alpha) * dist;
-        if (autoKeying || isOnKeyframe) {
-            p.getCurve()->setPointLeftAndRightIndex(p, time, leftX, leftY, x + rightX, y + rightY);
-        }
-    } else {
-        leftX = std::cos(alpha) * dist;
-        leftY = std::sin(alpha) * dist;
-        if (autoKeying || isOnKeyframe) {
-            p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
-        }
-    }
-    
-}
-
-}
 
 
 bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& pos)
@@ -1577,48 +1541,13 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         }   break;
         case DRAGGING_LEFT_TANGENT:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
             assert(_imp->tangentBeingDragged);
-            bool autoKeying = _imp->context->isAutoKeyingEnabled();
-            dragTangent(time, *_imp->tangentBeingDragged, dx, dy, true,autoKeying);
-            
-            if (_imp->context->isFeatherLinkEnabled()) {
-                boost::shared_ptr<BezierCP> counterPart;
-                if (_imp->tangentBeingDragged->isFeatherPoint()) {
-                    counterPart = _imp->tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_imp->tangentBeingDragged);
-                } else {
-                    counterPart = _imp->tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_imp->tangentBeingDragged);
-                }
-                assert(counterPart);
-                
-                dragTangent(time, *counterPart, dx, dy, true,autoKeying);
-            }
-            
-            _imp->computeSelectedCpsBBOX();
-            _imp->evaluateOnPenUp = true;
-            didSomething = true;
+            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->tangentBeingDragged,true));
         }   break;
         case DRAGGING_RIGHT_TANGENT:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
             assert(_imp->tangentBeingDragged);
-            
-            bool autoKeying = _imp->context->isAutoKeyingEnabled();
-            dragTangent(time, *_imp->tangentBeingDragged, dx, dy, false,autoKeying);
-            
-            if (_imp->context->isFeatherLinkEnabled()) {
-                boost::shared_ptr<BezierCP> counterPart;
-                if (_imp->tangentBeingDragged->isFeatherPoint()) {
-                    counterPart = _imp->tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_imp->tangentBeingDragged);
-                } else {
-                    counterPart = _imp->tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_imp->tangentBeingDragged);
-                }
-                assert(counterPart);
-                dragTangent(time, *counterPart, dx, dy, false,autoKeying);
-            }
-           
-            _imp->computeSelectedCpsBBOX();
-            _imp->evaluateOnPenUp = true;
+            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->tangentBeingDragged,false));
             didSomething = true;
         }   break;
         case DRAGGING_FEATHER_BAR:

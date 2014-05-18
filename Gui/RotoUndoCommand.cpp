@@ -355,3 +355,163 @@ void RemoveCurveUndoCommand::redo()
     
     setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
 }
+
+////////////////////////////////
+
+MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,double dx,double dy,int time,const boost::shared_ptr<BezierCP>& cp,bool left)
+: QUndoCommand()
+, _firstRedoCalled(false)
+, _roto(roto)
+, _dx(dx)
+, _dy(dy)
+, _featherLinkEnabled(roto->getContext()->isFeatherLinkEnabled())
+, _rippleEditEnabled(roto->getContext()->isRippleEditEnabled())
+, _time(time)
+, _tangentBeingDragged(cp)
+, _oldCp()
+, _oldFp()
+, _left(left)
+{
+    roto->getSelection(&_selectedCurves, &_selectedPoints);
+    boost::shared_ptr<BezierCP> counterPart;
+    if (cp->isFeatherPoint()) {
+        counterPart = _tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        _oldCp.reset(new BezierCP(*counterPart));
+        _oldFp.reset(new BezierCP(*_tangentBeingDragged));
+    } else {
+        counterPart = _tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        _oldCp.reset(new BezierCP(*_tangentBeingDragged));
+        _oldFp.reset(new BezierCP(*counterPart));
+    }
+    
+}
+
+MoveTangentUndoCommand::~MoveTangentUndoCommand()
+{
+    
+}
+
+
+
+namespace {
+    
+    static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying,bool rippleEdit)
+    {
+        double leftX,leftY,rightX,rightY,x,y;
+        bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY);
+        p.getRightBezierPointAtTime(time, &rightX, &rightY);
+        p.getPositionAtTime(time, &x, &y);
+        double dist = left ?  sqrt((rightX - x) * (rightX - x) + (rightY - y) * (rightY - y))
+        : sqrt((leftX - x) * (leftX - x) + (leftY - y) * (leftY - y));
+        if (left) {
+            leftX += dx;
+            leftY += dy;
+        } else {
+            rightX += dx;
+            rightY += dy;
+        }
+        double alpha = left ? std::atan2(y - leftY,x - leftX) : std::atan2(y - rightY,x - rightX);
+        std::set<int> times;
+        p.getKeyframeTimes(&times);
+        
+        if (left) {
+            rightX = std::cos(alpha) * dist;
+            rightY = std::sin(alpha) * dist;
+            if (autoKeying || isOnKeyframe) {
+                p.getCurve()->setPointLeftAndRightIndex(p, time, leftX, leftY, x + rightX, y + rightY);
+            }
+            if (rippleEdit) {
+                for (std::set<int>::iterator it = times.begin(); it!=times.end() ; ++it) {
+                    p.getCurve()->setPointLeftAndRightIndex(p, *it, leftX, leftY, x + rightX, y + rightY);
+                }
+            }
+        } else {
+            leftX = std::cos(alpha) * dist;
+            leftY = std::sin(alpha) * dist;
+            if (autoKeying || isOnKeyframe) {
+                p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
+            }
+            if (rippleEdit) {
+                for (std::set<int>::iterator it = times.begin(); it!=times.end() ; ++it) {
+                    p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
+                }
+            }
+        }
+        
+    }
+    
+}
+
+void MoveTangentUndoCommand::undo()
+{
+    boost::shared_ptr<BezierCP> counterPart;
+    if (_tangentBeingDragged->isFeatherPoint()) {
+        counterPart = _tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        _oldCp->getCurve()->clonePoint(*counterPart,*_oldCp);
+        _oldFp->getCurve()->clonePoint(*_tangentBeingDragged,*_oldFp);
+    } else {
+        counterPart = _tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        _oldCp->getCurve()->clonePoint(*_tangentBeingDragged,*_oldCp);
+        _oldFp->getCurve()->clonePoint(*counterPart,*_oldFp);
+    }
+    
+    if (_firstRedoCalled) {
+        _roto->setSelection(_selectedCurves, _selectedPoints);
+    }
+
+    _roto->evaluate();
+    
+    setText(QString("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+
+
+}
+
+void MoveTangentUndoCommand::redo()
+{
+    
+    boost::shared_ptr<BezierCP> counterPart;
+    if (_tangentBeingDragged->isFeatherPoint()) {
+        counterPart = _tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        _oldCp->getCurve()->clonePoint(*_oldCp, *counterPart);
+        _oldFp->getCurve()->clonePoint(*_oldFp, *_tangentBeingDragged);
+    } else {
+        counterPart = _tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        _oldCp->getCurve()->clonePoint(*_oldCp, *_tangentBeingDragged);
+        _oldFp->getCurve()->clonePoint(*_oldFp, *counterPart);
+    }
+    
+    bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
+    dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_rippleEditEnabled);
+    if (_featherLinkEnabled) {
+        dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying,_rippleEditEnabled);
+    }
+    
+    if (_firstRedoCalled) {
+        _roto->setSelection(_selectedCurves, _selectedPoints);
+    }
+    
+    _roto->evaluate();
+    
+    setText(QString("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    
+}
+
+int MoveTangentUndoCommand::id() const
+{
+    return kRotoMoveTangentCompressionID;
+}
+
+bool MoveTangentUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const MoveTangentUndoCommand* mvCmd = dynamic_cast<const MoveTangentUndoCommand*>(other);
+    if (!mvCmd) {
+        return false;
+    }
+    if (mvCmd->_tangentBeingDragged != _tangentBeingDragged || mvCmd->_left != _left || mvCmd->_featherLinkEnabled != _featherLinkEnabled
+        || mvCmd->_rippleEditEnabled != _rippleEditEnabled) {
+        return false;
+    }
+    return true;
+}
+
+

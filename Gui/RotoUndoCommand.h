@@ -151,4 +151,37 @@ private:
     std::list<RemovedCurve> _curves;
 };
 
+
+class MoveTangentUndoCommand : public QUndoCommand
+{
+public:
+    
+    MoveTangentUndoCommand(RotoGui* roto,double dx,double dy,int time,const boost::shared_ptr<BezierCP>& cp,bool left);
+    
+    virtual ~MoveTangentUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+    virtual int id() const OVERRIDE FINAL;
+    
+    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    
+private:
+    
+    bool _firstRedoCalled; //< false by default
+    RotoGui* _roto;
+    double _dx,_dy;
+    bool _featherLinkEnabled;
+    bool _rippleEditEnabled;
+    int _time; //< the time at which the change was made
+    std::list<boost::shared_ptr<Bezier> > _selectedCurves;
+    std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > > _selectedPoints;
+    boost::shared_ptr<BezierCP> _tangentBeingDragged,_oldCp,_oldFp;
+    
+    bool _left;
+};
+
+
 #endif // ROTOUNDOCOMMAND_H
