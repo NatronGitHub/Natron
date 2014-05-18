@@ -87,6 +87,7 @@ void MoveControlPointsUndoCommand::redo()
     }
     
     if (_firstRedoCalled) {
+        _roto->setSelection(_selectedCurves, _selectedPoints);
         _roto->evaluate();
     }
     
@@ -123,4 +124,234 @@ bool MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
     _dy += mvCmd->_dy;
     return true;
     
+}
+
+
+////////////////////////
+
+
+AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,int index,double t)
+: QUndoCommand()
+, _firstRedoCalled(false)
+, _roto(roto)
+, _oldCurve()
+, _curve(curve)
+, _index(index)
+, _t(t)
+{
+    _oldCurve.reset(new Bezier(*curve));
+}
+
+AddPointUndoCommand::~AddPointUndoCommand()
+{
+    
+}
+
+void AddPointUndoCommand::undo()
+{
+    _curve->clone(*_oldCurve);
+    _roto->setSelection(_curve, std::make_pair(CpPtr(),CpPtr()));
+     _roto->evaluate();
+    setText(QString("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+void AddPointUndoCommand::redo()
+{
+    _oldCurve->clone(*_curve);
+    boost::shared_ptr<BezierCP> cp = _curve->addControlPointAfterIndex(_index,_t);
+    boost::shared_ptr<BezierCP> newFp = _curve->getFeatherPointAtIndex(_index + 1);
+
+    _roto->setSelection(_curve, std::make_pair(cp, newFp));
+    if (_firstRedoCalled) {
+        _roto->evaluate();
+    }
+
+    _firstRedoCalled = true;
+    setText(QString("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+////////////////////////
+
+RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
+                                               const boost::shared_ptr<BezierCP>& cp)
+: QUndoCommand()
+, _roto(roto)
+, _curves()
+{
+    CurveDesc desc;
+    int indexToRemove = curve->getControlPointIndex(cp);
+    desc.curveRemoved = false; //set in the redo()
+    desc.parentLayer =
+    boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->getItemByName(curve->getParentLayer()->getName_mt_safe()));
+    assert(desc.parentLayer);
+    desc.curve = curve; 
+    desc.points.push_back(indexToRemove);
+    desc.oldCurve.reset(new Bezier(*curve));
+    _curves.push_back(desc);
+}
+
+RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const SelectedCpList& points)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _curves()
+{
+    for (SelectedCpList::const_iterator it = points.begin(); it!=points.end(); ++it) {
+        boost::shared_ptr<BezierCP> cp,fp;
+        if (it->first->isFeatherPoint()) {
+            cp = it->second;
+            fp = it->first;
+        } else {
+            cp = it->first;
+            fp = it->second;
+        }
+        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(cp->getCurve()->getName_mt_safe()));
+        
+        std::list< CurveDesc >::iterator foundCurve = _curves.end();
+        for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2!= _curves.end(); ++it2)
+        {
+            if (it2->curve == curve) {
+                foundCurve = it2;
+                break;
+            }
+        }
+        int indexToRemove = curve->getControlPointIndex(cp);
+        if (foundCurve == _curves.end()) {
+            CurveDesc curveDesc;
+            curveDesc.curveRemoved = false; //set in the redo()
+            curveDesc.parentLayer =
+            boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->getItemByName(cp->getCurve()->getParentLayer()->getName_mt_safe()));
+            assert(curveDesc.parentLayer);
+            curveDesc.points.push_back(indexToRemove);
+            curveDesc.curve = curve;
+            curveDesc.oldCurve.reset(new Bezier(*curve));
+            _curves.push_back(curveDesc);
+        } else {
+            foundCurve->points.push_back(indexToRemove);
+        }
+    }
+    for (std::list<CurveDesc>::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
+        it->points.sort();
+    }
+}
+
+RemovePointUndoCommand::~RemovePointUndoCommand()
+{
+    
+}
+
+void RemovePointUndoCommand::undo()
+{
+    
+    BezierList selection;
+    SelectedCpList cpSelection;
+    for (std::list< CurveDesc >::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
+        ///clone the curve
+        it->curve->clone(*(it->oldCurve));
+        if (it->curveRemoved) {
+            _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->curve);
+        }
+        selection.push_back(it->curve);
+    }
+    
+    _roto->setSelection(selection,cpSelection);
+    _roto->evaluate();
+    
+    setText(QString("Remove points to %1").arg(_roto->getNodeName()));
+}
+
+void RemovePointUndoCommand::redo()
+{
+    
+    ///clone the curve
+    for (std::list< CurveDesc >::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
+        it->oldCurve->clone(*(it->curve));
+    }
+    
+    std::list<Bezier*> toRemove;
+    std::list<BezierPtr> toSelect;
+    for (std::list< CurveDesc >::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
+        
+        ///Remove in decreasing order so indexes don't get messed up
+        for (std::list<int>::reverse_iterator it2 = it->points.rbegin(); it2!=it->points.rend(); ++it2) {
+            it->curve->removeControlPointByIndex(*it2);
+            int cpCount = it->curve->getControlPointsCount();
+            if (cpCount == 1) {
+                it->curve->setCurveFinished(false);
+            } else if (cpCount == 0) {
+                it->curveRemoved = true;
+                std::list<Bezier*>::iterator found = std::find(toRemove.begin(), toRemove.end(), it->curve.get());
+                if (found == toRemove.end()) {
+                    toRemove.push_back(it->curve.get());
+                }
+            }
+            if (cpCount > 0) {
+                std::list<BezierPtr>::iterator foundSelect = std::find(toSelect.begin(), toSelect.end(), it->curve);
+                if (foundSelect == toSelect.end()) {
+                    toSelect.push_back(it->curve);
+                }
+            }
+            
+        }
+    }
+   
+    for (std::list<Bezier*>::iterator it = toRemove.begin(); it!=toRemove.end(); ++it) {
+        _roto->removeCurve(*it);
+    }
+
+
+
+    _roto->setSelection(toSelect,SelectedCpList());
+    _roto->evaluate();
+    _firstRedoCalled = true;
+
+    setText(QString("Remove points to %1").arg(_roto->getNodeName()));
+}
+
+//////////////////////////
+
+RemoveCurveUndoCommand::RemoveCurveUndoCommand(RotoGui* roto,const std::list<boost::shared_ptr<Bezier> >& curves)
+: QUndoCommand()
+, _roto(roto)
+, _curves()
+{
+    for (BezierList::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
+        RemovedCurve r;
+        r.curve = *it;
+        r.layer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->getItemByName((*it)->getParentLayer()->getName_mt_safe()));
+        assert(r.layer);
+        r.indexInLayer = r.layer->getChildIndex(*it);
+        assert(r.indexInLayer != -1);
+        _curves.push_back(r);
+    }
+}
+
+RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
+{
+    
+}
+
+void RemoveCurveUndoCommand::undo()
+{
+    BezierList selection;
+    for (std::list<RemovedCurve>::iterator it = _curves.begin(); it!= _curves.end(); ++it) {
+        _roto->getContext()->addItem(it->layer.get(),it->indexInLayer, it->curve);
+        selection.push_back(it->curve);
+    }
+    
+    SelectedCpList cpList;
+    _roto->setSelection(selection, cpList);
+    _roto->evaluate();
+    
+    setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
+}
+
+void RemoveCurveUndoCommand::redo()
+{
+    for (std::list<RemovedCurve>::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
+        _roto->removeCurve(it->curve.get());
+    }
+    _roto->evaluate();
+    
+    setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
 }

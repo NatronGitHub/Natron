@@ -186,6 +186,8 @@ public:
     
     virtual ~RotoItem();
     
+    void clone(const RotoItem& other);
+    
     ///only callable on the main-thread
     void setName(const std::string& name);
     
@@ -265,6 +267,8 @@ public:
     
     virtual ~RotoDrawableItem();
     
+    void clone(const RotoDrawableItem& other);
+               
     /**
      * @brief Must be implemented by the derived class to save the state into
      * the serialization object.
@@ -367,6 +371,9 @@ public:
     ///only callable on the main-thread
     void removeItem(const RotoItem* item);
     
+    ///Returns the index of the given item in the layer, or -1 if not found
+    int getChildIndex(const boost::shared_ptr<RotoItem>& item) const;
+    
     ///only callable on the main-thread
     const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
     
@@ -398,9 +405,11 @@ public:
     
     Bezier(RotoContext* context,const std::string& name,RotoLayer* parent);
     
+    Bezier(const Bezier& other);
+    
     virtual ~Bezier();
     
-    
+    void clone(const Bezier& other);
     /**
      * @brief Adds a new control point to the curve. A feather point will be added, at the same position.
      * If auto keying is enabled and this is the first point and there's no keyframe a new keyframe will be set at the current time.
@@ -418,6 +427,7 @@ public:
      * A feather point will be added, at the same position.
      * If auto keying is enabled, and there's no keyframe a new keyframe will be set at the current time.
      *
+     * If index is -1 then the point will be added as the first point of the curve.
      * If index is invalid an invalid argument exception will be thrown.
      **/
     boost::shared_ptr<BezierCP> addControlPointAfterIndex(int index,double t);
@@ -769,6 +779,8 @@ public:
      **/
     void removeItem(RotoItem* item);
     
+    ///This is here for undo/redo purpose. Do not call this
+    void addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.

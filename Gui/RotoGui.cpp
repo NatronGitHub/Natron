@@ -1223,7 +1223,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             }
             break;
         case ADD_POINTS:
-#pragma message WARN("Make this an undo/redo command")
             ///If the user clicked on a bezier and this bezier is selected add a control point by
             ///splitting up the targeted segment
             if (nearbyBezier) {
@@ -1234,9 +1233,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     if (nearbyCP.first) {
                         _imp->handleControlPointSelection(nearbyCP);
                     } else {
-                        boost::shared_ptr<BezierCP> newCp = nearbyBezier->addControlPointAfterIndex(nearbyBezierCPIndex, nearbyBezierT);
-                        boost::shared_ptr<BezierCP> newFp = nearbyBezier->getFeatherPointAtIndex(nearbyBezierCPIndex + 1);
-                        _imp->handleControlPointSelection(std::make_pair(newCp,newFp));
+                        pushUndoCommand(new AddPointUndoCommand(this,nearbyBezier,nearbyBezierCPIndex,nearbyBezierT));
                         _imp->evaluateOnPenUp = true;
                     }
                     didSomething = true;
@@ -1244,30 +1241,14 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             }
             break;
         case REMOVE_POINTS:
-#pragma message WARN("Make this an undo/redo command")
             if (nearbyCP.first) {
                 Bezier* curve = nearbyCP.first->getCurve();
                 assert(nearbyBezier.get() == curve);
                 if (nearbyCP.first->isFeatherPoint()) {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(nearbyCP.second));
+                    pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second));
                 } else {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(nearbyCP.first));
+                    pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.first));
                 }
-                int cpCount = curve->getControlPointsCount();
-                if (cpCount == 1) {
-                    curve->setCurveFinished(false);
-                } else if (cpCount == 0) {
-                    
-                    ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeItem(nearbyBezier.get());
-
-                }
-                SelectedCPs::iterator foundSelected = std::find(_imp->selectedCps.begin(), _imp->selectedCps.end(), nearbyCP);
-                if (foundSelected != _imp->selectedCps.end()) {
-                    _imp->selectedCps.erase(foundSelected);
-                }
-                _imp->computeSelectedCpsBBOX();
-                _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
             break;
@@ -1682,6 +1663,14 @@ bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewpor
     return true;
 }
 
+void RotoGui::removeCurve(Bezier* curve)
+{
+    if (curve == _imp->builtBezier.get()) {
+        _imp->builtBezier.reset();
+    }
+    _imp->context->removeItem(curve);
+}
+
 bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 {
     bool didSomething = false;
@@ -1690,44 +1679,10 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 #pragma message WARN("Make this an  undo/redo command")
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->selectedCps.empty()) {
-            std::list < Bezier* > beziersToRemove;
-            for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it != _imp->selectedCps.end(); ++it) {
-                Bezier* curve = it->first->getCurve();
-                if (it->first->isFeatherPoint()) {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(it->second));
-                } else {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(it->first));
-                }
-                int cpCount = curve->getControlPointsCount();
-                if (cpCount == 1) {
-                    curve->setCurveFinished(false);
-                } else if (cpCount == 0) {
-                    beziersToRemove.push_back(curve);
-                    if (curve == _imp->builtBezier.get()) {
-                        _imp->builtBezier.reset();
-                    }
-                }
-            }
-            for (std::list < Bezier* > ::iterator it = beziersToRemove.begin(); it != beziersToRemove.end(); ++it) {
-                ///clear the shared pointer so the bezier gets deleted
-                _imp->context->removeItem(*it);
-            }
-            
-            _imp->selectedCps.clear();
-            _imp->computeSelectedCpsBBOX();
-            _imp->node->getNode()->getApp()->triggerAutoSave();
-            _imp->context->evaluateChange();
+            pushUndoCommand(new RemovePointUndoCommand(this,_imp->selectedCps));
             didSomething = true;
         } else if (!_imp->selectedBeziers.empty()) {
-            while (!_imp->selectedBeziers.empty()) {
-                Bezier* b = _imp->selectedBeziers.front().get();
-                _imp->context->removeItem(b);
-                if (b == _imp->builtBezier.get()) {
-                    _imp->builtBezier.reset();
-                }
-            }
-            _imp->node->getNode()->getApp()->triggerAutoSave();
-            _imp->context->evaluateChange();
+            pushUndoCommand(new RemoveCurveUndoCommand(this,_imp->selectedBeziers));
             didSomething = true;
         }
         
@@ -1867,7 +1822,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
             
             Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, polygon, constants,
                                             multipliers, polygonBBox, time, prevF, itF, nextF);
-            assert(featherPoint.x != controlPoint.x);
+            assert(featherPoint.x != controlPoint.x || featherPoint.y != controlPoint.y);
             
             if (((pos.y() >= (controlPoint.y - acceptance) && pos.y() <= (featherPoint.y + acceptance)) ||
                  (pos.y() >= (featherPoint.y - acceptance) && pos.y() <= (controlPoint.y + acceptance))) &&
@@ -2104,9 +2059,36 @@ void RotoGui::onSelectionChanged(int reason)
 void RotoGui::setSelection(const std::list<boost::shared_ptr<Bezier> >& selectedBeziers,
                   const std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >& selectedCps)
 {
-    _imp->selectedBeziers = selectedBeziers;
+    _imp->selectedBeziers.clear();
+    for (SelectedBeziers::const_iterator it = selectedBeziers.begin(); it!= selectedBeziers.end(); ++it) {
+        if (*it) {
+            _imp->selectedBeziers.push_back(*it);
+        }
+    }
+    _imp->selectedCps.clear();
+    for (SelectedCPs::const_iterator it = selectedCps.begin(); it!=selectedCps.end(); ++it) {
+        if (it->first && it->second) {
+            _imp->selectedCps.push_back(*it);
+        }
+    }
     _imp->context->select(_imp->selectedBeziers,RotoContext::OVERLAY_INTERACT);
-    _imp->selectedCps = selectedCps;
+    _imp->computeSelectedCpsBBOX();
+}
+
+void RotoGui::setSelection(const boost::shared_ptr<Bezier>& curve,
+                  const std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> >& point)
+{
+    _imp->selectedBeziers.clear();
+    if (curve) {
+        _imp->selectedBeziers.push_back(curve);
+    }
+    _imp->selectedCps.clear();
+    if (point.first && point.second) {
+        _imp->selectedCps.push_back(point);
+    }
+    if (curve) {
+        _imp->context->select(curve, RotoContext::OVERLAY_INTERACT);
+    }
     _imp->computeSelectedCpsBBOX();
 }
 
@@ -2129,7 +2111,7 @@ QString RotoGui::getNodeName() const
     return _imp->node->getNode()->getName().c_str();
 }
 
-const RotoContext* RotoGui::getContext()
+RotoContext* RotoGui::getContext()
 {
     return _imp->context.get();
 }

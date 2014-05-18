@@ -499,6 +499,15 @@ RotoItem::~RotoItem()
     
 }
 
+void RotoItem::clone(const RotoItem& other)
+{
+    QMutexLocker l(&itemMutex);
+    _imp->parentLayer = other._imp->parentLayer;
+    _imp->name = other._imp->name;
+    _imp->globallyActivated = other._imp->globallyActivated;
+    _imp->locked = other._imp->locked;
+}
+
 void RotoItem::setParentLayer(RotoLayer* layer)
 {
     ///called on the main-thread only
@@ -731,6 +740,20 @@ RotoDrawableItem::~RotoDrawableItem()
     
 }
 
+void RotoDrawableItem::clone(const RotoDrawableItem& other)
+{
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->activated->clone(other._imp->activated);
+        _imp->feather->clone(other._imp->feather);
+        _imp->featherFallOff->clone(other._imp->featherFallOff);
+        _imp->opacity->clone(other._imp->opacity);
+        _imp->inverted->clone(other._imp->inverted);
+        memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double)*4);
+    }
+    RotoItem::clone(other);
+}
+
 static void serializeRotoKnob(const boost::shared_ptr<KnobI>& knob,KnobSerialization* serialization)
 {
     std::pair<int, boost::shared_ptr<KnobI> > master = knob->getMaster(0);
@@ -928,10 +951,14 @@ void RotoLayer::insertItem(const boost::shared_ptr<RotoItem>& item,int index)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    assert(index >= 0);
     QMutexLocker l(&itemMutex);
     RotoItems::iterator it = _imp->items.begin();
-    std::advance(it, index);
-    
+    if (index >= (int)_imp->items.size()) {
+        it = _imp->items.end();
+    } else {
+        std::advance(it, index);
+    }
     ///insert before the iterator
     _imp->items.insert(it, item);
 }
@@ -947,6 +974,19 @@ void RotoLayer::removeItem(const RotoItem* item)
             _imp->items.erase(it);
         }
     }
+}
+
+int RotoLayer::getChildIndex(const boost::shared_ptr<RotoItem>& item) const
+{
+    QMutexLocker l(&itemMutex);
+    int i = 0;
+    for (RotoItems::iterator it = _imp->items.begin(); it!=_imp->items.end();++it,++i)
+    {
+        if (*it == item) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 const RotoItems& RotoLayer::getItems() const
@@ -1139,6 +1179,36 @@ Bezier::Bezier(RotoContext* ctx,const std::string& name,RotoLayer* parent)
 {
 }
 
+Bezier::Bezier(const Bezier& other)
+: RotoDrawableItem(other.getContext(),other.getName_mt_safe(),other.getParentLayer())
+, _imp(new BezierPrivate())
+{
+    clone(other);
+}
+
+void Bezier::clone(const Bezier& other)
+{
+    {
+        QMutexLocker l(&itemMutex);
+        assert(other._imp->featherPoints.size() == other._imp->points.size());
+        
+        _imp->featherPoints.clear();
+        _imp->points.clear();
+        BezierCPs::const_iterator itF = other._imp->featherPoints.begin();
+        for (BezierCPs::const_iterator it = other._imp->points.begin(); it!=other._imp->points.end(); ++it,++itF) {
+            boost::shared_ptr<BezierCP> cp(new BezierCP(this));
+            boost::shared_ptr<BezierCP> fp(new BezierCP(this));
+            cp->clone(**it);
+            fp->clone(**itF);
+            _imp->featherPoints.push_back(fp);
+            _imp->points.push_back(cp);
+        }
+        _imp->finished = other._imp->finished;
+    }
+    RotoDrawableItem::clone(other);
+}
+
+
 Bezier::~Bezier()
 {
     
@@ -1199,7 +1269,7 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     
     QMutexLocker l(&itemMutex);
         
-    if (index >= (int)_imp->points.size()) {
+    if (index >= (int)_imp->points.size() || index < -1) {
         throw std::invalid_argument("Spline control point index out of range.");
     }
     
@@ -1209,23 +1279,34 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     std::set<int> existingKeyframes;
     _imp->getKeyframeTimes(&existingKeyframes);
     
-    BezierCPs::const_iterator prev = _imp->atIndex(index);
-    BezierCPs::const_iterator next = prev;
-    ++next;
-    if (_imp->finished && next == _imp->points.end()) {
+    BezierCPs::const_iterator prev,next,prevF,nextF;
+    if (index == -1) {
+        prev = _imp->points.end();
+        --prev;
         next = _imp->points.begin();
-    }
-    
-    BezierCPs::const_iterator prevF = _imp->featherPoints.begin();
-    std::advance(prevF, index);
-    BezierCPs::const_iterator nextF = prevF;
-    ++nextF;
-    if (_imp->finished && nextF == _imp->featherPoints.end()) {
+        
+        prevF = _imp->featherPoints.end();
+        --prevF;
         nextF = _imp->featherPoints.begin();
+    } else {
+        prev = _imp->atIndex(index);
+        next = prev;
+        ++next;
+        if (_imp->finished && next == _imp->points.end()) {
+            next = _imp->points.begin();
+        }
+        assert(next != _imp->points.end());
+        prevF = _imp->featherPoints.begin();
+        std::advance(prevF, index);
+        nextF = prevF;
+        ++nextF;
+        if (_imp->finished && nextF == _imp->featherPoints.end()) {
+            nextF = _imp->featherPoints.begin();
+        }
     }
+  
     
-    
-    assert(next != _imp->points.end());
+
     
     for (std::set<int>::iterator it = existingKeyframes.begin(); it!=existingKeyframes.end(); ++it) {
         
@@ -1300,16 +1381,23 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     
     
     ////Insert the point into the container
-    BezierCPs::iterator it = _imp->points.begin();
-    ///it will point at the element right after index
-    std::advance(it, index + 1);
-    _imp->points.insert(it,p);
+    if (index != -1) {
+        BezierCPs::iterator it = _imp->points.begin();
+        ///it will point at the element right after index
+        std::advance(it, index + 1);
+        _imp->points.insert(it,p);
+        
+        ///insert the feather point
+        BezierCPs::iterator itF = _imp->featherPoints.begin();
+        std::advance(itF, index + 1);
+        _imp->featherPoints.insert(itF, fp);
+    } else {
+        _imp->points.push_front(p);
+        _imp->featherPoints.push_front(fp);
+    }
     
     
-    ///insert the feather point
-    BezierCPs::iterator itF = _imp->featherPoints.begin();
-    std::advance(itF, index + 1);
-    _imp->featherPoints.insert(itF, fp);
+    
     
     ///If auto-keying is enabled, set a new keyframe
     int currentTime = getContext()->getTimelineCurrentTime();
@@ -2799,6 +2887,19 @@ void RotoContext::removeItem(RotoItem* item)
         removeItemRecursively(item);
     }
     emit selectionChanged((int)RotoContext::OTHER);
+}
+
+void RotoContext::addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item)
+{
+    ///MT-safe: only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        layer->insertItem(item,indexInLayer);
+        _imp->lastInsertedItem = item;
+    }
+    emit itemInserted();
+
 }
 
 const std::list< boost::shared_ptr<RotoLayer> >& RotoContext::getLayers() const
