@@ -734,6 +734,12 @@ class RotoContext : public QObject
     Q_OBJECT
     
 public:
+    
+    enum SelectionReason {
+        OVERLAY_INTERACT = 0, ///when the user presses an interact
+        SETTINGS_PANEL, ///when the user interacts with the settings panel
+        OTHER ///when the project loader restores the selection
+    };
 
     RotoContext(Natron::Node* node);
     
@@ -777,10 +783,10 @@ public:
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(RotoItem* item);
+    void removeItem(RotoItem* item,SelectionReason reason = OTHER);
     
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item);
+    void addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item,SelectionReason reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -823,11 +829,6 @@ public:
     ///Deserialization
     void load(const RotoContextSerialization& obj);
     
-    enum SelectionReason {
-        OVERLAY_INTERACT = 0, ///when the user presses an interact
-        SETTINGS_PANEL, ///when the user interacts with the settings panel
-        OTHER ///when the project loader restores the selection
-    };
     
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
@@ -904,9 +905,9 @@ signals:
     
     void restorationComplete();
     
-    void itemInserted();
+    void itemInserted(int);
     
-    void itemRemoved(RotoItem*);
+    void itemRemoved(RotoItem*,int);
     
     void refreshViewerOverlays();
 
@@ -926,7 +927,7 @@ private:
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(const boost::shared_ptr<RotoItem>& b);
     
-     void removeItemRecursively(RotoItem* item);
+     void removeItemRecursively(RotoItem* item,SelectionReason reason);
     
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

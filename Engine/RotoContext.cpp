@@ -2712,7 +2712,7 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
         
         _imp->lastInsertedItem = item;
     }
-    emit itemInserted();
+    emit itemInserted(RotoContext::OTHER);
     
     clearSelection(RotoContext::OTHER);
     select(item, RotoContext::OTHER);
@@ -2836,7 +2836,7 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
         parentLayer->addItem(curve);
     }
     _imp->lastInsertedItem = curve;
-    emit itemInserted();
+    emit itemInserted(RotoContext::OTHER);
     
     clearSelection(RotoContext::OTHER);
     select(curve, RotoContext::OTHER);
@@ -2844,7 +2844,7 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
     return curve;
 }
 
-void RotoContext::removeItemRecursively(RotoItem* item)
+void RotoContext::removeItemRecursively(RotoItem* item,SelectionReason reason)
 {
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item);
     boost::shared_ptr<RotoItem> foundSelected;
@@ -2861,7 +2861,7 @@ void RotoContext::removeItemRecursively(RotoItem* item)
     if (isLayer) {
         const RotoItems& items = isLayer->getItems();
         for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
-            removeItemRecursively(it->get());
+            removeItemRecursively(it->get(),reason);
         }
         for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
             if (it->get() == isLayer) {
@@ -2870,11 +2870,11 @@ void RotoContext::removeItemRecursively(RotoItem* item)
             }
         }
     }
-    emit itemRemoved(item);
+    emit itemRemoved(item,(int)reason);
 
 }
 
-void RotoContext::removeItem(RotoItem* item)
+void RotoContext::removeItem(RotoItem* item,SelectionReason reason)
 {
     ///MT-safe: only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2884,21 +2884,30 @@ void RotoContext::removeItem(RotoItem* item)
         if (layer) {
             layer->removeItem(item);
         }
-        removeItemRecursively(item);
+        removeItemRecursively(item,reason);
     }
-    emit selectionChanged((int)RotoContext::OTHER);
+    emit selectionChanged((int)reason);
 }
 
-void RotoContext::addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item)
+void RotoContext::addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item,SelectionReason reason)
 {
     ///MT-safe: only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     {
         QMutexLocker l(&_imp->rotoContextMutex);
-        layer->insertItem(item,indexInLayer);
+        if (layer) {
+            layer->insertItem(item,indexInLayer);
+        }
+        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+        if (isLayer) {
+            std::list<boost::shared_ptr<RotoLayer> >::iterator foundLayer = std::find(_imp->layers.begin(), _imp->layers.end(), isLayer);
+            if (foundLayer == _imp->layers.end()) {
+                _imp->layers.push_back(isLayer);
+            }
+        }
         _imp->lastInsertedItem = item;
     }
-    emit itemInserted();
+    emit itemInserted(reason);
 
 }
 

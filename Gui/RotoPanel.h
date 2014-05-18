@@ -24,6 +24,7 @@ class QWidget;
 class NodeGui;
 class QUndoCommand;
 class RotoItem;
+class RotoContext;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
@@ -39,6 +40,12 @@ public:
     void onTreeOutOfFocusEvent();
     
     boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
+    
+    std::string getNodeName() const;
+    
+    RotoContext* getContext() const;
+    
+    void clearSelection();
     
     void pushUndoCommand(QUndoCommand* cmd);
 public slots:
@@ -65,10 +72,10 @@ public slots:
     void onTimeChanged(SequenceTime time,int reason);
     
     ///A new item has been created internally
-    void onItemInserted();
+    void onItemInserted(int reason);
     
     ///An item was removed by the user
-    void onItemRemoved(RotoItem* item);
+    void onItemRemoved(RotoItem* item,int reason);
     
     ///An item had its inverted state changed
     void onRotoItemInversionChanged();

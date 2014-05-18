@@ -11,9 +11,12 @@
 
 
 #include "RotoUndoCommand.h"
+#include <QTreeWidgetItem>
+
 #include "Global/GlobalDefines.h"
 #include "Engine/RotoContext.h"
 #include "Gui/RotoGui.h"
+#include "Gui/RotoPanel.h"
 
 using namespace Natron;
 
@@ -253,7 +256,7 @@ void RemovePointUndoCommand::undo()
         ///clone the curve
         it->curve->clone(*(it->oldCurve));
         if (it->curveRemoved) {
-            _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->curve);
+            _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->curve,RotoContext::OVERLAY_INTERACT);
         }
         selection.push_back(it->curve);
     }
@@ -332,7 +335,7 @@ void RemoveCurveUndoCommand::undo()
 {
     BezierList selection;
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it!= _curves.end(); ++it) {
-        _roto->getContext()->addItem(it->layer.get(),it->indexInLayer, it->curve);
+        _roto->getContext()->addItem(it->layer.get(),it->indexInLayer, it->curve,RotoContext::OVERLAY_INTERACT);
         selection.push_back(it->curve);
     }
     
@@ -951,7 +954,7 @@ void MakeBezierUndoCommand::redo()
     } else {
         _newCurve->clone(*_oldCurve);
         if (_curveNonExistant) {
-            _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _newCurve);
+            _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _newCurve,RotoContext::OVERLAY_INTERACT);
         }
     }
 
@@ -1032,7 +1035,7 @@ void MakeEllipseUndoCommand::redo()
 {
     if (_firstRedoCalled) {
         _curve->clone(*_newCurve);
-        _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve);
+        _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve,RotoContext::OVERLAY_INTERACT);
         _roto->evaluate(true);
     } else {
         if (_create) {
@@ -1186,7 +1189,7 @@ void MakeRectangleUndoCommand::redo()
     
     if (_firstRedoCalled) {
         _curve->clone(*_newCurve);
-        _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve);
+        _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve,RotoContext::OVERLAY_INTERACT);
         _roto->evaluate(true);
     } else {
         if (_create) {
@@ -1230,4 +1233,63 @@ bool MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
     _dx += sCmd->_dx;
     _dy += sCmd->_dy;
     return true;
+}
+
+//////////////////////////////
+
+
+RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,const QList<QTreeWidgetItem*>& items)
+: QUndoCommand()
+, _roto(roto)
+, _items()
+{
+    
+    for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        RemovedItem r;
+        r.treeItem = *it;
+        r.parentTreeItem = r.treeItem->parent();
+        r.item = _roto->getRotoItemForTreeItem(r.treeItem);
+        assert(r.item);
+        if (r.parentTreeItem) {
+            r.parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getRotoItemForTreeItem(r.parentTreeItem));
+            assert(r.parentLayer);
+            r.indexInLayer = r.parentLayer->getChildIndex(r.item);
+        }
+        _items.push_back(r);
+    }
+}
+
+RemoveItemsUndoCommand::~RemoveItemsUndoCommand()
+{
+    
+}
+
+void RemoveItemsUndoCommand::undo()
+{
+    for (std::list<RemovedItem>::iterator it = _items.begin(); it!= _items.end(); ++it) {
+        _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->item,RotoContext::SETTINGS_PANEL);
+        if (it->parentTreeItem) {
+            it->parentTreeItem->addChild(it->treeItem);
+        }
+        it->treeItem->setHidden(false);
+    }
+    _roto->getContext()->evaluateChange();
+    setText(QString("Remove items of %2").arg(_roto->getNodeName().c_str()));
+}
+
+void RemoveItemsUndoCommand::redo()
+{
+    for (std::list<RemovedItem>::iterator it = _items.begin(); it!= _items.end(); ++it) {
+        _roto->getContext()->removeItem(it->item.get(),RotoContext::SETTINGS_PANEL);
+        it->treeItem->setHidden(true);
+        if (it->treeItem->isSelected()) {
+            it->treeItem->setSelected(false);
+        }
+        if (it->parentTreeItem) {
+            it->parentTreeItem->removeChild(it->treeItem);
+        }
+    }
+    _roto->clearSelection();
+    _roto->getContext()->evaluateChange();
+    setText(QString("Remove items of %2").arg(_roto->getNodeName().c_str()));
 }

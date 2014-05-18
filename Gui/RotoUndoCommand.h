@@ -16,6 +16,7 @@
 #include <list>
 #include <map>
 #include <QUndoCommand>
+#include <QList>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
@@ -23,6 +24,9 @@ class Bezier;
 class BezierCP;
 class RotoGui;
 class RotoLayer;
+class RotoPanel;
+class QTreeWidgetItem;
+class RotoItem;
 class MoveControlPointsUndoCommand : public QUndoCommand
 {
 public:
@@ -396,6 +400,49 @@ private:
     double _x,_y;
     double _dx,_dy;
     int _time;
+};
+
+
+
+
+class RemoveItemsUndoCommand: public QUndoCommand
+{
+    
+    struct RemovedItem
+    {
+        QTreeWidgetItem* treeItem;
+        QTreeWidgetItem* parentTreeItem;
+        boost::shared_ptr<RotoLayer> parentLayer;
+        int indexInLayer;
+        boost::shared_ptr<RotoItem> item;
+        
+        RemovedItem()
+        : treeItem(0)
+        , parentTreeItem(0)
+        , parentLayer()
+        , indexInLayer(-1)
+        , item()
+        {
+            
+        }
+    };
+    
+public:
+    
+    
+    
+    RemoveItemsUndoCommand(RotoPanel* roto,const QList<QTreeWidgetItem*>& items);
+    
+    virtual ~RemoveItemsUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoPanel* _roto;
+    std::list<RemovedItem> _items;
 };
 
 #endif // ROTOUNDOCOMMAND_H

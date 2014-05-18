@@ -29,6 +29,7 @@
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/RotoUndoCommand.h"
 
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
@@ -187,8 +188,8 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
 {
     
     QObject::connect(_imp->context, SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)));
-    QObject::connect(_imp->context,SIGNAL(itemInserted()),this,SLOT(onItemInserted()));
-    QObject::connect(_imp->context,SIGNAL(itemRemoved(RotoItem*)),this,SLOT(onItemRemoved(RotoItem*)));
+    QObject::connect(_imp->context,SIGNAL(itemInserted(int)),this,SLOT(onItemInserted(int)));
+    QObject::connect(_imp->context,SIGNAL(itemRemoved(RotoItem*,int)),this,SLOT(onItemRemoved(RotoItem*,int)));
     QObject::connect(n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
                      SLOT(onTimeChanged(SequenceTime, int)));
     
@@ -581,16 +582,22 @@ void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
 }
 
 
-void RotoPanel::onItemInserted()
+void RotoPanel::onItemInserted(int reason)
 {
+    if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
+        return;
+    }
     int time = _imp->context->getTimelineCurrentTime();
     boost::shared_ptr<RotoItem> lastInsertedItem = _imp->context->getLastInsertedItem();
     assert(lastInsertedItem);
     _imp->insertItemRecursively(time, lastInsertedItem);
 }
 
-void RotoPanel::onItemRemoved(RotoItem* item)
+void RotoPanel::onItemRemoved(RotoItem* item,int reason)
 {
+    if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
+        return;
+    }
     _imp->removeItemRecursively(item);
 }
 
@@ -875,16 +882,9 @@ void RotoPanel::onAddLayerButtonClicked()
 
 void RotoPanel::onRemoveItemButtonClicked()
 {
-#pragma message WARN("Make this an  undo/redo command")
-    _imp->selectedItems.clear();
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
-    for (int i = 0; i < selectedItems.size(); ++i) {
-        TreeItems::iterator it = _imp->findItem(selectedItems[i]);
-        if (it != _imp->items.end()) {
-            _imp->context->removeItem(it->rotoItem.get());
-        }
-    }
-    _imp->context->evaluateChange();
+    pushUndoCommand(new RemoveItemsUndoCommand(this,selectedItems));
+  
 }
 
 static void isLayerAParent_recursive(RotoLayer* layer,RotoItem* item,bool* ret)
@@ -1095,4 +1095,20 @@ void RotoPanel::pushUndoCommand(QUndoCommand* cmd)
     NodeSettingsPanel* panel = _imp->node->getSettingPanel();
     assert(panel);
     panel->pushUndoCommand(cmd);
+}
+
+std::string RotoPanel::getNodeName() const
+{
+    return _imp->node->getNode()->getName();
+}
+
+RotoContext* RotoPanel::getContext() const
+{
+    return _imp->context;
+}
+
+void RotoPanel::clearSelection()
+{
+    _imp->selectedItems.clear();
+    _imp->context->clearSelection(RotoContext::SETTINGS_PANEL);
 }
