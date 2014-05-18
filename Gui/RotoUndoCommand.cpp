@@ -15,6 +15,8 @@
 #include "Engine/RotoContext.h"
 #include "Gui/RotoGui.h"
 
+using namespace Natron;
+
 typedef boost::shared_ptr<BezierCP> CpPtr;
 typedef std::pair<CpPtr,CpPtr> SelectedCp;
 typedef std::list<SelectedCp> SelectedCpList;
@@ -59,7 +61,7 @@ void MoveControlPointsUndoCommand::undo()
         it->second->getCurve()->clonePoint(*(it->second),*(cpIt->second));
     }
     
-    _roto->evaluate();
+    _roto->evaluate(true);
     _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool);
     _roto->setSelection(_selectedCurves, _selectedPoints);
     setText(QString("Move points of %1").arg(_roto->getNodeName()));
@@ -71,14 +73,16 @@ void MoveControlPointsUndoCommand::redo()
         int index;
         if (it->first->isFeatherPoint()) {
             if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_FEATHER_POINTS ||
-                (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL) {
+                (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
+                (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
                 index = it->second->getCurve()->getControlPointIndex(it->second);
                 assert(index != -1);
                 it->first->getCurve()->moveFeatherByIndex(index,_time, _dx, _dy);
             }
         } else {
             if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_POINTS ||
-                (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL) {
+                (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
+                (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
                 index = it->first->getCurve()->getControlPointIndex(it->first);
                 assert(index != -1);
                 it->first->getCurve()->movePointByIndex(index,_time, _dx, _dy);
@@ -88,7 +92,7 @@ void MoveControlPointsUndoCommand::redo()
     
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
-        _roto->evaluate();
+        _roto->evaluate(true);
     }
     
     _firstRedoCalled = true;
@@ -151,7 +155,7 @@ void AddPointUndoCommand::undo()
 {
     _curve->clone(*_oldCurve);
     _roto->setSelection(_curve, std::make_pair(CpPtr(),CpPtr()));
-     _roto->evaluate();
+     _roto->evaluate(true);
     setText(QString("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
@@ -163,7 +167,7 @@ void AddPointUndoCommand::redo()
 
     _roto->setSelection(_curve, std::make_pair(cp, newFp));
     if (_firstRedoCalled) {
-        _roto->evaluate();
+        _roto->evaluate(true);
     }
 
     _firstRedoCalled = true;
@@ -255,7 +259,7 @@ void RemovePointUndoCommand::undo()
     }
     
     _roto->setSelection(selection,cpSelection);
-    _roto->evaluate();
+    _roto->evaluate(true);
     
     setText(QString("Remove points to %1").arg(_roto->getNodeName()));
 }
@@ -302,7 +306,7 @@ void RemovePointUndoCommand::redo()
 
 
     _roto->setSelection(toSelect,SelectedCpList());
-    _roto->evaluate();
+    _roto->evaluate(_firstRedoCalled);
     _firstRedoCalled = true;
 
     setText(QString("Remove points to %1").arg(_roto->getNodeName()));
@@ -313,6 +317,7 @@ void RemovePointUndoCommand::redo()
 RemoveCurveUndoCommand::RemoveCurveUndoCommand(RotoGui* roto,const std::list<boost::shared_ptr<Bezier> >& curves)
 : QUndoCommand()
 , _roto(roto)
+, _firstRedoCalled(false)
 , _curves()
 {
     for (BezierList::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
@@ -341,7 +346,7 @@ void RemoveCurveUndoCommand::undo()
     
     SelectedCpList cpList;
     _roto->setSelection(selection, cpList);
-    _roto->evaluate();
+    _roto->evaluate(true);
     
     setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
 }
@@ -351,8 +356,9 @@ void RemoveCurveUndoCommand::redo()
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it!=_curves.end(); ++it) {
         _roto->removeCurve(it->curve.get());
     }
-    _roto->evaluate();
+    _roto->evaluate(_firstRedoCalled);
     
+    _firstRedoCalled = true;
     setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
 }
 
@@ -459,7 +465,7 @@ void MoveTangentUndoCommand::undo()
         _roto->setSelection(_selectedCurves, _selectedPoints);
     }
 
-    _roto->evaluate();
+    _roto->evaluate(true);
     
     setText(QString("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 
@@ -490,7 +496,9 @@ void MoveTangentUndoCommand::redo()
         _roto->setSelection(_selectedCurves, _selectedPoints);
     }
     
-    _roto->evaluate();
+    _roto->evaluate(_firstRedoCalled);
+    
+    _firstRedoCalled = true;
     
     setText(QString("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
     
@@ -514,4 +522,473 @@ bool MoveTangentUndoCommand::mergeWith(const QUndoCommand *other)
     return true;
 }
 
+//////////////////////////
 
+    
+MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(RotoGui* roto,double dx,double dy,
+                              const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& point,
+                              int time)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _dx(dx)
+, _dy(dy)
+, _rippleEditEnabled(roto->getContext()->isRippleEditEnabled())
+, _time(time)
+, _curve()
+, _oldPoint()
+, _newPoint(point)
+{
+    _curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(point.first->getCurve()->getName_mt_safe()));
+    assert(_curve);
+    _oldPoint.first.reset(new BezierCP(*_newPoint.first));
+    _oldPoint.second.reset(new BezierCP(*_newPoint.second));
+}
+    
+MoveFeatherBarUndoCommand::~MoveFeatherBarUndoCommand()
+{
+    
+}
+    
+void MoveFeatherBarUndoCommand::undo()
+{
+    
+    _curve->clonePoint(*_newPoint.first, *_oldPoint.first);
+    _curve->clonePoint(*_newPoint.second, *_oldPoint.second);
+
+    _roto->evaluate(true);
+    _roto->setSelection(_curve, _newPoint);
+    setText(QString("Move feather bar of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    
+}
+    
+void MoveFeatherBarUndoCommand::redo()
+{
+    
+    _curve->clonePoint(*_oldPoint.first, *_newPoint.first);
+    _curve->clonePoint(*_oldPoint.second, *_newPoint.second);
+    
+    boost::shared_ptr<BezierCP> p = _newPoint.first->isFeatherPoint() ?
+    _newPoint.second : _newPoint.first;
+    boost::shared_ptr<BezierCP> fp = _newPoint.first->isFeatherPoint() ?
+    _newPoint.first : _newPoint.second;
+    
+    Point delta;
+    Point featherPoint,controlPoint;
+    p->getPositionAtTime(_time, &controlPoint.x, &controlPoint.y);
+    bool isOnKeyframe = fp->getPositionAtTime(_time, &featherPoint.x, &featherPoint.y);
+    
+    if (controlPoint.x != featherPoint.x || controlPoint.y != featherPoint.y) {
+        Point featherVec;
+        featherVec.x = featherPoint.x - controlPoint.x;
+        featherVec.y = featherPoint.y - controlPoint.y;
+        double norm = sqrt((featherPoint.x - controlPoint.x) * (featherPoint.x - controlPoint.x)
+                           + (featherPoint.y - controlPoint.y) * (featherPoint.y - controlPoint.y));
+        assert(norm != 0);
+        delta.x = featherVec.x / norm;
+        delta.y = featherVec.y / norm;
+        
+        double dotProduct = delta.x * _dx + delta.y * _dy;
+        delta.x = delta.x * dotProduct;
+        delta.y = delta.y * dotProduct;
+        
+    } else {
+        
+        ///the feather point equals the control point, use derivatives
+        const std::list<boost::shared_ptr<BezierCP> >& cps = p->getCurve()->getFeatherPoints();
+        assert(cps.size() > 1);
+        
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
+        --prev;
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
+        ++next;
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = cps.begin();
+        for (; cur!=cps.end(); ++cur,++prev,++next) {
+            if (prev == cps.end()) {
+                prev = cps.begin();
+            }
+            if (next == cps.end()) {
+                next = cps.begin();
+            }
+            
+            if (*cur == fp) {
+                break;
+            }
+        }
+        assert( cur != cps.end() );
+        
+        double leftX,leftY,rightX,rightY,norm;
+        Bezier::leftDerivativeAtPoint(_time, **cur, **prev, &leftX, &leftY);
+        Bezier::rightDerivativeAtPoint(_time, **cur, **next, &rightX, &rightY);
+        norm = sqrt((rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY));
+        
+        ///normalize derivatives by their norm
+        if (norm != 0) {
+            delta.x = -((rightY - leftY) / norm);
+            delta.y = ((rightX - leftX) / norm) ;
+        } else {
+            ///both derivatives are the same, use the direction of the left one
+            norm = sqrt((leftX - featherPoint.x) * (leftX - featherPoint.x) + (leftY - featherPoint.y) * (leftY - featherPoint.y));
+            if (norm != 0) {
+                delta.x = -((leftY - featherPoint.y) / norm);
+                delta.y = ((leftX - featherPoint.x) / norm);
+            } else {
+                ///both derivatives and control point are equal, just use 0
+                delta.x = delta.y = 0;
+            }
+        }
+        
+        double dotProduct = delta.x * _dx + delta.y * _dy;
+        delta.x = delta.x * dotProduct;
+        delta.y = delta.y * dotProduct;
+    }
+    
+    Point extent;
+    
+    extent.x = featherPoint.x + delta.x;
+    extent.y = featherPoint.y + delta.y;
+    
+    if (_roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
+        int index = fp->getCurve()->getFeatherPointIndex(fp);
+        double leftX,leftY,rightX,rightY;
+        
+        fp->getLeftBezierPointAtTime(_time, &leftX, &leftY);
+        fp->getRightBezierPointAtTime(_time, &rightX, &rightY);
+        
+        fp->getCurve()->setPointAtIndex(true, index, _time, extent.x,extent.y,
+                                        leftX + delta.x, leftY + delta.y,
+                                        rightX + delta.x, rightY + delta.y);
+        
+    }
+    
+    _roto->evaluate(_firstRedoCalled);
+    _roto->setSelection(_curve, _newPoint);
+    
+    _firstRedoCalled = true;
+    setText(QString("Move feather bar of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    
+    
+}
+
+int MoveFeatherBarUndoCommand::id() const
+{
+    return kRotoMoveFeatherBarCompressionID;
+}
+
+bool MoveFeatherBarUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const MoveFeatherBarUndoCommand* mvCmd = dynamic_cast<const MoveFeatherBarUndoCommand*>(other);
+    if (!mvCmd) {
+        return false;
+    }
+    if (mvCmd->_newPoint.first != _newPoint.first || mvCmd->_newPoint.second!=_newPoint.second ||
+        mvCmd->_rippleEditEnabled != _rippleEditEnabled || mvCmd->_time != _time) {
+        return false;
+    }
+    return true;
+}
+    
+
+
+/////////////////////////
+
+RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
+                         const boost::shared_ptr<BezierCP>& fp)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedocalled(false)
+, _curve(curve)
+, _oldFp(new BezierCP(*fp))
+, _newFp(fp)
+{
+    
+}
+
+RemoveFeatherUndoCommand::~RemoveFeatherUndoCommand()
+{
+    
+}
+
+void RemoveFeatherUndoCommand::undo()
+{
+    _curve->clonePoint(*_newFp, *_oldFp);
+    _roto->evaluate(true);
+
+    boost::shared_ptr<BezierCP> cp = _curve->getControlPointForFeatherPoint(_newFp);
+    _roto->setSelection(_curve, std::make_pair(cp, _newFp));
+    setText(QString("Remove feather of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+void RemoveFeatherUndoCommand::redo()
+{
+    _curve->clonePoint(*_oldFp, *_newFp);
+    try {
+        _curve->removeFeatherAtIndex(_curve->getFeatherPointIndex(_newFp));
+    } catch (...) {
+        ///the point doesn't exist anymore, just do nothing
+        return;
+    }
+    
+    _roto->evaluate(_firstRedocalled);
+    
+    boost::shared_ptr<BezierCP> cp = _curve->getControlPointForFeatherPoint(_newFp);
+    _roto->setSelection(_curve, std::make_pair(cp, _newFp));
+    
+    _firstRedocalled = true;
+    
+    setText(QString("Remove feather of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+////////////////////////////
+
+
+OpenCloseUndoCommand::OpenCloseUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _selectedTool((int)roto->getSelectedTool())
+, _curve(curve)
+{
+    
+}
+
+OpenCloseUndoCommand::~OpenCloseUndoCommand()
+{
+    
+}
+
+void OpenCloseUndoCommand::undo()
+{
+    if (_firstRedoCalled) {
+        _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool);
+        if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
+            _roto->setBuiltBezier(_curve);
+        }
+    }
+    _curve->setCurveFinished(!_curve->isCurveFinished());
+    _roto->evaluate(true);
+    _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
+    setText(QString("Open/Close %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+void OpenCloseUndoCommand::redo()
+{
+    if (_firstRedoCalled) {
+        _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool);
+    }
+    _curve->setCurveFinished(!_curve->isCurveFinished());
+    _roto->evaluate(_firstRedoCalled);
+    _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
+    _firstRedoCalled = true;
+    setText(QString("Open/Close %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+////////////////////////////
+
+SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
+                      const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& point,
+                      int time,bool cusp)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _curve(curve)
+, _time(time)
+, _cusp(cusp)
+, _oldPoint()
+, _newPoint(point)
+{
+    _oldPoint.first.reset(new BezierCP(*point.first));
+    _oldPoint.second.reset(new BezierCP(*point.second));
+}
+
+SmoothCuspUndoCommand::~SmoothCuspUndoCommand()
+{
+
+}
+void SmoothCuspUndoCommand::undo()
+{
+    _curve->clonePoint(*_newPoint.first, *_oldPoint.first);
+    _curve->clonePoint(*_newPoint.second, *_oldPoint.second);
+    
+    _roto->evaluate(true);
+    _roto->setSelection(_curve, _newPoint);
+    if (_cusp) {
+        setText(QString("Cusp %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    } else {
+        setText(QString("Smooth %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    }
+}
+
+void SmoothCuspUndoCommand::redo()
+{
+    
+    _curve->clonePoint(*_oldPoint.first, *_newPoint.first);
+    _curve->clonePoint(*_oldPoint.second, *_newPoint.second);
+#pragma message WARN("Merge correctly")
+    int index = _curve->getControlPointIndex(_newPoint.first->isFeatherPoint() ? _newPoint.second : _newPoint.first);
+    assert(index != -1);
+    
+    if (_cusp) {
+        _curve->cuspPointAtIndex(index, _time);
+    } else {
+        _curve->smoothPointAtIndex(index, _time);
+    }
+    
+    _roto->evaluate(_firstRedoCalled);
+    _roto->setSelection(_curve, _newPoint);
+    
+    _firstRedoCalled = true;
+    if (_cusp) {
+        setText(QString("Cusp %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    } else {
+        setText(QString("Smooth %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    }
+    
+}
+
+int SmoothCuspUndoCommand::id() const
+{
+    return kRotoCuspSmoothCompressionID;
+}
+
+bool SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const SmoothCuspUndoCommand* sCmd = dynamic_cast<const SmoothCuspUndoCommand*>(other);
+    if (!sCmd) {
+        return false;
+    }
+    if (sCmd->_newPoint.first != _newPoint.first || sCmd->_newPoint.second != _newPoint.second ||
+        sCmd->_cusp != _cusp || sCmd->_time != _time) {
+        return false;
+    }
+    return true;
+}
+
+/////////////////////////
+
+MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,bool createPoint,double dx,double dy,int time)
+: QUndoCommand()
+, _firstRedoCalled(false)
+, _roto(roto)
+, _parentLayer()
+, _indexInLayer(0)
+, _oldCurve()
+, _newCurve(curve)
+, _curveNonExistant(false)
+, _createdPoint(createPoint)
+, _x(dx)
+, _y(dy)
+, _dx(createPoint ? 0. : dx)
+, _dy(createPoint ? 0. : dy)
+, _time(time)
+, _lastPointAdded(-1)
+{
+    if (!_newCurve) {
+        _curveNonExistant = true;
+    } else {
+        _oldCurve.reset(new Bezier(*_newCurve));
+    }
+}
+
+MakeBezierUndoCommand::~MakeBezierUndoCommand()
+{
+    
+}
+
+void MakeBezierUndoCommand::undo()
+{
+    assert(_createdPoint);
+    _roto->setCurrentTool(RotoGui::DRAW_BEZIER);
+    assert(_lastPointAdded != -1);
+    _oldCurve->clone(*_newCurve);
+    _newCurve->removeControlPointByIndex(_lastPointAdded);
+    if (_newCurve->getControlPointsCount() == 0) {
+         _curveNonExistant = true;
+        _roto->removeCurve(_newCurve.get());
+    }
+    if (!_curveNonExistant) {
+        _roto->setSelection(_newCurve, std::make_pair(CpPtr(), CpPtr()));
+        _roto->setBuiltBezier(_newCurve);
+    } else {
+        _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
+    }
+    _roto->evaluate(true);
+    setText(QString("Build bezier %1 of %2").arg(_newCurve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    
+}
+
+void MakeBezierUndoCommand::redo()
+{
+    if (_firstRedoCalled) {
+        _roto->setCurrentTool(RotoGui::DRAW_BEZIER);
+    }
+    
+    if (!_firstRedoCalled) {
+        if (_createdPoint) {
+            if (!_newCurve) {
+                _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName);
+                _oldCurve.reset(new Bezier(*_newCurve));
+                _lastPointAdded = 0;
+                 _curveNonExistant = false;
+            } else {
+                _oldCurve->clone(*_newCurve);
+                _newCurve->addControlPoint(_x, _y);
+                int lastIndex = _newCurve->getControlPointsCount() - 1;
+                assert(lastIndex > 0);
+                _lastPointAdded = lastIndex;
+            }
+        } else {
+            _oldCurve->clone(*_newCurve);
+            int lastIndex = _newCurve->getControlPointsCount() - 1;
+            assert(lastIndex >= 0);
+            _lastPointAdded = lastIndex;
+            _newCurve->moveLeftBezierPoint(lastIndex ,_time, -_dx, -_dy);
+            _newCurve->moveRightBezierPoint(lastIndex, _time, _dx, _dy);
+        }
+        _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->
+                                                              getItemByName(_newCurve->getParentLayer()->getName_mt_safe()));
+        _indexInLayer = _parentLayer->getChildIndex(_newCurve);
+
+    } else {
+        _newCurve->clone(*_oldCurve);
+        if (_curveNonExistant) {
+            _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _newCurve);
+        }
+    }
+
+    
+    boost::shared_ptr<BezierCP> cp = _newCurve->getControlPointAtIndex(_lastPointAdded);
+    boost::shared_ptr<BezierCP> fp = _newCurve->getFeatherPointAtIndex(_lastPointAdded);
+    _roto->setSelection(_newCurve, std::make_pair(cp, fp));
+    _roto->evaluate(_firstRedoCalled);
+    
+    _firstRedoCalled = true;
+    
+    
+    
+    setText(QString("Build bezier %1 of %2").arg(_newCurve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+}
+
+int MakeBezierUndoCommand::id() const
+{
+    return kRotoMakeBezierCompressionID;
+}
+
+bool MakeBezierUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const MakeBezierUndoCommand* sCmd = dynamic_cast<const MakeBezierUndoCommand*>(other);
+    if (!sCmd) {
+        return false;
+    }
+    
+    if (sCmd->_createdPoint || sCmd->_newCurve != _newCurve) {
+        return false;
+    }
+    
+    if (!sCmd->_createdPoint) {
+        _dx += sCmd->_dx;
+        _dy += sCmd->_dy;
+    }
+    
+    return true;
+}

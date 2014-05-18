@@ -150,6 +150,8 @@ public:
     void getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
                       std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >* selectedCps);
     
+    void setBuiltBezier(const boost::shared_ptr<Bezier>& curve);
+    
     /**
      * @brief For undo/redo purpose, calling this will do 3 things:
      * Refresh overlays
@@ -157,7 +159,7 @@ public:
      * Trigger an auto-save
      * Never call this upon the *first* redo() call, we do this already in the user event methods.
      **/
-    void evaluate();
+    void evaluate(bool redraw);
     
     void pushUndoCommand(QUndoCommand* cmd);
     

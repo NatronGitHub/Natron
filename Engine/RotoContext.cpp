@@ -3692,7 +3692,6 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
  
-    QMutexLocker l(&_imp->rotoContextMutex);
     
     ////Allocate the cairo temporary buffer
     cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());

@@ -81,6 +81,9 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphMoveNodeCommandCompressionID 4
 #define kRotoMoveControlPointsCompressionID 5
 #define kRotoMoveTangentCompressionID 6
+#define kRotoCuspSmoothCompressionID 7
+#define kRotoMoveFeatherBarCompressionID 8
+#define kRotoMakeBezierCompressionID 9
 
 #ifdef __NATRON_WIN32__
 namespace NatronWindows{
