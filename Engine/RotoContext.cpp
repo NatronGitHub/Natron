@@ -2697,9 +2697,15 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
         if (!deepestLayer) {
             ///find out if there's a base layer, if so add to the base layer,
             ///otherwise create the base layer
-            if (!_imp->layers.empty()) {
-                parentLayer = _imp->layers.front().get();
+            for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
+                int hierarchy = (*it)->getHierarchyLevel();
+                if (hierarchy == 0) {
+                    parentLayer = it->get();
+                    break;
+                }
             }
+            
+            
         } else {
             parentLayer = deepestLayer;
         }

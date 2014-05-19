@@ -1293,3 +1293,38 @@ void RemoveItemsUndoCommand::redo()
     _roto->getContext()->evaluateChange();
     setText(QString("Remove items of %2").arg(_roto->getNodeName().c_str()));
 }
+
+
+/////////////////////////////
+
+
+AddLayerUndoCommand::AddLayerUndoCommand(RotoPanel* roto)
+: QUndoCommand()
+, _roto(roto)
+, _layer()
+{
+    
+}
+
+AddLayerUndoCommand::~AddLayerUndoCommand()
+{
+    
+}
+
+void AddLayerUndoCommand::undo()
+{
+    _roto->getContext()->removeItem(_layer.get());
+    _roto->clearSelection();
+    _roto->getContext()->evaluateChange();
+    _layer.reset();
+    setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
+}
+
+void AddLayerUndoCommand::redo()
+{
+    _layer = _roto->getContext()->addLayer();
+    _roto->clearSelection();
+    _roto->getContext()->select(_layer, RotoContext::OTHER);
+    _roto->getContext()->evaluateChange();
+    setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
+}

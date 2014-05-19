@@ -445,4 +445,26 @@ private:
     std::list<RemovedItem> _items;
 };
 
+class AddLayerUndoCommand: public QUndoCommand
+{
+
+    
+public:
+    
+    
+    
+    AddLayerUndoCommand(RotoPanel* roto);
+    
+    virtual ~AddLayerUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoPanel* _roto;
+    boost::shared_ptr<RotoLayer> _layer;
+};
+
 #endif // ROTOUNDOCOMMAND_H

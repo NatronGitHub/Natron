@@ -236,7 +236,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::INT_SPINBOX);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly(true);
-    _imp->totalKeyframes->setToolTip("The keyframe count for all the shapes.");
+    _imp->totalKeyframes->setToolTip("The keyframe count for all the selected shapes.");
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
     
     QPixmap prevPix,nextPix,addPix,removePix;
@@ -889,11 +889,7 @@ void RotoPanel::onItemSelectionChanged()
 
 void RotoPanel::onAddLayerButtonClicked()
 {
-#pragma message WARN("Make this an  undo/redo command")
-    boost::shared_ptr<RotoLayer> layer = _imp->context->addLayer();
-    _imp->tree->clearSelection();
-    TreeItems::iterator it = _imp->findItem(layer.get());
-    assert(it != _imp->items.end());
+    pushUndoCommand(new AddLayerUndoCommand(this));
 }
 
 void RotoPanel::onRemoveItemButtonClicked()
