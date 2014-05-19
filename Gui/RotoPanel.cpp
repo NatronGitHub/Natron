@@ -931,6 +931,17 @@ void TreeWidget::dragMoveEvent(QDragMoveEvent * event)
     }
 }
 
+static void checkIfTreatedRecursive(QTreeWidgetItem* matcher, QTreeWidgetItem* item,bool *ret)
+{
+    if (item == matcher) {
+        *ret = true;
+    } else {
+        if (item->parent()) {
+            checkIfTreatedRecursive(matcher,item->parent(),ret);
+        }
+    }
+}
+
 
 bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
                                     const QPoint& pos,
@@ -944,6 +955,9 @@ bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
         
         DropIndicatorPosition position = dropIndicatorPosition();
         
+        ///list of items we already handled d&d for. If we find an item whose parent
+        ///is already in this list we don't handle it
+        std::list<QTreeWidgetItem*> treatedItems;
         while (!stream.atEnd())
         {
             
@@ -953,6 +967,7 @@ bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
             stream >> row >> col >> roleDataMap;
             
             QMap<int, QVariant>::Iterator it = roleDataMap.find(0);
+            
             if (it != roleDataMap.end()) {
                 DroppedItem ret;
 
@@ -969,6 +984,19 @@ bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
                 
                 ///the dropped item
                 ret.dropped = foundDropped[0];
+                
+                bool treated = false;
+                for (std::list<QTreeWidgetItem*>::iterator treatedIt = treatedItems.begin(); treatedIt != treatedItems.end(); ++treatedIt) {
+                    checkIfTreatedRecursive(*treatedIt,ret.dropped,&treated);
+                    if (treated) {
+                        break;
+                    }
+                }
+                if (treated) {
+                    continue;
+                }
+                
+                
                 ret.droppedRotoItem = _panel->getRotoItemForTreeItem(ret.dropped);
                 assert(into && ret.dropped && intoRotoItem && ret.droppedRotoItem);
                 
@@ -1059,6 +1087,7 @@ bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
                         return false;
                 } // switch
                 dropped.push_back(ret);
+                treatedItems.push_back(ret.dropped);
             } //  if (it != roleDataMap.end())
 
         } // while (!stream.atEnd())
