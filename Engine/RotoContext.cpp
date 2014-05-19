@@ -3262,6 +3262,15 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
     
     _imp->selectedItems.erase(it);
     
+    int nbBeziersUnLockedBezier = 0;
+    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier && !isBezier->isLockedRecursive()) {
+            ++nbBeziersUnLockedBezier;
+        }
+    }
+    bool notDirty = nbBeziersUnLockedBezier <= 1;
+    
     Bezier* isBezier = dynamic_cast<Bezier*>(b.get());
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(b.get());
     if (isBezier) {
@@ -3273,11 +3282,11 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
         
-        activated->unSlave(0,true);
-        feather->unSlave(0,true);
-        featherFallOff->unSlave(0,true);
-        opacity->unSlave(0,true);
-        inverted->unSlave(0,true);
+        activated->unSlave(0,notDirty);
+        feather->unSlave(0,notDirty);
+        featherFallOff->unSlave(0,notDirty);
+        opacity->unSlave(0,notDirty);
+        inverted->unSlave(0,notDirty);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -3285,15 +3294,8 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
             deselectInternal(*it);
         }
     }
-    int nbBeziersUnLockedBezier = 0;
-    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
-        if (isBezier && !isBezier->isLockedRecursive()) {
-            ++nbBeziersUnLockedBezier;
-        }
-    }
     
-    if (nbBeziersUnLockedBezier <= 1) {
+    if (notDirty) {
         _imp->activated->setDirty(false);
         _imp->opacity->setDirty(false);
         _imp->feather->setDirty(false);

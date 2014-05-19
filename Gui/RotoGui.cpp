@@ -1246,6 +1246,12 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case DRAW_BEZIER:
         {
+            if (_imp->builtBezier && _imp->builtBezier->isCurveFinished()) {
+                _imp->builtBezier.reset();
+                _imp->clearSelection();
+                onToolActionTriggered(_imp->selectAllAction);
+                return true;
+            }
             if (_imp->builtBezier) {
                 ///if the user clicked on a control point of the bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve
