@@ -3266,11 +3266,11 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
         
-        activated->unSlave(0,false);
-        feather->unSlave(0,false);
-        featherFallOff->unSlave(0,false);
-        opacity->unSlave(0,false);
-        inverted->unSlave(0,false);
+        activated->unSlave(0,true);
+        feather->unSlave(0,true);
+        featherFallOff->unSlave(0,true);
+        opacity->unSlave(0,true);
+        inverted->unSlave(0,true);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
