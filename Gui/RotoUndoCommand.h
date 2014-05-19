@@ -465,7 +465,12 @@ public:
 private:
     
     RotoPanel* _roto;
+    bool _firstRedoCalled;
+    RotoLayer* _parentLayer;
+    QTreeWidgetItem* _parentTreeItem;
+    QTreeWidgetItem* _treeItem;
     boost::shared_ptr<RotoLayer> _layer;
+    int _indexInParentLayer;
 };
 
 

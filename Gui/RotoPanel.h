@@ -42,6 +42,8 @@ public:
     void onTreeOutOfFocusEvent();
     
     boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
+   
+    QTreeWidgetItem* getTreeItemForRotoItem(const boost::shared_ptr<RotoItem>& item) const;
     
     std::string getNodeName() const;
     

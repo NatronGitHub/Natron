@@ -1300,7 +1300,12 @@ void RemoveItemsUndoCommand::redo()
 AddLayerUndoCommand::AddLayerUndoCommand(RotoPanel* roto)
 : QUndoCommand()
 , _roto(roto)
+, _firstRedoCalled(false)
+, _parentLayer(0)
+, _parentTreeItem(0)
+, _treeItem(0)
 , _layer()
+, _indexInParentLayer(-1)
 {
     
 }
@@ -1312,20 +1317,39 @@ AddLayerUndoCommand::~AddLayerUndoCommand()
 
 void AddLayerUndoCommand::undo()
 {
-    _roto->getContext()->removeItem(_layer.get());
+    _treeItem->setHidden(true);
+    if (_parentTreeItem) {
+        _parentTreeItem->removeChild(_treeItem);
+    }
+    _roto->getContext()->removeItem(_layer.get(),RotoContext::SETTINGS_PANEL);
     _roto->clearSelection();
     _roto->getContext()->evaluateChange();
-    _layer.reset();
     setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
 }
 
 void AddLayerUndoCommand::redo()
 {
-    _layer = _roto->getContext()->addLayer();
+    if (!_firstRedoCalled) {
+        _layer = _roto->getContext()->addLayer();
+        _parentLayer = _layer->getParentLayer();
+        _treeItem = _roto->getTreeItemForRotoItem(_layer);
+        _parentTreeItem = _treeItem->parent();
+        if (_parentLayer) {
+            _indexInParentLayer = _parentLayer->getChildIndex(_layer);
+        }
+    } else {
+        _roto->getContext()->addLayer(_layer);
+        _treeItem->setHidden(false);
+        if (_parentLayer) {
+            _roto->getContext()->addItem(_parentLayer, _indexInParentLayer, _layer,RotoContext::SETTINGS_PANEL);
+            _parentTreeItem->addChild(_treeItem);
+        }
+    }
     _roto->clearSelection();
     _roto->getContext()->select(_layer, RotoContext::OTHER);
     _roto->getContext()->evaluateChange();
     setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
+    _firstRedoCalled = true;
 }
 
 

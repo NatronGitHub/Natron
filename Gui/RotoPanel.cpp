@@ -343,6 +343,15 @@ boost::shared_ptr<RotoItem> RotoPanel::getRotoItemForTreeItem(QTreeWidgetItem* t
     return boost::shared_ptr<RotoItem>();
 }
 
+QTreeWidgetItem* RotoPanel::getTreeItemForRotoItem(const boost::shared_ptr<RotoItem>& item) const
+{
+    TreeItems::iterator it = _imp->findItem(item.get());
+    if (it != _imp->items.end()) {
+        return it->treeItem;
+    }
+    return NULL;
+}
+
 void RotoPanel::onGoToPrevKeyframeButtonClicked()
 {
     _imp->context->goToPreviousKeyframe();
