@@ -962,8 +962,7 @@ void MakeBezierUndoCommand::redo()
     boost::shared_ptr<BezierCP> cp = _newCurve->getControlPointAtIndex(_lastPointAdded);
     boost::shared_ptr<BezierCP> fp = _newCurve->getFeatherPointAtIndex(_lastPointAdded);
     _roto->setSelection(_newCurve, std::make_pair(cp, fp));
-    _roto->evaluate(_firstRedoCalled);
-    
+    _roto->autoSaveAndRedraw();
     _firstRedoCalled = true;
     
     
@@ -1327,4 +1326,68 @@ void AddLayerUndoCommand::redo()
     _roto->getContext()->select(_layer, RotoContext::OTHER);
     _roto->getContext()->evaluateChange();
     setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
+}
+
+
+/////////////////////////////////
+
+DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,const std::list< boost::shared_ptr<DroppedTreeItem> >& items)
+: QUndoCommand()
+, _roto(roto)
+, _items()
+{
+    for (std::list< boost::shared_ptr<DroppedTreeItem> >::const_iterator it = items.begin(); it!= items.end(); ++it) {
+        assert((*it)->newParentLayer && (*it)->newParentItem && (*it)->insertIndex != -1);
+        Item i;
+        i.dropped = *it;
+        i.oldParentItem = (*it)->dropped->parent();
+        i.oldParentLayer = (*it)->droppedRotoItem->getParentLayer();
+        if (i.oldParentLayer) {
+            i.indexInOldLayer = i.oldParentLayer->getChildIndex((*it)->droppedRotoItem);
+        } else {
+            i.indexInOldLayer = -1;
+        }
+        _items.push_back(i);
+    }
+}
+
+DragItemsUndoCommand::~DragItemsUndoCommand()
+{
+    
+}
+
+void DragItemsUndoCommand::undo()
+{
+    for (std::list<Item>::iterator it = _items.begin(); it!=_items.end(); ++it) {
+        assert(it->dropped->newParentItem);
+        it->dropped->newParentItem->removeChild(it->dropped->dropped);
+        it->dropped->newParentLayer->removeItem(it->dropped->droppedRotoItem.get());
+        if (it->oldParentItem) {
+            it->oldParentItem->insertChild(it->indexInOldLayer, it->dropped->dropped);
+            assert(it->oldParentLayer);
+            it->dropped->droppedRotoItem->setParentLayer(it->oldParentLayer);
+            _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoContext::SETTINGS_PANEL);
+        } else {
+            it->dropped->droppedRotoItem->setParentLayer(NULL);
+        }
+        
+    }
+    _roto->getContext()->evaluateChange();
+    setText(QString("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
+}
+
+void DragItemsUndoCommand::redo()
+{
+    for (std::list<Item>::iterator it = _items.begin(); it!=_items.end(); ++it) {
+        it->oldParentItem->removeChild(it->dropped->dropped);
+        if (it->oldParentLayer) {
+            it->oldParentLayer->removeItem(it->dropped->droppedRotoItem.get());
+        }
+        assert(it->dropped->newParentItem);
+        it->dropped->newParentItem->insertChild(it->dropped->insertIndex,it->dropped->dropped);
+        it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
+        it->dropped->droppedRotoItem->setParentLayer(it->dropped->newParentLayer);
+    }
+    _roto->getContext()->evaluateChange();
+    setText(QString("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
 }

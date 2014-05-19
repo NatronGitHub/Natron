@@ -25,6 +25,7 @@ class NodeGui;
 class QUndoCommand;
 class RotoItem;
 class RotoContext;
+class RotoLayer;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
@@ -32,6 +33,7 @@ class RotoPanel : public QWidget
     Q_OBJECT
     
 public:
+    
     
     RotoPanel(NodeGui* n,QWidget* parent = 0);
     
@@ -105,5 +107,25 @@ private:
     boost::scoped_ptr<RotoPanelPrivate> _imp;
 };
 
+
+struct DroppedTreeItem
+{
+    RotoLayer* newParentLayer;
+    int insertIndex;
+    QTreeWidgetItem* newParentItem;
+    QTreeWidgetItem* dropped;
+    boost::shared_ptr<RotoItem> droppedRotoItem;
+    
+    DroppedTreeItem()
+    : newParentLayer(0)
+    , insertIndex(-1)
+    , newParentItem(0)
+    , dropped(0)
+    , droppedRotoItem()
+    {
+        
+    }
+};
+typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
 
 #endif // ROTOPANEL_H

@@ -1629,6 +1629,7 @@ void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool featherLink = getContext()->isFeatherLinkEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     {
     QMutexLocker l(&itemMutex);
     
@@ -1659,7 +1660,7 @@ void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
             }
         }
         
-        if (getContext()->isRippleEditEnabled()) {
+        if (rippleEdit) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1682,6 +1683,7 @@ void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool featherLink = getContext()->isFeatherLinkEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     {
     QMutexLocker l(&itemMutex);
     
@@ -1713,7 +1715,7 @@ void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
             }
         }
         
-        if (getContext()->isRippleEditEnabled()) {
+        if (rippleEdit) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -3883,16 +3885,16 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 assert(norm != 0);
                 double dx = - ((next->y - prev->y) / norm);
                 double dy = ((next->x - prev->x) / norm);
-                p1.x = bezIT->x + dx;
-                p1.y = bezIT->y + dy;
+                p1.x = cur->x + dx;
+                p1.y = cur->y + dy;
                 
                 bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
-                    p1.x = bezIT->x - dx * absFeatherDist;
-                    p1.y = bezIT->y - dy * absFeatherDist;
+                    p1.x = cur->x - dx * absFeatherDist;
+                    p1.y = cur->y - dy * absFeatherDist;
                 } else {
-                    p1.x = bezIT->x + dx * absFeatherDist;
-                    p1.y = bezIT->y + dy * absFeatherDist;
+                    p1.x = cur->x + dx * absFeatherDist;
+                    p1.y = cur->y + dy * absFeatherDist;
                 }
                 
                 Point origin = p1;
@@ -3994,6 +3996,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
                     ++featherContourIT;
                 }
+                
            
             } else {
                 ///This is a vector of feather points that we compute during

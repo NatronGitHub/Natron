@@ -1436,6 +1436,12 @@ void RotoGui::evaluate(bool redraw)
     _imp->node->getNode()->getApp()->triggerAutoSave();
 }
 
+void RotoGui::autoSaveAndRedraw()
+{
+    _imp->viewer->redraw();
+    _imp->node->getNode()->getApp()->triggerAutoSave();
+}
+
 bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
 {
     if (_imp->evaluateOnPenUp) {

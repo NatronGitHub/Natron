@@ -163,6 +163,8 @@ public:
      **/
     void evaluate(bool redraw);
     
+    void autoSaveAndRedraw();
+    
     void pushUndoCommand(QUndoCommand* cmd);
     
     QString getNodeName() const;

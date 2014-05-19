@@ -27,6 +27,7 @@ class RotoLayer;
 class RotoPanel;
 class QTreeWidgetItem;
 class RotoItem;
+class DroppedTreeItem;
 class MoveControlPointsUndoCommand : public QUndoCommand
 {
 public:
@@ -465,6 +466,37 @@ private:
     
     RotoPanel* _roto;
     boost::shared_ptr<RotoLayer> _layer;
+};
+
+
+class DragItemsUndoCommand: public QUndoCommand
+{
+    
+    
+public:
+    
+    struct Item
+    {
+        boost::shared_ptr<DroppedTreeItem> dropped;
+        RotoLayer* oldParentLayer;
+        int indexInOldLayer;
+        QTreeWidgetItem* oldParentItem;
+    };
+    
+    
+    
+    DragItemsUndoCommand(RotoPanel* roto,const std::list< boost::shared_ptr<DroppedTreeItem> >& items);
+    
+    virtual ~DragItemsUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoPanel* _roto;
+    std::list < Item > _items;
 };
 
 #endif // ROTOUNDOCOMMAND_H
