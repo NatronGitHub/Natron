@@ -224,38 +224,61 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
     } else if (contexts.size() == 1) {
         context = (*contexts.begin());
     } else {
-
+        
         std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
-        if (found != contexts.end()) {
-            context = *found;
-        } else {
-            found = contexts.find(kOfxImageEffectContextWriter);
-            if (found != contexts.end()) {
-                context = *found;
-            } else {
-                found = contexts.find(kOfxImageEffectContextPaint);
-                if (found != contexts.end()) {
-                    context = *found;
-                } else {
-                    found = contexts.find(kOfxImageEffectContextGeneral);
-                    if (found != contexts.end()) {
-                        context = *found;
-                    } else {
-                        found = contexts.find(kOfxImageEffectContextFilter);
-                        if (found != contexts.end()) {
-                            context = *found;
-                        } else {
-                            found = contexts.find(kOfxImageEffectContextGenerator);
-                            if (found != contexts.end()) {
-                                context = *found;
-                            } else {
-                                kOfxImageEffectContextTransition;
-                            }
-                        }
-                    }
-                }
-            }
+        bool reader = found != contexts.end();
+        if (reader) {
+            context = kOfxImageEffectContextReader;
+            return;
         }
+        
+        found = contexts.find(kOfxImageEffectContextWriter);
+        bool writer = found != contexts.end();
+        if (writer) {
+            context = kOfxImageEffectContextWriter;
+            return;
+        }
+        
+        ////Special case for the "Draw" nodes: default to paint context.
+        ////We don't want to do this for other nodes that support the paint context.
+        ////For example we don't want to instantiate the transform node in the paint context
+        ////Maybe we should just always instantiate in paint context and deal with it with
+        ////the GUI
+        found = contexts.find(kOfxImageEffectContextPaint);
+        bool paint = found != contexts.end();
+        if (paint && QString(pluginID.c_str()).contains("RotoOFX",Qt::CaseInsensitive)) {
+            context = kOfxImageEffectContextPaint;
+            return;
+        }
+        
+        found = contexts.find(kOfxImageEffectContextGeneral);
+        bool general = found != contexts.end();
+        if (general) {
+            context = kOfxImageEffectContextGeneral;
+            return;
+        }
+        
+        found = contexts.find(kOfxImageEffectContextFilter);
+        bool filter = found != contexts.end();
+        if (filter) {
+            context = kOfxImageEffectContextFilter;
+            return;
+        }
+        
+        found = contexts.find(kOfxImageEffectContextGenerator);
+        bool generator = found != contexts.end();
+        if (generator) {
+            context = kOfxImageEffectContextGenerator;
+            return;
+        }
+        
+        found = contexts.find(kOfxImageEffectContextTransition);
+        bool transition = found != contexts.end();
+        if (transition) {
+            context = kOfxImageEffectContextTransition;
+            return;
+        }
+        
     }
 }
 

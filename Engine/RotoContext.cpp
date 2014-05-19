@@ -2115,7 +2115,7 @@ RectD Bezier::getBoundingBox(int time) const
     bbox.y1 = INT_MAX;
     bbox.y2 = INT_MIN;
     evaluateAtTime_DeCastelJau(time,0, 50,&pts,&bbox);
-    evaluateFeatherPointsAtTime_DeCastelJau(time,0,50, &pts,&bbox);
+    evaluateFeatherPointsAtTime_DeCastelJau(time,0,50, &pts,false,&bbox);
     
     if (bbox.x1 == INT_MAX) {
         bbox.x1 = 0;

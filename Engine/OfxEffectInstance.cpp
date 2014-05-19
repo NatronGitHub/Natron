@@ -396,7 +396,7 @@ bool OfxEffectInstance::isInputRotoBrush(int inputNb) const
     assert(inputNb < (int)inputs.size());
     
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
-    return inputs[inputs.size()-1-inputNb]->getName() == "Brush";
+    return inputs[inputs.size()-1-inputNb]->getName() == "Brush" && getNode()->isRotoNode();
 }
 
 /// the smallest RectI enclosing the given RectD
@@ -630,7 +630,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             for (int i = 0; i < nthClip ; ++i) {
                 OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
                 assert(clip);
-                if (!clip->isOutput() && !clip->isOptional() && clip->getName() != "Brush") {
+                if (!clip->isOutput() && !clip->isOptional() && (clip->getName() != "Brush" || !getNode()->isRotoNode())) {
                     double f,l;
                     clip->getFrameRange(f, l);
                     if (!firstValidClip) {

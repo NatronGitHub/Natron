@@ -470,8 +470,7 @@ int Node::getPreferredInputForConnection() const {
     
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
-    int firstOptionalEmptyInput = -1;
-    
+    std::list<int> optionalEmptyInputs;
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputs.size() ; ++i) {
@@ -482,9 +481,7 @@ int Node::getPreferredInputForConnection() const {
                         break;
                     }
                 } else {
-                    if (firstOptionalEmptyInput == -1) {
-                        firstOptionalEmptyInput = i;
-                    }
+                    optionalEmptyInputs.push_back(i);
                 }
             }
         }
@@ -492,10 +489,20 @@ int Node::getPreferredInputForConnection() const {
     
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
-    } else if(firstOptionalEmptyInput != -1) {
-        return firstOptionalEmptyInput;
-    } else {
-        return -1;
+    }  else {
+        if (!optionalEmptyInputs.empty()) {
+            std::list<int>::iterator  first = optionalEmptyInputs.begin();
+            while (first != optionalEmptyInputs.end() && _imp->liveInstance->isInputRotoBrush(*first)) {
+                ++first;
+            }
+            if (first == optionalEmptyInputs.end()) {
+                return -1;
+            } else {
+                return *first;
+            }
+        } else {
+            return -1;
+        }
     }
 }
 

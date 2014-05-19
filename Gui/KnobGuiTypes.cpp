@@ -106,7 +106,6 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
     for (int i = 0; i < dim; ++i) {
         QWidget *boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
-        //boxContainer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
@@ -1693,9 +1692,11 @@ ColorPickerLabel::ColorPickerLabel(QWidget* parent)
 {
     
     setToolTip(Qt::convertFromPlainText("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
-               "Note that by default " NATRON_APPLICATION_NAME " converts to linear the color picked\n"
-               "because all the processing pipeline is linear, but you can turn this off in the\n"
-               "preference panel.", Qt::WhiteSpaceNormal));
+                                        "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
+                                        "To deselect the picker click outside the image."
+                                        "Note that by default " NATRON_APPLICATION_NAME " converts to linear the color picked\n"
+                                        "because all the processing pipeline is linear, but you can turn this off in the\n"
+                                        "preference panel.", Qt::WhiteSpaceNormal));
     setMouseTracking(true);
 }
 

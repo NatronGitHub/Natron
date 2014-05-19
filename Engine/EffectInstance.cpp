@@ -1077,7 +1077,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                                      boost::shared_ptr<Natron::Image> downscaledOutput,
                                                      boost::shared_ptr<Natron::Image> output)
 {
-    Implementation::ScopedRenderArgs(&_imp->renderArgs,args);
+    Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
     RectI rectToRender = downscaledOutput->getMinimalRect(roi);
     bool useFullResImage = !supportsRenderScale() && args._mipMapLevel != 0;

@@ -2029,6 +2029,12 @@ void Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
     _imp->_projectGui->removeColorPicker(knob);
 }
 
+bool Gui::hasPickers() const
+{
+    assert(_imp->_projectGui);
+    return _imp->_projectGui->hasPickers();
+}
+
 void Gui::updateViewersViewsMenu(int viewsCount) {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {

@@ -218,22 +218,22 @@ bool VideoEngine::startEngine(bool singleThreaded) {
 
     
     
-    
-    ViewerInstance* viewer = _tree.outputAsViewer(); /*viewer might be NULL if the output is smthing else*/
-    
-    bool hasInput = false;
-    for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
-        if((*it)->isInputNode()){
-            hasInput = true;
-            break;
-        }
-    }
-
-    if (!hasInput) {
-        if(viewer)
-            viewer->disconnectViewer();
-        return false;
-    }
+//    
+//    ViewerInstance* viewer = _tree.outputAsViewer(); /*viewer might be NULL if the output is smthing else*/
+//    
+//    bool hasInput = false;
+//    for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
+//        if((*it)->isInputNode()){
+//            hasInput = true;
+//            break;
+//        }
+//    }
+//
+//    if (!hasInput) {
+//        if(viewer)
+//            viewer->disconnectViewer();
+//        return false;
+//    }
     
     {
         QMutexLocker workingLocker(&_workingMutex);

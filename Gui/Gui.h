@@ -211,6 +211,8 @@ public:
     void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
     
     void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+    
+    bool hasPickers() const;
 
     void initProjectGuiKnobs();
     

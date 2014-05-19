@@ -1000,7 +1000,7 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
         return false;
     }
     
-    if (_imp->_currentRoto.second) {
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos)) {
             return true;
         }
@@ -1031,7 +1031,7 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
         return false;
     }
     
-    if (_imp->_currentRoto.second) {
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
             return true;
         }
@@ -1061,7 +1061,7 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
         return false;
     }
     
-    if (_imp->_currentRoto.second) {
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penUp(scaleX, scaleY,viewportPos,pos)) {
             return true;
         }
@@ -1091,7 +1091,7 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
         return false;
     }
     
-    if (_imp->_currentRoto.second) {
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->keyDown(scaleX, scaleY,e)) {
             return true;
         }
@@ -1122,7 +1122,7 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
         return false;
     }
     
-    if (_imp->_currentRoto.second) {
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->keyUp(scaleX, scaleY,e)) {
             return true;
         }

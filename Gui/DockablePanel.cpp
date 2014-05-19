@@ -147,6 +147,7 @@ DockablePanel::DockablePanel(Gui* gui
         _undoButton = new Button(icUndo,"",_headerWidget);
         _undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
         _undoButton->setEnabled(false);
+        _undoButton->setFixedSize(20, 20);
         
         QPixmap pixRedo ;
         appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
@@ -158,6 +159,7 @@ DockablePanel::DockablePanel(Gui* gui
         _redoButton = new Button(icRedo,"",_headerWidget);
         _redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
         _redoButton->setEnabled(false);
+        _redoButton->setFixedSize(20, 20);
         
         QPixmap pixRestore;
         appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS, &pixRestore);
@@ -166,8 +168,9 @@ DockablePanel::DockablePanel(Gui* gui
         _restoreDefaultsButton = new Button(icRestore,"",_headerWidget);
         _restoreDefaultsButton->setToolTip(Qt::convertFromPlainText("Restore default values for this operator."
                                                                     " This cannot be undone!",Qt::WhiteSpaceNormal));
+        _restoreDefaultsButton->setFixedSize(20, 20);
         QObject::connect(_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
-        
+    
         
         QObject::connect(_undoButton, SIGNAL(clicked()),this, SLOT(onUndoClicked()));
         QObject::connect(_redoButton, SIGNAL(clicked()),this, SLOT(onRedoPressed()));
@@ -199,6 +202,7 @@ DockablePanel::DockablePanel(Gui* gui
     }
     
     _tabWidget = new QTabWidget(this);
+    _tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     _tabWidget->setObjectName("QTabWidget");
     _mainLayout->addWidget(_tabWidget);
     

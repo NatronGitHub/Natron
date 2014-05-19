@@ -415,6 +415,10 @@ private:
      **/
     void drawUserRoI();
     
+    void drawPickerRectangle();
+    
+    void drawPickerPixel();
+    
     /**
      *@brief Draws the persistent message if it is on.
      **/
@@ -438,6 +442,9 @@ private:
     
     bool isNearByUserRoIBottomLeft(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
 
+    void updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,int width,int height,const RectI& dispW);
+    void updateRectangleColorPicker();
+    
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };

@@ -121,7 +121,7 @@ const std::string &OfxClipInstance::getFieldOrder() const
 bool OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
-    if (getName() == "Brush") {
+    if (getName() == "Brush"  && _nodeInstance->getNode()->isRotoNode()) {
         return true;
     } else {
         if(_isOutput){
@@ -172,7 +172,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     int view = _lastRenderArgs.localData().view;
 
     
-    if (getName() == "Brush") {
+    if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
         assert(rotoCtx);
         RectI rod;
@@ -236,8 +236,6 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
     }
     else {
-        // default value: should never happen
-        assert(!"Cannot compute ROD the input is probably disconnected. The plug-in should have checked this before calling this function.");
         ret.x1 = kOfxFlagInfiniteMin;
         ret.x2 = kOfxFlagInfiniteMax;
         ret.y1 = kOfxFlagInfiniteMin;
@@ -381,7 +379,7 @@ int OfxClipInstance::getInputNb() const{
 
 Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 {
-    if (getName() == "Brush") {
+    if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
         return _nodeInstance;
     }
     if(_isOutput) {

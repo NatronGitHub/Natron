@@ -195,7 +195,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->mainLayout->addWidget(_imp->splineContainer);
     
     _imp->splineLayout = new QHBoxLayout(_imp->splineContainer);
-    
+    _imp->splineLayout->setSpacing(2);
     _imp->splineLabel = new ClickableLabel("Spline keyframe:",_imp->splineContainer);
     _imp->splineLabel->setSunken(false);
     _imp->splineLabel->setEnabled(false);
@@ -226,24 +226,28 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
     _imp->prevKeyframe->setToolTip("Go to the previous keyframe");
     _imp->prevKeyframe->setEnabled(false);
+    _imp->prevKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
     
     _imp->nextKeyframe = new Button(QIcon(nextPix),"",_imp->splineContainer);
     _imp->nextKeyframe->setToolTip("Go to the next keyframe");
     _imp->nextKeyframe->setEnabled(false);
+    _imp->nextKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
     
     _imp->addKeyframe = new Button(QIcon(addPix),"",_imp->splineContainer);
     _imp->addKeyframe->setToolTip("Add keyframe at the current timeline's time");
     _imp->addKeyframe->setEnabled(false);
+    _imp->addKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->addKeyframe);
     
     _imp->removeKeyframe = new Button(QIcon(removePix),"",_imp->splineContainer);
     _imp->removeKeyframe->setToolTip("Remove keyframe at the current timeline's time");
     _imp->removeKeyframe->setEnabled(false);
+    _imp->removeKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     _imp->splineLayout->addStretch();
@@ -633,7 +637,6 @@ void RotoPanel::onRotoItemInversionChanged()
 
 void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
 {
-#pragma message WARN("Make this an  undo/redo command")                    
     TreeItems::iterator it = _imp->findItem(item);
     if (it != _imp->items.end()) {
         int time = _imp->context->getTimelineCurrentTime();
