@@ -555,7 +555,8 @@ void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
     qDebug() << "ViewerCache disk size: " << printAsRAM(size);
 }
 
-void AppManager::setPlaybackCacheMaximumSize(double p){
+void AppManager::setPlaybackCacheMaximumSize(double p)
+{
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * p;
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
@@ -568,19 +569,21 @@ void AppManager::setPlaybackCacheMaximumSize(double p){
     qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
 }
 
-void AppManager::loadAllPlugins() {
+void AppManager::loadAllPlugins()
+{
     assert(_imp->_plugins.empty());
     assert(_imp->_formats.empty());
     
     
-    std::map<std::string,std::vector<std::string> > readersMap,writersMap;
+    std::map<std::string,std::vector<std::string> > readersMap;
+    std::map<std::string,std::vector<std::string> > writersMap;
     
     /*loading node plugins*/
     
     loadNodePlugins(&readersMap,&writersMap);
     
     /*loading ofx plugins*/
-    _imp->ofxHost->loadOFXPlugins(&_imp->_plugins,&readersMap,&writersMap);
+    _imp->ofxHost->loadOFXPlugins(&_imp->_plugins, &readersMap, &writersMap);
     
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
@@ -588,7 +591,8 @@ void AppManager::loadAllPlugins() {
 }
 
 void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
-                                 std::map<std::string,std::vector<std::string> >* writersMap){
+                                 std::map<std::string,std::vector<std::string> >* writersMap)
+{
     std::vector<std::string> functions;
     functions.push_back("BuildEffect");
     std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_NODES_PLUGINS_PATH, functions);
@@ -607,7 +611,7 @@ void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >
         }
     }
     
-    loadBuiltinNodePlugins(&_imp->_plugins,readersMap,writersMap);
+    loadBuiltinNodePlugins(&_imp->_plugins, readersMap, writersMap);
 }
 
 void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* /*plugins*/,

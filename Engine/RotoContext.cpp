@@ -295,9 +295,6 @@ static void cuspTangent(double x,double y,double *tx,double *ty)
     }
 }
     
-static const double pi=3.14159265358979323846264338327950288419717;
-    
-
 static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y,double *tx,double *ty)
 {
     
@@ -2059,7 +2056,7 @@ int Bezier::getKeyframesCount() const
 
 
 
-void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
+void Bezier::evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
                                         int nbPointsPerSegment,std::list< Natron::Point >* points,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
@@ -2076,7 +2073,7 @@ void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
     }
 }
 
-void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
+void Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
                                                      std::list< Natron::Point >* points,bool evaluateIfEqual,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
@@ -2114,8 +2111,9 @@ RectD Bezier::getBoundingBox(int time) const
     bbox.x2 = INT_MIN;
     bbox.y1 = INT_MAX;
     bbox.y2 = INT_MIN;
-    evaluateAtTime_DeCastelJau(time,0, 50,&pts,&bbox);
-    evaluateFeatherPointsAtTime_DeCastelJau(time,0,50, &pts,false,&bbox);
+
+    evaluateAtTime_DeCasteljau(time,0, 50,&pts,&bbox);
+    evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &pts, false, &bbox);
     
     if (bbox.x1 == INT_MAX) {
         bbox.x1 = 0;
@@ -3868,8 +3866,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 std::vector<double> multiples,constants;
                 RectD featherPolyBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
                 
-                (*it2)->evaluateFeatherPointsAtTime_DeCastelJau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
-                (*it2)->evaluateAtTime_DeCastelJau(time, mipmapLevel, 50, &bezierPolygon);
+                (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
+                (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
                 assert(!featherPolygon.empty());
                 
                 multiples.resize(featherPolygon.size());

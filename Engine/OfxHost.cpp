@@ -307,7 +307,8 @@ void Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path) {
 
 void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
                                      std::map<std::string,std::vector<std::string> >* readersMap,
-                                     std::map<std::string,std::vector<std::string> >* writersMap) {
+                                     std::map<std::string,std::vector<std::string> >* writersMap)
+{
     
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache

@@ -563,7 +563,7 @@ public:
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
-    void evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
+    void evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
                                     int nbPointsPerSegment,std::list<Natron::Point>* points,
                                     RectD* bbox = NULL) const;
     
@@ -571,11 +571,11 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
     
     /**
-     * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCastelJau will be returned,
-     * otherwise if it has never been called, evaluateAtTime_DeCastelJau will be called to compute the bounding box.
+     * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
+     * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
     RectD getBoundingBox(int time) const;
     

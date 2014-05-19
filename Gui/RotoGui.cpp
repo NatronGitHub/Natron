@@ -46,8 +46,6 @@ using namespace Natron;
 
 namespace {
     
-static const double pi=3.14159265358979323846264338327950288419717;
-
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
 typedef std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > SelectedCP;
@@ -563,7 +561,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             
             ///draw the bezier
             std::list< Point > points;
-            (*it)->evaluateAtTime_DeCastelJau(time,0, 100, &points);
+            (*it)->evaluateAtTime_DeCasteljau(time,0, 100, &points);
             
             double curveColor[4];
             if (!(*it)->isLockedRecursive()) {
@@ -582,7 +580,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             ///draw the feather points
             std::list< Point > featherPoints;
             RectD featherBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-            (*it)->evaluateFeatherPointsAtTime_DeCastelJau(time,0, 100, &featherPoints,true,&featherBBox);
+            (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, &featherPoints,true,&featherBBox);
             std::vector<double> constants(featherPoints.size()),multiples(featherPoints.size());
             Bezier::precomputePointInPolygonTables(featherPoints, &constants, &multiples);
             
@@ -1597,11 +1595,10 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
         
         std::list<Point> polygon;
         RectD polygonBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-        (*it)->evaluateFeatherPointsAtTime_DeCastelJau(time, 0, 50, &polygon, true,&polygonBBox);
+        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &polygon, true, &polygonBBox);
         std::vector<double> constants(polygon.size()),multipliers(polygon.size());
         Bezier::precomputePointInPolygonTables(polygon, &constants, &multipliers);
     
-        
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
         ++nextF;
@@ -1643,8 +1640,6 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
 
     return std::make_pair(boost::shared_ptr<BezierCP>(), boost::shared_ptr<BezierCP>());
 }
-
-
 
 void RotoGui::onAutoKeyingButtonClicked(bool e)
 {
