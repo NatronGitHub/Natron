@@ -918,6 +918,7 @@ void RotoLayer::load(const RotoItemSerialization &obj)
 {
     
     const RotoLayerSerialization& s = dynamic_cast<const RotoLayerSerialization&>(obj);
+    RotoItem::load(obj);
     {
         for (std::list<boost::shared_ptr<RotoItemSerialization> >::const_iterator it = s.children.begin(); it!=s.children.end(); ++it) {
             BezierSerialization* b = dynamic_cast<BezierSerialization*>(it->get());
@@ -929,13 +930,14 @@ void RotoLayer::load(const RotoItemSerialization &obj)
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
             } else if (l) {
-                boost::shared_ptr<RotoLayer> layer = getContext()->addLayer();
+                boost::shared_ptr<RotoLayer> layer(new RotoLayer(getContext(),kRotoLayerBaseName,this));
+                _imp->items.push_back(layer);
+                getContext()->addLayer(layer);
                 layer->load(*l);
             }
         }
         
     }
-    RotoItem::load(obj);
 }
 
 void RotoLayer::addItem(const boost::shared_ptr<RotoItem>& item)
@@ -2725,6 +2727,11 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
     clearSelection(RotoContext::OTHER);
     select(item, RotoContext::OTHER);
     return item;
+}
+
+void RotoContext::addLayer(const boost::shared_ptr<RotoLayer>& layer)
+{
+    _imp->layers.push_back(layer);
 }
 
 boost::shared_ptr<RotoItem> RotoContext::getLastInsertedItem() const

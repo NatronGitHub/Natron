@@ -1385,6 +1385,7 @@ void DragItemsUndoCommand::redo()
         }
         assert(it->dropped->newParentItem);
         it->dropped->newParentItem->insertChild(it->dropped->insertIndex,it->dropped->dropped);
+        it->dropped->newParentItem->setExpanded(true);
         it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
         it->dropped->droppedRotoItem->setParentLayer(it->dropped->newParentLayer);
     }

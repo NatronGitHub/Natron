@@ -772,6 +772,7 @@ public:
      * @brief Add a new layer to the currently selected layer.
      **/
     boost::shared_ptr<RotoLayer> addLayer();
+    void addLayer(const boost::shared_ptr<RotoLayer>& layer);
     
     /**
      * @brief Make a new bezier curve and append it into the currently selected layer. 
