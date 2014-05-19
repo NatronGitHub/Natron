@@ -229,7 +229,7 @@ struct ViewerGL::Implementation {
     bool clipToDisplayWindow;
     
     PickerState pickerState;
-    QPoint lastPickerPos;
+    QPointF lastPickerPos;
     QRectF pickerRect;
     /**
      * @brief X and Y are in widget coords!
@@ -950,16 +950,14 @@ void ViewerGL::drawPickerRectangle()
 
 void ViewerGL::drawPickerPixel()
 {
-    QPointF imgPos;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         glPointSize(1. * _imp->zoomCtx.factor());
-        imgPos = _imp->zoomCtx.toZoomCoordinates(_imp->lastPickerPos.x(), _imp->lastPickerPos.y());
     }
     glEnable(GL_POINT_SMOOTH);
     glColor3f(0.9, 0.7, 0.);
     glBegin(GL_POINTS);
-    glVertex2d(imgPos.x(),imgPos.y());
+    glVertex2d(_imp->lastPickerPos.x(),_imp->lastPickerPos.y());
     glEnd();
     glPointSize(1.);
     glDisable(GL_POINT_SMOOTH);
@@ -1742,6 +1740,10 @@ void ViewerGL::updateColorPicker(int x,int y)
         _imp->infoViewer->hideColorAndMouseInfo();
         return;
     }
+    if(_imp->pickerState != INACTIVE) {
+        return;
+    }
+    
     QPoint pos;
     bool xInitialized = false;
     bool yInitialized = false;
@@ -2490,7 +2492,7 @@ void ViewerGL::Implementation::pickColor(double x,double y)
         QMutexLocker l(&zoomCtxMutex);
         imgPos = zoomCtx.toZoomCoordinates(x, y);
     }
-    lastPickerPos = QPoint(x,y);
+    lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
     if (picked) {
@@ -2508,17 +2510,20 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
 {
     
     
-    QPoint posToUse = widgetPos;
+    QPointF posToUse = widgetPos;
     if (_imp->ms == PICKING_COLOR || _imp->pickerState != INACTIVE) {
-        posToUse = _imp->lastPickerPos;
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            posToUse = _imp->zoomCtx.toWidgetCoordinates(_imp->lastPickerPos.x(), _imp->lastPickerPos.y());
+        }
     }
     
     if (imgPos.x() >= dispW.left() &&
-        imgPos.x() <= dispW.right() &&
+        imgPos.x() < dispW.right() &&
         imgPos.y() >= dispW.bottom() &&
-        imgPos.y() <= dispW.top() &&
-        posToUse.x() >= 0 && posToUse.x() < width &&
-        posToUse.y() >= 0 && posToUse.y() < height ) {
+        imgPos.y() < dispW.top() &&
+        widgetPos.x() >= 0 && widgetPos.x() < width &&
+        widgetPos.y() >= 0 && widgetPos.y() < height ) {
         if (!_imp->infoViewer->colorAndMouseVisible()) {
             _imp->infoViewer->showColorAndMouseInfo();
         }

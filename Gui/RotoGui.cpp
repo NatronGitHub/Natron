@@ -175,6 +175,8 @@ struct RotoGui::RotoGuiPrivate
     
     void refreshSelectionRectangle(const QPointF& pos);
     
+    void updateSelectionFromSelectionRectangle();
+    
     void drawSelectionRectangle();
     
     void computeSelectedCpsBBOX();
@@ -881,9 +883,13 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
 
     selectionRectangle.setBottomRight(QPointF(selection.x2,selection.y1));
     selectionRectangle.setTopLeft(QPointF(selection.x1,selection.y2));
+}
+
+void RotoGui::RotoGuiPrivate::updateSelectionFromSelectionRectangle()
+{
+    
     
     clearSelection();
-    
     
     int selectionMode = -1;
     if (selectedTool == SELECT_ALL) {
@@ -894,11 +900,17 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
         selectionMode = 2;
     }
     
+    QPointF topLeft = selectionRectangle.topLeft();
+    QPointF btmRight = selectionRectangle.bottomRight();
+    int l = std::min(topLeft.x(), btmRight.x());
+    int r = std::max(topLeft.x(), btmRight.x());
+    int b = std::min(topLeft.y(), btmRight.y());
+    int t = std::max(topLeft.y(), btmRight.y());
     std::list<boost::shared_ptr<Bezier> > curves = context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
         
         if (!(*it)->isLockedRecursive()) {
-            SelectedCPs points  = (*it)->controlPointsWithinRect(selection.x1, selection.x2, selection.y1, selection.y2, 0,selectionMode);
+            SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
             if (selectedTool != SELECT_CURVES) {
                 selectedCps.insert(selectedCps.end(), points.begin(), points.end());
             }
@@ -910,9 +922,10 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
     
     
     
-    context->select(curves, RotoContext::OVERLAY_INTERACT);
+    context->select(selectedBeziers, RotoContext::OVERLAY_INTERACT);
     
     computeSelectedCpsBBOX();
+
 }
 
 void RotoGui::RotoGuiPrivate::clearSelection()
@@ -1448,6 +1461,10 @@ void RotoGui::autoSaveAndRedraw()
 
 bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
 {
+    if (_imp->state == SELECTING) {
+        _imp->updateSelectionFromSelectionRectangle();
+    }
+    
     if (_imp->evaluateOnPenUp) {
         _imp->context->evaluateChange();
         _imp->node->getNode()->getApp()->triggerAutoSave();

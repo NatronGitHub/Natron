@@ -27,7 +27,7 @@ class RotoLayer;
 class RotoPanel;
 class QTreeWidgetItem;
 class RotoItem;
-struct DroppedTreeItem;
+class DroppedTreeItem;
 
 class MoveControlPointsUndoCommand : public QUndoCommand
 {
