@@ -22,7 +22,10 @@ CLANG_DIAG_ON(uninitialized)
 class QTreeWidgetItem;
 class QWidget;
 class NodeGui;
+class QUndoCommand;
 class RotoItem;
+class RotoContext;
+class RotoLayer;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
@@ -31,6 +34,7 @@ class RotoPanel : public QWidget
     
 public:
     
+    
     RotoPanel(NodeGui* n,QWidget* parent = 0);
     
     virtual ~RotoPanel();
@@ -38,7 +42,16 @@ public:
     void onTreeOutOfFocusEvent();
     
     boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
+   
+    QTreeWidgetItem* getTreeItemForRotoItem(const boost::shared_ptr<RotoItem>& item) const;
     
+    std::string getNodeName() const;
+    
+    RotoContext* getContext() const;
+    
+    void clearSelection();
+    
+    void pushUndoCommand(QUndoCommand* cmd);
 public slots:
     
     void onGoToPrevKeyframeButtonClicked();
@@ -63,10 +76,10 @@ public slots:
     void onTimeChanged(SequenceTime time,int reason);
     
     ///A new item has been created internally
-    void onItemInserted();
+    void onItemInserted(int reason);
     
     ///An item was removed by the user
-    void onItemRemoved(RotoItem* item);
+    void onItemRemoved(RotoItem* item,int reason);
     
     ///An item had its inverted state changed
     void onRotoItemInversionChanged();
@@ -96,5 +109,25 @@ private:
     boost::scoped_ptr<RotoPanelPrivate> _imp;
 };
 
+
+struct DroppedTreeItem
+{
+    RotoLayer* newParentLayer;
+    int insertIndex;
+    QTreeWidgetItem* newParentItem;
+    QTreeWidgetItem* dropped;
+    boost::shared_ptr<RotoItem> droppedRotoItem;
+    
+    DroppedTreeItem()
+    : newParentLayer(0)
+    , insertIndex(-1)
+    , newParentItem(0)
+    , dropped(0)
+    , droppedRotoItem()
+    {
+        
+    }
+};
+typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
 
 #endif // ROTOPANEL_H

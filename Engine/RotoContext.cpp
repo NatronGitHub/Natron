@@ -309,7 +309,7 @@ static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y
             return;
         }
         
-        std::list < boost::shared_ptr<BezierCP> >::const_iterator prev = cps.begin();
+        std::list < boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
         --prev;
         std::list < boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
         ++next;
@@ -317,6 +317,12 @@ static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y
         int index = 0;
         int cpCount = (int)cps.size();
         for (std::list < boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it,++prev,++next,++index) {
+            if (prev == cps.end()) {
+                prev = cps.begin();
+            }
+            if (next == cps.end()) {
+                next = cps.begin();
+            }
             if (it->get() == p) {
                 break;
             }
@@ -324,44 +330,36 @@ static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y
         
         assert(index < cpCount);
         
-        if (index == 0) {
-            prev = cps.end();
-            --prev;
-        } else if (index == ((int)cps.size() -1)) {
-            next = cps.begin();
-        }
-        
         double leftDx,leftDy,rightDx,rightDy;
 
         Bezier::leftDerivativeAtPoint(time, *p, **prev, &leftDx, &leftDy);
         Bezier::rightDerivativeAtPoint(time, *p, **next, &rightDx, &rightDy);
         
-        double leftAlpha,rightAlpha;
-        if (leftDx == 0) {
-            leftAlpha = leftDy < 0 ? - pi / 2. : pi / 2.;
+        double norm = sqrt((rightDx - leftDx) * (rightDx - leftDx) + (rightDy - leftDy) * (rightDy - leftDy));
+        
+        Point delta;
+        ///normalize derivatives by their norm
+        if (norm != 0) {
+            delta.x = ((rightDx - leftDx) / norm) * TANGENTS_CUSP_LIMIT;
+            delta.y = ((rightDy - leftDy) / norm) * TANGENTS_CUSP_LIMIT;
         } else {
-            leftAlpha = std::atan2(leftDy , leftDx);
-        }
-        if (rightDx == 0) {
-            rightAlpha = rightDy < 0 ? - pi / 2. : pi / 2.;
-        } else {
-            rightAlpha = std::atan2(rightDy , rightDx);
-        }
-        double alpha = (leftAlpha + rightAlpha) / 2.;
-        if (std::abs(alpha) > pi / 2.) {
-            if (alpha < 0.) {
-                alpha = pi + alpha;
+            ///both derivatives are the same, use the direction of the left one
+            norm = sqrt((leftDx - x) * (leftDx - x) + (leftDy - y) * (leftDy - y));
+            if (norm != 0) {
+                delta.x = ((rightDx - x) / norm) * TANGENTS_CUSP_LIMIT;
+                delta.y = ((leftDy - y) / norm) * TANGENTS_CUSP_LIMIT;
             } else {
-                alpha = alpha - pi;
+                ///both derivatives and control point are equal, just use 0
+                delta.x = delta.y = 0;
             }
         }
         
         if (!left) {
-            *tx = x + std::cos(alpha + pi) * TANGENTS_CUSP_LIMIT;
-            *ty = y + std::sin(alpha + pi) * TANGENTS_CUSP_LIMIT;
+            *tx = x + delta.x;
+            *ty = y + delta.y;
         } else {
-            *tx = x + std::cos(alpha) * TANGENTS_CUSP_LIMIT;
-            *ty = y + std::sin(alpha) * TANGENTS_CUSP_LIMIT;
+            *tx = x - delta.x;
+            *ty = y - delta.y;
         }
    
     } else {
@@ -501,6 +499,15 @@ RotoItem::~RotoItem()
     
 }
 
+void RotoItem::clone(const RotoItem& other)
+{
+    QMutexLocker l(&itemMutex);
+    _imp->parentLayer = other._imp->parentLayer;
+    _imp->name = other._imp->name;
+    _imp->globallyActivated = other._imp->globallyActivated;
+    _imp->locked = other._imp->locked;
+}
+
 void RotoItem::setParentLayer(RotoLayer* layer)
 {
     ///called on the main-thread only
@@ -582,8 +589,11 @@ void RotoItem::isDeactivatedRecursive(bool* ret) const
 void RotoItem::setLocked_recursive(bool locked)
 {
     {
-        QMutexLocker m(&itemMutex);
-        _imp->locked = locked;
+        {
+            QMutexLocker m(&itemMutex);
+            _imp->locked = locked;
+        }
+        getContext()->onItemLockedChanged(this);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems& children = layer->getItems();
@@ -598,8 +608,11 @@ void RotoItem::setLocked(bool l,bool lockChildren){
     ///called on the main-thread only
     assert(QThread::currentThread() == qApp->thread());
     if (!lockChildren) {
-        QMutexLocker m(&itemMutex);
-        _imp->locked = l;
+        {
+            QMutexLocker m(&itemMutex);
+            _imp->locked = l;
+        }
+        getContext()->onItemLockedChanged(this);
     } else {
         setLocked_recursive(l);
     }
@@ -725,6 +738,20 @@ RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,
 RotoDrawableItem::~RotoDrawableItem()
 {
     
+}
+
+void RotoDrawableItem::clone(const RotoDrawableItem& other)
+{
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->activated->clone(other._imp->activated);
+        _imp->feather->clone(other._imp->feather);
+        _imp->featherFallOff->clone(other._imp->featherFallOff);
+        _imp->opacity->clone(other._imp->opacity);
+        _imp->inverted->clone(other._imp->inverted);
+        memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double)*4);
+    }
+    RotoItem::clone(other);
 }
 
 static void serializeRotoKnob(const boost::shared_ptr<KnobI>& knob,KnobSerialization* serialization)
@@ -891,6 +918,7 @@ void RotoLayer::load(const RotoItemSerialization &obj)
 {
     
     const RotoLayerSerialization& s = dynamic_cast<const RotoLayerSerialization&>(obj);
+    RotoItem::load(obj);
     {
         for (std::list<boost::shared_ptr<RotoItemSerialization> >::const_iterator it = s.children.begin(); it!=s.children.end(); ++it) {
             BezierSerialization* b = dynamic_cast<BezierSerialization*>(it->get());
@@ -902,13 +930,14 @@ void RotoLayer::load(const RotoItemSerialization &obj)
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
             } else if (l) {
-                boost::shared_ptr<RotoLayer> layer = getContext()->addLayer();
+                boost::shared_ptr<RotoLayer> layer(new RotoLayer(getContext(),kRotoLayerBaseName,this));
+                _imp->items.push_back(layer);
+                getContext()->addLayer(layer);
                 layer->load(*l);
             }
         }
         
     }
-    RotoItem::load(obj);
 }
 
 void RotoLayer::addItem(const boost::shared_ptr<RotoItem>& item)
@@ -924,10 +953,14 @@ void RotoLayer::insertItem(const boost::shared_ptr<RotoItem>& item,int index)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    assert(index >= 0);
     QMutexLocker l(&itemMutex);
     RotoItems::iterator it = _imp->items.begin();
-    std::advance(it, index);
-    
+    if (index >= (int)_imp->items.size()) {
+        it = _imp->items.end();
+    } else {
+        std::advance(it, index);
+    }
     ///insert before the iterator
     _imp->items.insert(it, item);
 }
@@ -943,6 +976,19 @@ void RotoLayer::removeItem(const RotoItem* item)
             _imp->items.erase(it);
         }
     }
+}
+
+int RotoLayer::getChildIndex(const boost::shared_ptr<RotoItem>& item) const
+{
+    QMutexLocker l(&itemMutex);
+    int i = 0;
+    for (RotoItems::iterator it = _imp->items.begin(); it!=_imp->items.end();++it,++i)
+    {
+        if (*it == item) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 const RotoItems& RotoLayer::getItems() const
@@ -1135,6 +1181,36 @@ Bezier::Bezier(RotoContext* ctx,const std::string& name,RotoLayer* parent)
 {
 }
 
+Bezier::Bezier(const Bezier& other)
+: RotoDrawableItem(other.getContext(),other.getName_mt_safe(),other.getParentLayer())
+, _imp(new BezierPrivate())
+{
+    clone(other);
+}
+
+void Bezier::clone(const Bezier& other)
+{
+    {
+        QMutexLocker l(&itemMutex);
+        assert(other._imp->featherPoints.size() == other._imp->points.size());
+        
+        _imp->featherPoints.clear();
+        _imp->points.clear();
+        BezierCPs::const_iterator itF = other._imp->featherPoints.begin();
+        for (BezierCPs::const_iterator it = other._imp->points.begin(); it!=other._imp->points.end(); ++it,++itF) {
+            boost::shared_ptr<BezierCP> cp(new BezierCP(this));
+            boost::shared_ptr<BezierCP> fp(new BezierCP(this));
+            cp->clone(**it);
+            fp->clone(**itF);
+            _imp->featherPoints.push_back(fp);
+            _imp->points.push_back(cp);
+        }
+        _imp->finished = other._imp->finished;
+    }
+    RotoDrawableItem::clone(other);
+}
+
+
 Bezier::~Bezier()
 {
     
@@ -1195,7 +1271,7 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     
     QMutexLocker l(&itemMutex);
         
-    if (index >= (int)_imp->points.size()) {
+    if (index >= (int)_imp->points.size() || index < -1) {
         throw std::invalid_argument("Spline control point index out of range.");
     }
     
@@ -1205,23 +1281,34 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     std::set<int> existingKeyframes;
     _imp->getKeyframeTimes(&existingKeyframes);
     
-    BezierCPs::const_iterator prev = _imp->atIndex(index);
-    BezierCPs::const_iterator next = prev;
-    ++next;
-    if (_imp->finished && next == _imp->points.end()) {
+    BezierCPs::const_iterator prev,next,prevF,nextF;
+    if (index == -1) {
+        prev = _imp->points.end();
+        --prev;
         next = _imp->points.begin();
-    }
-    
-    BezierCPs::const_iterator prevF = _imp->featherPoints.begin();
-    std::advance(prevF, index);
-    BezierCPs::const_iterator nextF = prevF;
-    ++nextF;
-    if (_imp->finished && nextF == _imp->featherPoints.end()) {
+        
+        prevF = _imp->featherPoints.end();
+        --prevF;
         nextF = _imp->featherPoints.begin();
+    } else {
+        prev = _imp->atIndex(index);
+        next = prev;
+        ++next;
+        if (_imp->finished && next == _imp->points.end()) {
+            next = _imp->points.begin();
+        }
+        assert(next != _imp->points.end());
+        prevF = _imp->featherPoints.begin();
+        std::advance(prevF, index);
+        nextF = prevF;
+        ++nextF;
+        if (_imp->finished && nextF == _imp->featherPoints.end()) {
+            nextF = _imp->featherPoints.begin();
+        }
     }
+  
     
-    
-    assert(next != _imp->points.end());
+
     
     for (std::set<int>::iterator it = existingKeyframes.begin(); it!=existingKeyframes.end(); ++it) {
         
@@ -1296,16 +1383,23 @@ boost::shared_ptr<BezierCP> Bezier::addControlPointAfterIndex(int index,double t
     
     
     ////Insert the point into the container
-    BezierCPs::iterator it = _imp->points.begin();
-    ///it will point at the element right after index
-    std::advance(it, index + 1);
-    _imp->points.insert(it,p);
+    if (index != -1) {
+        BezierCPs::iterator it = _imp->points.begin();
+        ///it will point at the element right after index
+        std::advance(it, index + 1);
+        _imp->points.insert(it,p);
+        
+        ///insert the feather point
+        BezierCPs::iterator itF = _imp->featherPoints.begin();
+        std::advance(itF, index + 1);
+        _imp->featherPoints.insert(itF, fp);
+    } else {
+        _imp->points.push_front(p);
+        _imp->featherPoints.push_front(fp);
+    }
     
     
-    ///insert the feather point
-    BezierCPs::iterator itF = _imp->featherPoints.begin();
-    std::advance(itF, index + 1);
-    _imp->featherPoints.insert(itF, fp);
+    
     
     ///If auto-keying is enabled, set a new keyframe
     int currentTime = getContext()->getTimelineCurrentTime();
@@ -1409,7 +1503,14 @@ void Bezier::removeControlPointByIndex(int index)
     assert(QThread::currentThread() == qApp->thread());
     
     QMutexLocker l(&itemMutex);
-    BezierCPs::iterator it = _imp->atIndex(index);
+    
+    BezierCPs::iterator it;
+    try {
+        it = _imp->atIndex(index);
+    } catch (...) {
+        ///attempt to remove an unexsiting point
+        return;
+    }
     _imp->points.erase(it);
     
     BezierCPs::iterator itF = _imp->featherPoints.begin();
@@ -1530,6 +1631,7 @@ void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool featherLink = getContext()->isFeatherLinkEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     {
     QMutexLocker l(&itemMutex);
     
@@ -1560,7 +1662,7 @@ void Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
             }
         }
         
-        if (getContext()->isRippleEditEnabled()) {
+        if (rippleEdit) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1583,6 +1685,7 @@ void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool featherLink = getContext()->isFeatherLinkEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     {
     QMutexLocker l(&itemMutex);
     
@@ -1614,7 +1717,7 @@ void Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
             }
         }
         
-        if (getContext()->isRippleEditEnabled()) {
+        if (rippleEdit) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -1788,6 +1891,12 @@ void Bezier::setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,
 
 }
 
+void Bezier::clonePoint(BezierCP& p,const BezierCP& to) const
+{
+    QMutexLocker l(&itemMutex);
+    p.clone(to);
+}
+
 void Bezier::removeFeatherAtIndex(int index)
 {
     ///only called on the main-thread
@@ -1950,42 +2059,42 @@ int Bezier::getKeyframesCount() const
 
 
 
-void Bezier::evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
+void Bezier::evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
                                         int nbPointsPerSegment,std::list< Natron::Point >* points,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
- 
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-        BezierCPs::const_iterator next = it;
-        ++next;
+    BezierCPs::const_iterator next = _imp->points.begin();
+    ++next;
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++next) {
         if (next == _imp->points.end()) {
-            if (_imp->finished) {
-                next = _imp->points.begin();
-            }  else {
+            if (!_imp->finished) {
                 break;
             }
+            next = _imp->points.begin();
         }
         evalBezierSegment(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
     }
 }
 
-void Bezier::evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
+void Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
                                                      std::list< Natron::Point >* points,bool evaluateIfEqual,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
     BezierCPs::const_iterator itCp = _imp->points.begin();
-    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++itCp) {
-        BezierCPs::const_iterator next = it;
-        BezierCPs::const_iterator nextCp = itCp;
-        ++nextCp;
-        ++next;
+    BezierCPs::const_iterator next = _imp->featherPoints.begin();
+    ++next;
+    BezierCPs::const_iterator nextCp = itCp;
+    ++nextCp;
+    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++itCp,++next,++nextCp) {
+        
+        if (next == _imp->featherPoints.end()) {
+            next = _imp->featherPoints.begin();
+        }
         if (nextCp == _imp->points.end()) {
-            if (_imp->finished) {
-                nextCp = _imp->points.begin();
-                next = _imp->featherPoints.begin();
-            }  else {
+            if (!_imp->finished) {
                 break;
             }
+            nextCp = _imp->points.begin();
         }
         if (!evaluateIfEqual && !areSegmentDifferents(time, **itCp, **nextCp, **it, **next))
         {
@@ -2005,8 +2114,8 @@ RectD Bezier::getBoundingBox(int time) const
     bbox.x2 = INT_MIN;
     bbox.y1 = INT_MAX;
     bbox.y2 = INT_MIN;
-    evaluateAtTime_DeCastelJau(time,0, 50,&pts,&bbox);
-    evaluateFeatherPointsAtTime_DeCastelJau(time,0,50, &pts,&bbox);
+    evaluateAtTime_DeCasteljau(time,0, 50,&pts,&bbox);
+    evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &pts, false, &bbox);
     
     if (bbox.x1 == INT_MAX) {
         bbox.x1 = 0;
@@ -2418,20 +2527,20 @@ void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
 {
     assert(constants->size() == multiples->size() && constants->size() == polygon.size());
     
-    std::list<Point>::const_iterator next = polygon.begin();
-    ++next;
-    int i = 0;
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++i) {
-        if (next == polygon.end()) {
-            next = polygon.begin();
+    std::list<Point>::const_iterator i = polygon.begin();
+    ++i;
+    int index = 0;
+    for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++index) {
+        if (i == polygon.end()) {
+            i = polygon.begin();
         }
-        if (it->y == next->y) {
-            constants->at(i) = 0;
-            multiples->at(i) = 0;
+        if (i->y == j->y) {
+            constants->at(index) = j->x;
+            multiples->at(index) = 0;
         } else {
-            double multiplier = (next->x - it->x) / (next->y - it->y);
-            constants->at(i) = - it->y * multiplier;
-            multiples->at(i) = multiplier;
+            double multiplier = (j->x - i->x) / (j->y - i->y);
+            constants->at(index) = i->x - i->y * multiplier;
+            multiples->at(index) = multiplier;
         }
     }
 }
@@ -2439,8 +2548,7 @@ void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
 bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
                             const std::vector<double>& constants,
                             const std::vector<double>& multiples,
-                            const RectD& featherPolyBBox,
-                            double tolerance) {
+                            const RectD& featherPolyBBox) {
     
     assert(constants.size() == multiples.size() && constants.size() == polygon.size());
     
@@ -2450,18 +2558,18 @@ bool Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
     }
     
     bool odd = false;
-    std::list<Point>::const_iterator next = polygon.begin();
-    ++next;
+    std::list<Point>::const_iterator i = polygon.begin();
+    ++i;
     std::vector<double>::const_iterator cIt = constants.begin();
     std::vector<double>::const_iterator mIt = multiples.begin();
     
-    for (std::list<Point>::const_iterator it = polygon.begin(); it!=polygon.end(); ++it,++next,++cIt,++mIt) {
-        if (next == polygon.end()) {
-            next = polygon.begin();
+    for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++cIt,++mIt) {
+        if (i == polygon.end()) {
+            i = polygon.begin();
         }
-        if ((next->y < p.y && it->y >= p.y) ||
-            (it->y < p.y && next->y >= p.y)) {
-            odd ^= (std::abs((p.y * *mIt + *cIt) - p.x) < tolerance);
+        if (((i->y > p.y) != (j->y > p.y)) &&
+            (p.x < (p.y * *mIt + *cIt))) {
+            odd = !odd;
         }
     }
     return odd;
@@ -2511,14 +2619,14 @@ Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
   
             ///normalize derivatives by their norm
             if (norm != 0) {
-                ret.x = -((rightY - leftY) / norm) * featherDistance;
-                ret.y = ((rightX - leftX) / norm) * featherDistance;
+                ret.x = -((rightY - leftY) / norm);
+                ret.y = ((rightX - leftX) / norm);
             } else {
                 ///both derivatives are the same, use the direction of the left one
                 norm = sqrt((leftX - cp.x) * (leftX - cp.x) + (leftY - cp.y) * (leftY - cp.y));
                 if (norm != 0) {
-                    ret.x = -((leftY - cp.y) / norm) * featherDistance;
-                    ret.y = ((leftX - cp.x) / norm) * featherDistance;
+                    ret.x = -((leftY - cp.y) / norm);
+                    ret.y = ((leftX - cp.x) / norm) ;
                 } else {
                     ///both derivatives and control point are equal, just use 0
                     ret.x = ret.y = 0;
@@ -2528,17 +2636,21 @@ Point Bezier::expandToFeatherDistance(const Point& cp, //< the point
             
             ///retrieve the position of the extent of the feather
             ///To retrieve the extent which is in not inside the polygon we test the 2 points
+            
+            ///Note that we're testing with a normalized vector because the polygon could be 1 pixel thin
+            ///and the test would yield wrong results. We multiply by the distance once we've done the test.
             Point extent;
             extent.x = cp.x + ret.x;
             extent.y = cp.y + ret.y;
             
             bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
             if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
-                *fp = extent;
+                //*fp = extent;
+                fp->x = cp.x + ret.x * featherDistance;
+                fp->y = cp.y + ret.y * featherDistance;
             } else {
-                extent.x = cp.x - ret.x;
-                extent.y = cp.y - ret.y;
-                *fp = extent;
+                fp->x = cp.x - ret.x * featherDistance;
+                fp->y = cp.y - ret.y * featherDistance;
             }
         }
     } else {
@@ -2589,9 +2701,15 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
         if (!deepestLayer) {
             ///find out if there's a base layer, if so add to the base layer,
             ///otherwise create the base layer
-            if (!_imp->layers.empty()) {
-                parentLayer = _imp->layers.front().get();
+            for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
+                int hierarchy = (*it)->getHierarchyLevel();
+                if (hierarchy == 0) {
+                    parentLayer = it->get();
+                    break;
+                }
             }
+            
+            
         } else {
             parentLayer = deepestLayer;
         }
@@ -2604,11 +2722,16 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
         
         _imp->lastInsertedItem = item;
     }
-    emit itemInserted();
+    emit itemInserted(RotoContext::OTHER);
     
     clearSelection(RotoContext::OTHER);
     select(item, RotoContext::OTHER);
     return item;
+}
+
+void RotoContext::addLayer(const boost::shared_ptr<RotoLayer>& layer)
+{
+    _imp->layers.push_back(layer);
 }
 
 boost::shared_ptr<RotoItem> RotoContext::getLastInsertedItem() const
@@ -2728,7 +2851,7 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
         parentLayer->addItem(curve);
     }
     _imp->lastInsertedItem = curve;
-    emit itemInserted();
+    emit itemInserted(RotoContext::OTHER);
     
     clearSelection(RotoContext::OTHER);
     select(curve, RotoContext::OTHER);
@@ -2736,7 +2859,7 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
     return curve;
 }
 
-void RotoContext::removeItemRecursively(RotoItem* item)
+void RotoContext::removeItemRecursively(RotoItem* item,SelectionReason reason)
 {
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item);
     boost::shared_ptr<RotoItem> foundSelected;
@@ -2753,7 +2876,7 @@ void RotoContext::removeItemRecursively(RotoItem* item)
     if (isLayer) {
         const RotoItems& items = isLayer->getItems();
         for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
-            removeItemRecursively(it->get());
+            removeItemRecursively(it->get(),reason);
         }
         for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
             if (it->get() == isLayer) {
@@ -2762,11 +2885,11 @@ void RotoContext::removeItemRecursively(RotoItem* item)
             }
         }
     }
-    emit itemRemoved(item);
+    emit itemRemoved(item,(int)reason);
 
 }
 
-void RotoContext::removeItem(RotoItem* item)
+void RotoContext::removeItem(RotoItem* item,SelectionReason reason)
 {
     ///MT-safe: only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2776,9 +2899,31 @@ void RotoContext::removeItem(RotoItem* item)
         if (layer) {
             layer->removeItem(item);
         }
-        removeItemRecursively(item);
+        removeItemRecursively(item,reason);
     }
-    emit selectionChanged((int)RotoContext::OTHER);
+    emit selectionChanged((int)reason);
+}
+
+void RotoContext::addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item,SelectionReason reason)
+{
+    ///MT-safe: only called on the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        if (layer) {
+            layer->insertItem(item,indexInLayer);
+        }
+        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+        if (isLayer) {
+            std::list<boost::shared_ptr<RotoLayer> >::iterator foundLayer = std::find(_imp->layers.begin(), _imp->layers.end(), isLayer);
+            if (foundLayer == _imp->layers.end()) {
+                _imp->layers.push_back(isLayer);
+            }
+        }
+        _imp->lastInsertedItem = item;
+    }
+    emit itemInserted(reason);
+
 }
 
 const std::list< boost::shared_ptr<RotoLayer> >& RotoContext::getLayers() const
@@ -3021,11 +3166,12 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
     assert(!_imp->rotoContextMutex.tryLock());
     
-    int nbBeziers = 0;
+    int nbUnlockedBeziers = 0;
     bool foundItem = false;
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        if (dynamic_cast<Bezier*>(it->get())) {
-            ++nbBeziers;
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier && !isBezier->isLockedRecursive()) {
+            ++nbUnlockedBeziers;
         }
         if (it->get() == item.get()) {
             foundItem = true;
@@ -3044,7 +3190,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
     if (isBezier) {
         
-        ++nbBeziers;
+        if (!isBezier->isLockedRecursive()) {
+            ++nbUnlockedBeziers;
+        }
         ///first-off set the context knobs to the value of this bezier
         boost::shared_ptr<KnobI> activated = isBezier->getActivatedKnob();
         boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
@@ -3072,7 +3220,7 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         }
     }
     
-    if (nbBeziers > 0) {
+    if (nbUnlockedBeziers > 0) {
         ///enable the knobs
         _imp->activated->setAllDimensionsEnabled(true);
         _imp->opacity->setAllDimensionsEnabled(true);
@@ -3083,7 +3231,7 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
     ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
     ///(maybe black or something)
-    if (nbBeziers >= 2) {
+    if (nbUnlockedBeziers >= 2) {
         _imp->activated->setDirty(true);
         _imp->opacity->setDirty(true);
         _imp->feather->setDirty(true);
@@ -3114,6 +3262,15 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
     
     _imp->selectedItems.erase(it);
     
+    int nbBeziersUnLockedBezier = 0;
+    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier && !isBezier->isLockedRecursive()) {
+            ++nbBeziersUnLockedBezier;
+        }
+    }
+    bool notDirty = nbBeziersUnLockedBezier <= 1;
+    
     Bezier* isBezier = dynamic_cast<Bezier*>(b.get());
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(b.get());
     if (isBezier) {
@@ -3125,11 +3282,11 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
         
-        activated->unSlave(0,false);
-        feather->unSlave(0,false);
-        featherFallOff->unSlave(0,false);
-        opacity->unSlave(0,false);
-        inverted->unSlave(0,false);
+        activated->unSlave(0,notDirty);
+        feather->unSlave(0,notDirty);
+        featherFallOff->unSlave(0,notDirty);
+        opacity->unSlave(0,notDirty);
+        inverted->unSlave(0,notDirty);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -3137,14 +3294,8 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
             deselectInternal(*it);
         }
     }
-    int nbBeziers = 0;
-    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        if (dynamic_cast<Bezier*>(it->get())) {
-            ++nbBeziers;
-        }
-    }
     
-    if (nbBeziers <= 1) {
+    if (notDirty) {
         _imp->activated->setDirty(false);
         _imp->opacity->setDirty(false);
         _imp->feather->setDirty(false);
@@ -3153,7 +3304,7 @@ void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
     }
     
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
-    if (nbBeziers == 0) {
+    if (nbBeziersUnLockedBezier == 0) {
         _imp->activated->setAllDimensionsEnabled(false);
         _imp->opacity->setAllDimensionsEnabled(false);
         _imp->featherFallOff->setAllDimensionsEnabled(false);
@@ -3465,12 +3616,43 @@ U64 RotoContext::getAge()
     return _imp->age;
 }
 
-void RotoContext::onItemLockedChanged()
+void RotoContext::onItemLockedChanged(RotoItem* item)
 {
-    RotoItem* item = qobject_cast<RotoItem*>(sender());
-    if (item) {
-        emit itemLockedChanged();
+    assert(item);
+    ///refresh knobs
+    int nbBeziersUnLockedBezier = 0;
+    
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        
+        for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+            Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+            if (isBezier && !isBezier->isLockedRecursive()) {
+                ++nbBeziersUnLockedBezier;
+            }
+        }
+        
     }
+    bool dirty = nbBeziersUnLockedBezier > 1;
+    bool enabled = nbBeziersUnLockedBezier > 0;
+    
+    _imp->activated->setDirty(dirty);
+    _imp->opacity->setDirty(dirty);
+    _imp->feather->setDirty(dirty);
+    _imp->featherFallOff->setDirty(dirty);
+    _imp->inverted->setDirty(dirty);
+    
+    _imp->activated->setAllDimensionsEnabled(enabled);
+    _imp->opacity->setAllDimensionsEnabled(enabled);
+    _imp->featherFallOff->setAllDimensionsEnabled(enabled);
+    _imp->feather->setAllDimensionsEnabled(enabled);
+    _imp->inverted->setAllDimensionsEnabled(enabled);
+    
+    
+    
+    
+    emit itemLockedChanged();
+    
 }
 
 static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
@@ -3536,7 +3718,6 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
  
-    QMutexLocker l(&_imp->rotoContextMutex);
     
     ////Allocate the cairo temporary buffer
     cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());
@@ -3683,10 +3864,12 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 ///This is used only if the feather distance is different of 0 and the feather points equal
                 ///the control points in order to still be able to apply the feather distance.
                 std::list<Point> featherPolygon;
+                std::list<Point> bezierPolygon;
                 std::vector<double> multiples,constants;
                 RectD featherPolyBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
                 
-                (*it2)->evaluateFeatherPointsAtTime_DeCastelJau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
+                (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time, mipmapLevel, 50, &featherPolygon, true, &featherPolyBBox);
+                (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
                 assert(!featherPolygon.empty());
                 
                 multiples.resize(featherPolygon.size());
@@ -3701,34 +3884,45 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 ++next;
                 std::list<Point>::iterator prev = featherPolygon.end();
                 --prev;
-                
+                std::list<Point>::iterator bezIT = bezierPolygon.begin();
+                std::list<Point>::iterator prevBez = bezierPolygon.end();
+                --prevBez;
                 double absFeatherDist = std::abs(featherDist);
                 
                 Point p1 = *cur;
                 double norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
                 assert(norm != 0);
-                double dx = - ((next->y - prev->y) / norm) * absFeatherDist;
-                double dy = ((next->x - prev->x) / norm) * absFeatherDist;
+                double dx = - ((next->y - prev->y) / norm);
+                double dy = ((next->x - prev->x) / norm);
                 p1.x = cur->x + dx;
                 p1.y = cur->y + dy;
                 
                 bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
-                    p1.x = cur->x - dx;
-                    p1.y = cur->y - dy;
+                    p1.x = cur->x - dx * absFeatherDist;
+                    p1.y = cur->y - dy * absFeatherDist;
+                } else {
+                    p1.x = cur->x + dx * absFeatherDist;
+                    p1.y = cur->y + dy * absFeatherDist;
                 }
                 
                 Point origin = p1;
                 featherContour.push_back(p1);
                 
-                ++prev; ++next; ++cur;
+                ++prev; ++next; ++cur; ++bezIT; ++prevBez;
                 
-                for (;;++prev,++cur,++next) {
+                for (;;++prev,++cur,++next,++bezIT,++prevBez) {
                     if (next == featherPolygon.end()) {
                         next = featherPolygon.begin();
                     }
                     if (prev == featherPolygon.end()) {
                         prev = featherPolygon.begin();
+                    }
+                    if (bezIT == bezierPolygon.end()) {
+                        bezIT = bezierPolygon.begin();
+                    }
+                    if (prevBez == bezierPolygon.end()) {
+                        prevBez = bezierPolygon.begin();
                     }
                     bool mustStop = false;
                     if (cur == featherPolygon.end()) {
@@ -3746,15 +3940,18 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     if (!mustStop) {
                         norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
                         assert(norm != 0);
-                        dx = - ((next->y - prev->y) / norm) *  absFeatherDist;
-                        dy = ((next->x - prev->x) / norm) *  absFeatherDist;
+                        dx = - ((next->y - prev->y) / norm);
+                        dy = ((next->x - prev->x) / norm);
                         p2.x = cur->x + dx;
                         p2.y = cur->y + dy;
                         
                         inside = Bezier::pointInPolygon(p2, featherPolygon, constants, multiples, featherPolyBBox);
                         if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
-                            p2.x = cur->x - dx;
-                            p2.y = cur->y - dy;
+                            p2.x = cur->x - dx * absFeatherDist;
+                            p2.y = cur->y - dy * absFeatherDist;
+                        } else {
+                            p2.x = cur->x + dx * absFeatherDist;
+                            p2.y = cur->y + dy * absFeatherDist;
                         }
                     } else {
                         p2 = origin;
@@ -3762,24 +3959,24 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     featherContour.push_back(p2);
                     
                     ///linear interpolation
-                    p0p1.x = (2. * fallOff * prev->x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
-                    p0p1.y = (2. * fallOff * prev->y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
-                    p1p0.x = (prev->x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
-                    p1p0.y = (prev->y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
+                    p0p1.x = (2. * fallOff * prevBez->x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
+                    p0p1.y = (2. * fallOff * prevBez->y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
+                    p1p0.x = (prevBez->x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+                    p1p0.y = (prevBez->y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
                     
-                    p2p3.x = (cur->x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
-                    p2p3.y = (cur->y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
-                    p3p2.x = (2. * fallOff * cur->x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
-                    p3p2.y = (2. * fallOff * cur->y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
+                    p2p3.x = (bezIT->x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                    p2p3.y = (bezIT->y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+                    p3p2.x = (2. * fallOff * bezIT->x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
+                    p3p2.y = (2. * fallOff * bezIT->y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
 
                     
                     ///move to the initial point
                     cairo_mesh_pattern_begin_patch(mesh);
-                    cairo_mesh_pattern_move_to(mesh, prev->x,prev->y);
+                    cairo_mesh_pattern_move_to(mesh, prevBez->x,prevBez->y);
                     cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
                     cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
-                    cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,cur->x,cur->y);
-                    cairo_mesh_pattern_line_to(mesh, prev->x, prev->y);
+                    cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,bezIT->x,bezIT->y);
+                    cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
                     ///Set the 4 corners color
                     ///inner is full color
                     cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
@@ -3808,6 +4005,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
                     ++featherContourIT;
                 }
+                
            
             } else {
                 ///This is a vector of feather points that we compute during
@@ -3817,96 +4015,95 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 std::vector<Point> preComputedFeatherPoints(cps.size() * 3);
                 std::vector<Point>::iterator preFillIt = preComputedFeatherPoints.begin();
                 
-                if (featherDist) {
-                    while (point != cps.end()) {
-
-                        if (nextPoint == cps.end()) {
-                            nextPoint = cps.begin();
-                            nextFPoint = fps.begin();
-                        }
-                        
-                        Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Right,p2p3,p3p2,p2Left,p3Left;
-                        (*point)->getPositionAtTime(time, &p0.x, &p0.y);
-                        adjustToPointToScale(mipmapLevel,p0.x,p0.y);
-                        
-                        (*point)->getRightBezierPointAtTime(time, &p0Right.x, &p0Right.y);
-                        adjustToPointToScale(mipmapLevel, p0Right.x, p0Right.y);
-                        
-                        (*fpoint)->getRightBezierPointAtTime(time, &p1Right.x, &p1Right.y);
-                        adjustToPointToScale(mipmapLevel, p1Right.x, p1Right.y);
-                        
-                        (*fpoint)->getPositionAtTime(time, &p1.x, &p1.y);
-                        adjustToPointToScale(mipmapLevel,p1.x,p1.y);
-                        
-                        (*nextPoint)->getPositionAtTime(time, &p3.x, &p3.y);
-                        adjustToPointToScale(mipmapLevel, p3.x, p3.y);
-                        
-                        (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.x, &p3Left.y);
-                        adjustToPointToScale(mipmapLevel, p3Left.x,p3Left.y);
-                        
-                        (*nextFPoint)->getPositionAtTime(time, &p2.x, &p2.y);
-                        adjustToPointToScale(mipmapLevel, p2.x, p2.y);
-                        
-                        (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.x, &p2Left.y);
-                        adjustToPointToScale(mipmapLevel, p2Left.x, p2Left.y);
-                        
+                while (point != cps.end()) {
                     
-                        ///This completes the previous iteration's triplet
-                        *preFillIt++ = p1Right;
-                        
-                        ///This makes up the new triplet
-                        *preFillIt++ = p2Left;
-                        *preFillIt++ = p2;
-                        
-                        ///linear interpolation
-                        p0p1.x = (2. * fallOff * p0.x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
-                        p0p1.y = (2. * fallOff * p0.y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
-                        p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
-                        p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) /(fallOff + 2. * fallOffInverse);
-                        
-                        p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
-                        p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
-                        p3p2.x = (2. * fallOff * p3.x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
-                        p3p2.y = (2. * fallOff * p3.y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
-                        
-                        ///move to the initial point
-                        cairo_mesh_pattern_begin_patch(mesh);
-                        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-                        
-                        ///make the 1st bezier segment
-                        cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
-                        
-                        ///make the 2nd bezier segment
-                        cairo_mesh_pattern_curve_to(mesh, p1Right.x,p1Right.y,p2Left.x,p2Left.y,p2.x,p2.y);
-                        
-                        ///make the 3rd bezier segment
-                        cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,p3.x,p3.y);
-                        
-                        ///make the last bezier segment to close the pattern
-                        cairo_mesh_pattern_curve_to(mesh, p3Left.x,p3Left.y,p0Right.x,p0Right.y,p0.x,p0.y);
-                        
-                        ///Set the 4 corners color
-                        
-                        ///inner is full color
-                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
-                        
-                        ///outter is faded
-                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
-                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
-                        
-                        ///inner is full color
-                        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
-                        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-                        
-                        cairo_mesh_pattern_end_patch(mesh);
-                        
-                        ++point;
-                        ++nextPoint;
-                        ++fpoint;
-                        ++nextFPoint;
-                        
+                    if (nextPoint == cps.end()) {
+                        nextPoint = cps.begin();
+                        nextFPoint = fps.begin();
                     }
+                    
+                    Point p0,p1,p2,p3,p0p1,p1p0,p0Right,p1Right,p2p3,p3p2,p2Left,p3Left;
+                    (*point)->getPositionAtTime(time, &p0.x, &p0.y);
+                    adjustToPointToScale(mipmapLevel,p0.x,p0.y);
+                    
+                    (*point)->getRightBezierPointAtTime(time, &p0Right.x, &p0Right.y);
+                    adjustToPointToScale(mipmapLevel, p0Right.x, p0Right.y);
+                    
+                    (*fpoint)->getRightBezierPointAtTime(time, &p1Right.x, &p1Right.y);
+                    adjustToPointToScale(mipmapLevel, p1Right.x, p1Right.y);
+                    
+                    (*fpoint)->getPositionAtTime(time, &p1.x, &p1.y);
+                    adjustToPointToScale(mipmapLevel,p1.x,p1.y);
+                    
+                    (*nextPoint)->getPositionAtTime(time, &p3.x, &p3.y);
+                    adjustToPointToScale(mipmapLevel, p3.x, p3.y);
+                    
+                    (*nextPoint)->getLeftBezierPointAtTime(time, &p3Left.x, &p3Left.y);
+                    adjustToPointToScale(mipmapLevel, p3Left.x,p3Left.y);
+                    
+                    (*nextFPoint)->getPositionAtTime(time, &p2.x, &p2.y);
+                    adjustToPointToScale(mipmapLevel, p2.x, p2.y);
+                    
+                    (*nextFPoint)->getLeftBezierPointAtTime(time, &p2Left.x, &p2Left.y);
+                    adjustToPointToScale(mipmapLevel, p2Left.x, p2Left.y);
+                    
+                    
+                    ///This completes the previous iteration's triplet
+                    *preFillIt++ = p1Right;
+                    
+                    ///This makes up the new triplet
+                    *preFillIt++ = p2Left;
+                    *preFillIt++ = p2;
+                    
+                    ///linear interpolation
+                    p0p1.x = (2. * fallOff * p0.x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
+                    p0p1.y = (2. * fallOff * p0.y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
+                    p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+                    p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) /(fallOff + 2. * fallOffInverse);
+                    
+                    p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                    p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+                    p3p2.x = (2. * fallOff * p3.x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
+                    p3p2.y = (2. * fallOff * p3.y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
+                    
+                    ///move to the initial point
+                    cairo_mesh_pattern_begin_patch(mesh);
+                    cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+                    
+                    ///make the 1st bezier segment
+                    cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
+                    
+                    ///make the 2nd bezier segment
+                    cairo_mesh_pattern_curve_to(mesh, p1Right.x,p1Right.y,p2Left.x,p2Left.y,p2.x,p2.y);
+                    
+                    ///make the 3rd bezier segment
+                    cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,p3.x,p3.y);
+                    
+                    ///make the last bezier segment to close the pattern
+                    cairo_mesh_pattern_curve_to(mesh, p3Left.x,p3Left.y,p0Right.x,p0Right.y,p0.x,p0.y);
+                    
+                    ///Set the 4 corners color
+                    
+                    ///inner is full color
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    
+                    ///outter is faded
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                    
+                    ///inner is full color
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+                    
+                    cairo_mesh_pattern_end_patch(mesh);
+                    
+                    ++point;
+                    ++nextPoint;
+                    ++fpoint;
+                    ++nextFPoint;
+                    
                 }
+                
                 ///2nd pass, draw the feather using the pattern previously defined
                 preFillIt = preComputedFeatherPoints.begin();
                 

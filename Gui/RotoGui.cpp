@@ -26,10 +26,12 @@
 
 #include "Gui/FromQtEnums.h"
 #include "Gui/NodeGui.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/RotoUndoCommand.h"
 
 #include "Global/GLIncludes.h"
 
@@ -96,7 +98,7 @@ struct RotoGui::RotoGuiPrivate
     RotoToolButton* selectTool;
     RotoToolButton* pointsEditionTool;
     RotoToolButton* bezierEditionTool;
-    
+
     QAction* selectAllAction;
     
     Roto_Tool selectedTool;
@@ -192,7 +194,6 @@ struct RotoGui::RotoGuiPrivate
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
     isNearbyFeatherBar(int time,const std::pair<double,double>& pixelScale,const QPointF& pos) const;
     
-    void dragFeatherPoint(int time,double dx,double dy);
 };
 
 RotoToolButton::RotoToolButton(QWidget* parent)
@@ -393,6 +394,21 @@ RotoGui::Roto_Tool RotoGui::getSelectedTool() const
     return _imp->selectedTool;
 }
 
+void RotoGui::setCurrentTool(RotoGui::Roto_Tool tool)
+{
+    QList<QAction*> actions = _imp->selectTool->actions();
+    actions.append(_imp->pointsEditionTool->actions());
+    actions.append(_imp->bezierEditionTool->actions());
+    for (int i = 0; i < actions.size(); ++i) {
+        QPoint data = actions[i]->data().toPoint();
+        if ((RotoGui::Roto_Tool)data.x() == tool) {
+            onToolActionTriggered(actions[i]);
+            return;
+        }
+    }
+    assert(false);
+}
+
 QToolBar* RotoGui::getToolBar() const
 {
     return _imp->toolbar;
@@ -445,7 +461,8 @@ void RotoGui::onToolActionTriggered(QAction* act)
     _imp->selectedCpsBbox.setTopRight(QPointF(0,0));
     
     ///clear all selection if we were building a new bezier
-    if (previousRole == BEZIER_EDITION_ROLE && _imp->selectedTool == DRAW_BEZIER && _imp->builtBezier) {
+    if (previousRole == BEZIER_EDITION_ROLE && _imp->selectedTool == DRAW_BEZIER && _imp->builtBezier &&
+        (Roto_Tool)data.x() != _imp->selectedTool) {
         _imp->builtBezier->setCurveFinished(true);
         _imp->clearSelection();
     }
@@ -546,7 +563,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             
             ///draw the bezier
             std::list< Point > points;
-            (*it)->evaluateAtTime_DeCastelJau(time,0, 100, &points);
+            (*it)->evaluateAtTime_DeCasteljau(time,0, 100, &points);
             
             double curveColor[4];
             if (!(*it)->isLockedRecursive()) {
@@ -565,7 +582,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             ///draw the feather points
             std::list< Point > featherPoints;
             RectD featherBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-            (*it)->evaluateFeatherPointsAtTime_DeCastelJau(time,0, 100, &featherPoints,true,&featherBBox);
+            (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, &featherPoints,true,&featherBBox);
             std::vector<double> constants(featherPoints.size()),multiples(featherPoints.size());
             Bezier::precomputePointInPolygonTables(featherPoints, &constants, &multiples);
             
@@ -678,6 +695,8 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                         glVertex2f(xF, yF);
                         glVertex2f(beyondX, beyondY);
                         glEnd();
+                        
+                        glColor3d(0.85, 0.67, 0.);
                         
                     } else {
                         ///if the feather point is identical to the control point
@@ -857,38 +876,42 @@ void RotoGui::RotoGuiPrivate::drawSelectionRectangle()
 
 void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
 {
-    double xmin = std::min(lastClickPos.x(),pos.x());
-    double xmax = std::max(lastClickPos.x(),pos.x());
-    double ymin = std::min(lastClickPos.y(),pos.y());
-    double ymax = std::max(lastClickPos.y(),pos.y());
-    selectionRectangle.setBottomRight(QPointF(xmax,ymin));
-    selectionRectangle.setTopLeft(QPointF(xmin,ymax));
+    RectD selection(std::min(lastClickPos.x(),pos.x()),
+                    std::min(lastClickPos.y(),pos.y()),
+                    std::max(lastClickPos.x(),pos.x()),
+                    std::max(lastClickPos.y(),pos.y()));
 
+    selectionRectangle.setBottomRight(QPointF(selection.x2,selection.y1));
+    selectionRectangle.setTopLeft(QPointF(selection.x1,selection.y2));
+    
     clearSelection();
     
-    int selectionMode;
+    
+    int selectionMode = -1;
     if (selectedTool == SELECT_ALL) {
         selectionMode = 0;
     } else if (selectedTool == SELECT_POINTS) {
         selectionMode = 1;
-    } else if (selectedTool == SELECT_FEATHER_POINTS) {
+    } else if (selectedTool == SELECT_FEATHER_POINTS || selectedTool == SELECT_CURVES) {
         selectionMode = 2;
-    } else {
-        ///this function can only be called if the current selected tool is one of the 3 aforementioned
-        assert(false);
     }
     
     std::list<boost::shared_ptr<Bezier> > curves = context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
         
         if (!(*it)->isLockedRecursive()) {
-            SelectedCPs points  = (*it)->controlPointsWithinRect(xmin, xmax, ymin, ymax, 0,selectionMode);
-            selectedCps.insert(selectedCps.end(), points.begin(), points.end());
+            SelectedCPs points  = (*it)->controlPointsWithinRect(selection.x1, selection.x2, selection.y1, selection.y2, 0,selectionMode);
+            if (selectedTool != SELECT_CURVES) {
+                selectedCps.insert(selectedCps.end(), points.begin(), points.end());
+            }
             if (!points.empty()) {
                 selectedBeziers.push_back(*it);
             }
         }
     }
+    
+    
+    
     context->select(curves, RotoContext::OVERLAY_INTERACT);
     
     computeSelectedCpsBBOX();
@@ -1016,42 +1039,6 @@ void RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost:
 
 }
 
-namespace {
-
-static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying)
-{
-    double leftX,leftY,rightX,rightY,x,y;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY);
-    p.getRightBezierPointAtTime(time, &rightX, &rightY);
-    p.getPositionAtTime(time, &x, &y);
-    double dist = left ?  sqrt((rightX - x) * (rightX - x) + (rightY - y) * (rightY - y))
-    : sqrt((leftX - x) * (leftX - x) + (leftY - y) * (leftY - y));
-    if (left) {
-        leftX += dx;
-        leftY += dy;
-    } else {
-        rightX += dx;
-        rightY += dy;
-    }
-    double alpha = left ? std::atan2(y - leftY,x - leftX) : std::atan2(y - rightY,x - rightX);
-    
-    if (left) {
-        rightX = std::cos(alpha) * dist;
-        rightY = std::sin(alpha) * dist;
-        if (autoKeying || isOnKeyframe) {
-            p.getCurve()->setPointLeftAndRightIndex(p, time, leftX, leftY, x + rightX, y + rightY);
-        }
-    } else {
-        leftX = std::cos(alpha) * dist;
-        leftY = std::sin(alpha) * dist;
-        if (autoKeying || isOnKeyframe) {
-            p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
-        }
-    }
-    
-}
-
-}
 
 
 bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& pos)
@@ -1069,7 +1056,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
     int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     if (_imp->selectedTool != CUSP_POINTS && _imp->selectedTool != SMOOTH_POINTS && _imp->selectedTool != SELECT_CURVES) {
         for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it!=_imp->selectedCps.end(); ++it) {
-            if (_imp->selectedTool == SELECT_ALL) {
+            if (_imp->selectedTool == SELECT_ALL ||
+                _imp->selectedTool == DRAW_BEZIER) {
                 int ret = it->first->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
                 if (ret >= 0) {
                     _imp->tangentBeingDragged = it->first;
@@ -1156,14 +1144,18 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 } else if (nearbyCP.first) {
                     _imp->handleControlPointSelection(nearbyCP);
                 }  else if (featherBarSel.first) {
+                    _imp->clearCPSSelection();
                     _imp->featherBarBeingDragged = featherBarSel;
+                    _imp->handleControlPointSelection(_imp->featherBarBeingDragged);
                     _imp->state = DRAGGING_FEATHER_BAR;
                 }
                 
             } else {
                 
                 if (featherBarSel.first) {
+                    _imp->clearCPSSelection();
                     _imp->featherBarBeingDragged = featherBarSel;
+                    _imp->handleControlPointSelection(_imp->featherBarBeingDragged);
                     _imp->state = DRAGGING_FEATHER_BAR;
                 } else if (_imp->isNearbySelectedCpsCrossHair(pos)) {
                     ///check if the user clicked nearby the cross hair of the selection rectangle in which case
@@ -1196,7 +1188,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             }
             break;
         case ADD_POINTS:
-#pragma message WARN("Make this an undo/redo command")
             ///If the user clicked on a bezier and this bezier is selected add a control point by
             ///splitting up the targeted segment
             if (nearbyBezier) {
@@ -1207,9 +1198,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     if (nearbyCP.first) {
                         _imp->handleControlPointSelection(nearbyCP);
                     } else {
-                        boost::shared_ptr<BezierCP> newCp = nearbyBezier->addControlPointAfterIndex(nearbyBezierCPIndex, nearbyBezierT);
-                        boost::shared_ptr<BezierCP> newFp = nearbyBezier->getFeatherPointAtIndex(nearbyBezierCPIndex + 1);
-                        _imp->handleControlPointSelection(std::make_pair(newCp,newFp));
+                        pushUndoCommand(new AddPointUndoCommand(this,nearbyBezier,nearbyBezierCPIndex,nearbyBezierT));
                         _imp->evaluateOnPenUp = true;
                     }
                     didSomething = true;
@@ -1217,106 +1206,53 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             }
             break;
         case REMOVE_POINTS:
-#pragma message WARN("Make this an undo/redo command")
             if (nearbyCP.first) {
                 Bezier* curve = nearbyCP.first->getCurve();
                 assert(nearbyBezier.get() == curve);
                 if (nearbyCP.first->isFeatherPoint()) {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(nearbyCP.second));
+                    pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second));
                 } else {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(nearbyCP.first));
+                    pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.first));
                 }
-                int cpCount = curve->getControlPointsCount();
-                if (cpCount == 1) {
-                    curve->setCurveFinished(false);
-                } else if (cpCount == 0) {
-                    
-                    ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeItem(nearbyBezier.get());
-
-                }
-                SelectedCPs::iterator foundSelected = std::find(_imp->selectedCps.begin(), _imp->selectedCps.end(), nearbyCP);
-                if (foundSelected != _imp->selectedCps.end()) {
-                    _imp->selectedCps.erase(foundSelected);
-                }
-                _imp->computeSelectedCpsBBOX();
-                _imp->evaluateOnPenUp = true;
                 didSomething = true;
             }
             break;
         case REMOVE_FEATHER_POINTS:
-#pragma message WARN("Make this an undo/redo command")
-            ///clear control points selections
-            _imp->selectedCps.clear();
-            _imp->showCpsBbox = false;
             if (nearbyCP.first) {
                 assert(nearbyBezier);
-                _imp->handleControlPointSelection(nearbyCP);
-                nearbyBezier->removeFeatherAtIndex(nearbyCpIndex);
-                _imp->computeSelectedCpsBBOX();
-                _imp->evaluateOnPenUp = true;
+                pushUndoCommand(new RemoveFeatherUndoCommand(this,nearbyBezier,
+                                                             nearbyCP.first->isFeatherPoint() ? nearbyCP.first : nearbyCP.second));
                 didSomething = true;
             }
             break;
         case OPEN_CLOSE_CURVE:
             if (nearbyBezier) {
-#pragma message WARN("Make this an undo/redo command")
-                SelectedBeziers::iterator foundBezier =
-                std::find(_imp->selectedBeziers.begin(), _imp->selectedBeziers.end(), nearbyBezier);
-                if (foundBezier != _imp->selectedBeziers.end()) {
-                    nearbyBezier->setCurveFinished(!nearbyBezier->isCurveFinished());
-                    _imp->evaluateOnPenUp = true;
-                    didSomething = true;
-                } else {
-                    _imp->handleBezierSelection(nearbyBezier);
-                }
+                pushUndoCommand(new OpenCloseUndoCommand(this,nearbyBezier));
+                didSomething = true;
             }
             break;
         case SMOOTH_POINTS:
-#pragma message WARN("Make this an undo/redo command")
-            ///clear control points selections
-            _imp->selectedCps.clear();
-            _imp->showCpsBbox = false;
+
             if (nearbyCP.first) {
-                assert(nearbyBezier);
-                _imp->handleControlPointSelection(nearbyCP);
-                nearbyBezier->smoothPointAtIndex(nearbyCpIndex, time);
-                _imp->evaluateOnPenUp = true;
-                _imp->computeSelectedCpsBBOX();
+                pushUndoCommand(new SmoothCuspUndoCommand(this,nearbyBezier,nearbyCP,time,false));
                 didSomething = true;
             }
             break;
         case CUSP_POINTS:
-#pragma message WARN("Make this an undo/redo command")
-            ///clear control points selections
-            _imp->selectedCps.clear();
-            _imp->showCpsBbox = false;
             if (nearbyCP.first && _imp->context->isAutoKeyingEnabled()) {
-                _imp->handleControlPointSelection(nearbyCP);
-                assert(nearbyBezier);
-                nearbyBezier->cuspPointAtIndex(nearbyCpIndex, time);
-                _imp->computeSelectedCpsBBOX();
-                _imp->evaluateOnPenUp = true;
+                pushUndoCommand(new SmoothCuspUndoCommand(this,nearbyBezier,nearbyCP,time,true));
                 didSomething = true;
             }
             break;
         case DRAW_BEZIER:
         {
-#pragma message WARN("Make this an undo/redo command")
-            ///make a new curve
-            if (!_imp->builtBezier) {
-                
-                boost::shared_ptr<Bezier> newCurve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoBezierBaseName);
-                boost::shared_ptr<BezierCP> cp = newCurve->getControlPointAtIndex(0);
-                boost::shared_ptr<BezierCP> fp = newCurve->getFeatherPointAtIndex(0);
-                assert(cp && fp);
-                _imp->selectedCps.push_back(std::make_pair(cp,fp));
-                _imp->builtBezier = newCurve;
-            } else {
-                
-                _imp->handleBezierSelection(_imp->builtBezier);
-                
-                
+            if (_imp->builtBezier && _imp->builtBezier->isCurveFinished()) {
+                _imp->builtBezier.reset();
+                _imp->clearSelection();
+                onToolActionTriggered(_imp->selectAllAction);
+                return true;
+            }
+            if (_imp->builtBezier) {
                 ///if the user clicked on a control point of the bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve
                 const std::list<boost::shared_ptr<BezierCP> >& cps = _imp->builtBezier->getControlPoints();
@@ -1327,9 +1263,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     if (x >= (pos.x() - cpSelectionTolerance) && x <= (pos.x() + cpSelectionTolerance) &&
                         y >= (pos.y() - cpSelectionTolerance) && y <= (pos.y() + cpSelectionTolerance)) {
                         if (it == cps.begin()) {
-                            _imp->builtBezier->setCurveFinished(true);
-                            _imp->evaluateOnPenUp = true;
-        
+                            pushUndoCommand(new OpenCloseUndoCommand(this,_imp->builtBezier));
+                            
                             _imp->builtBezier.reset();
                             
                             _imp->selectedCps.clear();
@@ -1340,22 +1275,18 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                             boost::shared_ptr<BezierCP> fp = _imp->builtBezier->getFeatherPointAtIndex(i);
                             assert(fp);
                             _imp->handleControlPointSelection(std::make_pair(*it, fp));
+                            _imp->state = DRAGGING_CPS;
                         }
                         
                         return true;
                     }
                 }
-                
-                ///continue the curve being built
-                _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-                int lastIndex = _imp->builtBezier->getControlPointsCount() - 1;
-                assert(lastIndex > 0);
-                boost::shared_ptr<BezierCP> cp = _imp->builtBezier->getControlPointAtIndex(lastIndex);
-                boost::shared_ptr<BezierCP> fp = _imp->builtBezier->getFeatherPointAtIndex(lastIndex);
-                assert(cp && fp);
-                _imp->selectedCps.push_back(std::make_pair(cp,fp));
+
             }
-            _imp->evaluateOnPenUp = true;
+            MakeBezierUndoCommand* cmd = new MakeBezierUndoCommand(this,_imp->builtBezier,true,pos.x(),pos.y(),time);
+            pushUndoCommand(cmd);
+            _imp->builtBezier = cmd->getCurve();
+            assert(_imp->builtBezier);
             _imp->state = BUILDING_BEZIER_CP_TANGENT;
             didSomething = true;
         }   break;
@@ -1364,16 +1295,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case DRAW_ELLIPSE:
         {
-#pragma message WARN("Make this an undo/redo command")
-            _imp->builtBezier = _imp->context->makeBezier(pos.x(), pos.y(),kRotoEllipseBaseName);
-            _imp->builtBezier->getControlPointAtIndex(0);
-            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-            _imp->builtBezier->addControlPoint(pos.x(), pos.y());
-            _imp->builtBezier->setCurveFinished(true);
-            _imp->evaluateOnPenUp = true;
-            _imp->handleBezierSelection(_imp->builtBezier);
-            if (_imp->modifiers.testFlag(Natron::ControlModifier)) {
+            bool fromCenter = _imp->modifiers.testFlag(Natron::ControlModifier);
+            pushUndoCommand(new MakeEllipseUndoCommand(this,true,fromCenter,pos.x(),pos.y(),time));
+            if (fromCenter) {
                 _imp->state = BULDING_ELLIPSE_CENTER;
             } else {
                 _imp->state = BUILDING_ELLIPSE;
@@ -1383,13 +1307,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         }   break;
         case DRAW_RECTANGLE:
         {
-            boost::shared_ptr<Bezier> curve = _imp->context->makeBezier(pos.x(), pos.y(),kRotoRectangleBaseName);
-            curve->addControlPoint(pos.x(), pos.y());
-            curve->addControlPoint(pos.x(), pos.y());
-            curve->addControlPoint(pos.x(), pos.y());
-            curve->setCurveFinished(true);
+            pushUndoCommand(new MakeRectangleUndoCommand(this,true,pos.x(),pos.y(),time));
             _imp->evaluateOnPenUp = true;
-            _imp->handleBezierSelection(curve);
             _imp->state = BUILDING_RECTANGLE;
             didSomething = true;
         }   break;
@@ -1450,24 +1369,8 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     bool didSomething = false;
     switch (_imp->state) {
         case DRAGGING_CPS:
-#pragma message WARN("Make this a mergeable undo/redo command")
         {
-            for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it!=_imp->selectedCps.end(); ++it) {
-                int index;
-                if (it->first->isFeatherPoint()) {
-                    if (_imp->selectedTool == SELECT_FEATHER_POINTS || _imp->selectedTool == SELECT_ALL) {
-                        index = it->second->getCurve()->getControlPointIndex(it->second);
-                        assert(index != -1);
-                        it->first->getCurve()->moveFeatherByIndex(index,time, dx, dy);
-                    }
-                } else {
-                    if (_imp->selectedTool == SELECT_POINTS || _imp->selectedTool == SELECT_ALL) {
-                        index = it->first->getCurve()->getControlPointIndex(it->first);
-                        assert(index != -1);
-                        it->first->getCurve()->movePointByIndex(index,time, dx, dy);
-                    }
-                }
-            }
+            pushUndoCommand(new MoveControlPointsUndoCommand(this,dx,dy,time));
             _imp->evaluateOnPenUp = true;
             _imp->computeSelectedCpsBBOX();
             didSomething = true;
@@ -1479,163 +1382,70 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         }   break;
         case BUILDING_BEZIER_CP_TANGENT:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
             assert(_imp->builtBezier);
-            int lastIndex = _imp->builtBezier->getControlPointsCount() - 1;
-            assert(lastIndex >= 0);
-            _imp->builtBezier->moveLeftBezierPoint(lastIndex ,time, -dx, -dy);
-            _imp->builtBezier->moveRightBezierPoint(lastIndex, time, dx, dy);
-            ///no need to set _imp->evaluateOnPenUp = true because the polygon is not closed anyway
+            pushUndoCommand(new MakeBezierUndoCommand(this,_imp->builtBezier,false,dx,dy,time));
             didSomething = true;
         }   break;
         case BUILDING_ELLIPSE:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            assert(_imp->builtBezier);
+            pushUndoCommand(new MakeEllipseUndoCommand(this,false,false,dx,dy,time));
             
-            boost::shared_ptr<BezierCP> top = _imp->builtBezier->getControlPointAtIndex(0);
-            boost::shared_ptr<BezierCP> right = _imp->builtBezier->getControlPointAtIndex(1);
-            boost::shared_ptr<BezierCP> bottom = _imp->builtBezier->getControlPointAtIndex(2);
-            boost::shared_ptr<BezierCP> left = _imp->builtBezier->getControlPointAtIndex(3);
-            
-            //top only moves by x
-            _imp->builtBezier->movePointByIndex(0,time, dx / 2., 0);
-            
-            //right
-            _imp->builtBezier->movePointByIndex(1,time, dx, dy / 2.);
-            
-            //bottom
-            _imp->builtBezier->movePointByIndex(2,time, dx / 2., dy );
-            
-            //left only moves by y
-            _imp->builtBezier->movePointByIndex(3,time, 0, dy / 2.);
-            
-            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-            top->getPositionAtTime(time, &topX, &topY);
-            right->getPositionAtTime(time, &rightX, &rightY);
-            bottom->getPositionAtTime(time, &btmX, &btmY);
-            left->getPositionAtTime(time, &leftX, &leftY);
-            
-            _imp->builtBezier->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
-            _imp->builtBezier->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
-            
-            _imp->builtBezier->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
-            
-            _imp->builtBezier->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
-            _imp->builtBezier->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
-            
-            _imp->builtBezier->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
-            
-
             didSomething = true;
             _imp->evaluateOnPenUp = true;
         }   break;
         case BULDING_ELLIPSE_CENTER:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            assert(_imp->builtBezier);
-            
-            boost::shared_ptr<BezierCP> top = _imp->builtBezier->getControlPointAtIndex(0);
-            boost::shared_ptr<BezierCP> right = _imp->builtBezier->getControlPointAtIndex(1);
-            boost::shared_ptr<BezierCP> bottom = _imp->builtBezier->getControlPointAtIndex(2);
-            boost::shared_ptr<BezierCP> left = _imp->builtBezier->getControlPointAtIndex(3);
-            
-            //top only moves by x
-            _imp->builtBezier->movePointByIndex(0,time, 0, dy);
-            
-            //right
-            _imp->builtBezier->movePointByIndex(1,time, dx , 0);
-            
-            //bottom
-            _imp->builtBezier->movePointByIndex(2,time, 0., -dy );
-            
-            //left only moves by y
-            _imp->builtBezier->movePointByIndex(3,time, -dx, 0);
-            double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-            top->getPositionAtTime(time, &topX, &topY);
-            right->getPositionAtTime(time, &rightX, &rightY);
-            bottom->getPositionAtTime(time, &btmX, &btmY);
-            left->getPositionAtTime(time, &leftX, &leftY);
-            
-            _imp->builtBezier->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
-            _imp->builtBezier->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
-            
-            _imp->builtBezier->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
-            
-            _imp->builtBezier->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
-            _imp->builtBezier->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
-            
-            _imp->builtBezier->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
-            _imp->builtBezier->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
+            pushUndoCommand(new MakeEllipseUndoCommand(this,false,true,dx,dy,time));
+            _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case BUILDING_RECTANGLE:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            assert(_imp->selectedBeziers.size() == 1);
-            boost::shared_ptr<Bezier>& curve = _imp->selectedBeziers.front();
-            curve->movePointByIndex(1,time, dx, 0);
-            curve->movePointByIndex(2,time, dx, dy);
-            curve->movePointByIndex(3,time, 0, dy);
+            pushUndoCommand(new MakeRectangleUndoCommand(this,false,dx,dy,time));
             didSomething = true;
             _imp->evaluateOnPenUp = true;
         }   break;
         case DRAGGING_LEFT_TANGENT:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
             assert(_imp->tangentBeingDragged);
-            boost::shared_ptr<BezierCP> counterPart;
-            if (_imp->tangentBeingDragged->isFeatherPoint()) {
-                counterPart = _imp->tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_imp->tangentBeingDragged);
-            } else {
-                counterPart = _imp->tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_imp->tangentBeingDragged);
-            }
-            assert(counterPart);
-            bool autoKeying = _imp->context->isAutoKeyingEnabled();
-            dragTangent(time, *_imp->tangentBeingDragged, dx, dy, true,autoKeying);
-            dragTangent(time, *counterPart, dx, dy, true,autoKeying);
-            _imp->computeSelectedCpsBBOX();
+            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->tangentBeingDragged,true));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case DRAGGING_RIGHT_TANGENT:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
             assert(_imp->tangentBeingDragged);
-            boost::shared_ptr<BezierCP> counterPart;
-            if (_imp->tangentBeingDragged->isFeatherPoint()) {
-                counterPart = _imp->tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_imp->tangentBeingDragged);
-            } else {
-                counterPart = _imp->tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_imp->tangentBeingDragged);
-            }
-            assert(counterPart);
-            bool autoKeying = _imp->context->isAutoKeyingEnabled();
-            dragTangent(time, *_imp->tangentBeingDragged, dx, dy, false,autoKeying);
-            dragTangent(time, *counterPart, dx, dy, false,autoKeying);
-            _imp->computeSelectedCpsBBOX();
+            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->tangentBeingDragged,false));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case DRAGGING_FEATHER_BAR:
         {
-#pragma message WARN("Make this a mergeable undo/redo command")
-            ///drag the feather point targeted of the euclidean distance of dx,dy in the direction perpendicular to
-            ///the derivative of the curve at the point
-            _imp->dragFeatherPoint(time, dx, dy);
+            pushUndoCommand(new MoveFeatherBarUndoCommand(this,dx,dy,_imp->featherBarBeingDragged,time));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case NONE:
-            
-            break;
         default:
             break;
     }
     _imp->lastMousePos = pos;
     return didSomething;
+}
+
+void RotoGui::evaluate(bool redraw)
+{
+    if (redraw) {
+        _imp->viewer->redraw();
+    }
+    _imp->context->evaluateChange();
+    _imp->node->getNode()->getApp()->triggerAutoSave();
+}
+
+void RotoGui::autoSaveAndRedraw()
+{
+    _imp->viewer->redraw();
+    _imp->node->getNode()->getApp()->triggerAutoSave();
 }
 
 bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
@@ -1658,60 +1468,34 @@ bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewpor
     return true;
 }
 
+void RotoGui::removeCurve(Bezier* curve)
+{
+    if (curve == _imp->builtBezier.get()) {
+        _imp->builtBezier.reset();
+    }
+    _imp->context->removeItem(curve);
+}
+
 bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 {
     bool didSomething = false;
     _imp->modifiers = QtEnumConvert::fromQtModifiers(e->modifiers());
     if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
-#pragma message WARN("Make this an  undo/redo command")
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->selectedCps.empty()) {
-            for (SelectedCPs::iterator it = _imp->selectedCps.begin(); it != _imp->selectedCps.end(); ++it) {
-                Bezier* curve = it->first->getCurve();
-                if (it->first->isFeatherPoint()) {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(it->second));
-                } else {
-                    curve->removeControlPointByIndex(curve->getControlPointIndex(it->first));
-                }
-                int cpCount = curve->getControlPointsCount();
-                if (cpCount == 1) {
-                    curve->setCurveFinished(false);
-                } else if (cpCount == 0) {
-                    
-                    ///clear the shared pointer so the bezier gets deleted
-                    _imp->context->removeItem(curve);
-                    if (curve == _imp->builtBezier.get()) {
-                        _imp->builtBezier.reset();
-                    }
-                }
-                
-            }
-            _imp->selectedCps.clear();
-            _imp->computeSelectedCpsBBOX();
-            _imp->node->getNode()->getApp()->triggerAutoSave();
-            _imp->context->evaluateChange();
+            pushUndoCommand(new RemovePointUndoCommand(this,_imp->selectedCps));
             didSomething = true;
         } else if (!_imp->selectedBeziers.empty()) {
-            while (!_imp->selectedBeziers.empty()) {
-                Bezier* b = _imp->selectedBeziers.front().get();
-                _imp->context->removeItem(b);
-                if (b == _imp->builtBezier.get()) {
-                    _imp->builtBezier.reset();
-                }
-            }
-            _imp->node->getNode()->getApp()->triggerAutoSave();
-            _imp->context->evaluateChange();
+            pushUndoCommand(new RemoveCurveUndoCommand(this,_imp->selectedBeziers));
             didSomething = true;
         }
         
     } else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
-#pragma message WARN("Make this an  undo/redo command")                            
         if (_imp->selectedTool == DRAW_BEZIER && _imp->builtBezier && !_imp->builtBezier->isCurveFinished()) {
-            _imp->builtBezier->setCurveFinished(true);
+            pushUndoCommand(new OpenCloseUndoCommand(this,_imp->builtBezier));
             _imp->builtBezier.reset();
             _imp->selectedCps.clear();
-            onToolActionTriggered(_imp->selectAllAction);
-            _imp->node->getNode()->getApp()->triggerAutoSave();
+             onToolActionTriggered(_imp->selectAllAction);
             _imp->context->evaluateChange();
             didSomething = true;
         }
@@ -1796,161 +1580,67 @@ bool RotoGui::RotoGuiPrivate::isNearbySelectedCpsCrossHair(const QPointF& pos) c
     }
 }
 
-namespace {
-struct ExpandFeatherData
-{
-    std::vector<double> constants,multipliers;
-    std::list<Point> polygon;
-    RectD bbox;
-};
-}
-
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
 RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,double>& pixelScale,const QPointF& pos) const
 {
     double distFeatherX = 20. * pixelScale.first;
 
-    double acceptance = 6. * pixelScale.second;
+    double acceptance = 15. * pixelScale.second;
     
-    std::map<Bezier*, ExpandFeatherData* > beziersData;
-    
-    for (SelectedCPs::const_iterator it = selectedCps.begin(); it!=selectedCps.end(); ++it) {
-        boost::shared_ptr<BezierCP> p = it->first->isFeatherPoint() ? it->second : it->first;
-        boost::shared_ptr<BezierCP> fp = it->first->isFeatherPoint() ? it->first : it->second;
-        
-        std::map<Bezier*, ExpandFeatherData* >::iterator foundData = beziersData.find(p->getCurve());
-        
-        const std::list<boost::shared_ptr<BezierCP> >& cps = p->getCurve()->getControlPoints();
+    for (SelectedBeziers::const_iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
+        const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& cps = (*it)->getControlPoints();
         int cpCount = (int)cps.size();
         if (cpCount <= 1) {
             continue;
         }
         
-        Point controlPoint,featherPoint;
-        p->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
-        fp->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
-        
-        ExpandFeatherData* bezierData = 0;
-        if (foundData != beziersData.end()) {
-            bezierData = foundData->second;
-        } else {
-            bezierData = new ExpandFeatherData;
-            bezierData->bbox.set(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-            p->getCurve()->evaluateFeatherPointsAtTime_DeCastelJau(time, 0, 50, &bezierData->polygon, true,&bezierData->bbox);
-            bezierData->constants.resize(bezierData->polygon.size());
-            bezierData->multipliers.resize(bezierData->polygon.size());
-            Bezier::precomputePointInPolygonTables(bezierData->polygon, &bezierData->constants, &bezierData->multipliers);
-            beziersData.insert(std::make_pair(p->getCurve(), bezierData));
-        }
-        
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
-        --prev;
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
-        ++next;
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = cps.begin();
-        for (; cur!=cps.end(); ++cur,++prev,++next) {
-            if (prev == cps.end()) {
-                prev = cps.begin();
+        std::list<Point> polygon;
+        RectD polygonBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
+        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &polygon, true,&polygonBBox);
+        std::vector<double> constants(polygon.size()),multipliers(polygon.size());
+        Bezier::precomputePointInPolygonTables(polygon, &constants, &multipliers);
+
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
+        ++nextF;
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator prevF = fps.end();
+        --prevF;
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
+
+        for (;itCp != cps.end(); ++itF,++nextF,++prevF,++itCp) {
+            
+            if (prevF == fps.end()) {
+                prevF = fps.begin();
             }
-            if (next == cps.end()) {
-                next = cps.begin();
+            if (nextF == fps.end()) {
+                nextF = fps.begin();
             }
             
-            if (*cur == p) {
-                break;
-            }
-        }
-        
-        Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, bezierData->polygon, bezierData->constants, bezierData->multipliers, bezierData->bbox, time, prev, cur, next);
-        
-        if (featherPoint.x == controlPoint.x) {
-            ///vertical line
-            if (pos.y() >= (controlPoint.y - acceptance) && pos.y() <= (featherPoint.y + acceptance) &&
-                pos.x() >= (controlPoint.x - acceptance) && pos.x() <= (controlPoint.x + acceptance)) {
-                return *it;
-            }
-        } else {
-            double a = (featherPoint.y - controlPoint.y) / (featherPoint.x - controlPoint.x);
-            double b =  controlPoint.y - a * controlPoint.x;
-            if (std::abs(pos.y() - (a * pos.x() + b)) < acceptance) {
-                return *it;
-            }
+            Point controlPoint,featherPoint;
+            (*itCp)->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
+            (*itF)->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
+            
+            Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, polygon, constants,
+                                            multipliers, polygonBBox, time, prevF, itF, nextF);
+            assert(featherPoint.x != controlPoint.x || featherPoint.y != controlPoint.y);
+            
+            if (((pos.y() >= (controlPoint.y - acceptance) && pos.y() <= (featherPoint.y + acceptance)) ||
+                 (pos.y() >= (featherPoint.y - acceptance) && pos.y() <= (controlPoint.y + acceptance))) &&
+                ((pos.x() >= (controlPoint.x - acceptance) && pos.x() <= (featherPoint.x + acceptance)) ||
+                 (pos.x() >= (featherPoint.x - acceptance) && pos.x() <= (controlPoint.x + acceptance)))) {
+                    double slopeX = (pos.x() - controlPoint.x) / (featherPoint.x - controlPoint.x);
+                    double slopeY = (pos.y() - controlPoint.y) / (featherPoint.y - controlPoint.y);
+                    if (std::abs(slopeX - slopeY) < acceptance) {
+                        return std::make_pair(*itCp, *itF);
+                    }
+                }
+            
         }
         
     }
-    for (std::map<Bezier*, ExpandFeatherData* >::iterator it = beziersData.begin();it!=beziersData.end();++it) {
-        delete it->second;
-    }
+
     return std::make_pair(boost::shared_ptr<BezierCP>(), boost::shared_ptr<BezierCP>());
-}
-
-void RotoGui::RotoGuiPrivate::dragFeatherPoint(int time,double dx,double dy)
-{
-    assert(featherBarBeingDragged.first && featherBarBeingDragged.second);
-    
-    double alphaDrag;
-    double dragDistance;
-    if (dx != 0.) {
-        alphaDrag = std::atan(dy / dx);
-        dragDistance = dx / std::cos(alphaDrag);
-    } else {
-        alphaDrag = dy < 0. ? - pi / 2. : pi / 2.;
-        dragDistance = dy;
-    }
-   
-    
-    boost::shared_ptr<BezierCP> p = featherBarBeingDragged.first->isFeatherPoint() ?
-    featherBarBeingDragged.second : featherBarBeingDragged.first;
-    boost::shared_ptr<BezierCP> fp = featherBarBeingDragged.first->isFeatherPoint() ?
-    featherBarBeingDragged.first : featherBarBeingDragged.second;
-    
-    Point featherPoint,controlPoint;
-    p->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
-    bool isOnKeyframe = fp->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
-    
-    
-    ///the feather point equals the control point, use derivatives
-    const std::list<boost::shared_ptr<BezierCP> >& cps = p->getCurve()->getControlPoints();
-    assert(cps.size() > 1);
-    
-    std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
-    --prev;
-    std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
-    ++next;
-    std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = cps.begin();
-    for (; cur!=cps.end(); ++cur,++prev,++next) {
-        if (prev == cps.end()) {
-            prev = cps.begin();
-        }
-        if (next == cps.end()) {
-            next = cps.begin();
-        }
-        
-        if (*cur == p) {
-            break;
-        }
-    }
-
-    std::list<Point> featherPolygon;
-    RectD featherBBox;
-    p->getCurve()->evaluateFeatherPointsAtTime_DeCastelJau(time, 0, 50 , &featherPolygon, true,&featherBBox);
-    std::vector<double> constants(featherPolygon.size()),multipliers(featherPolygon.size());
-    
-    Point delta = Bezier::expandToFeatherDistance(controlPoint, &featherPoint,dragDistance, featherPolygon, constants, multipliers, featherBBox, time, prev, cur, next);
-    
-    if (context->isAutoKeyingEnabled() || isOnKeyframe) {
-        int index = fp->getCurve()->getFeatherPointIndex(fp);
-        double leftX,leftY,rightX,rightY;
-        
-        fp->getLeftBezierPointAtTime(time, &leftX, &leftY);
-        fp->getRightBezierPointAtTime(time, &rightX, &rightY);
-
-        fp->getCurve()->setPointAtIndex(true, index, time, featherPoint.x,featherPoint.y,
-                                        leftX + delta.x, leftY + delta.y,
-                                        rightX + delta.x, rightY + delta.y);
-        
-    }
-    
 }
 
 void RotoGui::onAutoKeyingButtonClicked(bool e)
@@ -2065,4 +1755,75 @@ void RotoGui::onSelectionChanged(int reason)
         _imp->selectedBeziers = _imp->context->getSelectedCurves();
         _imp->viewer->redraw();
     }
+}
+
+void RotoGui::setSelection(const std::list<boost::shared_ptr<Bezier> >& selectedBeziers,
+                  const std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >& selectedCps)
+{
+    _imp->selectedBeziers.clear();
+    for (SelectedBeziers::const_iterator it = selectedBeziers.begin(); it!= selectedBeziers.end(); ++it) {
+        if (*it) {
+            _imp->selectedBeziers.push_back(*it);
+        }
+    }
+    _imp->selectedCps.clear();
+    for (SelectedCPs::const_iterator it = selectedCps.begin(); it!=selectedCps.end(); ++it) {
+        if (it->first && it->second) {
+            _imp->selectedCps.push_back(*it);
+        }
+    }
+    _imp->context->select(_imp->selectedBeziers,RotoContext::OVERLAY_INTERACT);
+    _imp->computeSelectedCpsBBOX();
+}
+
+void RotoGui::setSelection(const boost::shared_ptr<Bezier>& curve,
+                  const std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> >& point)
+{
+    _imp->selectedBeziers.clear();
+    if (curve) {
+        _imp->selectedBeziers.push_back(curve);
+    }
+    _imp->selectedCps.clear();
+    if (point.first && point.second) {
+        _imp->selectedCps.push_back(point);
+    }
+    if (curve) {
+        _imp->context->select(curve, RotoContext::OVERLAY_INTERACT);
+    }
+    _imp->computeSelectedCpsBBOX();
+}
+
+void RotoGui::getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
+                  std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >* selectedCps)
+{
+    *selectedBeziers = _imp->selectedBeziers;
+    *selectedCps = _imp->selectedCps;
+}
+
+void RotoGui::setBuiltBezier(const boost::shared_ptr<Bezier>& curve)
+{
+    assert(curve);
+    _imp->builtBezier = curve;
+}
+
+boost::shared_ptr<Bezier> RotoGui::getBezierBeingBuild() const
+{
+    return  _imp->builtBezier;
+}
+
+void RotoGui::pushUndoCommand(QUndoCommand* cmd)
+{
+    NodeSettingsPanel* panel = _imp->node->getSettingPanel();
+    assert(panel);
+    panel->pushUndoCommand(cmd);
+}
+
+QString RotoGui::getNodeName() const
+{
+    return _imp->node->getNode()->getName().c_str();
+}
+
+RotoContext* RotoGui::getContext()
+{
+    return _imp->context.get();
 }

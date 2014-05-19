@@ -89,16 +89,20 @@ lutFromColorspace(ViewerInstance::ViewerColorSpace cs)
 {
     const Natron::Color::Lut* lut;
     switch (cs) {
-        case ViewerInstance::Linear:
-            return 0;
         case ViewerInstance::sRGB:
             lut = Natron::Color::LutManager::sRGBLut();
             break;
         case ViewerInstance::Rec709:
             lut = Natron::Color::LutManager::Rec709Lut();
             break;
+        case ViewerInstance::Linear:
+        default:
+            lut = 0;
+            break;
     }
-    lut->validate();
+    if (lut) {
+        lut->validate();
+    }
     return lut;
 }
 
@@ -358,7 +362,7 @@ ViewerInstance::renderViewer(SequenceTime time,
     RectI rod,pixelRoD;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
-    SequenceTime inputIdentityTime;
+    SequenceTime inputIdentityTime = time;
     
     
     bool isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
@@ -880,7 +884,7 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
             double b = src_pixels[2];
             double a = src_pixels[3];
             
-            double mini,maxi;
+            double mini, maxi;
             switch (channels) {
                 case ViewerInstance::RGB:
                     mini = std::min(std::min(r,g),b);
@@ -907,6 +911,8 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
                     maxi = mini;
                     break;
                 default:
+                    mini = 0.;
+                    maxi = 0.;
                     break;
             }
             if (mini < localVmin) {
@@ -961,6 +967,11 @@ scaleToTexture8bits(std::pair<int,int> yRange,
             rOffset = 3;
             gOffset = 3;
             bOffset = 3;
+            break;
+        default:
+            rOffset = 0;
+            gOffset = 0;
+            bOffset = 0;
             break;
     }
 
@@ -1076,6 +1087,11 @@ scaleToTexture32bits(std::pair<int,int> yRange,
             rOffset = 3;
             gOffset = 3;
             bOffset = 3;
+            break;
+        default:
+            rOffset = 0;
+            gOffset = 0;
+            bOffset = 0;
             break;
     }
 

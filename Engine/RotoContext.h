@@ -179,13 +179,14 @@ class RotoLayer;
 struct RotoItemPrivate;
 class RotoItem : public QObject
 {
-    Q_OBJECT
     
 public:
     
     RotoItem(RotoContext* context,const std::string& name,RotoLayer* parent = NULL);
     
     virtual ~RotoItem();
+    
+    void clone(const RotoItem& other);
     
     ///only callable on the main-thread
     void setName(const std::string& name);
@@ -210,9 +211,7 @@ public:
     bool getLocked() const;
     
     bool isLockedRecursive() const;
-    
-    void emitLockedChanged();
-    
+        
     /**
      * @brief Returns at which hierarchy level the item is.
      * The base layer is 0.
@@ -268,6 +267,8 @@ public:
     
     virtual ~RotoDrawableItem();
     
+    void clone(const RotoDrawableItem& other);
+               
     /**
      * @brief Must be implemented by the derived class to save the state into
      * the serialization object.
@@ -370,6 +371,9 @@ public:
     ///only callable on the main-thread
     void removeItem(const RotoItem* item);
     
+    ///Returns the index of the given item in the layer, or -1 if not found
+    int getChildIndex(const boost::shared_ptr<RotoItem>& item) const;
+    
     ///only callable on the main-thread
     const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
     
@@ -401,9 +405,11 @@ public:
     
     Bezier(RotoContext* context,const std::string& name,RotoLayer* parent);
     
+    Bezier(const Bezier& other);
+    
     virtual ~Bezier();
     
-    
+    void clone(const Bezier& other);
     /**
      * @brief Adds a new control point to the curve. A feather point will be added, at the same position.
      * If auto keying is enabled and this is the first point and there's no keyframe a new keyframe will be set at the current time.
@@ -421,6 +427,7 @@ public:
      * A feather point will be added, at the same position.
      * If auto keying is enabled, and there's no keyframe a new keyframe will be set at the current time.
      *
+     * If index is -1 then the point will be added as the first point of the curve.
      * If index is invalid an invalid argument exception will be thrown.
      **/
     boost::shared_ptr<BezierCP> addControlPointAfterIndex(int index,double t);
@@ -513,6 +520,8 @@ public:
      **/
     void setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry);
     
+    void clonePoint(BezierCP& p,const BezierCP& to) const;
+    
     /**
      * @brief Removes the feather point at the given index by making it equal the "true" control point.
      **/
@@ -554,7 +563,7 @@ public:
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
-    void evaluateAtTime_DeCastelJau(int time,unsigned int mipMapLevel,
+    void evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
                                     int nbPointsPerSegment,std::list<Natron::Point>* points,
                                     RectD* bbox = NULL) const;
     
@@ -562,11 +571,11 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCastelJau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
     
     /**
-     * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCastelJau will be returned,
-     * otherwise if it has never been called, evaluateAtTime_DeCastelJau will be called to compute the bounding box.
+     * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
+     * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
     RectD getBoundingBox(int time) const;
     
@@ -669,8 +678,7 @@ public:
     static bool pointInPolygon(const Natron::Point& p,const std::list<Natron::Point>& polygon,
                                const std::vector<double>& constants,
                                const std::vector<double>& multiples,
-                               const RectD& featherPolyBBox,
-                               double tolerance = 0.1);
+                               const RectD& featherPolyBBox);
     
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -726,6 +734,12 @@ class RotoContext : public QObject
     Q_OBJECT
     
 public:
+    
+    enum SelectionReason {
+        OVERLAY_INTERACT = 0, ///when the user presses an interact
+        SETTINGS_PANEL, ///when the user interacts with the settings panel
+        OTHER ///when the project loader restores the selection
+    };
 
     RotoContext(Natron::Node* node);
     
@@ -758,6 +772,7 @@ public:
      * @brief Add a new layer to the currently selected layer.
      **/
     boost::shared_ptr<RotoLayer> addLayer();
+    void addLayer(const boost::shared_ptr<RotoLayer>& layer);
     
     /**
      * @brief Make a new bezier curve and append it into the currently selected layer. 
@@ -769,8 +784,10 @@ public:
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(RotoItem* item);
+    void removeItem(RotoItem* item,SelectionReason reason = OTHER);
     
+    ///This is here for undo/redo purpose. Do not call this
+    void addItem(RotoLayer* layer,int indexInLayer,const boost::shared_ptr<RotoItem>& item,SelectionReason reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -813,11 +830,6 @@ public:
     ///Deserialization
     void load(const RotoContextSerialization& obj);
     
-    enum SelectionReason {
-        OVERLAY_INTERACT = 0, ///when the user presses an interact
-        SETTINGS_PANEL, ///when the user interacts with the settings panel
-        OTHER ///when the project loader restores the selection
-    };
     
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
@@ -883,7 +895,7 @@ public:
     
     RotoLayer* getDeepestSelectedLayer() const;
 
-    
+    void onItemLockedChanged(RotoItem* item);
 signals:
     
     /**
@@ -894,9 +906,9 @@ signals:
     
     void restorationComplete();
     
-    void itemInserted();
+    void itemInserted(int);
     
-    void itemRemoved(RotoItem*);
+    void itemRemoved(RotoItem*,int);
     
     void refreshViewerOverlays();
 
@@ -910,14 +922,13 @@ public slots:
     
     void onRippleEditChanged(bool enabled);
     
-    void onItemLockedChanged();
         
 private:
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(const boost::shared_ptr<RotoItem>& b);
     
-     void removeItemRecursively(RotoItem* item);
+     void removeItemRecursively(RotoItem* item,SelectionReason reason);
     
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

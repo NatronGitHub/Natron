@@ -495,8 +495,8 @@ void GuiApplicationManager::setLoadingStatus(const QString& str) {
 
 void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                             std::map<std::string,std::vector<std::string> >* readersMap,
-                            std::map<std::string,std::vector<std::string> >* writersMap) {
-    
+                            std::map<std::string,std::vector<std::string> >* writersMap)
+{
     ////Use ReadQt and WriteQt only for debug versions of Natron.
     // these  are built-in nodes
     QStringList grouping;
@@ -557,6 +557,9 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         }
         
     }
+#else
+    (void)readersMap;
+    (void)writersMap;
 #endif
     
     {
