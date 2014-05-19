@@ -46,8 +46,6 @@ using namespace Natron;
 
 namespace {
     
-static const double pi=3.14159265358979323846264338327950288419717;
-
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
 typedef std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > SelectedCP;
@@ -1597,10 +1595,10 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
         
         std::list<Point> polygon;
         RectD polygonBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &polygon, true,&polygonBBox);
+        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &polygon, true, &polygonBBox);
         std::vector<double> constants(polygon.size()),multipliers(polygon.size());
         Bezier::precomputePointInPolygonTables(polygon, &constants, &multipliers);
-
+    
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
         ++nextF;

@@ -295,9 +295,6 @@ static void cuspTangent(double x,double y,double *tx,double *ty)
     }
 }
     
-static const double pi=3.14159265358979323846264338327950288419717;
-    
-
 static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y,double *tx,double *ty)
 {
     
@@ -3868,7 +3865,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 std::vector<double> multiples,constants;
                 RectD featherPolyBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
                 
-                (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time, mipmapLevel, 50, &featherPolygon, true, &featherPolyBBox);
+                (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
                 (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
                 assert(!featherPolygon.empty());
                 
