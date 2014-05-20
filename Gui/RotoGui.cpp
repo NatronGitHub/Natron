@@ -1600,7 +1600,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
 {
     double distFeatherX = 20. * pixelScale.first;
 
-    double acceptance = 15. * pixelScale.second;
+    double acceptance = 6 * pixelScale.second;
     
     for (SelectedBeziers::const_iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
         const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
@@ -1644,9 +1644,9 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
                  (pos.y() >= (featherPoint.y - acceptance) && pos.y() <= (controlPoint.y + acceptance))) &&
                 ((pos.x() >= (controlPoint.x - acceptance) && pos.x() <= (featherPoint.x + acceptance)) ||
                  (pos.x() >= (featherPoint.x - acceptance) && pos.x() <= (controlPoint.x + acceptance)))) {
-                    double slopeX = (pos.x() - controlPoint.x) / (featherPoint.x - controlPoint.x);
-                    double slopeY = (pos.y() - controlPoint.y) / (featherPoint.y - controlPoint.y);
-                    if (std::abs(slopeX - slopeY) < acceptance) {
+                    double a = (featherPoint.y - controlPoint.y) / (featherPoint.x - controlPoint.x);
+                    double b = controlPoint.y - a * controlPoint.x;
+                    if (std::fabs(pos.y() - (a * pos.x() + b)) < acceptance) {
                         return std::make_pair(*itCp, *itF);
                     }
                 }
