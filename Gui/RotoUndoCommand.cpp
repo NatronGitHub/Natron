@@ -1419,11 +1419,35 @@ void DragItemsUndoCommand::redo()
 
 //////////////////////
 
+static std::string getItemCopyName(RotoPanel* roto,RotoItem* originalItem)
+{
+    int i = 1;
+    std::string name = originalItem->getName_mt_safe() + "- copy";
+    boost::shared_ptr<RotoItem> foundItemWithName = roto->getContext()->getItemByName(name);
+    while (foundItemWithName && foundItemWithName.get() != originalItem) {
+        std::stringstream ss;
+        ss << originalItem->getName_mt_safe()  << "- copy " << i;
+        name = ss.str();
+        foundItemWithName = roto->getContext()->getItemByName(name);
+        ++i;
+    }
+    return name;
+}
+
+void setItemCopyNameRecursive(RotoPanel* panel,RotoItem* item)
+{
+    item->setName(getItemCopyName(panel, item));
+    RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item);
+    if (isLayer) {
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = isLayer->getItems().begin(); it!= isLayer->getItems().end(); ++it) {
+            setItemCopyNameRecursive(panel, it->get());
+        }
+    }
+}
 
 PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* target,QList<QTreeWidgetItem*> source)
 : QUndoCommand()
 , _roto(roto)
-,_firstRedoCalled(false)
 , _mode()
 , _targetTreeItem(target)
 , _targetItem()
@@ -1451,25 +1475,15 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* targ
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it!=_pastedItems.end(); ++it) {
             Bezier* srcBezier = dynamic_cast<Bezier*>(it->rotoItem.get());
             RotoLayer* srcLayer = dynamic_cast<RotoLayer*>(it->rotoItem.get());
-            
-            int i = 1;
-            std::string name = it->rotoItem->getName_mt_safe() + "- copy";
-            boost::shared_ptr<RotoItem> foundItemWithName = roto->getContext()->getItemByName(name);
-            while (foundItemWithName) {
-                std::stringstream ss;
-                ss << it->rotoItem->getName_mt_safe()  << "- copy " << i;
-                name = ss.str();
-                foundItemWithName = roto->getContext()->getItemByName(name);
-                ++i;
-            }
+
             if (srcBezier) {
                 boost::shared_ptr<Bezier> copy(new Bezier(*srcBezier));
-                copy->setName(name);
+                copy->setName(getItemCopyName(roto, it->rotoItem.get()));
                 it->itemCopy = copy;
             } else {
                 assert(srcLayer);
                 boost::shared_ptr<RotoLayer> copy(new RotoLayer(*srcLayer));
-                copy->setName(name);
+                setItemCopyNameRecursive(roto,copy.get());
                 it->itemCopy = copy;
             }
             
@@ -1537,4 +1551,49 @@ void PasteItemUndoCommand::redo()
     _roto->getContext()->evaluateChange();
     setText(QString("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
 
+}
+
+//////////////////
+
+
+DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* items)
+: QUndoCommand()
+, _roto(roto)
+, _item()
+{
+    _item.treeItem = items;
+    _item.item = _roto->getRotoItemForTreeItem(_item.treeItem);
+    assert(_item.item->getParentLayer());
+    Bezier* isBezier = dynamic_cast<Bezier*>(_item.item.get());
+    RotoLayer* isLayer = dynamic_cast<RotoLayer*>(_item.item.get());
+    if (isBezier) {
+        _item.duplicatedItem.reset(new Bezier(*isBezier));
+    } else {
+        assert(isLayer);
+        _item.duplicatedItem.reset(new RotoLayer(*isLayer));
+    }
+    
+    setItemCopyNameRecursive(roto, _item.duplicatedItem.get());
+}
+
+DuplicateItemUndoCommand::~DuplicateItemUndoCommand()
+{
+    
+}
+
+void DuplicateItemUndoCommand::undo()
+{
+    _roto->getContext()->removeItem(_item.duplicatedItem.get(),RotoContext::OTHER);
+    _roto->getContext()->evaluateChange();
+    setText(QString("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
+}
+
+void DuplicateItemUndoCommand::redo()
+{
+    
+    _roto->getContext()->addItem(_item.item->getParentLayer(),
+                                 _item.item->getParentLayer()->getItems().size(), _item.duplicatedItem, RotoContext::OTHER);
+    
+    _roto->getContext()->evaluateChange();
+    setText(QString("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
 }

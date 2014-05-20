@@ -546,12 +546,38 @@ public:
 private:
     
     RotoPanel* _roto;
-    bool _firstRedoCalled;
     Mode _mode;
     QTreeWidgetItem* _targetTreeItem;
     boost::shared_ptr<RotoItem> _targetItem;
     boost::shared_ptr<RotoItem> _oldTargetItem;
     std::list < PastedItem > _pastedItems;
+    
+};
+
+
+class DuplicateItemUndoCommand: public QUndoCommand
+{
+    
+public:
+    
+    struct DuplicatedItem {
+        QTreeWidgetItem* treeItem;
+        boost::shared_ptr<RotoItem> item;
+        boost::shared_ptr<RotoItem> duplicatedItem;
+    };
+    
+    DuplicateItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* items);
+    
+    virtual ~DuplicateItemUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoPanel* _roto;
+    DuplicatedItem _item;
     
 };
 

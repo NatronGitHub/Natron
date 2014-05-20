@@ -1285,7 +1285,7 @@ void RotoPanel::onPasteItemActionTriggered()
 
 void RotoPanel::onDuplicateItemActionTriggered()
 {
-    
+    pushUndoCommand(new DuplicateItemUndoCommand(this,_imp->lastRightClickedItem));
 }
 
 void RotoPanel::setLastRightClickedItem(QTreeWidgetItem* item)
