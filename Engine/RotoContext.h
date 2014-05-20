@@ -343,7 +343,11 @@ public:
     
     RotoLayer(RotoContext* context,const std::string& name,RotoLayer* parent);
     
+    RotoLayer(const RotoLayer& other);
+    
     virtual ~RotoLayer();
+    
+    void clone(const RotoLayer& other);
     
     /**
      * @brief Must be implemented by the derived class to save the state into

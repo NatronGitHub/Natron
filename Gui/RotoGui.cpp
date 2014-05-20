@@ -1600,7 +1600,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
 {
     double distFeatherX = 20. * pixelScale.first;
 
-    double acceptance = 6 * pixelScale.second;
+    double acceptance = 10 * pixelScale.second;
     
     for (SelectedBeziers::const_iterator it = selectedBeziers.begin(); it!=selectedBeziers.end(); ++it) {
         const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
@@ -1644,9 +1644,21 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
                  (pos.y() >= (featherPoint.y - acceptance) && pos.y() <= (controlPoint.y + acceptance))) &&
                 ((pos.x() >= (controlPoint.x - acceptance) && pos.x() <= (featherPoint.x + acceptance)) ||
                  (pos.x() >= (featherPoint.x - acceptance) && pos.x() <= (controlPoint.x + acceptance)))) {
-                    double a = (featherPoint.y - controlPoint.y) / (featherPoint.x - controlPoint.x);
-                    double b = controlPoint.y - a * controlPoint.x;
-                    if (std::fabs(pos.y() - (a * pos.x() + b)) < acceptance) {
+                    Point a;
+                    a.x = (featherPoint.x - controlPoint.x);
+                    a.y = (featherPoint.y - controlPoint.y);
+                    double norm = sqrt(a.x * a.x - a.y * a.y);
+                    a.x /= norm;
+                    a.y /= norm;
+                    Point b;
+                    b.x = (pos.x() - controlPoint.x);
+                    b.y = (pos.y() - controlPoint.y);
+                    norm = sqrt(b.x * b.x - b.y * b.y);
+                    b.x /= norm;
+                    b.y /= norm;
+                    
+                    double crossProduct = b.y * a.x - b.x * a.y;
+                    if (std::abs(crossProduct) <  0.1) {
                         return std::make_pair(*itCp, *itF);
                     }
                 }

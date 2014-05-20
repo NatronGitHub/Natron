@@ -1429,11 +1429,24 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         userRoI = _imp->userRoI;
     }
 
-    bool mouseInDispW = rod.contains(zoomPos.x(), zoomPos.y());
-    
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _imp->ms = DRAGGING_IMAGE;
-    } else if(event->button() == Qt::LeftButton &&
+        return;
+    }
+    
+    bool mouseInDispW = rod.contains(zoomPos.x(), zoomPos.y());
+    
+    bool overlaysCaught = false;
+    if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED) {
+        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos);
+        if (overlaysCaught) {
+            updateGL();
+            return;
+        }
+    }
+    
+    if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
               _imp->displayingImage && mouseInDispW) {
         _imp->pickerState = POINT;
@@ -1481,12 +1494,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
                isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
     }
-    if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED) {
-        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-        if (_imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos)) {
-            updateGL();
-        }
-    }
+   
     
 }
 

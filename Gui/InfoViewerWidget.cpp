@@ -138,6 +138,10 @@ InfoViewerWidget::~InfoViewerWidget(){
     
 }
 
+static double clamp(double v)
+{
+    return std::max(std::min(1.,v), 0.);
+}
 
 void InfoViewerWidget::updateColor()
 {
@@ -167,8 +171,8 @@ void InfoViewerWidget::updateColor()
     double srgb_b = Color::to_func_srgb(b);
     
     QColor col;
-    col.setRgbF(srgb_r, srgb_g, srgb_b);
-    QPixmap pix(20,20);
+    col.setRgbF(clamp(srgb_r), clamp(srgb_g), clamp(srgb_b));
+    QPixmap pix(15,15); 
     pix.fill(col);
     color->setPixmap(pix);
     color->repaint();

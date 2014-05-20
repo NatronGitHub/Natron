@@ -875,9 +875,39 @@ RotoLayer::RotoLayer(RotoContext* context,const std::string& n,RotoLayer* parent
     
 }
 
+RotoLayer::RotoLayer(const RotoLayer& other)
+: RotoItem(other.getContext(),other.getName_mt_safe(),other.getParentLayer())
+,_imp(new RotoLayerPrivate())
+{
+    clone(other);
+}
+
 RotoLayer::~RotoLayer()
 {
     
+}
+
+void RotoLayer::clone(const RotoLayer& other)
+{
+    RotoItem::clone(other);
+    
+    QMutexLocker l(&itemMutex);
+    _imp->items.clear();
+    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = other._imp->items.begin() ; it!= other._imp->items.end(); ++it) {
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+        if (isBezier) {
+            boost::shared_ptr<Bezier> copy(new Bezier(*isBezier));
+            copy->setParentLayer(this);
+            _imp->items.push_back(copy);
+        } else {
+            assert(isLayer);
+            boost::shared_ptr<RotoLayer> copy(new RotoLayer(*isLayer));
+            copy->setParentLayer(this);
+            _imp->items.push_back(copy);
+            getContext()->addLayer(copy);
+        }
+    }
 }
 
 void RotoLayer::save(RotoItemSerialization *obj) const
@@ -2729,7 +2759,11 @@ boost::shared_ptr<RotoLayer> RotoContext::addLayer()
 
 void RotoContext::addLayer(const boost::shared_ptr<RotoLayer>& layer)
 {
-    _imp->layers.push_back(layer);
+    std::list<boost::shared_ptr<RotoLayer> >::iterator it = std::find(_imp->layers.begin(), _imp->layers.end(), layer);
+    if (it == _imp->layers.end()) {
+        _imp->layers.push_back(layer);
+    }
+    
 }
 
 boost::shared_ptr<RotoItem> RotoContext::getLastInsertedItem() const

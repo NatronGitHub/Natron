@@ -1,3 +1,4 @@
+
 //  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,6 +65,8 @@ private:
         
         if (index.isValid() && index.column() != 0 && selection.contains(item)) {
             emit itemClicked(item, index.column());
+        } else if (event->button() == Qt::RightButton && index.isValid()) {
+            _panel->showItemMenu(item,event->globalPos());
         } else {
             QTreeWidget::mouseReleaseEvent(event);
         }
@@ -72,6 +75,8 @@ private:
     virtual void dragMoveEvent(QDragMoveEvent * event) OVERRIDE FINAL;
     
     virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
+    
+    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
     
     bool dragAndDropHandler(const QMimeData* mime,
                             const QPoint& pos,
@@ -132,12 +137,18 @@ struct RotoPanelPrivate
     TreeItems items;
     
     QTreeWidgetItem* editedItem;
+    std::string editedItemName;
+    
+    QTreeWidgetItem* lastRightClickedItem;
+    QList<QTreeWidgetItem*> clipBoard;
     
     RotoPanelPrivate(RotoPanel* publicInter,NodeGui*  n)
     : publicInterface(publicInter)
     , node(n)
     , context(n->getNode()->getRotoContext().get())
     , editedItem(NULL)
+    , lastRightClickedItem(NULL)
+    , clipBoard()
     {
         assert(n && context);
         
@@ -455,7 +466,29 @@ void RotoPanel::onSelectedBezierKeyframeRemoved(int time)
     _imp->updateSplinesInfosGUI(time);
 }
 
+void RotoPanel::updateItemGui(QTreeWidgetItem* item)
+{
+    int time = _imp->context->getTimelineCurrentTime();
+    TreeItems::iterator it = _imp->findItem(item);
+    assert(it!=_imp->items.end());
+    it->treeItem->setIcon(1,it->rotoItem->isGloballyActivated() ? _imp->iconVisible : _imp->iconUnvisible);
+    it->treeItem->setIcon(2,it->rotoItem->isLockedRecursive() ? _imp->iconLocked : _imp->iconUnlocked);
+    
+    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+    if (drawable) {
+        double overlayColor[4];
+        drawable->getOverlayColor(overlayColor);
+        QPixmap p(15,15);
+        QColor c;
+        c.setRgbF(overlayColor[0], overlayColor[1], overlayColor[2]);
+        c.setAlphaF(overlayColor[3]);
+        p.fill(c);
+        it->treeItem->setIcon(3, QIcon(p));
+        it->treeItem->setIcon(4,drawable->getInverted(time) ? _imp->iconInverted : _imp->iconUninverted);
+    }
+   
 
+}
 
 void RotoPanelPrivate::updateSplinesInfosGUI(int time)
 {
@@ -762,7 +795,14 @@ void RotoPanel::onItemChanged(QTreeWidgetItem* item,int column)
     }
     TreeItems::iterator it = _imp->findItem(item);
     if (it != _imp->items.end()) {
-        it->rotoItem->setName(item->text(column).toStdString());
+        std::string newName = item->text(column).toStdString();
+        boost::shared_ptr<RotoItem> existingItem = _imp->context->getItemByName(newName);
+        if (existingItem && existingItem != it->rotoItem) {
+            Natron::warningDialog("", "An item with the name "+ newName + " already exists. Please pick something else.");
+            item->setText(0, _imp->editedItemName.c_str());
+        } else {
+            it->rotoItem->setName(newName);
+        }
     }
 }
 
@@ -775,6 +815,7 @@ void RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,int column)
     if (it != _imp->items.end()) {
         _imp->editedItem = item;
         QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)));
+        _imp->editedItemName = it->rotoItem->getName_mt_safe();
         _imp->tree->openPersistentEditor(item);
     }
 }
@@ -1096,6 +1137,34 @@ void TreeWidget::dropEvent(QDropEvent* event)
     
 }
 
+void TreeWidget::keyPressEvent(QKeyEvent* event)
+{
+    
+    QList<QTreeWidgetItem*> selected = selectedItems();
+    QTreeWidgetItem* item = selected.empty() ? 0 :  selected.front();
+    
+    if (item) {
+        _panel->setLastRightClickedItem(item);
+        if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+            _panel->onRemoveItemButtonClicked();
+        } else if (event->key() == Qt::Key_C && event->modifiers().testFlag(Qt::ControlModifier)) {
+            _panel->onCopyItemActionTriggered();
+        } else if (event->key() == Qt::Key_V && event->modifiers().testFlag(Qt::ControlModifier)) {
+            _panel->onPasteItemActionTriggered();
+        } else if (event->key() == Qt::Key_X && event->modifiers().testFlag(Qt::ControlModifier)) {
+            _panel->onCutItemActionTriggered();
+        } else if (event->key() == Qt::Key_C && event->modifiers().testFlag(Qt::AltModifier)) {
+            _panel->onDuplicateItemActionTriggered();
+        } else if (event->key() == Qt::Key_A && event->modifiers().testFlag(Qt::ControlModifier)) {
+            _panel->selectAll();
+        } else {
+            QTreeWidget::keyPressEvent(event);
+        }
+    } else {
+        QTreeWidget::keyPressEvent(event);
+    }
+}
+
 void RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 {
     NodeSettingsPanel* panel = _imp->node->getSettingPanel();
@@ -1117,4 +1186,120 @@ void RotoPanel::clearSelection()
 {
     _imp->selectedItems.clear();
     _imp->context->clearSelection(RotoContext::SETTINGS_PANEL);
+}
+
+void RotoPanel::showItemMenu(QTreeWidgetItem* item,const QPoint& globalPos)
+{
+    TreeItems::iterator it = _imp->findItem(item);
+    if (it == _imp->items.end()) {
+        return;
+    }
+    
+    
+    _imp->lastRightClickedItem = item;
+    
+    QMenu menu(this);
+    menu.setShortcutEnabled(false);
+    QAction* addLayerAct = menu.addAction(tr("Add layer"));
+    QObject::connect(addLayerAct, SIGNAL(triggered()), this, SLOT(onAddLayerActionTriggered()));
+    QAction* deleteAct = menu.addAction(tr("Delete"));
+    deleteAct->setShortcut(QKeySequence(Qt::Key_Backspace));
+    QObject::connect(deleteAct, SIGNAL(triggered()), this, SLOT(onDeleteItemActionTriggered()));
+    QAction* cutAct = menu.addAction(tr("Cut"));
+    cutAct->setShortcut(QKeySequence(Qt::Key_X + Qt::CTRL));
+    QObject::connect(cutAct, SIGNAL(triggered()), this, SLOT(onCutItemActionTriggered()));
+    QAction* copyAct = menu.addAction(tr("Copy"));
+    copyAct->setShortcut(QKeySequence(Qt::Key_C + Qt::CTRL));
+    QObject::connect(copyAct, SIGNAL(triggered()), this, SLOT(onCopyItemActionTriggered()));
+    QAction* pasteAct = menu.addAction(tr("Paste"));
+    pasteAct->setShortcut(QKeySequence(Qt::Key_V + Qt::CTRL));
+    QObject::connect(pasteAct, SIGNAL(triggered()), this, SLOT(onPasteItemActionTriggered()));
+    pasteAct->setEnabled(!_imp->clipBoard.empty());
+    QAction* duplicateAct = menu.addAction(tr("Duplicate"));
+    duplicateAct->setShortcut(QKeySequence(Qt::Key_C + Qt::ALT));
+    QObject::connect(duplicateAct, SIGNAL(triggered()), this, SLOT(onDuplicateItemActionTriggered()));
+    
+    ///The base layer cannot be duplicated
+    duplicateAct->setEnabled(it->rotoItem->getParentLayer() != NULL);
+    
+    menu.exec(globalPos);
+}
+
+void RotoPanel::onAddLayerActionTriggered()
+{
+    assert(_imp->lastRightClickedItem);
+    pushUndoCommand(new AddLayerUndoCommand(this));
+}
+
+void RotoPanel::onDeleteItemActionTriggered()
+{
+    assert(_imp->lastRightClickedItem);
+    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    pushUndoCommand(new RemoveItemsUndoCommand(this,selectedItems));
+
+}
+
+void RotoPanel::onCutItemActionTriggered()
+{
+    assert(_imp->lastRightClickedItem);
+    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    _imp->clipBoard = selectedItems;
+    pushUndoCommand(new RemoveItemsUndoCommand(this,selectedItems));
+
+}
+
+void RotoPanel::onCopyItemActionTriggered()
+{
+    assert(_imp->lastRightClickedItem);
+    _imp->clipBoard = _imp->tree->selectedItems();
+}
+
+void RotoPanel::onPasteItemActionTriggered()
+{
+    assert(!_imp->clipBoard.empty());
+    
+    TreeItems::iterator it = _imp->findItem(_imp->lastRightClickedItem);
+    if (it == _imp->items.end()) {
+        return;
+    }
+    
+    
+    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(_imp->lastRightClickedItem);
+    if (drawable) {
+        
+        ///cannot paste multiple items on a drawable item
+        if (_imp->clipBoard.size() > 1) {
+            return;
+        }
+        
+        ///cannot paste a non-drawable to a drawable
+        TreeItems::iterator clip = _imp->findItem(_imp->clipBoard.front());
+        RotoDrawableItem* isClipBoardDrawable = dynamic_cast<RotoDrawableItem*>(clip->rotoItem.get());
+        if (!isClipBoardDrawable) {
+            return;
+        }
+    }
+    
+    pushUndoCommand(new PasteItemUndoCommand(this,_imp->lastRightClickedItem,_imp->clipBoard));
+}
+
+void RotoPanel::onDuplicateItemActionTriggered()
+{
+    
+}
+
+void RotoPanel::setLastRightClickedItem(QTreeWidgetItem* item)
+{
+    assert(item);
+    _imp->lastRightClickedItem = item;
+}
+
+void RotoPanel::selectAll()
+{
+    _imp->tree->blockSignals(true);
+    for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
+        it->treeItem->setSelected(true);
+    }
+    _imp->tree->blockSignals(false);
+    onItemSelectionChanged();
 }

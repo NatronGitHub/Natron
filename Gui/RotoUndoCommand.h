@@ -506,5 +506,53 @@ private:
 };
 
 
+/**
+ * @class This class supports 2 behaviours:
+ * 1) The user pastes one item upon another. The target's shape and attributes are copied and the 
+ * name is the source's name plus "- copy" at the end.
+ * 2) The user pastes several items upon a layer in which case the items are copied into that layer and
+ * the new items name is the same than the original appeneded with "- copy".
+ * 
+ * Anything else will not do anything and you should not issue a command which will yield an unsupported behaviour
+ * otherwise you'll create an empty action in the undo/redo stack.
+**/
+class PasteItemUndoCommand: public QUndoCommand
+{
+    
+public:
+    
+    enum Mode
+    {
+        CopyToLayer = 0,
+        CopyToItem
+    };
+    
+    struct PastedItem
+    {
+        QTreeWidgetItem* treeItem;
+        boost::shared_ptr<RotoItem> rotoItem;
+        boost::shared_ptr<RotoItem> itemCopy;
+    };
+    
+    
+    PasteItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* target,QList<QTreeWidgetItem*> source);
+    
+    virtual ~PasteItemUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoPanel* _roto;
+    bool _firstRedoCalled;
+    Mode _mode;
+    QTreeWidgetItem* _targetTreeItem;
+    boost::shared_ptr<RotoItem> _targetItem;
+    boost::shared_ptr<RotoItem> _oldTargetItem;
+    std::list < PastedItem > _pastedItems;
+    
+};
 
 #endif // ROTOUNDOCOMMAND_H

@@ -1416,3 +1416,125 @@ void DragItemsUndoCommand::redo()
     _roto->getContext()->evaluateChange();
     setText(QString("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
 }
+
+//////////////////////
+
+
+PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* target,QList<QTreeWidgetItem*> source)
+: QUndoCommand()
+, _roto(roto)
+,_firstRedoCalled(false)
+, _mode()
+, _targetTreeItem(target)
+, _targetItem()
+, _pastedItems()
+{
+    _targetItem = roto->getRotoItemForTreeItem(target);
+    assert(_targetItem);
+    
+    for (int i  = 0; i < source.size(); ++i) {
+        PastedItem item;
+        item.treeItem = source[i];
+        item.rotoItem = roto->getRotoItemForTreeItem(item.treeItem);
+        assert(item.rotoItem);
+        _pastedItems.push_back(item);
+    }
+    
+    Bezier* isBezier = dynamic_cast<Bezier*>(_targetItem.get());
+    if (isBezier) {
+        _mode = CopyToItem;
+        assert(source.size() == 1 && _pastedItems.size() == 1);
+        PastedItem& front = _pastedItems.front();
+        assert(dynamic_cast<RotoDrawableItem*>(front.rotoItem.get()));
+    } else {
+        _mode = CopyToLayer;
+        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it!=_pastedItems.end(); ++it) {
+            Bezier* srcBezier = dynamic_cast<Bezier*>(it->rotoItem.get());
+            RotoLayer* srcLayer = dynamic_cast<RotoLayer*>(it->rotoItem.get());
+            
+            int i = 1;
+            std::string name = it->rotoItem->getName_mt_safe() + "- copy";
+            boost::shared_ptr<RotoItem> foundItemWithName = roto->getContext()->getItemByName(name);
+            while (foundItemWithName) {
+                std::stringstream ss;
+                ss << it->rotoItem->getName_mt_safe()  << "- copy " << i;
+                name = ss.str();
+                foundItemWithName = roto->getContext()->getItemByName(name);
+                ++i;
+            }
+            if (srcBezier) {
+                boost::shared_ptr<Bezier> copy(new Bezier(*srcBezier));
+                copy->setName(name);
+                it->itemCopy = copy;
+            } else {
+                assert(srcLayer);
+                boost::shared_ptr<RotoLayer> copy(new RotoLayer(*srcLayer));
+                copy->setName(name);
+                it->itemCopy = copy;
+            }
+            
+        }
+    }
+}
+
+PasteItemUndoCommand::~PasteItemUndoCommand()
+{
+    
+}
+
+void PasteItemUndoCommand::undo()
+{
+    
+    if (_mode == CopyToItem) {
+        Bezier* isBezier = dynamic_cast<Bezier*>(_targetItem.get());
+        assert(isBezier);
+        assert(_oldTargetItem);
+        _roto->getContext()->deselect(_targetItem, RotoContext::OTHER);
+        Bezier* old = dynamic_cast<Bezier*>(_oldTargetItem.get());
+        isBezier->clone(*old);
+        _roto->updateItemGui(_targetTreeItem);
+        _roto->getContext()->select(_targetItem, RotoContext::OTHER);
+    } else {
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(_targetItem.get());
+        assert(isLayer);
+        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it!= _pastedItems.end(); ++it) {
+            _roto->getContext()->removeItem(it->itemCopy.get(),RotoContext::OTHER);
+        }
+    }
+    _roto->getContext()->evaluateChange();
+    setText(QString("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
+
+}
+
+void PasteItemUndoCommand::redo()
+{
+    if (_mode == CopyToItem) {
+        Bezier* isBezier = dynamic_cast<Bezier*>(_targetItem.get());
+        assert(isBezier);
+        _oldTargetItem.reset(new Bezier(*isBezier));
+        assert(_pastedItems.size() == 1);
+        PastedItem& front = _pastedItems.front();
+        Bezier* toCopy = dynamic_cast<Bezier*>(front.rotoItem.get());
+        
+        ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
+        ///have not been refreshed and the selected item is linked to those dirty knobs
+        _roto->getContext()->deselect(_targetItem, RotoContext::OTHER);
+        isBezier->clone(*toCopy);
+        isBezier->setName(_oldTargetItem->getName_mt_safe());
+        _roto->updateItemGui(_targetTreeItem);
+        _roto->getContext()->select(_targetItem, RotoContext::OTHER);
+    } else {
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(_targetItem.get());
+        assert(isLayer);
+        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it!= _pastedItems.end(); ++it) {
+            assert(it->itemCopy);
+            it->itemCopy->setParentLayer(isLayer);
+            _roto->getContext()->addItem(isLayer, isLayer->getItems().size(), it->itemCopy, RotoContext::OTHER);
+
+        }
+    }
+    
+    _roto->getContext()->evaluateChange();
+    setText(QString("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
+
+}

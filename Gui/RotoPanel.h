@@ -52,6 +52,11 @@ public:
     void clearSelection();
     
     void pushUndoCommand(QUndoCommand* cmd);
+    
+    void showItemMenu(QTreeWidgetItem* item,const QPoint& globalPos);
+    
+    void setLastRightClickedItem(QTreeWidgetItem* item);
+    
 public slots:
     
     void onGoToPrevKeyframeButtonClicked();
@@ -102,6 +107,22 @@ public slots:
     ///This gets called when the selection in the tree has changed
     void onItemSelectionChanged();
 
+    void onAddLayerActionTriggered();
+    
+    void onDeleteItemActionTriggered();
+    
+    void onCutItemActionTriggered();
+    
+    void onCopyItemActionTriggered();
+    
+    void onPasteItemActionTriggered();
+    
+    void onDuplicateItemActionTriggered();
+    
+    void updateItemGui(QTreeWidgetItem* item);
+    
+    void selectAll();
+    
 private:
     
     void onSelectionChangedInternal();
