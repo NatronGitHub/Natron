@@ -26,7 +26,6 @@ using namespace Natron;
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent)
 : QWidget(parent)
-, _colorAndMouseVisible(false)
 , mousePos(0,0)
 , rectUser(0,0)
 , colorUnderMouse(0,0,0,0)
@@ -114,20 +113,24 @@ void InfoViewerWidget::setFps(double actualFps,double desiredFps){
 void InfoViewerWidget::hideFps(){
     _fpsLabel->hide();
 }
-void InfoViewerWidget::showColorAndMouseInfo(){
 
-    _colorAndMouseVisible=true;
+bool InfoViewerWidget::colorAndMouseVisible()
+{
+    return coordMouse->isVisible();
+}
+
+void InfoViewerWidget::showColorAndMouseInfo(){
+    coordMouse->show();
+    hvl_lastOption->show();
+    rgbaValues->show();
+    color->show();
 }
 void InfoViewerWidget::hideColorAndMouseInfo(){
 
-    coordMouse->setText("");
-    hvl_lastOption->setText("");
-    rgbaValues->setText("");
-    QPixmap pix(20,20);
-    pix.fill(Qt::black);
-    color->setPixmap(pix);
-    
-    _colorAndMouseVisible=false;
+    coordMouse->hide();
+    hvl_lastOption->hide();
+    rgbaValues->hide();
+    color->hide();
 
 }
 
@@ -143,6 +146,7 @@ void InfoViewerWidget::updateColor()
     float b = colorUnderMouse.z();
     float a = colorUnderMouse.w();
 
+    
     QString values;
     //values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
     // the following three colors have an equal luminance (=0.4), which makes the text easier to read.
@@ -153,11 +157,24 @@ void InfoViewerWidget::updateColor()
         .arg(a,0,'f',5);
 
     rgbaValues->setText(values);
-
+    rgbaValues->repaint();
     float h,s,v,l;
     // Nuke's HSV display is based on sRGB, an L is Rec.709.
     // see http://forums.thefoundry.co.uk/phpBB2/viewtopic.php?t=2283
-    Color::rgb_to_hsv(Color::to_func_srgb(r),Color::to_func_srgb(g),Color::to_func_srgb(b),&h,&s,&v);
+    
+    double srgb_r = Color::to_func_srgb(r);
+    double srgb_g = Color::to_func_srgb(g);
+    double srgb_b = Color::to_func_srgb(b);
+    
+    QColor col;
+    col.setRgbF(srgb_r, srgb_g, srgb_b);
+    QPixmap pix(20,20);
+    pix.fill(col);
+    color->setPixmap(pix);
+    color->repaint();
+
+    
+    Color::rgb_to_hsv(srgb_r,srgb_g,srgb_b,&h,&s,&v);
     l = 0.2125*r + 0.7154*g + 0.0721*b; // L according to Rec.709
     QString hsvlValues;
     hsvlValues = QString("<font color=\"#DBE0E0\">H:%1 S:%2 V:%3  L:%4</font>")
@@ -167,6 +184,7 @@ void InfoViewerWidget::updateColor()
         .arg(l,0,'f',5);
 
     hvl_lastOption->setText(hsvlValues);
+    hvl_lastOption->repaint();
 }
 
 void InfoViewerWidget::updateCoordMouse(){
@@ -175,6 +193,7 @@ void InfoViewerWidget::updateCoordMouse(){
     .arg(mousePos.x())
     .arg(mousePos.y());
     coordMouse->setText(coord);
+    coordMouse->repaint();
 }
 
 void InfoViewerWidget::setResolution(const Format& f)

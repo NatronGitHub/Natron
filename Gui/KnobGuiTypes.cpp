@@ -1693,7 +1693,7 @@ ColorPickerLabel::ColorPickerLabel(QWidget* parent)
     
     setToolTip(Qt::convertFromPlainText("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                         "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
-                                        "To deselect the picker click outside the image."
+                                        "To deselect the picker left click anywhere."
                                         "Note that by default " NATRON_APPLICATION_NAME " converts to linear the color picked\n"
                                         "because all the processing pipeline is linear, but you can turn this off in the\n"
                                         "preference panel.", Qt::WhiteSpaceNormal));

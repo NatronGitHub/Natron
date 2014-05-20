@@ -36,8 +36,7 @@ public:
     void setColor(float r,float g,float b,float a);
     void setMousePos(QPoint p){mousePos =p;}
     void setUserRect(QPoint p){rectUser=p;}
-    bool colorAndMouseVisible(){return _colorAndMouseVisible;}
-    void colorAndMouseVisible(bool b){_colorAndMouseVisible=b;}
+    bool colorAndMouseVisible();
     
     void setResolution(const Format& f);
     
@@ -58,7 +57,6 @@ private:
     
     
 private:
-    bool _colorAndMouseVisible;
     
     QHBoxLayout* layout;
     QLabel* resolution;

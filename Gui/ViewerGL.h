@@ -444,6 +444,10 @@ private:
 
     void updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,int width,int height,const RectI& dispW);
     void updateRectangleColorPicker();
+    /**
+     * @brief X and Y are in widget coords!
+     **/
+    void pickColor(double x,double y);
     
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
