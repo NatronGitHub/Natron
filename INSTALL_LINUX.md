@@ -34,6 +34,13 @@ Go under Natron and type
 ###*GLEW*
  (The package depends on your distribution).
 	sudo apt-get install libglew-dev
+	
+###*Cairo 1.12*
+(The package depends on your distribution).
+On Ubuntu 12.04 LTS the package can be added with the following ppa:
+sudo add-apt-repository -y ppa:xorg-edgers/ppa 
+ 	sudo apt-get install libcairo2-dev
+	
 
 We're done here for libraries.
 

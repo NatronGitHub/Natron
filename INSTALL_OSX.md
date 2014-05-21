@@ -45,6 +45,12 @@ With macports:
 
 	sudo port install glew
 	
+###*Cairo 1.12*
+
+With macports:
+
+	sudo port install cairo
+	
 We're done here for libraries.
 
 

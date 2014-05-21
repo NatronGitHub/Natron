@@ -43,6 +43,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QMessageBox>
 #include <QImage>
 
+#include <cairo/cairo.h>
+
 #include <boost/version.hpp>
 
 #include "Engine/ViewerInstance.h"
@@ -255,7 +257,7 @@ struct GuiPrivate {
     QString _glewVersion;
     QString _qtVersion;
     QString _boostVersion;
-
+    QString _cairoVersion;
     
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
@@ -342,6 +344,7 @@ struct GuiPrivate {
     , _glewVersion()
     , _qtVersion()
     , _boostVersion()
+    , _cairoVersion()
     {
         
     }
@@ -376,6 +379,7 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
     
     _imp->_qtVersion = QString(QT_VERSION_STR);
     _imp->_boostVersion = QString(BOOST_LIB_VERSION);
+    _imp->_cairoVersion = QString(CAIRO_VERSION_STRING);
 }
 
 Gui::~Gui()
@@ -2224,6 +2228,11 @@ const QString& Gui::getBoostVersion() const {
 
 const QString& Gui::getQtVersion() const {
     return _imp->_qtVersion;
+}
+
+const QString& Gui::getCairoVersion() const
+{
+    return _imp->_cairoVersion;
 }
 
 void Gui::onNodeNameChanged(const QString& /*name*/) {

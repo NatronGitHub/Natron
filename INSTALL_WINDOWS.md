@@ -43,6 +43,13 @@ Open it with visual studio and build a static MT release version of expat.
 
 We're done here for libraries.
 
+###*Cairo 1.12*
+
+You can get the release from http://www.cairographics.org/releases/
+Then this page has a complete answer on how to compile the dependencies:
+http://stackoverflow.com/questions/85622/how-to-compile-cairo-for-visual-c-2008-express-edition
+This will work successfully.
+
 ###Add the config.pri file
 
 You have to define the locations of the required libraries.
@@ -84,6 +91,13 @@ Here's an example of a config.pri file:
     	
 	    LIBS += shell32.lib
 	    
+	}
+	
+	cairo {
+	
+		INCLUDEPATH +=  $$quote(path\\to\\cairo\\includes)
+    
+	    LIBS += -L$$quote(path\\to\\cairo\\lib) -lcairo
 	}
 
 ---------------------------------------------

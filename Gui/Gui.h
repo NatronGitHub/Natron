@@ -270,6 +270,7 @@ public:
 
     const QString& getQtVersion() const;
 
+    const QString& getCairoVersion() const;
     /**
      * @brief Make a new rotoscoping/painting interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.
