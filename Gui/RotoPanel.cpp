@@ -689,7 +689,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                     found->rotoItem->setGloballyActivated(activated, true);
                     _imp->setChildrenActivatedRecursively(activated, found->treeItem);
                 }
-                
+                _imp->context->emitRefreshViewerOverlays();
             }   break;
                 ///locked
             case 2:
@@ -731,8 +731,10 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                             TreeItems::iterator found = _imp->findItem(selected[i]);
                             assert(found != _imp->items.end());
                             drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                            drawable->setOverlayColor(oc);
-                            found->treeItem->setIcon(3, QIcon(pix));
+                            if (drawable) {
+                                drawable->setOverlayColor(oc);
+                                found->treeItem->setIcon(3, QIcon(pix));
+                            }
                         }
                     }
                 }

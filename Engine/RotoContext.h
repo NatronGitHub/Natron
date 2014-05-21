@@ -900,6 +900,8 @@ public:
     RotoLayer* getDeepestSelectedLayer() const;
 
     void onItemLockedChanged(RotoItem* item);
+    
+    void emitRefreshViewerOverlays();
 signals:
     
     /**
@@ -917,6 +919,7 @@ signals:
     void refreshViewerOverlays();
 
     void itemLockedChanged();
+    
     
 public slots:
     

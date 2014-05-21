@@ -3689,6 +3689,11 @@ void RotoContext::onItemLockedChanged(RotoItem* item)
     
 }
 
+void RotoContext::emitRefreshViewerOverlays()
+{
+    emit refreshViewerOverlays();
+}
+
 static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
 {
     if (mipmapLevel != 0) {
