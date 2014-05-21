@@ -32,6 +32,7 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/RotoUndoCommand.h"
+#include "Gui/GuiApplicationManager.h"
 
 #include "Global/GLIncludes.h"
 
@@ -264,8 +265,7 @@ QAction* RotoGui::createToolAction(QToolButton* toolGroup,
                                    RotoGui::Roto_Tool tool)
 {
     
-#pragma message WARN("Change constructor when icons will be added")
-    QAction *action = new QAction(icon,text,toolGroup);
+    QAction *action = new QAction(icon,"",toolGroup);
     action->setToolTip(text + ": " + tooltip + "<p><b>Keyboard shortcut: " + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
     
     QPoint data;
@@ -288,103 +288,164 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
 {
     assert(parent);
     
+    QPixmap pixBezier,pixEllipse,pixRectangle,pixAddPts,pixRemovePts,pixCuspPts,pixSmoothPts,pixOpenCloseCurve,pixRemoveFeather;
+    QPixmap pixSelectAll,pixSelectPoints,pixSelectFeather,pixSelectCurves,pixAutoKeyingEnabled,pixAutoKeyingDisabled;
+    QPixmap pixStickySelEnabled,pixStickySelDisabled,pixFeatherLinkEnabled,pixFeatherLinkDisabled,pixAddKey,pixRemoveKey;
+    QPixmap pixRippleEnabled,pixRippleDisabled;
+    
+    appPTR->getIcon(Natron::NATRON_PIXMAP_BEZIER_32, &pixBezier);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ELLIPSE,&pixEllipse);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_RECTANGLE,&pixRectangle);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_POINTS,&pixAddPts);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_POINTS,&pixRemovePts);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CUSP_POINTS,&pixCuspPts);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SMOOTH_POINTS,&pixSmoothPts);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_CLOSE_CURVE,&pixOpenCloseCurve);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_FEATHER,&pixRemoveFeather);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_ALL,&pixSelectAll);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_POINTS,&pixSelectPoints);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_FEATHER,&pixSelectFeather);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_CURVES,&pixSelectCurves);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_AUTO_KEYING_ENABLED,&pixAutoKeyingEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_AUTO_KEYING_DISABLED,&pixAutoKeyingDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_STICKY_SELECTION_ENABLED,&pixStickySelEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_STICKY_SELECTION_DISABLED,&pixStickySelDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_LINK_ENABLED,&pixFeatherLinkEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_LINK_DISABLED,&pixFeatherLinkDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_KEYFRAME,&pixAddKey);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME,&pixRemoveKey);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_ENABLED,&pixRippleEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_DISABLED,&pixRippleDisabled);
+    
     _imp->toolbar = new QToolBar(parent);
     _imp->toolbar->setOrientation(Qt::Vertical);
     _imp->selectionButtonsBar = new QWidget(parent);
     _imp->selectionButtonsBarLayout = new QHBoxLayout(_imp->selectionButtonsBar);
+    _imp->selectionButtonsBarLayout->setContentsMargins(3, 2, 0, 0);
+    QIcon autoKeyIc;
+    autoKeyIc.addPixmap(pixAutoKeyingEnabled,QIcon::Normal,QIcon::On);
+    autoKeyIc.addPixmap(pixAutoKeyingDisabled,QIcon::Normal,QIcon::Off);
     
-    _imp->autoKeyingEnabled = new Button(QIcon(),"Auto-key",_imp->selectionButtonsBar);
+    QSize buttonSize(25,25);
+    
+    _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
+    _imp->autoKeyingEnabled->setFixedSize(buttonSize);
     _imp->autoKeyingEnabled->setCheckable(true);
     _imp->autoKeyingEnabled->setChecked(_imp->context->isAutoKeyingEnabled());
     _imp->autoKeyingEnabled->setDown(_imp->context->isAutoKeyingEnabled());
-    _imp->autoKeyingEnabled->setToolTip("When activated any movement to a control point will set a keyframe at the current time.");
+    _imp->autoKeyingEnabled->setToolTip("Auto-keying: When activated any movement to a control point will set a keyframe at the current time.");
     QObject::connect(_imp->autoKeyingEnabled, SIGNAL(clicked(bool)), this, SLOT(onAutoKeyingButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->autoKeyingEnabled);
     
-    _imp->featherLinkEnabled = new Button(QIcon(),"Feather-link",_imp->selectionButtonsBar);
+    QIcon featherLinkIc;
+    featherLinkIc.addPixmap(pixFeatherLinkEnabled,QIcon::Normal,QIcon::On);
+    featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
+    _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
+    _imp->featherLinkEnabled->setFixedSize(buttonSize);
     _imp->featherLinkEnabled->setCheckable(true);
     _imp->featherLinkEnabled->setChecked(_imp->context->isFeatherLinkEnabled());
     _imp->featherLinkEnabled->setDown(_imp->context->isFeatherLinkEnabled());
-    _imp->featherLinkEnabled->setToolTip("When activated the feather points will follow the same movement as their counter-part does.");
+    _imp->featherLinkEnabled->setToolTip("Feather-link: When activated the feather points will follow the same"
+                                         " movement as their counter-part does.");
     QObject::connect(_imp->featherLinkEnabled, SIGNAL(clicked(bool)), this, SLOT(onFeatherLinkButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
     
-    _imp->stickySelectionEnabled = new Button(QIcon(),"Sticky-selection",_imp->selectionButtonsBar);
+    QIcon stickSelIc;
+    stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
+    stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
+    _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
+    _imp->stickySelectionEnabled->setFixedSize(buttonSize);
     _imp->stickySelectionEnabled->setCheckable(true);
     _imp->stickySelectionEnabled->setChecked(false);
     _imp->stickySelectionEnabled->setDown(false);
-    _imp->stickySelectionEnabled->setToolTip("When activated, clicking outside of any shape will not clear the current selection.");
+    _imp->stickySelectionEnabled->setToolTip("Sticky-selection: When activated, "
+                                             " clicking outside of any shape will not clear the current selection.");
     QObject::connect(_imp->stickySelectionEnabled, SIGNAL(clicked(bool)), this, SLOT(onStickySelectionButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
     
-    _imp->rippleEditEnabled = new Button(QIcon(),"Ripple-edit",_imp->selectionButtonsBar);
+    QIcon rippleEditIc;
+    rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
+    rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
+    _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
+    _imp->rippleEditEnabled->setFixedSize(buttonSize);
     _imp->rippleEditEnabled->setCheckable(true);
     _imp->rippleEditEnabled->setChecked(_imp->context->isRippleEditEnabled());
     _imp->rippleEditEnabled->setDown(_imp->context->isRippleEditEnabled());
-    _imp->rippleEditEnabled->setToolTip("When activated, moving a control point will set it as the same position for all the keyframes "
+    _imp->rippleEditEnabled->setToolTip("Ripple-edit: When activated, moving a control point"
+                                        " will set it as the same position for all the keyframes "
                                         "it has.");
     QObject::connect(_imp->rippleEditEnabled, SIGNAL(clicked(bool)), this, SLOT(onRippleEditButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
     
-    _imp->addKeyframeButton = new Button(QIcon(),"+ keyframe",_imp->selectionButtonsBar);
+    _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
+    _imp->addKeyframeButton->setFixedSize(buttonSize);
     QObject::connect(_imp->addKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onAddKeyFrameClicked()));
-    _imp->addKeyframeButton->setToolTip("Set a keyframe at the current time for the selected shapes, if any.");
+    _imp->addKeyframeButton->setToolTip("Set a keyframe at the current time for the selected shape(s), if any.");
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
-    _imp->removeKeyframeButton = new Button(QIcon(),"- keyframe",_imp->selectionButtonsBar);
+    _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
+    _imp->removeKeyframeButton->setFixedSize(buttonSize);
     QObject::connect(_imp->removeKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyFrameClicked()));
     _imp->removeKeyframeButton->setToolTip("Remove a keyframe at the current time for the selected shape(s), if any.");
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
-        
+    _imp->selectionButtonsBarLayout->addStretch();
+    
+    QSize rotoToolSize(30,30);
+    
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
+    _imp->selectTool->setFixedSize(rotoToolSize);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->selectTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
+    
+    
     QKeySequence selectShortCut(Qt::Key_Q);
-    _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(), "Select all",
+    _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(pixSelectAll), "Select all",
                                              "everything can be selected and moved.",
                                              selectShortCut, SELECT_ALL);
-    createToolAction(_imp->selectTool, QIcon(), "Select points",
+    createToolAction(_imp->selectTool, QIcon(pixSelectPoints), "Select points",
                      "works only for the points of the inner shape,"
                      " feather points will not be taken into account.",
                      selectShortCut, SELECT_POINTS);
-    createToolAction(_imp->selectTool, QIcon(), "Select curves",
+    createToolAction(_imp->selectTool, QIcon(pixSelectCurves), "Select curves",
                      "only the curves can be selected."
                      ,selectShortCut,SELECT_CURVES);
-    createToolAction(_imp->selectTool, QIcon(), "Select feather points", "only the feather points can be selected.",selectShortCut,SELECT_FEATHER_POINTS);
+    createToolAction(_imp->selectTool, QIcon(pixSelectFeather), "Select feather points", "only the feather points can be selected.",selectShortCut,SELECT_FEATHER_POINTS);
     _imp->selectTool->setDown(false);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->toolbar->addWidget(_imp->selectTool);
     
     _imp->pointsEditionTool = new RotoToolButton(_imp->toolbar);
+    _imp->pointsEditionTool->setFixedSize(rotoToolSize);
     _imp->pointsEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->pointsEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->pointsEditionTool->setText("Add points");
     QKeySequence pointsEditionShortcut(Qt::Key_D);
-    QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(), "Add points","add a new control point to the shape"
+    QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(pixAddPts), "Add points","add a new control point to the shape"
                                           ,pointsEditionShortcut, ADD_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove points","",pointsEditionShortcut,REMOVE_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Cusp points","", pointsEditionShortcut,CUSP_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Smooth points","", pointsEditionShortcut,SMOOTH_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Open/Close curve","", pointsEditionShortcut,OPEN_CLOSE_CURVE);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove feather","set the feather point to be equal to the control point", pointsEditionShortcut,REMOVE_FEATHER_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixRemovePts), "Remove points","",pointsEditionShortcut,REMOVE_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixCuspPts), "Cusp points","", pointsEditionShortcut,CUSP_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixSmoothPts), "Smooth points","", pointsEditionShortcut,SMOOTH_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixOpenCloseCurve), "Open/Close curve","", pointsEditionShortcut,OPEN_CLOSE_CURVE);
+    createToolAction(_imp->pointsEditionTool, QIcon(pixRemoveFeather), "Remove feather","set the feather point to be equal to the control point", pointsEditionShortcut,REMOVE_FEATHER_POINTS);
     _imp->pointsEditionTool->setDown(false);
     _imp->pointsEditionTool->setDefaultAction(addPtsAct);
     _imp->toolbar->addWidget(_imp->pointsEditionTool);
     
     _imp->bezierEditionTool = new RotoToolButton(_imp->toolbar);
+    _imp->bezierEditionTool->setFixedSize(rotoToolSize);
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->bezierEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->bezierEditionTool->setText("Bezier");
     QKeySequence editBezierShortcut(Qt::Key_V);
-    QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier",
+    QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(pixBezier), "Bezier",
                                               "Edit bezier paths. Click and drag the mouse to adjust tangents. Press enter to close the shape. "
                                               ,editBezierShortcut, DRAW_BEZIER);
     
     ////B-splines are not implemented yet
     //createToolAction(_imp->bezierEditionTool, QIcon(), "B-Spline", DRAW_B_SPLINE);
     
-    createToolAction(_imp->bezierEditionTool, QIcon(), "Ellipse","Hold control to draw the ellipse from its center",editBezierShortcut, DRAW_ELLIPSE);
-    createToolAction(_imp->bezierEditionTool, QIcon(), "Rectangle","", editBezierShortcut,DRAW_RECTANGLE);
+    createToolAction(_imp->bezierEditionTool, QIcon(pixEllipse), "Ellipse","Hold control to draw the ellipse from its center",editBezierShortcut, DRAW_ELLIPSE);
+    createToolAction(_imp->bezierEditionTool, QIcon(pixRectangle), "Rectangle","", editBezierShortcut,DRAW_RECTANGLE);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
     
     ////////////Default action is to make a new bezier

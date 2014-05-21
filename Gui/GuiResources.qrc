@@ -100,5 +100,26 @@
         <file>Resources/Images/bezier.png</file>
         <file>Resources/Images/unvisible.png</file>
         <file>Resources/Images/visible.png</file>
+        <file>Resources/Images/autoKeyingDisabled.png</file>
+        <file>Resources/Images/autoKeyingEnabled.png</file>
+        <file>Resources/Images/bezier32.png</file>
+        <file>Resources/Images/cursor.png</file>
+        <file>Resources/Images/cuspPoints.png</file>
+        <file>Resources/Images/ellipse.png</file>
+        <file>Resources/Images/featherLinkDisabled.png</file>
+        <file>Resources/Images/featherLinkEnabled.png</file>
+        <file>Resources/Images/openCloseCurve.png</file>
+        <file>Resources/Images/removeFeather.png</file>
+        <file>Resources/Images/removePoints.png</file>
+        <file>Resources/Images/rippleEditDisabled.png</file>
+        <file>Resources/Images/rippleEditEnabled.png</file>
+        <file>Resources/Images/selectCurves.png</file>
+        <file>Resources/Images/selectFeather.png</file>
+        <file>Resources/Images/selectPoints.png</file>
+        <file>Resources/Images/smoothPoints.png</file>
+        <file>Resources/Images/stickySelectionDisabled.png</file>
+        <file>Resources/Images/stickySelectionEnabled.png</file>
+        <file>Resources/Images/addPoints.png</file>
+        <file>Resources/Images/rectangle.png</file>
     </qresource>
 </RCC>

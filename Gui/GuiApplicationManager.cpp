@@ -344,6 +344,90 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"curve.png");
                 *pix = QPixmap::fromImage(img).scaled(15,15);
                 break;
+            case NATRON_PIXMAP_BEZIER_32:
+                img.load(NATRON_IMAGES_PATH"bezier32.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ELLIPSE:
+                img.load(NATRON_IMAGES_PATH"ellipse.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_RECTANGLE:
+                img.load(NATRON_IMAGES_PATH"rectangle.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ADD_POINTS:
+                img.load(NATRON_IMAGES_PATH"addPoints.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_REMOVE_POINTS:
+                img.load(NATRON_IMAGES_PATH"removePoints.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_REMOVE_FEATHER:
+                img.load(NATRON_IMAGES_PATH"removeFeather.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_CUSP_POINTS:
+                img.load(NATRON_IMAGES_PATH"cuspPoints.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SMOOTH_POINTS:
+                img.load(NATRON_IMAGES_PATH"smoothPoints.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_OPEN_CLOSE_CURVE:
+                img.load(NATRON_IMAGES_PATH"openCloseCurve.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SELECT_ALL:
+                img.load(NATRON_IMAGES_PATH"cursor.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SELECT_POINTS:
+                img.load(NATRON_IMAGES_PATH"selectPoints.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SELECT_FEATHER:
+                img.load(NATRON_IMAGES_PATH"selectFeather.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SELECT_CURVES:
+                img.load(NATRON_IMAGES_PATH"selectCurves.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_AUTO_KEYING_ENABLED:
+                img.load(NATRON_IMAGES_PATH"autoKeyingEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_AUTO_KEYING_DISABLED:
+                img.load(NATRON_IMAGES_PATH"autoKeyingDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_STICKY_SELECTION_ENABLED:
+                img.load(NATRON_IMAGES_PATH"stickySelectionEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_STICKY_SELECTION_DISABLED:
+                img.load(NATRON_IMAGES_PATH"stickySelectionDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_FEATHER_LINK_ENABLED:
+                img.load(NATRON_IMAGES_PATH"featherLinkEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_FEATHER_LINK_DISABLED:
+                img.load(NATRON_IMAGES_PATH"featherLinkDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_RIPPLE_EDIT_ENABLED:
+                img.load(NATRON_IMAGES_PATH"rippleEditEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_RIPPLE_EDIT_DISABLED:
+                img.load(NATRON_IMAGES_PATH"rippleEditDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
             default:
                 assert(!"Missing image.");
         }
