@@ -21,6 +21,7 @@
 #include <QMouseEvent>
 #include <QApplication>
 #include <QDataStream>
+#include <QMimeData>
 #include <QByteArray>
 
 #include "Gui/Button.h"
@@ -316,8 +317,11 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->tree->setColumnWidth(3, 25);
     _imp->tree->setColumnWidth(4, 25);
 
+#if QT_VERSION < 0x050000
     _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
-    
+#else
+    _imp->tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+#endif
     _imp->buttonContainer = new QWidget(this);
     _imp->buttonLayout = new QHBoxLayout(_imp->buttonContainer);
     _imp->buttonLayout->setContentsMargins(0, 0, 0, 0);
