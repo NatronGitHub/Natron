@@ -145,6 +145,7 @@ void NodeGui::initialize(NodeGraph* dag,
         assert(dockContainer);
         _settingsPanel = new NodeSettingsPanel(_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
+        QObject::connect(_settingsPanel, SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
         dockContainer->addWidget(_settingsPanel);
         
         if (!requestedByLoad) {

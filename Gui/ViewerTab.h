@@ -128,13 +128,13 @@ public:
      **/
     void setRotoInterface(NodeGui* n);
     
-    void removeRotoInterface(NodeGui* n,bool permanantly);
+    void removeRotoInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother);
     
     void getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<NodeGui*,RotoGui*>* currentRoto) const;
     
     void updateRotoSelectedTool(int tool,RotoGui* sender);
     
-    boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData() const;
+    boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData(NodeGui* node) const;
     
     void onRotoEvaluatedForThisViewer();
     
@@ -181,6 +181,8 @@ public slots:
     void onRenderScaleButtonClicked(bool checked);
     
     void onRotoRoleChanged(int previousRole,int newRole);
+    
+    void onRotoNodeGuiSettingsPanelClosed(bool closed);
 
 private:
         

@@ -2295,7 +2295,7 @@ void Gui::removeRotoInterface(NodeGui* n,bool permanantly)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
-        (*it)->removeRotoInterface(n, permanantly);
+        (*it)->removeRotoInterface(n, permanantly,false);
     }
 }
 

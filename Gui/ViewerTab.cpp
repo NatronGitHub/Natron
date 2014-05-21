@@ -642,7 +642,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     for (std::list<NodeGui*>::const_iterator it = existingRotoNodes.begin(); it!=existingRotoNodes.end(); ++it) {
         createRotoInterface(*it);
     }
-    if (currentRoto) {
+    if (currentRoto && currentRoto->isSettingsPanelVisible()) {
         setRotoInterface(currentRoto);
     }
 }
@@ -1376,11 +1376,14 @@ void ViewerTab::setInfoBarResolution(const Format& f)
 
 void ViewerTab::createRotoInterface(NodeGui* n)
 {
-    RotoGui* roto = new RotoGui(n,this,getRotoGuiSharedData());
+    RotoGui* roto = new RotoGui(n,this,getRotoGuiSharedData(n));
     QObject::connect(roto,SIGNAL(selectedToolChanged(int)),_imp->_gui,SLOT(onRotoSelectedToolChanged(int)));
     std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->_rotoNodes.insert(std::make_pair(n,roto));
     assert(ret.second);
-    setRotoInterface(n);
+    QObject::connect(n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onRotoNodeGuiSettingsPanelClosed(bool)));
+    if (n->isSettingsPanelVisible()) {
+        setRotoInterface(n);
+    }
 }
 
 
@@ -1395,52 +1398,64 @@ void ViewerTab::setRotoInterface(NodeGui* n)
         
         ///remove any existing roto gui
         if (_imp->_currentRoto.first != NULL) {
-            removeRotoInterface(_imp->_currentRoto.first, false);
+            removeRotoInterface(_imp->_currentRoto.first, false,true);
         }
         
         ///Add the widgets
         QToolBar* toolBar = it->second->getToolBar();
         _imp->_viewerLayout->insertWidget(0, toolBar);
+        toolBar->show();
         int viewerIndex = _imp->_mainLayout->indexOf(_imp->_viewerContainer);
         assert(viewerIndex >= 0);
-        _imp->_mainLayout->insertWidget(viewerIndex, it->second->getCurrentButtonsBar());
+        QWidget* buttonsBar = it->second->getCurrentButtonsBar();
+        _imp->_mainLayout->insertWidget(viewerIndex,buttonsBar);
+        buttonsBar->show();
         
         QObject::connect(it->second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)));
         _imp->_currentRoto.first = n;
         _imp->_currentRoto.second = it->second;
+        _imp->viewer->redraw();
     }
     
 }
 
-void ViewerTab::removeRotoInterface(NodeGui* n,bool permanantly)
+void ViewerTab::removeRotoInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother)
 {
     std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.find(n);
     if (it != _imp->_rotoNodes.end()) {
         
         if (_imp->_currentRoto.first == n) {
             QObject::disconnect(_imp->_currentRoto.second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)));
-            
             ///Remove the widgets of the current roto node
             assert(_imp->_viewerLayout->count() > 1);
-            _imp->_viewerLayout->removeItem(_imp->_viewerLayout->itemAt(0));
+            QLayoutItem* currentToolBarItem = _imp->_viewerLayout->itemAt(0);
+            QToolBar* currentToolBar = qobject_cast<QToolBar*>(currentToolBarItem->widget());
+            currentToolBar->hide();
+            assert(currentToolBar == _imp->_currentRoto.second->getToolBar());
+            _imp->_viewerLayout->removeItem(currentToolBarItem);
             int buttonsBarIndex = _imp->_mainLayout->indexOf(_imp->_currentRoto.second->getCurrentButtonsBar());
             assert(buttonsBarIndex >= 0);
-            _imp->_mainLayout->removeItem(_imp->_mainLayout->itemAt(buttonsBarIndex));
+            QLayoutItem* buttonsBar = _imp->_mainLayout->itemAt(buttonsBarIndex);
+            assert(buttonsBar);
+            _imp->_mainLayout->removeItem(buttonsBar);
+            buttonsBar->widget()->hide();
             
-            ///If theres another roto node, set it as the current roto interface
-            std::map<NodeGui*,RotoGui*>::iterator newRoto = _imp->_rotoNodes.end();
-            for (std::map<NodeGui*,RotoGui*>::iterator it2 = _imp->_rotoNodes.end(); it2 != _imp->_rotoNodes.end(); ++it2) {
-                if (it2 != it) {
-                    newRoto = it2;
-                    break;
+            if (!removeAndDontSetAnother) {
+                ///If theres another roto node, set it as the current roto interface
+                std::map<NodeGui*,RotoGui*>::iterator newRoto = _imp->_rotoNodes.end();
+                for (std::map<NodeGui*,RotoGui*>::iterator it2 = _imp->_rotoNodes.begin(); it2 != _imp->_rotoNodes.end(); ++it2) {
+                    if (it2->second != it->second && it2->first->isSettingsPanelVisible()) {
+                        newRoto = it2;
+                        break;
+                    }
                 }
-            }
-            
-            _imp->_currentRoto.first = 0;
-            _imp->_currentRoto.second = 0;
-            
-            if (newRoto != _imp->_rotoNodes.end()) {
-                setRotoInterface(newRoto->first);
+                
+                _imp->_currentRoto.first = 0;
+                _imp->_currentRoto.second = 0;
+                
+                if (newRoto != _imp->_rotoNodes.end()) {
+                    setRotoInterface(newRoto->first);
+                }
             }
 
         }
@@ -1484,16 +1499,31 @@ void ViewerTab::updateRotoSelectedTool(int tool,RotoGui* sender)
     }
 }
 
-boost::shared_ptr<RotoGuiSharedData> ViewerTab::getRotoGuiSharedData() const
+boost::shared_ptr<RotoGuiSharedData> ViewerTab::getRotoGuiSharedData(NodeGui* node) const
 {
-    if (_imp->_rotoNodes.empty()) {
+    std::map<NodeGui*,RotoGui*>::const_iterator found = _imp->_rotoNodes.find(node);
+    if (found == _imp->_rotoNodes.end()) {
         return boost::shared_ptr<RotoGuiSharedData>();
     } else {
-        return _imp->_rotoNodes.begin()->second->getRotoGuiSharedData();
+        return found->second->getRotoGuiSharedData();
     }
 }
 
 void ViewerTab::onRotoEvaluatedForThisViewer()
 {
     _imp->_gui->onViewerRotoEvaluated(this);
+}
+
+void ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
+{
+    NodeGui* n = qobject_cast<NodeGui*>(sender());
+    if (n) {
+        if (closed) {
+            removeRotoInterface(n, false,false);
+        } else {
+            if (n != _imp->_currentRoto.first) {
+                setRotoInterface(n);
+            }
+        }
+    }
 }

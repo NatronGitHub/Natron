@@ -585,6 +585,7 @@ void DockablePanel::setClosed(bool c)
 {
     setVisible(!c);
     _isClosed = c;
+    emit closeChanged(c);
 }
 
 void DockablePanel::closePanel() {
@@ -593,6 +594,7 @@ void DockablePanel::closePanel() {
     }
     close();
     _isClosed = true;
+    emit closeChanged(true);
     getGui()->getApp()->redrawAllViewers();
     
 }

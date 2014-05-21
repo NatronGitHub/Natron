@@ -274,6 +274,9 @@ signals:
     void nameChanged(QString);
     
     void positionChanged();
+    
+    void settingsPanelClosed(bool b);
+    
 private:
     
     void computePreviewImage(int time);

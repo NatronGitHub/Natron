@@ -162,6 +162,8 @@ signals:
     /*emitted when the panel is maximized*/
     void maximized();
     
+    void closeChanged(bool closed);
+    
 protected:
     
     virtual RotoPanel* initializeRotoPanel() {return NULL;}
