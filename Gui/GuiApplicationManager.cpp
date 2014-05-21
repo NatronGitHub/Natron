@@ -85,8 +85,8 @@ GuiApplicationManager::GuiApplicationManager()
 }
 
 GuiApplicationManager::~GuiApplicationManager() {
-    foreach(PluginGroupNode* p,_imp->_toolButtons){
-        delete p;
+    for (U32 i = 0; i < _imp->_toolButtons.size();++i) {
+        delete _imp->_toolButtons[i];
     }
 }
 

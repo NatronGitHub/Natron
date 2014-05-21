@@ -1154,6 +1154,7 @@ void AppManager::onNodeMemoryRegistered(qint64 mem)
         _imp->_nodesGlobalMemoryUse = 0;
         return;
     }
+
     _imp->_nodesGlobalMemoryUse += mem;
 }
 
