@@ -1739,6 +1739,7 @@ void RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_
                 if (fb->get() == b.get()) {
                     selectedBeziers.erase(fb);
                     *ret = true;
+                    break;
                 }
             }
         } else {
