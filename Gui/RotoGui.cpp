@@ -259,13 +259,14 @@ void RotoToolButton::handleSelection()
 QAction* RotoGui::createToolAction(QToolButton* toolGroup,
                                    const QIcon& icon,
                                    const QString& text,
+                                   const QString& tooltip,
                                    const QKeySequence& shortcut,
                                    RotoGui::Roto_Tool tool)
 {
     
 #pragma message WARN("Change constructor when icons will be added")
     QAction *action = new QAction(icon,text,toolGroup);
-    action->setToolTip(text + "<p><b>Keyboard shortcut:" + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
+    action->setToolTip(text + ": " + tooltip + "<p><b>Keyboard shortcut: " + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
     
     QPoint data;
     data.setX((int)tool);
@@ -296,6 +297,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     _imp->autoKeyingEnabled->setCheckable(true);
     _imp->autoKeyingEnabled->setChecked(_imp->context->isAutoKeyingEnabled());
     _imp->autoKeyingEnabled->setDown(_imp->context->isAutoKeyingEnabled());
+    _imp->autoKeyingEnabled->setToolTip("When activated any movement to a control point will set a keyframe at the current time.");
     QObject::connect(_imp->autoKeyingEnabled, SIGNAL(clicked(bool)), this, SLOT(onAutoKeyingButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->autoKeyingEnabled);
     
@@ -303,6 +305,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     _imp->featherLinkEnabled->setCheckable(true);
     _imp->featherLinkEnabled->setChecked(_imp->context->isFeatherLinkEnabled());
     _imp->featherLinkEnabled->setDown(_imp->context->isFeatherLinkEnabled());
+    _imp->featherLinkEnabled->setToolTip("When activated the feather points will follow the same movement as their counter-part does.");
     QObject::connect(_imp->featherLinkEnabled, SIGNAL(clicked(bool)), this, SLOT(onFeatherLinkButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
     
@@ -310,6 +313,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     _imp->stickySelectionEnabled->setCheckable(true);
     _imp->stickySelectionEnabled->setChecked(false);
     _imp->stickySelectionEnabled->setDown(false);
+    _imp->stickySelectionEnabled->setToolTip("When activated, clicking outside of any shape will not clear the current selection.");
     QObject::connect(_imp->stickySelectionEnabled, SIGNAL(clicked(bool)), this, SLOT(onStickySelectionButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
     
@@ -317,25 +321,36 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     _imp->rippleEditEnabled->setCheckable(true);
     _imp->rippleEditEnabled->setChecked(_imp->context->isRippleEditEnabled());
     _imp->rippleEditEnabled->setDown(_imp->context->isRippleEditEnabled());
+    _imp->rippleEditEnabled->setToolTip("When activated, moving a control point will set it as the same position for all the keyframes "
+                                        "it has.");
     QObject::connect(_imp->rippleEditEnabled, SIGNAL(clicked(bool)), this, SLOT(onRippleEditButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
     
     _imp->addKeyframeButton = new Button(QIcon(),"+ keyframe",_imp->selectionButtonsBar);
     QObject::connect(_imp->addKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onAddKeyFrameClicked()));
+    _imp->addKeyframeButton->setToolTip("Set a keyframe at the current time for the selected shapes, if any.");
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
     _imp->removeKeyframeButton = new Button(QIcon(),"- keyframe",_imp->selectionButtonsBar);
     QObject::connect(_imp->removeKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyFrameClicked()));
+    _imp->removeKeyframeButton->setToolTip("Remove a keyframe at the current time for the selected shape(s), if any.");
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
         
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect(_imp->selectTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     QKeySequence selectShortCut(Qt::Key_Q);
-    _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(), "Select all",selectShortCut, SELECT_ALL);
-    createToolAction(_imp->selectTool, QIcon(), "Select points",selectShortCut, SELECT_POINTS);
-    createToolAction(_imp->selectTool, QIcon(), "Select curves", selectShortCut,SELECT_CURVES);
-    createToolAction(_imp->selectTool, QIcon(), "Select feather points", selectShortCut,SELECT_FEATHER_POINTS);
+    _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(), "Select all",
+                                             "everything can be selected and moved.",
+                                             selectShortCut, SELECT_ALL);
+    createToolAction(_imp->selectTool, QIcon(), "Select points",
+                     "works only for the points of the inner shape,"
+                     " feather points will not be taken into account.",
+                     selectShortCut, SELECT_POINTS);
+    createToolAction(_imp->selectTool, QIcon(), "Select curves",
+                     "only the curves can be selected."
+                     ,selectShortCut,SELECT_CURVES);
+    createToolAction(_imp->selectTool, QIcon(), "Select feather points", "only the feather points can be selected.",selectShortCut,SELECT_FEATHER_POINTS);
     _imp->selectTool->setDown(false);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->toolbar->addWidget(_imp->selectTool);
@@ -345,12 +360,13 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     QObject::connect(_imp->pointsEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->pointsEditionTool->setText("Add points");
     QKeySequence pointsEditionShortcut(Qt::Key_D);
-    QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(), "Add points",pointsEditionShortcut, ADD_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove points", pointsEditionShortcut,REMOVE_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Cusp points", pointsEditionShortcut,CUSP_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Smooth points", pointsEditionShortcut,SMOOTH_POINTS);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Open/Close curve", pointsEditionShortcut,OPEN_CLOSE_CURVE);
-    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove feather", pointsEditionShortcut,REMOVE_FEATHER_POINTS);
+    QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(), "Add points","add a new control point to the shape"
+                                          ,pointsEditionShortcut, ADD_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove points","",pointsEditionShortcut,REMOVE_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Cusp points","", pointsEditionShortcut,CUSP_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Smooth points","", pointsEditionShortcut,SMOOTH_POINTS);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Open/Close curve","", pointsEditionShortcut,OPEN_CLOSE_CURVE);
+    createToolAction(_imp->pointsEditionTool, QIcon(), "Remove feather","set the feather point to be equal to the control point", pointsEditionShortcut,REMOVE_FEATHER_POINTS);
     _imp->pointsEditionTool->setDown(false);
     _imp->pointsEditionTool->setDefaultAction(addPtsAct);
     _imp->toolbar->addWidget(_imp->pointsEditionTool);
@@ -360,13 +376,15 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     QObject::connect(_imp->bezierEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)));
     _imp->bezierEditionTool->setText("Bezier");
     QKeySequence editBezierShortcut(Qt::Key_V);
-    QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier",editBezierShortcut, DRAW_BEZIER);
+    QAction* drawBezierAct = createToolAction(_imp->bezierEditionTool, QIcon(), "Bezier",
+                                              "Edit bezier paths. Click and drag the mouse to adjust tangents. Press enter to close the shape. "
+                                              ,editBezierShortcut, DRAW_BEZIER);
     
     ////B-splines are not implemented yet
     //createToolAction(_imp->bezierEditionTool, QIcon(), "B-Spline", DRAW_B_SPLINE);
     
-    createToolAction(_imp->bezierEditionTool, QIcon(), "Ellipse",editBezierShortcut, DRAW_ELLIPSE);
-    createToolAction(_imp->bezierEditionTool, QIcon(), "Rectangle", editBezierShortcut,DRAW_RECTANGLE);
+    createToolAction(_imp->bezierEditionTool, QIcon(), "Ellipse","Hold control to draw the ellipse from its center",editBezierShortcut, DRAW_ELLIPSE);
+    createToolAction(_imp->bezierEditionTool, QIcon(), "Rectangle","", editBezierShortcut,DRAW_RECTANGLE);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
     
     ////////////Default action is to make a new bezier
@@ -924,8 +942,9 @@ void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
 void RotoGui::RotoGuiPrivate::updateSelectionFromSelectionRectangle()
 {
     
-    
-    clearSelection();
+    if (!publicInterface->isStickySelectionEnabled()) {
+        clearSelection();
+    }
     
     int selectionMode = -1;
     if (selectedTool == SELECT_ALL) {
@@ -1209,8 +1228,10 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     ///we drag all the control points selected
                     _imp->state = DRAGGING_CPS;
                 } else {
-                    if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                        _imp->clearSelection();
+                    if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                        if (!isStickySelectionEnabled()) {
+                            _imp->clearSelection();
+                        }
                         _imp->rotoData->selectionRectangle.setTopLeft(pos);
                         _imp->rotoData->selectionRectangle.setBottomRight(pos);
                         _imp->state = SELECTING;

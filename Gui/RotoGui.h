@@ -230,6 +230,7 @@ private:
     QAction* createToolAction(QToolButton* toolGroup,
                               const QIcon& icon,
                               const QString& text,
+                              const QString& tooltip,
                               const QKeySequence& shortcut,
                               RotoGui::Roto_Tool tool);
     
