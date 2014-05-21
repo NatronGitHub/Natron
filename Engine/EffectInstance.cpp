@@ -711,7 +711,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
 
     bool useFullResImage = !supportsRenderScale() && (mipMapLevel != 0);
 
-    _node->addImageBeingRendered(useFullResImage ? image : downscaledImage, time, view);
+//    _node->addImageBeingRendered(useFullResImage ? image : downscaledImage, time, view,mipMapLevel);
     
     ///We check what is left to render.
     
@@ -829,7 +829,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 if (aborted()) {
                     //if render was aborted, remove the frame from the cache as it contains only garbage
                     appPTR->removeFromNodeCache(image);
-                    _node->removeImageBeingRendered(time, view);
+//                    _node->removeImageBeingRendered(time, view,mipMapLevel);
                     return true;
                 }
             }
@@ -1060,7 +1060,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
             break;
         }
     }
-    _node->removeImageBeingRendered(time, view);
+//    _node->removeImageBeingRendered(time, view,mipMapLevel);
     
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
@@ -1068,9 +1068,9 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
 
 }
 
-boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceTime time,int view) const{
-    return _node->getImageBeingRendered(time, view);
-}
+//boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceTime time,int view,unsigned int mipMapLevel) const{
+//    return _node->getImageBeingRendered(time, view,mipMapLevel);
+//}
 
 Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                                      const RectI& roi,

@@ -712,7 +712,7 @@ void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
                                          const RectI& roi,int view,
                                          bool isSequentialRender,bool isRenderResponseToUserInteraction,
-                                         boost::shared_ptr<Natron::Image> /*output*/){
+                                         boost::shared_ptr<Natron::Image> output){
     if(!_initialized){
         return Natron::StatFailed;
     }
@@ -727,6 +727,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     ///before calling render, set the render scale thread storage for each clip
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     effectInstance()->setClipsMipMapLevel(mipMapLevel);
+    effectInstance()->setClipsRenderedImage(output);
     
     ///This is passed to the render action to plug-ins that don't support render scale
     RenderScale scaleOne;
@@ -739,6 +740,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     
     effectInstance()->discardClipsMipMapLevel();
     effectInstance()->discardClipsView();
+    effectInstance()->discardClipsImage();
     
     if (stat != kOfxStatOK) {
         return StatFailed;

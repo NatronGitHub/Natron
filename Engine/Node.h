@@ -396,12 +396,12 @@ public:
     bool isActivated() const;
 
     
-    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const;
-    
-    void addImageBeingRendered(boost::shared_ptr<Natron::Image>,SequenceTime time,int view );
-    
-    void removeImageBeingRendered(SequenceTime time,int view );
-        
+//    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view,unsigned int mipmaplevel) const;
+//    
+//    void addImageBeingRendered(boost::shared_ptr<Natron::Image>,SequenceTime time,int view,unsigned int mipmaplevel );
+//    
+//    void removeImageBeingRendered(SequenceTime time,int view,unsigned int mipmaplevel );
+//        
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
      * a dialog. The message can be of 4 types...

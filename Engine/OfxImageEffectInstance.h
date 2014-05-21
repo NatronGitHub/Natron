@@ -12,7 +12,7 @@
 
 #include <string>
 #include <cstdarg>
-
+#include <boost/shared_ptr.hpp>
 #include <ofxhImageEffect.h>
 
 #include "Global/Macros.h"
@@ -20,6 +20,7 @@
 class OfxEffectInstance;
 
 namespace Natron {
+class Image;
 
 class OfxImageEffectInstance : public OFX::Host::ImageEffect::Instance
 {
@@ -184,6 +185,10 @@ public:
     void discardClipsMipMapLevel();
     
     void discardClipsView();
+    
+    void setClipsRenderedImage(const boost::shared_ptr<Natron::Image>& image);
+    
+    void discardClipsImage();
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 

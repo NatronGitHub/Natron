@@ -520,3 +520,17 @@ void OfxImageEffectInstance::discardClipsView()
     }
 
 }
+
+void OfxImageEffectInstance::setClipsRenderedImage(const boost::shared_ptr<Natron::Image>& image)
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->setRenderedImage(image);
+    }
+}
+
+void OfxImageEffectInstance::discardClipsImage()
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->discardRenderedImage();
+    }
+}

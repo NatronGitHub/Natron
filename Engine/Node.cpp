@@ -51,16 +51,18 @@ namespace { // protect local classes in anonymous namespace
 /*A key to identify an image rendered for this node.*/
 struct ImageBeingRenderedKey{
 
-    ImageBeingRenderedKey():_time(0),_view(0){}
+    ImageBeingRenderedKey():_time(0),_view(0) , _mipMapLevel(0) {}
 
-    ImageBeingRenderedKey(int time,int view):_time(time),_view(view){}
+    ImageBeingRenderedKey(int time,int view,unsigned mipmapLevel):_time(time),_view(view) , _mipMapLevel(mipmapLevel){}
 
     SequenceTime _time;
     int _view;
+    unsigned int _mipMapLevel;
 
     bool operator==(const ImageBeingRenderedKey& other) const {
         return _time == other._time &&
-                _view == other._view;
+                _view == other._view &&
+        _mipMapLevel == other._mipMapLevel;
     }
 
     bool operator<(const ImageBeingRenderedKey& other) const {
@@ -92,9 +94,9 @@ struct Node::Implementation {
         , deactivatedState()
         , activatedMutex()
         , activated(true)
-        , imageBeingRenderedMutex()
-        , imagesBeingRenderedNotEmpty()
-        , imagesBeingRendered()
+//        , imageBeingRenderedMutex()
+//        , imagesBeingRenderedNotEmpty()
+//        , imagesBeingRendered()
         , plugin(plugin_)
         , computingPreview(false)
         , computingPreviewMutex()
@@ -142,10 +144,10 @@ struct Node::Implementation {
     mutable QMutex activatedMutex;
     bool activated;
     
-    QMutex imageBeingRenderedMutex;
-    QWaitCondition imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
-
-    ImagesMap imagesBeingRendered; //< a map storing the ongoing render for this node
+//    QMutex imageBeingRenderedMutex;
+//    QWaitCondition imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
+//
+//    ImagesMap imagesBeingRendered; //< a map storing the ongoing render for this node
     
     LibraryBinary* plugin; //< the plugin which stores the function to instantiate the effect
     
@@ -397,10 +399,10 @@ void Node::quitAnyProcessing() {
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
     }
-    {
-        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
-        _imp->imagesBeingRenderedNotEmpty.wakeAll();
-    }
+//    {
+//        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
+//        _imp->imagesBeingRenderedNotEmpty.wakeAll();
+//    }
     bool computingPreview;
     {
         QMutexLocker locker(&_imp->computingPreviewMutex);
@@ -1048,36 +1050,36 @@ boost::shared_ptr<KnobI> Node::getKnobByName(const std::string& name) const
 }
 
 
-boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view) const
-{
-    QMutexLocker l(&_imp->imageBeingRenderedMutex);
-    ImagesMap::const_iterator it = _imp->imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
-    if (it!=_imp->imagesBeingRendered.end()) {
-        return it->second;
-    }
-    return boost::shared_ptr<Image>();
-}
-
-void Node::addImageBeingRendered(boost::shared_ptr<Image> image,SequenceTime time,int view )
-{
-    /*before rendering we add to the _imp->imagesBeingRendered member the image*/
-    ImageBeingRenderedKey renderedImageKey(time,view);
-    QMutexLocker locker(&_imp->imageBeingRenderedMutex);
-    _imp->imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
-}
-
-void Node::removeImageBeingRendered(SequenceTime time,int view )
-{
-    /*now that we rendered the image, remove it from the images being rendered*/
-    
-    QMutexLocker locker(&_imp->imageBeingRenderedMutex);
-    ImageBeingRenderedKey renderedImageKey(time,view);
-    std::pair<ImagesMap::iterator,ImagesMap::iterator> it = _imp->imagesBeingRendered.equal_range(renderedImageKey);
-    assert(it.first != it.second);
-    _imp->imagesBeingRendered.erase(it.first);
-
-    _imp->imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
-}
+//boost::shared_ptr<Image> Node::getImageBeingRendered(SequenceTime time,int view,unsigned int mipmaplevel) const
+//{
+//    QMutexLocker l(&_imp->imageBeingRenderedMutex);
+//    ImagesMap::const_iterator it = _imp->imagesBeingRendered.find(ImageBeingRenderedKey(time,view,mipmaplevel));
+//    if (it!=_imp->imagesBeingRendered.end()) {
+//        return it->second;
+//    }
+//    return boost::shared_ptr<Image>();
+//}
+//
+//void Node::addImageBeingRendered(boost::shared_ptr<Image> image,SequenceTime time,int view,unsigned int mipmaplevel )
+//{
+//    /*before rendering we add to the _imp->imagesBeingRendered member the image*/
+//    ImageBeingRenderedKey renderedImageKey(time,view,mipmaplevel);
+//    QMutexLocker locker(&_imp->imageBeingRenderedMutex);
+//    _imp->imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
+//}
+//
+//void Node::removeImageBeingRendered(SequenceTime time,int view,unsigned int mipmaplevel )
+//{
+//    /*now that we rendered the image, remove it from the images being rendered*/
+//    
+//    QMutexLocker locker(&_imp->imageBeingRenderedMutex);
+//    ImageBeingRenderedKey renderedImageKey(time,view,mipmaplevel);
+//    std::pair<ImagesMap::iterator,ImagesMap::iterator> it = _imp->imagesBeingRendered.equal_range(renderedImageKey);
+//    assert(it.first != it.second);
+//    _imp->imagesBeingRendered.erase(it.first);
+//
+//    _imp->imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
+//}
 
 namespace {
 static float bilinearFiltering(const float* srcPixelsFloor,const float* srcPixelsCeil,int fx,int cx,
@@ -1094,12 +1096,12 @@ static float bilinearFiltering(const float* srcPixelsFloor,const float* srcPixel
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
 {
 
-    {
-        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
-        while(!_imp->imagesBeingRendered.empty()){
-            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->imageBeingRenderedMutex);
-        }
-    }
+//    {
+//        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
+//        while(!_imp->imagesBeingRendered.empty()){
+//            _imp->imagesBeingRenderedNotEmpty.wait(&_imp->imageBeingRenderedMutex);
+//        }
+//    }
     {
         QMutexLocker locker(&_imp->mustQuitProcessingMutex);
         if (_imp->mustQuitProcessing) {

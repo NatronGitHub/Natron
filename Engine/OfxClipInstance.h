@@ -19,6 +19,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
+#include <boost/shared_ptr.hpp>
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
@@ -152,6 +153,11 @@ public:
     
     ///Set the mipmap level stored in the thread-local storage to be invalid
     void discardMipMapLevel();
+    
+    ///Set the image currently rendered
+    void setRenderedImage(const boost::shared_ptr<Natron::Image>& image);
+    
+    void discardRenderedImage();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -175,12 +181,16 @@ private:
         unsigned int mipMapLevel;
         bool isViewValid;
         int view;
+        boost::shared_ptr<Natron::Image> image;
+        bool isImageValid;
         
         LastRenderArgs()
         : isMipMapLevelValid(false)
         , mipMapLevel(0)
         , isViewValid(false)
         , view(0)
+        , image()
+        , isImageValid(false)
         {}
     };
     

@@ -255,7 +255,15 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
 {
     OfxPointD scale;
     scale.x = scale.y = 1.;
-    assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
+    assert(_lastRenderArgs.hasLocalData());
+    if (isOutput()) {
+        assert(_lastRenderArgs.localData().isImageValid);
+        boost::shared_ptr<Natron::Image> outputImage = _lastRenderArgs.localData().image;
+        assert(outputImage);
+        return new OfxImage(outputImage,*this);
+    }
+    
+    assert(_lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
     unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
@@ -266,21 +274,14 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
 
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,const OfxPointD& renderScale,
                                                                  int view, OfxRectD */*optionalBounds*/){
-    if(isOutput()){
-        boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
-        assert(outputImage);
-        return new OfxImage(outputImage,*this);
+    assert(!isOutput());
+    // input has been rendered just find it in the cache
+    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view);
+    if(!image){
+        return NULL;
     }else{
-
-        // input has been rendered just find it in the cache
-        boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view);
-        if(!image){
-            return NULL;
-        }else{
-            return new OfxImage(image,*this);
-        }
+        return new OfxImage(image,*this);
     }
-
 }
 
 std::string OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponents comp) {
@@ -392,7 +393,15 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
 {
     OfxPointD scale;
-    assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isMipMapLevelValid);
+    assert(_lastRenderArgs.hasLocalData());
+    if (isOutput()) {
+        assert(_lastRenderArgs.localData().isImageValid);
+        boost::shared_ptr<Natron::Image> outputImage = _lastRenderArgs.localData().image;
+        assert(outputImage);
+        return new OfxImage(outputImage,*this);
+    }
+    
+    assert(_lastRenderArgs.localData().isMipMapLevelValid);
     unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
@@ -408,6 +417,7 @@ void OfxClipInstance::setView(int view) {
         assert(!_lastRenderArgs.localData().isViewValid);
     } else {
         args.mipMapLevel = 0;
+        args.image.reset();
     }
     args.view = view;
     args.isViewValid =  true;
@@ -422,6 +432,7 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
         assert(!_lastRenderArgs.localData().isMipMapLevelValid);
     } else {
         args.view = 0;
+        args.image.reset();
     }
     args.mipMapLevel = mipMapLevel;
     args.isMipMapLevelValid = true;
@@ -441,4 +452,26 @@ void OfxClipInstance::discardMipMapLevel()
 {
     assert(_lastRenderArgs.hasLocalData());
     _lastRenderArgs.localData().isMipMapLevelValid = false;
+}
+
+void OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image>& image)
+{
+    LastRenderArgs args;
+    if (_lastRenderArgs.hasLocalData()) {
+        args = _lastRenderArgs.localData();
+        assert(!_lastRenderArgs.localData().isImageValid);
+    } else {
+        args.mipMapLevel = 0;
+        args.view = 0;
+    }
+    args.image = image;
+    args.isImageValid = true;
+    _lastRenderArgs.setLocalData(args);
+}
+
+void OfxClipInstance::discardRenderedImage()
+{
+    assert(_lastRenderArgs.hasLocalData());
+    _lastRenderArgs.localData().isImageValid = false;
+    _lastRenderArgs.localData().image.reset();
 }
