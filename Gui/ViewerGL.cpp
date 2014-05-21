@@ -1448,6 +1448,13 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         }
     }
     
+    if (event->button() == Qt::LeftButton &&
+        !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
+        _imp->displayingImage) {
+        _imp->pickerState = INACTIVE;
+        updateGL();
+    }
+    
     if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
               _imp->displayingImage && mouseInDispW) {
@@ -1463,11 +1470,6 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         _imp->pickerRect.setBottomRight(zoomPos);
         _imp->ms = BUILDING_PICKER_RECTANGLE;
         updateGL(); 
-    } else if (event->button() == Qt::LeftButton &&
-               !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-               _imp->displayingImage) {
-        _imp->pickerState = INACTIVE;
-        updateGL();
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
