@@ -2697,7 +2697,8 @@ RotoContext::RotoContext(Natron::Node* node)
 : _imp(new RotoContextPrivate(node))
 {
     ////Add the base layer
-    addLayer();
+    boost::shared_ptr<RotoLayer> base = addLayer();
+    deselect(base,RotoContext::OTHER);
 }
 
 RotoContext::~RotoContext()
