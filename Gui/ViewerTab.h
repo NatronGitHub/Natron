@@ -31,6 +31,7 @@ class RectI;
 class Format;
 class RotoGui;
 class NodeGui;
+struct RotoGuiSharedData;
 
 struct ViewerTabPrivate;
 class ViewerTab: public QWidget 
@@ -130,6 +131,12 @@ public:
     void removeRotoInterface(NodeGui* n,bool permanantly);
     
     void getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<NodeGui*,RotoGui*>* currentRoto) const;
+    
+    void updateRotoSelectedTool(int tool,RotoGui* sender);
+    
+    boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData() const;
+    
+    void onRotoEvaluatedForThisViewer();
     
 public slots:
     

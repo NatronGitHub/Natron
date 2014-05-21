@@ -65,7 +65,7 @@ void MoveControlPointsUndoCommand::undo()
     }
     
     _roto->evaluate(true);
-    _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool);
+    _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool,true);
     _roto->setSelection(_selectedCurves, _selectedPoints);
     setText(QString("Move points of %1").arg(_roto->getNodeName()));
 }
@@ -757,7 +757,7 @@ OpenCloseUndoCommand::~OpenCloseUndoCommand()
 void OpenCloseUndoCommand::undo()
 {
     if (_firstRedoCalled) {
-        _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool);
+        _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool,true);
         if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
             _roto->setBuiltBezier(_curve);
         }
@@ -771,7 +771,7 @@ void OpenCloseUndoCommand::undo()
 void OpenCloseUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool);
+        _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool,true);
     }
     _curve->setCurveFinished(!_curve->isCurveFinished());
     _roto->evaluate(_firstRedoCalled);
@@ -900,7 +900,7 @@ MakeBezierUndoCommand::~MakeBezierUndoCommand()
 void MakeBezierUndoCommand::undo()
 {
     assert(_createdPoint);
-    _roto->setCurrentTool(RotoGui::DRAW_BEZIER);
+    _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
     assert(_lastPointAdded != -1);
     _oldCurve->clone(*_newCurve);
     _newCurve->removeControlPointByIndex(_lastPointAdded);
@@ -922,7 +922,7 @@ void MakeBezierUndoCommand::undo()
 void MakeBezierUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _roto->setCurrentTool(RotoGui::DRAW_BEZIER);
+        _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
     }
     
     if (!_firstRedoCalled) {

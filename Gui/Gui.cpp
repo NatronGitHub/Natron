@@ -75,6 +75,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGui.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
+#include "Gui/RotoGui.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_IMAGE "Image"
@@ -2269,6 +2270,19 @@ void Gui::showOfxLog()
     lw.exec();
 }
 
+void Gui::onRotoSelectedToolChanged(int tool)
+{
+    RotoGui* roto = qobject_cast<RotoGui*>(sender());
+    if (!roto) {
+        return;
+    }
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->updateRotoSelectedTool(tool,roto);
+    }
+
+}
+
 void Gui::createNewRotoInterface(NodeGui* n)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -2293,3 +2307,13 @@ void Gui::setRotoInterface(NodeGui* n)
     }
 }
 
+void Gui::onViewerRotoEvaluated(ViewerTab* viewer)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        if (*it != viewer) {
+            (*it)->getViewer()->redraw();
+        }
+    }
+
+}

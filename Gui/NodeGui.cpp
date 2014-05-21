@@ -502,6 +502,9 @@ void NodeGui::setSelected(bool b){
     if(_settingsPanel){
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
+        if (b && isSettingsPanelVisible() && _internalNode->isRotoNode()) {
+            _graph->getGui()->setRotoInterface(this);
+        }
     }
 }
 

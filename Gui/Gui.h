@@ -286,6 +286,8 @@ public:
      **/
     void removeRotoInterface(NodeGui* n,bool permanantly);
     
+    void onViewerRotoEvaluated(ViewerTab* viewer);
+    
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
     static void debugImage(const Natron::Image* image,const QString& filename = QString());
@@ -370,6 +372,8 @@ public slots:
     void renderAllWriters();
         
     void renderSelectedNode();
+    
+    void onRotoSelectedToolChanged(int tool);
 
 private:
 

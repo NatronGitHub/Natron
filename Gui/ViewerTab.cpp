@@ -1376,7 +1376,8 @@ void ViewerTab::setInfoBarResolution(const Format& f)
 
 void ViewerTab::createRotoInterface(NodeGui* n)
 {
-    RotoGui* roto = new RotoGui(n,this);
+    RotoGui* roto = new RotoGui(n,this,getRotoGuiSharedData());
+    QObject::connect(roto,SIGNAL(selectedToolChanged(int)),_imp->_gui,SLOT(onRotoSelectedToolChanged(int)));
     std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->_rotoNodes.insert(std::make_pair(n,roto));
     assert(ret.second);
     setRotoInterface(n);
@@ -1388,6 +1389,9 @@ void ViewerTab::setRotoInterface(NodeGui* n)
     assert(n);
     std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.find(n);
     if (it != _imp->_rotoNodes.end()) {
+        if (_imp->_currentRoto .first == n) {
+            return;
+        }
         
         ///remove any existing roto gui
         if (_imp->_currentRoto.first != NULL) {
@@ -1471,4 +1475,25 @@ void ViewerTab::onRotoRoleChanged(int previousRole,int newRole)
         assert(viewerIndex >= 0);
         _imp->_mainLayout->insertWidget(viewerIndex, _imp->_currentRoto.second->getButtonsBar((RotoGui::Roto_Role)newRole));
     }
+}
+
+void ViewerTab::updateRotoSelectedTool(int tool,RotoGui* sender)
+{
+    if (_imp->_currentRoto.second && _imp->_currentRoto.second != sender) {
+        _imp->_currentRoto.second->setCurrentTool((RotoGui::Roto_Tool)tool,false);
+    }
+}
+
+boost::shared_ptr<RotoGuiSharedData> ViewerTab::getRotoGuiSharedData() const
+{
+    if (_imp->_rotoNodes.empty()) {
+        return boost::shared_ptr<RotoGuiSharedData>();
+    } else {
+        return _imp->_rotoNodes.begin()->second->getRotoGuiSharedData();
+    }
+}
+
+void ViewerTab::onRotoEvaluatedForThisViewer()
+{
+    _imp->_gui->onViewerRotoEvaluated(this);
 }

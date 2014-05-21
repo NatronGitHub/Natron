@@ -38,6 +38,7 @@ class QUndoCommand;
 class NodeGui;
 class Bezier;
 class BezierCP;
+struct RotoGuiSharedData;
 class RotoContext;
 class RotoToolButton : public QToolButton
 {
@@ -96,9 +97,11 @@ public:
         
     };
     
-    RotoGui(NodeGui* node,ViewerTab* parent);
+    RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGuiSharedData>& sharedData);
     
     ~RotoGui();
+    
+    boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData() const;
     
     /**
      * @brief Return the horizontal buttons bar for the given role
@@ -115,7 +118,7 @@ public:
      **/
     RotoGui::Roto_Tool getSelectedTool() const;
     
-    void setCurrentTool(RotoGui::Roto_Tool tool);
+    void setCurrentTool(RotoGui::Roto_Tool tool,bool emitSignal);
     
     QToolBar* getToolBar() const;
     
@@ -187,6 +190,8 @@ signals:
      **/
     void roleChanged(int previousRole,int newRole);
     
+    void selectedToolChanged(int);
+        
 public slots:
     
     void onToolActionTriggered();
@@ -214,8 +219,12 @@ public slots:
     void onCurveLockedChanged();
     
     void onSelectionChanged(int reason);
+    
+
         
 private:
+    
+    void onToolActionTriggeredInternal(QAction* action,bool emitSignal);
     
     
     QAction* createToolAction(QToolButton* toolGroup,
