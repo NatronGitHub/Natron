@@ -833,6 +833,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         params->gain = gain;
         params->offset = offset;
         params->lut = lut;
+        params->mipMapLevel = (unsigned int)mipMapLevel;
 
         if (!aborted()) {
             if (singleThreaded) {
@@ -1177,7 +1178,8 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                                   params->gain,
                                                   params->offset,
                                                   params->lut,
-                                                  updateViewerPboIndex);
+                                                  updateViewerPboIndex,
+                                                  params->mipMapLevel);
             updateViewerPboIndex = (updateViewerPboIndex+1)%2;
         }
 

@@ -292,12 +292,6 @@ public:
                    U64 nodeHash);
 
 
-    /**
-     * @brief Returns a pointer to the image being rendered currently by renderRoI if any.
-     **/
-//    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view,unsigned int mipMapLevel) const WARN_UNUSED_RETURN;
-    
-    
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and

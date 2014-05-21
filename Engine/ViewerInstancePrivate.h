@@ -67,6 +67,7 @@ struct UpdateViewerParams
     , bytesCount(0)
     , gain(1.)
     , offset(0.)
+    , mipMapLevel(0)
     , lut(ViewerInstance::sRGB)
     {}
 
@@ -75,6 +76,7 @@ struct UpdateViewerParams
     size_t bytesCount;
     double gain;
     double offset;
+    unsigned int mipMapLevel;
     ViewerInstance::ViewerColorSpace lut;
     boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
 };

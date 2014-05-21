@@ -126,6 +126,7 @@ struct ViewerGL::Implementation {
     , displayingImage(false)
     , displayingImageGain(1.)
     , displayingImageOffset(0.)
+    , displayingImageMipMapLevel(0)
     , displayingImageLut(ViewerInstance::sRGB)
     , must_initBlackTex(true)
     , ms(UNDEFINED)
@@ -179,6 +180,7 @@ struct ViewerGL::Implementation {
     bool displayingImage;/*!< True if the viewer is connected and not displaying black.*/
     double displayingImageGain;
     double displayingImageOffset;
+    unsigned int displayingImageMipMapLevel;
     ViewerInstance::ViewerColorSpace displayingImageLut;
     bool must_initBlackTex;
 
@@ -663,9 +665,8 @@ void ViewerGL::paintGL()
         glCheckError();
     }
 
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-
-    drawRenderingVAO(mipMapLevel);
+    
+    drawRenderingVAO(_imp->displayingImageMipMapLevel);
     glCheckError();
 
     if (_imp->displayingImage) {
@@ -680,7 +681,7 @@ void ViewerGL::paintGL()
 
     glCheckError();
     if (_imp->overlay) {
-        drawOverlay(mipMapLevel);
+        drawOverlay(_imp->displayingImageMipMapLevel);
     }
 
     if (_imp->displayPersistentMessage) {
@@ -1343,7 +1344,7 @@ void ViewerGL::initBlackTex()
 
 
 
-void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex)
+void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1379,6 +1380,7 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     _imp->displayingImage = true;
     _imp->displayingImageGain = gain;
     _imp->displayingImageOffset = offset;
+    _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
 
     emit imageChanged();
