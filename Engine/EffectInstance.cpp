@@ -11,6 +11,7 @@
 
 #include "EffectInstance.h"
 
+#include <sstream>
 #include <QtConcurrentMap>
 #include <QReadWriteLock>
 #include <QCoreApplication>
@@ -18,6 +19,7 @@
 
 #include <boost/bind.hpp>
 
+#include "Global/MemoryInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
@@ -568,7 +570,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         ///!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data.
         boost::shared_ptr<Image> newImage;
         bool cached = appPTR->getImageOrCreate(key, cachedImgParams, &newImage);
-        assert(newImage);
+        if (!newImage) {
+            std::stringstream ss;
+            ss << "Failed to allocate an image of ";
+            ss << printAsRAM(cachedImgParams->getElementsCount() * sizeof(Image::data_t)).toStdString();
+            Natron::errorDialog("Out of memory",ss.str());
+            return newImage;
+        }
         
         
         if (cached && byPassCache) {

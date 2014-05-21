@@ -146,10 +146,16 @@ public:
             if (!path.empty() && count != 0) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
                 _backingFile->resize(count*sizeof(DataType));
+                if (!_backingFile->data()) {
+                    throw std::bad_alloc();
+                }
             }
         } else if(cost == 0) {
             _storageMode = RAM;
             _buffer = new DataType[count];
+            if (!_buffer) {
+                throw std::bad_alloc();
+            }
         }
         _size = count * sizeof(DataType);
     }

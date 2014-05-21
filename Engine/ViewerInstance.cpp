@@ -23,6 +23,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 
+#include "Global/MemoryInfo.h"
 #include "Engine/Node.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/AppManager.h"
@@ -598,11 +599,19 @@ ViewerInstance::renderViewer(SequenceTime time,
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams =
             FrameEntry::makeParams(pixelRoD, key.getBitDepth(), textureRect.w, textureRect.h);
             
-            bool success = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
+            bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
+            if (!params->cachedFrame) {
+                std::stringstream ss;
+                ss << "Failed to allocate a texture of ";
+                ss << printAsRAM(cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t)).toStdString();
+                Natron::errorDialog("Out of memory",ss.str());
+                return StatFailed;
+            }
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
             ///are sure that this time the image was not in the cache and we created it because this functino
             ///is not multi-threaded.
-            assert(!success);
+            assert(!textureIsCached);
+            
             assert(params->cachedFrame);
             // how do you make sure cachedFrame->data() is not freed after this line?
             ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
@@ -662,6 +671,10 @@ ViewerInstance::renderViewer(SequenceTime time,
                     
                     lastRenderedImage = activeInputToRender->renderRoI(
                     EffectInstance::RenderRoIArgs(time, scale,mipMapLevel,view,texRectClipped,isSequentialRender,true,byPassCache,&rod));
+                    
+                    if (!lastRenderedImage) {
+                        return StatFailed;
+                    }
                     
                     ///since we are going to render a new image, decrease the current memory use of the viewer by
                     ///the amount of the current image, and increase it after we rendered the new image.

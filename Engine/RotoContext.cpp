@@ -16,6 +16,7 @@
 
 #include <boost/bind.hpp>
 
+#include "Global/MemoryInfo.h"
 #include "Engine/RotoContextPrivate.h"
 
 #include "Engine/Interpolation.h"
@@ -3739,7 +3740,13 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
                                                     std::map<int, std::vector<RangeD> >());
         
         cached = appPTR->getImageOrCreate(key, params, &image);
-        assert(image);
+        if (!image) {
+            std::stringstream ss;
+            ss << "Failed to allocate an image of ";
+            ss << printAsRAM(params->getElementsCount() * sizeof(Natron::Image::data_t)).toStdString();
+            Natron::errorDialog("Out of memory",ss.str());
+            return image;
+        }
 
         if (cached && byPassCache) {
             image->clearBitmap();

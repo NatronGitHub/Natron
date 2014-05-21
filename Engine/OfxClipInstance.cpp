@@ -259,7 +259,9 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     if (isOutput()) {
         assert(_lastRenderArgs.localData().isImageValid);
         boost::shared_ptr<Natron::Image> outputImage = _lastRenderArgs.localData().image;
-        assert(outputImage);
+        if (!outputImage) {
+            return NULL;
+        }
         return new OfxImage(outputImage,*this);
     }
     
@@ -397,7 +399,9 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime tim
     if (isOutput()) {
         assert(_lastRenderArgs.localData().isImageValid);
         boost::shared_ptr<Natron::Image> outputImage = _lastRenderArgs.localData().image;
-        assert(outputImage);
+        if (!outputImage) {
+            return NULL;
+        }
         return new OfxImage(outputImage,*this);
     }
     
