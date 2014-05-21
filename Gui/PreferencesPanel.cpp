@@ -55,6 +55,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *par
     
     _panel->initializeKnobs();
     
+    resize(500, 400);
     
 }
 
