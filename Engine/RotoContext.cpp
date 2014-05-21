@@ -1001,6 +1001,7 @@ void RotoLayer::removeItem(const RotoItem* item)
     {
         if (it->get() == item) {
             _imp->items.erase(it);
+            break;
         }
     }
 }
