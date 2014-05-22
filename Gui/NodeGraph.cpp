@@ -169,7 +169,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _navigator = new NodeGraphNavigator();
     _navigatorProxy = new QGraphicsProxyWidget(0);
     _navigatorProxy->setWidget(_navigator);
-    // scene->addItem(_navigatorProxy);
+     scene->addItem(_navigatorProxy);
     _navigatorProxy->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     _navigatorProxy->hide();
     

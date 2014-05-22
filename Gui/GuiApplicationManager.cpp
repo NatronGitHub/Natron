@@ -88,6 +88,7 @@ GuiApplicationManager::~GuiApplicationManager() {
     for (U32 i = 0; i < _imp->_toolButtons.size();++i) {
         delete _imp->_toolButtons[i];
     }
+    delete _imp->_colorPickerCursor;
 }
 
 
