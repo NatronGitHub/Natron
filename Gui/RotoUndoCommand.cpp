@@ -490,6 +490,8 @@ void MoveTangentUndoCommand::redo()
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
         _roto->evaluate(true);
+    } else {
+        _roto->refreshSelectionBBox();
     }
     
     

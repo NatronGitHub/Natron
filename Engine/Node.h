@@ -470,6 +470,15 @@ public:
   
     boost::shared_ptr<Natron::Node> getMasterNode() const;
     
+    /**
+     * @brief Attemps to lock an image for render. If it successfully obtained the lock,
+     * the thread can continue and render normally. If another thread is currently
+     * rendering that image, this function will wait until the image is available for render again.
+     * This is used internally by EffectInstance::renderRoI
+     **/
+    void addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image);
+    void removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& image);
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;

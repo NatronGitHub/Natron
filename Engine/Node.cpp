@@ -48,32 +48,6 @@ using boost::shared_ptr;
 
 namespace { // protect local classes in anonymous namespace
 
-/*A key to identify an image rendered for this node.*/
-struct ImageBeingRenderedKey{
-
-    ImageBeingRenderedKey():_time(0),_view(0) , _mipMapLevel(0) {}
-
-    ImageBeingRenderedKey(int time,int view,unsigned mipmapLevel):_time(time),_view(view) , _mipMapLevel(mipmapLevel){}
-
-    SequenceTime _time;
-    int _view;
-    unsigned int _mipMapLevel;
-
-    bool operator==(const ImageBeingRenderedKey& other) const {
-        return _time == other._time &&
-                _view == other._view &&
-        _mipMapLevel == other._mipMapLevel;
-    }
-
-    bool operator<(const ImageBeingRenderedKey& other) const {
-        return _time < other._time ||
-                _view < other._view;
-    }
-};
-
-typedef std::multimap<ImageBeingRenderedKey,boost::shared_ptr<Image> > ImagesMap;
-
-
 /*The output node was connected from inputNumber to this...*/
 typedef std::map<boost::shared_ptr<Node> ,int > DeactivatedState;
 
@@ -113,6 +87,8 @@ struct Node::Implementation {
         , maskChannelKnob()
         , invertMaskKnob()
         , rotoContext()
+        , imagesBeingRenderedMutex()
+        , imagesBeingRendered()
     {
     }
     
@@ -140,11 +116,6 @@ struct Node::Implementation {
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
     bool activated;
-    
-//    QMutex imageBeingRenderedMutex;
-//    QWaitCondition imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
-//
-//    ImagesMap imagesBeingRendered; //< a map storing the ongoing render for this node
     
     LibraryBinary* plugin; //< the plugin which stores the function to instantiate the effect
     
@@ -178,6 +149,10 @@ struct Node::Implementation {
     boost::shared_ptr<Bool_Knob> invertMaskKnob;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
+    
+    mutable QMutex imagesBeingRenderedMutex;
+    QWaitCondition imageBeingRenderedCond;
+    std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
 };
 
 /**
@@ -1546,6 +1521,39 @@ bool Node::isMaskInverted() const
         return _imp->invertMaskKnob->getValue();
     }
 }
+
+
+void Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
+{
+    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
+    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
+    std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    while (it != _imp->imagesBeingRendered.end()) {
+        _imp->imageBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
+        it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    }
+    ///Okay the image is not used by any other thread, claim that we want to use it
+    assert(it == _imp->imagesBeingRendered.end());
+    _imp->imagesBeingRendered.push_back(image);
+}
+
+void Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
+{
+    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
+    
+    std::list<boost::shared_ptr<Natron::Image> >::iterator it =
+    std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
+    
+    ///The image must exist, otherwise this is a bug
+    assert(it != _imp->imagesBeingRendered.end());
+    
+    _imp->imagesBeingRendered.erase(it);
+    
+    ///Notify all waiting threads that we're finished
+    _imp->imageBeingRenderedCond.wakeAll();
+}
+
+//////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)
     : Node(app,plugin)

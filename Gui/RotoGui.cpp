@@ -1961,6 +1961,11 @@ void RotoGui::getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBezier
     *selectedCps = _imp->rotoData->selectedCps;
 }
 
+void RotoGui::refreshSelectionBBox()
+{
+    _imp->computeSelectedCpsBBOX();
+}
+
 void RotoGui::setBuiltBezier(const boost::shared_ptr<Bezier>& curve)
 {
     assert(curve);

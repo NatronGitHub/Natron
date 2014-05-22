@@ -153,6 +153,8 @@ public:
     void getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
                       std::list<std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >* selectedCps);
     
+    void refreshSelectionBBox();
+    
     void setBuiltBezier(const boost::shared_ptr<Bezier>& curve);
     
     boost::shared_ptr<Bezier> getBezierBeingBuild() const;

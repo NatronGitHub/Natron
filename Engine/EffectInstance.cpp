@@ -46,6 +46,31 @@ class File_Knob;
 class OutputFile_Knob;
 
 
+/**
+ * @brief This object locks an image for writing (and waits until it can lock it) and releases
+ * the lock when it is destroyed.
+ **/
+class OutputImageLocker {
+    
+    Natron::Node* n;
+    boost::shared_ptr<Natron::Image> img;
+public:
+    
+    OutputImageLocker(Natron::Node* node,const boost::shared_ptr<Natron::Image>& image)
+    : n (node) , img(image)
+    {
+        assert(n && img);
+        n->addImageBeingRendered(img);
+    }
+    
+    ~OutputImageLocker()
+    {
+        n->removeImageBeingRendered(img);
+    }
+    
+};
+
+
 struct EffectInstance::RenderArgs {
     RectI _roi; //< The RoI in PIXEL coordinates
     RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
@@ -724,6 +749,11 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
     ///intersect the image render window to the actual image region of definition.
     RectI intersection;
     renderWindow.intersect(downscaledImage->getPixelRoD(), &intersection);
+    
+    
+    ////Right before checking whats left to render, lock the image for writing
+    ////When it goes out of scope the lock will be released automatically
+    OutputImageLocker imageLock(_node.get(),downscaledImage);
     
     /// If the list is empty then we already rendered it all
     std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
