@@ -401,7 +401,7 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const Ren
 }
 
 EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& renderWindow,
-                                                           int /*view*/){
+                                                           int /*view*/,U64 /*nodeHash*/){
     RoIMap ret;
     for (int i = 0; i < maximumInputs(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
@@ -529,7 +529,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         if (identity) {
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
-            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view);
+            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         args.roi,
                                                         inputsRoI,
@@ -642,7 +642,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
-            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view);
+            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         args.roi,
                                                         inputsRoI,
@@ -800,7 +800,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         ///the getRegionOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
         ///store it into the render args so the getImage() function can retrieve the results.
-        RoIMap inputsRoi = getRegionOfInterest_public(time, scale, canonicalRectToRender,view);
+        RoIMap inputsRoi = getRegionOfInterest_public(time, scale, canonicalRectToRender,view,nodeHash);
         
         /*we can set the render args*/
         assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
@@ -1478,11 +1478,12 @@ Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,co
     return ret;
 }
 
-EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view)
+EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime time,RenderScale scale,
+                                                                  const RectI& renderWindow,int view,U64 nodeHash)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, renderWindow, view);
+    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, renderWindow, view,nodeHash);
     decrementRecursionLevel();
     return ret;
 }

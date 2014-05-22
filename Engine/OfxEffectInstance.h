@@ -142,7 +142,7 @@ public:
                                                  RectI* rod,bool* isProjectFormat) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,
-                                                               const RectI& renderWindow,int view) OVERRIDE WARN_UNUSED_RETURN;
+                                                               const RectI& renderWindow,int view,U64 nodeHash) OVERRIDE WARN_UNUSED_RETURN;
     
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
 

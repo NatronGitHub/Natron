@@ -380,7 +380,7 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
+    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view,U64 nodeHash) WARN_UNUSED_RETURN;
     
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
@@ -402,7 +402,7 @@ public:
     Natron::Status getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
                                          RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
     
-    RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
+    RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view,U64 nodeHash) WARN_UNUSED_RETURN;
     
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
     

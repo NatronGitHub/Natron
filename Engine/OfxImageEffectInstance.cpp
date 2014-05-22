@@ -534,3 +534,17 @@ void OfxImageEffectInstance::discardClipsImage()
         dynamic_cast<OfxClipInstance*>(it->second)->discardRenderedImage();
     }
 }
+
+void OfxImageEffectInstance::setClipsHash(U64 hash)
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->setAttachedNodeHash(hash);
+    }
+}
+
+void OfxImageEffectInstance::discardClipsHash()
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->discardAttachedNodeHash();
+    }
+}

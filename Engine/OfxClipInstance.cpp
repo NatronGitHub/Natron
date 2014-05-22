@@ -170,7 +170,8 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
     unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
     int view = _lastRenderArgs.localData().view;
-
+    
+   
     
     if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
@@ -188,11 +189,14 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (n) {
         bool isProjectFormat;
         
+        assert(_lastRenderArgs.localData().attachedNodeHashValid);
+        U64 nodeHash = _lastRenderArgs.localData().attachedNodeHash;
+        
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
         
         
-        Natron::ImageKey key = Natron::Image::makeKey(n->hash(), time,mipmapLevel,view);
+        Natron::ImageKey key = Natron::Image::makeKey(nodeHash, time,mipmapLevel,view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);
@@ -422,6 +426,7 @@ void OfxClipInstance::setView(int view) {
     } else {
         args.mipMapLevel = 0;
         args.image.reset();
+        args.attachedNodeHash = 0;
     }
     args.view = view;
     args.isViewValid =  true;
@@ -437,6 +442,7 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     } else {
         args.view = 0;
         args.image.reset();
+        args.attachedNodeHash = 0;
     }
     args.mipMapLevel = mipMapLevel;
     args.isMipMapLevelValid = true;
@@ -467,6 +473,7 @@ void OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image>& i
     } else {
         args.mipMapLevel = 0;
         args.view = 0;
+        args.attachedNodeHash = 0;
     }
     args.image = image;
     args.isImageValid = true;
@@ -478,4 +485,26 @@ void OfxClipInstance::discardRenderedImage()
     assert(_lastRenderArgs.hasLocalData());
     _lastRenderArgs.localData().isImageValid = false;
     _lastRenderArgs.localData().image.reset();
+}
+
+void OfxClipInstance::setAttachedNodeHash(U64 hash)
+{
+    LastRenderArgs args;
+    if (_lastRenderArgs.hasLocalData()) {
+        args = _lastRenderArgs.localData();
+        assert(!_lastRenderArgs.localData().isImageValid);
+    } else {
+        args.mipMapLevel = 0;
+        args.view = 0;
+        args.image.reset();
+    }
+    args.attachedNodeHash = hash;
+    args.attachedNodeHashValid = true;
+    _lastRenderArgs.setLocalData(args);
+}
+
+void OfxClipInstance::discardAttachedNodeHash()
+{
+    assert(_lastRenderArgs.hasLocalData());
+    _lastRenderArgs.localData().attachedNodeHashValid = false;
 }

@@ -15,7 +15,7 @@
 #include <boost/shared_ptr.hpp>
 #include <ofxhImageEffect.h>
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 class OfxEffectInstance;
 
@@ -189,6 +189,10 @@ public:
     void setClipsRenderedImage(const boost::shared_ptr<Natron::Image>& image);
     
     void discardClipsImage();
+    
+    void setClipsHash(U64 hash);
+    
+    void discardClipsHash();
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 

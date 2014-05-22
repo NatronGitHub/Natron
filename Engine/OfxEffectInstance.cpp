@@ -526,7 +526,8 @@ OfxRectD rectToOfxRect2D(const RectI b){
 }
 
 
-EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view) {
+EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,
+                                                              const RectI& renderWindow,int view,U64 nodeHash) {
     
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
@@ -538,6 +539,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     ///before calling getRoIaction set the relevant infos on the clips
     effectInstance()->setClipsMipMapLevel(mipMapLevel);
     effectInstance()->setClipsView(view);
+    effectInstance()->setClipsHash(nodeHash);
     
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
@@ -549,6 +551,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     
     effectInstance()->discardClipsMipMapLevel();
     effectInstance()->discardClipsView();
+    effectInstance()->discardClipsHash();
     
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         Natron::errorDialog(getNode()->getName_mt_safe(), "Failed to specify the region of interest from inputs.");

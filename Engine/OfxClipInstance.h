@@ -158,6 +158,11 @@ public:
     void setRenderedImage(const boost::shared_ptr<Natron::Image>& image);
     
     void discardRenderedImage();
+    
+    ///Set the hash the node has for this thread
+    void setAttachedNodeHash(U64 hash);
+    
+    void discardAttachedNodeHash();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -183,6 +188,8 @@ private:
         int view;
         boost::shared_ptr<Natron::Image> image;
         bool isImageValid;
+        U64 attachedNodeHash;
+        bool attachedNodeHashValid;
         
         LastRenderArgs()
         : isMipMapLevelValid(false)
@@ -191,6 +198,8 @@ private:
         , view(0)
         , image()
         , isImageValid(false)
+        , attachedNodeHash(0)
+        , attachedNodeHashValid(false)
         {}
     };
     
