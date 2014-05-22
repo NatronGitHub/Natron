@@ -1145,7 +1145,6 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         
         const float* src_pixels_floor = img->pixelAt(rod.x1, yFloor);
         const float* src_pixels_ceil = img->pixelAt(rod.x1, yCeil);
-        
         for (int j = 0; j < width; ++j) {
             
             double x = (double)j/xZoomFactor + rod.x1;

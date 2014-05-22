@@ -132,7 +132,7 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainerLayout->addWidget(box);
         if (getKnob()->getDimension() == 1 && !_knob->isSliderDisabled()) {
             
-            if ((max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN) {
+            if ((max > min) && (max - min) < SLIDER_MAX_RANGE && max < INT_MAX && min > INT_MIN) {
                 _slider = new ScaleSliderQWidget(min, max,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
                 if(hasToolTip()) {
                     _slider->setToolTip(toolTip());
@@ -489,7 +489,7 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         
         if (_knob->getDimension() == 1 && !_knob->isSliderDisabled()) {
 
-            if ((max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX) {
+            if ((max > min) && (max - min) < SLIDER_MAX_RANGE && max < DBL_MAX && min > -DBL_MAX) {
                 _slider = new ScaleSliderQWidget(min, max,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
                 if(hasToolTip()) {
                     _slider->setToolTip(toolTip());
