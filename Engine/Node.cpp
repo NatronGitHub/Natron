@@ -144,9 +144,10 @@ struct Node::Implementation {
     mutable QMutex masterNodeMutex;
     boost::shared_ptr<Node> masterNode;
   
-    boost::shared_ptr<Bool_Knob> enableMaskKnob;
-    boost::shared_ptr<Choice_Knob> maskChannelKnob;
-    boost::shared_ptr<Bool_Knob> invertMaskKnob;
+    ///For each mask, the input number and the knob
+    std::map<int,boost::shared_ptr<Bool_Knob> > enableMaskKnob;
+    std::map<int,boost::shared_ptr<Choice_Knob> > maskChannelKnob;
+    std::map<int,boost::shared_ptr<Bool_Knob> > invertMaskKnob;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -210,15 +211,7 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     }
     
     initializeInputs();
-    initializeKnobs();
-    
-    
-    
-    ///non OpenFX-plugin
-    if (func.first && !serialization.isNull() && serialization.getPluginID() == pluginID &&
-        majorVersion() == serialization.getPluginMajorVersion() && minorVersion() == serialization.getPluginMinorVersion()) {
-            loadKnobs(serialization);
-    }
+    initializeKnobs(serialization);
     
     if (!nameSet) {
          getApp()->getProject()->initNodeCountersAndSetName(this);
@@ -286,28 +279,31 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     assert(QThread::currentThread() == qApp->thread());
     
     const std::vector< boost::shared_ptr<KnobI> >& nodeKnobs = getKnobs();
-    const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size();++j) {
-        
-        ///try to find a serialized value for this knob
-        for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-            if((*it)->getName() == nodeKnobs[j]->getName()){
-                // don't load the value if the Knob is not persistant! (it is just the default value in this case)
-                if (nodeKnobs[j]->getIsPersistant()) {
-                    nodeKnobs[j]->clone((*it)->getKnob());
-                }
-                break;
-            }
-        }
+        loadKnob(nodeKnobs[j], serialization);
     }
-    
     ///now restore the roto context if the node has a roto context
     if (serialization.hasRotoContext() && _imp->rotoContext) {
         _imp->rotoContext->load(serialization.getRotoContext());
     }
     
     setKnobsAge(serialization.getKnobsAge());
+}
+
+void Node::loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization)
+{
+    const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
+    ///try to find a serialized value for this knob
+    for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
+        if((*it)->getName() == knob->getName()){
+            // don't load the value if the Knob is not persistant! (it is just the default value in this case)
+            if (knob->getIsPersistant()) {
+                knob->clone((*it)->getKnob());
+            }
+            break;
+        }
+    }
 }
 
 void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes) {
@@ -535,7 +531,7 @@ void Node::onGUINameChanged(const QString& str) {
     _imp->name = str.toStdString();
 }
 
-void Node::initializeKnobs() {
+void Node::initializeKnobs(const NodeSerialization& serialization) {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -546,34 +542,45 @@ void Node::initializeKnobs() {
     for (int i = 0; i < inputsCount; ++i) {
         if (_imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i)) {
             std::string maskName = _imp->liveInstance->inputLabel(i);
-            _imp->enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, maskName);
-            _imp->enableMaskKnob->setDefaultValue(false, 0);
-            _imp->enableMaskKnob->turnOffNewLine();
-            _imp->enableMaskKnob->setName("enable_mask_natron_" + maskName);
-            _imp->enableMaskKnob->setAnimationEnabled(false);
-            _imp->enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
+            boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, maskName);
+            _imp->enableMaskKnob.insert(std::make_pair(i,enableMaskKnob));
+            enableMaskKnob->setDefaultValue(false, 0);
+            enableMaskKnob->turnOffNewLine();
+            std::string enableMaskName("enable_mask_natron_" + maskName);
+            enableMaskKnob->setName(enableMaskName);
+            enableMaskKnob->setAnimationEnabled(false);
+            enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
                                                  "Turning this off will fill with 1's the mask.");
             
-            _imp->maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "");
+            boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "");
+            _imp->maskChannelKnob.insert(std::make_pair(i,maskChannelKnob));
             std::vector<std::string> choices;
             choices.push_back("None");
             choices.push_back("Red");
             choices.push_back("Green");
             choices.push_back("Blue");
             choices.push_back("Alpha");
-            _imp->maskChannelKnob->populateChoices(choices);
-            _imp->maskChannelKnob->setDefaultValue(4, 0);
-            _imp->maskChannelKnob->setAnimationEnabled(false);
-            _imp->maskChannelKnob->turnOffNewLine();
-            _imp->maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
+            maskChannelKnob->populateChoices(choices);
+            maskChannelKnob->setDefaultValue(4, 0);
+            maskChannelKnob->setAnimationEnabled(false);
+            maskChannelKnob->turnOffNewLine();
+            maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
                                                   "Setting this to None is the same as disabling the mask.");
-            _imp->maskChannelKnob->setName("mask_channel_natron_" + maskName);
+            std::string channelMaskName("mask_channel_natron_" + maskName);
+            maskChannelKnob->setName(channelMaskName);
             
-            _imp->invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert");
-            _imp->invertMaskKnob->setDefaultValue(false, 0);
-            _imp->invertMaskKnob->setAnimationEnabled(false);
-            _imp->invertMaskKnob->setName("invert_mask_natron_" + maskName);
-            _imp->invertMaskKnob->setHintToolTip("Invert the use of the mask");
+            boost::shared_ptr<Bool_Knob> invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert");
+            _imp->invertMaskKnob.insert(std::make_pair(i, invertMaskKnob));
+            invertMaskKnob->setDefaultValue(false, 0);
+            invertMaskKnob->setAnimationEnabled(false);
+            std::string inverMaskName("invert_mask_natron_" + maskName);
+            invertMaskKnob->setName(inverMaskName);
+            invertMaskKnob->setHintToolTip("Invert the use of the mask");
+            
+            ///and load it
+            loadKnob(enableMaskKnob, serialization);
+            loadKnob(maskChannelKnob, serialization);
+            loadKnob(invertMaskKnob, serialization);
         }
     }
     
@@ -1493,33 +1500,28 @@ Natron::ImageComponents Node::findClosestSupportedComponents(int inputNb,Natron:
     }
 }
 
-int Node::getMaskChannel() const
+int Node::getMaskChannel(int inputNb) const
 {
-    if (!_imp->maskChannelKnob) {
-        return -1;
-    } else {
-        return _imp->maskChannelKnob->getValue() - 1;
-    }
+    std::map<int, boost::shared_ptr<Choice_Knob> >::const_iterator it = _imp->maskChannelKnob.find(inputNb);
+    assert(it != _imp->maskChannelKnob.end());
+    return it->second->getValue() - 1;
+ 
 }
 
 
-bool Node::isMaskEnabled() const
+bool Node::isMaskEnabled(int inputNb) const
 {
-    if (!_imp->enableMaskKnob) {
-        return false;
-    } else {
-        return _imp->enableMaskKnob->getValue();
-    }
+    std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->enableMaskKnob.find(inputNb);
+    assert(it != _imp->enableMaskKnob.end());
+    return it->second->getValue();
 }
 
 
-bool Node::isMaskInverted() const
+bool Node::isMaskInverted(int inputNb) const
 {
-    if (!_imp->invertMaskKnob) {
-        return false;
-    } else {
-        return _imp->invertMaskKnob->getValue();
-    }
+    std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->invertMaskKnob.find(inputNb);
+    assert(it != _imp->invertMaskKnob.end());
+    return it->second->getValue();
 }
 
 

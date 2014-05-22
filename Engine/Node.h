@@ -60,6 +60,7 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
     
+    
     ///If the node can have a roto context, create it
     void createRotoContextConditionnally();
     
@@ -91,10 +92,6 @@ public:
      **/
     U64 getHashValue() const;
     
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    void initializeKnobs();
     
     /**
      * @brief Forwarded to the live effect instance
@@ -181,17 +178,17 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel() const;
+    int getMaskChannel(int inputNb) const;
     
     /**
      * @brief Returns whether masking is enabled or not
      **/
-    bool isMaskEnabled() const;
+    bool isMaskEnabled(int inputNb) const;
     
     /**
      * @brief Returns true if the mask should be used inverted
      **/
-    bool isMaskInverted() const;
+    bool isMaskInverted(int inputNb) const;
     
     /**
      * @brief Returns a pointer to the input Node at index 'index'
@@ -573,6 +570,15 @@ protected:
     void initializeInputs();
 
 private:
+    
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    void initializeKnobs(const NodeSerialization& serialization);
+
+    
+    void loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization);
+    
     /**
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.

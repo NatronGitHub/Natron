@@ -225,17 +225,17 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel() const;
+    int getMaskChannel(int inputNb) const;
     
     /**
      * @brief Returns whether masking is enabled or not
      **/
-    bool isMaskEnabled() const;
+    bool isMaskEnabled(int inputNb) const;
     
     /**
      * @brief Returns true if the mask should be used inverted
      **/
-    bool isMaskInverted() const;
+    bool isMaskInverted(int inputNb) const;
     
     /**
      * @brief Routine called after the creation of an effect. This function must

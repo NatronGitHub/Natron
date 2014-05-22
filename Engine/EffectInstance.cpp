@@ -353,17 +353,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///if the plug-in doesn't support the image components
     if (!isSupportedComponent(inputNb, inputImg->getComponents())) {
         Natron::ImageComponents mappedComp = findClosestSupportedComponents(inputNb, inputImg->getComponents());
-        int channelForAlpha = getMaskChannel();
+        bool isMask = isInputMask(inputNb);
+        int channelForAlpha = isMask ? getMaskChannel(inputNb) : 3;
+        
         Natron::Image* remappedImg;
         
-        if ((mappedComp == Natron::ImageComponentAlpha) && (channelForAlpha == -1 || !isMaskEnabled())) {
+        if (isMask && (mappedComp == Natron::ImageComponentAlpha) && (channelForAlpha == -1 || !isMaskEnabled(inputNb))) {
             ///Set the mask to 0's everywhere
             
             remappedImg = new Natron::Image(mappedComp,inputImg->getRoD(),inputImg->getMipMapLevel());
             remappedImg->defaultInitialize(1.,1.);
         } else {
             ///convert the fetched input image
-            bool invert = isInputMask(inputNb) && isMaskInverted();
+            bool invert = isMask && isMaskInverted(inputNb);
             remappedImg = inputImg->convertToFormat(mappedComp, channelForAlpha,invert);
         }
         
@@ -1548,21 +1550,21 @@ Natron::ImageComponents EffectInstance::findClosestSupportedComponents(int input
     return _node->findClosestSupportedComponents(inputNb,comp);
 }
 
-int EffectInstance::getMaskChannel() const
+int EffectInstance::getMaskChannel(int inputNb) const
 {
-    return _node->getMaskChannel();
+    return _node->getMaskChannel(inputNb);
 }
 
 
-bool EffectInstance::isMaskEnabled() const
+bool EffectInstance::isMaskEnabled(int inputNb) const
 {
-    return _node->isMaskEnabled();
+    return _node->isMaskEnabled(inputNb);
 }
 
 
-bool EffectInstance::isMaskInverted() const
+bool EffectInstance::isMaskInverted(int inputNb) const
 {
-    return _node->isMaskInverted();
+    return _node->isMaskInverted(inputNb);
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
