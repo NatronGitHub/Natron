@@ -264,6 +264,8 @@ struct RotoDrawableItemPrivate
         overlayColor[3] = 1.;
         
     }
+
+    ~RotoDrawableItemPrivate() {}
 };
 
 struct RotoContextPrivate
