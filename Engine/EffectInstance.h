@@ -100,7 +100,17 @@ public:
      **/
     boost::shared_ptr<Node> getNode() const WARN_UNUSED_RETURN { return _node; }
     
+    /**
+     * @brief Returns the "real" hash of the node synchronized with the gui state
+     **/
     U64 hash() const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
+     * at any time during the same render call. 
+     * @returns This function returns true if case of success, false otherwise.
+     **/
+    bool getRenderHash(U64* hash) const WARN_UNUSED_RETURN;
     
     U64 knobsAge() const WARN_UNUSED_RETURN;
     

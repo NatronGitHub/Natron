@@ -189,8 +189,15 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (n) {
         bool isProjectFormat;
         
-        assert(_lastRenderArgs.localData().attachedNodeHashValid);
-        U64 nodeHash = _lastRenderArgs.localData().attachedNodeHash;
+        U64 nodeHash;
+        if (!_lastRenderArgs.localData().attachedNodeHashValid) {
+            bool foundRenderHash = n->getRenderHash(&nodeHash);
+            if (!foundRenderHash) {
+                nodeHash = n->hash();
+            }
+        } else {
+            nodeHash = _lastRenderArgs.localData().attachedNodeHash;
+        }
         
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;

@@ -210,6 +210,15 @@ U64 EffectInstance::hash() const
     return getNode()->getHashValue();
 }
 
+bool EffectInstance::getRenderHash(U64* hash) const
+{
+    if (!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs) {
+        return false;
+    } else {
+        *hash = _imp->renderArgs.localData()._nodeHash;
+        return true;
+    }
+}
 
 bool EffectInstance::aborted() const
 {
@@ -371,7 +380,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     }
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat) {
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,
+                                                     bool* isProjectFormat) {
     
     Format frmt;
     getRenderFormat(&frmt);
@@ -1473,7 +1483,7 @@ Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,co
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    Natron::Status ret = getRegionOfDefinition(time, scale,view ,rod, isProjectFormat);
+    Natron::Status ret = getRegionOfDefinition(time, scale,view ,rod,isProjectFormat);
     decrementRecursionLevel();
     return ret;
 }

@@ -482,7 +482,8 @@ std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
     return formats;
 }
 
-Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat){
+Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,
+                                                        bool* isProjectFormat){
     if(!_initialized){
         return Natron::StatFailed;
     }
