@@ -30,6 +30,7 @@ PluginMemory::PluginMemory(Natron::EffectInstance* effect)
 
 
 PluginMemory::~PluginMemory() {
+    delete _mutex;
     delete [] _ptr;
 }
 

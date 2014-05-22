@@ -799,7 +799,7 @@ void ViewerTab::refresh(){
 ViewerTab::~ViewerTab()
 {
     _imp->_viewerNode->invalidateUiContext();
-    if (_imp->_gui->getLastSelectedViewer() == this) {
+    if (!_imp->app->isClosing() && _imp->_gui->getLastSelectedViewer() == this) {
         _imp->_gui->setLastSelectedViewer(NULL);
     }
 }

@@ -521,6 +521,10 @@ Knob<int>(holder, description, dimension,declaredByPlugin)
     
 }
 
+Choice_Knob::~Choice_Knob() {
+
+}
+
 bool Choice_Knob::canAnimate() const
 {
     return canAnimateStatic();

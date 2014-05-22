@@ -83,7 +83,7 @@ namespace Natron {
             clear();
         }
         
-        ~Bitmap() { delete _map; }
+        ~Bitmap() { delete [] _map; }
         
         void clear() { std::fill(_map, _map+ _rod.area(), 0); }
         

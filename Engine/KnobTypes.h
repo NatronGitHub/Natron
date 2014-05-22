@@ -301,6 +301,8 @@ public:
     }
     
     Choice_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
+
+    virtual ~Choice_Knob();
     
     /*Must be called right away after the constructor.*/
     void populateChoices(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
