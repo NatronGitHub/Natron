@@ -25,7 +25,8 @@ CLANG_DIAG_ON(uninitialized)
 class Settings;
 class DockablePanel;
 class QVBoxLayout;
-class QHBoxLayout;
+//class QHBoxLayout;
+class QDialogButtonBox;
 class Button;
 class Gui;
 class PreferencesPanel : public QWidget
@@ -41,8 +42,10 @@ public slots:
     void restoreDefaults();
     
     void cancelChanges();
-    
-    void saveChanges();
+
+    void applyChanges();
+
+    void applyChangesAndClose();
 private:
     
     virtual void showEvent(QShowEvent* e) OVERRIDE;
@@ -53,9 +56,9 @@ private:
     Gui* _gui;
     QVBoxLayout* _mainLayout;
     DockablePanel* _panel;
-    QWidget* _buttonsContainer;
-    QHBoxLayout* _buttonsLayout;
+    QDialogButtonBox* _buttonBox;
     Button* _restoreDefaultsB;
+    Button* _applyB;
     Button* _cancelB;
     Button* _okB;
     boost::shared_ptr<Settings> _settings;
