@@ -1751,6 +1751,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
 
 void ViewerGL::updateColorPicker(int x,int y)
 {
+    if (_imp->pickerState != INACTIVE) {
+        return;
+    }
+
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     if (!_imp->displayingImage) {
