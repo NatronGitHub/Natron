@@ -14,6 +14,7 @@
 #include <QDesktopWidget>
 #include <QApplication>
 #include <QTextDocument> // for Qt::convertFromPlainText
+#include <QDialogButtonBox>
 
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"
@@ -36,27 +37,30 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *par
     
     _panel = new DockablePanel(_gui,_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
                                "","",false,"",this);
-    // _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
-    _buttonsContainer = new QWidget(this);
-    _buttonsLayout = new QHBoxLayout(_buttonsContainer);
-    _buttonsLayout->addStretch();
-    _restoreDefaultsB = new Button("Restore defaults",_buttonsContainer);
+    _buttonBox = new QDialogButtonBox(Qt::Horizontal);
+    _applyB = new Button("Apply");
+    _applyB->setToolTip(Qt::convertFromPlainText("Apply changes without closing the window.",Qt::WhiteSpaceNormal));
+    _restoreDefaultsB = new Button("Restore defaults");
     _restoreDefaultsB->setToolTip(Qt::convertFromPlainText("Restore default values for all preferences.",Qt::WhiteSpaceNormal));
-    _cancelB = new Button("Cancel",_buttonsContainer);
-    _okB = new Button("Save",_buttonsContainer);
-    _buttonsLayout->addWidget(_restoreDefaultsB);
-    _buttonsLayout->addWidget(_cancelB);
-    _buttonsLayout->addWidget(_okB);
-    
+    _cancelB = new Button("Cancel");
+    _cancelB->setToolTip(Qt::convertFromPlainText("Cancel changes that were not applied and close the window.",Qt::WhiteSpaceNormal));
+    _okB = new Button("OK");
+    _okB->setToolTip(Qt::convertFromPlainText("Apply changes and close the window.",Qt::WhiteSpaceNormal));
+    _buttonBox->addButton(_applyB, QDialogButtonBox::ApplyRole);
+    _buttonBox->addButton(_restoreDefaultsB, QDialogButtonBox::ResetRole);
+    _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
+    _buttonBox->addButton(_okB, QDialogButtonBox::AcceptRole);
+
     _mainLayout->addStretch();
-    _mainLayout->addWidget(_buttonsContainer);
-    
+    _mainLayout->addWidget(_buttonBox);
+
     QObject::connect(_restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()));
-    QObject::connect(_cancelB, SIGNAL(clicked()), this, SLOT(cancelChanges()));
-    QObject::connect(_okB, SIGNAL(clicked()), this, SLOT(saveChanges()));
-    
+    QObject::connect(_applyB, SIGNAL(clicked()), this, SLOT(applyChanges()));
+    QObject::connect(_buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()));
+    QObject::connect(_buttonBox, SIGNAL(accepted()), this, SLOT(applyChangesAndClose()));
+
     _panel->initializeKnobs();
     
     resize(500, 400);
@@ -72,11 +76,15 @@ void PreferencesPanel::restoreDefaults() {
     
 }
 
+void PreferencesPanel::applyChanges() {
+    _settings->saveSettings();
+}
+
 void PreferencesPanel::cancelChanges() {
     close();
 }
 
-void PreferencesPanel::saveChanges() {
+void PreferencesPanel::applyChangesAndClose() {
     _settings->saveSettings();
     close();
 }
