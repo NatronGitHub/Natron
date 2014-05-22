@@ -13,10 +13,13 @@
 #include <QVBoxLayout>
 #include <QDesktopWidget>
 #include <QApplication>
+#include <QTextDocument> // for Qt::convertFromPlainText
+
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
+
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *parent)
     : QWidget(parent)
     , _gui(parent)
@@ -39,7 +42,8 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *par
     _buttonsContainer = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsContainer);
     _buttonsLayout->addStretch();
-    _restoreDefaultsB = new Button("Restore default",_buttonsContainer);
+    _restoreDefaultsB = new Button("Restore defaults",_buttonsContainer);
+    _restoreDefaultsB->setToolTip(Qt::convertFromPlainText("Restore default values for all preferences.",Qt::WhiteSpaceNormal));
     _cancelB = new Button("Cancel",_buttonsContainer);
     _okB = new Button("Save",_buttonsContainer);
     _buttonsLayout->addWidget(_restoreDefaultsB);
