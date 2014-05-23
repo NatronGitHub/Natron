@@ -656,7 +656,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
-                                int /*view*/,SequenceTime* inputTime,int* inputNb) {
+                                int view,SequenceTime* inputTime,int* inputNb) {
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -671,7 +671,15 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     
     bool useScaleOne = !supportsRenderScale();
     
+    unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
+    effectInstance()->setClipsMipMapLevel(mipmapLevel);
+    effectInstance()->setClipsView(view);
+    
     OfxStatus stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,useScaleOne ? scaleOne : scale,inputclip);
+    
+    effectInstance()->discardClipsView();
+    effectInstance()->discardClipsMipMapLevel();
+    
     if(stat == kOfxStatOK){
         OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
         if (!clip) {
