@@ -272,6 +272,7 @@ void TabWidget::closePane(){
         return;
     }
     
+    
     /*Removing it from the _panes vector*/
     _gui->removePane(this);
     
@@ -281,6 +282,9 @@ void TabWidget::closePane(){
     if(!mainContainer) {
         return;
     }
+    
+    QList<int> mainContainerSizes = container->sizes();
+
     
     /*identifying the other tab*/
     TabWidget* other = 0;
@@ -319,6 +323,9 @@ void TabWidget::closePane(){
         other->setParent(mainContainer);
     }
     mainContainer->insertWidget(subSplitterIndex, other);
+    
+    ///restore the main container sizes
+    mainContainer->setSizes_mt_safe(mainContainerSizes);
     
     /*deleting the subSplitter*/
     _gui->removeSplitter(container);
@@ -446,6 +453,8 @@ void TabWidget::splitHorizontally(){
     /*We need to know the position in the container layout of the old tab widget*/
     int oldIndex = container->indexOf(this);
     
+    QList<int> containerSizes = container->sizes();
+    
     Splitter* newSplitter = new Splitter(container);
     newSplitter->setObjectName_mt_safe(container->objectName()+TabWidget::splitHorizontallyTag);
     newSplitter->setContentsMargins(0, 0, 0, 0);
@@ -465,11 +474,13 @@ void TabWidget::splitHorizontally(){
     QSize splitterSize = newSplitter->sizeHint();
     QList<int> sizes; sizes <<   splitterSize.width()/2;
     sizes  << splitterSize.width()/2;
-    newSplitter->setSizes(sizes);
+    newSplitter->setSizes_mt_safe(sizes);
     
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
     
+    ///restore the container original sizes
+    container->setSizes_mt_safe(containerSizes);
     
     _userSplits.insert(std::make_pair(newTab,false));
     
@@ -482,6 +493,8 @@ void TabWidget::splitVertically(){
     
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if(!container) return;
+    
+    QList<int> containerSizes = container->sizes();
     
     /*We need to know the position in the container layout of the old tab widget*/
     int oldIndex = container->indexOf(this);
@@ -506,9 +519,12 @@ void TabWidget::splitVertically(){
     QSize splitterSize = newSplitter->sizeHint();
     QList<int> sizes; sizes <<   splitterSize.height()/2;
     sizes  << splitterSize.height()/2;
-    newSplitter->setSizes(sizes);
+    newSplitter->setSizes_mt_safe(sizes);
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
+    
+    ///restore the container original sizes
+    container->setSizes_mt_safe(containerSizes);
     
     _userSplits.insert(std::make_pair(newTab,true));
     
