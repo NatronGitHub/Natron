@@ -1749,6 +1749,20 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
 }
 
 
+void ViewerGL::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+    QPointF pos_opengl;
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        pos_opengl = _imp->zoomCtx.toZoomCoordinates(event->x(),event->y());
+    }
+    if (_imp->viewerTab->notifyOverlaysPenDoubleClick(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), pos_opengl)) {
+        updateGL();
+    }
+    QGLWidget::mouseDoubleClickEvent(event);
+}
+
 void ViewerGL::updateColorPicker(int x,int y)
 {
     if (_imp->pickerState != INACTIVE) {

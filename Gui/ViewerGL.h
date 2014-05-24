@@ -316,6 +316,8 @@ private:
     
     virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
     
+    virtual void mouseDoubleClickEvent(QMouseEvent* event) OVERRIDE FINAL;
+    
     virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
     
     virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;

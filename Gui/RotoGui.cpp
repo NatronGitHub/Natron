@@ -42,7 +42,9 @@
 #define kXHairSelectedCpsTolerance 8
 #define kXHairSelectedCpsBox 8
 #define kTangentHandleSelectionTolerance 8
-
+#define kTransformArrowLenght 10
+#define kTransformArrowWidth 3
+#define kTransformArrowOffsetFromPoint 15
 using namespace Natron;
 
 namespace {
@@ -57,7 +59,8 @@ typedef std::list< boost::shared_ptr<Bezier> > SelectedBeziers;
 enum EventState
 {
     NONE = 0,
-    DRAGGING_CPS,
+    DRAGGING_CP,
+    DRAGGING_SELECTED_CPS,
     SELECTING,
     BUILDING_BEZIER_CP_TANGENT,
     BUILDING_ELLIPSE,
@@ -65,7 +68,33 @@ enum EventState
     BUILDING_RECTANGLE,
     DRAGGING_LEFT_TANGENT,
     DRAGGING_RIGHT_TANGENT,
-    DRAGGING_FEATHER_BAR
+    DRAGGING_FEATHER_BAR,
+    DRAGGING_BBOX_TOP_LEFT,
+    DRAGGING_BBOX_TOP_RIGHT,
+    DRAGGING_BBOX_BTM_RIGHT,
+    DRAGGING_BBOX_BTM_LEFT,
+    DRAGGING_BBOX_MID_TOP,
+    DRAGGING_BBOX_MID_RIGHT,
+    DRAGGING_BBOX_MID_BTM,
+    DRAGGING_BBOX_MID_LEFT
+};
+    
+enum HoveredState
+{
+    HOVERING_NOTHING = 0,
+    HOVERING_BBOX_TOP_LEFT,
+    HOVERING_BBOX_TOP_RIGHT,
+    HOVERING_BBOX_BTM_RIGHT,
+    HOVERING_BBOX_BTM_LEFT,
+    HOVERING_BBOX_MID_TOP,
+    HOVERING_BBOX_MID_RIGHT,
+    HOVERING_BBOX_MID_BTM,
+    HOVERING_BBOX_MID_LEFT
+};
+    
+enum SelectedCpsTransformMode {
+    TRANSLATE_AND_SCALE = 0,
+    ROTATE_AND_SKEW = 1
 };
     
 }
@@ -77,14 +106,20 @@ struct RotoGuiSharedData
     
     SelectedCPs selectedCps;
     
+
     QRectF selectedCpsBbox;
     bool showCpsBbox;
+    
+    ////This is by default TRANSLATE_AND_SCALE. When clicking the cross-hair in the center this will toggle the transform mode
+    ////like it does in inkscape.
+    SelectedCpsTransformMode transformMode;
     
     
     QRectF selectionRectangle;
     
     boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
     
+    SelectedCP cpBeingDragged; //< the cp being dragged
     boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
                                                      //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged;
@@ -94,8 +129,10 @@ struct RotoGuiSharedData
     , selectedCps()
     , selectedCpsBbox()
     , showCpsBbox(false)
+    , transformMode()
     , selectionRectangle()
     , builtBezier()
+    , cpBeingDragged()
     , tangentBeingDragged()
     , featherBarBeingDragged()
     {
@@ -141,6 +178,7 @@ struct RotoGui::RotoGuiPrivate
     Natron::KeyboardModifiers modifiers;
     
     EventState state;
+    HoveredState hoverState;
     
     QPointF lastClickPos;
     QPointF lastMousePos;
@@ -167,6 +205,7 @@ struct RotoGui::RotoGuiPrivate
     , selectedRole(0)
     , modifiers(Natron::NoModifier)
     , state(NONE)
+    , hoverState(HOVERING_NOTHING)
     , lastClickPos()
     , lastMousePos()
     , rotoData(sharedData)
@@ -202,9 +241,15 @@ struct RotoGui::RotoGuiPrivate
     
     void computeSelectedCpsBBOX();
     
+    QPointF getSelectedCpsBBOXCenter();
+    
     void drawSelectedCpsBBOX();
     
-    bool isNearbySelectedCpsCrossHair(const QPointF& pos) const;
+    ///by default draws a vertical arrow, which can be rotated by rotate amount.
+    void drawArrow(double centerX,double centerY,double rotate,bool hovered,const std::pair<double,double>& pixelScale);
+    
+    ///same as drawArrow but the two ends will make an angle of 90 degrees
+    void drawBendedArrow(double centerX,double centerY,double rotate,bool hovered,const std::pair<double,double>& pixelScale);
     
     void handleBezierSelection(const boost::shared_ptr<Bezier>& curve);
     
@@ -214,6 +259,18 @@ struct RotoGui::RotoGuiPrivate
     
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
     isNearbyFeatherBar(int time,const std::pair<double,double>& pixelScale,const QPointF& pos) const;
+    
+    bool isNearbySelectedCpsCrossHair(const QPointF& pos) const;
+    
+    bool isNearbyBBoxTopLeft(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    bool isNearbyBBoxTopRight(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    bool isNearbyBBoxBtmLeft(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    bool isNearbyBBoxBtmRight(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    
+    bool isNearbyBBoxMidTop(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    bool isNearbyBBoxMidRight(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    bool isNearbyBBoxMidBtm(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    bool isNearbyBBoxMidLeft(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
     
 };
 
@@ -561,6 +618,7 @@ void RotoGui::onToolActionTriggeredInternal(QAction* action,bool emitSignal)
     ///reset the selected control points
     _imp->rotoData->selectedCps.clear();
     _imp->rotoData->showCpsBbox = false;
+    _imp->rotoData->transformMode = TRANSLATE_AND_SCALE;
     _imp->rotoData->selectedCpsBbox.setTopLeft(QPointF(0,0));
     _imp->rotoData->selectedCpsBbox.setTopRight(QPointF(0,0));
     
@@ -748,7 +806,8 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                     bool colorChanged = false;
                     SelectedCPs::const_iterator firstSelectedCP = _imp->rotoData->selectedCps.begin();
                     if ((firstSelectedCP->first == *it2)
-                        && _imp->rotoData->selectedCps.size() == 1 && _imp->state == DRAGGING_CPS) {
+                        && _imp->rotoData->selectedCps.size() == 1 &&
+                        ( _imp->state == DRAGGING_SELECTED_CPS || _imp->state == DRAGGING_CP)) {
                         glColor3f(0.2, 1., 0.);
                         colorChanged = true;
                     }
@@ -765,7 +824,9 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                     }
                     
                     if ((firstSelectedCP->first == *itF)
-                        && _imp->rotoData->selectedCps.size() == 1 && _imp->state == DRAGGING_CPS && !colorChanged) {
+                        && _imp->rotoData->selectedCps.size() == 1 &&
+                       ( _imp->state == DRAGGING_SELECTED_CPS || _imp->state == DRAGGING_CP)
+                        && !colorChanged) {
                         glColor3f(0.2, 1., 0.);
                         colorChanged = true;
                     }
@@ -895,6 +956,85 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
     }
 }
 
+void RotoGui::RotoGuiPrivate::drawArrow(double centerX,double centerY,double rotate,bool hovered,const std::pair<double,double>& pixelScale)
+{
+    if (hovered) {
+        glColor3f(0., 1., 0.);
+    } else {
+        glColor3f(1., 1., 1.);
+    }
+    
+    double arrowLenght =  kTransformArrowLenght * pixelScale.second;
+    double arrowWidth = kTransformArrowWidth * pixelScale.second;
+    double arrowHeadHeight = 4 * pixelScale.second;
+    
+    glPushMatrix();
+    glTranslatef(centerX, centerY, 0.);
+    glRotatef(rotate, 0., 0., 1.);
+    QPointF bottom(0.,- arrowLenght);
+    QPointF top(0, arrowLenght);
+    ///the arrow head is 4 pixels long and kTransformArrowWidth * 2 large
+    glBegin(GL_LINES);
+    glVertex2f(top.x(), top.y());
+    glVertex2f(bottom.x(), bottom.y());
+    glEnd();
+    
+    glBegin(GL_POLYGON);
+    glVertex2f(bottom.x(), bottom.y());
+    glVertex2f(bottom.x() + arrowWidth, bottom.y() + arrowHeadHeight);
+    glVertex2f(bottom.x() - arrowWidth, bottom.y() + arrowHeadHeight);
+    glEnd();
+    
+    glBegin(GL_POLYGON);
+    glVertex2f(top.x(), top.y());
+    glVertex2f(top.x() - arrowWidth, top.y() - arrowHeadHeight);
+    glVertex2f(top.x() + arrowWidth, top.y() - arrowHeadHeight);
+    glEnd();
+    glPopMatrix();
+    
+}
+
+void RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,double centerY,double rotate,bool hovered,
+                                              const std::pair<double,double>& pixelScale)
+{
+    if (hovered) {
+        glColor3f(0., 1., 0.);
+    } else {
+        glColor3f(1., 1., 1.);
+    }
+    
+    double arrowLenght =  kTransformArrowLenght * pixelScale.second;
+    double arrowWidth = kTransformArrowWidth * pixelScale.second;
+    double arrowHeadHeight = 4 * pixelScale.second;
+    glPushMatrix();
+    glTranslatef(centerX, centerY, 0.);
+    glRotatef(rotate, 0., 0., 1.);
+    
+    /// by default we draw the top left
+    QPointF bottom(0.,- arrowLenght / 2.);
+    QPointF right(arrowLenght / 2., 0.);
+    glBegin (GL_LINE_STRIP);
+    glVertex2f (bottom.x(),bottom.y());
+    glVertex2f (0., 0.);
+    glVertex2f (right.x(),right.y());
+    glEnd ();
+    
+    glBegin(GL_POLYGON);
+    glVertex2f(bottom.x(), bottom.y() - arrowHeadHeight);
+    glVertex2f(bottom.x() - arrowWidth, bottom.y());
+    glVertex2f(bottom.x() + arrowWidth, bottom.y());
+    glEnd();
+    
+    glBegin(GL_POLYGON);
+    glVertex2f(right.x() + arrowHeadHeight, right.y());
+    glVertex2f(right.x(), right.y() - arrowWidth);
+    glVertex2f(right.x(), right.y() + arrowWidth);
+    glEnd();
+    
+    glEnd();
+    glPopMatrix();
+}
+
 void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
 {
     std::pair<double,double> pixelScale;
@@ -940,10 +1080,79 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     glVertex2f(selectedCpsCrossVertLine.p2().x(),std::min(selectedCpsCrossVertLine.p2().y(),topLeft.y()));
     glEnd();
     
-    glDisable(GL_LINE_SMOOTH);
     glCheckError();
+    glDisable(GL_LINE_SMOOTH);
+
     
-    glLineWidth(1.);
+    QPointF midTop((topLeft.x() + btmRight.x()) / 2.,topLeft.y());
+    QPointF midRight(btmRight.x(),(topLeft.y() + btmRight.y()) / 2.);
+    QPointF midBtm((topLeft.x() + btmRight.x()) / 2.,btmRight.y());
+    QPointF midLeft(topLeft.x(),(topLeft.y() + btmRight.y()) / 2.);
+    
+    ///draw the 4 corners points and the 4 mid points
+    glPointSize(5.f);
+    glBegin(GL_POINTS);
+    glVertex2f(topLeft.x(), topLeft.y());
+    glVertex2f(btmRight.x(), topLeft.y());
+    glVertex2f(btmRight.x(), btmRight.y());
+    glVertex2f(topLeft.x(), btmRight.y());
+    
+    glVertex2f(midTop.x(), midTop.y());
+    glVertex2f(midRight.x(), midRight.y());
+    glVertex2f(midBtm.x(), midBtm.y());
+    glVertex2f(midLeft.x(), midLeft.y());
+    glEnd();
+    
+    ///now draw the handles to indicate the user he/she can transform the selection rectangle
+    ///draw it only if it is not dragged
+    bool drawHandles = state != DRAGGING_BBOX_BTM_LEFT && state != DRAGGING_BBOX_BTM_RIGHT &&
+    state != DRAGGING_BBOX_TOP_LEFT && state != DRAGGING_BBOX_TOP_RIGHT && state != DRAGGING_BBOX_MID_TOP
+    && state != DRAGGING_BBOX_MID_RIGHT && state != DRAGGING_BBOX_MID_LEFT && state != DRAGGING_BBOX_MID_BTM;
+    
+    
+    if (drawHandles) {
+        
+        double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
+        double halfOffset = offset / 2.;
+        if (rotoData->transformMode == TRANSLATE_AND_SCALE) {
+            ///draw mid top arrow vertical
+            drawArrow(midTop.x(), midTop.y() + offset, 0., hoverState == HOVERING_BBOX_MID_TOP, pixelScale);
+            ///draw mid right arrow horizontal
+            drawArrow(midRight.x() + offset, midRight.y(), 90., hoverState == HOVERING_BBOX_MID_RIGHT, pixelScale);
+            ///draw mid btm arrow vertical
+            drawArrow(midBtm.x(), midBtm.y() - offset, 0., hoverState == HOVERING_BBOX_MID_BTM, pixelScale);
+            ///draw mid left arrow horizontal
+            drawArrow(midLeft.x() - offset, midLeft.y(), 90., hoverState == HOVERING_BBOX_MID_LEFT, pixelScale);
+            ///draw top left arrow rotated
+            drawArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, -45., hoverState == HOVERING_BBOX_TOP_LEFT, pixelScale);
+            ///draw top right arrow rotated
+            drawArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, 45., hoverState == HOVERING_BBOX_TOP_RIGHT, pixelScale);
+            ///draw btm right arrow rotated
+            drawArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -45., hoverState == HOVERING_BBOX_BTM_RIGHT, pixelScale);
+            ///draw btm left arrow rotated
+            drawArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 45., hoverState == HOVERING_BBOX_BTM_LEFT, pixelScale);
+        } else {
+            ///draw mid top arrow horizontal
+            drawArrow(midTop.x(), midTop.y() + offset, 90., hoverState == HOVERING_BBOX_MID_TOP, pixelScale);
+            ///draw mid right arrow vertical
+            drawArrow(midRight.x() + offset, midRight.y(), 0., hoverState == HOVERING_BBOX_MID_RIGHT, pixelScale);
+            ///draw mid btm arrow horizontal
+            drawArrow(midBtm.x(), midBtm.y() - offset, 90., hoverState == HOVERING_BBOX_MID_BTM, pixelScale);
+            ///draw mid left arrow vertical
+            drawArrow(midLeft.x() - offset, midLeft.y(),0., hoverState == HOVERING_BBOX_MID_LEFT, pixelScale);
+            ///draw the top left bended
+            drawBendedArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, 0., hoverState == HOVERING_BBOX_TOP_LEFT, pixelScale);
+            ///draw the top right bended
+            drawBendedArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, -90, hoverState == HOVERING_BBOX_TOP_RIGHT, pixelScale);
+            ///draw the btm right bended
+            drawBendedArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -180, hoverState == HOVERING_BBOX_BTM_RIGHT, pixelScale);
+            ///draw the btm left bended
+            drawBendedArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 90, hoverState == HOVERING_BBOX_BTM_LEFT, pixelScale);
+        }
+    }
+    
+    glPointSize(1.f);
+    glLineWidth(1.f);
     glPopAttrib();
     glColor4f(1., 1., 1., 1.);
 }
@@ -1054,6 +1263,7 @@ void RotoGui::RotoGuiPrivate::clearCPSSelection()
 {
     rotoData->selectedCps.clear();
     rotoData->showCpsBbox = false;
+    rotoData->transformMode = TRANSLATE_AND_SCALE;
     rotoData->selectedCpsBbox.setTopLeft(QPointF(0,0));
     rotoData->selectedCpsBbox.setTopRight(QPointF(0,0));
 }
@@ -1123,6 +1333,11 @@ void RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
     }
 }
 
+QPointF RotoGui::RotoGuiPrivate::getSelectedCpsBBOXCenter()
+{
+    return rotoData->selectedCpsBbox.center();
+}
+
 void RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezier>& curve)
 {
     ///find out if the bezier is already selected.
@@ -1162,7 +1377,8 @@ void RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost:
   
     }
     
-    state = DRAGGING_CPS;
+    rotoData->cpBeingDragged = p;
+    state = DRAGGING_CP;
 
 }
 
@@ -1262,41 +1478,69 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             if (_imp->selectedTool == SELECT_ALL || _imp->selectedTool == SELECT_FEATHER_POINTS) {
                 featherBarSel = _imp->isNearbyFeatherBar(time, pixelScale, pos);
             }
-            if (nearbyBezier) {
-                _imp->handleBezierSelection(nearbyBezier);
-                ///check if the user clicked nearby the cross hair of the selection rectangle in which case
-                ///we drag all the control points selected
-                if (_imp->isNearbySelectedCpsCrossHair(pos)) {
-                    _imp->state = DRAGGING_CPS;
-                } else if (nearbyCP.first) {
-                    _imp->handleControlPointSelection(nearbyCP);
-                }  else if (featherBarSel.first) {
-                    _imp->clearCPSSelection();
-                    _imp->rotoData->featherBarBeingDragged = featherBarSel;
-                    _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
-                    _imp->state = DRAGGING_FEATHER_BAR;
-                }
-                
-            } else {
-                
-                if (featherBarSel.first) {
-                    _imp->clearCPSSelection();
-                    _imp->rotoData->featherBarBeingDragged = featherBarSel;
-                    _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
-                    _imp->state = DRAGGING_FEATHER_BAR;
-                } else if (_imp->isNearbySelectedCpsCrossHair(pos)) {
+            
+            if (_imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos)) {
+                _imp->state = DRAGGING_SELECTED_CPS;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_TOP_LEFT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_TOP_RIGHT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_BTM_LEFT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_BTM_RIGHT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_TOP;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_RIGHT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_BTM;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_LEFT;
+            }
+            
+            if (_imp->state == NONE) {
+                if (nearbyBezier) {
+                    
                     ///check if the user clicked nearby the cross hair of the selection rectangle in which case
                     ///we drag all the control points selected
-                    _imp->state = DRAGGING_CPS;
-                } else {
-                    if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                        if (!isStickySelectionEnabled()) {
-                            _imp->clearSelection();
+                    if (nearbyCP.first) {
+                        _imp->handleControlPointSelection(nearbyCP);
+                        _imp->handleBezierSelection(nearbyBezier);
+                    } else if (featherBarSel.first) {
+                        _imp->clearCPSSelection();
+                        _imp->rotoData->featherBarBeingDragged = featherBarSel;
+                        _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
+                        _imp->handleBezierSelection(nearbyBezier);
+                        _imp->state = DRAGGING_FEATHER_BAR;
+                    } else {
+                        ///If the bezier is already selected and we re-click on it, change the transform mode
+                        SelectedBeziers::const_iterator found =
+                        std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
+                        if (found == _imp->rotoData->selectedBeziers.end()) {
+                            _imp->handleBezierSelection(nearbyBezier);
+                        } else if (found != _imp->rotoData->selectedBeziers.end() && _imp->rotoData->showCpsBbox){
+                            _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+                            ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                         }
-                        _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                        _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                        _imp->state = SELECTING;
-                        
+                    }
+                } else {
+                    
+                    if (featherBarSel.first) {
+                        _imp->clearCPSSelection();
+                        _imp->rotoData->featherBarBeingDragged = featherBarSel;
+                        _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
+                        _imp->state = DRAGGING_FEATHER_BAR;
+                    } else {
+                        if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                            if (!isStickySelectionEnabled()) {
+                                _imp->clearSelection();
+                            }
+                            _imp->rotoData->selectionRectangle.setTopLeft(pos);
+                            _imp->rotoData->selectionRectangle.setBottomRight(pos);
+                            _imp->state = SELECTING;
+                            
+                        }
                     }
                 }
             }
@@ -1304,15 +1548,46 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             
         }   break;
         case SELECT_CURVES:
-            if (nearbyBezier) {
-                _imp->handleBezierSelection(nearbyBezier);
-            } else {
-                if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                    _imp->clearSelection();
-                    _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                    _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                    _imp->state = SELECTING;
-                    
+            if (_imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos)) {
+                _imp->state = DRAGGING_SELECTED_CPS;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_TOP_LEFT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_TOP_RIGHT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_BTM_LEFT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_BTM_RIGHT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_TOP;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_RIGHT;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_BTM;
+            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale)) {
+                _imp->state = DRAGGING_BBOX_MID_LEFT;
+            }
+            
+            if (_imp->state == NONE) {
+                
+                if (nearbyBezier) {
+                    ///If the bezier is already selected and we re-click on it, change the transform mode
+                    SelectedBeziers::const_iterator found =
+                    std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
+                    if (found == _imp->rotoData->selectedBeziers.end()) {
+                        _imp->handleBezierSelection(nearbyBezier);
+                    } else if (found != _imp->rotoData->selectedBeziers.end() && _imp->rotoData->showCpsBbox){
+                        _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+                        ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
+                    }
+                } else {
+                    if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                        _imp->clearSelection();
+                        _imp->rotoData->selectionRectangle.setTopLeft(pos);
+                        _imp->rotoData->selectionRectangle.setBottomRight(pos);
+                        _imp->state = SELECTING;
+                        
+                    }
                 }
             }
             break;
@@ -1404,7 +1679,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                             boost::shared_ptr<BezierCP> fp = _imp->rotoData->builtBezier->getFeatherPointAtIndex(i);
                             assert(fp);
                             _imp->handleControlPointSelection(std::make_pair(*it, fp));
-                            _imp->state = DRAGGING_CPS;
                         }
                         
                         return true;
@@ -1451,11 +1725,51 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
     return didSomething;
 }
 
+bool RotoGui::penDoubleClicked(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& pos)
+{
+    bool didSomething = false;
+    std::pair<double, double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
+
+    if (_imp->selectedTool == SELECT_ALL) {
+        double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
+        double nearbyBezierT;
+        int nearbyBezierCPIndex;
+        bool isFeather;
+        boost::shared_ptr<Bezier> nearbyBezier =
+        _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+        if (nearbyBezier && nearbyBezier->isLockedRecursive()) {
+            nearbyBezier.reset();
+        }
+        if (nearbyBezier) {
+            ///If the bezier is already selected and we re-click on it, change the transform mode
+            _imp->handleBezierSelection(nearbyBezier);
+            _imp->clearCPSSelection();
+            const std::list<boost::shared_ptr<BezierCP> >& cps = nearbyBezier->getControlPoints();
+            const std::list<boost::shared_ptr<BezierCP> >& fps = nearbyBezier->getFeatherPoints();
+            assert(cps.size() == fps.size());
+            std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
+            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+            for (; itCp != cps.end(); ++itCp,++itFp) {
+                _imp->rotoData->selectedCps.push_back(std::make_pair(*itCp, *itFp));
+            }
+            if (_imp->rotoData->selectedCps.size() > 1) {
+                _imp->computeSelectedCpsBBOX();
+            }
+            didSomething = true;
+            
+        }
+    }
+    return didSomething;
+}
+
 bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& pos)
 {
     std::pair<double, double> pixelScale;
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     
+    bool didSomething = false;
+
     int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
@@ -1465,29 +1779,83 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     } else {
         double cpTol = kControlPointSelectionTolerance * pixelScale.first;
         
-        if (_imp->state != DRAGGING_CPS) {
-            for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin(); it!=_imp->rotoData->selectedBeziers.end(); ++it) {
-                int index = -1;
-                std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
-                (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol,Bezier::WHATEVER_FIRST,&index);
-                if (index != -1) {
-                    _imp->viewer->setCursor(QCursor(Qt::CrossCursor));
-                    cursorSet = true;
-                    break;
-                }
+        
+        if (!cursorSet && _imp->rotoData->showCpsBbox && _imp->state != DRAGGING_CP && _imp->state != DRAGGING_SELECTED_CPS
+            &&  _imp->state != DRAGGING_LEFT_TANGENT &&
+            _imp->state != DRAGGING_RIGHT_TANGENT) {
+            double bboxTol = cpTol;
+            if (_imp->isNearbyBBoxBtmLeft(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_BTM_LEFT;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxBtmRight(pos,bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_BTM_RIGHT;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxTopRight(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_TOP_RIGHT;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxTopLeft(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_TOP_LEFT;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxMidTop(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_MID_TOP;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxMidRight(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_MID_RIGHT;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxMidBtm(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_MID_BTM;
+                didSomething = true;
+            } else if (_imp->isNearbyBBoxMidLeft(pos, bboxTol,pixelScale)) {
+                _imp->hoverState = HOVERING_BBOX_MID_LEFT;
+                didSomething = true;
+            } else {
+                _imp->hoverState = HOVERING_NOTHING;
+                didSomething = true;
             }
         }
-        if (!cursorSet && _imp->state != DRAGGING_LEFT_TANGENT && _imp->state != DRAGGING_RIGHT_TANGENT) {
-            ///find a nearby tangent
-            for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it!=_imp->rotoData->selectedCps.end(); ++it) {
-                if (it->first->isNearbyTangent(time, pos.x(), pos.y(), cpTol) != -1) {
-                    _imp->viewer->setCursor(QCursor(Qt::CrossCursor));
-                    cursorSet = true;
-                    break;
+        if (_imp->hoverState == HOVERING_NOTHING) {
+            if (_imp->state != DRAGGING_CP  && _imp->state != DRAGGING_SELECTED_CPS) {
+                for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin(); it!=_imp->rotoData->selectedBeziers.end(); ++it) {
+                    int index = -1;
+                    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
+                    (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol,Bezier::WHATEVER_FIRST,&index);
+                    if (index != -1) {
+                        _imp->viewer->setCursor(QCursor(Qt::CrossCursor));
+                        cursorSet = true;
+                        break;
+                    }
                 }
             }
+            if (!cursorSet && _imp->state != DRAGGING_LEFT_TANGENT && _imp->state != DRAGGING_RIGHT_TANGENT) {
+                ///find a nearby tangent
+                for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it!=_imp->rotoData->selectedCps.end(); ++it) {
+                    if (it->first->isNearbyTangent(time, pos.x(), pos.y(), cpTol) != -1) {
+                        _imp->viewer->setCursor(QCursor(Qt::CrossCursor));
+                        cursorSet = true;
+                        break;
+                    }
+                }
+            }
+            if (!cursorSet && _imp->state != DRAGGING_CP  && _imp->state != DRAGGING_SELECTED_CPS &&  _imp->state != DRAGGING_LEFT_TANGENT &&
+                _imp->state != DRAGGING_RIGHT_TANGENT) {
+                double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
+                double nearbyBezierT;
+                int nearbyBezierCPIndex;
+                bool isFeather;
+                boost::shared_ptr<Bezier> nearbyBezier =
+                _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+                if (nearbyBezier && !nearbyBezier->isLockedRecursive()) {
+                    _imp->viewer->setCursor(QCursor(Qt::PointingHandCursor));
+                    cursorSet = true;
+                }
+            }
+            
+            didSomething = true;
         }
+        
+        
     }
+    
     if (!cursorSet) {
         _imp->viewer->setCursor(QCursor(Qt::ArrowCursor));
     }
@@ -1495,15 +1863,25 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     
     double dx = pos.x() - _imp->lastMousePos.x();
     double dy = pos.y() - _imp->lastMousePos.y();
-    bool didSomething = false;
     switch (_imp->state) {
-        case DRAGGING_CPS:
+        case DRAGGING_SELECTED_CPS:
         {
-            pushUndoCommand(new MoveControlPointsUndoCommand(this,dx,dy,time));
+            pushUndoCommand(new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,dx,dy,time));
             _imp->evaluateOnPenUp = true;
             _imp->computeSelectedCpsBBOX();
             didSomething = true;
         }   break;
+        case DRAGGING_CP:
+        {
+            assert(_imp->rotoData->cpBeingDragged.first && _imp->rotoData->cpBeingDragged.second);
+            std::list<SelectedCP> toDrag;
+            toDrag.push_back(_imp->rotoData->cpBeingDragged);
+            pushUndoCommand(new MoveControlPointsUndoCommand(this,toDrag,dx,dy,time));
+            _imp->evaluateOnPenUp = true;
+            _imp->computeSelectedCpsBBOX();
+            didSomething = true;
+
+        };  break;
         case SELECTING:
         {
             _imp->refreshSelectionRectangle(pos);
@@ -1554,6 +1932,93 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
+        case DRAGGING_BBOX_TOP_LEFT:
+        case DRAGGING_BBOX_TOP_RIGHT:
+        case DRAGGING_BBOX_BTM_RIGHT:
+        case DRAGGING_BBOX_BTM_LEFT:
+        {
+            QPointF center = _imp->getSelectedCpsBBOXCenter();
+            double rot = 0;
+            double sx = 1.,sy = 1.;
+
+            if (_imp->rotoData->transformMode == ROTATE_AND_SKEW) {
+
+                double angle = std::atan2(pos.y() - center.y() , pos.x() - center.x());
+                double prevAngle = std::atan2(_imp->lastMousePos.y() - center.y() , _imp->lastMousePos.x() - center.x());
+                rot = angle - prevAngle;
+            } else {
+                
+                // the scale ratio is the ratio of distances to the center
+                double prevDist = (_imp->lastMousePos.x() - center.x()) * (_imp->lastMousePos.x() - center.x()) +
+                (_imp->lastMousePos.y() - center.y()) * (_imp->lastMousePos.y() - center.y());
+                if (prevDist != 0) {
+                    double dist = (pos.x() - center.x()) * (pos.x() - center.x()) + (pos.y() - center.y()) * (pos.y() - center.y());
+                    double ratio = std::sqrt(dist / prevDist);
+                    sx *= ratio;
+                    sy *= ratio;
+                }
+            }
+            
+            double tx = 0., ty = 0.;
+            double skewX = 0.,skewY = 0.;
+            
+            pushUndoCommand(new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time));
+            _imp->evaluateOnPenUp = true;
+            didSomething = true;
+        }   break;
+        case DRAGGING_BBOX_MID_TOP:
+        case DRAGGING_BBOX_MID_BTM:
+        {
+            QPointF center = _imp->getSelectedCpsBBOXCenter();
+            double rot = 0;
+            double sx = 1.,sy = 1.;
+            double skewX = 0.,skewY = 0.;
+            double tx = 0., ty = 0.;
+            
+            if (_imp->rotoData->transformMode == ROTATE_AND_SKEW) {
+                const double addSkew = (pos.x() - _imp->lastMousePos.x())/(pos.y() - center.y());
+                skewX += addSkew;
+            } else {
+                // the scale ratio is the ratio of distances to the center
+                double prevDist = (_imp->lastMousePos.x() - center.x()) * (_imp->lastMousePos.x() - center.x()) +
+                (_imp->lastMousePos.y() - center.y()) * (_imp->lastMousePos.y() - center.y());
+                if (prevDist != 0) {
+                    double dist = (pos.x() - center.x()) * (pos.x() - center.x()) + (pos.y() - center.y()) * (pos.y() - center.y());
+                    double ratio = std::sqrt(dist / prevDist);
+                    sy *= ratio;
+                }
+            }
+            pushUndoCommand(new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time));
+            _imp->evaluateOnPenUp = true;
+            didSomething = true;
+        }   break;
+        case DRAGGING_BBOX_MID_RIGHT:
+        case DRAGGING_BBOX_MID_LEFT:
+        {
+            QPointF center = _imp->getSelectedCpsBBOXCenter();
+            double rot = 0;
+            double sx = 1.,sy = 1.;
+            double skewX = 0.,skewY = 0.;
+            double tx = 0., ty = 0.;
+            
+            if (_imp->rotoData->transformMode == ROTATE_AND_SKEW) {
+                const double addSkew = (pos.y() - _imp->lastMousePos.y())/(pos.x() - center.x());
+                skewY += addSkew;
+            } else {
+                // the scale ratio is the ratio of distances to the center
+                double prevDist = (_imp->lastMousePos.x() - center.x()) * (_imp->lastMousePos.x() - center.x()) +
+                (_imp->lastMousePos.y() - center.y()) * (_imp->lastMousePos.y() - center.y());
+                if (prevDist != 0) {
+                    double dist = (pos.x() - center.x()) * (pos.x() - center.x()) + (pos.y() - center.y()) * (pos.y() - center.y());
+                    double ratio = std::sqrt(dist / prevDist);
+                    sx *= ratio;
+                }
+            }
+            pushUndoCommand(new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time));
+
+            _imp->evaluateOnPenUp = true;
+            didSomething = true;
+        }   break;
         case NONE:
         default:
             break;
@@ -1591,6 +2056,8 @@ bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewpor
         _imp->evaluateOnPenUp = false;
     }
     _imp->rotoData->tangentBeingDragged.reset();
+    _imp->rotoData->cpBeingDragged.first.reset();
+    _imp->rotoData->cpBeingDragged.second.reset();
     _imp->rotoData->featherBarBeingDragged.first.reset();
     _imp->rotoData->featherBarBeingDragged.second.reset();
     _imp->state = NONE;
@@ -1713,6 +2180,154 @@ bool RotoGui::RotoGuiPrivate::isNearbySelectedCpsCrossHair(const QPointF& pos) c
         return true;
     } else {
         return false;
+    }
+}
+
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxTopLeft(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF corner = rotoData->selectedCpsBbox.topLeft();
+    if (p.x() >= (corner.x() - tolerance) && p.x() <= (corner.x() + tolerance) &&
+        p.y() >= (corner.y() - tolerance) && p.y() <= (corner.y() + tolerance)) {
+        return true;
+    } else {
+        double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(corner.x() - halfOffset,corner.y() + halfOffset);
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+
+}
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxTopRight(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF corner(btmRight.x(),topLeft.y());
+    if (p.x() >= (corner.x() - tolerance) && p.x() <= (corner.x() + tolerance) &&
+        p.y() >= (corner.y() - tolerance) && p.y() <= (corner.y() + tolerance)) {
+        return true;
+    } else {
+        double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(corner.x() + halfOffset,corner.y() + halfOffset);
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+}
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxBtmLeft(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF corner(topLeft.x(),btmRight.y());
+    if (p.x() >= (corner.x() - tolerance) && p.x() <= (corner.x() + tolerance) &&
+        p.y() >= (corner.y() - tolerance) && p.y() <= (corner.y() + tolerance)) {
+        return true;
+    } else {
+        double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(corner.x() - halfOffset,corner.y() - halfOffset);
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+}
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxBtmRight(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF corner = rotoData->selectedCpsBbox.bottomRight();
+    if (p.x() >= (corner.x() - tolerance) && p.x() <= (corner.x() + tolerance) &&
+        p.y() >= (corner.y() - tolerance) && p.y() <= (corner.y() + tolerance)) {
+        return true;
+    } else {
+        double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(corner.x() + halfOffset,corner.y() - halfOffset);
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+
+}
+
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxMidTop(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF topRight(btmRight.x(),topLeft.y());
+    QPointF mid = (topLeft + topRight) / 2.;
+    if (p.x() >= (mid.x() - tolerance) && p.x() <= (mid.x() + tolerance) &&
+        p.y() >= (mid.y() - tolerance) && p.y() <= (mid.y() + tolerance)) {
+        return true;
+    } else {
+        double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;
+        ///test if pos is within the arrow bounding box
+        QPointF center(mid.x(),mid.y() + offset);
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+}
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxMidRight(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF topRight(btmRight.x(),topLeft.y());
+    QPointF mid = (btmRight + topRight) / 2.;
+    if (p.x() >= (mid.x() - tolerance) && p.x() <= (mid.x() + tolerance) &&
+        p.y() >= (mid.y() - tolerance) && p.y() <= (mid.y() + tolerance)) {
+        return true;
+    } else {
+        double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(mid.x() + offset,mid.y());
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+}
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxMidBtm(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF btmLeft(topLeft.x(),btmRight.y());
+    QPointF mid = (btmRight + btmLeft) / 2.;
+    if (p.x() >= (mid.x() - tolerance) && p.x() <= (mid.x() + tolerance) &&
+        p.y() >= (mid.y() - tolerance) && p.y() <= (mid.y() + tolerance)) {
+        return true;
+    } else {
+        double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(mid.x(),mid.y() - offset);
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
+    }
+}
+bool RotoGui::RotoGuiPrivate::isNearbyBBoxMidLeft(const QPointF& p,double tolerance,const std::pair<double, double>& pixelScale) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF btmLeft(topLeft.x(),btmRight.y());
+    QPointF mid = (topLeft + btmLeft) / 2.;
+    if (p.x() >= (mid.x() - tolerance) && p.x() <= (mid.x() + tolerance) &&
+        p.y() >= (mid.y() - tolerance) && p.y() <= (mid.y() + tolerance)) {
+        return true;
+    } else {
+        double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
+        double length = kTransformArrowLenght * pixelScale.first;
+        double halfLength = length / 2.;;
+        ///test if pos is within the arrow bounding box
+        QPointF center(mid.x() - offset,mid.y());
+        RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
+        return arrowBbox.contains(p.x(),p.y());
     }
 }
 
@@ -1867,9 +2482,11 @@ void RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_
     boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(item);
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
     if (b) {
-        if (item->getLocked()) {
+        if (item->isLockedRecursive()) {
             for (SelectedBeziers::iterator fb = rotoData->selectedBeziers.begin(); fb != rotoData->selectedBeziers.end(); ++fb) {
                 if (fb->get() == b.get()) {
+                    ///if the curve was selected, wipe the selection CP bbox
+                    clearCPSSelection();
                     rotoData->selectedBeziers.erase(fb);
                     *ret = true;
                     break;
@@ -1903,6 +2520,7 @@ void RotoGui::onCurveLockedChanged()
     if (item) {
         _imp->onCurveLockedChangedRecursive(item, &changed);
     }
+    
     if (changed) {
         _imp->viewer->redraw();
     }

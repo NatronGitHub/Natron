@@ -15,6 +15,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RotoContext.h"
+#include "Engine/Transform.h"
 #include "Gui/RotoGui.h"
 #include "Gui/RotoPanel.h"
 
@@ -27,7 +28,9 @@ typedef std::list<SelectedCp> SelectedCpList;
 typedef boost::shared_ptr<Bezier> BezierPtr;
 typedef std::list<BezierPtr> BezierList;
 
-MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,double dx,double dy,int time)
+MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
+                                        const std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >& toDrag
+                                                           ,double dx,double dy,int time)
 : QUndoCommand()
 , _firstRedoCalled(false)
 , _roto(roto)
@@ -37,6 +40,7 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,double 
 , _rippleEditEnabled(roto->getContext()->isRippleEditEnabled())
 , _selectedTool((int)roto->getSelectedTool())
 , _time(time)
+, _pointsToDrag(toDrag)
 {
     assert(roto);
     
@@ -59,7 +63,7 @@ MoveControlPointsUndoCommand::~MoveControlPointsUndoCommand()
 void MoveControlPointsUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
-    for (SelectedCpList::iterator it = _selectedPoints.begin(); it!=_selectedPoints.end(); ++it,++cpIt) {
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!=_pointsToDrag.end(); ++it,++cpIt) {
         it->first->getCurve()->clonePoint(*(it->first),*(cpIt->first));
         it->second->getCurve()->clonePoint(*(it->second),*(cpIt->second));
     }
@@ -72,7 +76,7 @@ void MoveControlPointsUndoCommand::undo()
 
 void MoveControlPointsUndoCommand::redo()
 {
-    for (SelectedCpList::iterator it = _selectedPoints.begin(); it!=_selectedPoints.end(); ++it) {
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!=_pointsToDrag.end(); ++it) {
         int index;
         if (it->first->isFeatherPoint()) {
             if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_FEATHER_POINTS ||
@@ -131,6 +135,131 @@ bool MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
     _dy += mvCmd->_dy;
     return true;
     
+}
+
+////////////////////////
+
+TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
+                                           double centerX,double centerY,
+                                           double rot,
+                                           double skewX,double skewY,
+                                           double tx,double ty,
+                                           double sx,double sy,
+                                           int time)
+: QUndoCommand()
+, _firstRedoCalled(false)
+, _roto(roto)
+, _rippleEditEnabled(roto->getContext()->isRippleEditEnabled())
+, _selectedTool((int)roto->getSelectedTool())
+, _matrix(new Transform::Matrix3x3)
+, _time(time)
+, _selectedCurves()
+, _originalPoints()
+, _selectedPoints()
+{
+    roto->getSelection(&_selectedCurves, &_selectedPoints);
+    *_matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, true, (rot), centerX, centerY);
+    ///we make a copy of the points
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it!= _selectedPoints.end(); ++it) {
+        CpPtr first(new BezierCP(*(it->first)));
+        CpPtr second(new BezierCP(*(it->second)));
+        _originalPoints.push_back(std::make_pair(first, second));
+    }
+}
+
+TransformUndoCommand::~TransformUndoCommand()
+{
+    
+}
+
+void TransformUndoCommand::undo()
+{
+    SelectedCpList::iterator cpIt = _originalPoints.begin();
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it!=_selectedPoints.end(); ++it,++cpIt) {
+        it->first->getCurve()->clonePoint(*(it->first),*(cpIt->first));
+        it->second->getCurve()->clonePoint(*(it->second),*(cpIt->second));
+    }
+    
+    _roto->evaluate(true);
+    _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool,true);
+    _roto->setSelection(_selectedCurves, _selectedPoints);
+    setText(QString("Transform points of %1").arg(_roto->getNodeName()));
+}
+
+void TransformUndoCommand::transformPoint(const boost::shared_ptr<BezierCP>& point)
+{
+    int index = !point->isFeatherPoint() ? point->getCurve()->getControlPointIndex(point) :
+    point->getCurve()->getFeatherPointIndex(point);
+    assert(index != -1);
+    Transform::Point3D cp,leftCp,rightCp;
+    point->getPositionAtTime(_time, &cp.x, &cp.y);
+    point->getLeftBezierPointAtTime(_time, &leftCp.x, &leftCp.y);
+    point->getRightBezierPointAtTime(_time, &rightCp.x, &rightCp.y);
+    cp.z = 1.;
+    leftCp.z = 1.;
+    rightCp.z = 1.;
+    
+    cp = *_matrix * cp;
+    leftCp = *_matrix *leftCp;
+    rightCp = *_matrix *rightCp;
+    
+    cp.x /= cp.z; cp.y /= cp.z;
+    leftCp.x /= leftCp.z; leftCp.y /= leftCp.z;
+    rightCp.x /= rightCp.z; rightCp.y /= rightCp.z;
+    
+    point->getCurve()->setPointAtIndex(point->isFeatherPoint(), index, _time, cp.x, cp.y,
+                                            leftCp.x,leftCp.y, rightCp.x, rightCp.y);
+
+}
+
+void TransformUndoCommand::redo()
+{
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it!=_selectedPoints.end(); ++it) {
+        transformPoint(it->first);
+        transformPoint(it->second);
+    }
+    
+    if (_firstRedoCalled) {
+        _roto->setSelection(_selectedCurves, _selectedPoints);
+        _roto->evaluate(true);
+    } else {
+        _roto->refreshSelectionBBox();
+        _roto->onRefreshAsked();
+    }
+
+    _firstRedoCalled = true;
+    setText(QString("Transform points of %1").arg(_roto->getNodeName()));
+
+}
+
+int TransformUndoCommand::id() const
+{
+    return kRotoTransformCompressionID;
+}
+
+bool TransformUndoCommand::mergeWith(const QUndoCommand *other)
+{
+    const TransformUndoCommand* cmd = dynamic_cast<const TransformUndoCommand*>(other);
+    if (!cmd) {
+        return false;
+    }
+    
+    if (cmd->_selectedPoints.size() != _selectedPoints.size() || cmd->_time != _time || cmd->_selectedTool != _selectedTool
+        || cmd->_rippleEditEnabled != _rippleEditEnabled) {
+        return false;
+    }
+    
+    SelectedCpList::const_iterator it = _selectedPoints.begin();
+    SelectedCpList::const_iterator oIt = cmd->_selectedPoints.begin();
+    for (; it != _selectedPoints.end(); ++it,++oIt) {
+        if (it->first != oIt->first || it->second != oIt->second ) {
+            return false;
+        }
+    }
+    
+    *_matrix = *_matrix * *cmd->_matrix;
+    
+    return true;
 }
 
 

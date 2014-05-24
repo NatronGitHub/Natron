@@ -533,6 +533,11 @@ public:
         other.y2 <= y2;
     }
     
+    bool contains(double x,double y) const {
+        return x >= x1 && x < x2 && y >= y1 && y < y2;
+    }
+
+    
     void debug() const{
         std::cout << "RectI is..." << std::endl;
         std::cout << "left = " << x1 << std::endl;

@@ -68,6 +68,8 @@ public:
     
     bool notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     
+    bool notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    
     bool notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     
     bool notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);

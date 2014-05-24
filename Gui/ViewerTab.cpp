@@ -1025,6 +1025,20 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
     return false;
 }
 
+bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
+{
+    if (_imp->app->isClosing()) {
+        return false;
+    }
+    
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->penDoubleClicked(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
     if (_imp->app->isClosing()) {

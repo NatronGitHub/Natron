@@ -155,6 +155,7 @@ HEADERS += \
     ThreadStorage.h \
     TimeLine.h \
     Timer.h \
+    Transform.h \
     Variant.h \
     VideoEngine.h \
     ViewerInstance.h \
@@ -167,5 +168,5 @@ HEADERS += \
     ../Global/Macros.h \
     ../Global/MemoryInfo.h \
     ../Global/QtCompat.h \
-    ../libs/SequenceParsing/SequenceParsing.h \
+    ../libs/SequenceParsing/SequenceParsing.h
 

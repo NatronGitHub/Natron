@@ -27,13 +27,18 @@ class RotoLayer;
 class RotoPanel;
 class QTreeWidgetItem;
 class RotoItem;
+namespace Transform {
+    struct Matrix3x3;
+}
 struct DroppedTreeItem;
 
 class MoveControlPointsUndoCommand : public QUndoCommand
 {
 public:
     
-    MoveControlPointsUndoCommand(RotoGui* roto,double dx,double dy,int time);
+    MoveControlPointsUndoCommand(RotoGui* roto,
+                                 const std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > >& toDrag
+                                 ,double dx,double dy,int time);
     
     virtual ~MoveControlPointsUndoCommand();
     
@@ -56,6 +61,45 @@ private:
     int _time; //< the time at which the change was made
     std::list<boost::shared_ptr<Bezier> > _selectedCurves;
     
+    std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints,_pointsToDrag;
+};
+
+
+class TransformUndoCommand : public QUndoCommand
+{
+public:
+    
+    TransformUndoCommand(RotoGui* roto,
+                         double centerX,double centerY,
+                         double rot,
+                         double skewX,double skewY,
+                         double tx,double ty,
+                         double sx,double sy,
+                         int time);
+    
+    virtual ~TransformUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+    virtual int id() const OVERRIDE FINAL;
+    
+    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    
+private:
+    
+    void transformPoint(const boost::shared_ptr<BezierCP>& point);
+    
+    bool _firstRedoCalled; //< false by default
+    RotoGui* _roto;
+    
+    bool _rippleEditEnabled;
+    int _selectedTool; //< corresponds to the RotoGui::Roto_Tool enum
+    boost::shared_ptr<Transform::Matrix3x3> _matrix;
+    int _time; //< the time at which the change was made
+    std::list<boost::shared_ptr<Bezier> > _selectedCurves;
+
     std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints;
 };
 
