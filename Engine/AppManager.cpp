@@ -257,9 +257,23 @@ AppManager::~AppManager(){
     
     _imp->saveCaches();
     
-    assert(qApp);
-    delete qApp;
+	if(qApp) {
+		delete qApp;
+	}
 }
+
+void AppManager::quit(AppInstance* instance)
+{
+	instance->aboutToQuit();
+	delete instance;
+	///if we exited the last instance, exit the event loop, this will make
+	/// the exec() function return.
+	if (_imp->_appInstances.empty()) {
+		assert(qApp);
+		qApp->quit();
+	}
+}
+
 
 void AppManager::initializeQApp(int argc,char* argv[]) const {
     new QCoreApplication(argc,argv);
@@ -1129,16 +1143,6 @@ void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
     }
 }
 
-void AppManager::quit(AppInstance* instance)
-{
-    instance->aboutToQuit();
-    delete instance;
-    ///if we exited the last instance, exit the event loop, this will make
-    /// the exec() function return.
-    if (_imp->_appInstances.empty()) {
-        qApp->quit();
-    }
-}
 
 int AppManager::exec() {
     return qApp->exec();

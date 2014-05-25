@@ -425,11 +425,15 @@ void Gui::toggleFullScreen()
 
 void Gui::closeEvent(QCloseEvent *e) {
     assert(e);
-    if (!exitGui()) {
-        e->ignore();
-        return;
-    }
-    e->accept();
+	if (_imp->_appInstance->isClosing()) {
+		e->ignore();
+	} else {
+		if (!exitGui()) {
+			e->ignore();
+			return;
+		}
+		e->accept();
+	}
 }
 
 
@@ -474,7 +478,7 @@ void Gui::createGui(){
     QMouseEvent e(QEvent::MouseMove,QCursor::pos(),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
     qApp->sendEvent(this, &e);
     
-    QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(quit()));
+  //  QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(quit()));
     
 }
 
