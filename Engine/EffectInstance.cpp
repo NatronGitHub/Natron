@@ -348,6 +348,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
+	if (!inputImg) {
+		return inputImg;
+	}
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
     
     ///if the plug-in doesn't support the image components

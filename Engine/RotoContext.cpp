@@ -2093,6 +2093,9 @@ void Bezier::evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
 {
     QMutexLocker l(&itemMutex);
     BezierCPs::const_iterator next = _imp->points.begin();
+	if (_imp->points.empty()) {
+			return;
+	}
     ++next;
     for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++next) {
         if (next == _imp->points.end()) {
@@ -2109,6 +2112,9 @@ void Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMa
                                                      std::list< Natron::Point >* points,bool evaluateIfEqual,RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
+	if (_imp->points.empty()) {
+		return;
+	}
     BezierCPs::const_iterator itCp = _imp->points.begin();
     BezierCPs::const_iterator next = _imp->featherPoints.begin();
     ++next;
@@ -2558,6 +2564,9 @@ void Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
     assert(constants->size() == multiples->size() && constants->size() == polygon.size());
     
     std::list<Point>::const_iterator i = polygon.begin();
+	if (polygon.empty()) {
+		return;
+	}
     ++i;
     int index = 0;
     for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++index) {
@@ -3281,21 +3290,21 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
     
 }
 
-void RotoContext::deselectInternal(const boost::shared_ptr<RotoItem>& b)
+void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
     assert(!_imp->rotoContextMutex.tryLock());
     
-    std::list<boost::shared_ptr<RotoItem> >::iterator it = std::find(_imp->selectedItems.begin(),_imp->selectedItems.end(),b);
+    std::list<boost::shared_ptr<RotoItem> >::iterator foundSelected = std::find(_imp->selectedItems.begin(),_imp->selectedItems.end(),b);
     
     ///if the item is not selected, exit
-    if (it == _imp->selectedItems.end()) {
+    if (foundSelected == _imp->selectedItems.end()) {
         return;
     }
     
-    _imp->selectedItems.erase(it);
+    _imp->selectedItems.erase(foundSelected);
     
     int nbBeziersUnLockedBezier = 0;
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {

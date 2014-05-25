@@ -1060,6 +1060,7 @@ void MakeBezierUndoCommand::redo()
         if (_createdPoint) {
             if (!_newCurve) {
                 _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName);
+				assert(_newCurve);
                 _oldCurve.reset(new Bezier(*_newCurve));
                 _lastPointAdded = 0;
                  _curveNonExistant = false;
@@ -1078,9 +1079,11 @@ void MakeBezierUndoCommand::redo()
             _newCurve->moveLeftBezierPoint(lastIndex ,_time, -_dx, -_dy);
             _newCurve->moveRightBezierPoint(lastIndex, _time, _dx, _dy);
         }
-        _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->
-                                                              getItemByName(_newCurve->getParentLayer()->getName_mt_safe()));
-        _indexInLayer = _parentLayer->getChildIndex(_newCurve);
+		boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName(_newCurve->getParentLayer()->getName_mt_safe());
+		if (parentItem) {
+			_parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+			_indexInLayer = _parentLayer->getChildIndex(_newCurve);
+		}
 
     } else {
         _newCurve->clone(*_oldCurve);
@@ -1132,7 +1135,6 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,bool create,bool fr
 : QUndoCommand()
 , _firstRedoCalled(false)
 , _roto(roto)
-, _newCurve()
 , _curve()
 , _create(create)
 , _fromCenter(fromCenter)
@@ -1164,17 +1166,16 @@ void MakeEllipseUndoCommand::undo() {
 void MakeEllipseUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _curve->clone(*_newCurve);
         _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve,RotoContext::OVERLAY_INTERACT);
         _roto->evaluate(true);
     } else {
         if (_create) {
             _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName);
-            _curve->addControlPoint(_x,_y);
-            _curve->addControlPoint(_x,_y);
-            _curve->addControlPoint(_x,_y);
+			assert(_curve);
+            _curve->addControlPoint(_x+1,_y-1);
+            _curve->addControlPoint(_x,_y-2);
+            _curve->addControlPoint(_x-1,_y-1);
             _curve->setCurveFinished(true);
-            _newCurve.reset(new Bezier(*_curve));
         } else {
             boost::shared_ptr<BezierCP> top = _curve->getControlPointAtIndex(0);
             boost::shared_ptr<BezierCP> right = _curve->getControlPointAtIndex(1);
@@ -1248,9 +1249,11 @@ void MakeEllipseUndoCommand::redo()
 
             }
         }
-        _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->
-                                                              getItemByName(_curve->getParentLayer()->getName_mt_safe()));
-        _indexInLayer = _parentLayer->getChildIndex(_curve);
+		boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName(_curve->getParentLayer()->getName_mt_safe());
+		if (parentItem) {
+			_parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+			_indexInLayer = _parentLayer->getChildIndex(_curve);
+		}
     }
     _roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
@@ -1272,7 +1275,9 @@ bool MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
     if (sCmd->_curve != _curve || sCmd->_create) {
         return false;
     }
-    _newCurve->clone(*sCmd->_curve);
+	if (_curve != sCmd->_curve) {
+		_curve->clone(*sCmd->_curve);
+	}
     _dx += sCmd->_dx;
     _dy += sCmd->_dy;
     return true;
@@ -1287,7 +1292,6 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,bool create,dou
 , _roto(roto)
 , _parentLayer()
 , _indexInLayer(-1)
-, _newCurve()
 , _curve()
 , _create(create)
 , _x(dx)
@@ -1318,25 +1322,26 @@ void MakeRectangleUndoCommand::redo()
 {
     
     if (_firstRedoCalled) {
-        _curve->clone(*_newCurve);
         _roto->getContext()->addItem(_parentLayer.get(), _indexInLayer, _curve,RotoContext::OVERLAY_INTERACT);
         _roto->evaluate(true);
     } else {
         if (_create) {
             _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName);
-            _curve->addControlPoint(_x,_y);
-            _curve->addControlPoint(_x,_y);
-            _curve->addControlPoint(_x,_y);
+			assert(_curve);
+            _curve->addControlPoint(_x+1,_y);
+            _curve->addControlPoint(_x+1,_y-1);
+            _curve->addControlPoint(_x,_y-1);
             _curve->setCurveFinished(true);
-            _newCurve.reset(new Bezier(*_curve));
         } else {
             _curve->movePointByIndex(1,_time, _dx, 0);
             _curve->movePointByIndex(2,_time, _dx, _dy);
             _curve->movePointByIndex(3,_time, 0, _dy);
         }
-        _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->
-                                                              getItemByName(_curve->getParentLayer()->getName_mt_safe()));
-        _indexInLayer = _parentLayer->getChildIndex(_curve);
+		boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName(_curve->getParentLayer()->getName_mt_safe());
+		if (parentItem) {
+			_parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+			_indexInLayer = _parentLayer->getChildIndex(_curve);
+		}
         
     }
     _roto->setBuiltBezier(_curve);
@@ -1359,7 +1364,9 @@ bool MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
     if (sCmd->_curve != _curve || sCmd->_create) {
         return false;
     }
-    _newCurve->clone(*sCmd->_curve);
+	if (_curve != sCmd->_curve) {
+		_curve->clone(*sCmd->_curve);
+	}
     _dx += sCmd->_dx;
     _dy += sCmd->_dy;
     return true;

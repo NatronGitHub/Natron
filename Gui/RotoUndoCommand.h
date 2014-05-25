@@ -409,7 +409,7 @@ private:
     RotoGui* _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
-    boost::shared_ptr<Bezier> _newCurve,_curve;
+    boost::shared_ptr<Bezier> _curve;
     bool _create;
     bool _fromCenter;
     double _x,_y;
@@ -441,7 +441,7 @@ private:
     RotoGui* _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
-    boost::shared_ptr<Bezier> _newCurve,_curve;
+    boost::shared_ptr<Bezier> _curve;
     bool _create;
     double _x,_y;
     double _dx,_dy;

@@ -25,7 +25,6 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
-#include "Global/Macros.h"
 #include "Global/Enums.h"
 
 #undef foreach

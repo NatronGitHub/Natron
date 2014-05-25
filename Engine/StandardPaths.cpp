@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QString>
 #if QT_VERSION < 0x050000
 
 #else
@@ -139,7 +140,7 @@ static QString qSystemDirectory()
         retLen = ::GetSystemDirectory(fullPath.data(), retLen);
     }
     // in some rare cases retLen might be 0
-    return QString::fromAscii(fullPath.constData(), int(retLen));
+    return QString::fromLatin1(fullPath.constData(), int(retLen));
 }
 
 static HINSTANCE load(const wchar_t *libraryName, bool onlySystemDirectory = true){

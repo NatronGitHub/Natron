@@ -933,7 +933,7 @@ public slots:
 private:
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
-    void deselectInternal(const boost::shared_ptr<RotoItem>& b);
+    void deselectInternal(boost::shared_ptr<RotoItem> b);
     
      void removeItemRecursively(RotoItem* item,SelectionReason reason);
     

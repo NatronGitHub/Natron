@@ -776,6 +776,10 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                 const std::list< boost::shared_ptr<BezierCP> >& cps = (*selected)->getControlPoints();
                 const std::list< boost::shared_ptr<BezierCP> >& featherPts = (*selected)->getFeatherPoints();
                 assert(cps.size() == featherPts.size());
+
+				if (cps.empty()) {
+					continue;
+				}
                 
                 double cpHalfWidth = kControlPointMidSize * pixelScale.first;
                 double cpHalfHeight = kControlPointMidSize * pixelScale.second;

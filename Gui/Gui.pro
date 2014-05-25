@@ -8,7 +8,7 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost glew opengl qt
-QT += gui core opengl network
+QT += gui core opengl network cairo
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 
