@@ -29,6 +29,7 @@ CLANG_DIAG_ON(unused-parameter)
 
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_V_INTRODUCES_ROTO
 
 namespace Natron {
     class Node;
@@ -120,6 +121,11 @@ private:
     template<class Archive>
     void load(Archive & ar, const unsigned int version)
     {
+        if (version > NODE_SERIALIZATION_CURRENT_VERSION) {
+            throw std::invalid_argument("The project you're trying to load contains data produced by a more recent "
+                                        "version of Natron, which makes it unreadable");
+        }
+        
         assert(_app);
         ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
@@ -151,7 +157,7 @@ private:
 
 
 
-BOOST_CLASS_VERSION(NodeSerialization, NODE_SERIALIZATION_V_INTRODUCES_ROTO)
+BOOST_CLASS_VERSION(NodeSerialization, NODE_SERIALIZATION_CURRENT_VERSION)
 
 
 #endif // NODESERIALIZATION_H
