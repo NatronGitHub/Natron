@@ -757,6 +757,9 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     
     /*the item to filter*/
     QModelIndex item = sourceModel()->index(source_row , 0 , source_parent);
+	if (!item.isValid()) {
+		return false;	
+	}
     
     /*the full absolute file path of the item*/
     QString path = item.data(QFileSystemModel::FilePathRole).toString();
@@ -826,7 +829,8 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
      *We just need to change its name to reflect the number
      *of elements in the sequence.
      */
-    for(int c = 0 ; c < _model->rowCount(parent) ; ++c) {
+	int rowCount = _model->rowCount(parent);
+    for(int c = 0 ; c < rowCount ; ++c) {
         QModelIndex item = _model->index(c,0,parent);
         /*We skip directories*/
         if(!item.isValid() || _model->isDir(item)){
@@ -934,6 +938,7 @@ void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, s
 
 
 void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &option, const QModelIndex & index) const {
+	assert(index.isValid());
     if(index.column() != 0 && index.column() != 1) {
         return QStyledItemDelegate::paint(painter,option,index);
     }
@@ -943,7 +948,13 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     } else if (index.column() == 1) {
         QFileSystemModel* model = _fd->getFileSystemModel();
         QModelIndex modelIndex = _fd->mapToSource(index);
+		if (!modelIndex.isValid()) {
+			return;
+		}
         QModelIndex idx = model->index(modelIndex.row(),0,modelIndex.parent());
+		if (!idx.isValid()) {
+			return;
+		}
         str = idx.data().toString();
     }
     std::pair<qint64,QString> found_item;
@@ -967,7 +978,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
         }
-        QString nameToPaint = found_item.second;
+        const QString& nameToPaint = found_item.second;
         int totalSize = geom.width();
         int iconWidth = option.decorationSize.width();
         int textSize = totalSize - iconWidth;
@@ -999,7 +1010,11 @@ void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     if(index.column() == 0){
         QString str = index.data().toString();
         QFileInfo fileInfo(str);
-        str = _model->index(str).data().toString();
+		QModelIndex modelIndex = _model->index(str);
+		if (!modelIndex.isValid()) {
+			return;
+		}
+        str = modelIndex.data().toString();
         QIcon icon = _model->iconProvider()->icon(fileInfo);
         int totalSize = option.rect.width();
         int iconSize = option.decorationSize.width();
