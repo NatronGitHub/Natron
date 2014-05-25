@@ -101,9 +101,9 @@ enum MOUSE_STATE{
 } // namespace
 
 enum PickerState {
-    INACTIVE = 0,
-    POINT,
-    RECTANGLE
+    PICKER_INACTIVE = 0,
+    PICKER_POINT,
+    PICKER_RECTANGLE
 };
 
 struct ViewerGL::Implementation {
@@ -153,7 +153,7 @@ struct ViewerGL::Implementation {
     , userRoI() // protected by mutex
     , zoomCtx() // protected by mutex
     , clipToDisplayWindow(true) // protected by mutex
-    , pickerState(INACTIVE)
+    , pickerState(PICKER_INACTIVE)
     {
         assert(qApp && qApp->thread() == QThread::currentThread());
     }
@@ -799,9 +799,9 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
 
-    if (_imp->pickerState == RECTANGLE) {
+    if (_imp->pickerState == PICKER_RECTANGLE) {
         drawPickerRectangle();
-    } else if (_imp->pickerState == POINT) {
+    } else if (_imp->pickerState == PICKER_POINT) {
         drawPickerPixel();
     }
     
@@ -1451,21 +1451,21 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
         _imp->displayingImage) {
-        _imp->pickerState = INACTIVE;
+        _imp->pickerState = PICKER_INACTIVE;
         updateGL();
     }
     
     if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
               _imp->displayingImage && mouseInDispW) {
-        _imp->pickerState = POINT;
+        _imp->pickerState = PICKER_POINT;
         pickColor(event->x(),event->y());
         _imp->ms = PICKING_COLOR;
         updateGL();
     } else if (event->button() == Qt::LeftButton &&
                event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
                _imp->displayingImage && mouseInDispW) {
-        _imp->pickerState = RECTANGLE;
+        _imp->pickerState = PICKER_RECTANGLE;
         _imp->pickerRect.setTopLeft(zoomPos);
         _imp->pickerRect.setBottomRight(zoomPos);
         _imp->ms = BUILDING_PICKER_RECTANGLE;
@@ -1765,7 +1765,7 @@ void ViewerGL::mouseDoubleClickEvent(QMouseEvent* event)
 
 void ViewerGL::updateColorPicker(int x,int y)
 {
-    if (_imp->pickerState != INACTIVE) {
+    if (_imp->pickerState != PICKER_INACTIVE) {
         return;
     }
 
@@ -2118,10 +2118,10 @@ void ViewerGL::enterEvent(QEvent *event)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     switch (_imp->pickerState) {
-        case RECTANGLE:
+        case PICKER_RECTANGLE:
             updateRectangleColorPicker();
             break;
-        case POINT: {
+        case PICKER_POINT: {
             
             QPointF widgetPos;
             {
@@ -2143,7 +2143,7 @@ void ViewerGL::enterEvent(QEvent *event)
             
         } break;
             
-        case INACTIVE:
+        case PICKER_INACTIVE:
             updateColorPicker();
             break;
         default:
@@ -2595,7 +2595,7 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
             _imp->infoViewer->showColorAndMouseInfo();
         }
         
-        if (_imp->pickerState == INACTIVE) {
+        if (_imp->pickerState == PICKER_INACTIVE) {
             boost::shared_ptr<VideoEngine> videoEngine = _imp->viewerTab->getInternalNode()->getVideoEngine();
             if (!videoEngine->isWorking()) {
                 updateColorPicker(widgetPos.x(),widgetPos.y());
