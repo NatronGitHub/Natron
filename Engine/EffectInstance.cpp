@@ -300,6 +300,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     EffectInstance* n  = input_other_thread(inputNb);
    
     boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+    if (!roto && !n) {
+        return boost::shared_ptr<Natron::Image>();
+    }
+    
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
     assert(_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs);
@@ -316,10 +320,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 
     
     RoIMap::iterator found = inputsRoI.find(roto ? this : n);
-    assert(found != inputsRoI.end());
     
     ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
     RectI roi = found->second;
+    assert(found != inputsRoI.end());
+
     
     ///Convert to pixel coordinates (FIXME: take the par into account)
     if (mipMapLevel != 0) {
@@ -338,6 +343,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if(!n){
         return boost::shared_ptr<Natron::Image>();
     }
+    
     
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.

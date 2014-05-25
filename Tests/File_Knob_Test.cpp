@@ -170,7 +170,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     
     sequence.clear();
     filesListFromPattern(dir.absoluteFilePath("#####.unittest").toStdString(), &sequence);
-    EXPECT_EQ(3,(int)sequence.size());
+    EXPECT_EQ(0,(int)sequence.size());
     
     for (int i = 0; i < fileNames.size(); ++i) {
         QFile::remove(fileNames[i]);
@@ -598,14 +598,14 @@ TEST(SequenceFromFiles,ComplexTest) {
     {
         FileNameContent file1("/Users/Test/12345.jpg");
         SequenceFromFiles sequence(file1,false);
-        EXPECT_TRUE(sequence.tryInsertFile(FileNameContent("/Users/Test/34567.jpg")));
-        EXPECT_TRUE(sequence.tryInsertFile(FileNameContent("/Users/Test/04592.jpg")));
-        EXPECT_TRUE(sequence.tryInsertFile(FileNameContent("/Users/Test/23489.jpg")));
-        EXPECT_TRUE(sequence.tryInsertFile(FileNameContent("/Users/Test/00001.jpg")));
+        EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/34567.jpg")));
+        EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/04592.jpg")));
+        EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/23489.jpg")));
+        EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/00001.jpg")));
         EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/0001.jpg")));
-        EXPECT_TRUE(sequence.tryInsertFile(FileNameContent("/Users/Test/122938.jpg")));
+        EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/122938.jpg")));
         EXPECT_FALSE(sequence.tryInsertFile(FileNameContent("/Users/Test/000002.jpg")));
-        EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/#####.jpg");
+        EXPECT_FALSE(sequence.generateValidSequencePattern() == "/Users/Test/#####.jpg");
 
     }
 }
