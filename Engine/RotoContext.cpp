@@ -645,7 +645,7 @@ bool RotoItem::isLockedRecursive() const
         parent = _imp->parentLayer;
     }
     if (parent) {
-        bool ret;
+        bool ret = false;
         isLocked_imp(parent, &ret);
         return ret;
     } else {
