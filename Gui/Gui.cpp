@@ -411,6 +411,9 @@ bool Gui::exitGui()
 void Gui::quit()
 {
     assert(_imp->_appInstance);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        (*it)->notifyAppClosing();
+    }
     _imp->_appInstance->quit();
 }
 

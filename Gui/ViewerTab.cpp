@@ -799,7 +799,8 @@ void ViewerTab::refresh(){
 ViewerTab::~ViewerTab()
 {
     _imp->_viewerNode->invalidateUiContext();
-    if (!_imp->app->isClosing() && _imp->_gui->getLastSelectedViewer() == this) {
+    if (_imp->app && !_imp->app->isClosing() && _imp->_gui->getLastSelectedViewer() == this) {
+        assert(_imp->_gui);
         _imp->_gui->setLastSelectedViewer(NULL);
     }
 }
@@ -945,7 +946,9 @@ void ViewerTab::onViewerChannelsChanged(int i){
 }
 bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::MouseButtonPress) {
-        _imp->_gui->selectNode(_imp->app->getNodeGui(_imp->_viewerNode->getNode()));
+        if (_imp->_gui && _imp->app) {
+            _imp->_gui->selectNode(_imp->app->getNodeGui(_imp->_viewerNode->getNode()));
+        }
         
     }
     return QWidget::eventFilter(target, event);
@@ -975,7 +978,7 @@ void ViewerTab::showView(int view){
 
 
 void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return;
     }
 
@@ -996,7 +999,7 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
 
 bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
@@ -1027,7 +1030,7 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
 
 bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
 {
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
@@ -1041,7 +1044,7 @@ bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const Q
 
 bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
@@ -1071,7 +1074,7 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
 
 bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
@@ -1101,7 +1104,7 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
 
 bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
@@ -1132,7 +1135,7 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
 
 bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
@@ -1164,7 +1167,7 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
 
 bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
@@ -1189,7 +1192,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e
 
 bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     bool ret = false;
@@ -1212,7 +1215,7 @@ bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
 bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
     
     
-    if (_imp->app->isClosing()) {
+    if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     bool ret = false;
@@ -1540,4 +1543,10 @@ void ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
             }
         }
     }
+}
+
+void ViewerTab::notifyAppClosing()
+{
+    _imp->_gui = 0;
+    _imp->app = 0;
 }

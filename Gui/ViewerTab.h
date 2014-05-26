@@ -60,6 +60,8 @@ public:
     
     void seek(SequenceTime time);
     
+    void notifyAppClosing();
+    
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
