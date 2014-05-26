@@ -296,8 +296,13 @@ std::string EffectInstance::inputLabel(int inputNb) const
 
 boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view)
 {
+    EffectInstance* n;
+    if (QThread::currentThread() == qApp->thread()) {
+        n = input(inputNb);
+    } else {
+        n  = input_other_thread(inputNb);
+    }
     
-    EffectInstance* n  = input_other_thread(inputNb);
    
     boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
     if (!roto && !n) {
