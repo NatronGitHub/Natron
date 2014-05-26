@@ -1410,11 +1410,37 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
     bool didSomething = false;
 
     int time = _imp->context->getTimelineCurrentTime();
+    int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
+    double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
+
+    if (_imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos)) {
+        _imp->state = DRAGGING_SELECTED_CPS;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_TOP_LEFT;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_TOP_RIGHT;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_BTM_LEFT;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_BTM_RIGHT;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_MID_TOP;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_MID_RIGHT;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_MID_BTM;
+    } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale)) {
+        _imp->state = DRAGGING_BBOX_MID_LEFT;
+    }
+    
+    if (_imp->state != NONE) {
+        return true;
+    }
+    
     
     ////////////////// TANGENT SELECTION
     ///in all cases except cusp/smooth if a control point is selected, check if the user clicked on a tangent handle
     ///in which case we go into DRAGGING_TANGENT mode
-    int tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     if (_imp->selectedTool != CUSP_POINTS && _imp->selectedTool != SMOOTH_POINTS && _imp->selectedTool != SELECT_CURVES) {
         for (SelectedCPs::iterator it = _imp->rotoData->selectedCps.begin(); it!=_imp->rotoData->selectedCps.end(); ++it) {
             if (_imp->selectedTool == SELECT_ALL ||
@@ -1469,7 +1495,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
 
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
     int nearbyCpIndex = -1;
-    double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
     if (nearbyBezier) {
         /////////////////CONTROL POINT SELECTION
         //////Check if the point is nearby a control point of a selected bezier
@@ -1497,98 +1522,21 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 featherBarSel = _imp->isNearbyFeatherBar(time, pixelScale, pos);
             }
             
-            if (_imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos)) {
-                _imp->state = DRAGGING_SELECTED_CPS;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_TOP_LEFT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_TOP_RIGHT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_BTM_LEFT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_BTM_RIGHT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_TOP;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_RIGHT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_BTM;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_LEFT;
-            }
             
-            if (_imp->state == NONE) {
-                if (nearbyBezier) {
-                    
-                    ///check if the user clicked nearby the cross hair of the selection rectangle in which case
-                    ///we drag all the control points selected
-                    if (nearbyCP.first) {
-                        _imp->handleControlPointSelection(nearbyCP);
-                        _imp->handleBezierSelection(nearbyBezier);
-                    } else if (featherBarSel.first) {
-                        _imp->clearCPSSelection();
-                        _imp->rotoData->featherBarBeingDragged = featherBarSel;
-                        _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
-                        _imp->handleBezierSelection(nearbyBezier);
-                        _imp->state = DRAGGING_FEATHER_BAR;
-                    } else {
-                        ///If the bezier is already selected and we re-click on it, change the transform mode
-                        SelectedBeziers::const_iterator found =
-                        std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
-                        if (found == _imp->rotoData->selectedBeziers.end()) {
-                            _imp->handleBezierSelection(nearbyBezier);
-                        } else if (found != _imp->rotoData->selectedBeziers.end() && _imp->rotoData->showCpsBbox){
-                            _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
-                            ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
-                        }
-                    }
-                } else {
-                    
-                    if (featherBarSel.first) {
-                        _imp->clearCPSSelection();
-                        _imp->rotoData->featherBarBeingDragged = featherBarSel;
-                        _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
-                        _imp->state = DRAGGING_FEATHER_BAR;
-                    } else {
-                        if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                            if (!isStickySelectionEnabled()) {
-                                _imp->clearSelection();
-                            }
-                            _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                            _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                            _imp->state = SELECTING;
-                            
-                        }
-                    }
-                }
-            }
-            didSomething = true;
-            
-        }   break;
-        case SELECT_CURVES:
-            if (_imp->rotoData->showCpsBbox && _imp->isNearbySelectedCpsCrossHair(pos)) {
-                _imp->state = DRAGGING_SELECTED_CPS;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_TOP_LEFT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxTopRight(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_TOP_RIGHT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmLeft(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_BTM_LEFT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxBtmRight(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_BTM_RIGHT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidTop(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_TOP;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidRight(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_RIGHT;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidBtm(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_BTM;
-            } else if (_imp->rotoData->showCpsBbox && _imp->isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale)) {
-                _imp->state = DRAGGING_BBOX_MID_LEFT;
-            }
-            
-            if (_imp->state == NONE) {
+            if (nearbyBezier) {
                 
-                if (nearbyBezier) {
+                ///check if the user clicked nearby the cross hair of the selection rectangle in which case
+                ///we drag all the control points selected
+                if (nearbyCP.first) {
+                    _imp->handleControlPointSelection(nearbyCP);
+                    _imp->handleBezierSelection(nearbyBezier);
+                } else if (featherBarSel.first) {
+                    _imp->clearCPSSelection();
+                    _imp->rotoData->featherBarBeingDragged = featherBarSel;
+                    _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
+                    _imp->handleBezierSelection(nearbyBezier);
+                    _imp->state = DRAGGING_FEATHER_BAR;
+                } else {
                     ///If the bezier is already selected and we re-click on it, change the transform mode
                     SelectedBeziers::const_iterator found =
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
@@ -1598,9 +1546,19 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                         _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
                         ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                     }
+                }
+            } else {
+                
+                if (featherBarSel.first) {
+                    _imp->clearCPSSelection();
+                    _imp->rotoData->featherBarBeingDragged = featherBarSel;
+                    _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
+                    _imp->state = DRAGGING_FEATHER_BAR;
                 } else {
-                    if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                        _imp->clearSelection();
+                    if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                        if (!isStickySelectionEnabled()) {
+                            _imp->clearSelection();
+                        }
                         _imp->rotoData->selectionRectangle.setTopLeft(pos);
                         _imp->rotoData->selectionRectangle.setBottomRight(pos);
                         _imp->state = SELECTING;
@@ -1608,6 +1566,32 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     }
                 }
             }
+            
+            didSomething = true;
+            
+        }   break;
+        case SELECT_CURVES:
+            
+            if (nearbyBezier) {
+                ///If the bezier is already selected and we re-click on it, change the transform mode
+                SelectedBeziers::const_iterator found =
+                std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
+                if (found == _imp->rotoData->selectedBeziers.end()) {
+                    _imp->handleBezierSelection(nearbyBezier);
+                } else if (found != _imp->rotoData->selectedBeziers.end() && _imp->rotoData->showCpsBbox){
+                    _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+                    ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
+                }
+            } else {
+                if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                    _imp->clearSelection();
+                    _imp->rotoData->selectionRectangle.setTopLeft(pos);
+                    _imp->rotoData->selectionRectangle.setBottomRight(pos);
+                    _imp->state = SELECTING;
+                    
+                }
+            }
+            
             break;
         case ADD_POINTS:
             ///If the user clicked on a bezier and this bezier is selected add a control point by
