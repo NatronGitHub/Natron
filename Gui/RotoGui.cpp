@@ -323,7 +323,7 @@ QAction* RotoGui::createToolAction(QToolButton* toolGroup,
                                    RotoGui::Roto_Tool tool)
 {
     
-    QAction *action = new QAction(icon,"",toolGroup);
+    QAction *action = new QAction(icon,text,toolGroup);
     action->setToolTip(text + ": " + tooltip + "<p><b>Keyboard shortcut: " + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
     
     QPoint data;
@@ -842,6 +842,17 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                     bool drawFeather = !(*it2)->equalsAtTime(time, **itF);
                     double distFeatherX = 20. * pixelScale.first;
                     double distFeatherY = 20. * pixelScale.second;
+                    
+                    bool isHovered = false;
+                    if (_imp->rotoData->featherBarBeingHovered.first) {
+                        assert(_imp->rotoData->featherBarBeingHovered.second);
+                        if (_imp->rotoData->featherBarBeingHovered.first->isFeatherPoint()) {
+                            isHovered = _imp->rotoData->featherBarBeingHovered.first == *itF;
+                        } else if (_imp->rotoData->featherBarBeingHovered.second->isFeatherPoint()) {
+                            isHovered = _imp->rotoData->featherBarBeingHovered.second == *itF;
+                        }
+                    }
+                    
                     if (drawFeather) {
                         glBegin(GL_POLYGON);
                         glVertex2f(xF - cpHalfWidth, yF - cpHalfHeight);
@@ -850,15 +861,6 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                         glVertex2f(xF - cpHalfWidth, yF + cpHalfHeight);
                         glEnd();
                         
-                        bool isHovered = false;
-                        if (_imp->rotoData->featherBarBeingHovered.first) {
-                            assert(_imp->rotoData->featherBarBeingHovered.second);
-                            if (_imp->rotoData->featherBarBeingHovered.first->isFeatherPoint()) {
-                                isHovered = _imp->rotoData->featherBarBeingHovered.first == *itF;
-                            } else if (_imp->rotoData->featherBarBeingHovered.second->isFeatherPoint()) {
-                                isHovered = _imp->rotoData->featherBarBeingHovered.second == *itF;
-                            }
-                        }
                         
                         if ((_imp->state == DRAGGING_FEATHER_BAR &&
                             (*itF == _imp->rotoData->featherBarBeingDragged.first || *itF == _imp->rotoData->featherBarBeingDragged.second)) ||
@@ -904,9 +906,9 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                                 
                                 Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, featherPoints, constants, multiples, featherBBox, time, prevCp, it2, nextCp);
                                 
-                                if (_imp->state == DRAGGING_FEATHER_BAR &&
+                                if ((_imp->state == DRAGGING_FEATHER_BAR &&
                                     (*itF == _imp->rotoData->featherBarBeingDragged.first ||
-                                     *itF == _imp->rotoData->featherBarBeingDragged.second)) {
+                                     *itF == _imp->rotoData->featherBarBeingDragged.second)) || isHovered) {
                                     glColor3f(0.2, 1., 0.);
                                     colorChanged = true;
                                 } else {
