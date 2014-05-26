@@ -67,6 +67,9 @@ void GuiAppInstance::aboutToQuit()
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
 	_imp->_gui->close();
+    _imp->_gui->setParent(NULL);
+    delete _imp->_gui;
+    _imp->_gui = 0;
    // delete _imp->_gui;
 }
 
