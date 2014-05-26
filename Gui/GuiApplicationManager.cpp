@@ -564,9 +564,9 @@ void GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,int* dimension,
 
 void GuiApplicationManager::updateAllRecentFileMenus() {
     
-    const std::map<int,AppInstance*>& instances = getAppInstances();
-    for (std::map<int,AppInstance*>::const_iterator it = instances.begin(); it!= instances.end(); ++it) {
-        dynamic_cast<GuiAppInstance*>(it->second)->getGui()->updateRecentFileActions();
+    const std::map<int,AppInstanceRef>& instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it!= instances.end(); ++it) {
+        dynamic_cast<GuiAppInstance*>(it->second.app)->getGui()->updateRecentFileActions();
     }
 }
 
@@ -685,9 +685,9 @@ void GuiApplicationManager::initializeQApp(int argc,char* argv[]) const {
 void GuiApplicationManager::setUndoRedoStackLimit(int limit)
 {
     
-    const std::map<int,AppInstance*>& apps = getAppInstances();
-    for (std::map<int,AppInstance*>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second);
+    const std::map<int,AppInstanceRef>& apps = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->setUndoRedoStackLimit(limit);
         }

@@ -50,7 +50,7 @@ AppManager* AppManager::_instance = 0;
 struct AppManagerPrivate {
     
     AppManager::AppType _appType; //< the type of app
-    std::map<int,AppInstance*> _appInstances; //< the instances mapped against their ID
+    std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
@@ -265,6 +265,9 @@ AppManager::~AppManager(){
 void AppManager::quit(AppInstance* instance)
 {
 	instance->aboutToQuit();
+    std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find(instance->getAppID());
+    assert(found != _imp->_appInstances.end());
+    found->second.status = APP_INACTIVE;
 	///if we exited the last instance, exit the event loop, this will make
 	/// the exec() function return.
 	if (_imp->_appInstances.size() == 1) {
@@ -396,16 +399,16 @@ AppInstance* AppManager::newAppInstance(const QString& projectName,const QString
 }
 
 AppInstance* AppManager::getAppInstance(int appID) const{
-    std::map<int,AppInstance*>::const_iterator it;
+    std::map<int,AppInstanceRef>::const_iterator it;
     it = _imp->_appInstances.find(appID);
     if(it != _imp->_appInstances.end()){
-        return it->second;
+        return it->second.app;
     }else{
         return NULL;
     }
 }
 
-const std::map<int,AppInstance*>&  AppManager::getAppInstances() const{
+const std::map<int,AppInstanceRef>&  AppManager::getAppInstances() const{
     return _imp->_appInstances;
 }
 
@@ -443,8 +446,8 @@ void AppManager::clearAllCaches() {
     clearNodeCache();
     
     ///for each app instance clear all its nodes cache
-    for (std::map<int,AppInstance*>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
-        it->second->clearOpenFXPluginsCaches();
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+        it->second.app->clearOpenFXPluginsCaches();
     }
 }
 
@@ -491,11 +494,11 @@ std::vector<Natron::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(cons
 }
 
 AppInstance* AppManager::getTopLevelInstance () const{
-    std::map<int,AppInstance*>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
+    std::map<int,AppInstanceRef>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
     if(it == _imp->_appInstances.end()){
         return NULL;
     }else{
-        return it->second;
+        return it->second.app;
     }
 }
 
@@ -521,9 +524,9 @@ void AppManager::abortAnyProcessing() {
         QMutexLocker l(&_imp->_wasAbortCalledMutex);
         _imp->_wasAbortAnyProcessingCalled = true;
     }
-    for (std::map<int,AppInstance*>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         std::vector<boost::shared_ptr<Natron::Node> > nodes;
-        it->second->getActiveNodes(&nodes);
+        it->second.app->getActiveNodes(&nodes);
         for (U32 i = 0; i < nodes.size(); ++i) {
             nodes[i]->quitAnyProcessing();
         }
@@ -543,7 +546,10 @@ bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& sho
 }
 
 void AppManager::registerAppInstance(AppInstance* app){
-    _imp->_appInstances.insert(std::make_pair(app->getAppID(),app));
+    AppInstanceRef ref;
+    ref.app = app;
+    ref.status = Natron::APP_ACTIVE;
+    _imp->_appInstances.insert(std::make_pair(app->getAppID(),ref));
 }
 
 void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
@@ -724,13 +730,13 @@ void AppManager::setAsTopLevelInstance(int appID){
         return;
     }
     _imp->_topLevelInstanceID = appID;
-    for(std::map<int,AppInstance*>::iterator it = _imp->_appInstances.begin();it!=_imp->_appInstances.end();++it){
+    for(std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin();it!=_imp->_appInstances.end();++it){
         if (it->first != _imp->_topLevelInstanceID) {
             if(!isBackground())
-                it->second->disconnectViewersFromViewerCache();
+                it->second.app->disconnectViewersFromViewerCache();
         }else{
             if(!isBackground())
-                it->second->connectViewersToViewerCache();
+                it->second.app->connectViewersToViewerCache();
         }
     }
 }

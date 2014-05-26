@@ -49,7 +49,20 @@ namespace Natron {
     class FrameEntry;
     class Plugin;
     class CacheSignalEmitter;
+    
+    enum AppInstanceStatus
+    {
+        APP_INACTIVE = 0, //< the app has not been loaded yet or has been closed already
+        APP_ACTIVE //< the app is active and can be used
+    };
 }
+
+struct AppInstanceRef
+{
+    AppInstance* app;
+    Natron::AppInstanceStatus status;
+    
+};
 
 struct AppManagerPrivate;
 class AppManager : public QObject , public boost::noncopyable
@@ -116,7 +129,7 @@ public:
 
     void setAsTopLevelInstance(int appID);
 
-    const std::map<int,AppInstance*>& getAppInstances() const WARN_UNUSED_RETURN;
+    const std::map<int,AppInstanceRef>& getAppInstances() const WARN_UNUSED_RETURN;
 
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
 

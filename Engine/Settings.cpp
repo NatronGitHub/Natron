@@ -472,10 +472,10 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
 
     
     if (k == _texturesMode.get()) {
-        std::map<int,AppInstance*> apps = appPTR->getAppInstances();
+        std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
-        for(std::map<int,AppInstance*>::iterator it = apps.begin();it!=apps.end();++it){
-            const std::vector<boost::shared_ptr<Node> > nodes = it->second->getProject()->getCurrentNodes();
+        for(std::map<int,AppInstanceRef>::iterator it = apps.begin();it!=apps.end();++it){
+            const std::vector<boost::shared_ptr<Node> > nodes = it->second.app->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
                 if (nodes[i]->pluginID() == "Viewer") {

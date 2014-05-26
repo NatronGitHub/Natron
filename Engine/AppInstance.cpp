@@ -48,7 +48,8 @@ struct AppInstancePrivate {
 };
 
 AppInstance::AppInstance(int appID)
-: _imp(new AppInstancePrivate(appID,this))
+: QObject()
+, _imp(new AppInstancePrivate(appID,this))
 {
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);

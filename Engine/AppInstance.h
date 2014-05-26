@@ -47,7 +47,7 @@ public:
     
     AppInstance(int appID);
     
-    ~AppInstance();
+    virtual ~AppInstance();
     
     virtual void aboutToQuit(){}
     
