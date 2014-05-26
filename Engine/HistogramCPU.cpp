@@ -461,10 +461,13 @@ computeHistogramStatic(const HistogramRequest& request, boost::shared_ptr<Finish
     assert(histo_upscaled.size() == histo->size() * upscale);
     std::vector<float>::const_iterator it_in = histo_upscaled.begin();
     std::advance(it_in, (upscale - 1) / 2);
-    for (std::vector<float>::iterator it_out = histo->begin();
-         it_out != histo->end();
-         ++it_out, std::advance (it_in,upscale)) {
+	std::vector<float>::iterator it_out = histo->begin();
+    while (it_out != histo->end()) {
         *it_out = *it_in * upscale;
+		++it_out;
+		if (it_out != histo->end()) {
+			std::advance (it_in,upscale);
+		}
     }
 }
 
