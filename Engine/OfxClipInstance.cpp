@@ -214,7 +214,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
         ///If the RoD is cached accept it always if it doesn't depend on the project format.
         ///Otherwise cehck that it is really the current project format.
-        if (isCached && (!cachedImgParams->isRodProjectFormat()
+        if (n == _nodeInstance && isCached && (!cachedImgParams->isRodProjectFormat()
             || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)))) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
@@ -403,7 +403,11 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
     if(_isOutput) {
         return _nodeInstance;
     } else {
-        return _nodeInstance->input_other_thread(getInputNb());
+        if (QThread::currentThread() == qApp->thread()) {
+            return _nodeInstance->input(getInputNb());
+        } else {
+            return _nodeInstance->input_other_thread(getInputNb());
+        }
     }
 }
 
