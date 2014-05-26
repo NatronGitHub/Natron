@@ -225,7 +225,7 @@ bool AppManager::load(int argc, char *argv[],const QString& projectFilename,cons
         hadArgs = false;
     }
     initializeQApp(argc, argv);
-    
+
     assert(argv);
     if (!hadArgs) {
         delete [] argv[0];
@@ -265,13 +265,14 @@ AppManager::~AppManager(){
 void AppManager::quit(AppInstance* instance)
 {
 	instance->aboutToQuit();
-	delete instance;
 	///if we exited the last instance, exit the event loop, this will make
 	/// the exec() function return.
-	if (_imp->_appInstances.empty()) {
+	if (_imp->_appInstances.size() == 1) {
 		assert(qApp);
 		qApp->quit();
 	}
+	delete instance;
+	
 }
 
 
