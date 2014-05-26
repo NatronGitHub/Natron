@@ -476,6 +476,12 @@ public:
     void addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image);
     void removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& image);
     
+    void onInputChanged(int inputNb);
+    
+    void onMultipleInputChanged();
+    
+    void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reason);
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -501,7 +507,6 @@ public slots:
     }
     
     void onMasterNodeDeactivated();
-
     
 signals:
     

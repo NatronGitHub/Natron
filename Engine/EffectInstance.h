@@ -472,12 +472,6 @@ public:
      **/
     virtual void endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
-    /**
-     * @brief Called whenever a param changes. It calls the virtual
-     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
-     * not done already.
-     **/
-    virtual void onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) OVERRIDE {}
     
     /**
      * @brief Can be overloaded to clear any cache the plugin might be
@@ -562,6 +556,14 @@ public:
     void unregisterPluginMemory(size_t nBytes);
     
     /**
+     * @brief Called right away when the user first opens the settings panel of the node.
+     * This is called after each params had its default value set.
+     **/
+    virtual void beginEditKnobs() {}
+    
+    virtual std::vector<std::string> supportedFileFormats() const { return std::vector<std::string>(); }
+    
+    /**
      * @brief Called everytimes an input connection is changed
      **/
     virtual void onInputChanged(int /*inputNo*/) {}
@@ -572,15 +574,15 @@ public:
      **/
     virtual void onMultipleInputsChanged() {}
     
-    /**
-     * @brief Called right away when the user first opens the settings panel of the node.
-     * This is called after each params had its default value set.
-     **/
-    virtual void beginEditKnobs() {}
-    
-    virtual std::vector<std::string> supportedFileFormats() const { return std::vector<std::string>(); }
-    
 protected:
+    
+ 
+    /**
+     * @brief Called whenever a param changes. It calls the virtual
+     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
+     * not done already.
+     **/
+    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) {}
     
     
     virtual void beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
@@ -593,6 +595,9 @@ protected:
                                    bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                    int /*view*/) {}
 public:
+    
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
     
     void beginSequenceRender_public(SequenceTime first,SequenceTime last,
                                      SequenceTime step,bool interactive,RenderScale scale,

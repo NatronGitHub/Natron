@@ -175,7 +175,7 @@ public:
 
     virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE;
+    virtual void knobChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE;
     
     virtual void beginEditKnobs() OVERRIDE;
 

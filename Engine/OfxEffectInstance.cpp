@@ -449,7 +449,7 @@ bool OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
     }
     return isProjectFormat;
 }
-
+  
 
 void OfxEffectInstance::onInputChanged(int inputNo) {
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
@@ -1089,7 +1089,7 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/){
 }
 
 
-void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){
+void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason){
     if(!_initialized){
         return;
     }

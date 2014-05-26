@@ -368,10 +368,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         Natron::Image* remappedImg;
         
         if (isMask && (mappedComp == Natron::ImageComponentAlpha) && (channelForAlpha == -1 || !isMaskEnabled(inputNb))) {
-            ///Set the mask to 0's everywhere
-            
-            remappedImg = new Natron::Image(mappedComp,inputImg->getRoD(),inputImg->getMipMapLevel());
-            remappedImg->defaultInitialize(1.,1.);
+            return boost::shared_ptr<Natron::Image>();
         } else {
             ///convert the fetched input image
             bool invert = isMask && isMaskInverted(inputNb);
@@ -1574,6 +1571,11 @@ bool EffectInstance::isMaskEnabled(int inputNb) const
 bool EffectInstance::isMaskInverted(int inputNb) const
 {
     return _node->isMaskInverted(inputNb);
+}
+
+void EffectInstance::onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) {
+    _node->onEffectKnobValueChanged(k, reason);
+    knobChanged(k, reason);
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)

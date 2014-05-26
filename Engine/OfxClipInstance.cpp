@@ -124,10 +124,14 @@ bool OfxClipInstance::getConnected() const
     if (getName() == "Brush"  && _nodeInstance->getNode()->isRotoNode()) {
         return true;
     } else {
-        if(_isOutput){
+        if (_isOutput) {
             return _nodeInstance->hasOutputConnected();
-        }else{
-            return _nodeInstance->input_other_thread(getInputNb()) != NULL;
+        } else {
+            int inputNb = getInputNb();
+            if (isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb)) {
+                return false;
+            }
+            return _nodeInstance->input_other_thread(inputNb) != NULL;
         }
     }
 }

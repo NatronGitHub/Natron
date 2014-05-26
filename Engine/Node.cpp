@@ -802,6 +802,7 @@ bool Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
         _imp->inputsQueue[inputNumber] = input;
     }
     emit inputChanged(inputNumber);
+    onInputChanged(inputNumber);
     computeHash();
     return true;
 }
@@ -829,6 +830,7 @@ int Node::disconnectInput(int inputNumber)
         _imp->inputsQueue[inputNumber].reset();
     }
     emit inputChanged(inputNumber);
+    onInputChanged(inputNumber);
     computeHash();
     return inputNumber;
 }
@@ -845,6 +847,7 @@ int Node::disconnectInput(boost::shared_ptr<Node> input)
                 _imp->inputsQueue[i].reset();
                 l.unlock();
                 emit inputChanged(i);
+                onInputChanged(i);
                 computeHash();
                 l.relock();
                 return i;
@@ -1503,8 +1506,11 @@ Natron::ImageComponents Node::findClosestSupportedComponents(int inputNb,Natron:
 int Node::getMaskChannel(int inputNb) const
 {
     std::map<int, boost::shared_ptr<Choice_Knob> >::const_iterator it = _imp->maskChannelKnob.find(inputNb);
-    assert(it != _imp->maskChannelKnob.end());
-    return it->second->getValue() - 1;
+    if (it != _imp->maskChannelKnob.end()) {
+        return it->second->getValue() - 1;
+    } else {
+        return 3;
+    }
  
 }
 
@@ -1512,16 +1518,22 @@ int Node::getMaskChannel(int inputNb) const
 bool Node::isMaskEnabled(int inputNb) const
 {
     std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->enableMaskKnob.find(inputNb);
-    assert(it != _imp->enableMaskKnob.end());
-    return it->second->getValue();
+    if (it != _imp->enableMaskKnob.end()) {
+        return it->second->getValue();
+    } else {
+        return true;
+    }
 }
 
 
 bool Node::isMaskInverted(int inputNb) const
 {
     std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->invertMaskKnob.find(inputNb);
-    assert(it != _imp->invertMaskKnob.end());
-    return it->second->getValue();
+    if (it != _imp->invertMaskKnob.end()) {
+        return it->second->getValue();
+    } else {
+        return false;
+    }
 }
 
 
@@ -1553,6 +1565,47 @@ void Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& imag
     
     ///Notify all waiting threads that we're finished
     _imp->imageBeingRenderedCond.wakeAll();
+}
+
+void Node::onInputChanged(int inputNb)
+{
+    
+    std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.find(inputNb);
+    if (it != _imp->enableMaskKnob.end()) {
+        boost::shared_ptr<Node> inp = input(inputNb);
+        it->second->setValue(inp ? true : false, 0);
+    }
+    _imp->liveInstance->onInputChanged(inputNb);
+    
+}
+
+void Node::onMultipleInputChanged()
+{
+    for (std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.begin(); it!=_imp->enableMaskKnob.end(); ++it) {
+        boost::shared_ptr<Node> inp = input(it->first);
+        it->second->setValue(inp ? true : false, 0);
+    }
+    _imp->liveInstance->onMultipleInputsChanged();
+}
+
+void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason /*reason*/)
+{
+    for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it!=_imp->maskChannelKnob.end(); ++it) {
+        if (it->second.get() == what) {
+            int index = it->second->getValue();
+            std::map<int, boost::shared_ptr<Bool_Knob> >::iterator found = _imp->enableMaskKnob.find(it->first);
+            if (index == 0 && found->second->isEnabled(0)) {
+                found->second->setValue(false, 0);
+                found->second->setEnabled(0, false);
+            } else if (!found->second->isEnabled(0)) {
+                found->second->setEnabled(0, true);
+                if (input(it->first)) {
+                    found->second->setValue(true, 0);
+                }
+            }
+            break;
+        }
+    }
 }
 
 //////////////////////////////////
