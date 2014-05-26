@@ -588,7 +588,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
                      SLOT(onColorSpaceComboBoxChanged(int)));
     QObject::connect(_imp->_zoomCombobox, SIGNAL(currentIndexChanged(QString)),_imp->viewer, SLOT(zoomSlot(QString)));
     QObject::connect(_imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
-    QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode,SLOT(onGainChanged(double)));
+    QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), this,SLOT(onGainSliderChanged(double)));
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_gainBox, SLOT(setValue(double)));
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), this, SLOT(onGainSliderChanged(double)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_gainSlider, SLOT(seekScalePosition(double)));
