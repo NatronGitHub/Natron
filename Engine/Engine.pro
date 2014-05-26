@@ -84,6 +84,7 @@ SOURCES += \
     StringAnimationManager.cpp \
     TimeLine.cpp \
     Timer.cpp \
+    Transform.cpp \
     VideoEngine.cpp \
     ViewerInstance.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp
