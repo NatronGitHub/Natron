@@ -812,7 +812,15 @@ void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/){
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
         _overlayInteract->drawAction(time, rs);
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
     }
 }
 
@@ -838,7 +846,19 @@ bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,con
         penPosViewport.y = viewportPos.y();
         
         OfxTime time = effect_->getFrameRecursive();
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         if (stat == kOfxStatOK) {
             _penDown = true;
             return true;
@@ -862,7 +882,18 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         OfxTime time = effect_->getFrameRecursive();
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -886,7 +917,19 @@ bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         OfxTime time = effect_->getFrameRecursive();
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         if (stat == kOfxStatOK) {
             _penDown = false;
             return true;
@@ -905,7 +948,18 @@ bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Nat
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
         QByteArray keyStr;
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
         OfxStatus stat = _overlayInteract->keyDownAction(time, rs, (int)key, keyStr.data());
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -923,7 +977,19 @@ bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natro
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
         QByteArray keyStr;
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->keyUpAction(time, rs, (int)key, keyStr.data());
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -942,7 +1008,19 @@ bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,N
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
         QByteArray keyStr;
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, (int)key, keyStr.data());
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -959,7 +1037,19 @@ bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->gainFocusAction(time, rs);
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -977,7 +1067,19 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/){
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
+        
+        int view;
+        effectInstance()->getViewRecursive(view);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsMipMapLevel(0);
+        effectInstance()->setClipsHash(hash());
+        
         OfxStatus stat = _overlayInteract->loseFocusAction(time, rs);
+        
+        effectInstance()->discardClipsView();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1004,9 +1106,11 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
     int view;
     effectInstance()->getViewRecursive(view);
     
-    effectInstance()->setClipsMipMapLevel(mipMapLevel);
-    effectInstance()->setClipsView(view);
-    effectInstance()->setClipsHash(hash());
+    if (getRecursionLevel() == 1) {
+        effectInstance()->setClipsMipMapLevel(mipMapLevel);
+        effectInstance()->setClipsView(view);
+        effectInstance()->setClipsHash(hash());
+    }
     
     OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
@@ -1025,9 +1129,11 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
             break;
     }
 
-    effectInstance()->discardClipsHash();
-    effectInstance()->discardClipsMipMapLevel();
-    effectInstance()->discardClipsView();
+    if (getRecursionLevel() == 1) {
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        effectInstance()->discardClipsView();
+    }
     
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         QString err(QString(getNode()->getName_mt_safe().c_str()) + ": An error occured while changing parameter " +
