@@ -122,7 +122,7 @@ struct RotoGuiSharedData
     SelectedCP cpBeingDragged; //< the cp being dragged
     boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
                                                      //only relevant when the state is DRAGGING_X_TANGENT
-    SelectedCP featherBarBeingDragged;
+    SelectedCP featherBarBeingDragged,featherBarBeingHovered;
     
     RotoGuiSharedData()
     : selectedBeziers()
@@ -135,6 +135,7 @@ struct RotoGuiSharedData
     , cpBeingDragged()
     , tangentBeingDragged()
     , featherBarBeingDragged()
+    , featherBarBeingHovered()
     {
         
     }
@@ -849,8 +850,19 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                         glVertex2f(xF - cpHalfWidth, yF + cpHalfHeight);
                         glEnd();
                         
-                        if (_imp->state == DRAGGING_FEATHER_BAR &&
-                            (*itF == _imp->rotoData->featherBarBeingDragged.first || *itF == _imp->rotoData->featherBarBeingDragged.second)) {
+                        bool isHovered = false;
+                        if (_imp->rotoData->featherBarBeingHovered.first) {
+                            assert(_imp->rotoData->featherBarBeingHovered.second);
+                            if (_imp->rotoData->featherBarBeingHovered.first->isFeatherPoint()) {
+                                isHovered = _imp->rotoData->featherBarBeingHovered.first == *itF;
+                            } else if (_imp->rotoData->featherBarBeingHovered.second->isFeatherPoint()) {
+                                isHovered = _imp->rotoData->featherBarBeingHovered.second == *itF;
+                            }
+                        }
+                        
+                        if ((_imp->state == DRAGGING_FEATHER_BAR &&
+                            (*itF == _imp->rotoData->featherBarBeingDragged.first || *itF == _imp->rotoData->featherBarBeingDragged.second)) ||
+                            isHovered) {
                             glColor3f(0.2, 1., 0.);
                             colorChanged = true;
                         } else {
@@ -1853,7 +1865,18 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                     cursorSet = true;
                 }
             }
-            
+        
+            SelectedCP nearbyFeatherBar;
+            if (!cursorSet) {
+                nearbyFeatherBar = _imp->isNearbyFeatherBar(time, pixelScale, pos);
+                if (nearbyFeatherBar.first && nearbyFeatherBar.second) {
+                    _imp->rotoData->featherBarBeingHovered = nearbyFeatherBar;
+                }
+            }
+            if (!nearbyFeatherBar.first || !nearbyFeatherBar.second) {
+                _imp->rotoData->featherBarBeingHovered.first.reset();
+                _imp->rotoData->featherBarBeingHovered.second.reset();
+            }
             didSomething = true;
         }
         
@@ -2408,7 +2431,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
                         b.y /= norm;
                         
                         double crossProduct = b.y * a.x - b.x * a.y;
-                        if (std::abs(crossProduct) <  0.1) {
+                        if (std::abs(crossProduct) <  0.3) {
                             return std::make_pair(*itCp, *itF);
                         }
                     }
