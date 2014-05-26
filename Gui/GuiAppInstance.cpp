@@ -12,6 +12,7 @@
 
 #include <QDir>
 #include <QMutex>
+#include <QCoreApplication>
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
