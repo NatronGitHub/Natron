@@ -379,7 +379,7 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
     
     _imp->_qtVersion = QString(QT_VERSION_STR);
     _imp->_boostVersion = QString(BOOST_LIB_VERSION);
-    _imp->_cairoVersion = QString(CAIRO_VERSION_STRING);
+    _imp->_cairoVersion = QString(cairo_version_string());
 }
 
 Gui::~Gui()
