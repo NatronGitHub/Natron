@@ -429,7 +429,6 @@ void OfxClipInstance::setView(int view) {
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().isViewValid);
     } else {
         args.mipMapLevel = 0;
         args.image.reset();
@@ -445,7 +444,6 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().isMipMapLevelValid);
     } else {
         args.view = 0;
         args.image.reset();
@@ -499,7 +497,6 @@ void OfxClipInstance::setAttachedNodeHash(U64 hash)
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().isImageValid);
     } else {
         args.mipMapLevel = 0;
         args.view = 0;

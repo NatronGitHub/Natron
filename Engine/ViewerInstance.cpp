@@ -1432,7 +1432,7 @@ ViewerInstance::getMipMapLevel() const
     return _imp->viewerMipMapLevel;
 
 }
-
+  
 
 ViewerInstance::DisplayChannels
 ViewerInstance::getChannels() const
@@ -1447,4 +1447,9 @@ void ViewerInstance::addAcceptedComponents(int /*inputNb*/,std::list<Natron::Ima
 {
     ///Viewer only supports RGBA for now.
     comps->push_back(Natron::ImageComponentRGBA);
+}
+
+int ViewerInstance::getCurrentView() const
+{
+    return _imp->uiContext->getCurrentView();
 }

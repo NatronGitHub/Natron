@@ -991,7 +991,7 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
     if(!_initialized){
         return;
     }
-    
+      
     if (_renderButton && k == _renderButton.get()) {
         
         ///don't do anything since it is handled upstream
@@ -1000,6 +1000,14 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
     
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
+    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(renderScale.x);
+    int view;
+    effectInstance()->getViewRecursive(view);
+    
+    effectInstance()->setClipsMipMapLevel(mipMapLevel);
+    effectInstance()->setClipsView(view);
+    effectInstance()->setClipsHash(hash());
+    
     OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
     switch (reason) {
@@ -1017,6 +1025,10 @@ void OfxEffectInstance::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason r
             break;
     }
 
+    effectInstance()->discardClipsHash();
+    effectInstance()->discardClipsMipMapLevel();
+    effectInstance()->discardClipsView();
+    
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         QString err(QString(getNode()->getName_mt_safe().c_str()) + ": An error occured while changing parameter " +
                     k->getDescription().c_str());

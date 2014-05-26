@@ -37,6 +37,7 @@
 #include "Engine/Format.h"
 #include "Engine/Node.h"
 #include "Global/MemoryInfo.h"
+#include "Engine/ViewerInstance.h"
 
 using namespace Natron;
 
@@ -201,7 +202,32 @@ double OfxImageEffectInstance::getFrameRecursive() const {
 /// renderScale
 void OfxImageEffectInstance::getRenderScaleRecursive(double &x, double &y) const {
     assert(node());
-    x = y = 1.0;
+    std::list<ViewerInstance*> attachedViewers;
+    node()->getNode()->hasViewersConnected(&attachedViewers);
+    ///get the render scale of the 1st viewer
+    if (!attachedViewers.empty()) {
+        ViewerInstance* first = attachedViewers.front();
+        int mipMapLevel = first->getMipMapLevel();
+        x = Natron::Image::getScaleFromMipMapLevel((unsigned int)mipMapLevel);
+        y = x;
+    } else {
+        x = 1.;
+        y = 1.;
+    }
+}
+
+void OfxImageEffectInstance::getViewRecursive(int& view) const
+{
+    assert(node());
+    std::list<ViewerInstance*> attachedViewers;
+    node()->getNode()->hasViewersConnected(&attachedViewers);
+    ///get the render scale of the 1st viewer
+    if (!attachedViewers.empty()) {
+        ViewerInstance* first = attachedViewers.front();
+        view = first->getCurrentView();
+    } else {
+        view = 0;
+    }
 }
 
 // make a parameter instance

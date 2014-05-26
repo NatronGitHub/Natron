@@ -141,6 +141,11 @@ public:
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
     void onAutoContrastChanged(bool autoContrast,bool refresh);
+    
+    /**
+     * @brief Returns the current view, MT-safe
+     **/
+    int getCurrentView() const;
 
 public slots:
 

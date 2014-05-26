@@ -107,6 +107,8 @@ public:
     /// the recursive instanceChangedAction will be fed the correct
     /// renderScale
     virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE FINAL;
+    
+    void getViewRecursive(int& view) const;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
