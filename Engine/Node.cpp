@@ -542,7 +542,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     for (int i = 0; i < inputsCount; ++i) {
         if (_imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i)) {
             std::string maskName = _imp->liveInstance->inputLabel(i);
-            boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, maskName);
+            boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, maskName,1,false);
             _imp->enableMaskKnob.insert(std::make_pair(i,enableMaskKnob));
             enableMaskKnob->setDefaultValue(false, 0);
             enableMaskKnob->turnOffNewLine();
@@ -552,7 +552,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
             enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
                                                  "Turning this off will fill with 1's the mask.");
             
-            boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "");
+            boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "",1,false);
             _imp->maskChannelKnob.insert(std::make_pair(i,maskChannelKnob));
             std::vector<std::string> choices;
             choices.push_back("None");
@@ -569,7 +569,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
             std::string channelMaskName("mask_channel_natron_" + maskName);
             maskChannelKnob->setName(channelMaskName);
             
-            boost::shared_ptr<Bool_Knob> invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert");
+            boost::shared_ptr<Bool_Knob> invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert",1,false);
             _imp->invertMaskKnob.insert(std::make_pair(i, invertMaskKnob));
             invertMaskKnob->setDefaultValue(false, 0);
             invertMaskKnob->setAnimationEnabled(false);

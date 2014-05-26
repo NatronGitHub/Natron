@@ -1580,7 +1580,9 @@ bool EffectInstance::isMaskInverted(int inputNb) const
 
 void EffectInstance::onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) {
     _node->onEffectKnobValueChanged(k, reason);
-    knobChanged(k, reason);
+    if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
+        knobChanged(k, reason);
+    }
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
