@@ -188,6 +188,9 @@ public slots:
     
     void onRotoNodeGuiSettingsPanelClosed(bool closed);
 
+    void onGainSliderChanged(double v);
+    
+    void onColorSpaceComboBoxChanged(int v);
 private:
         
     bool eventFilter(QObject *target, QEvent *event);

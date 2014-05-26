@@ -1386,6 +1386,20 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     emit imageChanged();
 }
 
+void ViewerGL::setGain(double d)
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    _imp->displayingImageGain = d;
+}
+
+void ViewerGL::setLut(int lut)
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
+}
+
 /**
  *@returns Returns true if the graphic card supports GLSL.
  **/

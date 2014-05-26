@@ -584,13 +584,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     
     /*slots & signals*/
-    QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), _imp->_viewerNode,
-                     SLOT(onColorSpaceChanged(QString)));
+    QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
+                     SLOT(onColorSpaceComboBoxChanged(int)));
     QObject::connect(_imp->_zoomCombobox, SIGNAL(currentIndexChanged(QString)),_imp->viewer, SLOT(zoomSlot(QString)));
     QObject::connect(_imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_viewerNode,SLOT(onGainChanged(double)));
     QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_gainBox, SLOT(setValue(double)));
-    QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), _imp->_viewerNode, SLOT(onGainChanged(double)));
+    QObject::connect(_imp->_gainSlider, SIGNAL(positionChanged(double)), this, SLOT(onGainSliderChanged(double)));
     QObject::connect(_imp->_gainBox, SIGNAL(valueChanged(double)), _imp->_gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(_imp->_currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)));
     
@@ -645,6 +645,22 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     if (currentRoto && currentRoto->isSettingsPanelVisible()) {
         setRotoInterface(currentRoto);
     }
+}
+
+void ViewerTab::onColorSpaceComboBoxChanged(int v)
+{
+    ViewerInstance::ViewerColorSpace colorspace;
+    if (v == 0) {
+        colorspace = ViewerInstance::Linear;
+    } else if (1) {
+        colorspace = ViewerInstance::sRGB;
+    } else if (2) {
+       colorspace = ViewerInstance::Rec709;
+    } else {
+        assert(false);
+    }
+    _imp->viewer->setLut((int)colorspace);
+    _imp->_viewerNode->onColorSpaceChanged(colorspace);
 }
 
 void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
@@ -910,11 +926,13 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         _imp->_renderScaleCombo->setCurrentIndex(4);
     }
 
-
-
-
-
     
+}
+
+void ViewerTab::onGainSliderChanged(double v)
+{
+    _imp->viewer->setGain(v);
+    _imp->_viewerNode->onGainChanged(v);
 }
 
 void ViewerTab::onViewerChannelsChanged(int i){

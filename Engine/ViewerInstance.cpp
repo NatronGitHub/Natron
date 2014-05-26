@@ -1272,20 +1272,14 @@ ViewerInstance::isAutoContrastEnabled() const
 }
 
 void
-ViewerInstance::onColorSpaceChanged(const QString& colorspaceName)
+ViewerInstance::onColorSpaceChanged(ViewerInstance::ViewerColorSpace colorspace)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     QMutexLocker l(&_imp->viewerParamsMutex);
     
-    if (colorspaceName == "Linear(None)") {
-        _imp->viewerParamsLut = Linear;
-    } else if (colorspaceName == "sRGB") {
-        _imp->viewerParamsLut = sRGB;
-    } else if (colorspaceName == "Rec.709") {
-        _imp->viewerParamsLut = Rec709;
-    }
+    _imp->viewerParamsLut = colorspace;
 
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {

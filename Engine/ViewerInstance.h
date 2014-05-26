@@ -146,16 +146,16 @@ public:
      * @brief Returns the current view, MT-safe
      **/
     int getCurrentView() const;
+    
+    void onGainChanged(double exp);
+    
+    void onColorSpaceChanged(ViewerInstance::ViewerColorSpace colorspace);
 
 public slots:
 
     void onViewerCacheFrameAdded();
-
-    void onGainChanged(double exp);
     
     void onMipMapLevelChanged(int level);
-
-    void onColorSpaceChanged(const QString& colorspaceName);
 
     void onNodeNameChanged(const QString&);
 

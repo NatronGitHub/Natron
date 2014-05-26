@@ -276,7 +276,13 @@ public:
     ViewerInstance* getInternalNode() const;
     
     ViewerTab* getViewerTab() const;
-            
+    
+    /**
+     * @brief can only be called on the main-thread
+     **/
+    void setGain(double d);
+    
+    void setLut(int lut);
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.
