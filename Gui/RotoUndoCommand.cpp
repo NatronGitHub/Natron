@@ -199,9 +199,9 @@ void TransformUndoCommand::transformPoint(const boost::shared_ptr<BezierCP>& poi
     leftCp.z = 1.;
     rightCp.z = 1.;
     
-    cp = *_matrix * cp;
-    leftCp = *_matrix *leftCp;
-    rightCp = *_matrix *rightCp;
+    cp = matApply(*_matrix, cp);
+    leftCp = matApply(*_matrix, leftCp);
+    rightCp = matApply(*_matrix, rightCp);
     
     cp.x /= cp.z; cp.y /= cp.z;
     leftCp.x /= leftCp.z; leftCp.y /= leftCp.z;
@@ -257,7 +257,7 @@ bool TransformUndoCommand::mergeWith(const QUndoCommand *other)
         }
     }
     
-    *_matrix = *_matrix * *cmd->_matrix;
+    *_matrix = matMul(*_matrix, *cmd->_matrix);
     
     return true;
 }

@@ -142,7 +142,8 @@ void Matrix3x3::setIdentity()
     g = 0; h = 0; i = 1;
 }
 
-Matrix3x3 operator*(const Matrix3x3& m1, const Matrix3x3& m2) {
+Matrix3x3 matMul(const Matrix3x3& m1, const Matrix3x3& m2)
+{
     return Matrix3x3(m1.a * m2.a + m1.b * m2.d + m1.c * m2.g,
                      m1.a * m2.b + m1.b * m2.e + m1.c * m2.h,
                      m1.a * m2.c + m1.b * m2.f + m1.c * m2.i,
@@ -154,7 +155,8 @@ Matrix3x3 operator*(const Matrix3x3& m1, const Matrix3x3& m2) {
                      m1.g * m2.c + m1.h * m2.f + m1.i * m2.i);
 }
 
-Point3D operator*(const Matrix3x3& m,const Point3D& p) {
+Point3D matApply(const Matrix3x3& m, const Point3D& p)
+{
     Point3D ret;
     ret.x = m.a * p.x + m.b * p.y + m.c * p.z;
     ret.y = m.d * p.x + m.e * p.y + m.f * p.z;
@@ -190,7 +192,7 @@ double Matrix4x4::operator()(int row,int col) const
     return data[row * 4 + col];
 }
 
-Matrix4x4 operator*(const Matrix4x4& m1, const Matrix4x4& m2) {
+Matrix4x4 matMul(const Matrix4x4& m1, const Matrix4x4& m2) {
     Matrix4x4 ret;
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -202,7 +204,7 @@ Matrix4x4 operator*(const Matrix4x4& m1, const Matrix4x4& m2) {
     return ret;
 }
 
-Point4D operator*(const Matrix4x4& m,const Point4D& p) {
+Point4D matApply(const Matrix4x4& m,const Point4D& p) {
         Point4D ret;
     for (int i = 0; i < 4; ++i) {
         ret(i) = 0.;
@@ -213,6 +215,8 @@ Point4D operator*(const Matrix4x4& m,const Point4D& p) {
     return ret;
 }
 
+#if 0
+    static
 Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m)
 {
     Matrix4x4 ret;
@@ -227,6 +231,7 @@ Matrix4x4 matrix4x4FromMatrix3x3(const Matrix3x3& m)
 // IMPLEMENTATION //
 ////////////////////
 
+static
 double
 matDeterminant(const Matrix3x3& M)
 {
@@ -235,6 +240,7 @@ matDeterminant(const Matrix3x3& M)
              +M.c * (M.d * M.h - M.g * M.e));
 }
 
+static
 Matrix3x3
 matScaleAdjoint(const Matrix3x3& M, double s)
 {
@@ -253,18 +259,22 @@ matScaleAdjoint(const Matrix3x3& M, double s)
     return ret;
 }
 
+static
 Matrix3x3
 matInverse(const Matrix3x3& M)
 {
     return matScaleAdjoint(M, 1. / matDeterminant(M));
 }
 
+    static
 Matrix3x3
 matInverse(const Matrix3x3& M,double det)
 {
     return matScaleAdjoint(M, 1. / det);
 }
+#endif
 
+static
 Matrix3x3
 matRotation(double rads)
 {
@@ -273,12 +283,7 @@ matRotation(double rads)
     return Matrix3x3(c,s,0,-s,c,0,0,0,1);
 }
 
-Matrix3x3
-matRotationAroundPoint(double rads, double px, double py)
-{
-    return matTranslation(px, py) * (matRotation(rads) * matTranslation(-px, -py));
-}
-
+static
 Matrix3x3
 matTranslation(double x, double y)
 {
@@ -287,6 +292,16 @@ matTranslation(double x, double y)
                      0., 0., 1.);
 }
 
+#if 0
+static
+Matrix3x3
+matRotationAroundPoint(double rads, double px, double py)
+{
+    return matMul(matTranslation(px, py), matMul(matRotation(rads), matTranslation(-px, -py)));
+}
+#endif
+
+static
 Matrix3x3
 matScale(double x, double y)
 {
@@ -295,18 +310,23 @@ matScale(double x, double y)
                      0., 0., 1.);
 }
 
+#if 0
+static
 Matrix3x3
 matScale(double s)
 {
     return matScale(s, s);
 }
 
+static
 Matrix3x3
 matScaleAroundPoint(double scaleX, double scaleY, double px, double py)
 {
-    return matTranslation(px,py) * (matScale(scaleX,scaleY) * matTranslation(-px, -py));
+    return matMul(matTranslation(px,py), matMul(matScale(scaleX,scaleY), matTranslation(-px, -py)));
 }
+#endif
 
+static
 Matrix3x3
 matSkewXY(double skewX, double skewY, bool skewOrderYX)
 {
@@ -315,7 +335,9 @@ matSkewXY(double skewX, double skewY, bool skewOrderYX)
                      0., 0., 1.);
 }
 
+#if 0
 // matrix transform from destination to source
+static
 Matrix3x3
 matInverseTransformCanonical(double translateX, double translateY,
                                  double scaleX, double scaleY,
@@ -333,13 +355,14 @@ matInverseTransformCanonical(double translateX, double translateY,
     ///5) We translate back to the origin
 
     // since this is the inverse, oerations are in reverse order
-    return (matTranslation(centerX, centerY) *
-            matScale(1. / scaleX, 1. / scaleY) *
-            matSkewXY(-skewX, -skewY, !skewOrderYX) *
-            matRotation(rads) *
-            matTranslation(-translateX,-translateY) *
-            matTranslation(-centerX,-centerY));
+    return (matMul(matMul(matMul(matMul(matMul(matTranslation(centerX, centerY),
+            matScale(1. / scaleX, 1. / scaleY)),
+            matSkewXY(-skewX, -skewY, !skewOrderYX)),
+            matRotation(rads)),
+            matTranslation(-translateX,-translateY)),
+            matTranslation(-centerX,-centerY)));
 }
+#endif
 
 // matrix transform from source to destination
 Matrix3x3
@@ -358,18 +381,20 @@ matTransformCanonical(double translateX, double translateY,
     ///5) We apply the global translation
     ///5) We translate back to the origin
 
-    return (matTranslation(centerX, centerY) *
-            matTranslation(translateX, translateY) *
-            matRotation(-rads) *
-            matSkewXY(skewX, skewY, skewOrderYX) *
-            matScale(scaleX, scaleY) *
-            matTranslation(-centerX,-centerY));
+    return (matMul(matMul(matMul(matMul(matMul(matTranslation(centerX, centerY),
+            matTranslation(translateX, translateY)),
+            matRotation(-rads)),
+            matSkewXY(skewX, skewY, skewOrderYX)),
+            matScale(scaleX, scaleY)),
+            matTranslation(-centerX,-centerY)));
 }
 
 // The transforms between pixel and canonical coordinated
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#MappingCoordinates
 
+#if 0
 /// transform from pixel coordinates to canonical coordinates
+static
 Matrix3x3
 matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
                         double renderscaleX, //!< 0.5 for a half-resolution image
@@ -387,6 +412,7 @@ matPixelToCanonical(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
 }
 
 /// transform from canonical coordinates to pixel coordinates
+static
 Matrix3x3
 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
                         double renderscaleX, //!< 0.5 for a half-resolution image
@@ -404,6 +430,7 @@ matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
 }
 
 // matrix transform from destination to source
+static
 Matrix3x3
 matInverseTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
                              double renderscaleX, //!< 0.5 for a half-resolution image
@@ -421,12 +448,13 @@ matInverseTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x
     ///2) we apply transform
     ///3) We go back to pixels
 
-    return (matCanonicalToPixel(pixelaspectratio, renderscaleX, renderscaleY, fielded) *
-            matInverseTransformCanonical(translateX, translateY, scaleX, scaleY, skewX, skewY, skewOrderYX, rads, centerX, centerY) *
-            matPixelToCanonical(pixelaspectratio, renderscaleX, renderscaleY, fielded));
+    return (matMul(matMul(matCanonicalToPixel(pixelaspectratio, renderscaleX, renderscaleY, fielded),
+            matInverseTransformCanonical(translateX, translateY, scaleX, scaleY, skewX, skewY, skewOrderYX, rads, centerX, centerY)),
+            matPixelToCanonical(pixelaspectratio, renderscaleX, renderscaleY, fielded)));
 }
 
 // matrix transform from source to destination
+static
 Matrix3x3
 matTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
                       double renderscaleX, //!< 0.5 for a half-resolution image
@@ -444,9 +472,10 @@ matTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pix
     ///2) we apply transform
     ///3) We go back to pixels
 
-    return (matCanonicalToPixel(pixelaspectratio, renderscaleX, renderscaleY, fielded) *
-            matTransformCanonical(translateX, translateY, scaleX, scaleY, skewX, skewY, skewOrderYX, rads, centerX, centerY) *
-            matPixelToCanonical(pixelaspectratio, renderscaleX, renderscaleY, fielded));
+    return (matMul(matMul(matCanonicalToPixel(pixelaspectratio, renderscaleX, renderscaleY, fielded),
+            matTransformCanonical(translateX, translateY, scaleX, scaleY, skewX, skewY, skewOrderYX, rads, centerX, centerY)),
+            matPixelToCanonical(pixelaspectratio, renderscaleX, renderscaleY, fielded)));
 }
+#endif
 
 }
