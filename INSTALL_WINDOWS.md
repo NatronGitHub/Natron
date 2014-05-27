@@ -6,6 +6,19 @@ Required: Install git, best is the github app.
 ##Install libraries
 
 In order to have Natron compiling, first you need to install the required libraries.
+An alternative is to download the pre-compiled binaries provided by MrKepzie from
+[Dropbox](https://www.dropbox.com/s/s5yuh9k3kum99jp/3rdparty_windows_32_and_64bits_msvc2010.zip)
+They contain:
+* Qt 4.8.5 compiled for 64 bits as dlls. 32 bits version can be downloaded from the Qt website (see below)
+* lib jpeg 8d/9a static MT. You should use the 9a version for OpenImageIO
+* libpng 1.2.51/ 1.6.9 static MT, you should use version 1.6.9 for OpenImageIO and cairo
+* OpenEXR 2.1 static MT
+* OpenImageIO 1.4.2 static MT release
+* libtiff 4.0.3 static MT release
+* zlib 1.2.8 static MT release
+* OpenColorIO 1.0.9 static MT release
+* cairo 1.12.4 static MT release
+* pixman 0.32.4 static MT release (64 bits only, it's easy to compile the 32 bits version yourself).
 
 ###*Qt 4.8*
 
@@ -17,6 +30,8 @@ You can download boost from
 (boost download)[http://www.boost.org/users/download/]
 For now only boost serialisation is required. Follow the build instructions to compile
 boost. You'll need to build a shared | multi-threaded version of the librairies.
+Pre-compiled binaries for boost are available here:
+http://boost.teeks99.com/
 
 ###*glew*
 On windows,OpenGL API is not up to date to the features we need.
@@ -83,15 +98,16 @@ Here's an example of a config.pri file:
 	    
 	}
 
-	expat {
+	expat
+	{
 	
-    	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
-    	
-    	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Debug\\libexpatMT.lib)
-    	
-	    LIBS += shell32.lib
-	    
+		INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
+		
+		LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win64\\bin\\Release) -llibexpatMT
+		
+		LIBS += shell32.lib	
 	}
+
 	
 	cairo {
 	
