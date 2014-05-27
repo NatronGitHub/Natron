@@ -402,6 +402,7 @@ bool Gui::exitGui()
     } else if (ret == 2) {
         return false;
     }
+    removeEventFilter(this);
     _imp->saveGuiGeometry();
     quit();
     return true;
@@ -616,15 +617,18 @@ void Gui::setupUi()
     _imp->actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
     _imp->actionNew_project->setShortcut(QKeySequence::New);
     _imp->actionNew_project->setIcon(get_icon("document-new"));
+    _imp->actionNew_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect(_imp->actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()));
     _imp->actionOpen_project = new QAction(this);
     _imp->actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
     _imp->actionOpen_project->setShortcut(QKeySequence::Open);
     _imp->actionOpen_project->setIcon(get_icon("document-open"));
+    _imp->actionOpen_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect(_imp->actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
     _imp->actionSave_project = new QAction(this);
     _imp->actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
     _imp->actionSave_project->setShortcut(QKeySequence::Save);
+    _imp->actionSave_project->setShortcutContext(Qt::WindowShortcut);
     _imp->actionSave_project->setIcon(get_icon("document-save"));
     QObject::connect(_imp->actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
     _imp->actionSaveAs_project = new QAction(this);
@@ -638,6 +642,7 @@ void Gui::setupUi()
     _imp->actionExit = new QAction(this);
     _imp->actionExit->setObjectName(QString::fromUtf8("actionExit"));
     _imp->actionExit->setMenuRole(QAction::QuitRole);
+    _imp->actionExit->setShortcutContext(Qt::WindowShortcut);
     _imp->actionExit->setIcon(get_icon("application-exit"));
     _imp->actionProject_settings = new QAction(this);
     _imp->actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
@@ -648,6 +653,7 @@ void Gui::setupUi()
     _imp->actionFullScreen = new QAction(this);
     _imp->actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
     _imp->actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
+    _imp->actionFullScreen->setShortcutContext(Qt::WindowShortcut);
     _imp->actionFullScreen->setIcon(get_icon("view-fullscreen"));
     _imp->actionClearDiskCache = new QAction(this);
     _imp->actionClearDiskCache->setObjectName(QString::fromUtf8("actionClearDiskCache"));
@@ -671,9 +677,11 @@ void Gui::setupUi()
     
     _imp->renderAllWriters = new QAction(this);
     _imp->renderAllWriters->setCheckable(false);
+    _imp->renderAllWriters->setShortcutContext(Qt::WindowShortcut);
     _imp->renderAllWriters->setShortcut(QKeySequence(Qt::Key_F5));
     _imp->renderSelectedNode = new QAction(this);
     _imp->renderSelectedNode->setCheckable(false);
+    _imp->renderSelectedNode->setShortcutContext(Qt::WindowShortcut);
     _imp->renderSelectedNode->setShortcut(QKeySequence(Qt::Key_F7));
     
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
@@ -684,42 +692,52 @@ void Gui::setupUi()
     
     _imp->actionConnectInput1 = new QAction(this);
     _imp->actionConnectInput1->setCheckable(false);
+    _imp->actionConnectInput1->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput1->setShortcut(QKeySequence(Qt::Key_1));
     
     _imp->actionConnectInput2 = new QAction(this);
     _imp->actionConnectInput2->setCheckable(false);
+    _imp->actionConnectInput2->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput2->setShortcut(QKeySequence(Qt::Key_2));
     
     _imp->actionConnectInput3 = new QAction(this);
     _imp->actionConnectInput3->setCheckable(false);
+    _imp->actionConnectInput3->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput3->setShortcut(QKeySequence(Qt::Key_3));
     
     _imp->actionConnectInput4 = new QAction(this);
     _imp->actionConnectInput4->setCheckable(false);
+    _imp->actionConnectInput4->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput4->setShortcut(QKeySequence(Qt::Key_4));
     
     _imp->actionConnectInput5 = new QAction(this);
     _imp->actionConnectInput5->setCheckable(false);
+    _imp->actionConnectInput5->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput5->setShortcut(QKeySequence(Qt::Key_5));
     
     _imp->actionConnectInput6 = new QAction(this);
     _imp->actionConnectInput6->setCheckable(false);
+    _imp->actionConnectInput6->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput6->setShortcut(QKeySequence(Qt::Key_6));
     
     _imp->actionConnectInput7 = new QAction(this);
     _imp->actionConnectInput7->setCheckable(false);
+    _imp->actionConnectInput7->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput7->setShortcut(QKeySequence(Qt::Key_7));
     
     _imp->actionConnectInput8 = new QAction(this);
     _imp->actionConnectInput8->setCheckable(false);
+    _imp->actionConnectInput8->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput8->setShortcut(QKeySequence(Qt::Key_8));
     
     _imp->actionConnectInput9 = new QAction(this);
     _imp->actionConnectInput9->setCheckable(false);
+    _imp->actionConnectInput9->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput9->setShortcut(QKeySequence(Qt::Key_9));
     
     _imp->actionConnectInput10 = new QAction(this);
     _imp->actionConnectInput10->setCheckable(false);
+    _imp->actionConnectInput10->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput10->setShortcut(QKeySequence(Qt::Key_0));
 
     

@@ -30,7 +30,7 @@ CONFIG(debug, debug|release){
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
 unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
-*g++* {rr
+*g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wextra
   GCCVer = $$system($$QMAKE_CXX --version)
