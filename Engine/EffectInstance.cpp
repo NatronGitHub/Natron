@@ -262,7 +262,8 @@ int EffectInstance::getRenderViewsCount() const{
 }
 
 
-bool EffectInstance::hasOutputConnected() const{
+bool EffectInstance::hasOutputConnected() const
+{
     return _node->hasOutputConnected();
 }
 
