@@ -296,6 +296,14 @@ std::string EffectInstance::inputLabel(int inputNb) const
 
 boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view)
 {
+    
+    bool isMask = isInputMask(inputNb);
+    
+    if (isMask && !isMaskEnabled(inputNb)) {
+        ///This is last resort, the plug-in should've checked getConnected() before which would have returned false.
+        return boost::shared_ptr<Natron::Image>();
+    }
+    
     EffectInstance* n;
     if (QThread::currentThread() == qApp->thread()) {
         n = input(inputNb);
@@ -323,12 +331,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     unsigned int mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;;
     RoIMap inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
 
-    
+
     RoIMap::iterator found = inputsRoI.find(roto ? this : n);
-    
+    assert(found != inputsRoI.end());
+
     ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
     RectI roi = found->second;
-    assert(found != inputsRoI.end());
 
     
     ///Convert to pixel coordinates (FIXME: take the par into account)
@@ -367,7 +375,6 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///if the plug-in doesn't support the image components
     if (!isSupportedComponent(inputNb, inputImg->getComponents())) {
         Natron::ImageComponents mappedComp = findClosestSupportedComponents(inputNb, inputImg->getComponents());
-        bool isMask = isInputMask(inputNb);
         int channelForAlpha = isMask ? getMaskChannel(inputNb) : 3;
         
         Natron::Image* remappedImg;
@@ -853,6 +860,11 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
          in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
          to remove them.*/
         for (FramesNeededMap::const_iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
+            
+            if (isInputMask(it2->first) && !isMaskEnabled(it2->first)) {
+                continue;
+            }
+            
             EffectInstance* inputEffect = input_other_thread(it2->first);
             if (inputEffect) {
                 RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
