@@ -342,7 +342,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
     ///Convert to pixel coordinates (FIXME: take the par into account)
     if (mipMapLevel != 0) {
-        roi = roi.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+        roi = roi.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
     }
     
     
@@ -872,7 +872,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 assert(foundInputRoI != inputsRoi.end());
                 
                 ///convert to pixel coords
-                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
                 
                 ///notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
