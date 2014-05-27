@@ -550,7 +550,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
             enableMaskKnob->setName(enableMaskName);
             enableMaskKnob->setAnimationEnabled(false);
             enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                                 "Turning this off will fill with 1's the mask.");
+                                                 "Turning this off will act as though the mask was disconnected.");
             
             boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance, "",1,false);
             _imp->maskChannelKnob.insert(std::make_pair(i,maskChannelKnob));
