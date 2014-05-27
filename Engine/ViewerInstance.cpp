@@ -390,7 +390,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 inputIdentityNumber = cachedImgParams->getInputNbIdentity();
                 inputIdentityTime = cachedImgParams->getInputTimeIdentity();
             }
-            
+            activeInputToRender = recursiveInput;
         } else {
             isInputImgCached = false;
         }
