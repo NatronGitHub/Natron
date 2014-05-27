@@ -414,6 +414,10 @@ const std::map<int,AppInstanceRef>&  AppManager::getAppInstances() const{
 
 void AppManager::removeInstance(int appID){
     _imp->_appInstances.erase(appID);
+    if(!_imp->_appInstances.empty()) {
+        setAsTopLevelInstance(_imp->_appInstances.begin()->first);
+    }
+
 }
 
 AppManager::AppType AppManager::getAppType() const {
