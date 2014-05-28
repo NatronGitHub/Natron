@@ -39,10 +39,15 @@
 #include "Engine/Timer.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
+#include "Engine/Settings.h"
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
 #define NATRON_EDGE_DROP_TOLERANCE 15
+
+#define NATRON_MAGNETIC_GRID_GRIP_TOLERANCE 10
+
+#define NATRON_MAGNETIC_GRID_RELEASE_DISTANCE 25
 
 using namespace Natron;
 
@@ -78,6 +83,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , positionMutex()
 , _slaveMasterLink(NULL)
 , _masterNodeGui()
+, _magnecEnabled(false)
+, _magnecStartingPos()
 {
     
 }
@@ -277,24 +284,119 @@ void NodeGui::updateShape(int width,int height){
     refreshPosition(pos().x(), pos().y());
 }
 
+
+
 void NodeGui::refreshPosition(double x,double y){
-    setPos(x, y);
-    refreshEdges();
+    
+    
+    QRectF bbox = mapRectToScene(_boundingBox->rect());
     const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
+
+    if (appPTR->getCurrentSettings()->isSnapToNodeEnabled()) {
+        
+        
+        if (_magnecEnabled) {
+            double dist = sqrt((x - _magnecStartingPos.x()) * (x - _magnecStartingPos.x()) +
+                               (y - _magnecStartingPos.y()) * (y - _magnecStartingPos.y()));
+            if (dist >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
+                _magnecEnabled = false;
+            } else {
+                return;
+            }
+        }
+        
+        
+        QSize size = getSize();
+        
+        ///handle magnetic grid
+        QPointF middlePos(x + size.width() / 2,y + size.height() / 2);
+        for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+            boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
+            if (inputSource) {
+                QSize inputSize = inputSource->getSize();
+                QPointF inputScenePos = inputSource->scenePos();
+                QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
+                QPointF mapped = mapFromScene(inputPos);
+                if (!contains(mapped)) {
+                    if ((inputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                         inputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                        _magnecEnabled = true;
+                        x = inputPos.x() - size.width() / 2;
+                        _magnecStartingPos.setX(x);
+                        _magnecStartingPos.setY(y);
+                    } else if ((inputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                inputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                        _magnecEnabled = true;
+                        _magnecStartingPos.setX(x);
+                        y = inputPos.y() - size.height() / 2;
+                        _magnecStartingPos.setY(y);
+                    }
+                }
+            }
+        }
+        
+        if (!_magnecEnabled) {
+            ///check now the outputs
+            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+                boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
+                assert(node);
+                QSize outputSize = node->getSize();
+                QPointF nodeScenePos = node->scenePos();
+                QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);
+                QPointF mapped = mapFromScene(outputPos);
+                if (!contains(mapped)) {
+                    if ((outputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                         outputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                        _magnecEnabled = true;
+                        x = outputPos.x() - size.width() / 2;
+                        _magnecStartingPos.setX(x);
+                        _magnecStartingPos.setY(y);
+                    } else if ((outputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                outputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                        _magnecEnabled = true;
+                        _magnecStartingPos.setX(x);
+                        y = outputPos.y() - size.height() / 2;
+                        _magnecStartingPos.setY(y);
+                    }
+                }
+                
+            }
+            
+        }
+    }
+    
+    
+    setPos(x, y);
+    
+    const std::list<boost::shared_ptr<NodeGui> >& allNodes = _graph->getAllActiveNodes();
+    
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if (it->get() != this && (*it)->intersects(bbox)) {
+            setAboveItem(it->get());
+        }
+    }
+    
+    refreshEdges();
+    
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
-    const std::list<boost::shared_ptr<NodeGui> >& allNodes = _graph->getAllActiveNodes();
-    
-    QRectF bbox = mapRectToScene(_boundingBox->rect());
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        if (it->get() != this && (*it)->intersects(bbox)) {
-            (*it)->stackBefore(this);
+    emit positionChanged();
+}
+
+void NodeGui::setAboveItem(QGraphicsItem* item)
+{
+    item->stackBefore(this);
+    for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
+        if (inputSource.get() != item) {
+            item->stackBefore(it->second);
         }
     }
-    
-    emit positionChanged();
+    if (_outputEdge) {
+        item->stackBefore(_outputEdge);
+    }
 }
 
 void NodeGui::changePosition(double dx,double dy) {
@@ -1043,5 +1145,14 @@ void NodeGui::deleteReferences()
         _settingsPanel->setParent(NULL);
         delete _settingsPanel;
         _settingsPanel = NULL;
+    }
+}
+
+QSize NodeGui::getSize() const
+{
+    if (_previewPixmap && _previewPixmap->isVisible()) {
+        return QSize(NODE_WITH_PREVIEW_LENGTH,NODE_WITH_PREVIEW_HEIGHT);
+    } else {
+        return QSize(NODE_LENGTH,NODE_HEIGHT);
     }
 }

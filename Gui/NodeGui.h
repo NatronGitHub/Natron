@@ -155,6 +155,8 @@ public:
     
     static QSize nodeSize(bool withPreview);
     
+    QSize getSize() const;
+    
         
     /*Returns an edge if the node has an edge close to the
      point pt. pt is in scene coord.*/
@@ -282,6 +284,8 @@ signals:
     
 private:
     
+    void setAboveItem(QGraphicsItem* item);
+    
     void computePreviewImage(int time);
     
     void populateMenu();
@@ -336,6 +340,11 @@ private:
     
     QGraphicsLineItem* _slaveMasterLink;
     boost::shared_ptr<NodeGui> _masterNodeGui;
+    
+    bool _magnecEnabled;
+    QPoint _magnecStartingPos;
+
+    
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

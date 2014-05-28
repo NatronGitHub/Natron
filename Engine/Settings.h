@@ -98,6 +98,8 @@ public:
     
     int getAutoSaveDelayMS() const;
     
+    bool isSnapToNodeEnabled() const;
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -114,6 +116,7 @@ private:
     boost::shared_ptr<Int_Knob> _numberOfThreads;
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
+    boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;

@@ -562,6 +562,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     if(n->getNode()->pluginID() == "Viewer"){
                         break;
                     }
+                    _arrowSelected->stackBefore(n.get());
                     _undoStack->setActive();
                     _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
                 } else {
@@ -573,7 +574,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                         std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
                         assert(foundInput != inputEdges.end());
                         _undoStack->setActive();
-                        _undoStack->push(new ConnectCommand(this,foundInput->second,foundInput->second->getSource(),_arrowSelected->getSource()));
+                        _undoStack->push(new ConnectCommand(this,foundInput->second,
+                                                            foundInput->second->getSource(),_arrowSelected->getSource()));
                     
                     }
                 }
@@ -617,12 +619,13 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 
     }else if(_evtState == NODE_DRAGGING && _nodeSelected){
         
-        QPointF op = _nodeSelected->mapFromScene(_lastScenePosClick);
-        QPointF np = _nodeSelected->mapFromScene(newPos);
-        qreal diffx=np.x()-op.x();
-        qreal diffy=np.y()-op.y();
-        QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
-        _nodeSelected->refreshPosition(p.x(),p.y());
+        //QPointF op = _nodeSelected->mapFromScene(_lastScenePosClick);
+        //QPointF np = _nodeSelected->mapFromScene(newPos);
+        //qreal diffx=np.x()-op.x();
+        //qreal diffy=np.y()-op.y();
+        //QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
+        QSize size = _nodeSelected->getSize();
+        _nodeSelected->refreshPosition(newPos.x() - size.width() / 2,newPos.y() - size.height() / 2);
         setCursor(QCursor(Qt::ClosedHandCursor));
     }else if(_evtState == MOVING_AREA){
         
@@ -1419,7 +1422,7 @@ void NodeGraph::populateMenu(){
     
     QAction* displayCacheInfoAction = new QAction(tr("Display memory consumption"),this);
     displayCacheInfoAction->setCheckable(true);
-    displayCacheInfoAction->setChecked(true);
+    displayCacheInfoAction->setChecked(_cacheSizeText->isVisible());
     QObject::connect(displayCacheInfoAction,SIGNAL(triggered()),this,SLOT(toggleCacheInfos()));
     _menu->addAction(displayCacheInfoAction);
     

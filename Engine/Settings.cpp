@@ -109,6 +109,14 @@ void Settings::initializeKnobs(){
                                                       " will be enabled.");
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
     
+    
+    _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
+    _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap them to positions where it lines them up "
+                                            "with the inputs and output nodes.");
+    _snapNodesToConnections->setDefaultValue(true);
+    _snapNodesToConnections->setAnimationEnabled(false);
+    _generalTab->addKnob(_snapNodesToConnections);
+    
     _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
     
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
@@ -292,6 +300,7 @@ void Settings::saveSettings(){
     settings.setValue("Number of threads", _numberOfThreads->getValue());
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
+    settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.endGroup();
     
@@ -354,6 +363,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("AutoPreviewDefault")) {
         _autoPreviewEnabledForNewProjects->setValue(settings.value("AutoPreviewDefault").toBool(),0);
+    }
+    if (settings.contains("SnapToNode")) {
+        _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
     }
     if (settings.contains("ExtraPluginsPaths")) {
         _extraPluginPaths->setValue(settings.value("ExtraPluginsPaths").toString().toStdString(),0);
@@ -673,4 +685,9 @@ int Settings::getMaximumUndoRedoNodeGraph() const
 int Settings::getAutoSaveDelayMS() const
 {
     return _autoSaveDelay->getValue() * 1000;
+}
+
+bool Settings::isSnapToNodeEnabled() const
+{
+    return _snapNodesToConnections->getValue();
 }
