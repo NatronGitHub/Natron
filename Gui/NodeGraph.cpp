@@ -488,7 +488,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     Edge* selectedEdge = 0;
     {
         QMutexLocker l(&_nodesMutex);
-        for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it){
+        for(std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _nodes.rbegin();it!=_nodes.rend();++it){
             boost::shared_ptr<NodeGui>& n = *it;
             QPointF evpt = n->mapFromScene(_lastScenePosClick);
             if(n->isActive() && n->contains(evpt)){

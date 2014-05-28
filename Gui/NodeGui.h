@@ -89,8 +89,11 @@ public:
     
     
   
-    /*Returns tru if the NodeGUI contains the point*/
+    /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE;
+    
+    /*Returns true if the bounding box of the node intersects the given rectangle in scene coordinates.*/
+    bool intersects(const QRectF& rect) const;
     
     /*returns a QPainterPath indicating the global shape of the node.
      This must be provided so the QGraphicsView framework recognises the
