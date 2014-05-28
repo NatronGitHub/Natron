@@ -902,6 +902,42 @@ void Tab_Knob::addKnob(boost::shared_ptr<KnobI> k)
     }
 }
 
+/******************************PAGE_KNOB**************************************/
+
+Page_Knob::Page_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
+Knob<bool>(holder, description, dimension,declaredByPlugin)
+{
+    
+}
+
+bool Page_Knob::canAnimate() const
+{
+    return false;
+}
+
+const std::string Page_Knob::_typeNameStr("Page");
+
+const std::string& Page_Knob::typeNameStatic()
+{
+    return _typeNameStr;
+}
+
+const std::string& Page_Knob::typeName() const
+{
+    return typeNameStatic();
+}
+
+
+
+void Page_Knob::addKnob(boost::shared_ptr<KnobI> k)
+{
+    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
+    if(found == _children.end()){
+        _children.push_back(k);
+        k->setParentKnob(getHolder()->getKnobByName(getName()));
+    }
+}
+
 
 /******************************Parametric_Knob**************************************/
 

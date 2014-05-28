@@ -21,6 +21,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GlobalDefines.h"
@@ -48,6 +49,7 @@ namespace Natron{
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
 **/
+struct DockablePanelPrivate;
 class DockablePanel : public QFrame {
     Q_OBJECT
 public:
@@ -71,12 +73,19 @@ public:
     
     virtual ~DockablePanel() OVERRIDE;
     
-    bool isMinimized() const {return _minimized;}
+    bool isMinimized() const;
     
+    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& getKnobs() const;
+
+    QVBoxLayout* getContainer() const;
+    
+    QUndoStack* getUndoStack() const;
+
+    bool isClosed() const;
+
     /*inserts a new tab to the dockable panel.*/
     void addTab(const QString& name);
 
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& getKnobs() const { return _knobs; }
     
     /*Creates a new button and inserts it in the header
      at position headerPosition. You can then take
@@ -85,7 +94,6 @@ public:
      to the DockablePanel.*/
     Button* insertHeaderButton(int headerPosition);
     
-    QVBoxLayout* getContainer() const {return _container;}
     
     void pushUndoCommand(QUndoCommand* cmd);
 
@@ -93,8 +101,6 @@ public:
      the gui for the knob.*/
     KnobGui* findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool makeNewLine,QWidget* lastRowWidget,
                                  const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >());
-    
-    QUndoStack* getUndoStack() const { return _undoStack; }
     
     const QUndoCommand* getLastUndoCommand() const;
     
@@ -106,7 +112,6 @@ public:
     
     QWidget* getHeaderWidget() const;
 
-    bool isClosed() const { return _isClosed; }
     
 public slots:
     
@@ -178,54 +183,9 @@ private:
     
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,bool onlyTopLevelKnobs);
     
-    // FIXME: PIMPL
-    Gui* _gui;
-    
-    QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/
-
-    /*global layout*/
-    QVBoxLayout* _mainLayout;
-
-    /*Header related*/
-    QFrame* _headerWidget;
-    QHBoxLayout *_headerLayout;
-
-    LineEdit* _nameLineEdit; /*!< if the name is editable*/
-    QLabel* _nameLabel; /*!< if the name is read-only*/
-
-    /*Tab related*/
-    QTabWidget* _tabWidget;
-
-    Button* _helpButton;
-    Button* _minimize;
-    Button* _floatButton;
-    Button* _cross;
-
-    Button* _undoButton;
-    Button* _redoButton;
-    Button* _restoreDefaultsButton;
-
-    bool _minimized; /*!< true if the panel is minimized*/
-    QUndoStack* _undoStack; /*!< undo/redo stack*/
-    
-    bool _floating; /*!< true if the panel is floating*/
-    FloatingWidget* _floatingWidget;
-
-    /*a map storing for each knob a pointer to their GUI.*/
-    std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
-    KnobHolder* _holder;
-
-    /* map<tab name, pair<tab , row count> >*/
-    std::map<QString,std::pair<QWidget*,int> > _tabs;
-
-    QString _defaultTabName;
-    
-    bool _useScrollAreasForTabs;
-    
-    HeaderMode _mode;
-    
-    bool _isClosed;
+    boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
+
 
 class NodeSettingsPanel : public DockablePanel
 {

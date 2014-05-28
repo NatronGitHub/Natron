@@ -557,6 +557,39 @@ private:
 };
 
 
+
+/******************************PAGE_KNOB**************************************/
+
+class Page_Knob :  public QObject,public Knob<bool>
+{
+    Q_OBJECT
+public:
+    
+    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+        return new Page_Knob(holder, description, dimension,declaredByPlugin);
+    }
+    
+    Page_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
+    
+    void addKnob(boost::shared_ptr<KnobI> k);
+    
+    const std::vector< boost::shared_ptr<KnobI> >& getChildren() const { return _children; }
+    
+    static const std::string& typeNameStatic();
+    
+private:
+    virtual bool canAnimate() const OVERRIDE FINAL;
+    
+    virtual const std::string& typeName() const OVERRIDE FINAL;
+    
+private:
+    
+    std::vector< boost::shared_ptr<KnobI> > _children;
+    
+    static const std::string _typeNameStr;
+};
+
+
 /******************************Parametric_Knob**************************************/
 
 class Parametric_Knob :  public QObject, public Knob<double>

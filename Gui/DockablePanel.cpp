@@ -49,6 +49,92 @@ CLANG_DIAG_ON(unused-private-field)
 using std::make_pair;
 using namespace Natron;
 
+struct DockablePanelPrivate
+{
+    Gui* _gui;
+    
+    QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/
+    
+    /*global layout*/
+    QVBoxLayout* _mainLayout;
+    
+    /*Header related*/
+    QFrame* _headerWidget;
+    QHBoxLayout *_headerLayout;
+    
+    LineEdit* _nameLineEdit; /*!< if the name is editable*/
+    QLabel* _nameLabel; /*!< if the name is read-only*/
+    
+    /*Tab related*/
+    QTabWidget* _tabWidget;
+    
+    Button* _helpButton;
+    Button* _minimize;
+    Button* _floatButton;
+    Button* _cross;
+    
+    Button* _undoButton;
+    Button* _redoButton;
+    Button* _restoreDefaultsButton;
+    
+    bool _minimized; /*!< true if the panel is minimized*/
+    QUndoStack* _undoStack; /*!< undo/redo stack*/
+    
+    bool _floating; /*!< true if the panel is floating*/
+    FloatingWidget* _floatingWidget;
+    
+    /*a map storing for each knob a pointer to their GUI.*/
+    std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
+    KnobHolder* _holder;
+    
+    /* map<tab name, pair<tab , row count> >*/
+    std::map<QString,std::pair<QWidget*,int> > _tabs;
+    
+    QString _defaultTabName;
+    
+    bool _useScrollAreasForTabs;
+    
+    DockablePanel::HeaderMode _mode;
+    
+    bool _isClosed;
+    
+    DockablePanelPrivate(Gui* gui
+                         ,KnobHolder* holder
+                         , QVBoxLayout* container
+                         , DockablePanel::HeaderMode headerMode
+                         ,bool useScrollAreasForTabs
+                         ,const QString& defaultTab)
+    :_gui(gui)
+    ,_container(container)
+    ,_mainLayout(NULL)
+    ,_headerWidget(NULL)
+    ,_headerLayout(NULL)
+    ,_nameLineEdit(NULL)
+    ,_nameLabel(NULL)
+    ,_tabWidget(NULL)
+    ,_helpButton(NULL)
+    ,_minimize(NULL)
+    ,_floatButton(NULL)
+    ,_cross(NULL)
+    ,_undoButton(NULL)
+    ,_redoButton(NULL)
+    ,_restoreDefaultsButton(NULL)
+    ,_minimized(false)
+    ,_undoStack(new QUndoStack)
+    ,_floating(false)
+    ,_floatingWidget(NULL)
+    ,_knobs()
+    ,_holder(holder)
+    ,_tabs()
+    ,_defaultTabName(defaultTab)
+    ,_useScrollAreasForTabs(useScrollAreasForTabs)
+    ,_mode(headerMode)
+    ,_isClosed(false)
+    {
+        
+    }
+};
+
 DockablePanel::DockablePanel(Gui* gui
                              ,KnobHolder* holder
                              , QVBoxLayout* container
@@ -58,59 +144,35 @@ DockablePanel::DockablePanel(Gui* gui
                              , const QString& helpToolTip
                              , bool createDefaultTab, const QString& defaultTab
                              , QWidget *parent)
-:QFrame(parent)
-,_gui(gui)
-,_container(container)
-,_mainLayout(NULL)
-,_headerWidget(NULL)
-,_headerLayout(NULL)
-,_nameLineEdit(NULL)
-,_nameLabel(NULL)
-,_tabWidget(NULL)
-,_helpButton(NULL)
-,_minimize(NULL)
-,_floatButton(NULL)
-,_cross(NULL)
-,_undoButton(NULL)
-,_redoButton(NULL)
-,_restoreDefaultsButton(NULL)
-,_minimized(false)
-,_undoStack(new QUndoStack)
-,_floating(false)
-,_floatingWidget(NULL)
-,_knobs()
-,_holder(holder)
-,_tabs()
-,_defaultTabName(defaultTab)
-,_useScrollAreasForTabs(useScrollAreasForTabs)
-,_mode(headerMode)
-,_isClosed(false)
+: QFrame(parent)
+, _imp(new DockablePanelPrivate(gui,holder,container,headerMode,useScrollAreasForTabs,defaultTab))
+
 {
-    _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setSpacing(0);
-    _mainLayout->setContentsMargins(0, 0, 0, 0);
-    setLayout(_mainLayout);
+    _imp->_mainLayout = new QVBoxLayout(this);
+    _imp->_mainLayout->setSpacing(0);
+    _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
+    setLayout(_imp->_mainLayout);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
     
     if(headerMode != NO_HEADER){
         
-        _headerWidget = new QFrame(this);
-        _headerWidget->setFrameShape(QFrame::Box);
-        _headerLayout = new QHBoxLayout(_headerWidget);
-        _headerLayout->setContentsMargins(0, 0, 0, 0);
-        _headerLayout->setSpacing(2);
-        _headerWidget->setLayout(_headerLayout);
+        _imp->_headerWidget = new QFrame(this);
+        _imp->_headerWidget->setFrameShape(QFrame::Box);
+        _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
+        _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
+        _imp->_headerLayout->setSpacing(2);
+        _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
         
         QPixmap pixHelp ;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
-        _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
+        _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
         if (!helpToolTip.isEmpty()) {
-            _helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
+            _imp->_helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
         }
-        _helpButton->setFixedSize(15, 15);
-        QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
+        _imp->_helpButton->setFixedSize(15, 15);
+        QObject::connect(_imp->_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
         
         
         QPixmap pixM;
@@ -122,19 +184,19 @@ DockablePanel::DockablePanel(Gui* gui
         QPixmap pixF;
         appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &pixF);
         
-        _minimize=new Button(QIcon(pixM),"",_headerWidget);
-        _minimize->setFixedSize(15,15);
-        _minimize->setCheckable(true);
-        QObject::connect(_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
+        _imp->_minimize=new Button(QIcon(pixM),"",_imp->_headerWidget);
+        _imp->_minimize->setFixedSize(15,15);
+        _imp->_minimize->setCheckable(true);
+        QObject::connect(_imp->_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
         
-        _floatButton = new Button(QIcon(pixF),"",_headerWidget);
-        _floatButton->setFixedSize(15, 15);
-        QObject::connect(_floatButton,SIGNAL(clicked()),this,SLOT(floatPanel()));
+        _imp->_floatButton = new Button(QIcon(pixF),"",_imp->_headerWidget);
+        _imp->_floatButton->setFixedSize(15, 15);
+        QObject::connect(_imp->_floatButton,SIGNAL(clicked()),this,SLOT(floatPanel()));
         
         
-        _cross=new Button(QIcon(pixC),"",_headerWidget);
-        _cross->setFixedSize(15,15);
-        QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
+        _imp->_cross=new Button(QIcon(pixC),"",_imp->_headerWidget);
+        _imp->_cross->setFixedSize(15,15);
+        QObject::connect(_imp->_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
         
         
         QPixmap pixUndo ;
@@ -144,10 +206,10 @@ DockablePanel::DockablePanel(Gui* gui
         QIcon icUndo;
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
-        _undoButton = new Button(icUndo,"",_headerWidget);
-        _undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
-        _undoButton->setEnabled(false);
-        _undoButton->setFixedSize(20, 20);
+        _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
+        _imp->_undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
+        _imp->_undoButton->setEnabled(false);
+        _imp->_undoButton->setFixedSize(20, 20);
         
         QPixmap pixRedo ;
         appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
@@ -156,67 +218,67 @@ DockablePanel::DockablePanel(Gui* gui
         QIcon icRedo;
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
-        _redoButton = new Button(icRedo,"",_headerWidget);
-        _redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
-        _redoButton->setEnabled(false);
-        _redoButton->setFixedSize(20, 20);
+        _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
+        _imp->_redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
+        _imp->_redoButton->setEnabled(false);
+        _imp->_redoButton->setFixedSize(20, 20);
         
         QPixmap pixRestore;
         appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS, &pixRestore);
         QIcon icRestore;
         icRestore.addPixmap(pixRestore);
-        _restoreDefaultsButton = new Button(icRestore,"",_headerWidget);
-        _restoreDefaultsButton->setToolTip(Qt::convertFromPlainText("Restore default values for this operator."
+        _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
+        _imp->_restoreDefaultsButton->setToolTip(Qt::convertFromPlainText("Restore default values for this operator."
                                                                     " This cannot be undone!",Qt::WhiteSpaceNormal));
-        _restoreDefaultsButton->setFixedSize(20, 20);
-        QObject::connect(_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
+        _imp->_restoreDefaultsButton->setFixedSize(20, 20);
+        QObject::connect(_imp->_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
     
         
-        QObject::connect(_undoButton, SIGNAL(clicked()),this, SLOT(onUndoClicked()));
-        QObject::connect(_redoButton, SIGNAL(clicked()),this, SLOT(onRedoPressed()));
+        QObject::connect(_imp->_undoButton, SIGNAL(clicked()),this, SLOT(onUndoClicked()));
+        QObject::connect(_imp->_redoButton, SIGNAL(clicked()),this, SLOT(onRedoPressed()));
         
         if(headerMode != READ_ONLY_NAME){
-            _nameLineEdit = new LineEdit(_headerWidget);
-            _nameLineEdit->setText(initialName);
-            QObject::connect(_nameLineEdit,SIGNAL(editingFinished()),this,SLOT(onLineEditNameEditingFinished()));
-            _headerLayout->addWidget(_nameLineEdit);
+            _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
+            _imp->_nameLineEdit->setText(initialName);
+            QObject::connect(_imp->_nameLineEdit,SIGNAL(editingFinished()),this,SLOT(onLineEditNameEditingFinished()));
+            _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         }else{
-            _nameLabel = new QLabel(initialName,_headerWidget);
-            _headerLayout->addWidget(_nameLabel);
+            _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
+            _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
         
-        _headerLayout->addStretch();
+        _imp->_headerLayout->addStretch();
         
-        _headerLayout->addWidget(_undoButton);
-        _headerLayout->addWidget(_redoButton);
-        _headerLayout->addWidget(_restoreDefaultsButton);
+        _imp->_headerLayout->addWidget(_imp->_undoButton);
+        _imp->_headerLayout->addWidget(_imp->_redoButton);
+        _imp->_headerLayout->addWidget(_imp->_restoreDefaultsButton);
         
-        _headerLayout->addStretch();
-        _headerLayout->addWidget(_helpButton);
-        _headerLayout->addWidget(_minimize);
-        _headerLayout->addWidget(_floatButton);
-        _headerLayout->addWidget(_cross);
+        _imp->_headerLayout->addStretch();
+        _imp->_headerLayout->addWidget(_imp->_helpButton);
+        _imp->_headerLayout->addWidget(_imp->_minimize);
+        _imp->_headerLayout->addWidget(_imp->_floatButton);
+        _imp->_headerLayout->addWidget(_imp->_cross);
         
-        _mainLayout->addWidget(_headerWidget);
+        _imp->_mainLayout->addWidget(_imp->_headerWidget);
         
     }
     
-    _tabWidget = new QTabWidget(this);
-    _tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
-    _tabWidget->setObjectName("QTabWidget");
-    _mainLayout->addWidget(_tabWidget);
+    _imp->_tabWidget = new QTabWidget(this);
+    _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
+    _imp->_tabWidget->setObjectName("QTabWidget");
+    _imp->_mainLayout->addWidget(_imp->_tabWidget);
     
     if(createDefaultTab){
-        addTab(_defaultTabName);
+        addTab(_imp->_defaultTabName);
     }
 }
 
 DockablePanel::~DockablePanel(){
-    delete _undoStack;
+    delete _imp->_undoStack;
     
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it){
+    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it){
         if(it->second){
             KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
             QObject::disconnect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
@@ -226,7 +288,7 @@ DockablePanel::~DockablePanel(){
 }
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
-    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it) {
+    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
         for (int i = 0; i < it->first->getDimension(); ++i) {
             if (it->first->typeName() != Button_Knob::typeNameStatic()) {
                 it->first->resetToDefaultValue(i);
@@ -238,15 +300,15 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
 void DockablePanel::onLineEditNameEditingFinished() {
     
     
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_holder);
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (effect) {
         
-        std::string newName = _nameLineEdit->text().toStdString();
+        std::string newName = _imp->_nameLineEdit->text().toStdString();
         if (newName.empty()) {
-            _nameLineEdit->blockSignals(true);
+            _imp->_nameLineEdit->blockSignals(true);
             Natron::errorDialog("Node name", "A node must have a unique name.");
-            _nameLineEdit->setText(effect->getName().c_str());
-            _nameLineEdit->blockSignals(false);
+            _imp->_nameLineEdit->setText(effect->getName().c_str());
+            _imp->_nameLineEdit->blockSignals(false);
             return;
         }
         
@@ -255,18 +317,18 @@ void DockablePanel::onLineEditNameEditingFinished() {
             return;
         }
         
-        std::vector<boost::shared_ptr<Natron::Node> > allNodes = _holder->getApp()->getProject()->getCurrentNodes();
+        std::vector<boost::shared_ptr<Natron::Node> > allNodes = _imp->_holder->getApp()->getProject()->getCurrentNodes();
         for (U32 i = 0;  i < allNodes.size(); ++i) {
             if (allNodes[i]->getName() == newName) {
-                _nameLineEdit->blockSignals(true);
+                _imp->_nameLineEdit->blockSignals(true);
                 Natron::errorDialog("Node name", "A node with the same name already exists in the project.");
-                _nameLineEdit->setText(effect->getName().c_str());
-                _nameLineEdit->blockSignals(false);
+                _imp->_nameLineEdit->setText(effect->getName().c_str());
+                _imp->_nameLineEdit->blockSignals(false);
                 return;
             }
         }
     }
-    emit nameChanged(_nameLineEdit->text());
+    emit nameChanged(_imp->_nameLineEdit->text());
 }
 
 void DockablePanel::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,bool onlyTopLevelKnobs) {
@@ -316,14 +378,14 @@ void DockablePanel::initializeKnobs() {
     
     /// function called to create the gui for each knob. It can be called several times in a row
     /// without any damage
-    initializeKnobVector(_holder->getKnobs(),true);
+    initializeKnobVector(_imp->_holder->getKnobs(),true);
     
     RotoPanel* roto = initializeRotoPanel();
     if (roto) {
-        std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.find(_defaultTabName);
-        assert(parentTab != _tabs.end());
+        std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _imp->_tabs.find(_imp->_defaultTabName);
+        assert(parentTab != _imp->_tabs.end());
         QFormLayout* layout;
-        if (_useScrollAreasForTabs) {
+        if (_imp->_useScrollAreasForTabs) {
             layout = dynamic_cast<QFormLayout*>(dynamic_cast<QScrollArea*>(parentTab->second.first)->widget()->layout());
         } else {
             layout = dynamic_cast<QFormLayout*>(parentTab->second.first->layout());
@@ -343,8 +405,8 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
     boost::shared_ptr<Tab_Knob> isTab = boost::dynamic_pointer_cast<Tab_Knob>(knob);
     if (isTab) {
         QString tabName(isTab->getDescription().c_str());
-        for (int j = 0 ; j < _tabWidget->count(); ++j) {
-            if(_tabWidget->tabText(j) == tabName){
+        for (int j = 0 ; j < _imp->_tabWidget->count(); ++j) {
+            if(_imp->_tabWidget->tabText(j) == tabName){
                 return ret;
             }
         }
@@ -352,7 +414,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
         addTab(tabName);
 
     } else {
-        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it!=_imp->_knobs.end(); ++it) {
             if(it->first == knob){
                 return it->second;
             }
@@ -366,14 +428,14 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
             qDebug() << "Failed to create Knob GUI";
             return NULL;
         }
-        _knobs.insert(make_pair(knob, ret));
+        _imp->_knobs.insert(make_pair(knob, ret));
         
         ///if widgets for the KnobGui have already been created, don't the following
         if (!ret->hasWidgetBeenCreated()) {
             
             
             ///find to what to belongs the knob. by default it belongs to the default tab.
-            std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.end() ;
+            std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _imp->_tabs.end() ;
             
             
             boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
@@ -393,21 +455,21 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
             ///if the parent is a tab find it
             if (parentIsTab) {
                 //make sure the tab has been created;
-                std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentIsTab->getDescription().c_str());
+                std::map<QString,std::pair<QWidget*,int> >::iterator it = _imp->_tabs.find(parentIsTab->getDescription().c_str());
                 
                 ///if it crashes there's serious problem because findKnobGuiOrCreate(parentKnob) should have registered
                 ///the tab. Maybe you passed incorrect pointers ?
-                assert(it != _tabs.end());
+                assert(it != _imp->_tabs.end());
                 parentTab = it;
                 
             } else {
                 ///defaults to the default tab
-                parentTab = _tabs.find(_defaultTabName);
+                parentTab = _imp->_tabs.find(_imp->_defaultTabName);
                 ///The dockpanel must have a default tab if you didn't declare your own tab to
                 ///put your knobs into!
-                assert(parentTab != _tabs.end());
+                assert(parentTab != _imp->_tabs.end());
             }
-            assert(parentTab != _tabs.end());
+            assert(parentTab != _imp->_tabs.end());
             
             /// if this knob is within a group, make sure the group is created so far
             Group_KnobGui* parentGui = 0;
@@ -426,7 +488,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
             
             ///retrieve the form layout
             QFormLayout* layout;
-            if (_useScrollAreasForTabs) {
+            if (_imp->_useScrollAreasForTabs) {
                 layout = dynamic_cast<QFormLayout*>(
                                                     dynamic_cast<QScrollArea*>(parentTab->second.first)->widget()->layout());
             } else {
@@ -521,14 +583,14 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool m
 void DockablePanel::addTab(const QString& name){
     QWidget* newTab;
     QWidget* layoutContainer;
-    if (_useScrollAreasForTabs) {
-        QScrollArea* sa = new QScrollArea(_tabWidget);
+    if (_imp->_useScrollAreasForTabs) {
+        QScrollArea* sa = new QScrollArea(_imp->_tabWidget);
         layoutContainer = new QWidget(sa);
         sa->setWidgetResizable(true);
         sa->setWidget(layoutContainer);
         newTab = sa;
     } else {
-        newTab = new QWidget(_tabWidget);
+        newTab = new QWidget(_imp->_tabWidget);
         layoutContainer = newTab;
     }
     newTab->setObjectName(name);
@@ -542,114 +604,114 @@ void DockablePanel::addTab(const QString& name){
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
-    _tabWidget->addTab(newTab,name);
-    _tabs.insert(make_pair(name,make_pair(newTab,0)));
+    _imp->_tabWidget->addTab(newTab,name);
+    _imp->_tabs.insert(make_pair(name,make_pair(newTab,0)));
 }
 
 const QUndoCommand* DockablePanel::getLastUndoCommand() const{
-    return _undoStack->command(_undoStack->index()-1);
+    return _imp->_undoStack->command(_imp->_undoStack->index()-1);
 }
 
 void DockablePanel::pushUndoCommand(QUndoCommand* cmd){
-    _undoStack->setActive();
-    _undoStack->push(cmd);
-    if(_undoButton && _redoButton){
-        _undoButton->setEnabled(_undoStack->canUndo());
-        _redoButton->setEnabled(_undoStack->canRedo());
+    _imp->_undoStack->setActive();
+    _imp->_undoStack->push(cmd);
+    if(_imp->_undoButton && _imp->_redoButton){
+        _imp->_undoButton->setEnabled(_imp->_undoStack->canUndo());
+        _imp->_redoButton->setEnabled(_imp->_undoStack->canRedo());
     }
 }
 
 void DockablePanel::onUndoClicked(){
-    _undoStack->undo();
-    if(_undoButton && _redoButton){
-        _undoButton->setEnabled(_undoStack->canUndo());
-        _redoButton->setEnabled(_undoStack->canRedo());
+    _imp->_undoStack->undo();
+    if(_imp->_undoButton && _imp->_redoButton){
+        _imp->_undoButton->setEnabled(_imp->_undoStack->canUndo());
+        _imp->_redoButton->setEnabled(_imp->_undoStack->canRedo());
     }
     emit undoneChange();
 }
 
 void DockablePanel::onRedoPressed(){
-    _undoStack->redo();
-    if(_undoButton && _redoButton){
-        _undoButton->setEnabled(_undoStack->canUndo());
-        _redoButton->setEnabled(_undoStack->canRedo());
+    _imp->_undoStack->redo();
+    if(_imp->_undoButton && _imp->_redoButton){
+        _imp->_undoButton->setEnabled(_imp->_undoStack->canUndo());
+        _imp->_redoButton->setEnabled(_imp->_undoStack->canRedo());
     }
     emit redoneChange();
 }
 
 void DockablePanel::showHelp(){
-    QToolTip::showText(QCursor::pos(), _helpButton->toolTip());
+    QToolTip::showText(QCursor::pos(), _imp->_helpButton->toolTip());
 }
 
 void DockablePanel::setClosed(bool c)
 {
     setVisible(!c);
-    _isClosed = c;
+    _imp->_isClosed = c;
     emit closeChanged(c);
 }
 
 void DockablePanel::closePanel() {
-    if (_floating) {
+    if (_imp->_floating) {
         floatPanel();
     }
     close();
-    _isClosed = true;
+    _imp->_isClosed = true;
     emit closeChanged(true);
     getGui()->getApp()->redrawAllViewers();
     
 }
 void DockablePanel::minimizeOrMaximize(bool toggled){
-    _minimized=toggled;
-    if(_minimized){
+    _imp->_minimized=toggled;
+    if(_imp->_minimized){
         emit minimized();
     }else{
         emit maximized();
     }
-    _tabWidget->setVisible(!_minimized);
+    _imp->_tabWidget->setVisible(!_imp->_minimized);
     std::vector<QWidget*> _panels;
-    for(int i =0 ; i < _container->count(); ++i) {
-        if (QWidget *myItem = dynamic_cast <QWidget*>(_container->itemAt(i))){
+    for(int i =0 ; i < _imp->_container->count(); ++i) {
+        if (QWidget *myItem = dynamic_cast <QWidget*>(_imp->_container->itemAt(i))){
             _panels.push_back(myItem);
-            _container->removeWidget(myItem);
+            _imp->_container->removeWidget(myItem);
         }
     }
     for (U32 i =0 ; i < _panels.size(); ++i) {
-        _container->addWidget(_panels[i]);
+        _imp->_container->addWidget(_panels[i]);
     }
     update();
 }
 
 void DockablePanel::floatPanel() {
-    _floating = !_floating;
-    if (_floating) {
-        assert(!_floatingWidget);
-        _floatingWidget = new FloatingWidget(_gui);
-        QObject::connect(_floatingWidget,SIGNAL(closed()),this,SLOT(closePanel()));
-        _container->removeWidget(this);
-        _floatingWidget->setWidget(size(),this);
+    _imp->_floating = !_imp->_floating;
+    if (_imp->_floating) {
+        assert(!_imp->_floatingWidget);
+        _imp->_floatingWidget = new FloatingWidget(_imp->_gui);
+        QObject::connect(_imp->_floatingWidget,SIGNAL(closed()),this,SLOT(closePanel()));
+        _imp->_container->removeWidget(this);
+        _imp->_floatingWidget->setWidget(size(),this);
     } else {
-        assert(_floatingWidget);
-        _floatingWidget->removeWidget();
-        setParent(_container->parentWidget());
-        _container->insertWidget(0, this);
-        delete _floatingWidget;
-        _floatingWidget = 0;
+        assert(_imp->_floatingWidget);
+        _imp->_floatingWidget->removeWidget();
+        setParent(_imp->_container->parentWidget());
+        _imp->_container->insertWidget(0, this);
+        delete _imp->_floatingWidget;
+        _imp->_floatingWidget = 0;
     }
 }
 
 
 void DockablePanel::onNameChanged(const QString& str){
-    if(_nameLabel){
-        _nameLabel->setText(str);
-    }else if(_nameLineEdit){
-        _nameLineEdit->setText(str);
+    if(_imp->_nameLabel){
+        _imp->_nameLabel->setText(str);
+    }else if(_imp->_nameLineEdit){
+        _imp->_nameLineEdit->setText(str);
     }
 }
 
 
 Button* DockablePanel::insertHeaderButton(int headerPosition){
-    Button* ret = new Button(_headerWidget);
-    _headerLayout->insertWidget(headerPosition, ret);
+    Button* ret = new Button(_imp->_headerWidget);
+    _imp->_headerLayout->insertWidget(headerPosition, ret);
     return ret;
 }
 
@@ -657,13 +719,13 @@ void DockablePanel::onKnobDeletion(){
     
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (handler) {
-        for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
+        for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it){
             KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
             if (helper->getSignalSlotHandler().get() == handler) {
                 if(it->second){
                     delete it->second;
                 }
-                _knobs.erase(it);
+                _imp->_knobs.erase(it);
                 return;
             }
         }
@@ -673,24 +735,34 @@ void DockablePanel::onKnobDeletion(){
 
 
 Gui* DockablePanel::getGui() const {
-    return _gui;
+    return _imp->_gui;
 }
 
 void DockablePanel::insertHeaderWidget(int index,QWidget* widget) {
-    if (_mode != NO_HEADER) {
-        _headerLayout->insertWidget(index, widget);
+    if (_imp->_mode != NO_HEADER) {
+        _imp->_headerLayout->insertWidget(index, widget);
     }
 }
 
 void DockablePanel::appendHeaderWidget(QWidget* widget) {
-    if (_mode != NO_HEADER) {
-        _headerLayout->addWidget(widget);
+    if (_imp->_mode != NO_HEADER) {
+        _imp->_headerLayout->addWidget(widget);
     }
 }
 
 QWidget* DockablePanel::getHeaderWidget() const {
-    return _headerWidget;
+    return _imp->_headerWidget;
 }
+
+bool DockablePanel::isMinimized() const {return _imp->_minimized;}
+
+const std::map<boost::shared_ptr<KnobI>,KnobGui*>& DockablePanel::getKnobs() const { return _imp->_knobs; }
+
+QVBoxLayout* DockablePanel::getContainer() const {return _imp->_container;}
+
+QUndoStack* DockablePanel::getUndoStack() const { return _imp->_undoStack; }
+
+bool DockablePanel::isClosed() const { return _imp->_isClosed; }
 
 NodeSettingsPanel::NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
 :DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),

@@ -342,9 +342,9 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypePage) {
-        OFX::Host::Param::PageInstance *ret = new OFX::Host::Param::PageInstance(descriptor, this);
-        // RETURN immediately, nothing else to do
-        return ret;
+        OfxPageInstance* ret = new OfxPageInstance(node(),descriptor);
+        knob = ret->getKnob();
+        instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypePushButton) {
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(node(), descriptor);

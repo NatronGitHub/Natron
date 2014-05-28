@@ -48,6 +48,7 @@ class Bool_Knob;
 class Choice_Knob;
 class Group_Knob;
 class RichText_Knob;
+class Page_Knob;
 class Parametric_Knob;
 class OfxEffectInstance;
 class OverlaySupport;
@@ -527,6 +528,26 @@ private:
     boost::shared_ptr<Group_Knob> _groupKnob;
     boost::shared_ptr<Tab_Knob> _tabKnob;
 };
+
+class OfxPageInstance : public OFX::Host::Param::PageInstance, public OfxParamToKnob {
+
+public:
+    
+    
+    OfxPageInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor);
+    
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled() OVERRIDE FINAL;
+    
+    // callback which should set secret state as appropriate
+    virtual void setSecret() OVERRIDE FINAL;
+    
+    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    
+private:
+    boost::shared_ptr<Page_Knob> _pageKnob;
+};
+
 
 class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance, public OfxParamToKnob {
     Q_OBJECT

@@ -1680,6 +1680,35 @@ void OfxGroupInstance::setSecret() {
     _groupKnob->setSecret(getSecret());
 }
 
+////////////////////////// OfxPageInstance /////////////////////////////////////////////////
+
+
+OfxPageInstance::OfxPageInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::PageInstance(descriptor,node->effectInstance())
+, _pageKnob()
+{
+    _pageKnob = Natron::createKnob<Page_Knob>(node, getParamLabel(this));
+}
+
+// callback which should set enabled state as appropriate
+void OfxPageInstance::setEnabled()
+{
+    _pageKnob->setAllDimensionsEnabled(getEnabled());
+}
+
+// callback which should set secret state as appropriate
+void OfxPageInstance::setSecret()
+{
+    _pageKnob->setAllDimensionsEnabled(getSecret());
+}
+
+
+boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
+{
+    return _pageKnob;
+}
+
+
 
 ////////////////////////// OfxStringInstance /////////////////////////////////////////////////
 
