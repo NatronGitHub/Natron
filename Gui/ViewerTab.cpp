@@ -1418,6 +1418,9 @@ void ViewerTab::createRotoInterface(NodeGui* n)
     QObject::connect(n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onRotoNodeGuiSettingsPanelClosed(bool)));
     if (n->isSettingsPanelVisible()) {
         setRotoInterface(n);
+    } else {
+        roto->getToolBar()->hide();
+        roto->getCurrentButtonsBar()->hide();
     }
 }
 
