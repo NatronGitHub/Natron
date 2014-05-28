@@ -285,6 +285,15 @@ void NodeGui::refreshPosition(double x,double y){
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
+    const std::list<boost::shared_ptr<NodeGui> >& allNodes = _graph->getAllActiveNodes();
+    
+    QRectF bbox = mapRectToScene(_boundingBox->rect());
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if (it->get() != this && (*it)->intersects(bbox)) {
+            (*it)->stackBefore(this);
+        }
+    }
+    
     emit positionChanged();
 }
 
@@ -430,6 +439,12 @@ void NodeGui::initializeInputs()
 }
 bool NodeGui::contains(const QPointF &point) const{
     return _boundingBox->contains(point);
+}
+
+bool NodeGui::intersects(const QRectF& rect) const
+{
+    QRectF mapped = mapRectFromScene(rect);
+    return _boundingBox->rect().intersects(mapped);
 }
 
 QPainterPath NodeGui::shape() const
