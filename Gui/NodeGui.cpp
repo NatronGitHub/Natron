@@ -53,7 +53,9 @@ using namespace Natron;
 
 using std::make_pair;
 
-static const double pi=3.14159265358979323846264338327950288419717;
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
 
 NodeGui::NodeGui(QGraphicsItem *parent)
 : QObject()
@@ -518,7 +520,7 @@ void NodeGui::initializeInputs()
         if(emptyInputsCount == 1 && _internalNode->maximumInputs() > 1){
             for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
                 if(!it->second->hasSource()){
-                    it->second->setAngle(pi);
+                    it->second->setAngle(M_PI);
                     it->second->initLine();
                     return;
                 }
@@ -528,8 +530,8 @@ void NodeGui::initializeInputs()
     }
     
     
-    double piDividedbyX = (double)(pi/(double)(emptyInputsCount+1));
-    double angle = pi-piDividedbyX;
+    double piDividedbyX = M_PI/(emptyInputsCount+1);
+    double angle = M_PI - piDividedbyX;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         if(!it->second->hasSource() && it->second->isVisible()){
             it->second->setAngle(angle);

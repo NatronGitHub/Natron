@@ -42,20 +42,20 @@ Copyright (C) 2014 INRIA
 #include <cstdlib>
 #include <algorithm>
 
-namespace {
-static const double pi = 3.14159265358979323846264338327950288419717;
-}
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
 
 namespace Transform
 {
 
 double toDegrees(double rad) {
-    rad = rad * 180.0 / pi;
+    rad = rad * 180.0 / M_PI;
     return rad;
 }
 
 double toRadians(double deg) {
-    deg = deg * pi / 180.0;
+    deg = deg * M_PI / 180.0;
     return deg;
 }
 

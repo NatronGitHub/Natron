@@ -18,7 +18,13 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 
-const qreal pi= 3.14159265358979323846264338327950288419717;
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+#ifndef M_PI_2
+#define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
+#endif
+
 static const qreal UNATTACHED_ARROW_LENGTH=60.;
 const int graphicalContainerOffset=10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
@@ -51,7 +57,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
 , _isOutputEdge(true)
 , inputNb(-1)
-, angle(pi / 2.)
+, angle(M_PI_2)
 , label(NULL)
 , arrowHead()
 , dest()
@@ -128,11 +134,11 @@ void Edge::initLine()
     } else if (!source && dest) {
         ///// The edge is an input edge which is unconnected
         
-        srcpt = QPointF(dst.x() + (cos(angle)*UNATTACHED_ARROW_LENGTH),
-          dst.y() - (sin(angle) * UNATTACHED_ARROW_LENGTH));
+        srcpt = QPointF(dst.x() + (std::cos(angle)*UNATTACHED_ARROW_LENGTH),
+                        dst.y() - (std::sin(angle) * UNATTACHED_ARROW_LENGTH));
         
         if (label) {
-            double cosinus = cos(angle);
+            double cosinus = std::cos(angle);
             int yOffset = 0;
             if(cosinus < 0){
                 yOffset = -40;
@@ -192,14 +198,15 @@ void Edge::initLine()
     }
     
     qreal a;
-    a = acos(line().dx() / line().length());
-    if (line().dy() >= 0)
-        a = 2*pi - a;
+    a = std::acos(line().dx() / line().length());
+    if (line().dy() >= 0) {
+        a = 2 * M_PI - a;
+    }
     qreal arrowSize = 5;
-    QPointF arrowP1 = line().p1() + QPointF(sin(a + pi / 3) * arrowSize,
-                                            cos(a + pi / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(sin(a + pi - pi / 3) * arrowSize,
-                                            cos(a + pi - pi / 3) * arrowSize);
+    QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI / 3) * arrowSize);
+    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
 
     arrowHead.clear();
     arrowHead << dst << arrowP1 << arrowP2;
@@ -243,15 +250,15 @@ void Edge::dragSource(const QPointF& src)
     
     setLine(QLineF(line().p1(),src));
 
-    double a = acos(line().dx() / line().length());
+    double a = std::acos(line().dx() / line().length());
     if (line().dy() >= 0)
-        a = 2*pi - a;
+        a = 2 * M_PI - a;
 
     double arrowSize = 5;
-    QPointF arrowP1 = line().p1() + QPointF(sin(a + pi / 3) * arrowSize,
-                                            cos(a + pi / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(sin(a + pi - pi / 3) * arrowSize,
-                                            cos(a + pi - pi / 3) * arrowSize);
+    QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI / 3) * arrowSize);
+    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
     arrowHead.clear();
 	arrowHead << line().p1() << arrowP1 << arrowP2;
 
@@ -265,15 +272,15 @@ void Edge::dragDest(const QPointF& dst)
 {
     setLine(QLineF(dst,line().p2()));
 
-    double a = acos(line().dx() / line().length());
+    double a = std::acos(line().dx() / line().length());
     if (line().dy() >= 0)
-        a = 2*pi - a;
+        a = 2 * M_PI - a;
     
     double arrowSize = 5;
-    QPointF arrowP1 = line().p1() + QPointF(sin(a + pi / 3) * arrowSize,
-                                            cos(a + pi / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(sin(a + pi - pi / 3) * arrowSize,
-                                            cos(a + pi - pi / 3) * arrowSize);
+    QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI / 3) * arrowSize);
+    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
     arrowHead.clear();
 	arrowHead << line().p1() << arrowP1 << arrowP2;
     
