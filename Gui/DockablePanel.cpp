@@ -425,7 +425,32 @@ void DockablePanel::initializeKnobs() {
         
     RotoPanel* roto = initializeRotoPanel();
     if (roto) {
-        std::map<QString,Page >::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
+        PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
+        ///the top level parent is not a page, i.e the plug-in didn't specify any page
+        ///for this param, put it in the first page that is not the default page.
+        ///If there is still no page, put it in the default tab.
+        for (PageMap::iterator it = _imp->_pages.begin(); it!=_imp->_pages.end(); ++it) {
+            if (it->first != _imp->_defaultPageName) {
+                parentTab = it;
+                break;
+            }
+        }
+        if (parentTab == _imp->_pages.end()) {
+            ///find in all knobs a page param to set this param into
+            for (U32 i = 0; i < knobs.size(); ++i) {
+                Page_Knob* p = dynamic_cast<Page_Knob*>(knobs[i].get());
+                if (p) {
+                    parentTab = _imp->addPage(p->getDescription().c_str());
+                    break;
+                }
+            }
+            
+            ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
+            if (parentTab == _imp->_pages.end()) {
+                parentTab = _imp->addPage(_imp->_defaultPageName);
+            }
+        }
+
         assert(parentTab != _imp->_pages.end());
         QFormLayout* layout;
         if (_imp->_useScrollAreasForTabs) {
