@@ -251,10 +251,10 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
     }
     else {
-        ret.x1 = kOfxFlagInfiniteMin;
-        ret.x2 = kOfxFlagInfiniteMax;
-        ret.y1 = kOfxFlagInfiniteMin;
-        ret.y2 = kOfxFlagInfiniteMax;
+        ret.x1 = 0.;
+        ret.x2 = 1.;
+        ret.y1 = 0.;
+        ret.y2 = 1.;
     }
     return ret;
 }

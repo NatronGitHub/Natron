@@ -3776,6 +3776,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     
     ////Allocate the cairo temporary buffer
     cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());
+    cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
         appPTR->removeFromNodeCache(image);
         return image;
