@@ -235,10 +235,29 @@ bool Curve::areKeyFramesTimeClampedToIntegers() const
 
 void Curve::clone(const Curve& other)
 {
-    clearKeyFrames();
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
     QWriteLocker l(&_imp->_lock);
+    _imp->keyFrames.clear();
     std::transform(otherKeys.begin(), otherKeys.end(), std::inserter(_imp->keyFrames, _imp->keyFrames.begin()), KeyFrameCloner());
+}
+
+void Curve::clone(const Curve& other,SequenceTime offset,const RangeD& range)
+{
+    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    bool copyAll = range.min == 0 && range.max == 0;
+    QWriteLocker l(&_imp->_lock);
+    _imp->keyFrames.clear();
+    for (KeyFrameSet::iterator it = otherKeys.begin(); it!=otherKeys.end(); ++it) {
+        double time = it->getTime();
+        if (!copyAll && (time < range.min || time > range.max)) {
+            continue;
+        }
+        KeyFrame k(*it);
+        if (offset != 0) {
+            k.setTime(time + offset);
+        }
+        _imp->keyFrames.insert(k);
+    }
 }
 
 

@@ -89,8 +89,21 @@ public:
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
      * to this knob. This function calls cloneExtraData.
+     *
+     * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
     virtual void clone(const boost::shared_ptr<KnobI>& other) = 0;
+    
+    /**
+     * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
+     * on the keyframes time and only the keyframes withing the given range are copied.
+     * If the range is [0,0] everything will be copied. 
+     * 
+     * Note that unlike the other version of clone, this version is more relaxed and accept parameters
+     * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
+     * The restriction on types still apply.
+     **/
+    virtual void clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range) = 0;
     
 protected:
     
@@ -710,6 +723,7 @@ protected:
      * The other knob is guaranteed to be of the same type.
      **/
     virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/) {}
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/,SequenceTime /*offset*/,const RangeD& /*range*/) {}
     
     /**
      * @brief Called when a keyframe is removed.
@@ -883,6 +897,8 @@ public:
     
     virtual void clone(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
     
+    virtual void clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range) OVERRIDE FINAL;
+    
 private:
     
     void cloneValues(const boost::shared_ptr<KnobI>& other);
@@ -943,6 +959,8 @@ public:
 protected:
     
     virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE;
+    
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range) OVERRIDE;
     
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE ;
     

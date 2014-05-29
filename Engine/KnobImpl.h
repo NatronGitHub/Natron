@@ -708,24 +708,28 @@ template<>
 void Knob<int>::cloneValues(const boost::shared_ptr<KnobI>& other)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other.get());
+    assert(isInt);
     _values = isInt->_values;
 }
 template<>
 void Knob<bool>::cloneValues(const boost::shared_ptr<KnobI>& other)
 {
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other.get());
+    assert(isBool),
     _values = isBool->_values;
 }
 template<>
 void Knob<double>::cloneValues(const boost::shared_ptr<KnobI>& other)
 {
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other.get());
+    assert(isDouble);
     _values = isDouble->_values;
 }
 template<>
 void Knob<std::string>::cloneValues(const boost::shared_ptr<KnobI>& other)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other.get());
+    assert(isString);
     _values = isString->_values;
 }
 
@@ -745,5 +749,15 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
     setSecret(other->getIsSecret());
 }
 
+template<typename T>
+void Knob<T>::clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range)
+{
+    cloneValues(other);
+    int dimMin = std::min(getDimension() , other->getDimension());
+    for (int i = 0; i < dimMin; ++ dimMin) {
+        getCurve(i)->clone(*other->getCurve(i),offset,range);
+    }
+    cloneExtraData(other,offset,range);
+}
 
 #endif // KNOBIMPL_H

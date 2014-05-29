@@ -50,6 +50,8 @@ public:
     
     void clone(const StringAnimationManager& other);
     
+    void clone(const StringAnimationManager& other,SequenceTime offset,const RangeD& range);
+    
     void load(const std::map<int,std::string>& keyframes);
     
     void save(std::map<int,std::string>* keyframes) const;

@@ -1121,6 +1121,17 @@ void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other){
     }
 }
 
+void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range)
+{
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
+    if (isParametric) {
+        int dimMin = std::min(getDimension(), isParametric->getDimension());
+        for (int i = 0; i < dimMin; ++i) {
+            _curves[i]->clone(*isParametric->getParametricCurve(i),offset,range);
+        }
+    }
+}
+
 void Parametric_Knob::saveParametricCurves(std::list< Curve >* curves) const
 {
     for (U32 i = 0; i < _curves.size(); ++i) {

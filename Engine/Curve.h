@@ -24,8 +24,8 @@ CLANG_DIAG_OFF(unused-parameter)
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 
-#include "Global/Enums.h"
 #include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
@@ -152,6 +152,12 @@ public:
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
     **/
     void clone(const Curve& other);
+    
+    /**
+     * @brief Same as the other version clone except that keyframes will be offset by the given offset
+     * and only the keyframes lying in the given range will be copied.
+     **/
+    void clone(const Curve& other,SequenceTime offset,const RangeD& range);
 
     bool isAnimated() const WARN_UNUSED_RETURN;
     
