@@ -316,9 +316,9 @@ void NodeGui::refreshPosition(double x,double y){
             boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
             if (inputSource) {
                 QSize inputSize = inputSource->getSize();
-                QPointF inputScenePos = inputSource->scenePos();
+                QPointF inputScenePos = inputSource->pos();
                 QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
-                QPointF mapped = mapFromScene(inputPos);
+                QPointF mapped = mapFromParent(inputPos);
                 if (!contains(mapped)) {
                     if ((inputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
                          inputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
@@ -343,9 +343,9 @@ void NodeGui::refreshPosition(double x,double y){
                 boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
                 assert(node);
                 QSize outputSize = node->getSize();
-                QPointF nodeScenePos = node->scenePos();
+                QPointF nodeScenePos = node->pos();
                 QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);
-                QPointF mapped = mapFromScene(outputPos);
+                QPointF mapped = mapFromParent(outputPos);
                 if (!contains(mapped)) {
                     if ((outputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
                          outputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
