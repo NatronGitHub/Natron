@@ -283,7 +283,7 @@ void TabWidget::closePane(){
         return;
     }
     
-    QList<int> mainContainerSizes = container->sizes();
+    QList<int> mainContainerSizes = mainContainer->sizes();
 
     
     /*identifying the other tab*/
@@ -318,11 +318,9 @@ void TabWidget::closePane(){
         }
     }
     /*moving the other to the mainContainer*/
-    if(other){
-        other->setVisible(true);
-        other->setParent(mainContainer);
-    }
     mainContainer->insertWidget(subSplitterIndex, other);
+    other->setVisible(true);
+    other->setParent(mainContainer);
     
     ///restore the main container sizes
     mainContainer->setSizes_mt_safe(mainContainerSizes);
