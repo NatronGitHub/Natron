@@ -754,8 +754,11 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset,co
 {
     cloneValues(other);
     int dimMin = std::min(getDimension() , other->getDimension());
-    for (int i = 0; i < dimMin; ++ dimMin) {
+    for (int i = 0; i < dimMin; ++i) {
         getCurve(i)->clone(*other->getCurve(i),offset,range);
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_valueChanged(i);
+        }
     }
     cloneExtraData(other,offset,range);
 }
