@@ -233,8 +233,8 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         }
         if (texture != c->texID) {
             texture = c->texID;
-            assert(glIsTexture(texture));
             glBindTexture(GL_TEXTURE_2D, texture);
+            assert(glIsTexture(texture));
         }
         glCheckError();
         glBegin(GL_QUADS);
