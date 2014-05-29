@@ -25,6 +25,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QGraphicsLineItem>
 #include <QUndoStack>
 #include <QMenu>
+#include <QThread>
 #include <QDropEvent>
 #include <QCoreApplication>
 #include <QMimeData>
@@ -744,6 +745,8 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         cloneSelectedNode();
     } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier) && e->modifiers().testFlag(Qt::ShiftModifier)) {
         decloneSelectedNode();
+    } else if (e->key() == Qt::Key_F) {
+        centerOnAllNodes();
     }
 
     
@@ -1444,6 +1447,11 @@ void NodeGraph::populateMenu(){
     QObject::connect(forceRefreshPreviews,SIGNAL(triggered()),this,SLOT(forceRefreshAllPreviews()));
     _menu->addAction(forceRefreshPreviews);
 
+    QAction* frameAllNodes = new QAction(tr("Frame nodes"),this);
+    frameAllNodes->setShortcut(QKeySequence(Qt::Key_F));
+    QObject::connect(frameAllNodes,SIGNAL(triggered()),this,SLOT(centerOnAllNodes()));
+    _menu->addAction(frameAllNodes);
+
     _menu->addSeparator();
     
     const std::vector<ToolButton*>& toolButtons = _gui->getToolButtons();
@@ -1786,4 +1794,25 @@ void NodeGraph::deleteNodePermanantly(const boost::shared_ptr<NodeGui>& n)
         _nodeClipBoard._gui.reset();
     }
     
+}
+
+void NodeGraph::centerOnAllNodes()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_nodesMutex);
+    double xmin = INT_MAX;
+    double xmax = INT_MIN;
+    double ymin = INT_MAX;
+    double ymax = INT_MIN;
+    
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        QSize size = (*it)->getSize();
+        QPointF pos = (*it)->scenePos();
+        xmin = std::min(xmin, pos.x());
+        xmax = std::max(xmax,pos.x() + size.width());
+        ymin = std::min(ymin,pos.y());
+        ymax = std::max(ymax,pos.y() + size.height());
+    }
+    QRect rect(xmin,ymin,(xmax - xmin),(ymax - ymin));
+    fitInView(rect,Qt::KeepAspectRatio);
 }

@@ -175,6 +175,8 @@ public slots:
     void cloneSelectedNode();
     
     void decloneSelectedNode();
+    
+    void centerOnAllNodes();
 
 private:
     
