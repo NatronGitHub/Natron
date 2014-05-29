@@ -30,12 +30,11 @@ namespace Natron {
 }
 
 class File_Knob;
-class Tab_Knob;
+class Page_Knob;
 class Double_Knob;
 class Int_Knob;
 class Bool_Knob;
 class Choice_Knob;
-class Table_Knob;
 class Path_Knob;
 
 class Settings : public KnobHolder
@@ -109,7 +108,7 @@ private:
     bool tryLoadOpenColorIOConfig();
 
     
-    boost::shared_ptr<Tab_Knob> _generalTab;
+    boost::shared_ptr<Page_Knob> _generalTab;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Bool_Knob> _linearPickers;
@@ -122,19 +121,19 @@ private:
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;
     
-    boost::shared_ptr<Tab_Knob> _cachingTab;
+    boost::shared_ptr<Page_Knob> _cachingTab;
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
     boost::shared_ptr<Int_Knob> _maxRAMPercent;
     boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
     
-    boost::shared_ptr<Tab_Knob> _viewersTab;
+    boost::shared_ptr<Page_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
     boost::shared_ptr<Int_Knob> _powerOf2Tiling;
     
-    boost::shared_ptr<Tab_Knob> _readersTab;
+    boost::shared_ptr<Page_Knob> _readersTab;
     std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;
     
-    boost::shared_ptr<Tab_Knob> _writersTab;
+    boost::shared_ptr<Page_Knob> _writersTab;
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     
     bool _wereChangesMadeSinceLastSave;

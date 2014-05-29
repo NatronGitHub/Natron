@@ -643,6 +643,7 @@ boost::shared_ptr<KnobI> Double_KnobGui::getKnob() const { return _knob; }
 
 Button_KnobGui::Button_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
+, _button(0)
 {
     _knob = boost::dynamic_pointer_cast<Button_Knob>(knob);
 }
@@ -2080,7 +2081,9 @@ void GroupBoxLabel::setChecked(bool b)
 
 Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
-, _checked(false) {
+, _checked(false)
+, _button(0)
+{
 
     _knob = boost::dynamic_pointer_cast<Group_Knob>(knob);
 }
@@ -2099,7 +2102,7 @@ void Group_KnobGui::addKnob(KnobGui *child, int row, int column) {
 }
 
 bool Group_KnobGui::isChecked() const {
-    return _button->isChecked();
+    return hasWidgetBeenCreated() ? _button->isChecked() : true;
 }
 
 void Group_KnobGui::createWidget(QHBoxLayout* layout)
@@ -2157,12 +2160,16 @@ void Group_KnobGui::updateGUI(int /*dimension*/)
 {
     bool b = _knob->getValue();
     setChecked(b);
-    _button->setChecked(b);
+    if (_button) {
+        _button->setChecked(b);
+    }
 }
 
 void Group_KnobGui::_hide()
 {
-    _button->hide();
+    if (_button) {
+        _button->hide();
+    }
     for (U32 i = 0 ; i < _children.size() ; ++i) {
         _children[i].first->hide();
         
@@ -2175,7 +2182,9 @@ void Group_KnobGui::_show()
     if (_knob->getIsSecret()) {
         return;
     }
-    _button->show();
+    if (_button) {
+        _button->show();
+    }
     
     if (_checked) {
         for (U32 i = 0 ; i < _children.size() ; ++i) {
@@ -2187,7 +2196,9 @@ void Group_KnobGui::_show()
 
 void Group_KnobGui::setEnabled() {
     bool enabled = _knob->isEnabled(0);
-    _button->setEnabled(enabled);
+    if (_button) {
+        _button->setEnabled(enabled);
+    }
     if (enabled) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
             for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {

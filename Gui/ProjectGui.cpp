@@ -81,8 +81,8 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
                                false,
                                "Project Settings",
                                "The settings of the current project.",
-                               true,
-                               "Rendering",
+                               false,
+                               "Settings",
                                parent);
     
     

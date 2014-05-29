@@ -381,12 +381,14 @@ QTabBar::tab:selected {
 }
 QTabBar::tab:!selected {
     margin-top: 3px; /* make non-selected tabs look smaller */
+    margin-left: 3px;
+    margin-right: 3px;
 }
 /* make use of negative margins for overlapping tabs */
 QTabBar::tab:selected {
     /* expand/overlap to the left and right by 4px */
-    margin-left: -3px;
-    margin-right: -3px;
+    margin-left: 0px;
+    margin-right: 0px;
 }
 QTabBar::tab:first:selected {
     margin-left: 0; /* the first selected tab has nothing to overlap with on the left */

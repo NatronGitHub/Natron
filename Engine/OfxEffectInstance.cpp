@@ -204,7 +204,15 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
     OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
     if(overlayEntryPoint){
         _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
+        effectInstance()->setClipsHash(hash());
+        RenderScale s;
+        effectInstance()->getRenderScaleRecursive(s.x, s.y);
+        effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(s.x));
+        effectInstance()->setClipsView(0);
         _overlayInteract->createInstanceAction();
+        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsMipMapLevel();
+        effectInstance()->discardClipsView();
         getApp()->redrawAllViewers();
     }
     

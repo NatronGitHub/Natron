@@ -501,6 +501,7 @@ class Group_Knob:  public QObject, public Knob<bool>
     Q_OBJECT
     
     std::vector< boost::shared_ptr<KnobI> > _children;
+    bool _isTab;
 public:
     
     static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
@@ -513,6 +514,10 @@ public:
     
     const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
     
+    void setAsTab() ;
+    
+    bool isTab() const;
+    
     static const std::string& typeNameStatic();
     
 private:
@@ -522,37 +527,6 @@ private:
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
 private:
-    static const std::string _typeNameStr;
-};
-
-/******************************TAB_KNOB**************************************/
-
-class Tab_Knob :  public QObject,public Knob<bool>
-{
-    Q_OBJECT
-public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
-        return new Tab_Knob(holder, description, dimension,declaredByPlugin);
-    }
-    
-    Tab_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
-    void addKnob(boost::shared_ptr<KnobI> k);
-    
-    const std::vector< boost::shared_ptr<KnobI> >& getChildren() const { return _children; }
-    
-    static const std::string& typeNameStatic();
-    
-private:
-    virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
-private:
-    
-    std::vector< boost::shared_ptr<KnobI> > _children;
-    
     static const std::string _typeNameStr;
 };
 

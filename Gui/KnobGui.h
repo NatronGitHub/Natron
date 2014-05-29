@@ -76,8 +76,14 @@ public:
     
     bool hasWidgetBeenCreated() const ;
     
-    void createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine,
+    void createGUI(QFormLayout* containerLayout,
+                   QWidget* fieldContainer,
+                   QWidget* label,
+                   QHBoxLayout* layout,
+                   int row,
+                   bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine);
+
         
     void pushUndoCommand(QUndoCommand* cmd);
     
@@ -242,6 +248,7 @@ protected:
     virtual void updateGUI(int dimension) = 0;
     
 private:
+
     
     void copyToClipBoard(int dimension,bool copyAnimation);
     

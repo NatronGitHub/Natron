@@ -40,7 +40,6 @@ class String_Knob;
 class File_Knob;
 class OutputFile_Knob;
 class Button_Knob;
-class Tab_Knob;
 class Color_Knob;
 class Int_Knob;
 class Double_Knob;
@@ -526,7 +525,6 @@ public:
 
 private:
     boost::shared_ptr<Group_Knob> _groupKnob;
-    boost::shared_ptr<Tab_Knob> _tabKnob;
 };
 
 class OfxPageInstance : public OFX::Host::Param::PageInstance, public OfxParamToKnob {
@@ -543,6 +541,9 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    
+    ///Must be called after all OfxParamInstances have been created
+    void populatePage();
     
 private:
     boost::shared_ptr<Page_Knob> _pageKnob;

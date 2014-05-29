@@ -56,7 +56,7 @@ static QString getDefaultOcioConfigPath() {
 
 void Settings::initializeKnobs(){
     
-    _generalTab = Natron::createKnob<Tab_Knob>(this, "General");
+    _generalTab = Natron::createKnob<Page_Knob>(this, "General");
     
     _autoSaveDelay = Natron::createKnob<Int_Knob>(this, "Auto-save trigger delay");
     _autoSaveDelay->setAnimationEnabled(false);
@@ -131,7 +131,7 @@ void Settings::initializeKnobs(){
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
     
-    boost::shared_ptr<Tab_Knob> ocioTab = Natron::createKnob<Tab_Knob>(this, "OpenColorIO");
+    boost::shared_ptr<Page_Knob> ocioTab = Natron::createKnob<Page_Knob>(this, "OpenColorIO");
     
     
     _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
@@ -168,7 +168,7 @@ void Settings::initializeKnobs(){
                                           "to a custom OpenColorIO config file (.ocio).");
     ocioTab->addKnob(_customOcioConfigFile);
     
-    _viewersTab = Natron::createKnob<Tab_Knob>(this, "Viewers");
+    _viewersTab = Natron::createKnob<Page_Knob>(this, "Viewers");
     
     _texturesMode = Natron::createKnob<Choice_Knob>(this, "Viewer textures bit depth");
     _texturesMode->setAnimationEnabled(false);
@@ -201,7 +201,7 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
-    _cachingTab = Natron::createKnob<Tab_Knob>(this, "Caching");
+    _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
     
     _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
     _maxRAMPercent->setAnimationEnabled(false);
@@ -241,9 +241,9 @@ void Settings::initializeKnobs(){
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
     
-    _readersTab = Natron::createKnob<Tab_Knob>(this, "Readers");
+    _readersTab = Natron::createKnob<Page_Knob>(this, "Readers");
 
-    _writersTab = Natron::createKnob<Tab_Knob>(this, "Writers");
+    _writersTab = Natron::createKnob<Page_Knob>(this, "Writers");
     
     
     setDefaultValues();

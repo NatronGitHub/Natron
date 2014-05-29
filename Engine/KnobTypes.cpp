@@ -828,8 +828,19 @@ const std::string& String_Knob::typeName() const
 
 Group_Knob::Group_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
 Knob<bool>(holder, description, dimension,declaredByPlugin)
+, _isTab(false)
 {
     
+}
+
+void Group_Knob::setAsTab()
+{
+    _isTab = true;
+}
+
+bool Group_Knob::isTab() const
+{
+    return _isTab;
 }
 
 bool Group_Knob::canAnimate() const
@@ -866,41 +877,6 @@ const std::vector< boost::shared_ptr<KnobI> > &Group_Knob::getChildren() const
     return _children;
 }
 
-/******************************TAB_KNOB**************************************/
-
-Tab_Knob::Tab_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
-Knob<bool>(holder, description, dimension,declaredByPlugin)
-{
-    
-}
-
-bool Tab_Knob::canAnimate() const
-{
-    return false;
-}
-
-const std::string Tab_Knob::_typeNameStr("Tab");
-
-const std::string& Tab_Knob::typeNameStatic()
-{
-    return _typeNameStr;
-}
-
-const std::string& Tab_Knob::typeName() const
-{
-    return typeNameStatic();
-}
-
-
-
-void Tab_Knob::addKnob(boost::shared_ptr<KnobI> k)
-{
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    if(found == _children.end()){
-        _children.push_back(k);
-        k->setParentKnob(getHolder()->getKnobByName(getName()));
-    }
-}
 
 /******************************PAGE_KNOB**************************************/
 
@@ -934,7 +910,9 @@ void Page_Knob::addKnob(boost::shared_ptr<KnobI> k)
     std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
     if(found == _children.end()){
         _children.push_back(k);
-        k->setParentKnob(getHolder()->getKnobByName(getName()));
+        if (!k->getParentKnob()) {
+            k->setParentKnob(getHolder()->getKnobByName(getName()));
+        }
     }
 }
 

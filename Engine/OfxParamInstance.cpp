@@ -1638,36 +1638,27 @@ OfxInteger3DInstance::onKnobAnimationLevelChanged(int lvl)
 OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
 , _groupKnob()
-, _tabKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
-    if(isTab){
-        _tabKnob = Natron::createKnob<Tab_Knob>(node, getParamLabel(this));
-        
-    }else{
-        _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
-        int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
-        _groupKnob->setDefaultValue(opened,0);
+    
+    _groupKnob = Natron::createKnob<Group_Knob>(node, getParamLabel(this));
+    int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
+    if (isTab) {
+        _groupKnob->setAsTab();
     }
+    _groupKnob->setDefaultValue(opened,0);
+    
     
     
 }
 void OfxGroupInstance::addKnob(boost::shared_ptr<KnobI> k) {
-    if(_groupKnob){
-        _groupKnob->addKnob(k);
-    }else{
-        _tabKnob->addKnob(k);
-    }
+    _groupKnob->addKnob(k);
 }
 
 boost::shared_ptr<KnobI> OfxGroupInstance::getKnob() const{
-    if(_groupKnob){
-        return _groupKnob;
-    }else{
-        return _tabKnob;
-    }
+    return _groupKnob;
 }
 
 
@@ -1688,6 +1679,7 @@ OfxPageInstance::OfxPageInstance(OfxEffectInstance* node,OFX::Host::Param::Descr
 , _pageKnob()
 {
     _pageKnob = Natron::createKnob<Page_Knob>(node, getParamLabel(this));
+   
 }
 
 // callback which should set enabled state as appropriate
@@ -1700,6 +1692,16 @@ void OfxPageInstance::setEnabled()
 void OfxPageInstance::setSecret()
 {
     _pageKnob->setAllDimensionsEnabled(getSecret());
+}
+
+void OfxPageInstance::populatePage()
+{
+    const std::map<int,OFX::Host::Param::Instance*>& children = getChildren();
+    for (std::map<int, OFX::Host::Param::Instance*>::const_iterator it = children.begin(); it!=children.end(); ++it) {
+        OfxParamToKnob* param = dynamic_cast<OfxParamToKnob*>(it->second);
+        assert(param);
+        _pageKnob->addKnob(param->getKnob());
+    }
 }
 
 

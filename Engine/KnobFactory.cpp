@@ -85,13 +85,11 @@ void KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert(knobFactoryEntry<Choice_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Separator_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Group_Knob>());
-    _loadedKnobs.insert(knobFactoryEntry<Tab_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Color_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<String_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Parametric_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Path_Knob>());
     _loadedKnobs.insert(knobFactoryEntry<Page_Knob>());
-    //   _loadedKnobs.insert(knobFactoryEntry<Table_Knob>());
 }
 
 boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,

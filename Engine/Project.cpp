@@ -447,6 +447,8 @@ bool Project::findAndTryLoadAutoSave() {
 
 void Project::initializeKnobs(){
     
+    boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Settings");
+    
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
@@ -463,7 +465,9 @@ void Project::initializeKnobs(){
 
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
+    page->addKnob(_imp->formatKnob);
     _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
+    page->addKnob(_imp->addFormatKnob);
 
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
     _imp->viewsCount->setAnimationEnabled(false);
@@ -471,12 +475,14 @@ void Project::initializeKnobs(){
     _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
+    page->addKnob(_imp->viewsCount);
     
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
     _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->setAnimationEnabled(false);
+    page->addKnob(_imp->previewMode);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setDefaultValue(autoPreviewEnabled,0);
     

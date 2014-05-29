@@ -237,6 +237,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     OFX::Host::Param::Instance* instance = NULL;
     boost::shared_ptr<KnobI> knob;
 
+    bool paramShouldBePersistant = true;
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(node(), descriptor);
         knob = ret->getKnob();
@@ -340,16 +341,17 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         OfxGroupInstance *ret = new OfxGroupInstance(node(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-
+        paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePage) {
         OfxPageInstance* ret = new OfxPageInstance(node(),descriptor);
         knob = ret->getKnob();
         instance = ret;
-
+        paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePushButton) {
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(node(), descriptor);
         knob = ret->getKnob();
         instance = ret;
+        paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(node(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
@@ -373,7 +375,12 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     
     knob->setName(paramName);
     knob->setEvaluateOnChange(descriptor.getEvaluateOnChange());
-    knob->setIsPersistant(descriptor.getIsPersistant());
+    
+    bool persistant = descriptor.getIsPersistant();
+    if (!paramShouldBePersistant) {
+        persistant = false;
+    }
+    knob->setIsPersistant(persistant);
     knob->setAnimationEnabled(descriptor.getCanAnimate());
     knob->setSecret(descriptor.getSecret());
     knob->setAllDimensionsEnabled(descriptor.getEnabled());
@@ -397,27 +404,32 @@ void OfxImageEffectInstance::addParamsToTheirParents(){
     //for each params find their parents if any and add to the parent this param's knob
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
         
-        std::map<OFX::Host::Param::Instance*,std::string>::const_iterator found = _parentingMap.find(*it);
-        
-        //the param has no parent
-        if(found == _parentingMap.end()){
-            continue;
+        OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
+        if (isPage) {
+            isPage->populatePage();
+        } else {
+            
+            std::map<OFX::Host::Param::Instance*,std::string>::const_iterator found = _parentingMap.find(*it);
+            
+            //the param has no parent
+            if(found == _parentingMap.end()){
+                continue;
+            }
+            
+            assert(!found->second.empty());
+            
+            //find the parent by name
+            const std::map<std::string, OFX::Host::Param::Instance*>& paramsMap = getParams();
+            std::map<std::string, OFX::Host::Param::Instance*>::const_iterator foundParent = paramsMap.find(found->second);
+            
+            //the parent must exist!
+            assert(foundParent != paramsMap.end());
+            
+            //add the param's knob to the parent
+            OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(found->first);
+            assert(knobHolder);
+            dynamic_cast<OfxGroupInstance*>(foundParent->second)->addKnob(knobHolder->getKnob());
         }
-        
-        assert(!found->second.empty());
-        
-        //find the parent by name
-        const std::map<std::string, OFX::Host::Param::Instance*>& paramsMap = getParams();
-        std::map<std::string, OFX::Host::Param::Instance*>::const_iterator foundParent = paramsMap.find(found->second);
-        
-        //the parent must exist!
-        assert(foundParent != paramsMap.end());
-        
-        //add the param's knob to the parent
-        OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(found->first);
-        assert(knobHolder);
-        dynamic_cast<OfxGroupInstance*>(foundParent->second)->addKnob(knobHolder->getKnob());
-        
     }
     
     

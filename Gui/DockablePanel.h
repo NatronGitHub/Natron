@@ -26,25 +26,16 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-class LineEdit;
 class KnobI;
 class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
 class QVBoxLayout;
-class QTabWidget;
 class Button;
-class QHBoxLayout;
-class QLabel;
 class QUndoStack;
 class QUndoCommand;
-class FloatingWidget;
 class RotoPanel;
-namespace Natron{
-    class Project;
-    class Node;
-};
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
@@ -67,8 +58,8 @@ public:
                   ,bool useScrollAreasForTabs
                   ,const QString& initialName = QString()
                   ,const QString& helpToolTip = QString()
-                  ,bool createDefaultTab = false
-                  ,const QString& defaultTab = QString()
+                  ,bool createDefaultPage = false
+                  ,const QString& defaultPageName = QString("Default")
                   ,QWidget *parent = 0);
     
     virtual ~DockablePanel() OVERRIDE;
@@ -83,9 +74,6 @@ public:
 
     bool isClosed() const;
 
-    /*inserts a new tab to the dockable panel.*/
-    void addTab(const QString& name);
-
     
     /*Creates a new button and inserts it in the header
      at position headerPosition. You can then take
@@ -97,10 +85,6 @@ public:
     
     void pushUndoCommand(QUndoCommand* cmd);
 
-    /*Search an existing knob GUI in the map, otherwise creates
-     the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate(boost::shared_ptr<KnobI> knob,bool makeNewLine,QWidget* lastRowWidget,
-                                 const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >());
     
     const QUndoCommand* getLastUndoCommand() const;
     
@@ -112,6 +96,7 @@ public:
     
     QWidget* getHeaderWidget() const;
 
+    KnobGui* getKnobGui(const boost::shared_ptr<KnobI>& knob) const;
     
 public slots:
     
@@ -179,9 +164,6 @@ private:
         emit selected();
         QFrame::mousePressEvent(e);
     }
-
-    
-    void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,bool onlyTopLevelKnobs);
     
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };

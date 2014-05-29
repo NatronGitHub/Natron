@@ -156,15 +156,20 @@ void KnobGui::pushUndoCommand(QUndoCommand* cmd){
 }
 
 
-void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWidget* label,QHBoxLayout* layout,int row,bool isOnNewLine,
+void KnobGui::createGUI(QFormLayout* containerLayout,
+                        QWidget* fieldContainer,
+                        QWidget* label,
+                        QHBoxLayout* layout,
+                        int row,
+                        bool isOnNewLine,
                         const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine) {
     
     boost::shared_ptr<KnobI> knob = getKnob();
-    
+
+    _imp->containerLayout = containerLayout;
     _imp->fieldLayout = layout;
     _imp->row = row;
     _imp->knobsOnSameLine = knobsOnSameLine;
-    _imp->containerLayout = containerLayout;
     _imp->field = fieldContainer;
     _imp->descriptionLabel = label;
     _imp->isOnNewLine = isOnNewLine;
@@ -176,19 +181,20 @@ void KnobGui::createGUI(QFormLayout* containerLayout,QWidget* fieldContainer,QWi
         createAnimationButton(layout);
     }
     _imp->widgetCreated = true;
-
+    
     for(int i = 0; i < knob->getDimension();++i){
         updateGUI(i);
         checkAnimationLevel(i);
     }
     setEnabledSlot();
-    
     if (isOnNewLine) {
         containerLayout->addRow(label, fieldContainer);
     }
     setSecret();
 
 }
+
+
 
 void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     _imp->animationMenu = new QMenu(layout->parentWidget());
@@ -460,10 +466,10 @@ void KnobGui::setSecret() {
     bool showit = !knob->getIsSecret();
     boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
-        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_imp->container->findKnobGuiOrCreate(parentKnob,true,NULL));
+        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_imp->container->getKnobGui(parentKnob));
         assert(parentGui);
         // check for secretness and visibility of the group
-        if (parentKnob->getIsSecret() || !parentGui->isChecked()) {
+        if (parentKnob->getIsSecret() || (parentGui && !parentGui->isChecked())) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
         // prepare for next loop iteration
@@ -735,7 +741,9 @@ void KnobGui::show(int index){
             _imp->descriptionLabel->show();
         }
     } else {
-        _imp->descriptionLabel->show();
+        if (_imp->descriptionLabel) {
+            _imp->descriptionLabel->show();
+        }
     }
 
     
