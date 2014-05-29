@@ -1815,4 +1815,6 @@ void NodeGraph::centerOnAllNodes()
     }
     QRect rect(xmin,ymin,(xmax - xmin),(ymax - ymin));
     fitInView(rect,Qt::KeepAspectRatio);
+    _refreshOverlays = true;
+    repaint();
 }
