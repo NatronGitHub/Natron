@@ -626,6 +626,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         //qreal diffy=np.y()-op.y();
         //QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
         QSize size = _nodeSelected->getSize();
+        newPos = _nodeSelected->mapToParent(_nodeSelected->mapFromScene(newPos));
         _nodeSelected->refreshPosition(newPos.x() - size.width() / 2,newPos.y() - size.height() / 2);
         setCursor(QCursor(Qt::ClosedHandCursor));
     }else if(_evtState == MOVING_AREA){
