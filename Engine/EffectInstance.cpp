@@ -318,20 +318,65 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         return boost::shared_ptr<Natron::Image>();
     }
     
+    RectI currentEffectRenderWindow;
+    bool isSequentialRender,isRenderUserInteraction,byPassCache;
+    unsigned int mipMapLevel;
+    RoIMap inputsRoI;
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
-    assert(_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs);
+    
+    /// From http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectsImagesAndClipsUsingClips
+//    Images may be fetched from an attached clip in the following situations...
+//    in the kOfxImageEffectActionRender action
+//    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
+    if(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs) {
+        ///This is a bad plug-in
+        qDebug() << getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
+        "Developers of that plug-in should fix it. \n Reminder from the OpenFX spec: \n "
+        "Images may be fetched from an attached clip in the following situations... \n"
+        "- in the kOfxImageEffectActionRender action\n"
+        "- in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason or kOfxChangeUserEdited";
+        ///Try to compensate for the mistale
+        isSequentialRender = true;
+        isRenderUserInteraction = true;
+        byPassCache = false;
+        std::list<ViewerInstance*> viewers;
+        getNode()->hasViewersConnected(&viewers);
+        if (!viewers.empty()) {
+            mipMapLevel = viewers.front()->getMipMapLevel();
+            view = (unsigned int)viewers.front()->getCurrentView();
+        } else {
+            mipMapLevel = 0;
+            view = 0;
+        }
+        RenderScale scale;
+        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.y = scale.x;
+        bool isProjectFormat;
+        
+        ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
+        ///// should never happen.
+        ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
+        Natron::Status stat = getRegionOfDefinition(time, scale, view, &currentEffectRenderWindow, &isProjectFormat);
+        if (stat == StatFailed) {
+            return boost::shared_ptr<Natron::Image>();
+        }
+        
+        ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
+        ///// should never happen.
+        inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow, 0, hash());
+        
+    } else {
+        currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
+        isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
+        isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
+        byPassCache = _imp->renderArgs.localData()._byPassCache;
+        mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
+        inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
+    }
     
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
-    
-    RectI currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
-    bool isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
-    bool isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
-    bool byPassCache = _imp->renderArgs.localData()._byPassCache;
-    unsigned int mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;;
-    RoIMap inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
-
 
     RoIMap::iterator found = inputsRoI.find(roto ? this : n);
     assert(found != inputsRoI.end());

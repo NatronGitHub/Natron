@@ -510,8 +510,12 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
     
-    effectInstance()->discardClipsMipMapLevel();
-    effectInstance()->discardClipsView();
+    if (getRecursionLevel() <= 1) {
+        effectInstance()->discardClipsMipMapLevel();
+        effectInstance()->discardClipsView();
+    } else {
+        qDebug() << "getRegionOfDefinition cannot be called recursively as an action. Please check this.";
+    }
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
@@ -558,9 +562,13 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, useScaleOne ? scaleOne : scale,
                                                         rectToOfxRect2D(renderWindow), inputRois);
     
-    effectInstance()->discardClipsMipMapLevel();
-    effectInstance()->discardClipsView();
-    effectInstance()->discardClipsHash();
+    if (getRecursionLevel() <= 1) {
+        effectInstance()->discardClipsMipMapLevel();
+        effectInstance()->discardClipsView();  
+        effectInstance()->discardClipsHash();
+    } else {
+        qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
+    }
     
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         Natron::errorDialog(getNode()->getName_mt_safe(), "Failed to specify the region of interest from inputs.");

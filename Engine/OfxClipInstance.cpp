@@ -12,7 +12,7 @@
 
 #include <cfloat>
 #include <limits>
-
+#include <QDebug>
 #include "Global/Macros.h"
 
 #include "Engine/OfxEffectInstance.h"
@@ -171,7 +171,9 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     RectI rod;
     
-    assert(_lastRenderArgs.hasLocalData() && _lastRenderArgs.localData().isViewValid && _lastRenderArgs.localData().isMipMapLevelValid);
+    if (!_lastRenderArgs.hasLocalData() || !_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
+        qDebug() << "";
+    }
     unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
     int view = _lastRenderArgs.localData().view;
     
@@ -437,7 +439,9 @@ void OfxClipInstance::setView(int view) {
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().isViewValid);
+        if (_lastRenderArgs.localData().isViewValid) {
+            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
+        }
     } else {
         args.mipMapLevel = 0;
         args.image.reset();
@@ -453,7 +457,9 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().isMipMapLevelValid);
+        if (_lastRenderArgs.localData().isMipMapLevelValid) {
+            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
+        }
     } else {
         args.view = 0;
         args.image.reset();
@@ -484,7 +490,9 @@ void OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image>& i
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().isImageValid);
+        if(_lastRenderArgs.localData().isImageValid) {
+            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
+        }
     } else {
         args.mipMapLevel = 0;
         args.view = 0;
@@ -507,7 +515,9 @@ void OfxClipInstance::setAttachedNodeHash(U64 hash)
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        assert(!_lastRenderArgs.localData().attachedNodeHashValid);
+        if(_lastRenderArgs.localData().attachedNodeHashValid) {
+            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
+        }
     } else {
         args.mipMapLevel = 0;
         args.view = 0;
