@@ -110,6 +110,7 @@ For Image Effects, it is generally a bad idea to call this after each render, bu
 \b0\fs32 \cf0 This is called when an instance is 
 \i first
 \i0  actively edited by a user, ie: and interface is open and parameter values and input clips can be modified. It is there so that effects can create private user interface structures when necassary. Note that some hosts can have multiple editors open on the same effect instance simulateously.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -120,6 +121,7 @@ For Image Effects, it is generally a bad idea to call this after each render, bu
 \b0\fs32 \cf0 This is called when the 
 \i last
 \i0  user interface on an instance closed. It is there so that effects can destroy private user interface structures when necassary. Note that some hosts can have multiple editors open on the same effect instance simulateously, this will only be called when the last of those editors are closed.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -134,6 +136,7 @@ This action will be called multiple times, one for each of the contexts the plug
 This action 
 \i must
 \i0  be trapped, it is not optional.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -143,6 +146,7 @@ This action
 
 \b0\fs32 \cf0 The region of definition for an image effect is the rectangular section of the 2D image plane that it is capable of filling, given the state of its input clips and parameters. This action is used to calculate the RoD for a plugin instance at a given frame. For more details on regions of definition see \cf3 \ul Image Effect Architectures\cf0 \ulnone .\
 Note that hosts that have constant sized imagery need not call this action, only hosts that allow image sizes to vary need call this.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -153,6 +157,7 @@ Note that hosts that have constant sized imagery need not call this action, only
 \b0\fs32 \cf0 This action allows a host to ask an effect, given a region I want to render, what region do you need from each of your input clips. In that way, depending on the host architecture, a host can fetch the minimal amount of the image needed as input. Note that there is a region of interest to be set in 
 \f1\fs26 outArgs
 \f0\fs32  for each input clip that exists on the effect. Form more details see \cf3 \ul Image Effect Architectures\cf0 \ulnone .\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -164,7 +169,8 @@ Note that hosts that have constant sized imagery need not call this action, only
 This action need only ever be called if the plugin has set the 
 \f1\fs26 \cf3 kOfxImageEffectPropTemporalClipAccessg
 \f0\fs32 \cf0  property on the plugin descriptor to be true. Otherwise the host assumes that the only frame needed from the inputs is the current one and this acion is not called.\
-\cf4 UNSUPPORTED\
+\pard\pardeftab720\sa320
+\cf2 SUPPORTED\cf4 \
 \
 \pard\pardeftab720\sa380
 
@@ -179,6 +185,7 @@ If the effect does not need to process any pixels, it should set the value of th
 \f0\fs32  property on 
 \f1\fs26 outArgs
 \f0\fs32  to be the time at which the frame should be fetched from a clip.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf4 \
 \
 \pard\pardeftab720\sa380
@@ -187,6 +194,7 @@ If the effect does not need to process any pixels, it should set the value of th
 \pard\pardeftab720\sa320
 
 \b0\fs32 \cf0 This action is where an effect gets to push pixels and turn its input clips and parameter set into an output image. This is possibly quite complicated and covered in the \cf3 \ul Rendering Image Effects\cf0 \ulnone  chapter.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -195,6 +203,7 @@ If the effect does not need to process any pixels, it should set the value of th
 \pard\pardeftab720\sa320
 
 \b0\fs32 \cf0 This action is passed to an image effect before it renders a range of frames. It is there to allow an effect to set things up for a long sequence of frames. Note that this is still called, even if only a single frame is being rendered in an interactive environment.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \pard\pardeftab720\sa380
 
@@ -202,6 +211,7 @@ If the effect does not need to process any pixels, it should set the value of th
 \pard\pardeftab720\sa320
 
 \b0\fs32 \cf0 This action is passed to an image effect after is has rendered a range of frames. It is there to allow an effect to free resources after a long sequence of frame renders. Note that this is still called, even if only a single frame is being rendered in an interactive environment.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -213,6 +223,7 @@ If the effect does not need to process any pixels, it should set the value of th
 This should be called once after creation of an instance, each time an input clip is changed, and whenever a parameter named in the 
 \f1\fs26 \cf3 kOfxImageEffectPropClipPreferencesSlaveParam
 \f0\fs32 \cf0  has its value changed.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -221,6 +232,7 @@ This should be called once after creation of an instance, each time an input cli
 \pard\pardeftab720\sa320
 
 \b0\fs32 \cf0 This action allows a host to ask an effect what range of frames it can produce images over. Only effects instantiated in the \cf3 \ul General Context\cf0 \ulnone can have this called on them. In all other the host is in strict control over the temporal duration of the effect.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf4 \
 \
 \pard\pardeftab720\sa420
@@ -233,6 +245,7 @@ This should be called once after creation of an instance, each time an input cli
 
 \b0\fs32 \cf0 The kOfxActionDescribe is the first action passed to an interact. It is where an interact defines how it behaves and the resources it needs to function.\
 Note that the handle passed in acts as a descriptor for, rather than an instance of the interact.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -243,6 +256,7 @@ Note that the handle passed in acts as a descriptor for, rather than an instance
 \b0\fs32 \cf0 The 
 \f1\fs26 \cf3 kOfxActionCreateInstance
 \f0\fs32 \cf0  is the first action passed to an interact instance after its creation. It is there to allow a plugin to create any per-instance data structures it may need.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\
 \
 \pard\pardeftab720\sa380
@@ -251,6 +265,7 @@ Note that the handle passed in acts as a descriptor for, rather than an instance
 \pard\pardeftab720\sa320
 
 \b0\fs32 \cf0 This action is the last passed to an interact's instance before its destruction. It is there to allow a plugin to destroy any per-instance data structures it may have created.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -259,6 +274,7 @@ Note that the handle passed in acts as a descriptor for, rather than an instance
 
 \b0\fs32 \cf0 This action is issued to an interact whenever the host needs the plugin to redraw the given interact. The interact should issue any openGL calls it needs at this point.\
 Note that the interact may (in the case of custom parameter GUIS) or may not (in the case of image effect overlays) be required to swap buffers, that is up to the kind of interact.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -267,6 +283,7 @@ Note that the interact may (in the case of custom parameter GUIS) or may not (in
 
 \b0\fs32 \cf0 This action is issued whenever the pen moves an the interact's has focus. It should be issued whether the pen is currently up or down.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -275,6 +292,7 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when a pen transitions for the 'up' to the 'down' state.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -283,6 +301,7 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when a pen transitions for the 'down' to the 'up' state.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -291,6 +310,7 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when a key on the keyboard is depressed.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -299,6 +319,7 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when a key on the keyboard is released.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -307,6 +328,7 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when a key on the keyboard is held down an a key repeat is issued.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -315,6 +337,7 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when an interact gains input focus.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED\cf0 \
 \pard\pardeftab720\sa380
 
@@ -323,4 +346,5 @@ No openGL calls should be issued by the plug-in during this action.\
 
 \b0\fs32 \cf0 This action is issued when an interact loses input focus.\
 No openGL calls should be issued by the plug-in during this action.\
+\pard\pardeftab720\sa320
 \cf2 SUPPORTED}
