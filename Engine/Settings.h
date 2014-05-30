@@ -85,6 +85,8 @@ public:
     
     bool wereChangesMadeSinceLastSave() const { return _wereChangesMadeSinceLastSave; }
     
+    void resetWereChangesMadeSinceLastSave() { _wereChangesMadeSinceLastSave = false; }
+    
     bool isAutoPreviewOnForNewProjects() const;
     
     QStringList getPluginsExtraSearchPaths() const;

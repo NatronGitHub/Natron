@@ -93,6 +93,7 @@ void PreferencesPanel::showEvent(QShowEvent* /*e*/) {
     QDesktopWidget* desktop = QApplication::desktop();
     const QRect rect = desktop->screenGeometry();
     move(QPoint(rect.width() / 2 - width() / 2,rect.height() / 2 - height() / 2));
+    _settings->resetWereChangesMadeSinceLastSave();
 }
 
 void PreferencesPanel::closeEvent(QCloseEvent*) {
