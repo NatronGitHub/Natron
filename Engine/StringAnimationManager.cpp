@@ -208,14 +208,16 @@ void StringAnimationManager::clone(const StringAnimationManager& other) {
     _imp->keyframes = other._imp->keyframes;
 }
 
-void StringAnimationManager::clone(const StringAnimationManager& other,SequenceTime offset,const RangeD& range)
+void StringAnimationManager::clone(const StringAnimationManager& other,SequenceTime offset, const RangeD* range)
 {
-    bool copyAll = range.min == 0 && range.max == 0;
+    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
+    // it prevents copying the value of frame 0.
+    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
     QMutexLocker l(&_imp->keyframesMutex);
     _imp->keyframes.clear();
     QMutexLocker l2(&other._imp->keyframesMutex);
     for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it!=other._imp->keyframes.end(); ++it) {
-        if (!copyAll && (it->time < range.min || it->time > range.max)) {
+        if (copyRange && (it->time < range->min || it->time > range->max)) {
             continue;
         }
         StringKeyFrame k;
