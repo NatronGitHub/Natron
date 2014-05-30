@@ -86,6 +86,10 @@ void FloatingWidget::removeWidget() {
 
 void FloatingWidget::closeEvent(QCloseEvent* e) {
     emit closed();
+    TabWidget* embedded = dynamic_cast<TabWidget*>(_embeddedWidget);
+    if (embedded) {
+        embedded->destroyTabs();
+    }
     QWidget::closeEvent(e);
 }
 
@@ -263,7 +267,6 @@ void TabWidget::closePane(){
     /*If it is floating we do not need to re-arrange the splitters containing the tab*/
     if (isFloating()) {
         parentWidget()->close();
-        destroyTabs();
         return;
     }
     
