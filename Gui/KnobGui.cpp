@@ -1117,8 +1117,10 @@ void KnobGui::checkAnimationLevel(int dimension)
             level = Natron::NO_ANIMATION;
         }
     }
-    knob->setAnimationLevel(dimension,level);
-    reflectAnimationLevel(dimension, level);
+    if (level != knob->getAnimationLevel(dimension)) {
+        knob->setAnimationLevel(dimension,level);
+        reflectAnimationLevel(dimension, level);
+    }
 }
 
 

@@ -154,6 +154,7 @@ struct KnobHelper::KnobHelperPrivate {
     mutable QReadWriteLock _mastersMutex; //< protects _masters
     MastersMap _masters; //from what knob is slaved each curve if any
     
+    mutable QMutex _animationLevelMutex;
     std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
     
@@ -183,6 +184,7 @@ struct KnobHelper::KnobHelperPrivate {
     , _curves(dimension)
     , _mastersMutex()
     , _masters(dimension)
+    , _animationLevelMutex()
     , _animationLevel(dimension)
     , _betweenBeginEndMutex(QMutex::Recursive)
     , _betweenBeginEndCount(0)
@@ -624,14 +626,18 @@ std::vector< std::pair<int,boost::shared_ptr<KnobI> > > KnobHelper::getMasters_m
 
 void KnobHelper::setAnimationLevel(int dimension,Natron::AnimationLevel level)
 {
-    assert(dimension < (int)_imp->_animationLevel.size());
-    
-    _imp->_animationLevel[dimension] = level;
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker l(&_imp->_animationLevelMutex);
+        assert(dimension < (int)_imp->_animationLevel.size());
+        _imp->_animationLevel[dimension] = level;
+    }
     _signalSlotHandler->s_animationLevelChanged((int)level);
 }
 
 Natron::AnimationLevel KnobHelper::getAnimationLevel(int dimension) const
 {
+    QMutexLocker l(&_imp->_animationLevelMutex);
     if (dimension > (int)_imp->_animationLevel.size()) {
         throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
     }
@@ -1055,7 +1061,7 @@ void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI> &
 {
     AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other.get());
     if (isAnimatedString) {
-        
+        _animation->clone(isAnimatedString->getAnimation(),offset,range);
     }
 }
 
