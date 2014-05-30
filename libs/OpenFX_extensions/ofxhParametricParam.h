@@ -49,11 +49,8 @@ public:
     /// addControlPoint() hence we can't do this ourselves in the constructor.
     OfxStatus defaultInitializeAllCurves(const Param::Descriptor& descriptor);
     
-    // copy one parameter to another
-    virtual OfxStatus copy(const Instance &instance, OfxTime offset);
-
-    // copy one parameter to another, with a range
-    virtual OfxStatus copy(const Instance &instance, OfxTime offset, OfxRangeD range);
+    // copy one parameter to another, with a range (NULL means to copy all animation)
+    virtual OfxStatus copyFrom(const Instance &instance, OfxTime offset, const OfxRangeD* range);
 
     // callback which should set enabled state as appropriate
     virtual void setEnabled();

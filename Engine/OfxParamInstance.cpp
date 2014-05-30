@@ -140,24 +140,12 @@ namespace OfxKeyFrame{
         return kOfxStatOK;
     }
     
-    // copy one parameter to another
-    OfxStatus copy(const boost::shared_ptr<KnobI> from,const boost::shared_ptr<KnobI> &to, OfxTime offset)
+    // copy one parameter to another, with a range(NULL means to copy all animation)
+    OfxStatus copyFrom(const boost::shared_ptr<KnobI>& from, const boost::shared_ptr<KnobI> &to, OfxTime offset, const OfxRangeD* range)
     {
         ///copy only if type is the same
         if (from->typeName() == to->typeName()) {
-            RangeD range;
-            range.min = range.max = 0.;
-            to->clone(from,offset,range);
-        }
-        return kOfxStatOK;
-    }
-    
-    // copy one parameter to another, with a range
-    OfxStatus copy(const boost::shared_ptr<KnobI>& from,const boost::shared_ptr<KnobI> &to, OfxTime offset, OfxRangeD range)
-    {
-        ///copy only if type is the same
-        if (from->typeName() == to->typeName()) {
-            to->clone(from,offset,range);
+            to->clone(from, offset, range);
         }
         return kOfxStatOK;
     }
@@ -256,32 +244,41 @@ boost::shared_ptr<KnobI> OfxIntegerInstance::getKnob() const{
 }
 
 
-OfxStatus OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxIntegerInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxIntegerInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxIntegerInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxIntegerInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxIntegerInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxIntegerInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxIntegerInstance::deleteAllKeys(){
+
+OfxStatus
+OfxIntegerInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxIntegerInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxIntegerInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxIntegerInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 
@@ -467,16 +464,11 @@ OfxStatus OfxDoubleInstance::deleteAllKeys()
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxDoubleInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxDoubleInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxDoubleInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 void
@@ -541,32 +533,41 @@ boost::shared_ptr<KnobI> OfxBooleanInstance::getKnob() const{
     return _knob;
 }
 
-OfxStatus OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxBooleanInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxBooleanInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxBooleanInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxBooleanInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxBooleanInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxBooleanInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxBooleanInstance::deleteAllKeys(){
+
+OfxStatus
+OfxBooleanInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxBooleanInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxBooleanInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 void OfxBooleanInstance::onKnobAnimationLevelChanged(int lvl)
@@ -623,21 +624,29 @@ OfxStatus OfxChoiceInstance::set(OfxTime time, int v) {
 
 
 // callback which should set enabled state as appropriate
-void OfxChoiceInstance::setEnabled(){
+void
+OfxChoiceInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
-void OfxChoiceInstance::setSecret() {
+void
+OfxChoiceInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxChoiceInstance::setEvaluateOnChange() {
+void
+OfxChoiceInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
-void OfxChoiceInstance::setOption(int /*num*/) {
+void
+OfxChoiceInstance::setOption(int /*num*/)
+{
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     _entries.clear();
     std::vector<std::string> helpStrings;
@@ -651,42 +660,51 @@ void OfxChoiceInstance::setOption(int /*num*/) {
     _knob->populateChoices(_entries, helpStrings);
 }
 
-boost::shared_ptr<KnobI> OfxChoiceInstance::getKnob() const{
+boost::shared_ptr<KnobI>
+OfxChoiceInstance::getKnob() const
+{
     return _knob;
 }
 
-
-OfxStatus OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxChoiceInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxChoiceInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxChoiceInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxChoiceInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxChoiceInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxChoiceInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxChoiceInstance::deleteAllKeys(){
+
+OfxStatus
+OfxChoiceInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-
-OfxStatus OfxChoiceInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
-OfxStatus OfxChoiceInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
-}
-
-
-void OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxChoiceInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -866,16 +884,11 @@ OfxRGBAInstance::deleteAllKeys()
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxRGBAInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxRGBAInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxRGBAInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 void
@@ -985,72 +998,78 @@ OfxRGBInstance::integrate(OfxTime time1, OfxTime time2, double&r ,double& g, dou
 
 // callback which should set enabled state as appropriate
 void
-OfxRGBInstance::setEnabled(){
+OfxRGBInstance::setEnabled()
+{
     _knob->setAllDimensionsEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
 void
-OfxRGBInstance::setSecret() {
+OfxRGBInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
 void
-OfxRGBInstance::setEvaluateOnChange() {
+OfxRGBInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
 
 boost::shared_ptr<KnobI>
-OfxRGBInstance::getKnob() const{
+OfxRGBInstance::getKnob() const
+{
     return _knob;
 }
 
 bool
-OfxRGBInstance::isAnimated(int dimension) const {
+OfxRGBInstance::isAnimated(int dimension) const
+{
     return _knob->isAnimated(dimension);
 }
 
 bool
-OfxRGBInstance::isAnimated() const {
+OfxRGBInstance::isAnimated() const
+{
     return _knob->isAnimated(0) || _knob->isAnimated(1) || _knob->isAnimated(2);
 }
 
 OfxStatus
-OfxRGBInstance::getNumKeys(unsigned int &nKeys) const {
+OfxRGBInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
 
 OfxStatus
-OfxRGBInstance::getKeyTime(int nth, OfxTime& time) const {
+OfxRGBInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
 
 OfxStatus
-OfxRGBInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+OfxRGBInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
 
 OfxStatus
-OfxRGBInstance::deleteKey(OfxTime time) {
+OfxRGBInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
 
 OfxStatus
-OfxRGBInstance::deleteAllKeys(){
+OfxRGBInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxRGBInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxRGBInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxRGBInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(),getKnob(), offset, range);
 }
 
 void
@@ -1257,16 +1276,11 @@ OfxDouble2DInstance::deleteAllKeys()
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxDouble2DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxDouble2DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 
@@ -1409,16 +1423,11 @@ OfxInteger2DInstance::deleteAllKeys()
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxInteger2DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxInteger2DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 void
@@ -1595,21 +1604,17 @@ OfxDouble3DInstance::deleteKey(OfxTime time)
     return OfxKeyFrame::deleteKey(_knob, time);
 }
 
-OfxStatus OfxDouble3DInstance::deleteAllKeys()
+OfxStatus
+OfxDouble3DInstance::deleteAllKeys()
 {
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxDouble3DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxDouble3DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 void
@@ -1757,16 +1762,11 @@ OfxInteger3DInstance::deleteAllKeys()
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxInteger3DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxInteger3DInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxInteger3DInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
 void
@@ -2008,15 +2008,16 @@ OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     return stat;
 }
 
-boost::shared_ptr<KnobI> OfxStringInstance::getKnob() const{
-    
-    if(_fileKnob){
+boost::shared_ptr<KnobI>
+OfxStringInstance::getKnob() const
+{
+    if (_fileKnob) {
         return _fileKnob;
     }
-    if(_outputFileKnob){
+    if (_outputFileKnob) {
         return _outputFileKnob;
     }
-    if(_stringKnob){
+    if (_stringKnob) {
         return _stringKnob;
     }
     if (_pathKnob) {
@@ -2026,8 +2027,10 @@ boost::shared_ptr<KnobI> OfxStringInstance::getKnob() const{
     return boost::shared_ptr<KnobI>();
 }
 // callback which should set enabled state as appropriate
-void OfxStringInstance::setEnabled(){
-    if(_fileKnob){
+void
+OfxStringInstance::setEnabled()
+{
+    if (_fileKnob) {
         _fileKnob->setAllDimensionsEnabled(getEnabled());
     }
     if (_outputFileKnob) {
@@ -2042,8 +2045,10 @@ void OfxStringInstance::setEnabled(){
 }
 
 // callback which should set secret state as appropriate
-void OfxStringInstance::setSecret(){
-    if(_fileKnob){
+void
+OfxStringInstance::setSecret()
+{
+    if (_fileKnob) {
         _fileKnob->setSecret(getSecret());
     }
     if (_outputFileKnob) {
@@ -2058,8 +2063,10 @@ void OfxStringInstance::setSecret(){
 }
 
 
-void OfxStringInstance::setEvaluateOnChange() {
-    if(_fileKnob){
+void
+OfxStringInstance::setEvaluateOnChange()
+{
+    if (_fileKnob) {
         _fileKnob->setEvaluateOnChange(getEvaluateOnChange());
     }
     if (_outputFileKnob) {
@@ -2073,14 +2080,18 @@ void OfxStringInstance::setEvaluateOnChange() {
     }
 }
 
-const std::string OfxStringInstance::getRandomFrameName(int f) const{
+const std::string
+OfxStringInstance::getRandomFrameName(int f) const
+{
     return _fileKnob ? _fileKnob->getValueAtTimeConditionally(f,true) : "";
 }
 
 
-OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus
+OfxStringInstance::getNumKeys(unsigned int &nKeys) const
+{
     boost::shared_ptr<KnobI> knob;
-    if(_stringKnob){
+    if (_stringKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
@@ -2089,9 +2100,12 @@ OfxStatus OfxStringInstance::getNumKeys(unsigned int &nKeys) const {
     }
     return OfxKeyFrame::getNumKeys(knob, nKeys);
 }
-OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxStringInstance::getKeyTime(int nth, OfxTime& time) const
+{
     boost::shared_ptr<KnobI> knob;
-    if(_stringKnob){
+    if (_stringKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
@@ -2100,9 +2114,12 @@ OfxStatus OfxStringInstance::getKeyTime(int nth, OfxTime& time) const {
     }
     return OfxKeyFrame::getKeyTime(knob, nth, time);
 }
-OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     boost::shared_ptr<KnobI> knob;
-    if(_stringKnob){
+    if (_stringKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
@@ -2111,9 +2128,12 @@ OfxStatus OfxStringInstance::getKeyIndex(OfxTime time, int direction, int & inde
     }
     return OfxKeyFrame::getKeyIndex(knob, time, direction, index);
 }
-OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxStringInstance::deleteKey(OfxTime time)
+{
     boost::shared_ptr<KnobI> knob;
-    if(_stringKnob){
+    if (_stringKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
     } else if (_fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(_fileKnob);
@@ -2122,7 +2142,10 @@ OfxStatus OfxStringInstance::deleteKey(OfxTime time) {
     }
     return OfxKeyFrame::deleteKey(knob, time);
 }
-OfxStatus OfxStringInstance::deleteAllKeys(){
+
+OfxStatus
+OfxStringInstance::deleteAllKeys()
+{
     boost::shared_ptr<KnobI> knob;
     if(_stringKnob){
         knob = boost::dynamic_pointer_cast<KnobI>(_stringKnob);
@@ -2134,19 +2157,15 @@ OfxStatus OfxStringInstance::deleteAllKeys(){
     return OfxKeyFrame::deleteAllKeys(knob);
 }
 
-OfxStatus OfxStringInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxStringInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
-OfxStatus OfxStringInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
-}
-
-void OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -2248,43 +2267,56 @@ void OfxCustomInstance::setEnabled() {
 }
 
 // callback which should set secret state as appropriate
-void OfxCustomInstance::setSecret() {
+void
+OfxCustomInstance::setSecret()
+{
     _knob->setSecret(getSecret());
 }
 
-void OfxCustomInstance::setEvaluateOnChange() {
+void
+OfxCustomInstance::setEvaluateOnChange()
+{
     _knob->setEvaluateOnChange(getEvaluateOnChange());
 }
 
-OfxStatus OfxCustomInstance::getNumKeys(unsigned int &nKeys) const {
+OfxStatus OfxCustomInstance::getNumKeys(unsigned int &nKeys) const
+{
     return OfxKeyFrame::getNumKeys(_knob, nKeys);
 }
-OfxStatus OfxCustomInstance::getKeyTime(int nth, OfxTime& time) const {
+
+OfxStatus
+OfxCustomInstance::getKeyTime(int nth, OfxTime& time) const
+{
     return OfxKeyFrame::getKeyTime(_knob, nth, time);
 }
-OfxStatus OfxCustomInstance::getKeyIndex(OfxTime time, int direction, int & index) const {
+
+OfxStatus
+OfxCustomInstance::getKeyIndex(OfxTime time, int direction, int & index) const
+{
     return OfxKeyFrame::getKeyIndex(_knob, time, direction, index);
 }
-OfxStatus OfxCustomInstance::deleteKey(OfxTime time) {
+
+OfxStatus
+OfxCustomInstance::deleteKey(OfxTime time)
+{
     return OfxKeyFrame::deleteKey(_knob, time);
 }
-OfxStatus OfxCustomInstance::deleteAllKeys(){
+
+OfxStatus
+OfxCustomInstance::deleteAllKeys()
+{
     return OfxKeyFrame::deleteAllKeys(_knob);
 }
 
-OfxStatus OfxCustomInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
-OfxStatus OfxCustomInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
-}
-
-void OfxCustomInstance::onKnobAnimationLevelChanged(int lvl)
+void
+OfxCustomInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
     assert(l == Natron::NO_ANIMATION || getCanAnimate());
@@ -2379,7 +2411,9 @@ void OfxParametricInstance::setLabel() {
     }
 }
 
-void OfxParametricInstance::setDisplayRange() {
+void
+OfxParametricInstance::setDisplayRange()
+{
     double range_min = getProperties().getDoubleProperty(kOfxParamPropParametricRange,0);
     double range_max = getProperties().getDoubleProperty(kOfxParamPropParametricRange,1);
     
@@ -2388,7 +2422,8 @@ void OfxParametricInstance::setDisplayRange() {
     _knob->setParametricRange(range_min, range_max);
 }
 
-OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime /*time*/,double parametricPosition,double *returnValue)
+OfxStatus
+OfxParametricInstance::getValue(int curveIndex, OfxTime /*time*/, double parametricPosition, double *returnValue)
 {
     Natron::Status stat = _knob->getValue(curveIndex, parametricPosition, returnValue);
     if(stat == Natron::StatOK){
@@ -2398,7 +2433,9 @@ OfxStatus OfxParametricInstance::getValue(int curveIndex,OfxTime /*time*/,double
     }
 }
 
-OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double /*time*/,int *returnValue){
+OfxStatus
+OfxParametricInstance::getNControlPoints(int curveIndex, double /*time*/, int *returnValue)
+{
     Natron::Status stat = _knob->getNControlPoints(curveIndex, returnValue);
     if(stat == Natron::StatOK){
         return kOfxStatOK;
@@ -2407,11 +2444,13 @@ OfxStatus OfxParametricInstance::getNControlPoints(int curveIndex,double /*time*
     }
 }
 
-OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
-                                                    double /*time*/,
-                                                    int    nthCtl,
-                                                    double *key,
-                                                    double *value) {
+OfxStatus
+OfxParametricInstance::getNthControlPoint(int curveIndex,
+                                          double /*time*/,
+                                          int    nthCtl,
+                                          double *key,
+                                          double *value)
+{
     Natron::Status stat = _knob->getNthControlPoint(curveIndex, nthCtl, key, value);
     if(stat == Natron::StatOK){
         return kOfxStatOK;
@@ -2420,13 +2459,14 @@ OfxStatus OfxParametricInstance::getNthControlPoint(int curveIndex,
     }
 }
 
-OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
-                                                    double /*time*/,
-                                                    int   nthCtl,
-                                                    double key,
-                                                    double value,
-                                                    bool /*addAnimationKey*/
-) {
+OfxStatus
+OfxParametricInstance::setNthControlPoint(int   curveIndex,
+                                          double /*time*/,
+                                          int   nthCtl,
+                                          double key,
+                                          double value,
+                                          bool /*addAnimationKey*/)
+{
     Natron::Status stat = _knob->setNthControlPoint(curveIndex, nthCtl, key, value);
     if(stat == Natron::StatOK){
         return kOfxStatOK;
@@ -2434,11 +2474,14 @@ OfxStatus OfxParametricInstance::setNthControlPoint(int   curveIndex,
         return kOfxStatFailed;
     }
 }
-OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
-                                                 double /*time*/,
-                                                 double key,
-                                                 double value,
-                                                 bool/* addAnimationKey*/) {
+
+OfxStatus
+OfxParametricInstance::addControlPoint(int   curveIndex,
+                                       double /*time*/,
+                                       double key,
+                                       double value,
+                                       bool/* addAnimationKey*/)
+{
     Natron::Status stat = _knob->addControlPoint(curveIndex, key, value);
     if(stat == Natron::StatOK){
         return kOfxStatOK;
@@ -2447,7 +2490,9 @@ OfxStatus OfxParametricInstance::addControlPoint(int   curveIndex,
     }
 }
 
-OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthCtl) {
+OfxStatus
+OfxParametricInstance::deleteControlPoint(int curveIndex, int nthCtl)
+{
     Natron::Status stat = _knob->deleteControlPoint(curveIndex, nthCtl);
     if(stat == Natron::StatOK){
         return kOfxStatOK;
@@ -2456,7 +2501,9 @@ OfxStatus  OfxParametricInstance::deleteControlPoint(int   curveIndex,int   nthC
     }
 }
 
-OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex) {
+OfxStatus
+OfxParametricInstance::deleteAllControlPoints(int curveIndex)
+{
     Natron::Status stat = _knob->deleteAllControlPoints(curveIndex);
     if(stat == Natron::StatOK){
         return kOfxStatOK;
@@ -2466,7 +2513,9 @@ OfxStatus  OfxParametricInstance::deleteAllControlPoints(int   curveIndex) {
 }
 
 
-void OfxParametricInstance::onCustomBackgroundDrawingRequested(){
+void
+OfxParametricInstance::onCustomBackgroundDrawingRequested()
+{
     if(_overlayInteract){
         RenderScale s;
         _overlayInteract->getPixelScale(s.x, s.y);
@@ -2474,14 +2523,9 @@ void OfxParametricInstance::onCustomBackgroundDrawingRequested(){
     }
 }
 
-OfxStatus OfxParametricInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset)
+OfxStatus
+OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range)
 {
     const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset);
-}
-
-OfxStatus OfxParametricInstance::copy(const OFX::Host::Param::Instance &instance, OfxTime offset, OfxRangeD range)
-{
-    const OfxParamToKnob& other = dynamic_cast<const OfxParamToKnob&>(instance);
-    return OfxKeyFrame::copy(other.getKnob(),getKnob(), offset,range);
+    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }

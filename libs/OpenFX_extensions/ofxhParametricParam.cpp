@@ -129,14 +129,8 @@ OfxStatus ParametricInstance::defaultInitializeAllCurves(const Param::Descriptor
     return kOfxStatOK;
 }
 
-// copy one parameter to another
-OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/)
-{
-    return kOfxStatErrMissingHostFeature;
-}
-
-// copy one parameter to another, with a range
-OfxStatus ParametricInstance::copy(const Param::Instance &/*instance*/, OfxTime /*offset*/, OfxRangeD /*range*/)
+// copy one parameter to another, with a range (NULL means to copy all animation)
+OfxStatus ParametricInstance::copyFrom(const Param::Instance &/*instance*/, OfxTime /*offset*/, const OfxRangeD* /*range*/)
 {
     return kOfxStatErrMissingHostFeature;
 }
