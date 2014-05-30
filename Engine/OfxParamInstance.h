@@ -163,7 +163,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -208,7 +207,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -251,7 +249,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -294,7 +291,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -340,7 +336,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -387,7 +382,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -431,7 +425,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
 
@@ -472,7 +465,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
 
@@ -513,7 +505,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
@@ -616,7 +607,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -678,7 +668,6 @@ public:
     virtual OfxStatus getKeyIndex(OfxTime time, int direction, int & index) const OVERRIDE FINAL;
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
-    
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
     
@@ -757,7 +746,6 @@ public:
     virtual OfxStatus  deleteControlPoint(int curveIndex, int nthCtl) OVERRIDE FINAL;
     
     virtual OfxStatus  deleteAllControlPoints(int curveIndex) OVERRIDE FINAL;
-    
     
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     

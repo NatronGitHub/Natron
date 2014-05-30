@@ -129,7 +129,7 @@ void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
     AnimatingString_KnobHelper::cloneExtraData(other);
 }
 
-void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range)
+void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
 {
     File_Knob* isFile = dynamic_cast<File_Knob*>(other.get());
     if (isFile) {

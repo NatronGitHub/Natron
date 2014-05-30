@@ -1088,7 +1088,8 @@ Natron::Status Parametric_Knob::setNthControlPoint(int   dimension,
 
 }
 
-Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl){
+Natron::Status  Parametric_Knob::deleteControlPoint(int dimension, int nthCtl)
+{
     
     ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
@@ -1100,7 +1101,8 @@ Natron::Status  Parametric_Knob::deleteControlPoint(int   dimension,int   nthCtl
     return StatOK;
 }
 
-Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
+Natron::Status  Parametric_Knob::deleteAllControlPoints(int dimension)
+{
     ///Mt-safe as Curve is MT-safe
     if(dimension >= (int)_curves.size()){
         return StatFailed;
@@ -1111,7 +1113,8 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int   dimension){
 }
 
 
-void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other){
+void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+{
     ///Mt-safe as Curve is MT-safe
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
     if (isParametric && isParametric->getDimension() == getDimension()) {
@@ -1121,13 +1124,13 @@ void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other){
     }
 }
 
-void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range)
+void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
 {
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
     if (isParametric) {
         int dimMin = std::min(getDimension(), isParametric->getDimension());
         for (int i = 0; i < dimMin; ++i) {
-            _curves[i]->clone(*isParametric->getParametricCurve(i),offset,range);
+            _curves[i]->clone(*isParametric->getParametricCurve(i), offset, range);
         }
     }
 }

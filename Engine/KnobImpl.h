@@ -750,12 +750,12 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
 }
 
 template<typename T>
-void Knob<T>::clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset,const RangeD& range)
+void Knob<T>::clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
 {
     cloneValues(other);
     int dimMin = std::min(getDimension() , other->getDimension());
     for (int i = 0; i < dimMin; ++i) {
-        getCurve(i)->clone(*other->getCurve(i),offset,range);
+        getCurve(i)->clone(*other->getCurve(i), offset, range);
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(i);
         }
