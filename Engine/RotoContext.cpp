@@ -261,14 +261,20 @@ int BezierCP::isNearbyTangent(int time,double x,double y,double acceptance) cons
 {
     
         
-    double leftX,leftY,rightX,rightY;
+    double xp,yp,leftX,leftY,rightX,rightY;
+    getPositionAtTime(time, &xp, &yp);
     getLeftBezierPointAtTime(time, &leftX, &leftY);
     getRightBezierPointAtTime(time, &rightX, &rightY);
-    if (leftX >= (x - acceptance) && leftX <= (x + acceptance) && leftY >= (y - acceptance) && leftY <= (y + acceptance)) {
-        return 0;
+    
+    if (xp != leftX || yp != leftY) {
+        if (leftX >= (x - acceptance) && leftX <= (x + acceptance) && leftY >= (y - acceptance) && leftY <= (y + acceptance)) {
+            return 0;
+        }
     }
-    if (rightX >= (x - acceptance) && rightX <= (x + acceptance) && rightY >= (y - acceptance) && rightY <= (y + acceptance)) {
-        return 1;
+    if (xp != rightX || yp != rightY) {
+        if (rightX >= (x - acceptance) && rightX <= (x + acceptance) && rightY >= (y - acceptance) && rightY <= (y + acceptance)) {
+            return 1;
+        }
     }
     
     return -1;
