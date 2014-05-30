@@ -513,6 +513,8 @@ ViewerGL::~ViewerGL()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    makeCurrent();
+    
     if(_imp->shaderRGB){
         _imp->shaderRGB->removeAllShaders();
         delete _imp->shaderRGB;

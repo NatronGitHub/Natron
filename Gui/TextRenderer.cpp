@@ -32,6 +32,8 @@ using namespace Natron;
 
 #define TEXTURE_SIZE 256
 
+#define NATRON_TEXT_RENDERER_USE_CACHE
+
 namespace
 {
 
@@ -52,15 +54,19 @@ struct TextRendererPrivate {
 
     CharBitmap *createCharacter(QChar c);
 
-    void clearCache();
+    void clearUsedTextures();
+    
+    void clearBitmapCache();
 
     QFont _font;
 
     QFontMetrics _fontMetrics;
 
+#ifdef NATRON_TEXT_RENDERER_USE_CACHE
     ///foreach unicode character, a character texture (multiple characters belong to the same real opengl texture)
-    typedef QHash<ushort, CharBitmap > BitmapCache;
+    typedef QHash<ushort, CharBitmap* > BitmapCache;
     BitmapCache _bitmapsCache;
+#endif
 
     std::list<GLuint> _usedTextures;
 
@@ -83,20 +89,32 @@ TextRendererPrivate::TextRendererPrivate(const QFont &font)
 
 TextRendererPrivate::~TextRendererPrivate()
 {
-    clearCache();
+    clearUsedTextures();
+    clearBitmapCache();
 }
 
-void TextRendererPrivate::clearCache()
+void TextRendererPrivate::clearUsedTextures()
 {
-    foreach(GLuint texture, _usedTextures) {
-        
+
+    for (std::list<GLuint>::iterator it = _usedTextures.begin(); it!= _usedTextures.end(); ++it) {
         //https://www.opengl.org/sdk/docs/man2/xhtml/glIsTexture.xml
-        //A name returned by glGenTextures, but not yet associated with a texture by calling glBindTexture, is not the name of a texture.
-        //Not sure if we should leave this assert here since  textures are not bound any longer at this point.
-        //        assert(glIsTexture(texture));
-        glDeleteTextures(1, &texture);
+               //A name returned by glGenTextures, but not yet associated with a texture by calling glBindTexture, is not the name of a texture.
+               //Not sure if we should leave this assert here since  textures are not bound any longer at this point.
+               //        assert(glIsTexture(texture));
+        glDeleteTextures(1, &(*it));
     }
 }
+
+void TextRendererPrivate::clearBitmapCache()
+{
+#ifdef NATRON_TEXT_RENDERER_USE_CACHE
+    for (BitmapCache::iterator it = _bitmapsCache.begin(); it!= _bitmapsCache.end(); ++it) {
+        delete it.value();
+    }
+    _bitmapsCache.clear();
+#endif
+}
+
 void TextRendererPrivate::newTransparantTexture()
 {
     GLuint texture;
@@ -118,13 +136,15 @@ void TextRendererPrivate::newTransparantTexture()
 
 CharBitmap *TextRendererPrivate::createCharacter(QChar c)
 {
-    ushort unic = c.unicode();
+#ifdef NATRON_TEXT_RENDERER_USE_CACHE
 
+    ushort unic = c.unicode();
     //c is already in the cache
     BitmapCache::iterator it = _bitmapsCache.find(unic);
     if (it != _bitmapsCache.end()) {
-        return &(it.value());
+        return it.value();
     }
+#endif
 
     if (_usedTextures.empty()) {
         newTransparantTexture();
@@ -159,32 +179,38 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c)
     glCheckError();
 
 
-    CharBitmap character;
-    character.texID = texture;
+    CharBitmap *character = new CharBitmap;
+    character->texID = texture;
 
-    character.w = width;
-    character.h = height;
+    character->w = width;
+    character->h = height;
 
-    character.xTexCoords[0] = (GLfloat)_xOffset / TEXTURE_SIZE;
-    character.xTexCoords[1] = (GLfloat)(_xOffset + width) / TEXTURE_SIZE;
+    character->xTexCoords[0] = (GLfloat)_xOffset / TEXTURE_SIZE;
+    character->xTexCoords[1] = (GLfloat)(_xOffset + width) / TEXTURE_SIZE;
 
-    character.yTexCoords[0] = (GLfloat)_yOffset / TEXTURE_SIZE;
-    character.yTexCoords[1] = (GLfloat)(_yOffset + height) / TEXTURE_SIZE;
+    character->yTexCoords[0] = (GLfloat)_yOffset / TEXTURE_SIZE;
+    character->yTexCoords[1] = (GLfloat)(_yOffset + height) / TEXTURE_SIZE;
 
+#ifdef NATRON_TEXT_RENDERER_USE_CACHE
     BitmapCache::iterator retIt = _bitmapsCache.insert(unic, character); // insert a new charactr
     assert(retIt != _bitmapsCache.end());
+#endif
     
     _xOffset += width;
-    if (_xOffset + _fontMetrics.maxWidth() >= TEXTURE_SIZE) {
+    if (_xOffset + width >= TEXTURE_SIZE) {
         _xOffset = 1;
         _yOffset += height;
     }
-    if (_yOffset + _fontMetrics.height() >= TEXTURE_SIZE) {
+    if (_yOffset + height >= TEXTURE_SIZE) {
         newTransparantTexture();
         _yOffset = 1;
     }
 
-    return &(retIt.value());
+#ifdef NATRON_TEXT_RENDERER_USE_CACHE
+    return retIt.value();
+#else
+    return character;
+#endif
 }
 
 

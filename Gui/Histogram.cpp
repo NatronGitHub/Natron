@@ -342,8 +342,11 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
 
 Histogram::~Histogram()
 {
+    
+    
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    makeCurrent();
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     glDeleteTextures(3,&_imp->histogramTexture[0]);
