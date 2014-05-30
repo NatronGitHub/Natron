@@ -309,9 +309,9 @@ public:
     
     virtual ~CacheEntryHelper() { }
     
-    const KeyType& getKey() const {return _key;}
+    const KeyType& getKey() const OVERRIDE FINAL {return _key;}
     
-    typename AbstractCacheEntry<KeyType>::hash_type getHashKey() const {return _key.getHash();}
+    typename AbstractCacheEntry<KeyType>::hash_type getHashKey() const OVERRIDE FINAL {return _key.getHash();}
     
     std::string generateStringFromHash(const std::string& path) const {
         std::string name(path);
@@ -347,7 +347,7 @@ public:
     
     void deallocate() {_data.deallocate();}
     
-    virtual size_t size() const { return dataSize(); }
+    virtual size_t size() const OVERRIDE { return dataSize(); }
 
     size_t dataSize() const {return _data.size();}
     

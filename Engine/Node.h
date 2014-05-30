@@ -476,6 +476,12 @@ public:
     void addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image);
     void removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& image);
     
+    /**
+     * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
+     * do not respect the OpenFX specification.
+     **/
+    boost::shared_ptr<Natron::Image> getImageBeingRendered(int time,unsigned int mipMapLevel,int view);
+    
     void onInputChanged(int inputNb);
     
     void onMultipleInputChanged();

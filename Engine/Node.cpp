@@ -1598,6 +1598,19 @@ void Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& imag
     _imp->imageBeingRenderedCond.wakeAll();
 }
 
+boost::shared_ptr<Natron::Image> Node::getImageBeingRendered(int time,unsigned int mipMapLevel,int view)
+{
+    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
+    for (std::list<boost::shared_ptr<Natron::Image> >::iterator it = _imp->imagesBeingRendered.begin();
+         it!= _imp->imagesBeingRendered.end(); ++it) {
+        const Natron::ImageKey &key = (*it)->getKey();
+        if (key._view == view && key._mipMapLevel == mipMapLevel && key._time == time) {
+            return *it;
+        }
+    }
+    return boost::shared_ptr<Natron::Image>();
+}
+
 void Node::onInputChanged(int inputNb)
 {
     
