@@ -201,6 +201,10 @@ public:
 public slots:
   
     void togglePreview();
+    
+    void onPreviewKnobToggled();
+    
+    void onDisabledKnobToggled(bool disabled);
 
     /**
      * @brief Updates the position of the items contained by the node to fit into
@@ -276,6 +280,7 @@ public slots:
     void refreshOutputEdgeVisibility();
 
 signals:
+    
     void nameChanged(QString);
     
     void positionChanged();
@@ -283,6 +288,8 @@ signals:
     void settingsPanelClosed(bool b);
     
 private:
+    
+    void togglePreview_internal();
     
     void setAboveItem(QGraphicsItem* item);
     
@@ -327,6 +334,7 @@ private:
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
     QGradient* _clonedGradient;
+    QGradient* _disabledGradient;
     
     QMenu* _menu;
     
@@ -344,7 +352,6 @@ private:
     bool _magnecEnabled;
     QPoint _magnecStartingPos;
 
-    
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

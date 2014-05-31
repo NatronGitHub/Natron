@@ -488,6 +488,8 @@ public:
     
     void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reason);
     
+    bool isNodeDisabled() const;
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -562,6 +564,9 @@ signals:
     
     void slavedStateChanged(bool b);
     
+    void previewKnobToggled();
+    
+    void disabledKnobToggled(bool disabled);
     
 protected:
 

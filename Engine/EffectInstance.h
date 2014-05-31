@@ -431,14 +431,7 @@ public:
      * @brief Overload this and return true if your operator should dislay a preview image by default.
      **/
     virtual bool makePreviewByDefault() const WARN_UNUSED_RETURN {return false;}
-    
-    bool isPreviewEnabled() const WARN_UNUSED_RETURN;
-    
-    /**
-     * @brief Called by the GUI when the user wants to activate preview image for this effect.
-     **/
-    void togglePreview();
-    
+
     /**
      * @brief Called on generator effects upon creation if they have an image input file field.
      **/

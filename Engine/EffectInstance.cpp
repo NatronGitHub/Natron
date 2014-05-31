@@ -106,7 +106,6 @@ struct EffectInstance::Implementation {
     : renderAbortedMutex()
     , renderAborted(false)
     , renderArgs()
-    , previewEnabled(false)
     , beginEndRenderMutex()
     , beginEndRenderCount(0)
     , duringInteractActionMutex()
@@ -118,8 +117,6 @@ struct EffectInstance::Implementation {
     bool renderAborted; //< was rendering aborted ?
     
     ThreadStorage<RenderArgs> renderArgs;
-    mutable QMutex previewEnabledMutex;
-    bool previewEnabled;
     QMutex beginEndRenderMutex;
     int beginEndRenderCount;
     
@@ -230,12 +227,6 @@ void EffectInstance::setAborted(bool b)
 {
     QWriteLocker l(&_imp->renderAbortedMutex);
     _imp->renderAborted = b;
-}
-
-bool EffectInstance::isPreviewEnabled() const
-{
-    QMutexLocker l(&_imp->previewEnabledMutex);
-    return _imp->previewEnabled;
 }
 
 U64 EffectInstance::knobsAge() const {
@@ -603,7 +594,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         bool isProjectFormat = false;
         
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
-        if (identity) {
+        
+        if (identity && !_node->isInputNode()) {
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
             RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
@@ -1300,11 +1292,6 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
     getNode()->refreshPreviewsRecursively();
 }
 
-void EffectInstance::togglePreview() {
-    QMutexLocker l(&_imp->previewEnabledMutex);
-    _imp->previewEnabled = !_imp->previewEnabled;
-}
-
 bool EffectInstance::message(Natron::MessageType type,const std::string& content) const{
     return _node->message(type,content);
 }
@@ -1544,7 +1531,30 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    bool ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
+    bool ret;
+    if (_node->isNodeDisabled()) {
+        ret = true;
+        *inputTime = time;
+        *inputNb = -1;
+        ///we forward this node to the last connected non-optional input
+        ///if there's only optional inputs connected, we return the last optional input
+        int lastOptionalInput = -1;
+        for (int i = maximumInputs() - 1; i >= 0; --i) {
+            bool optional = isInputOptional(i);
+            if (!optional && _node->input_other_thread(i)) {
+                *inputNb = i;
+                break;
+            } else if (optional && lastOptionalInput == -1) {
+                lastOptionalInput = i;
+            }
+        }
+        if (*inputNb == -1) {
+            *inputNb = lastOptionalInput;
+        }
+        
+    } else {
+        ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
+    }
     decrementRecursionLevel();
     return ret;
 }

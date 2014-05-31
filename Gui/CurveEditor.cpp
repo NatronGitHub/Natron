@@ -124,7 +124,7 @@ std::pair<QAction*,QAction*> CurveEditor::getUndoRedoActions() const {
 void CurveEditor::addNode(boost::shared_ptr<NodeGui> node){
 
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getNode()->getKnobs();
-    if(knobs.empty()){
+    if(knobs.empty() || !node->getSettingPanel()){
         return;
     }
     bool hasKnobsAnimating = false;

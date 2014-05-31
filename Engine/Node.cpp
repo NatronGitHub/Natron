@@ -88,6 +88,9 @@ struct Node::Implementation {
         , enableMaskKnob()
         , maskChannelKnob()
         , invertMaskKnob()
+        , nodeSettingsPage()
+        , previewEnabledKnob()
+        , disableNodeKnob()
         , rotoContext()
         , imagesBeingRenderedMutex()
         , imagesBeingRendered()
@@ -151,6 +154,10 @@ struct Node::Implementation {
     std::map<int,boost::shared_ptr<Bool_Knob> > enableMaskKnob;
     std::map<int,boost::shared_ptr<Choice_Knob> > maskChannelKnob;
     std::map<int,boost::shared_ptr<Bool_Knob> > invertMaskKnob;
+    
+    boost::shared_ptr<Page_Knob> nodeSettingsPage;
+    boost::shared_ptr<Bool_Knob> previewEnabledKnob;
+    boost::shared_ptr<Bool_Knob> disableNodeKnob;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -434,9 +441,6 @@ std::vector<std::string> Node::getInputNames() const
 
 int Node::getPreferredInputForConnection() const {
     
-    ////Only called by the main-thread
-    assert(QThread::currentThread() == qApp->thread());
-    
     if (maximumInputs() == 0) {
         return -1;
     }
@@ -587,6 +591,20 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
         }
     }
     
+    _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Node",1,false);
+    
+    _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
+    _imp->previewEnabledKnob->setDefaultValue(makePreviewByDefault());
+    _imp->previewEnabledKnob->setAnimationEnabled(false);
+    _imp->previewEnabledKnob->setIsPersistant(false);
+    _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
+    _imp->nodeSettingsPage->addKnob(_imp->previewEnabledKnob);
+    
+    _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Disable",1,false);
+    _imp->disableNodeKnob->setAnimationEnabled(false);
+    _imp->disableNodeKnob->setDefaultValue(false);
+    _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
+    _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
     
     emit knobsInitialized();
 }
@@ -1273,14 +1291,14 @@ bool Node::makePreviewByDefault() const
 
 void Node::togglePreview()
 {
-    ///MT-safe from EffectInstance
-    _imp->liveInstance->togglePreview();
+    ///MT-safe from Knob
+    _imp->previewEnabledKnob->setValue(!_imp->previewEnabledKnob->getValue(),0);
 }
 
 bool Node::isPreviewEnabled() const
 {
      ///MT-safe from EffectInstance
-    return _imp->liveInstance->isPreviewEnabled();
+    return _imp->previewEnabledKnob->getValue();
 }
 
 bool Node::aborted() const
@@ -1632,7 +1650,7 @@ void Node::onMultipleInputChanged()
     _imp->liveInstance->onMultipleInputsChanged();
 }
 
-void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason /*reason*/)
+void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reason)
 {
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it!=_imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
@@ -1650,6 +1668,19 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason /*rea
             break;
         }
     }
+    
+    if (what == _imp->previewEnabledKnob.get()) {
+        if (reason == Natron::USER_EDITED) {
+            emit previewKnobToggled();
+        }
+    } else if (what == _imp->disableNodeKnob.get()) {
+        emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
+    }
+}
+
+bool Node::isNodeDisabled() const
+{
+    return _imp->disableNodeKnob->getValue();
 }
 
 //////////////////////////////////

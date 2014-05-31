@@ -91,6 +91,17 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     
 }
 
+NodeGui::~NodeGui(){
+    
+    deleteReferences();
+    
+    delete _clonedGradient;
+    delete _selectedGradient;
+    delete _defaultGradient;
+    delete _disabledGradient;
+}
+
+
 void NodeGui::initialize(NodeGraph* dag,
                          const boost::shared_ptr<NodeGui>& thisAsShared,
                          QVBoxLayout *dockContainer,
@@ -121,7 +132,8 @@ void NodeGui::initialize(NodeGraph* dag,
     QObject::connect(_internalNode.get(), SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
     QObject::connect(_internalNode.get(), SIGNAL(slavedStateChanged(bool)), this, SLOT(onSlaveStateChanged(bool)));
     QObject::connect(_internalNode.get(), SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()));
-    /*Disabled for now*/
+    QObject::connect(_internalNode.get(), SIGNAL(previewKnobToggled()),this,SLOT(onPreviewKnobToggled()));
+    QObject::connect(_internalNode.get(), SIGNAL(disabledKnobToggled(bool)),this,SLOT(onDisabledKnobToggled(bool)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(1);
@@ -170,7 +182,7 @@ void NodeGui::initialize(NodeGraph* dag,
 	}
     
     if(_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()){
-        togglePreview();
+        togglePreview_internal();
         
     }else{
         updateShape(NODE_LENGTH,NODE_HEIGHT);
@@ -191,8 +203,12 @@ void NodeGui::initialize(NodeGraph* dag,
     _clonedGradient->setColorAt(0, QColor(200,70,100));
     _clonedGradient->setColorAt(1, QColor(120,120,120));
     
-    _boundingBox->setBrush(*_defaultGradient);
+    _disabledGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    _disabledGradient->setColorAt(0,QColor(0,0,0));
+    _disabledGradient->setColorAt(1, QColor(20,20,20));
     
+    _boundingBox->setBrush(*_defaultGradient);
+
     
     gettimeofday(&_lastRenderStartedSlotCallTime, 0);
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
@@ -210,8 +226,8 @@ void NodeGui::beginEditKnobs() {
     _internalNode->beginEditKnobs();
 }
 
-void NodeGui::togglePreview(){
-    _internalNode->togglePreview();
+void NodeGui::togglePreview_internal()
+{
     if(_internalNode->isPreviewEnabled()){
         if(!_previewPixmap){
             QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
@@ -223,9 +239,21 @@ void NodeGui::togglePreview(){
         updateShape(NODE_WITH_PREVIEW_LENGTH,NODE_WITH_PREVIEW_HEIGHT);
         _previewPixmap->show();
     }else{
-        _previewPixmap->hide();
+        if (_previewPixmap) {
+            _previewPixmap->hide();
+        }
         updateShape(NODE_LENGTH,NODE_HEIGHT);
     }
+}
+
+void NodeGui::onPreviewKnobToggled()
+{
+    togglePreview_internal();
+}
+
+void NodeGui::togglePreview(){
+    _internalNode->togglePreview();
+    togglePreview_internal();
 }
 
 QSize NodeGui::nodeSize(bool withPreview) {
@@ -240,13 +268,6 @@ QSize NodeGui::nodeSize(bool withPreview) {
     return ret;
 }
 
-NodeGui::~NodeGui(){
-    
-    deleteReferences();
-    
-    delete _selectedGradient;
-    delete _defaultGradient;
-}
 
 void NodeGui::removeUndoStack(){
     if(getUndoStack()){
@@ -609,13 +630,15 @@ Edge* NodeGui::firstAvailableEdge(){
 
 void NodeGui::setSelected(bool b){
     _selected = b;
-    if (b) {
-        _boundingBox->setBrush(*_selectedGradient);
-    } else {
-        if (_slaveMasterLink) {
-            _boundingBox->setBrush(*_clonedGradient);
+    if (!_internalNode->isNodeDisabled()) {
+        if (b) {
+            _boundingBox->setBrush(*_selectedGradient);
         } else {
-            _boundingBox->setBrush(*_defaultGradient);
+            if (_slaveMasterLink) {
+                _boundingBox->setBrush(*_clonedGradient);
+            } else {
+                _boundingBox->setBrush(*_defaultGradient);
+            }
         }
     }
     update();
@@ -913,6 +936,7 @@ void NodeGui::populateMenu(){
 
 }
 const std::map<boost::shared_ptr<KnobI> ,KnobGui*>& NodeGui::getKnobs() const{
+    assert(_settingsPanel);
     return _settingsPanel->getKnobs();
 }
 
@@ -1046,10 +1070,12 @@ void NodeGui::onSlaveStateChanged(bool b) {
         pen.setWidth(3);
         pen.setBrush(QColor(200,100,100));
         _slaveMasterLink->setPen(pen);
-        if (!isSelected()) {
-            _boundingBox->setBrush(*_clonedGradient);
+        if (!_internalNode->isNodeDisabled()) {
+            if (!isSelected()) {
+                _boundingBox->setBrush(*_clonedGradient);
+            }
         }
-
+        
     } else {
         QObject::disconnect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
         QObject::disconnect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
@@ -1058,9 +1084,10 @@ void NodeGui::onSlaveStateChanged(bool b) {
         delete _slaveMasterLink;
         _slaveMasterLink = 0;
         _masterNodeGui.reset();
-        
-        if (!isSelected()) {
-            _boundingBox->setBrush(*_defaultGradient);
+        if (!_internalNode->isNodeDisabled()) {
+            if (!isSelected()) {
+                _boundingBox->setBrush(*_defaultGradient);
+            }
         }
     }
     update();
@@ -1156,5 +1183,23 @@ QSize NodeGui::getSize() const
         return QSize(NODE_WITH_PREVIEW_LENGTH,NODE_WITH_PREVIEW_HEIGHT);
     } else {
         return QSize(NODE_LENGTH,NODE_HEIGHT);
+    }
+}
+
+
+void NodeGui::onDisabledKnobToggled(bool disabled) {
+    if (disabled) {
+        _boundingBox->setBrush(*_disabledGradient);
+        _nameItem->setDefaultTextColor(QColor(120,120,120));
+    } else {
+        if (_slaveMasterLink) {
+            _boundingBox->setBrush(*_clonedGradient);
+        } else if (isSelected()) {
+            _boundingBox->setBrush(*_selectedGradient);
+        } else {
+            _boundingBox->setBrush(*_defaultGradient);
+        }
+        _boundingBox->setBrush(*_defaultGradient);
+        _nameItem->setDefaultTextColor(QColor(0,0,0));
     }
 }
