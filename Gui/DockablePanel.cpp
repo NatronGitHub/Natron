@@ -436,10 +436,10 @@ void DockablePanel::initializeKnobs() {
             }
         }
         if (parentTab == _imp->_pages.end()) {
-            ///find in all knobs a page param to set this param into
+            ///find in all knobs a page param (that is not the extra one added by Natron) to set this param into
             for (U32 i = 0; i < knobs.size(); ++i) {
                 Page_Knob* p = dynamic_cast<Page_Knob*>(knobs[i].get());
-                if (p) {
+                if (p && p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) {
                     parentTab = _imp->addPage(p->getDescription().c_str());
                     break;
                 }
@@ -558,7 +558,7 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
                     ///find in all knobs a page param to set this param into
                     for (U32 i = 0; i < knobs.size(); ++i) {
                         Page_Knob* p = dynamic_cast<Page_Knob*>(knobs[i].get());
-                        if (p) {
+                        if (p && p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) {
                             page = addPage(p->getDescription().c_str());
                             break;
                         }

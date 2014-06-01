@@ -591,7 +591,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
         }
     }
     
-    _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, "Node",1,false);
+    _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, NATRON_EXTRA_PARAMETER_PAGE_NAME,1,false);
     
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
     _imp->previewEnabledKnob->setDefaultValue(makePreviewByDefault());

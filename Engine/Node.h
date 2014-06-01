@@ -28,6 +28,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 
+#define NATRON_EXTRA_PARAMETER_PAGE_NAME "Node"
+
 class AppInstance;
 class NodeSettingsPanel;
 class KnobI;
