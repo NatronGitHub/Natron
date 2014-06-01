@@ -140,7 +140,7 @@ public:
     
     void setUndoRedoStackLimit(int limit);
     
-    void deleteNodePermanantly(const boost::shared_ptr<NodeGui>& n);
+    void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
     
 public slots:
     

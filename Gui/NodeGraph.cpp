@@ -1769,7 +1769,7 @@ void NodeGraph::setUndoRedoStackLimit(int limit)
     _undoStack->setUndoLimit(limit);
 }
 
-void NodeGraph::deleteNodePermanantly(const boost::shared_ptr<NodeGui>& n)
+void NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 {
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_nodesTrash.begin(),_nodesTrash.end(),n);
     if (it != _nodesTrash.end()) {
