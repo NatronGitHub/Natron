@@ -597,6 +597,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     _imp->previewEnabledKnob->setDefaultValue(makePreviewByDefault());
     _imp->previewEnabledKnob->setAnimationEnabled(false);
     _imp->previewEnabledKnob->setIsPersistant(false);
+    _imp->previewEnabledKnob->setEvaluateOnChange(false);
     _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
     _imp->nodeSettingsPage->addKnob(_imp->previewEnabledKnob);
     
