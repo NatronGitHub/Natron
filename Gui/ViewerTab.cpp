@@ -814,11 +814,14 @@ void ViewerTab::refresh(){
 
 ViewerTab::~ViewerTab()
 {
-    _imp->_viewerNode->invalidateUiContext();
-    if (_imp->app && !_imp->app->isClosing() && _imp->_gui->getLastSelectedViewer() == this) {
-        assert(_imp->_gui);
-        _imp->_gui->setLastSelectedViewer(NULL);
-    }
+	if (_imp->_gui) {
+		_imp->_viewerNode->invalidateUiContext();
+		if (_imp->app && !_imp->app->isClosing() && _imp->_gui->getLastSelectedViewer() == this) {
+			assert(_imp->_gui);
+			_imp->_gui->setLastSelectedViewer(NULL);
+		}
+	}
+   
 }
 
 

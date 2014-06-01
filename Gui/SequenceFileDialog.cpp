@@ -406,8 +406,6 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     if(!isSequenceDialog){
         enableSequenceMode(false);
     }
-    
-    
 }
 SequenceFileDialog::~SequenceFileDialog(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -855,7 +853,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
 void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
 }
-
+#include <QStyleFactory>
 SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd):QTreeView(fd),_fd(fd){
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
@@ -869,6 +867,11 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd):QTreeView(fd),_fd
     setDragDropMode(QAbstractItemView::InternalMove);
     //setAttribute(Qt::WA_MacShowFocusRect,0);
     setAcceptDrops(true);
+}
+
+void SequenceDialogView::paintEvent(QPaintEvent *event)
+{
+	QTreeView::paintEvent(event);
 }
 
 void SequenceDialogView::dropEvent(QDropEvent* event){
@@ -900,7 +903,7 @@ void SequenceDialogView::dragLeaveEvent(QDragLeaveEvent* e){
 
 void SequenceDialogView::resizeEvent(QResizeEvent* e) {
     expandColumnsToFullWidth(e->size().width());
-    repaint();
+   // repaint(); //< seems to make Qt crash on windows
     QTreeView::resizeEvent(e);
 }
 

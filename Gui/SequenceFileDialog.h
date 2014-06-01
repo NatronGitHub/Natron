@@ -183,6 +183,8 @@ public:
     void dragLeaveEvent(QDragLeaveEvent* e);
     
     void resizeEvent(QResizeEvent* e);
+
+	void paintEvent(QPaintEvent *event);
 };
 
 

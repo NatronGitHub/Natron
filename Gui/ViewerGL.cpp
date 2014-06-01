@@ -2122,6 +2122,10 @@ void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+	if (!_imp->viewerTab->getGui()) {
+		return;
+	}
+
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
     if(_imp->viewerTab->notifyOverlaysFocusLost(scale,scale)){
         updateGL();
@@ -2544,7 +2548,9 @@ void ViewerGL::removeGUI()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true,true);
+	if (_imp->viewerTab->getGui()) {
+		_imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true,true);
+	}
 }
 
 int ViewerGL::getCurrentView() const

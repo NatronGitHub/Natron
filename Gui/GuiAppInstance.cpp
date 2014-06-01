@@ -74,7 +74,7 @@ void GuiAppInstance::aboutToQuit()
 GuiAppInstance::~GuiAppInstance() {
     
 //#ifndef __NATRON_WIN32__
-    delete _imp->_gui;
+    _imp->_gui->deleteLater();
     _imp->_gui = 0;
 //#endif
     QCoreApplication::processEvents();
