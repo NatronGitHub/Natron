@@ -24,7 +24,15 @@ log{
 
 CONFIG(debug, debug|release){
     message("Compiling in DEBUG mode.")
-    DEFINES += NATRON_DEBUG
+    DEFINES *= NATRON_DEBUG DEBUG
+} else {
+    message("Compiling in RELEASE mode.")
+    DEFINES *= NDEBUG
+}
+
+
+CONFIG(noassertions) {
+   DEFINES *= NDEBUG QT_NO_DEBUG
 }
 
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
