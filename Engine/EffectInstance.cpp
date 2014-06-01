@@ -595,28 +595,34 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         
-        if (identity && !_node->isInputNode()) {
-            RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
-            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
-            Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
-                                                        args.roi,
-                                                        inputsRoI,
-                                                        args.time,
-                                                        args.view,
-                                                        args.scale,
-                                                        args.mipMapLevel,
-                                                        args.isSequentialRender,
-                                                        args.isRenderUserInteraction,
-                                                        byPassCache,
-                                                        nodeHash,
-                                                        0);
+        bool isInputNode = _node->isInputNode();
+        if (identity) {
             
-            ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-            image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
-            
-            ///if we bypass the cache, don't cache the result of isIdentity
-            if (byPassCache) {
-                return image;
+            if (isInputNode) {
+                return boost::shared_ptr<Natron::Image>();
+            } else {
+                RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
+                RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
+                Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
+                                                            args.roi,
+                                                            inputsRoI,
+                                                            args.time,
+                                                            args.view,
+                                                            args.scale,
+                                                            args.mipMapLevel,
+                                                            args.isSequentialRender,
+                                                            args.isRenderUserInteraction,
+                                                            byPassCache,
+                                                            nodeHash,
+                                                            0);
+                
+                ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
+                image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view);
+                
+                ///if we bypass the cache, don't cache the result of isIdentity
+                if (byPassCache) {
+                    return image;
+                }
             }
         } else {
             ///set it to -1 so the cache knows it's not an identity
