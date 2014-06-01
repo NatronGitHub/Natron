@@ -1787,7 +1787,7 @@ void ViewerGL::updateColorPicker(int x,int y)
 
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (!_imp->displayingImage) {
+    if (!_imp->displayingImage && _imp->infoViewer->colorAndMouseVisible()) {
         _imp->infoViewer->hideColorAndMouseInfo();
         return;
     }
@@ -1825,8 +1825,13 @@ void ViewerGL::updateColorPicker(int x,int y)
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
     if (!picked) {
-        _imp->infoViewer->hideColorAndMouseInfo();
+		if (_imp->infoViewer->colorAndMouseVisible()) {
+			_imp->infoViewer->hideColorAndMouseInfo();
+		}
     } else {
+		if (!_imp->infoViewer->colorAndMouseVisible()) {
+			_imp->infoViewer->showColorAndMouseInfo();
+		}
         _imp->infoViewer->setColor(r,g,b,a);
         emit infoColorUnderMouseChanged();
     }
@@ -2613,9 +2618,6 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
         imgPos.y() < dispW.top() &&
         widgetPos.x() >= 0 && widgetPos.x() < width &&
         widgetPos.y() >= 0 && widgetPos.y() < height ) {
-        if (!_imp->infoViewer->colorAndMouseVisible()) {
-            _imp->infoViewer->showColorAndMouseInfo();
-        }
         
         if (_imp->pickerState == PICKER_INACTIVE) {
             boost::shared_ptr<VideoEngine> videoEngine = _imp->viewerTab->getInternalNode()->getVideoEngine();

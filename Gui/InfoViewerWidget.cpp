@@ -131,7 +131,6 @@ void InfoViewerWidget::hideColorAndMouseInfo(){
     hvl_lastOption->hide();
     rgbaValues->hide();
     color->hide();
-
 }
 
 InfoViewerWidget::~InfoViewerWidget(){
@@ -161,7 +160,7 @@ void InfoViewerWidget::updateColor()
         .arg(a,0,'f',5);
 
     rgbaValues->setText(values);
-   // rgbaValues->repaint();
+    rgbaValues->repaint();
     float h,s,v,l;
     // Nuke's HSV display is based on sRGB, an L is Rec.709.
     // see http://forums.thefoundry.co.uk/phpBB2/viewtopic.php?t=2283
@@ -175,7 +174,7 @@ void InfoViewerWidget::updateColor()
     QPixmap pix(15,15); 
     pix.fill(col);
     color->setPixmap(pix);
-   // color->repaint();
+    color->repaint();
 
     
     Color::rgb_to_hsv(srgb_r,srgb_g,srgb_b,&h,&s,&v);
@@ -188,7 +187,7 @@ void InfoViewerWidget::updateColor()
         .arg(l,0,'f',5);
 
     hvl_lastOption->setText(hsvlValues);
-   // hvl_lastOption->repaint();
+    hvl_lastOption->repaint();
 }
 
 void InfoViewerWidget::updateCoordMouse(){

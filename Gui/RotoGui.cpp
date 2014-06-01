@@ -1904,7 +1904,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         {
             assert(_imp->rotoData->builtBezier);
             pushUndoCommand(new MakeBezierUndoCommand(this,_imp->rotoData->builtBezier,false,dx,dy,time));
-            didSomething = true;
         }   break;
         case BUILDING_ELLIPSE:
         {
