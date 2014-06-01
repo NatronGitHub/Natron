@@ -796,6 +796,9 @@ struct KnobHolder::KnobHolderPrivate
     
     EvaluationRequest evaluateQueue;
     
+    mutable QMutex paramsEditLevelMutex;
+    KnobHolder::MultipleParamsEditLevel paramsEditLevel;
+    
     KnobHolderPrivate(AppInstance* appInstance)
     : _app(appInstance)
     , _knobs()
@@ -823,6 +826,18 @@ KnobHolder::~KnobHolder()
         KnobHelper* helper = dynamic_cast<KnobHelper*>(_imp->_knobs[i].get());
         helper->_imp->_holder = 0;
     }
+}
+
+KnobHolder::MultipleParamsEditLevel KnobHolder::getMultipleParamsEditLevel() const
+{
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+    return _imp->paramsEditLevel;
+}
+
+void KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level)
+{
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+    _imp->paramsEditLevel = level;
 }
 
 AppInstance* KnobHolder::getApp() const {return _imp->_app;}

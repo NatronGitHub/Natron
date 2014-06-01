@@ -181,12 +181,14 @@ double OfxImageEffectInstance::getProjectPixelAspectRatio() const
 // This contains the duration of the plug-in effect, in frames.
 double OfxImageEffectInstance::getEffectDuration() const {
     assert(node());
+#pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain ?")
     return 1.0;
 }
 
 // For an instance, this is the frame rate of the project the effect is in.
 double OfxImageEffectInstance::getFrameRate() const {
     assert(node());
+#pragma message WARN("Add a frame rate parameter to the project")
     return 25.0;
 }
 
@@ -452,15 +454,19 @@ void OfxImageEffectInstance::addParamsToTheirParents(){
  - ::kOfxStatErrBadHandle  - if the instance handle was invalid
  
  */
-OfxStatus OfxImageEffectInstance::editBegin(const std::string& /*name*/) {
-    return kOfxStatErrMissingHostFeature;
+OfxStatus OfxImageEffectInstance::editBegin(const std::string& /*name*/)
+{
+    _node->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND);
+    return kOfxStatOK;
 }
 
 /// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditEnd
 ///
 /// Client host code needs to implement this
-OfxStatus OfxImageEffectInstance::editEnd(){
-    return kOfxStatErrMissingHostFeature;
+OfxStatus OfxImageEffectInstance::editEnd()
+{
+    _node->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_OFF);
+    return kOfxStatOK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

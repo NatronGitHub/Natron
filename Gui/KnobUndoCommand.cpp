@@ -6,6 +6,7 @@
 #include "KnobUndoCommand.h"
 
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 #include "Gui/GuiApplicationManager.h"
 
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,int targetDimension,
@@ -203,4 +204,172 @@ void PasteUndoCommand::redo()
     }
     
 }
+
+
+MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,
+                                                           const std::list<Variant>& values,int time)
+: QUndoCommand()
+, knobs()
+, createNew(createNew)
+, firstRedoCalled(false)
+{
+    assert(knob);
+    boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
+    boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
+    
+    ValueToSet v;
+    v.newValues = values;
+    v.time = time;
+    v.copy = copy;
+    v.setKeyFrame = setKeyFrame;
+    knobs.insert(std::make_pair(knob, v));
+
+}
+
+MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
+{
+    
+}
+
+boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob) const
+{
+    const std::string& typeName = originalKnob->typeName();
+    boost::shared_ptr<KnobI> copy;
+    int dimension = originalKnob->getDimension();
+    if (typeName == Int_Knob::typeNameStatic()) {
+        copy.reset(new Int_Knob(NULL,"",dimension,false));
+    } else if (typeName == Bool_Knob::typeNameStatic()) {
+        copy.reset(new Bool_Knob(NULL,"",dimension,false));
+    } else if (typeName == Double_Knob::typeNameStatic()) {
+        copy.reset(new Double_Knob(NULL,"",dimension,false));
+    } else if (typeName == Choice_Knob::typeNameStatic()) {
+        copy.reset(new Choice_Knob(NULL,"",dimension,false));
+    } else if (typeName == String_Knob::typeNameStatic()) {
+        copy.reset(new String_Knob(NULL,"",dimension,false));
+    } else if (typeName == Parametric_Knob::typeNameStatic()) {
+        copy.reset(new Parametric_Knob(NULL,"",dimension,false));
+    } else if (typeName == Color_Knob::typeNameStatic()) {
+        copy.reset(new Color_Knob(NULL,"",dimension,false));
+    } else if (typeName == Path_Knob::typeNameStatic()) {
+        copy.reset(new Path_Knob(NULL,"",dimension,false));
+    } else if (typeName == File_Knob::typeNameStatic()) {
+        copy.reset(new File_Knob(NULL,"",dimension,false));
+    } else if (typeName == OutputFile_Knob::typeNameStatic()) {
+        copy.reset(new OutputFile_Knob(NULL,"",dimension,false));
+    }
+    
+    ///If this is another type of knob this is wrong since they do not hold any value
+    assert(copy);
+    copy->populate();
+    
+    ///make a clone of the original knob at that time and stash it
+    copy->clone(originalKnob);
+    return copy;
+}
+
+void MultipleKnobEditsUndoCommand::undo()
+{
+    ///clone the copy for all knobs
+    for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
+        boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
+        
+        ///clone the original knob back to its old state
+        it->first->getKnob()->clone(it->second.copy);
+        
+        ///clone the copy to the new values
+        it->second.copy->clone(copyWithNewValues);
+    }
+    
+    assert(!knobs.empty());
+    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
+    QString holderName;
+    if (holder) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            holderName = effect->getName().c_str();
+        }
+    }
+    setText(QObject::tr("Multiple edits for %1").arg(holderName));
+
+}
+
+void MultipleKnobEditsUndoCommand::redo()
+{
+    if (firstRedoCalled) {
+        ///just clone
+        for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+            boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
+            boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
+            
+            ///clone the original knob back to its old state
+            it->first->getKnob()->clone(it->second.copy);
+            
+            ///clone the copy to the old values
+            it->second.copy->clone(copyWithOldValues);
+        }
+
+    } else {
+        ///this is the first redo command, set values
+        for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+            int i = 0;
+            boost::shared_ptr<KnobI> knob = it->first->getKnob();
+            for (std::list<Variant>::iterator it2 = it->second.newValues.begin(); it2!=it->second.newValues.end(); ++it2,++i) {
+                KeyFrame k;
+                Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+                Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+                if (isInt) {
+                    it->first->setValue<int>(i, it2->toInt(), &k);
+                } else if (isBool) {
+                    it->first->setValue<bool>(i, it2->toBool(), &k);
+                } else if (isDouble) {
+                    it->first->setValue<double>(i, it2->toDouble(), &k);
+                } else if (isString) {
+                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k);
+                } else {
+                    assert(false);
+                }
+                if (it->second.setKeyFrame) {
+                    it->first->setKeyframe(it->second.time, i);
+                }
+            }
+        }
+        firstRedoCalled = true;
+    }
+    
+    assert(!knobs.empty());
+    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
+    QString holderName;
+    if (holder) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            holderName = effect->getName().c_str();
+        }
+    }
+    setText(QObject::tr("Multiple edits for %1").arg(holderName));
+
+}
+
+int MultipleKnobEditsUndoCommand::id() const
+{
+    return kMultipleKnobsUndoChangeCommandCompressionID;
+}
+
+bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
+{
+    const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command);
+    if (!knobCommand || command->id() != id()) {
+        return false;
+    }
+    
+    if (!createNew) {
+        return false;
+    }
+    
+    knobs.insert(knobCommand->knobs.begin(), knobCommand->knobs.end());
+    return true;
+}
+
 

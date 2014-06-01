@@ -220,19 +220,40 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     KnobHelper::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
     
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && holder->isDoingInteractAction() && reason != Natron::USER_EDITED) {
-        
-        int setValueRecursionLevel;
-        {
-            QMutexLocker l(&_setValueRecursionLevelMutex);
-            setValueRecursionLevel = _setValueRecursionLevel;
+    if (holder && reason == Natron::PLUGIN_EDITED) {
+        if (holder->isDoingInteractAction()) {
+            if (!get_SetValueRecursionLevel()) {
+                Variant vari;
+                valueToVariant(v, &vari);
+                _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
+                return ret;
+                
+            }
         }
-        if (!setValueRecursionLevel) {
-            Variant vari;
-            valueToVariant(v, &vari);
-            _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
-            return ret;
-            
+        KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
+        switch (paramEditLevel) {
+            case KnobHolder::PARAM_EDIT_OFF:
+            default:
+                break;
+            case KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND:
+            {
+                if (!get_SetValueRecursionLevel()) {
+                    Variant vari;
+                    valueToVariant(v, &vari);
+                    holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false);
+                    return ret;
+                }
+            }     break;
+            case KnobHolder::PARAM_EDIT_ON:
+            {
+                if (!get_SetValueRecursionLevel()) {
+                    Variant vari;
+                    valueToVariant(v, &vari);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false);
+                    return ret;
+                }
+            }   break;
         }
     }
     
@@ -289,6 +310,36 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
     }
 
+    Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
+    if (holder && reason == Natron::PLUGIN_EDITED) {
+        KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
+        switch (paramEditLevel) {
+            case KnobHolder::PARAM_EDIT_OFF:
+            default:
+                break;
+            case KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND:
+            {
+                if (!get_SetValueRecursionLevel()) {
+                    Variant vari;
+                    valueToVariant(v, &vari);
+                    holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
+                    return true;
+                }
+            }     break;
+            case KnobHolder::PARAM_EDIT_ON:
+            {
+                if (!get_SetValueRecursionLevel()) {
+                    Variant vari;
+                    valueToVariant(v, &vari);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
+                    return true;
+                }
+            }   break;
+        }
+
+    }
+    
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     if (isSlave(dimension)) {
@@ -331,6 +382,37 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
     }
 
+    Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
+    if (holder && reason == Natron::PLUGIN_EDITED) {
+        KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
+        switch (paramEditLevel) {
+            case KnobHolder::PARAM_EDIT_OFF:
+            default:
+                break;
+            case KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND:
+            {
+                if (!get_SetValueRecursionLevel()) {
+                    Variant vari;
+                    valueToVariant(v, &vari);
+                    holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
+                    return true;
+                }
+            }     break;
+            case KnobHolder::PARAM_EDIT_ON:
+            {
+                if (!get_SetValueRecursionLevel()) {
+                    Variant vari;
+                    valueToVariant(v, &vari);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
+                    return true;
+                }
+            }   break;
+        }
+        
+    }
+
+    
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
     if (isSlave(dimension)) {

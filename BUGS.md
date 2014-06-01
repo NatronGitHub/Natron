@@ -26,14 +26,7 @@ Missing and wanted features
 
 Here is a list of non-blocking bugs / wanted features:
 
-- the nodegraph should have a "f" shortcut to recenter the graph, and scrollbars (or a birds eye view) when the graph is too large.
-
-- Progress suite is not implemented (GUI is blocked until the operation has ended)
-
-- The OFX keyframe interface is missing some unimplemented functions yet:
-  - OfxParameterSuiteV1::paramEditBegin — Used to group any parameter changes for undo/redo purposes
-  - OfxParameterSuiteV1::paramEditEnd — Used to group any parameter changes for undo/redo purposes
-  - OfxParameterSuiteV1::paramCopy — Copies one parameter to another, including any animation etc...
+- the nodegraph should have scrollbars (or a birds eye view) when the graph is too large.
 
 - support Parameter Interacts, which are OpenGL "widgets" integrated in the parameters panel
 http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts

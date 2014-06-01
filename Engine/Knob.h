@@ -478,6 +478,9 @@ public:
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
     void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
+    void s_appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame) {
+        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
+    }
     void s_setDirty(bool b) { emit dirty(b); }
     
 public slots:
@@ -553,6 +556,10 @@ signals:
     ///Emitted whenever the GUI should set the value using the undo stack. This is
     ///only to address the problem of interacts that should use the undo/redo stack.
     void setValueWithUndoStack(Variant v,int dim);
+    
+    ///Same as setValueWithUndoStack except that the value change will be compressed
+    ///in a multiple edit undo/redo action
+    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -907,6 +914,12 @@ private:
     
     void valueToVariant(const T& v,Variant* vari);
     
+    int get_SetValueRecursionLevel() const
+    {
+        QMutexLocker l(&_setValueRecursionLevelMutex);
+        return _setValueRecursionLevel;
+    }
+    
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
     //////////////////////////////////////////////////////////////////////
@@ -920,7 +933,7 @@ private:
     
     ///this flag is to avoid recursive setValue calls
     int _setValueRecursionLevel;
-    QMutex _setValueRecursionLevelMutex;
+    mutable QMutex _setValueRecursionLevelMutex;
 
 
 };
@@ -990,6 +1003,13 @@ class KnobHolder {
     
 public:
     
+    enum MultipleParamsEditLevel
+    {
+        PARAM_EDIT_OFF = 0, //< The knob should not use multiple edits command
+        PARAM_EDIT_ON_CREATE_NEW_COMMAND, //< The knob should use multiple edits command and create a new one that will not merge with others
+        PARAM_EDIT_ON //< The knob should use multiple edits command and merge it with priors command (if any)
+    };
+    
     /**
      *@brief A holder is a class managing a bunch of knobs and interacting with an appInstance.
      * When appInstance is NULL the holder will be considered "application global" in which case
@@ -1009,6 +1029,10 @@ public:
     const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const WARN_UNUSED_RETURN;
     
     void refreshAfterTimeChange(SequenceTime time);
+    
+    KnobHolder::MultipleParamsEditLevel getMultipleParamsEditLevel() const;
+    
+    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level);
     
 protected:
     /**

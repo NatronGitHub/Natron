@@ -186,6 +186,45 @@ private:
     bool _merge;
 };
 
+
+class MultipleKnobEditsUndoCommand : public QUndoCommand
+{
+    struct ValueToSet {
+        boost::shared_ptr<KnobI> copy;
+        std::list<Variant> newValues;
+        int time;
+        bool setKeyFrame;
+    };
+    
+    ///For each knob, the second member points to a clone of the knob before the first redo() call was made
+    typedef std::map < KnobGui* , ValueToSet >  ParamsMap;
+    ParamsMap knobs;
+    bool createNew;
+    bool firstRedoCalled;
+public:
+    
+    /**
+     * @brief Make a new command
+     * @param createNew If true this command will not merge with a previous same command
+     * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
+     **/
+    MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,const std::list<Variant>& values,int time);
+    
+    virtual ~MultipleKnobEditsUndoCommand();
+  
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+    virtual int id() const OVERRIDE FINAL;
+    
+    virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
+    
+private:
+    
+    boost::shared_ptr<KnobI> createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob) const;
+};
+
 class PasteUndoCommand : public QUndoCommand
 {
     KnobGui* _knob;
