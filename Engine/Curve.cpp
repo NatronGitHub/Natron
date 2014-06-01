@@ -290,7 +290,7 @@ bool Curve::addKeyFrame(KeyFrame key)
     
     std::pair<KeyFrameSet::iterator,bool> it = addKeyFrameNoUpdate(key);
     
-    evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
+    it.first = evaluateCurveChanged(KEYFRAME_CHANGED,it.first);
     l.unlock();
     ///This call must not be locked!
     if (_imp->owner) {
@@ -823,7 +823,7 @@ KeyFrame Curve::setKeyFrameValueAndTime(double time,double value,int index,int* 
         
         if (setTime || setValue) {
             it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
-            evaluateCurveChanged(KEYFRAME_CHANGED,it);
+            it = evaluateCurveChanged(KEYFRAME_CHANGED,it);
             evaluateAnimation = true;
         }
         if (newIndex) {
@@ -855,7 +855,7 @@ KeyFrame Curve::setKeyFrameLeftDerivative(double value,int index,int* newIndex)
             KeyFrame newKey(*it);
             newKey.setLeftDerivative(value);
             it = addKeyFrameNoUpdate(newKey).first;
-            evaluateCurveChanged(DERIVATIVES_CHANGED,it);
+            it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
             evaluateAnimation = true;
         }
         if (newIndex) {
@@ -885,7 +885,7 @@ KeyFrame Curve::setKeyFrameRightDerivative(double value,int index,int* newIndex)
             KeyFrame newKey(*it);
             newKey.setRightDerivative(value);
             it = addKeyFrameNoUpdate(newKey).first;
-            evaluateCurveChanged(DERIVATIVES_CHANGED,it);
+            it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
             evaluateAnimation = true;
         }
         if (newIndex) {
@@ -915,7 +915,7 @@ KeyFrame Curve::setKeyFrameDerivatives(double left, double right,int index,int* 
             newKey.setLeftDerivative(left);
             newKey.setRightDerivative(right);
             it = addKeyFrameNoUpdate(newKey).first;
-            evaluateCurveChanged(DERIVATIVES_CHANGED,it);
+            it = evaluateCurveChanged(DERIVATIVES_CHANGED,it);
             evaluateAnimation = true;
             
         }
@@ -995,7 +995,7 @@ KeyFrameSet::iterator Curve::setKeyframeInterpolation_internal(KeyFrameSet::iter
     KeyFrame newKey(*it);
     newKey.setInterpolation(interp);
     it = addKeyFrameNoUpdate(newKey).first;
-    evaluateCurveChanged(KEYFRAME_CHANGED,it);
+    it = evaluateCurveChanged(KEYFRAME_CHANGED,it);
     return it;
 }
 
@@ -1080,14 +1080,14 @@ KeyFrameSet::iterator Curve::refreshDerivatives(Curve::CurveChangedReason reason
     key = newKeyIt.first;
     
     if (reason != DERIVATIVES_CHANGED) {
-        evaluateCurveChanged(DERIVATIVES_CHANGED,key);
+        key = evaluateCurveChanged(DERIVATIVES_CHANGED,key);
     }
     return key;
 }
 
 
 
-void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterator key)
+KeyFrameSet::iterator Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterator key)
 {
     // PRIVATE - should not lock
     assert(key!=_imp->keyFrames.end());
@@ -1114,6 +1114,7 @@ void Curve::evaluateCurveChanged(CurveChangedReason reason, KeyFrameSet::iterato
             next = refreshDerivatives(DERIVATIVES_CHANGED,next);
         }
     }
+	return key;
 }
 
 KeyFrameSet::const_iterator Curve::find(double time) const

@@ -276,8 +276,10 @@ private:
     /**
      * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
      * evaluate any change (i.e: force a new render)
+     * WARNING: The iterator "key" is invalid after this call.
+     * The value pointed to by key before this call is now pointed to by the iterator returned by this function.
      **/
-    void evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key);
+    KeyFrameSet::iterator evaluateCurveChanged(CurveChangedReason reason,KeyFrameSet::iterator key) WARN_UNUSED_RETURN;
     
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReason reason, KeyFrameSet::iterator key);
 
