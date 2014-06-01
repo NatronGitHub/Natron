@@ -255,10 +255,7 @@ struct GuiPrivate {
     
     QString _openGLVersion;
     QString _glewVersion;
-    QString _qtVersion;
-    QString _boostVersion;
-    QString _cairoVersion;
-    
+
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
     , _isUserScrubbingTimeline(false)
@@ -342,9 +339,6 @@ struct GuiPrivate {
     , _aboutWindow(0)
     , _openGLVersion()
     , _glewVersion()
-    , _qtVersion()
-    , _boostVersion()
-    , _cairoVersion()
     {
         
     }
@@ -376,10 +370,6 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
                      SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
     QObject::connect(app,SIGNAL(pluginsPopulated()),this,SLOT(addToolButttonsToToolBar()));
-    
-    _imp->_qtVersion = QString(QT_VERSION_STR);
-    _imp->_boostVersion = QString(BOOST_LIB_VERSION);
-    _imp->_cairoVersion = QString(cairo_version_string());
 }
 
 Gui::~Gui()
@@ -2239,25 +2229,25 @@ void Gui::setOpenGLVersion(const QString& version) {
     _imp->_aboutWindow->updateLibrariesVersions();
 }
 
-const QString& Gui::getGlewVersion() const {
+QString Gui::getGlewVersion() const {
     return _imp->_glewVersion;
 }
 
-const QString& Gui::getOpenGLVersion() const {
+QString Gui::getOpenGLVersion() const {
     return _imp->_openGLVersion;
 }
 
-const QString& Gui::getBoostVersion() const {
-    return _imp->_boostVersion;
+QString Gui::getBoostVersion() const {
+    return QString(BOOST_LIB_VERSION);
 }
 
-const QString& Gui::getQtVersion() const {
-    return _imp->_qtVersion;
+QString Gui::getQtVersion() const {
+    return QString(QT_VERSION_STR) + " / " + qVersion();
 }
 
-const QString& Gui::getCairoVersion() const
+QString Gui::getCairoVersion() const
 {
-    return _imp->_cairoVersion;
+    return QString(CAIRO_VERSION_STRING) + " / " + QString(cairo_version_string());
 }
 
 void Gui::onNodeNameChanged(const QString& /*name*/) {

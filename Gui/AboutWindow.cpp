@@ -52,7 +52,7 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
     
     _aboutText = new QTextBrowser(_tabWidget);
     _aboutText->setOpenExternalLinks(true);
-    QString aboutText = QString("<p>%1 version %2.</p>"
+    QString aboutText = QString("<p>%1 version %2%7.</p>"
                                 "<p>This version was generated from the source code branch %5"
                                 " at commit %6.</p>"
                                 "<p>Copyright (C) 2013 the %1 developers.</p>"
@@ -65,12 +65,24 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
                                 "<p>Note: This software is currently under beta testing, meaning there are "
                                 " bugs and untested stuffs. If you feel like reporting a bug, please do so "
                                 "on the <a href=\"%4\"><font color=\"orange\"> issue tracker.</font></a></p>")
-                                .arg(NATRON_APPLICATION_NAME)
-                                .arg(NATRON_VERSION_STRING)
-                                .arg("https://natron.inria.fr")
-                                .arg("https://groups.google.com/forum/?hl=en#!categories/natron-vfx/installation-troobleshooting-bugs")
-                                .arg(GIT_BRANCH)
-                                .arg(GIT_COMMIT);
+                                .arg(NATRON_APPLICATION_NAME) // %1
+                                .arg(NATRON_VERSION_STRING) // %2
+                                .arg("https://natron.inria.fr") // %3
+                                .arg("https://groups.google.com/forum/?hl=en#!categories/natron-vfx/installation-troobleshooting-bugs") // %4
+                                .arg(GIT_BRANCH) // %5
+                                .arg(GIT_COMMIT) // %6
+#ifdef DEBUG
+                                .arg(" (debug)") //%7
+#else
+#ifdef NDEBUG
+                                // release with asserts disabled (should be the *real* release)
+                                .arg("") // %7
+#else
+                                // release with asserts enabled
+                                .arg(" (opt)") // %7
+#endif
+#endif
+                                ;
     _aboutText->setText(aboutText);
     _tabWidget->addTab(_aboutText, "About");
     

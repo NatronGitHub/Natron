@@ -262,15 +262,15 @@ public:
     
     void setOpenGLVersion(const QString & version);
     
-    const QString& getGlewVersion() const;
+    QString getGlewVersion() const;
     
-    const QString& getOpenGLVersion() const;
+    QString getOpenGLVersion() const;
 
-    const QString& getBoostVersion() const;
+    QString getBoostVersion() const;
 
-    const QString& getQtVersion() const;
+    QString getQtVersion() const;
 
-    const QString& getCairoVersion() const;
+    QString getCairoVersion() const;
     /**
      * @brief Make a new rotoscoping/painting interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.
