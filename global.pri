@@ -106,10 +106,6 @@ unix {
   QMAKE_CXXFLAGS -= -O2
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
 
- #Needed on Xcode 5.1 as libc++ from llvm is now compiler default
-  QMAKE_CXXFLAGS = -std=c++11 -stdlib=libstdc++ -mmacosx-version-min=10.7
-  QMAKE_LFLAGS = -std=c++11 -stdlib=libstdc++ -mmacosx-version-min=10.7
-
   # Qt 4.8.5's XCode generator has a bug and places moc_*.cpp files next to the sources instead of inside the build dir
   # However, setting the MOC_DIR doesn't fix that (Xcode build fails)
   # Simple rtule: don't use Xcode
