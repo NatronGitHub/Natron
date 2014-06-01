@@ -388,3 +388,37 @@ void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceNa
 void GuiAppInstance::setUndoRedoStackLimit(int limit) {
     _imp->_gui->setUndoRedoStackLimit(limit);
 }
+
+void GuiAppInstance::startProgress(Natron::EffectInstance* effect,const std::string& message)
+{
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+
+    _imp->_gui->startProgress(effect, message);
+
+}
+
+void GuiAppInstance::endProgress(Natron::EffectInstance* effect)
+{
+    _imp->_gui->endProgress(effect);
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+
+}
+
+bool GuiAppInstance::progressUpdate(Natron::EffectInstance* effect,double t)
+{
+    bool ret =  _imp->_gui->progressUpdate(effect, t);
+    if (!ret) {
+        {
+            QMutexLocker l(&_imp->_showingDialogMutex);
+            _imp->_showingDialog = false;
+        }
+
+    }
+    return ret;
+}

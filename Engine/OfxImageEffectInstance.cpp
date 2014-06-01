@@ -471,17 +471,24 @@ OfxStatus OfxImageEffectInstance::editEnd(){
 // overridden for Progress::ProgressI
 
 /// Start doing progress.
-void OfxImageEffectInstance::progressStart(const std::string& /*message*/) {
+void OfxImageEffectInstance::progressStart(const std::string& message) {
+    _node->getApp()->startProgress(_node, message);
 }
 
 /// finish yer progress
 void OfxImageEffectInstance::progressEnd() {
+    _node->getApp()->endProgress(_node);
 }
 
-/// set the progress to some level of completion, returns
-/// false if you should abandon processing, true to continue
-bool OfxImageEffectInstance::progressUpdate(double /*t*/) {
-    return true;
+/** @brief Indicate how much of the processing task has been completed and reports on any abort status.
+ 
+ \arg \e effectInstance - the instance of the plugin this progress bar is
+ associated with. It cannot be NULL.
+ \arg \e progress - a number between 0.0 and 1.0 indicating what proportion of the current task has been processed.
+ \returns false if you should abandon processing, true to continue
+*/
+bool OfxImageEffectInstance::progressUpdate(double t) {
+    return _node->getApp()->progressUpdate(_node, t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

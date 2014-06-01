@@ -61,6 +61,7 @@ class ProcessHandler;
 namespace Natron {
     class Node;
     class Image;
+    class EffectInstance;
     class OutputEffectInstance;
 }
 
@@ -288,6 +289,12 @@ public:
     void removeRotoInterface(NodeGui* n,bool permanantly);
     
     void onViewerRotoEvaluated(ViewerTab* viewer);
+    
+    void startProgress(Natron::EffectInstance* effect,const std::string& message);
+    
+    void endProgress(Natron::EffectInstance* effect);
+    
+    bool progressUpdate(Natron::EffectInstance* effect,double t);
     
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/

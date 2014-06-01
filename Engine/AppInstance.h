@@ -34,6 +34,7 @@ class ProcessHandler;
 namespace Natron {
     class Node;
     class Project;
+    class EffectInstance;
     class OutputEffectInstance;
 }
 
@@ -109,6 +110,13 @@ public:
                                                    const boost::shared_ptr<ProcessHandler>& /*process*/) {}
 
     virtual bool isShowingDialog() const { return false; }
+    
+    virtual void startProgress(Natron::EffectInstance* /*effect*/,const std::string& /*message*/) {}
+    
+    virtual void endProgress(Natron::EffectInstance* /*effect*/) {}
+    
+    virtual bool progressUpdate(Natron::EffectInstance* /*effect*/,double /*t*/) {return true;}
+    
 public slots:
     
     void quit();

@@ -19,6 +19,7 @@
 #include <QCoreApplication>
 #include <QAction>
 #include <QSettings>
+#include <QDebug>
 #include <QThread>
 
 #if QT_VERSION >= 0x050000
@@ -42,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QToolButton>
 #include <QMessageBox>
 #include <QImage>
+#include <QProgressDialog>
 
 #include <cairo/cairo.h>
 
@@ -253,6 +255,8 @@ struct GuiPrivate {
     ///The "About" window.
     AboutWindow* _aboutWindow;
     
+    std::map<Natron::EffectInstance*,QProgressDialog*> _progressBars;
+    
     QString _openGLVersion;
     QString _glewVersion;
 
@@ -337,6 +341,7 @@ struct GuiPrivate {
     , _projectGui(0)
     , _currentlyDraggedPanel(0)
     , _aboutWindow(0)
+    , _progressBars()
     , _openGLVersion()
     , _glewVersion()
     {
@@ -2340,4 +2345,65 @@ void Gui::onViewerRotoEvaluated(ViewerTab* viewer)
         }
     }
 
+}
+
+void Gui::startProgress(Natron::EffectInstance* effect,const std::string& message)
+{
+    if (QThread::currentThread() != qApp->thread()) {
+        qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
+        return;
+    }
+    
+    QProgressDialog* dialog = new QProgressDialog(message.c_str(),tr("Cancel"),0,100,this);
+    dialog->setWindowModality(Qt::NonModal);
+    dialog->setRange(0, 100);
+    dialog->setMinimumWidth(250);
+    dialog->setWindowTitle(effect->getNode()->getName_mt_safe().c_str());
+    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    
+    ///If a second dialog was asked for whilst another is still active, the first dialog will not be
+    ///able to be canceled.
+    if (found != _imp->_progressBars.end()) {
+        _imp->_progressBars.erase(found);
+    }
+    
+    _imp->_progressBars.insert(std::make_pair(effect,dialog));
+    dialog->show();
+    //dialog->exec();
+}
+
+void Gui::endProgress(Natron::EffectInstance* effect)
+{
+    if (QThread::currentThread() != qApp->thread()) {
+        qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
+        return;
+    }
+    
+    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    if (found == _imp->_progressBars.end()) {
+        qDebug() << effect->getNode()->getName_mt_safe().c_str() <<  " called endProgress but didn't called startProgress first.";
+    }
+    
+    
+    found->second->close();
+    _imp->_progressBars.erase(found);
+}
+
+bool Gui::progressUpdate(Natron::EffectInstance* effect,double t)
+{
+    if (QThread::currentThread() != qApp->thread()) {
+        qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
+        return true;
+    }
+    
+    std::map<Natron::EffectInstance*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+    if (found == _imp->_progressBars.end()) {
+        qDebug() << effect->getNode()->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+    }
+    if (found->second->wasCanceled()) {
+        return false;
+    }
+    found->second->setValue(t * 100);
+    QCoreApplication::processEvents();
+    return true;
 }

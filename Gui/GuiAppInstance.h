@@ -81,7 +81,12 @@ public:
     bool isClosing() const;
     
     virtual bool isShowingDialog() const OVERRIDE FINAL;
+    
+    virtual void startProgress(Natron::EffectInstance* effect,const std::string& message) OVERRIDE FINAL;
 
+    virtual void endProgress(Natron::EffectInstance* effect) OVERRIDE FINAL;
+    
+    virtual bool progressUpdate(Natron::EffectInstance* effect,double t) OVERRIDE FINAL;
 public slots:
     
     void onProjectNodesCleared();
