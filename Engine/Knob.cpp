@@ -806,6 +806,7 @@ struct KnobHolder::KnobHolderPrivate
     , _isSlave(false)
     , actionsRecursionLevel()
     , evaluateQueue()
+    , paramsEditLevel(PARAM_EDIT_OFF)
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
