@@ -75,14 +75,14 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 4037D4193E4219AF3CA213FA;
+			remoteGlobalIDString = F82FF8B1AB092B635B8D3C44;
 			remoteInfo = Engine;
 		};
 		1E5F8F5918AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 7F7885FA157803963BE4F88F;
+			remoteGlobalIDString = 9B38B1D5C33AF4E4B0F859F7;
 			remoteInfo = Gui;
 		};
 		1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */ = {
@@ -159,7 +159,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = ED08CA340BFEF8FE1A2D2AD0;
+			remoteGlobalIDString = 0E116598542859DA9320C015;
 			remoteInfo = HostSupport;
 		};
 		D7A1965B18B2256400F412DA /* PBXContainerItemProxy */ = {
@@ -444,16 +444,12 @@
 		1EADE5BC18AA400B00EF3180 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				SDKROOT = macosx10.8;
 			};
 			name = Debug;
 		};
 		1EADE5BD18AA400B00EF3180 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				SDKROOT = macosx10.8;
 			};
 			name = Release;
 		};
