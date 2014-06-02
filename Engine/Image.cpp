@@ -363,7 +363,7 @@ boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsig
                                                  bool isRoDProjectFormat,ImageComponents components,
                                                  int inputNbIdentity,int inputTimeIdentity,
                                                  const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel)
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel)
                                                           ,isRoDProjectFormat,components,inputNbIdentity,inputTimeIdentity,framesNeeded));
 }
 

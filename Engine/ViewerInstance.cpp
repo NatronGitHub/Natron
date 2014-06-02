@@ -448,7 +448,7 @@ ViewerInstance::renderViewer(SequenceTime time,
 
         // For the viewer, we need the enclosing rectangle to avoid black borders.
         // Do this here to avoid infinity values.
-        pixelRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+        pixelRoD = rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
 
     emit rodChanged(rod);

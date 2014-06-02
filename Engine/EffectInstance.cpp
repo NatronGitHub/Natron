@@ -382,7 +382,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
     ///Convert to pixel coordinates (FIXME: take the par into account)
     if (mipMapLevel != 0) {
-        roi = roi.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+        roi = roi.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
     
     
