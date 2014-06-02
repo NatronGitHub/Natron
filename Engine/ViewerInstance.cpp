@@ -491,11 +491,11 @@ ViewerInstance::renderViewer(SequenceTime time,
     texRectClipped.intersect(pixelRoD, &texRectClipped);
     
     ///The width and height of the texture is the width of texRect clamped to the
-    ///pixelRoD
+    ///pixelRoD with the viewer scaling factor applied. (This is the real size of data the texture will have).
     int texW = texRect.width() > pixelRoD.width() ? pixelRoD.width() : texRect.width();
     int texH = texRect.height() > pixelRoD.height() ? pixelRoD.height() : texRect.height();
     
-    
+    ///Texture rect contains coordinates in the image to be rendered without the scaling of the viewer applied
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
                             texRectClipped.y2,texW,texH,closestPowerOf2);
     

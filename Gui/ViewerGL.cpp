@@ -149,11 +149,11 @@ struct ViewerGL::Implementation {
     , currentViewerInfos_btmLeftBBOXoverlay()
     , currentViewerInfos_topRightBBOXoverlay()
     , currentViewerInfos_resolutionOverlay()
+    , pickerState(PICKER_INACTIVE)
     , userRoIEnabled(false) // protected by mutex
     , userRoI() // protected by mutex
     , zoomCtx() // protected by mutex
     , clipToDisplayWindow(true) // protected by mutex
-    , pickerState(PICKER_INACTIVE)
     {
         assert(qApp && qApp->thread() == QThread::currentThread());
     }
@@ -218,6 +218,11 @@ struct ViewerGL::Implementation {
     QString currentViewerInfos_topRightBBOXoverlay;/*!< The string holding the top right corner coordinates of the dataWindow*/
     QString currentViewerInfos_resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
 
+    ///////Picker infos, used only by the main-thread
+    PickerState pickerState;
+    QPointF lastPickerPos;
+    QRectF pickerRect;
+    
     //////////////////////////////////////////////////////////
     // The following are accessed from various threads
     QMutex userRoIMutex;
@@ -229,10 +234,6 @@ struct ViewerGL::Implementation {
 
     QMutex clipToDisplayWindowMutex;
     bool clipToDisplayWindow;
-    
-    PickerState pickerState;
-    QPointF lastPickerPos;
-    QRectF pickerRect;
  
 };
 
@@ -1147,6 +1148,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         ret = ret.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
     
+    ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
     if (!ret.intersect(imageRoD, &ret)) {
         ret.clear();
     }
@@ -1155,8 +1157,11 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         if (_imp->userRoIEnabled) {
             RectI userRoI = _imp->userRoI;
             if (mipMapLevel != 0) {
-                userRoI = userRoI.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+                ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
+                userRoI = userRoI.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
             }
+            
+            ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
             if (!ret.intersect(userRoI, &ret)) {
                 ret.clear();
             }
