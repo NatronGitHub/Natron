@@ -227,7 +227,7 @@ struct ViewerGL::Implementation {
     // The following are accessed from various threads
     QMutex userRoIMutex;
     bool userRoIEnabled;
-    RectI userRoI;
+    RectI userRoI; //< in canonical coords
 
     ZoomContext zoomCtx;/*!< All zoom related variables are packed into this object. */
     QMutex zoomCtxMutex; /// protectx zoomCtx*
@@ -305,16 +305,18 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
     const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    
+    ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
+    ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
     RectI texRect(r.x1,r.y1,r.x2,r.y2);
     
     
-    ///the RoD of the iamge
+    ///the RoD of the iamge in canonical coords.
     RectI rod = getRoD();
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
         if (_imp->clipToDisplayWindow) {
-            ///clip the RoD to the portion where data lies. (i.e: r might be smaller than rod when it is the project window.)
-            ///if so then we don't want to display "all" the project window.
+            ///clip the RoD to the project format.
             if (!rod.intersect(getDisplayWindow(),&rod)) {
                 return;
             }
@@ -323,16 +325,26 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     }
     
     double texXOffset = 0,texYOffset = 0;
+    
+    ///If proxy is enabled
     if (mipMapLevel != 0) {
+        
+        ///1) convert the image data rectangle to canonical coords
         texRect = texRect.upscalePowerOfTwo(mipMapLevel);
-        RectI texRectClipped;
-        texRect.intersect(rod, &texRectClipped);
-        RectI largestEnclosedRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
-        texXOffset = (double)(r.x2 - largestEnclosedRoD.x2) / r.w;
+
+        ///pixelRoD is the rod in pixel coordinates, we draw the largest enclosed so we don't have black borders.
+        RectI pixelRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+        
+        ///clip the image data rectangle to the rod (which has just been clipped to the display window)
+        ///This call might not be useful if _imp->clipToDisplayWindow is off because the internal viewer has already
+        ///clipped the texture rectangle to the rod
+        texRect.intersect(rod, &texRect);
+
+        ///Notice that here we use 'r' and not texRect because 'r' is in pixel coordinates (so is pixelRoD)
+        texXOffset = (double)(r.x2 - pixelRoD.x2) / r.w;
         if (texXOffset < 0) texXOffset = 0;
-        texYOffset = (double)(r.y2 - largestEnclosedRoD.y2) / r.h;
+        texYOffset = (double)(r.y2 - pixelRoD.y2) / r.h;
         if (texYOffset < 0) texYOffset = 0;
-        texRect = texRectClipped;
         
     }
     
@@ -370,6 +382,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
 //        
 //    }
     
+    ///Vertices are in canonical coords
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
         (GLfloat)texRect.x1       , (GLfloat)rod.top()  , //1
@@ -389,6 +402,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
     
+   
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
     texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
