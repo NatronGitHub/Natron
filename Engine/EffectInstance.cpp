@@ -305,6 +305,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     
    
     boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+    bool useRotoInput = false;
+    if (roto) {
+        useRotoInput = isInputRotoBrush(inputNb);
+    }
     if (!roto && !n) {
         return boost::shared_ptr<Natron::Image>();
     }
@@ -369,7 +373,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
 
-    RoIMap::iterator found = inputsRoI.find(roto ? this : n);
+    RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
     assert(found != inputsRoI.end());
 
     ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
@@ -382,7 +386,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     }
     
     
-    if (roto && isInputRotoBrush(inputNb)) {
+    if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
         return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time, view, mipMapLevel, byPassCache);
