@@ -15,55 +15,102 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
-
+#include "Engine/Knob.h"
 
 using namespace Natron;
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent, bool hasAlpha):
 OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
-, _viewport(NULL)
+, NatronOverlayInteractSupport()
 {
 }
 
-void OfxOverlayInteract::setCallingViewport(OverlaySupport* viewport) {
+Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,OFX::Host::Interact::Descriptor &desc, void *effectInstance)
+: OFX::Host::Interact::Instance(desc,effectInstance)
+, NatronOverlayInteractSupport()
+{
+    setCallingViewport(knob);
+}
+
+
+
+NatronOverlayInteractSupport::NatronOverlayInteractSupport()
+: _viewport(NULL)
+{
+    
+}
+
+NatronOverlayInteractSupport::~NatronOverlayInteractSupport()
+{
+    
+}
+
+void NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport) {
     _viewport = viewport;
 }
 
-OfxStatus OfxOverlayInteract::swapBuffers(){
+OfxStatus NatronOverlayInteractSupport::n_swapBuffers(){
     if (_viewport) {
         _viewport->swapOpenGLBuffers();
     }
     return kOfxStatOK;
 }
 
-OfxStatus OfxOverlayInteract::redraw(){
+OfxStatus NatronOverlayInteractSupport::n_redraw(){
     if (_viewport) {
         _viewport->redraw();
     }
     return kOfxStatOK;
 }
 
-void OfxOverlayInteract::getViewportSize(double &width, double &height) const {
+void NatronOverlayInteractSupport::n_getViewportSize(double &width, double &height) const {
 
     if (_viewport) {
         _viewport->getViewportSize(width,height);
     }
 }
 
-void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
+void NatronOverlayInteractSupport::n_getPixelScale(double& xScale, double& yScale) const{
     if (_viewport) {
         _viewport->getPixelScale(xScale,yScale);
     }
 }
 
-void OfxOverlayInteract::getBackgroundColour(double &r, double &g, double &b) const{
+void NatronOverlayInteractSupport::n_getBackgroundColour(double &r, double &g, double &b) const{
     if (_viewport) {
         _viewport->getBackgroundColour(r,g,b);
     }
 }
 
-#ifdef OFX_EXTENSIONS_NUKE
-void OfxOverlayInteract::getOverlayColour(double &r, double &g, double &b) const{
+void NatronOverlayInteractSupport::n_getOverlayColour(double &r, double &g, double &b) const{
     r = g = b = 1.;
 }
-#endif
+
+void Natron::OfxParamOverlayInteract::getMinimumSize(int& minW,int& minH) const
+{
+    minW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractMinimumSize,0);
+    minH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractMinimumSize,1);
+}
+
+void Natron::OfxParamOverlayInteract::getPreferredSize(int& pW,int& pH) const
+{
+    pW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize,0);
+    pH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize,1);
+}
+
+void Natron::OfxParamOverlayInteract::getSize(double &w,double &h) const
+{
+    w = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSize,0);
+    h = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSize,1);
+}
+
+void Natron::OfxParamOverlayInteract::setSize(double w,double h)
+{
+    _descriptor.getProperties().setDoubleProperty(kOfxParamPropInteractSize,w,0);
+    _descriptor.getProperties().setDoubleProperty(kOfxParamPropInteractSize,h,1);
+}
+
+void Natron::OfxParamOverlayInteract::getPixelAspect(double& par) const
+{
+    par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+}

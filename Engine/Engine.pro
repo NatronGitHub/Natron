@@ -114,6 +114,7 @@ HEADERS += \
     ImageParamsSerialization.h \
     Interpolation.h \
     Knob.h \
+    KnobGuiI.h \
     KnobImpl.h \
     KnobSerialization.h \
     KnobFactory.h \

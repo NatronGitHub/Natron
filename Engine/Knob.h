@@ -19,6 +19,8 @@
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
+#include "Engine/KnobGuiI.h"
+#include "Engine/OverlaySupport.h"
 
 class Curve;
 class KeyFrame;
@@ -27,7 +29,11 @@ class AppInstance;
 class KnobSerialization;
 class StringAnimationManager;
 
-class KnobI
+namespace Natron {
+class OfxParamOverlayInteract;
+}
+
+class KnobI : public OverlaySupport
 {
 public:
     
@@ -42,6 +48,9 @@ public:
      * for Curve.
      **/
     virtual void populate() = 0;
+    
+    virtual void setKnobGuiPointer(KnobGuiI* ptr) = 0;
+    virtual KnobGuiI* getKnobGuiPointer() const = 0;
     
     /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
@@ -374,6 +383,24 @@ public:
      * @brief Get the tooltip text.
      **/
     virtual const std::string& getHintToolTip() const = 0;
+
+    /**
+     * @brief Call this to set a custom interact entry point, replacing any existing gui.
+     **/
+    virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract>& interactDesc) = 0;
+    virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const = 0;
+    
+    virtual void swapOpenGLBuffers() = 0;
+    virtual void redraw() = 0;
+    virtual void getViewportSize(double &width, double &height) const = 0;
+    virtual void getPixelScale(double& xScale, double& yScale) const  = 0;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
+    
+    /**
+     * @brief If this is an openfx param, this is the pointer to the handle.
+     **/
+    virtual void setOfxParamHandle(void* ofxParamHandle) = 0;
+    virtual void* getOfxParamHandle() const = 0;
     
 protected:
     
@@ -588,6 +615,8 @@ public:
     
     virtual ~KnobHelper();
     
+    virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
+    virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
@@ -698,6 +727,20 @@ public:
     virtual void setHintToolTip(const std::string& hint) OVERRIDE FINAL;
     
     virtual const std::string& getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract>& interactDesc) OVERRIDE FINAL;
+    virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
+    virtual void redraw() OVERRIDE FINAL;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
+    virtual void getPixelScale(double& xScale, double& yScale) const  OVERRIDE FINAL;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    
+    virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
+    
+    virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
     
     virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) OVERRIDE FINAL WARN_UNUSED_RETURN;

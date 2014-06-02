@@ -38,6 +38,7 @@
 #include "Engine/Node.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/OfxOverlayInteract.h"
 
 using namespace Natron;
 
@@ -232,6 +233,16 @@ void OfxImageEffectInstance::getViewRecursive(int& view) const
     }
 }
 
+ ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
+       ///expects those properties to exist, so we add them to the INTERACT descriptor.
+static const OFX::Host::Property::PropSpec interactDescProps[] = {
+    { kOfxParamPropInteractSize,        OFX::Host::Property::eDouble,  2, false, "0" },
+    { kOfxParamPropInteractSizeAspect,  OFX::Host::Property::eDouble,  1, false, "1" },
+    { kOfxParamPropInteractMinimumSize, OFX::Host::Property::eInt,  2, false, "10" },
+    { kOfxParamPropInteractPreferedSize,OFX::Host::Property::eInt,     2, false, "10" },
+    OFX::Host::Property::propSpecEnd
+};
+
 // make a parameter instance
 OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &paramName, OFX::Host::Param::Descriptor &descriptor)
 {
@@ -395,7 +406,16 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     }else if(layoutHint == 2){
         knob->turnOffNewLine();
     }
+    knob->setOfxParamHandle((void*)instance->getHandle());
     
+    OfxPluginEntryPoint* interact =
+    (OfxPluginEntryPoint*)descriptor.getProperties().getPointerProperty(kOfxParamPropInteractV1);
+    if (interact) {
+        OFX::Host::Interact::Descriptor& interactDesc = dynamic_cast<OfxParamToKnob*>(instance)->getInteractDesc();
+        interactDesc.getProperties().addProperties(interactDescProps);
+        interactDesc.setEntryPoint(interact);
+        interactDesc.describe(8, false);
+    }
     
     return instance;
 

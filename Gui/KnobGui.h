@@ -24,6 +24,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobGuiI.h"
 
 // Qt
 class QUndoCommand; //used by KnobGui
@@ -34,7 +35,6 @@ class QMenu;
 class QLabel;
 
 // Engine
-class KnobI; //used by KnobGui
 class Variant; //used by KnobGui
 class KeyFrame;
 
@@ -45,7 +45,7 @@ class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
 class Gui;
 
-class KnobGui : public QObject
+class KnobGui : public QObject,public KnobGuiI
 {
     Q_OBJECT
 
@@ -135,6 +135,16 @@ public:
         checkAnimationLevel(dimension);
         return (int)ret;
     }
+    
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
+    virtual void redraw() OVERRIDE FINAL;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
+    virtual void getPixelScale(double& xScale, double& yScale) const  OVERRIDE FINAL;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    
+    ///Should set to the underlying knob the gui ptr
+    virtual void setKnobGuiPointer() OVERRIDE FINAL;
+
     
 public slots:
     
@@ -249,6 +259,7 @@ protected:
     
 private:
 
+    void updateGuiInternal(int dimension);
     
     void copyToClipBoard(int dimension,bool copyAnimation);
     

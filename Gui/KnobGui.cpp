@@ -67,6 +67,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CurveWidget.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/CustomParamInteract.h"
 
 using namespace Natron;
 
@@ -91,6 +92,8 @@ struct KnobGui::KnobGuiPrivate
     QWidget* descriptionLabel;
     bool isOnNewLine;
     
+    CustomParamInteract* customInteract;
+    
     KnobGuiPrivate(DockablePanel* container)
     : triggerNewLine(true)
     , spacingBetweenItems(0)
@@ -106,6 +109,7 @@ struct KnobGui::KnobGuiPrivate
     , field(NULL)
     , descriptionLabel(NULL)
     , isOnNewLine(false)
+    , customInteract(NULL)
     {
         
     }
@@ -117,6 +121,7 @@ struct KnobGui::KnobGuiPrivate
 KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
 : _imp(new KnobGuiPrivate(container))
 {
+    knob->setKnobGuiPointer(this);
     KnobHelper* helper = dynamic_cast<KnobHelper*>(knob.get());
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
     
@@ -176,16 +181,24 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
     if (!isOnNewLine) {
         layout->addWidget(label);
     }
-    createWidget(layout);
+    
+    boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
+    if (customInteract != 0) {
+        _imp->customInteract = new CustomParamInteract(this,knob->getOfxParamHandle(),customInteract);
+        layout->addWidget(_imp->customInteract);
+    } else {
+        createWidget(layout);
+    }
     if(knob->isAnimationEnabled() && knob->typeName() != File_Knob::typeNameStatic()){
         createAnimationButton(layout);
     }
     _imp->widgetCreated = true;
     
-    for(int i = 0; i < knob->getDimension();++i){
-        updateGUI(i);
+    for(int i = 0; i < knob->getDimension();++i) {
+        updateGuiInternal(i);
         checkAnimationLevel(i);
     }
+    
     setEnabledSlot();
     if (isOnNewLine) {
         containerLayout->addRow(label, fieldContainer);
@@ -194,7 +207,14 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
 
 }
 
-
+void KnobGui::updateGuiInternal(int dimension)
+{
+    if (!_imp->customInteract) {
+        updateGUI(dimension);
+    } else {
+        _imp->customInteract->update();
+    }
+}
 
 void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     _imp->animationMenu = new QMenu(layout->parentWidget());
@@ -688,7 +708,11 @@ int KnobGui::getKnobsCountOnSameLine() const {
 }
 
 void KnobGui::hide(){
-    _hide();
+    if (!_imp->customInteract) {
+        _hide();
+    } else {
+        _imp->customInteract->hide();
+    }
     if(_imp->animationButton)
         _imp->animationButton->hide();
     //also  hide the curve from the curve editor if there's any
@@ -719,7 +743,11 @@ void KnobGui::hide(){
     }
 }
 void KnobGui::show(int index){
-    _show();
+    if (!_imp->customInteract) {
+        _show();
+    } else {
+        _imp->customInteract->show();
+    }
     if(_imp->animationButton)
         _imp->animationButton->show();
     //also show the curve from the curve editor if there's any
@@ -765,7 +793,9 @@ bool KnobGui::isOnNewLine() const {
 }
 
 void KnobGui::setEnabledSlot(){
-    setEnabled();
+    if (!_imp->customInteract) {
+        setEnabled();
+    }
     boost::shared_ptr<KnobI> knob = getKnob();
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->setEnabled(knob->isEnabled(0));
@@ -787,7 +817,7 @@ QWidget* KnobGui::getFieldContainer() const {
 
 void KnobGui::onInternalValueChanged(int dimension) {
     if(_imp->widgetCreated){
-        updateGUI(dimension);
+        updateGuiInternal(dimension);
         checkAnimationLevel(dimension);
     }
 }
@@ -1119,7 +1149,9 @@ void KnobGui::checkAnimationLevel(int dimension)
     }
     if (level != knob->getAnimationLevel(dimension)) {
         knob->setAnimationLevel(dimension,level);
-        reflectAnimationLevel(dimension, level);
+        if (!_imp->customInteract) {
+            reflectAnimationLevel(dimension, level);
+        }
     }
 }
 
@@ -1140,8 +1172,9 @@ void KnobGui::resetDefault(int dimension) {
 
 
 void KnobGui::setReadOnly_(bool readOnly,int dimension) {
-    
-    setReadOnly(readOnly, dimension);
+    if (!_imp->customInteract) {
+        setReadOnly(readOnly, dimension);
+    }
     
     ///This code doesn't work since the knob dimensions are still enabled even if readonly
 //    bool hasDimensionEnabled = false;
@@ -1186,5 +1219,49 @@ void KnobGui::onSetValueUsingUndoStack(const Variant& v,int dim) {
 
 void KnobGui::onSetDirty(bool d)
 {
-    setDirty(d);
+    if (!_imp->customInteract) {
+        setDirty(d);
+    }
 }
+
+void KnobGui::swapOpenGLBuffers()
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->swapOpenGLBuffers();
+    }
+}
+void KnobGui::redraw()
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->redraw();
+    }
+
+}
+void KnobGui::getViewportSize(double &width, double &height) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->getViewportSize(width, height);
+    }
+
+}
+void KnobGui::getPixelScale(double& xScale, double& yScale) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->getPixelScale(xScale, yScale);
+    }
+   
+}
+void KnobGui::getBackgroundColour(double &r, double &g, double &b) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->getBackgroundColour(r, g, b);
+    }
+
+}
+
+///Should set to the underlying knob the gui ptr
+void KnobGui::setKnobGuiPointer()
+{
+    getKnob()->setKnobGuiPointer(this);
+}
+

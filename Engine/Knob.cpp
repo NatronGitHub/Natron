@@ -165,6 +165,10 @@ struct KnobHelper::KnobHelperPrivate {
     
     bool _declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
     
+    boost::shared_ptr<OfxParamOverlayInteract> _customInteract;
+    KnobGuiI* _gui;
+    void* _ofxParamHandle;
+    
     KnobHelperPrivate(KnobHelper* publicInterface,KnobHolder*  holder,int dimension,const std::string& description,bool declaredByPlugin)
     : _publicInterface(publicInterface)
     , _holder(holder)
@@ -191,6 +195,9 @@ struct KnobHelper::KnobHelperPrivate {
     , _beginEndReason(Natron::PROJECT_LOADING)
     , _dimensionChanged()
     , _declaredByPlugin(declaredByPlugin)
+    , _customInteract()
+    , _gui(0)
+    , _ofxParamHandle(0)
     {
     }
     
@@ -211,6 +218,17 @@ KnobHelper::~KnobHelper()
     if (_imp->_holder) {
         _imp->_holder->removeKnob(this);
     }
+}
+
+void KnobHelper::setKnobGuiPointer(KnobGuiI* ptr)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->_gui = ptr;
+}
+
+KnobGuiI* KnobHelper::getKnobGuiPointer() const
+{
+    return _imp->_gui;
 }
 
 bool KnobHelper::isDeclaredByPlugin() const
@@ -568,6 +586,59 @@ void KnobHelper::setHintToolTip(const std::string& hint)
 const std::string& KnobHelper::getHintToolTip() const
 {
     return _imp->_tooltipHint;
+}
+
+void KnobHelper::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract>& interactDesc)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->_customInteract = interactDesc;
+}
+
+boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_customInteract;
+}
+
+void KnobHelper::swapOpenGLBuffers()
+{
+    
+}
+
+void KnobHelper::redraw()
+{
+    assert(_imp->_gui);
+    _imp->_gui->redraw();
+}
+
+void KnobHelper::getViewportSize(double &width, double &height) const
+{
+    assert(_imp->_gui);
+    _imp->_gui->getViewportSize(width, height);
+}
+
+void KnobHelper::getPixelScale(double& xScale, double& yScale) const
+{
+    assert(_imp->_gui);
+    _imp->_gui->getPixelScale(xScale, yScale);
+}
+
+void KnobHelper::getBackgroundColour(double &r, double &g, double &b) const
+{
+    assert(_imp->_gui);
+    _imp->_gui->getBackgroundColour(r, g, b);
+}
+
+void KnobHelper::setOfxParamHandle(void* ofxParamHandle)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->_ofxParamHandle = ofxParamHandle;
+}
+
+void* KnobHelper::getOfxParamHandle() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_ofxParamHandle;
 }
 
 bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,Natron::ValueChangedReason reason) {

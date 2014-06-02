@@ -60,12 +60,16 @@ namespace Natron{
 
 
 class OfxParamToKnob {
+    
+    OFX::Host::Interact::Descriptor interactDesc;
+    
 public:
     
     OfxParamToKnob(){}
     
     virtual boost::shared_ptr<KnobI> getKnob() const = 0;
     
+    OFX::Host::Interact::Descriptor& getInteractDesc() { return interactDesc; }
 
 };
 

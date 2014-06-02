@@ -215,7 +215,22 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
         effectInstance()->discardClipsView();
         getApp()->redrawAllViewers();
     }
-    
+    ///for each param, if it has a valid custom interact, create it
+    const std::list<OFX::Host::Param::Instance*>& params = effectInstance()->getParamList();
+    for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+        OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(*it);
+        assert(paramToKnob);
+        OFX::Host::Interact::Descriptor& interactDesc = paramToKnob->getInteractDesc();
+        if (interactDesc.getState() == OFX::Host::Interact::eDescribed) {
+            boost::shared_ptr<KnobI> knob = paramToKnob->getKnob();
+            boost::shared_ptr<OfxParamOverlayInteract> overlay(new OfxParamOverlayInteract(knob.get(),interactDesc,
+                                                                                           effectInstance()->getHandle()));
+            
+            overlay->createInstanceAction();
+            knob->setCustomInteract(overlay);
+        }
+
+    }
 }
 
 bool OfxEffectInstance::isOutput() const {
