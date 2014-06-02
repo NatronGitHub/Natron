@@ -65,6 +65,21 @@ private:
     
     virtual QSize sizeHint() const OVERRIDE FINAL;
     
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+
+    
     boost::scoped_ptr<CustomParamInteractPrivate> _imp;
 };
 

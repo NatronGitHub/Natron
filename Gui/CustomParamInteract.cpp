@@ -7,11 +7,17 @@
 #include "CustomParamInteract.h"
 #include <QThread>
 #include <QCoreApplication>
-#include "Engine/OfxOverlayInteract.h"
+#include <QMouseEvent>
+#include <QByteArray>
+
 #include "Gui/KnobGui.h"
+#include "Gui/FromQtEnums.h"
+
+#include "Engine/OfxOverlayInteract.h"
 #include "Engine/Knob.h"
 #include "Engine/AppInstance.h"
 #include "Engine/TimeLine.h"
+
 
 using namespace Natron;
 
@@ -139,4 +145,109 @@ void CustomParamInteract::getBackgroundColour(double &r, double &g, double &b) c
     r = 0;
     g = 0;
     b = 0;
+}
+
+void CustomParamInteract::mousePressEvent(QMouseEvent* e)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    OfxPointD pos;
+    OfxPointI viewportPos;
+    pos.x = e->x();
+    pos.y = e->y();
+    viewportPos.y = e->x();
+    viewportPos.y = e->y();
+    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, pos, viewportPos, 1.);
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
+}
+
+void CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    OfxPointD pos;
+    OfxPointI viewportPos;
+    pos.x = e->x();
+    pos.y = e->y();
+    viewportPos.y = e->x();
+    viewportPos.y = e->y();
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, pos, viewportPos, 1.);
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
+}
+
+void CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    OfxPointD pos;
+    OfxPointI viewportPos;
+    pos.x = e->x();
+    pos.y = e->y();
+    viewportPos.y = e->x();
+    viewportPos.y = e->y();
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, pos, viewportPos, 1.);
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
+}
+
+void CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+
+    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale);
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
+}
+
+void CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale);
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
+}
+
+void CustomParamInteract::keyPressEvent(QKeyEvent* e)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    
+    QByteArray keyStr;
+    OfxStatus stat;
+    if (e->isAutoRepeat()) {
+       stat = _imp->entryPoint->keyRepeatAction(time, scale,(int)QtEnumConvert::fromQtKey((Qt::Key)e->key()), keyStr.data());
+    } else {
+       stat = _imp->entryPoint->keyDownAction(time, scale, (int)QtEnumConvert::fromQtKey((Qt::Key)e->key()), keyStr.data());
+    }
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
+}
+
+void CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
+{
+    OfxPointD scale;
+    scale.x = scale.y = 1.;
+    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    
+    QByteArray keyStr;
+    OfxStatus stat = _imp->entryPoint->keyUpAction(time, scale, (int)QtEnumConvert::fromQtKey((Qt::Key)e->key()), keyStr.data());
+    if (stat == kOfxStatOK) {
+        updateGL();
+    }
 }
