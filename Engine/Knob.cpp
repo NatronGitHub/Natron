@@ -128,76 +128,81 @@ typedef std::vector< std::pair< int,boost::shared_ptr<KnobI> > > MastersMap;
 typedef std::vector< boost::shared_ptr<Curve> > CurvesMap;
 
 struct KnobHelper::KnobHelperPrivate {
-    KnobHelper* _publicInterface;
-    KnobHolder*  _holder;
-    std::string _description;//< the text label that will be displayed  on the GUI
-    std::string _name;//< the knob can have a name different than the label displayed on GUI.
+    KnobHelper* publicInterface;
+    KnobHolder* holder;
+    std::string description;//< the text label that will be displayed  on the GUI
+    std::string name;//< the knob can have a name different than the label displayed on GUI.
                   //By default this is the same as _description but can be set by calling setName().
-    bool _newLine;
-    int _itemSpacing;
+    bool newLine;
+    int itemSpacing;
     
-    boost::shared_ptr<KnobI> _parentKnob;
-    bool _IsSecret;
-    std::vector<bool> _enabled;
-    bool _CanUndo;
-    bool _EvaluateOnChange; //< if true, a value change will never trigger an evaluation
-    bool _IsPersistant;//will it be serialized?
-    std::string _tooltipHint;
-    bool _isAnimationEnabled;
+    boost::shared_ptr<KnobI> parentKnob;
+    bool IsSecret;
+    std::vector<bool> enabled;
+    bool CanUndo;
+    bool EvaluateOnChange; //< if true, a value change will never trigger an evaluation
+    bool IsPersistant;//will it be serialized?
+    std::string tooltipHint;
+    bool isAnimationEnabled;
     
-    int _dimension;
+    int dimension;
     /* the keys for a specific dimension*/
-    CurvesMap _curves;
+    CurvesMap curves;
     
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
-    mutable QReadWriteLock _mastersMutex; //< protects _masters
-    MastersMap _masters; //from what knob is slaved each curve if any
+    mutable QReadWriteLock mastersMutex; //< protects _masters
+    MastersMap masters; //from what knob is slaved each curve if any
     
-    mutable QMutex _animationLevelMutex;
-    std::vector<Natron::AnimationLevel> _animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
+    mutable QMutex animationLevelMutex;
+    std::vector<Natron::AnimationLevel> animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
     
-    mutable QMutex _betweenBeginEndMutex;
-    int _betweenBeginEndCount; //< between begin/end value change count
-    Natron::ValueChangedReason _beginEndReason;
-    std::vector<int> _dimensionChanged; //< all the dimension changed during the begin end
+    mutable QMutex betweenBeginEndMutex;
+    int betweenBeginEndCount; //< between begin/end value change count
+    Natron::ValueChangedReason beginEndReason;
+    std::vector<int> dimensionChanged; //< all the dimension changed during the begin end
     
-    bool _declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
+    bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
     
-    boost::shared_ptr<OfxParamOverlayInteract> _customInteract;
-    KnobGuiI* _gui;
-    void* _ofxParamHandle;
+    boost::shared_ptr<OfxParamOverlayInteract> customInteract;
+    KnobGuiI* gui;
+    void* ofxParamHandle;
     
-    KnobHelperPrivate(KnobHelper* publicInterface,KnobHolder*  holder,int dimension,const std::string& description,bool declaredByPlugin)
-    : _publicInterface(publicInterface)
-    , _holder(holder)
-    , _description(description)
-    , _name(description.c_str())
-    , _newLine(true)
-    , _itemSpacing(0)
-    , _parentKnob()
-    , _IsSecret(false)
-    , _enabled(dimension)
-    , _CanUndo(true)
-    , _EvaluateOnChange(true)
-    , _IsPersistant(true)
-    , _tooltipHint()
-    , _isAnimationEnabled(true)
-    , _dimension(dimension)
-    , _curves(dimension)
-    , _mastersMutex()
-    , _masters(dimension)
-    , _animationLevelMutex()
-    , _animationLevel(dimension)
-    , _betweenBeginEndMutex(QMutex::Recursive)
-    , _betweenBeginEndCount(0)
-    , _beginEndReason(Natron::PROJECT_LOADING)
-    , _dimensionChanged()
-    , _declaredByPlugin(declaredByPlugin)
-    , _customInteract()
-    , _gui(0)
-    , _ofxParamHandle(0)
+
+    KnobHelperPrivate(KnobHelper* publicInterface_,
+                      KnobHolder*  holder_,
+                      int dimension_,
+                      const std::string& description_,
+                      bool declaredByPlugin_)
+    : publicInterface(publicInterface_)
+    , holder(holder_)
+    , description(description_)
+    , name(description_.c_str())
+    , newLine(true)
+    , itemSpacing(0)
+    , parentKnob()
+    , IsSecret(false)
+    , enabled(dimension_)
+    , CanUndo(true)
+    , EvaluateOnChange(true)
+    , IsPersistant(true)
+    , tooltipHint()
+    , isAnimationEnabled(true)
+    , dimension(dimension_)
+    , curves(dimension_)
+    , mastersMutex()
+    , masters(dimension_)
+    , animationLevelMutex()
+    , animationLevel(dimension_)
+    , betweenBeginEndMutex(QMutex::Recursive)
+    , betweenBeginEndCount(0)
+    , beginEndReason(Natron::PROJECT_LOADING)
+    , dimensionChanged()
+    , declaredByPlugin(declaredByPlugin_)
+    , customInteract()
+    , gui(0)
+    , ofxParamHandle(0)
     {
     }
     
@@ -215,32 +220,32 @@ KnobHelper::~KnobHelper()
     if (_signalSlotHandler) {
         _signalSlotHandler->s_deleted();
     }
-    if (_imp->_holder) {
-        _imp->_holder->removeKnob(this);
+    if (_imp->holder) {
+        _imp->holder->removeKnob(this);
     }
 }
 
 void KnobHelper::setKnobGuiPointer(KnobGuiI* ptr)
 {
     assert(QThread::currentThread() == qApp->thread());
-    _imp->_gui = ptr;
+    _imp->gui = ptr;
 }
 
 KnobGuiI* KnobHelper::getKnobGuiPointer() const
 {
-    return _imp->_gui;
+    return _imp->gui;
 }
 
 bool KnobHelper::isDeclaredByPlugin() const
 {
-    return _imp->_declaredByPlugin;
+    return _imp->declaredByPlugin;
 }
 
 void KnobHelper::populate() {
-    for (int i = 0; i < _imp->_dimension ; ++i) {
-        _imp->_enabled[i] = true;
-        _imp->_curves[i] = boost::shared_ptr<Curve>(new Curve(this));
-        _imp->_animationLevel[i] = Natron::NO_ANIMATION;
+    for (int i = 0; i < _imp->dimension ; ++i) {
+        _imp->enabled[i] = true;
+        _imp->curves[i] = boost::shared_ptr<Curve>(new Curve(this));
+        _imp->animationLevel[i] = Natron::NO_ANIMATION;
     }
 }
 
@@ -253,7 +258,7 @@ void KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHand
 
 double KnobHelper::getDerivativeAtTime(double time,int dimension) const
 {
-    if (dimension > (int)_imp->_curves.size()) {
+    if (dimension > (int)_imp->curves.size()) {
         throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
     }
 
@@ -263,7 +268,7 @@ double KnobHelper::getDerivativeAtTime(double time,int dimension) const
         return master.second->getDerivativeAtTime(time,master.first);
     }
 
-    boost::shared_ptr<Curve> curve  = _imp->_curves[dimension];
+    boost::shared_ptr<Curve> curve  = _imp->curves[dimension];
     if (curve->getKeyFramesCount() > 0) {
         return curve->getDerivativeAt(time);
     } else {
@@ -276,7 +281,7 @@ double KnobHelper::getDerivativeAtTime(double time,int dimension) const
 
 void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason)
 {
-    if (dimension > (int)_imp->_curves.size()) {
+    if (dimension > (int)_imp->curves.size()) {
         throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -287,7 +292,7 @@ void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedRe
     }
     
     try {
-        _imp->_curves[dimension]->removeKeyFrameWithTime((double)time);
+        _imp->curves[dimension]->removeKeyFrameWithTime((double)time);
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }
@@ -303,7 +308,7 @@ void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedRe
 
 void KnobHelper::removeAnimation(int dimension,Natron::ValueChangedReason reason)
 {
-    if (dimension > (int)_imp->_curves.size()) {
+    if (dimension > (int)_imp->curves.size()) {
         throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -313,7 +318,7 @@ void KnobHelper::removeAnimation(int dimension,Natron::ValueChangedReason reason
         return;
     }
     
-    _imp->_curves[dimension]->clearKeyFrames();
+    _imp->curves[dimension]->clearKeyFrames();
     
     //virtual portion
     animationRemoved_virtual(dimension);
@@ -326,13 +331,13 @@ void KnobHelper::removeAnimation(int dimension,Natron::ValueChangedReason reason
 
 boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension) const
 {
-    assert(dimension < (int)_imp->_curves.size());
+    assert(dimension < (int)_imp->curves.size());
     
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (master.second) {
         return master.second->getCurve(master.first);
     }
-    return _imp->_curves[dimension];
+    return _imp->curves[dimension];
 }
 
 bool KnobHelper::isAnimated(int dimension) const
@@ -342,54 +347,54 @@ bool KnobHelper::isAnimated(int dimension) const
 
 const std::vector<boost::shared_ptr<Curve> >& KnobHelper::getCurves() const
 {
-    return _imp->_curves;
+    return _imp->curves;
 }
 
 
 int KnobHelper::getDimension() const
 {
-    return _imp->_dimension;
+    return _imp->dimension;
 }
 
 void KnobHelper::beginValueChange(Natron::ValueChangedReason reason)
 {
     {
-        QMutexLocker l(&_imp->_betweenBeginEndMutex);
-        _imp->_beginEndReason = reason;
-        ++_imp->_betweenBeginEndCount;
+        QMutexLocker l(&_imp->betweenBeginEndMutex);
+        _imp->beginEndReason = reason;
+        ++_imp->betweenBeginEndCount;
     }
     if (getHolder()) {
-        _imp->_holder->notifyProjectBeginKnobsValuesChanged(reason);
+        _imp->holder->notifyProjectBeginKnobsValuesChanged(reason);
     }
 }
 
 void KnobHelper::endValueChange()
 {
     {
-        QMutexLocker l(&_imp->_betweenBeginEndMutex);
-        assert(_imp->_betweenBeginEndCount > 0);
-        --_imp->_betweenBeginEndCount;
+        QMutexLocker l(&_imp->betweenBeginEndMutex);
+        assert(_imp->betweenBeginEndCount > 0);
+        --_imp->betweenBeginEndCount;
         
-        if (_imp->_betweenBeginEndCount == 0) {
+        if (_imp->betweenBeginEndCount == 0) {
             
-            processNewValue(_imp->_beginEndReason);
+            processNewValue(_imp->beginEndReason);
             
             if (_signalSlotHandler) {
-                if ((_imp->_beginEndReason != Natron::USER_EDITED)) {
-                    for (U32 i = 0; i < _imp->_dimensionChanged.size(); ++i) {
-                        _signalSlotHandler->s_valueChanged(_imp->_dimensionChanged[i]);
+                if ((_imp->beginEndReason != Natron::USER_EDITED)) {
+                    for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
+                        _signalSlotHandler->s_valueChanged(_imp->dimensionChanged[i]);
                     }
                 }
-                for (U32 i = 0; i < _imp->_dimensionChanged.size(); ++i) {
-                    _signalSlotHandler->s_updateSlaves(_imp->_dimensionChanged[i]);
+                for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
+                    _signalSlotHandler->s_updateSlaves(_imp->dimensionChanged[i]);
                 }
 
             }
-            _imp->_dimensionChanged.clear();
+            _imp->dimensionChanged.clear();
         }
     }
     if (getHolder()) {
-        _imp->_holder->notifyProjectEndKnobsValuesChanged();
+        _imp->holder->notifyProjectEndKnobsValuesChanged();
     }
 }
 
@@ -403,24 +408,24 @@ void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason re
     
     bool beginCalled = false;
     {
-        QMutexLocker l(&_imp->_betweenBeginEndMutex);
-        if (_imp->_betweenBeginEndCount == 0) {
+        QMutexLocker l(&_imp->betweenBeginEndMutex);
+        if (_imp->betweenBeginEndCount == 0) {
             beginValueChange(reason);
             beginCalled = true;
         }
         
-        std::vector<int>::iterator foundDimensionChanged = std::find(_imp->_dimensionChanged.begin(),
-                                                                     _imp->_dimensionChanged.end(), dimension);
-        if (foundDimensionChanged == _imp->_dimensionChanged.end()) {
-            _imp->_dimensionChanged.push_back(dimension);
+        std::vector<int>::iterator foundDimensionChanged = std::find(_imp->dimensionChanged.begin(),
+                                                                     _imp->dimensionChanged.end(), dimension);
+        if (foundDimensionChanged == _imp->dimensionChanged.end()) {
+            _imp->dimensionChanged.push_back(dimension);
         }
         
     }
     
     if (getHolder()) {
         ///Basically just call onKnobChange on the plugin
-        bool significant = (reason != Natron::TIME_CHANGED) && _imp->_EvaluateOnChange;
-        _imp->_holder->notifyProjectEvaluationRequested(reason, this, significant);
+        bool significant = (reason != Natron::TIME_CHANGED) && _imp->EvaluateOnChange;
+        _imp->holder->notifyProjectEvaluationRequested(reason, this, significant);
     }
     
     if (beginCalled) {
@@ -430,22 +435,22 @@ void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason re
 
 void KnobHelper::turnOffNewLine()
 {
-    _imp->_newLine = false;
+    _imp->newLine = false;
 }
 
 bool KnobHelper::isNewLineTurnedOff() const
 {
-    return !_imp->_newLine;
+    return !_imp->newLine;
 }
 
 void KnobHelper::setSpacingBetweenItems(int spacing)
 {
-    _imp->_itemSpacing = spacing;
+    _imp->itemSpacing = spacing;
 }
 
 void KnobHelper::setEnabled(int dimension,bool b)
 {
-    _imp->_enabled[dimension] = b;
+    _imp->enabled[dimension] = b;
     if (_signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
     }
@@ -453,8 +458,8 @@ void KnobHelper::setEnabled(int dimension,bool b)
 
 void KnobHelper::setAllDimensionsEnabled(bool b)
 {
-    for (U32 i = 0; i < _imp->_enabled.size(); ++i) {
-        _imp->_enabled[i] = b;
+    for (U32 i = 0; i < _imp->enabled.size(); ++i) {
+        _imp->enabled[i] = b;
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
@@ -463,7 +468,7 @@ void KnobHelper::setAllDimensionsEnabled(bool b)
 
 void KnobHelper::setSecret(bool b)
 {
-    _imp->_IsSecret = b;
+    _imp->IsSecret = b;
     if (_signalSlotHandler) {
         _signalSlotHandler->s_secretChanged();
     }
@@ -483,7 +488,7 @@ int KnobHelper::determineHierarchySize() const
 
 const std::string& KnobHelper::getDescription() const
 {
-    return _imp->_description;
+    return _imp->description;
 }
 
 
@@ -499,48 +504,48 @@ bool KnobHelper::hasAnimation() const
 
 KnobHolder*  KnobHelper::getHolder() const
 {
-    return _imp->_holder;
+    return _imp->holder;
 }
 
 void KnobHelper::setAnimationEnabled(bool val)
 {
-    _imp->_isAnimationEnabled = val;
+    _imp->isAnimationEnabled = val;
 }
 
 bool KnobHelper::isAnimationEnabled() const
 {
-    return canAnimate() && _imp->_isAnimationEnabled;
+    return canAnimate() && _imp->isAnimationEnabled;
 }
 
 void KnobHelper::setName(const std::string& name)
 {
-    _imp->_name = name;
+    _imp->name = name;
 }
 
 std::string KnobHelper::getName() const
 {
-    return _imp->_name;
+    return _imp->name;
 }
 
 void KnobHelper::setParentKnob(boost::shared_ptr<KnobI> knob)
 {
-    _imp->_parentKnob = knob;
+    _imp->parentKnob = knob;
 }
 
 boost::shared_ptr<KnobI> KnobHelper::getParentKnob() const
 {
-    return _imp->_parentKnob;
+    return _imp->parentKnob;
 }
 
 bool KnobHelper::getIsSecret() const
 {
-    return _imp->_IsSecret;
+    return _imp->IsSecret;
 }
 
 bool KnobHelper::isEnabled(int dimension) const
 {
     assert(dimension < getDimension());
-    return _imp->_enabled[dimension];
+    return _imp->enabled[dimension];
 }
 
 void KnobHelper::setDirty(bool d)
@@ -550,54 +555,54 @@ void KnobHelper::setDirty(bool d)
 
 void KnobHelper::setEvaluateOnChange(bool b)
 {
-    _imp->_EvaluateOnChange = b;
+    _imp->EvaluateOnChange = b;
 }
 
 bool KnobHelper::getIsPersistant() const
 {
-    return _imp->_IsPersistant;
+    return _imp->IsPersistant;
 }
 
 void KnobHelper::setIsPersistant(bool b)
 {
-    _imp->_IsPersistant = b;
+    _imp->IsPersistant = b;
 }
 
 void KnobHelper::setCanUndo(bool val)
 {
-    _imp->_CanUndo = val;
+    _imp->CanUndo = val;
 }
 
 bool KnobHelper::getCanUndo() const
 {
-    return _imp->_CanUndo;
+    return _imp->CanUndo;
 }
 
 bool KnobHelper::getEvaluateOnChange()const
 {
-    return _imp->_EvaluateOnChange;
+    return _imp->EvaluateOnChange;
 }
 
 void KnobHelper::setHintToolTip(const std::string& hint)
 {
-    _imp->_tooltipHint = hint;
+    _imp->tooltipHint = hint;
 }
 
 const std::string& KnobHelper::getHintToolTip() const
 {
-    return _imp->_tooltipHint;
+    return _imp->tooltipHint;
 }
 
 void KnobHelper::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract>& interactDesc)
 {
     assert(QThread::currentThread() == qApp->thread());
-    _imp->_customInteract = interactDesc;
+    _imp->customInteract = interactDesc;
 }
 
 boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
 {
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->_customInteract;
+    return _imp->customInteract;
 }
 
 void KnobHelper::swapOpenGLBuffers()
@@ -607,51 +612,51 @@ void KnobHelper::swapOpenGLBuffers()
 
 void KnobHelper::redraw()
 {
-    assert(_imp->_gui);
-    _imp->_gui->redraw();
+    assert(_imp->gui);
+    _imp->gui->redraw();
 }
 
 void KnobHelper::getViewportSize(double &width, double &height) const
 {
-    assert(_imp->_gui);
-    _imp->_gui->getViewportSize(width, height);
+    assert(_imp->gui);
+    _imp->gui->getViewportSize(width, height);
 }
 
 void KnobHelper::getPixelScale(double& xScale, double& yScale) const
 {
-    assert(_imp->_gui);
-    _imp->_gui->getPixelScale(xScale, yScale);
+    assert(_imp->gui);
+    _imp->gui->getPixelScale(xScale, yScale);
 }
 
 void KnobHelper::getBackgroundColour(double &r, double &g, double &b) const
 {
-    assert(_imp->_gui);
-    _imp->_gui->getBackgroundColour(r, g, b);
+    assert(_imp->gui);
+    _imp->gui->getBackgroundColour(r, g, b);
 }
 
 void KnobHelper::setOfxParamHandle(void* ofxParamHandle)
 {
     assert(QThread::currentThread() == qApp->thread());
-    _imp->_ofxParamHandle = ofxParamHandle;
+    _imp->ofxParamHandle = ofxParamHandle;
 }
 
 void* KnobHelper::getOfxParamHandle() const
 {
     assert(QThread::currentThread() == qApp->thread());
-    return _imp->_ofxParamHandle;
+    return _imp->ofxParamHandle;
 }
 
 bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,Natron::ValueChangedReason reason) {
-    assert(dimension < (int)_imp->_masters.size());
+    assert(dimension < (int)_imp->masters.size());
     assert(!other->isSlave(otherDimension));
     
     {
-        QWriteLocker l(&_imp->_mastersMutex);
-        if (_imp->_masters[dimension].second) {
+        QWriteLocker l(&_imp->mastersMutex);
+        if (_imp->masters[dimension].second) {
             return false;
         }
-        _imp->_masters[dimension].second = other;
-        _imp->_masters[dimension].first = otherDimension;
+        _imp->masters[dimension].second = other;
+        _imp->masters[dimension].first = otherDimension;
     }
     
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(other);
@@ -673,47 +678,47 @@ bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int
 
 std::pair<int,boost::shared_ptr<KnobI> > KnobHelper::getMaster(int dimension) const
 {
-    QReadLocker l(&_imp->_mastersMutex);
-    return _imp->_masters[dimension];
+    QReadLocker l(&_imp->mastersMutex);
+    return _imp->masters[dimension];
 }
 
 void KnobHelper::resetMaster(int dimension)
 {
-    _imp->_masters[dimension].second.reset();
-    _imp->_masters[dimension].first = -1;
+    _imp->masters[dimension].second.reset();
+    _imp->masters[dimension].first = -1;
 }
 
 bool KnobHelper::isSlave(int dimension) const
 {
-    QReadLocker l(&_imp->_mastersMutex);
-    return bool(_imp->_masters[dimension].second);
+    QReadLocker l(&_imp->mastersMutex);
+    return bool(_imp->masters[dimension].second);
 }
 
 std::vector< std::pair<int,boost::shared_ptr<KnobI> > > KnobHelper::getMasters_mt_safe() const
 {
-    QReadLocker l(&_imp->_mastersMutex);
-    return _imp->_masters;
+    QReadLocker l(&_imp->mastersMutex);
+    return _imp->masters;
 }
 
 void KnobHelper::setAnimationLevel(int dimension,Natron::AnimationLevel level)
 {
     assert(QThread::currentThread() == qApp->thread());
     {
-        QMutexLocker l(&_imp->_animationLevelMutex);
-        assert(dimension < (int)_imp->_animationLevel.size());
-        _imp->_animationLevel[dimension] = level;
+        QMutexLocker l(&_imp->animationLevelMutex);
+        assert(dimension < (int)_imp->animationLevel.size());
+        _imp->animationLevel[dimension] = level;
     }
     _signalSlotHandler->s_animationLevelChanged((int)level);
 }
 
 Natron::AnimationLevel KnobHelper::getAnimationLevel(int dimension) const
 {
-    QMutexLocker l(&_imp->_animationLevelMutex);
-    if (dimension > (int)_imp->_animationLevel.size()) {
+    QMutexLocker l(&_imp->animationLevelMutex);
+    if (dimension > (int)_imp->animationLevel.size()) {
         throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
     }
     
-    return _imp->_animationLevel[dimension];
+    return _imp->animationLevel[dimension];
 }
 
 
@@ -818,10 +823,10 @@ int KnobHelper::getKeyFrameIndex(int dimension, double time) const
 
 struct KnobHolder::KnobHolderPrivate
 {
-    AppInstance* _app;
-    std::vector< boost::shared_ptr<KnobI> > _knobs;
-    bool _knobsInitialized;
-    bool _isSlave;
+    AppInstance* app;
+    std::vector< boost::shared_ptr<KnobI> > knobs;
+    bool knobsInitialized;
+    bool isSlave;
     
     ///Use to count the recursion in the function calls
     /* The image effect actions which may trigger a recursive action call on a single instance are...
@@ -870,17 +875,18 @@ struct KnobHolder::KnobHolderPrivate
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditLevel paramsEditLevel;
     
-    KnobHolderPrivate(AppInstance* appInstance)
-    : _app(appInstance)
-    , _knobs()
-    , _knobsInitialized(false)
-    , _isSlave(false)
+    KnobHolderPrivate(AppInstance* appInstance_)
+    : app(appInstance_)
+    , knobs()
+    , knobsInitialized(false)
+    , isSlave(false)
     , actionsRecursionLevel()
     , evaluateQueue()
+    , paramsEditLevel(PARAM_EDIT_OFF)
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
-        if (_app) {
+        if (appInstance_) {
             actionsRecursionLevel.setLocalData(0);
         }
     }
@@ -893,9 +899,9 @@ KnobHolder::KnobHolder(AppInstance* appInstance)
 
 KnobHolder::~KnobHolder()
 {
-    for (U32 i = 0; i < _imp->_knobs.size(); ++i) {
-        KnobHelper* helper = dynamic_cast<KnobHelper*>(_imp->_knobs[i].get());
-        helper->_imp->_holder = 0;
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        KnobHelper* helper = dynamic_cast<KnobHelper*>(_imp->knobs[i].get());
+        helper->_imp->holder = 0;
     }
 }
 
@@ -911,21 +917,21 @@ void KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel 
     _imp->paramsEditLevel = level;
 }
 
-AppInstance* KnobHolder::getApp() const {return _imp->_app;}
+AppInstance* KnobHolder::getApp() const {return _imp->app;}
 
 void KnobHolder::initializeKnobsPublic()
 {
     initializeKnobs();
-    _imp->_knobsInitialized = true;
+    _imp->knobsInitialized = true;
 }
 
-void KnobHolder::addKnob(boost::shared_ptr<KnobI> k){ _imp->_knobs.push_back(k); }
+void KnobHolder::addKnob(boost::shared_ptr<KnobI> k){ _imp->knobs.push_back(k); }
 
 void KnobHolder::removeKnob(KnobI* knob)
 {
-    for (U32 i = 0; i < _imp->_knobs.size() ; ++i) {
-        if (_imp->_knobs[i].get() == knob) {
-            _imp->_knobs.erase(_imp->_knobs.begin()+i);
+    for (U32 i = 0; i < _imp->knobs.size() ; ++i) {
+        if (_imp->knobs[i].get() == knob) {
+            _imp->knobs.erase(_imp->knobs.begin()+i);
             break;
         }
     }
@@ -933,40 +939,40 @@ void KnobHolder::removeKnob(KnobI* knob)
 
 void KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
-    for (U32 i = 0; i < _imp->_knobs.size() ; ++i) {
-        _imp->_knobs[i]->onTimeChanged(time);
+    for (U32 i = 0; i < _imp->knobs.size() ; ++i) {
+        _imp->knobs[i]->onTimeChanged(time);
     }
 }
 
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason)
 {
-    if (!_imp->_knobsInitialized) {
+    if (!_imp->knobsInitialized) {
         return;
     }
     
-    if (_imp->_app) {
+    if (_imp->app) {
         getApp()->getProject()->beginProjectWideValueChanges(reason, this);
     }
 }
 
 void KnobHolder::notifyProjectEndKnobsValuesChanged()
 {
-    if (!_imp->_knobsInitialized) {
+    if (!_imp->knobsInitialized) {
         return;
     }
     
-    if (_imp->_app) {
+    if (_imp->app) {
         getApp()->getProject()->endProjectWideValueChanges(this);
     }
 }
 
 void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,KnobI* k,bool significant)
 {
-    if (!_imp->_knobsInitialized) {
+    if (!_imp->knobsInitialized) {
         return;
     }
     
-    if (_imp->_app) {
+    if (_imp->app) {
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     } else {
         onKnobValueChanged(k, reason);
@@ -988,13 +994,13 @@ boost::shared_ptr<KnobI> KnobHolder::getKnobByName(const std::string& name) cons
 
 const std::vector< boost::shared_ptr<KnobI> >& KnobHolder::getKnobs() const {
     ///MT-safe since it never changes
-    return _imp->_knobs;
+    return _imp->knobs;
 }
 
 
 void KnobHolder::slaveAllKnobs(KnobHolder* other) {
     
-    if (_imp->_isSlave) {
+    if (_imp->isSlave) {
         return;
     }
     const std::vector<boost::shared_ptr<KnobI> >& otherKnobs = other->getKnobs();
@@ -1012,17 +1018,17 @@ void KnobHolder::slaveAllKnobs(KnobHolder* other) {
             foundKnob->slaveTo(j, otherKnobs[i], j);
         }
     }
-    _imp->_isSlave = true;
+    _imp->isSlave = true;
     onSlaveStateChanged(true,other);
 
 }
 
 bool KnobHolder::isSlave() const  {
-    return _imp->_isSlave;
+    return _imp->isSlave;
 }
 
 void KnobHolder::unslaveAllKnobs() {
-    if (!_imp->_isSlave) {
+    if (!_imp->isSlave) {
         return;
     }
     const std::vector<boost::shared_ptr<KnobI> >& thisKnobs = getKnobs();
@@ -1033,7 +1039,7 @@ void KnobHolder::unslaveAllKnobs() {
             }
         }
     }
-    _imp->_isSlave = false;
+    _imp->isSlave = false;
     onSlaveStateChanged(false,(KnobHolder*)NULL);
 }
 

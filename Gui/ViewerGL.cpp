@@ -346,28 +346,28 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         }
     }
     
-    {
-        /*setup the scissor box to paint only what's contained in the project's window*/
-        QPointF scissorBoxBtmLeft, scissorBoxTopRight;
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            scissorBoxBtmLeft = _imp->zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
-            scissorBoxTopRight = _imp->zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
-        }
-        
-        /*invert y coordinate as OpenGL expects btm left corner to be 0,0*/
-        scissorBoxBtmLeft.ry() = height() - scissorBoxBtmLeft.ry();
-        scissorBoxTopRight.ry() = height() - scissorBoxTopRight.ry();
-        
-        int scissorBoxBtmLeftX_int = std::floor(scissorBoxBtmLeft.x());
-        int scissorBoxBtmLeftY_int = std::floor(scissorBoxBtmLeft.y());
-        int scissorBoxTopRightX_int = std::ceil(scissorBoxTopRight.x());
-        int scissorBoxTopRightY_int = std::ceil(scissorBoxTopRight.y());
-        
-        glScissor(scissorBoxBtmLeftX_int,scissorBoxBtmLeftY_int,scissorBoxTopRightX_int - scissorBoxBtmLeftX_int,
-                  scissorBoxTopRightY_int - scissorBoxBtmLeftY_int);
-        
-    }
+//    {
+//        /*setup the scissor box to paint only what's contained in the project's window*/
+//        QPointF scissorBoxBtmLeft, scissorBoxTopRight;
+//        {
+//            QMutexLocker l(&_imp->zoomCtxMutex);
+//            scissorBoxBtmLeft = _imp->zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
+//            scissorBoxTopRight = _imp->zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
+//        }
+//        
+//        /*invert y coordinate as OpenGL expects btm left corner to be 0,0*/
+//        scissorBoxBtmLeft.ry() = height() - scissorBoxBtmLeft.ry();
+//        scissorBoxTopRight.ry() = height() - scissorBoxTopRight.ry();
+//        
+//        int scissorBoxBtmLeftX_int = std::floor(scissorBoxBtmLeft.x());
+//        int scissorBoxBtmLeftY_int = std::floor(scissorBoxBtmLeft.y());
+//        int scissorBoxTopRightX_int = std::ceil(scissorBoxTopRight.x());
+//        int scissorBoxTopRightY_int = std::ceil(scissorBoxTopRight.y());
+//        
+//        glScissor(scissorBoxBtmLeftX_int,scissorBoxBtmLeftY_int,scissorBoxTopRightX_int - scissorBoxBtmLeftX_int,
+//                  scissorBoxTopRightY_int - scissorBoxBtmLeftY_int);
+//        
+//    }
     
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -415,7 +415,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     };
     
     glCheckError();
-    glEnable(GL_SCISSOR_TEST);
+    // glEnable(GL_SCISSOR_TEST);
 
     
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
@@ -440,7 +440,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glCheckError();
     
-    glDisable(GL_SCISSOR_TEST);
+    // glDisable(GL_SCISSOR_TEST);
 }
 
 #if 0
@@ -1144,7 +1144,7 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
     
     if (mipMapLevel != 0) {
         // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-        ret = ret.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+        ret = ret.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
     
     if (!ret.intersect(imageRoD, &ret)) {
