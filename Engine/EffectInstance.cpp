@@ -919,7 +919,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 assert(foundInputRoI != inputsRoi.end());
                 
                 ///convert to pixel coords
-                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
+                RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
                 
                 ///notify the node that we're going to render something with the input
                 assert(it2->first != -1); //< see getInputNumber
@@ -1092,6 +1092,7 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
                 RectI minimalRectToRender = downscaledImage->getMinimalRect(rectToRender);
                 canonicalRectToRender = minimalRectToRender;
                 if (useFullResImage) {
+                    ///Watch out here we're transforming it in pixel coordinates
                     canonicalRectToRender = minimalRectToRender.upscalePowerOfTwo(mipMapLevel);
                     canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
                 }

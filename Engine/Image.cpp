@@ -325,6 +325,11 @@ CacheEntryHelper<float,ImageKey>(key,params,restore,path)
     _bitmap.initialize(p->getPixelRoD());
     _rod = p->getRoD();
     _pixelRod = p->getPixelRoD();
+    
+#ifdef NATRON_DEBUG
+    ///fill with red, to recognize unrendered pixels
+    fill(_pixelRod,1.,0.,0.,1.);
+#endif
 }
 
 /*This constructor can be used to allocate a local Image. The deallocation should
@@ -414,8 +419,8 @@ void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
     int nComps = getElementsCountForComponents(comps);
     int rowElems = (int)getRowElements();
     float* dst = pixelAt(rect.x1, rect.y1);
-    for (int i = 0; i < rect.height();++i,dst += (rowElems - rect.width())) {
-        for (int j = 0; j < rect.width();++j,dst+=comps) {
+    for (int i = 0; i < rect.height();++i,dst += (rowElems - rect.width() * nComps)) {
+        for (int j = 0; j < rect.width();++j,dst+=nComps) {
             for (int k = 0; k < nComps; ++k) {
                 if (comps == Natron::ImageComponentAlpha) {
                     dst[k] = a;
