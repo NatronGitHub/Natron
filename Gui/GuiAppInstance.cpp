@@ -324,6 +324,13 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     ///validate the frame range to render
     int firstFrame,lastFrame;
     writer->getFrameRange_public(&firstFrame, &lastFrame);
+    //if firstframe and lastframe are infinite clamp them to the timeline bounds
+    if (firstFrame == INT_MIN) {
+        firstFrame = getTimeLine()->firstFrame();
+    }
+    if (lastFrame == INT_MAX) {
+        lastFrame = getTimeLine()->lastFrame();
+    }
     if(firstFrame > lastFrame) {
         Natron::errorDialog(writer->getNode()->getName_mt_safe() ,"First frame in the sequence is greater than the last frame");
         return;
