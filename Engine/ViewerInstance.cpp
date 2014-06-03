@@ -453,7 +453,8 @@ ViewerInstance::renderViewer(SequenceTime time,
 
     emit rodChanged(rod);
 
-    if (!_imp->uiContext->isClippingImageToProjectWindow()) {
+    bool isClippingToProjectWindow = _imp->uiContext->isClippingImageToProjectWindow();
+    if (!isClippingToProjectWindow) {
         dispW.set(rod);
     }
     
@@ -466,6 +467,17 @@ ViewerInstance::renderViewer(SequenceTime time,
     ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
     RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD);
+    
+    
+    ///Clip the roi  the project window (in pixel coordinates)
+    RectI pixelDispW;
+    if (isClippingToProjectWindow) {
+        pixelDispW = dispW;
+        if (mipMapLevel != 0) {
+            pixelDispW = dispW.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+        }
+        roi.intersect(pixelDispW, &roi);
+    }
 
     ////Texrect is the coordinates of the 4 corners of the texture in the pixelRoD with the current zoom
     ////factor taken into account.
@@ -480,7 +492,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         return StatOK;
     }
     
-    ///TexRectClipped is the same as texRect but without the zoom factor taken into account
+    ///TexRectClipped is the same as texRect but without the zoom factor taken into account (in pixel coords)
     RectI texRectClipped = texRect;
     texRectClipped.x1 *= closestPowerOf2;
     texRectClipped.x2 *= closestPowerOf2;
@@ -489,6 +501,12 @@ ViewerInstance::renderViewer(SequenceTime time,
     
     ///Make sure the bounds of the area to render in the texture lies in the pixelRoD
     texRectClipped.intersect(pixelRoD, &texRectClipped);
+    ///Clip again against the project window
+    if (isClippingToProjectWindow) {
+        ///it has already been computed in the previous clip above
+        assert(!pixelDispW.isNull());
+        texRectClipped.intersect(pixelDispW, &texRectClipped);
+    }
     
     ///The width and height of the texture is the width of texRect clamped to the
     ///pixelRoD with the viewer scaling factor applied. (This is the real size of data the texture will have).

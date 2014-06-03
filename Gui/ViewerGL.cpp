@@ -313,103 +313,96 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     
     ///the RoD of the iamge in canonical coords.
     RectI rod = getRoD();
+    bool clipToDisplayWindow;
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
-        if (_imp->clipToDisplayWindow) {
-            ///clip the RoD to the project format.
-            if (!rod.intersect(getDisplayWindow(),&rod)) {
-                return;
-            }
+        clipToDisplayWindow = _imp->clipToDisplayWindow;
+    }
+    if (clipToDisplayWindow) {
+        ///clip the RoD to the project format.
+        if (!rod.intersect(getDisplayWindow(),&rod)) {
+            return;
         }
-
     }
     
-    double texXOffset = 0,texYOffset = 0;
-    
+    RectI texRectClipped = texRect;
     ///If proxy is enabled
     if (mipMapLevel != 0) {
         
         ///1) convert the image data rectangle to canonical coords
         texRect = texRect.upscalePowerOfTwo(mipMapLevel);
-
-        ///pixelRoD is the rod in pixel coordinates, we draw the largest enclosed so we don't have black borders.
-        RectI pixelRoD = rod.downscalePowerOfTwoLargestEnclosed(mipMapLevel);
         
-        ///clip the image data rectangle to the rod (which has just been clipped to the display window)
-        ///This call might not be useful if _imp->clipToDisplayWindow is off because the internal viewer has already
-        ///clipped the texture rectangle to the rod
-        texRect.intersect(rod, &texRect);
-
-        ///Notice that here we use 'r' and not texRect because 'r' is in pixel coordinates (so is pixelRoD)
-        texXOffset = (double)(r.x2 - pixelRoD.x2) / r.w;
-        if (texXOffset < 0) texXOffset = 0;
-        texYOffset = (double)(r.y2 - pixelRoD.y2) / r.h;
-        if (texYOffset < 0) texYOffset = 0;
+        ///clip to the RoD.
+        texRect.intersect(rod, &texRectClipped);
         
     }
+    
+    ///clip the image data rectangle to the rod (which has just been clipped to the display window)
+    ///This call is not  useful if _imp->clipToDisplayWindow is on because the internal viewer has already
+    ///clipped the texture rectangle to the rod
+    //  texRect.intersect(rod, &texRect);
     
     //if user RoI is enabled, clip the rod to that roi
+    bool userRoiEnabled;
     {
         QMutexLocker l(&_imp->userRoIMutex);
-        if (_imp->userRoIEnabled) {
-            //if the userRoI isn't intersecting the rod, just don't render anything
-            if(!rod.intersect(_imp->userRoI,&rod)) {
-                return;
-            }
+        userRoiEnabled = _imp->userRoIEnabled;
+    }
+    if (userRoiEnabled) {
+        //if the userRoI isn't intersecting the rod, just don't render anything
+        if (!rod.intersect(_imp->userRoI,&rod)) {
+            return;
         }
+        texRectClipped.intersect(rod, &texRectClipped);
     }
     
-//    {
-//        /*setup the scissor box to paint only what's contained in the project's window*/
-//        QPointF scissorBoxBtmLeft, scissorBoxTopRight;
-//        {
-//            QMutexLocker l(&_imp->zoomCtxMutex);
-//            scissorBoxBtmLeft = _imp->zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
-//            scissorBoxTopRight = _imp->zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
-//        }
-//        
-//        /*invert y coordinate as OpenGL expects btm left corner to be 0,0*/
-//        scissorBoxBtmLeft.ry() = height() - scissorBoxBtmLeft.ry();
-//        scissorBoxTopRight.ry() = height() - scissorBoxTopRight.ry();
-//        
-//        int scissorBoxBtmLeftX_int = std::floor(scissorBoxBtmLeft.x());
-//        int scissorBoxBtmLeftY_int = std::floor(scissorBoxBtmLeft.y());
-//        int scissorBoxTopRightX_int = std::ceil(scissorBoxTopRight.x());
-//        int scissorBoxTopRightY_int = std::ceil(scissorBoxTopRight.y());
-//        
-//        glScissor(scissorBoxBtmLeftX_int,scissorBoxBtmLeftY_int,scissorBoxTopRightX_int - scissorBoxBtmLeftX_int,
-//                  scissorBoxTopRightY_int - scissorBoxBtmLeftY_int);
-//        
-//    }
     
     ///Vertices are in canonical coords
     GLfloat vertices[32] = {
         (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
-        (GLfloat)texRect.x1       , (GLfloat)rod.top()  , //1
-        (GLfloat)texRect.x2 , (GLfloat)rod.top()  , //2
+        (GLfloat)texRectClipped.x1       , (GLfloat)rod.top()  , //1
+        (GLfloat)texRectClipped.x2 , (GLfloat)rod.top()  , //2
         (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
-        (GLfloat)rod.left(), (GLfloat)texRect.y2, //4
-        (GLfloat)texRect.x1      ,  (GLfloat)texRect.y2, //5
-        (GLfloat)texRect.x2,  (GLfloat)texRect.y2, //6
-        (GLfloat)rod.right(),(GLfloat)texRect.y2, //7
-        (GLfloat)rod.left() ,(GLfloat)texRect.y1      , //8
-        (GLfloat)texRect.x1      ,  (GLfloat)texRect.y1      , //9
-        (GLfloat)texRect.x2,  (GLfloat)texRect.y1      , //10
-        (GLfloat)rod.right(),(GLfloat)texRect.y1      , //11
+        (GLfloat)rod.left(), (GLfloat)texRectClipped.y2, //4
+        (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y2, //5
+        (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y2, //6
+        (GLfloat)rod.right(),(GLfloat)texRectClipped.y2, //7
+        (GLfloat)rod.left() ,(GLfloat)texRectClipped.y1      , //8
+        (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y1      , //9
+        (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y1      , //10
+        (GLfloat)rod.right(),(GLfloat)texRectClipped.y1      , //11
         (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
-        (GLfloat)texRect.x1      ,  (GLfloat)rod.bottom(), //13
-        (GLfloat)texRect.x2,  (GLfloat)rod.bottom(), //14
+        (GLfloat)texRectClipped.x1      ,  (GLfloat)rod.bottom(), //13
+        (GLfloat)texRectClipped.x2,  (GLfloat)rod.bottom(), //14
         (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
     };
     
    
+    ////The texture real size (r.w,r.h) might be slightly bigger than the actual
+    ////pixel coordinates bounds r.x1,r.x2 r.y1 r.y2 because we clipped these bounds against the pixelRoD
+    ////in the ViewerInstance::renderViewer function. That means we need to draw actually only the part of
+    ////the texture that contains the bounds.
+    ////Notice that r.w and r.h are scaled to the closest Po2 of the current scaling factor, so we need to scale it up
+    ////So it is in the same coordinates as the bounds.
     GLfloat texBottom,texLeft,texRight,texTop;
     texBottom =  0;
     texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
-    texTop -= texYOffset;
-    texRight -= texXOffset;
+    
+    ///Now if the user RoI is enabled, the texture coordinates must be adjusted
+    if (userRoiEnabled) {
+        GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
+        texBottomTmp = (GLfloat)(texRectClipped.y1 - texRect.y1) / (GLfloat) (texRect.y2 - texRect.y1) * (texTop - texBottom);
+        texTopTmp = (GLfloat)texRectClipped.y2 / (GLfloat) (texRect.y2) * (texTop - texBottom);
+        texLeftTmp = (GLfloat)(texRectClipped.x1 - texRect.x1) / (GLfloat) (texRect.x2 - texRect.x1) * (texRight - texLeft);
+        texRightTmp = (GLfloat)texRectClipped.x2 / (GLfloat) (texRect.x2) * (texRight - texLeft);
+        texBottom = texBottomTmp;
+        texTop = texTopTmp;
+        texLeft = texLeftTmp;
+        texRight = texRightTmp;
+    }
+    
     GLfloat renderingTextureCoordinates[32] = {
         texLeft , texTop , //0
         texLeft , texTop , //1
@@ -430,9 +423,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     };
     
     glCheckError();
-    // glEnable(GL_SCISSOR_TEST);
 
-    
     glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -454,8 +445,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glCheckError();
-    
-    // glDisable(GL_SCISSOR_TEST);
 }
 
 #if 0
@@ -1166,6 +1155,8 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
     if (!ret.intersect(imageRoD, &ret)) {
         ret.clear();
     }
+    
+    
     {
         QMutexLocker l(&_imp->userRoIMutex);
         if (_imp->userRoIEnabled) {
