@@ -400,9 +400,9 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
                texRectClipped.x2 <= texRect.x2);
         
         texBottomTmp = (GLfloat)(texRectClipped.y1 - texRect.y1) / (GLfloat) (texRect.y2 - texRect.y1) * (texTop - texBottom);
-        texTopTmp = (GLfloat)texRectClipped.y2 / (GLfloat) (texRect.y2  - texRect.y1) * (texTop - texBottom);
+        texTopTmp = (GLfloat)(texRectClipped.y2 - texRect.y1) / (GLfloat) (texRect.y2  - texRect.y1) * (texTop - texBottom);
         texLeftTmp = (GLfloat)(texRectClipped.x1 - texRect.x1) / (GLfloat) (texRect.x2 - texRect.x1) * (texRight - texLeft);
-        texRightTmp = (GLfloat)texRectClipped.x2 / (GLfloat) (texRect.x2  - texRect.x1) * (texRight - texLeft);
+        texRightTmp = (GLfloat)(texRectClipped.x2  - texRect.x1) / (GLfloat) (texRect.x2  - texRect.x1) * (texRight - texLeft);
         texBottom = texBottomTmp;
         texTop = texTopTmp;
         texLeft = texLeftTmp;
