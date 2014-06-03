@@ -508,14 +508,15 @@ ViewerInstance::renderViewer(SequenceTime time,
         texRectClipped.intersect(pixelDispW, &texRectClipped);
     }
     
-    ///The width and height of the texture is the width of texRect clamped to the
-    ///pixelRoD with the viewer scaling factor applied. (This is the real size of data the texture will have).
-    int texW = texRect.width() > pixelRoD.width() ? pixelRoD.width() : texRect.width();
-    int texH = texRect.height() > pixelRoD.height() ? pixelRoD.height() : texRect.height();
+    ///The width and height of the texture must at least contain the roi
+    RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing((unsigned int)closestPowerOf2 >> 1);
+    
+    //int texW = texRectClippedDownscaled.width() ;//texRect.width() > pixelRoD.width() ? pixelRoD.width() : texRect.width();
+    //int texH = texRectClippedDownscaled.height();//texRect.height() > pixelRoD.height() ? pixelRoD.height() : texRect.height();
     
     ///Texture rect contains coordinates in the image to be rendered without the scaling of the viewer applied
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
-                            texRectClipped.y2,texW,texH,closestPowerOf2);
+                            texRectClipped.y2,texRectClippedDownscaled.width(),texRectClippedDownscaled.height(),closestPowerOf2);
     
     //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;

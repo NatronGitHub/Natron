@@ -325,6 +325,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         }
     }
     
+    ///texRectCLipped is at full res always
     RectI texRectClipped = texRect;
     ///If proxy is enabled
     if (mipMapLevel != 0) {
@@ -332,15 +333,10 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         ///1) convert the image data rectangle to canonical coords
         texRect = texRect.upscalePowerOfTwo(mipMapLevel);
         
-        ///clip to the RoD.
+        ///texRect was created using the downscaleSmallestEnclosingPot function, so upscaling it by a pot will require a clip to the RoD.
         texRect.intersect(rod, &texRectClipped);
         
     }
-    
-    ///clip the image data rectangle to the rod (which has just been clipped to the display window)
-    ///This call is not  useful if _imp->clipToDisplayWindow is on because the internal viewer has already
-    ///clipped the texture rectangle to the rod
-    //  texRect.intersect(rod, &texRect);
     
     //if user RoI is enabled, clip the rod to that roi
     bool userRoiEnabled;
@@ -349,9 +345,12 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         userRoiEnabled = _imp->userRoIEnabled;
     }
     if (userRoiEnabled) {
-        //if the userRoI isn't intersecting the rod, just don't render anything
-        if (!rod.intersect(_imp->userRoI,&rod)) {
-            return;
+        {
+            QMutexLocker l(&_imp->userRoIMutex);
+            //if the userRoI isn't intersecting the rod, just don't render anything
+            if (!rod.intersect(_imp->userRoI,&rod)) {
+                return;
+            }
         }
         texRectClipped.intersect(rod, &texRectClipped);
     }
@@ -391,7 +390,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
     
     ///Now if the user RoI is enabled, the texture coordinates must be adjusted
-    // if (userRoiEnabled) {
+    if (userRoiEnabled) {
         GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
         
         assert((texRect.y2  - texRect.y1) > 0 &&(texRect.x2  - texRect.x1) > 0 &&
@@ -408,7 +407,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         texTop = texTopTmp;
         texLeft = texLeftTmp;
         texRight = texRightTmp;
-    //  }
+    }
     
     GLfloat renderingTextureCoordinates[32] = {
         texLeft , texTop , //0
