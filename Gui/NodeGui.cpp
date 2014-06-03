@@ -304,6 +304,11 @@ void NodeGui::updateShape(int width,int height){
                                topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
 
     refreshEdges();
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        assert(*it);
+        (*it)->doRefreshEdgesGUI();
+    }
     refreshPosition(pos().x(), pos().y());
 }
 
