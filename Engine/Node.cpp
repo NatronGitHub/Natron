@@ -633,6 +633,11 @@ Natron::EffectInstance* Node::getLiveInstance() const
     return _imp->liveInstance;
 }
 
+bool Node::hasEffect() const
+{
+    return _imp->liveInstance != NULL;
+}
+
 void Node::hasViewersConnected(std::list< ViewerInstance* >* viewers) const
 {
     
@@ -1253,7 +1258,6 @@ bool Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    
     QString name = pluginID().c_str();
     return name.contains("roto",Qt::CaseInsensitive);
 }

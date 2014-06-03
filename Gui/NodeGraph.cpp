@@ -1776,7 +1776,9 @@ void NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
         _nodesTrash.erase(it);
     }
     
-    if (n->getNode()->isRotoNode()) {
+    boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+    assert(internalNode);
+    if (internalNode->hasEffect() && internalNode->isRotoNode()) {
         getGui()->removeRotoInterface(n.get(),true);
     }
     ///now that we made the command dirty, delete the node everywhere in Natron
@@ -1790,7 +1792,7 @@ void NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
     }
     
     
-    if (_nodeClipBoard._internal && _nodeClipBoard._internal->getNode() == n->getNode()) {
+    if (_nodeClipBoard._internal && _nodeClipBoard._internal->getNode() == internalNode) {
         _nodeClipBoard._internal.reset();
         _nodeClipBoard._gui.reset();
     }

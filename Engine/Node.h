@@ -89,6 +89,8 @@ public:
     
     Natron::EffectInstance* getLiveInstance() const;
     
+    bool hasEffect() const;
+    
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
      **/
