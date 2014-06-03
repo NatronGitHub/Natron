@@ -325,7 +325,8 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     int firstFrame,lastFrame;
     writer->getFrameRange_public(&firstFrame, &lastFrame);
     if(firstFrame > lastFrame) {
-        throw std::invalid_argument("First frame in the sequence is greater than the last frame");
+        Natron::errorDialog(writer->getNode()->getName_mt_safe() ,"First frame in the sequence is greater than the last frame");
+        return;
     }
     ///get the output file knob to get the same of the sequence
     QString outputFileSequence;
