@@ -85,8 +85,8 @@ void FloatingWidget::removeWidget() {
 }
 
 void FloatingWidget::closeEvent(QCloseEvent* e) {
-    emit closed();
     TabWidget* embedded = dynamic_cast<TabWidget*>(_embeddedWidget);
+    emit closed();
     if (embedded) {
         embedded->destroyTabs();
     }

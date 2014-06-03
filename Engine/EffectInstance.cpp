@@ -309,7 +309,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if (roto) {
         useRotoInput = isInputRotoBrush(inputNb);
     }
-    if (!roto && !n) {
+    if ((!roto || (roto && !useRotoInput)) && !n) {
         return boost::shared_ptr<Natron::Image>();
     }
     
