@@ -242,6 +242,7 @@ public:
     
     bool hasOutputConnected() const;
     
+    bool hasInputConnected() const;
     /**
      * @brief This is used by the auto-connection algorithm.
      * When connecting nodes together this function helps determine

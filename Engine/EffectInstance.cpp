@@ -599,10 +599,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         
-        bool isInputNode = _node->isInputNode();
         if (identity) {
             
-            if (isInputNode) {
+            ///THe effect is an identity but it has no inputs
+            if (inputNbIdentity == -1) {
                 return boost::shared_ptr<Natron::Image>();
             } else {
                 RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);

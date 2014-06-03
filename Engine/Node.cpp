@@ -770,6 +770,25 @@ bool Node::isInputConnected(int inputNb) const
     return input(inputNb) != NULL;
 }
 
+bool Node::hasInputConnected() const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    if (QThread::currentThread() == qApp->thread()) {
+        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
+            if (_imp->inputsQueue[i]) {
+                return true;
+            }
+        }
+    } else {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool Node::hasOutputConnected() const
 {
     ////Only called by the main-thread
