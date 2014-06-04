@@ -1831,13 +1831,23 @@ void ViewerGL::updateColorPicker(int x,int y)
         imgPos = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
     }
     
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-    if (mipMapLevel != 0) {
-        imgPos /= (1 << mipMapLevel);
-    }
-    
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-    bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+    bool picked = false;
+    
+    Format dispW = getDisplayWindow();
+    if (imgPos.x() >= dispW.left() &&
+        imgPos.x() < dispW.right() &&
+        imgPos.y() >= dispW.bottom() &&
+        imgPos.y() < dispW.top() &&
+        pos.x() >= 0 && pos.x() < width() &&
+        pos.y() >= 0 && pos.y() < height())
+    {
+        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+        if (mipMapLevel != 0) {
+            imgPos /= (1 << mipMapLevel);
+        }
+        picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+    }
     if (!picked) {
 		if (_imp->infoViewer->colorAndMouseVisible()) {
 			_imp->infoViewer->hideColorAndMouseInfo();
