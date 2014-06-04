@@ -487,7 +487,7 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
 
     RectI srcRoI = roi;
     srcRoI.intersect(srcRoD, &srcRoI); // intersect srcRoI with the region of definition
-    srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
+    srcRoI = srcRoI.roundPowerOfTwoSmallestEnclosing(1);
     
     RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
     // a few checks...
@@ -881,7 +881,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
 
     
     ///The last mip map level we will make with closestPo2
-    RectI lastLevelRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
+    RectI lastLevelRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
     
     ///The output image must contain the last level roi
     assert(dstRoD.contains(lastLevelRoI));
@@ -902,8 +902,8 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 1; i <= level; ++i) {
         
-        ///Halve the closestPo2 rect
-        RectI halvedRoI = roi.downscalePowerOfTwoLargestEnclosed(i);
+        ///Halve the smallest enclosing po2 rect as we need to render a minimum of the renderWindow
+        RectI halvedRoI = roi.downscalePowerOfTwoSmallestEnclosing(i);
         
         ///Allocate an image with half the size of the source image
         dstImg = new Natron::Image(getComponents(),halvedRoI,0);
