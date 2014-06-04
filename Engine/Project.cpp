@@ -45,7 +45,7 @@ Project::Project(AppInstance* appInstance)
 }
 
 Project::~Project() {
-    clearNodes();
+    clearNodes(false);
     
     ///Don't clear autosaves if the program is shutting down by user request.
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
@@ -556,7 +556,7 @@ void Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n)
     n->removeReferences();
 }
     
-void Project::clearNodes() {
+void Project::clearNodes(bool emitSignal) {
     std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
     {
         QMutexLocker l(&_imp->nodesLock);
@@ -573,7 +573,9 @@ void Project::clearNodes() {
 //        delete nodesToDelete[i];
 //    }
     
-    emit nodesCleared();
+    if (emitSignal) {
+        emit nodesCleared();
+    }
 }
 
 void Project::setFrameRange(int first, int last){

@@ -76,6 +76,7 @@ GuiAppInstance::~GuiAppInstance() {
 //#ifndef __NATRON_WIN32__
     _imp->_gui->deleteLater();
     _imp->_gui = 0;
+    _imp.reset();
 //#endif
     QCoreApplication::processEvents();
 
@@ -83,7 +84,7 @@ GuiAppInstance::~GuiAppInstance() {
 
 bool GuiAppInstance::isClosing() const
 {
-    return _imp->_isClosing;
+    return !_imp || _imp->_isClosing;
 }
 
 void GuiAppInstance::load(const QString& projectName,const QStringList& /*writers*/) {
@@ -234,7 +235,7 @@ boost::shared_ptr<Node> GuiAppInstance::getNode(boost::shared_ptr<NodeGui> n) co
 
 void GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui>& n)
 {
-    
+
     assert(!n->getNode()->isActivated());
     if (!isClosing()) {
         getProject()->removeNodeFromProject(n->getNode());

@@ -170,7 +170,7 @@ public:
      **/
     void removeNodeFromProject(const boost::shared_ptr<Natron::Node>& n);
     
-    void clearNodes();
+    void clearNodes(bool emitSignal = true);
     
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
 
