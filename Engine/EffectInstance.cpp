@@ -883,6 +883,14 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         /*we can set the render args*/
         assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
 
+        ///If the effect is a writer, byPassCache was set to true to make sure the image
+        ///we got from the cache would get its bitmap cleared (indicating we would have to call render again)
+        ///but for the render args, we set byPassCache to false otherwise each input will not benefit of the
+        ///cache, which would drastically reduce effiency.
+        if (isWriter()) {
+            assert(byPassCache);
+            byPassCache = false;
+        }
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                     rectToRender,
                                                     inputsRoi,
