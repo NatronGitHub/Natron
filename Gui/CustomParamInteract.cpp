@@ -24,19 +24,22 @@ using namespace Natron;
 struct CustomParamInteractPrivate
 {
     KnobGui* knob;
-    void* ofxParamHandle;
+    OFX::Host::Param::Instance* ofxParam;
     boost::shared_ptr<OfxParamOverlayInteract> entryPoint;
     QSize preferredSize;
     double par;
     
     CustomParamInteractPrivate(KnobGui* knob,void* ofxParamHandle,const boost::shared_ptr<OfxParamOverlayInteract>& entryPoint)
     : knob(knob)
-    , ofxParamHandle(ofxParamHandle)
+    , ofxParam(0)
     , entryPoint(entryPoint)
     , preferredSize()
     , par(0)
     {
         assert(entryPoint && ofxParamHandle);
+        ofxParam = reinterpret_cast<OFX::Host::Param::Instance*>(ofxParamHandle);
+        assert(ofxParam->verifyMagic());
+        
         par = entryPoint->getProperties().getIntProperty(kOfxParamPropInteractSizeAspect);
         int pW,pH;
         entryPoint->getPreferredSize(pW, pH);

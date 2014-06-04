@@ -119,9 +119,9 @@ public:
     
     void getPreferredSize(int& pW,int& pH) const;
     
-    void getSize(double &w,double &h) const;
+    void getSize(int &w,int &h) const;
     
-    void setSize(double w,double h);
+    void setSize(int w,int h);
     
     void getPixelAspect(double& par) const;
 

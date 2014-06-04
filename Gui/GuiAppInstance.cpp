@@ -108,6 +108,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
     
     if (getAppID() == 0) {
+        appPTR->setLoadingStatus("Checking if updates are available...");
         ///Before loading autosave check for a new version
         checkForNewVersion();
     }

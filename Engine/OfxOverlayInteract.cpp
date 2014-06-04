@@ -98,16 +98,16 @@ void Natron::OfxParamOverlayInteract::getPreferredSize(int& pW,int& pH) const
     pH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize,1);
 }
 
-void Natron::OfxParamOverlayInteract::getSize(double &w,double &h) const
+void Natron::OfxParamOverlayInteract::getSize(int &w,int &h) const
 {
-    w = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSize,0);
-    h = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSize,1);
+    w = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractSize,0);
+    h = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractSize,1);
 }
 
-void Natron::OfxParamOverlayInteract::setSize(double w,double h)
+void Natron::OfxParamOverlayInteract::setSize(int w,int h)
 {
-    _descriptor.getProperties().setDoubleProperty(kOfxParamPropInteractSize,w,0);
-    _descriptor.getProperties().setDoubleProperty(kOfxParamPropInteractSize,h,1);
+    _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize,w,0);
+    _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize,h,1);
 }
 
 void Natron::OfxParamOverlayInteract::getPixelAspect(double& par) const

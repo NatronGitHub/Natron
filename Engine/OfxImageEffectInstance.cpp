@@ -236,7 +236,7 @@ void OfxImageEffectInstance::getViewRecursive(int& view) const
  ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
        ///expects those properties to exist, so we add them to the INTERACT descriptor.
 static const OFX::Host::Property::PropSpec interactDescProps[] = {
-    { kOfxParamPropInteractSize,        OFX::Host::Property::eDouble,  2, false, "0" },
+    { kOfxParamPropInteractSize,        OFX::Host::Property::eInt,  2, true, "0" },
     { kOfxParamPropInteractSizeAspect,  OFX::Host::Property::eDouble,  1, false, "1" },
     { kOfxParamPropInteractMinimumSize, OFX::Host::Property::eInt,  2, false, "10" },
     { kOfxParamPropInteractPreferedSize,OFX::Host::Property::eInt,     2, false, "10" },
