@@ -641,8 +641,6 @@ bool Node::hasEffect() const
 void Node::hasViewersConnected(std::list< ViewerInstance* >* viewers) const
 {
     
-    ////Only called by the main-thread
-    
     ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
     if(thisViewer) {
         std::list<ViewerInstance* >::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
@@ -665,6 +663,29 @@ void Node::hasViewersConnected(std::list< ViewerInstance* >* viewers) const
     }
 }
 
+void Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) const
+{
+    Natron::OutputEffectInstance* thisWriter = dynamic_cast<Natron::OutputEffectInstance*>(_imp->liveInstance);
+    if(thisWriter) {
+        std::list<Natron::OutputEffectInstance* >::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
+        if(alreadyExists == writers->end()){
+            writers->push_back(thisWriter);
+        }
+    } else {
+        if (QThread::currentThread() == qApp->thread()) {
+            for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->outputsQueue.begin(); it != _imp->outputsQueue.end(); ++it) {
+                assert(*it);
+                (*it)->hasWritersConnected(writers);
+            }
+        } else {
+            QMutexLocker l(&_imp->outputsMutex);
+            for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+                assert(*it);
+                (*it)->hasWritersConnected(writers);
+            }
+        }
+    }
+}
 
 int Node::majorVersion() const {
      ///Thread safe as it never changes
@@ -1461,7 +1482,7 @@ void Node::refreshPreviewsRecursively() {
     assert(QThread::currentThread() == qApp->thread());
     
     if (isPreviewEnabled()) {
-        refreshPreviewImage(getApp()->getTimeLine()->currentFrame());
+        refreshPreviewImage(_imp->liveInstance->getCurrentFrameRecursive());
     }
     for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->outputsQueue.begin(); it!=_imp->outputsQueue.end(); ++it) {
         assert(*it);

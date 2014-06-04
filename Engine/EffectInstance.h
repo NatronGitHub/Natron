@@ -567,6 +567,15 @@ public:
      **/
     virtual void onMultipleInputsChanged() {}
     
+    /**
+     * @brief Returns the current frame this effect is rendering depending 
+     * on the state of the renderer. If no writer is actively rendering this
+     * node then the timeline current time is returned, otherwise the writer's
+     * current frame is returned. This function uses thread storage to determine
+     * exactly what writer is actively calling this function.
+     **/
+    int getCurrentFrameRecursive() const;
+    
 protected:
     
  

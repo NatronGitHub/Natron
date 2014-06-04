@@ -3574,7 +3574,8 @@ std::list< boost::shared_ptr<Bezier> > RotoContext::getSelectedCurves() const
 std::list< boost::shared_ptr<Bezier> > RotoContext::getCurvesByRenderOrder() const
 {
     std::list< boost::shared_ptr<Bezier> > ret;
-    int time = getTimelineCurrentTime();
+    ///Note this might not be the timeline's current frame if this is a writer.
+    int time = _imp->node->getLiveInstance()->getCurrentFrameRecursive();
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if (!_imp->layers.empty()) {

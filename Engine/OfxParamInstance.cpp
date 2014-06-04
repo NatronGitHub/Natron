@@ -1927,13 +1927,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
 
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
-    int currentFrame;
-    Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_node);
-    if (_node->isWriter() && outputEffect->isDoingFullSequenceRender()) {
-        currentFrame = outputEffect->getCurrentFrame();
-    } else {
-        currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-    }
+    int currentFrame = _node->getCurrentFrameRecursive();
     if(_fileKnob){
         str = _fileKnob->getValueAtTimeConditionally(currentFrame,true);
     }else if(_outputFileKnob){

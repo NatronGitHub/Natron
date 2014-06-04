@@ -84,6 +84,11 @@ bool Project::loadProject(const QString& path,const QString& name){
         }
         return false;
     }
+    
+    ///Process all events before flagging that we're no longer loading the project
+    ///to avoid multiple renders being called because of reshape events of viewers
+    QCoreApplication::processEvents();
+    
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         _imp->isLoadingProject = false;
@@ -408,6 +413,11 @@ bool Project::findAndTryLoadAutoSave() {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
                     getApp()->createNode("Viewer");
                 }
+                
+                ///Process all events before flagging that we're no longer loading the project
+                ///to avoid multiple renders being called because of reshape events of viewers
+                QCoreApplication::processEvents();
+                
                 {
                     QMutexLocker l(&_imp->isLoadingProjectMutex);
                     _imp->isLoadingProject = false;

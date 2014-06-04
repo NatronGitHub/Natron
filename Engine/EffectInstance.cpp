@@ -1664,6 +1664,14 @@ void EffectInstance::onKnobValueChanged(KnobI* k, Natron::ValueChangedReason rea
     }
 }
 
+int EffectInstance::getCurrentFrameRecursive() const
+{
+    if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+        return _imp->renderArgs.localData()._time;
+    }
+    return getApp()->getTimeLine()->currentFrame();
+}
+
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 : Natron::EffectInstance(node)
 , _videoEngine(node ? new VideoEngine(this) : 0)

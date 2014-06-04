@@ -50,7 +50,12 @@ std::string Knob<std::string>::getValue(int dimension) const
         if (!getHolder() || !getHolder()->getApp()) {
             time = 0;
         } else {
-            time = getHolder()->getApp()->getTimeLine()->currentFrame();
+            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
+            if (isEffect) {
+                time = isEffect->getCurrentFrameRecursive();
+            } else {
+                time = getHolder()->getApp()->getTimeLine()->currentFrame();
+            }
         }
         return getValueAtTime(time, dimension);
     }
@@ -79,7 +84,12 @@ T Knob<T>::getValue(int dimension) const
         if (!getHolder() || !getHolder()->getApp()) {
             time = 0;
         } else {
-            time = getHolder()->getApp()->getTimeLine()->currentFrame();
+            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
+            if (isEffect) {
+                time = isEffect->getCurrentFrameRecursive();
+            } else {
+                time = getHolder()->getApp()->getTimeLine()->currentFrame();
+            }
         }
         return getValueAtTime(time, dimension);
     }
@@ -279,7 +289,13 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                 (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
                 newKey != NULL) { //< the keyframe to set is not null
 
-            SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
+            SequenceTime time;
+            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
+            if (isEffect) {
+                time = isEffect->getCurrentFrameRecursive();
+            } else {
+                time = getHolder()->getApp()->getTimeLine()->currentFrame();
+            }
             bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
             if (addedKeyFrame) {
                 ret = KEYFRAME_ADDED;
@@ -698,7 +714,12 @@ void Knob<T>::evaluateAnimationChange()
     //the holder cannot be a global holder(i.e: it cannot be tied application wide, e.g like Settings)
     SequenceTime time;
     if (getHolder() && getHolder()->getApp()) {
-        time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
+        if (isEffect) {
+            time = isEffect->getCurrentFrameRecursive();
+        } else {
+            time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        }
     } else {
         time = 0;
     }
