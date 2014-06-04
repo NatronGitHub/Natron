@@ -1719,12 +1719,15 @@ void Gui::onDoDialog(int type, const QString& title, const QString& content, Nat
 {
     if(type == 0){
         QMessageBox critical(QMessageBox::Critical,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
         critical.exec();
     }else if(type == 1){
         QMessageBox warning(QMessageBox::Warning,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        warning.setTextFormat(Qt::RichText);
         warning.exec();
     }else if(type == 2){
         QMessageBox info(QMessageBox::Information,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        info.setTextFormat(Qt::RichText);
         info.exec();
     }else{
         QMessageBox ques(QMessageBox::Question,title,content,QtEnumConvert::toQtStandarButtons(buttons),

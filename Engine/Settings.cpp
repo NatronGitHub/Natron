@@ -60,6 +60,7 @@ void Settings::initializeKnobs(){
     
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setAnimationEnabled(false);
+    _checkForUpdates->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will check for new updates on start-up of the application.");
     _generalTab->addKnob(_checkForUpdates);
     
     _autoSaveDelay = Natron::createKnob<Int_Knob>(this, "Auto-save trigger delay");
