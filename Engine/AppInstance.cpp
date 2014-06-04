@@ -111,7 +111,8 @@ void AppInstance::newVersionCheckDownloaded()
         QString text(QString("Updates for " NATRON_APPLICATION_NAME " are now available for download. "
                         "You are currently using " NATRON_APPLICATION_NAME " version " NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS
                         ". The latest version of " NATRON_APPLICATION_NAME " is version ") + data +
-                     QString(". You can download it from <a href='http://sourceforge.net/projects/natron/'>Sourceforge</a>."));
+                     QString(". You can download it from <a href='http://sourceforge.net/projects/natron/'>"
+                             "<font color=\"orange\">Sourceforge</a>."));
         Natron::informationDialog("New version",text.toStdString());
     }
     downloader->deleteLater();
