@@ -601,9 +601,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         if (identity) {
             
-            ///THe effect is an identity but it has no inputs
+            ///The effect is an identity but it has no inputs
             if (inputNbIdentity == -1) {
                 return boost::shared_ptr<Natron::Image>();
+            } else if (inputNbIdentity == -2) {
+                ///This special value of -2 indicates that the plugin is identity of itself at another time
+                RenderRoIArgs argCpy = args;
+                argCpy.time = inputTimeIdentity;
+                return renderRoI(argCpy);
+                
             } else {
                 RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
                 RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);

@@ -330,7 +330,8 @@ protected:
      * @param roi The region of interest
      * @param view The view we 're interested in
      * @param inputTime[out] the input time to which this plugin is identity of
-     * @param inputNb[out] the input number of the effect that is identity of
+     * @param inputNb[out] the input number of the effect that is identity of.
+     * The special value of -2 indicates that the plugin is identity of itself at another time
      **/
     virtual bool isIdentity(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& /*roi*/,
                             int /*view*/,SequenceTime* /*inputTime*/,int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }

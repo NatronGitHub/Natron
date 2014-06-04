@@ -721,7 +721,12 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
         *inputTime = inputTimeOfx;
-        *inputNb = natronClip->getInputNb();
+        
+        if (natronClip->isOutput()) {
+            *inputNb = -2;
+        } else {
+            *inputNb = natronClip->getInputNb();
+        }
         return true;
     }else{
         return false;
