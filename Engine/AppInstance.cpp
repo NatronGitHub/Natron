@@ -16,6 +16,8 @@
 #include <QDir>
 #include <QtConcurrentMap>
 #include <QThreadPool>
+#include <QUrl>
+#include <QEventLoop>
 
 #include <boost/bind.hpp>
 
@@ -25,6 +27,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/FileDownloader.h"
 
 using namespace Natron;
 
@@ -64,9 +67,67 @@ AppInstance::~AppInstance(){
     QThreadPool::globalInstance()->waitForDone();
 }
 
+void AppInstance::checkForNewVersion() const
+{
+    FileDownloader* downloader = new FileDownloader(QUrl(NATRON_LAST_VERSION_URL));
+    QObject::connect(downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()));
+    QObject::connect(downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()));
+    
+    ///make the call blocking
+    QEventLoop loop;
+    connect(downloader->getReply(), SIGNAL(finished()), &loop, SLOT(quit()));
+    loop.exec();
+
+}
+
+
+void AppInstance::newVersionCheckDownloaded()
+{
+    FileDownloader* downloader = qobject_cast<FileDownloader*>(sender());
+    assert(downloader);
+    QString data(downloader->downloadedData());
+    data = data.remove("Natron latest version: ");
+    QString versionStr;
+    int i = 0;
+    while (i < data.size() && data.at(i)!= QChar(' ')) {
+        versionStr.push_back(data.at(i));
+        ++i;
+    }
+    QStringList versionDigits = versionStr.split(QChar('.'));
+    
+    ///we only understand 3 digits formed version numbers
+    if (versionDigits.size() != 3) {
+        return;
+    }
+    
+    int major = versionDigits[0].toInt();
+    int minor = versionDigits[1].toInt();
+    int revision = versionDigits[2].toInt();
+    
+    int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
+    if (versionEncoded > NATRON_VERSION_ENCODED) {
+        QString text(QString("Updates for " NATRON_APPLICATION_NAME " are now available for download.\n"
+                        "You are currently using " NATRON_APPLICATION_NAME " version " NATRON_VERSION_STRING " " NATRON_DEVELOPMENT_STATUS  "\n"
+                        "The latest version of " NATRON_APPLICATION_NAME " is version ") + data);
+        Natron::informationDialog("New version",text.toStdString());
+    }
+    downloader->deleteLater();
+}
+
+void AppInstance::newVersionCheckError()
+{
+    ///Nothing to do,
+    FileDownloader* downloader = qobject_cast<FileDownloader*>(sender());
+    assert(downloader);
+    downloader->deleteLater();
+}
+
 void AppInstance::load(const QString& projectName,const QStringList& writers)
 {
     
+    if (getAppID() == 0) {
+        checkForNewVersion();
+    }
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if(appPTR->getAppType() == AppManager::APP_BACKGROUND_AUTO_RUN && projectName.isEmpty()){
@@ -165,7 +226,12 @@ void AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* 
     }
 }
 
-boost::shared_ptr<Natron::Project> AppInstance::getProject() const { return _imp->_currentProject; }
+boost::shared_ptr<Natron::Project> AppInstance::getProject() const {
+    if (!_imp) {
+        return boost::shared_ptr<Natron::Project>();
+    }
+    return _imp->_currentProject;
+}
 
 boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  { return _imp->_currentProject->getTimeLine(); }
 

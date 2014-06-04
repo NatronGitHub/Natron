@@ -31,7 +31,29 @@
 #define NATRON_VERSION_MAJOR 0
 #define NATRON_VERSION_MINOR 9
 #define NATRON_VERSION_REVISION 2
-#define NATRON_VERSION_STRING "0.9.2"
+
+#define NATRON_VERSION_ENCODE(major,minor,revision) ( \
+    ((major) * 10000) \
+    +((minor) * 100)  \
+    +((revision) * 1)) 
+
+#define NATRON_VERSION_ENCODED NATRON_VERSION_ENCODE( \
+    NATRON_VERSION_MAJOR, \
+    NATRON_VERSION_MINOR, \
+    NATRON_VERSION_REVISION)
+
+#define NATRON_VERSION_STRINGIZE_(major,minor,revision) \
+    #major"."#minor"."#revision
+
+#define NATRON_VERSION_STRINGIZE(major,minor,revision) \
+    NATRON_VERSION_STRINGIZE_(major,minor,revision)
+
+#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE( \
+    NATRON_VERSION_MAJOR, \
+    NATRON_VERSION_MINOR, \
+    NATRON_VERSION_REVISION)
+
+#define NATRON_LAST_VERSION_URL "https://github.com/MrKepzie/Natron/blob/master/LATEST_VERSION.txt"
 
 #define NATRON_DEVELOPMENT_ALPHA "Alpha"
 #define NATRON_DEVELOPMENT_BETA "Beta"

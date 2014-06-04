@@ -106,6 +106,12 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     ///show the gui
     _imp->_gui->show();
     
+    
+    if (getAppID() == 0) {
+        ///Before loading autosave check for a new version
+        checkForNewVersion();
+    }
+    
     /// Create auto-save dir if it does not exists
     QDir dir = Natron::Project::autoSavesDir();
     dir.mkpath(".");
@@ -227,7 +233,11 @@ boost::shared_ptr<Node> GuiAppInstance::getNode(boost::shared_ptr<NodeGui> n) co
 
 void GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui>& n)
 {
+ 
     assert(!n->getNode()->isActivated());
+    if (!getProject()) {
+        return;
+    }
     getProject()->removeNodeFromProject(n->getNode());
     for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
         if(it->second == n){

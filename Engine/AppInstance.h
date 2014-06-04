@@ -117,6 +117,11 @@ public:
     
     virtual bool progressUpdate(Natron::EffectInstance* /*effect*/,double /*t*/) {return true;}
     
+    /**
+     * @brief Checks for a new version of Natron
+     **/
+    void checkForNewVersion() const;
+    
 public slots:
     
     void quit();
@@ -133,6 +138,9 @@ public slots:
     
     void clearOpenFXPluginsCaches();
     
+    void newVersionCheckDownloaded();
+    
+    void newVersionCheckError();
     
 signals:
     
@@ -145,6 +153,7 @@ protected:
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 private:
+    
     
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
                                      bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,
