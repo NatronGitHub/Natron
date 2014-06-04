@@ -108,7 +108,9 @@ void AppInstance::newVersionCheckDownloaded()
     if (versionEncoded > NATRON_VERSION_ENCODED) {
         QString text(QString("Updates for " NATRON_APPLICATION_NAME " are now available for download.\n"
                         "You are currently using " NATRON_APPLICATION_NAME " version " NATRON_VERSION_STRING " " NATRON_DEVELOPMENT_STATUS  "\n"
-                        "The latest version of " NATRON_APPLICATION_NAME " is version ") + data);
+                        "The latest version of " NATRON_APPLICATION_NAME " is version ") + data +
+                     QString(".\n You can download it from this address: \n"
+                             "http://sourceforge.net/projects/natron/"));
         Natron::informationDialog("New version",text.toStdString());
     }
     downloader->deleteLater();
