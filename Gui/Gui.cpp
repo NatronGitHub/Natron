@@ -91,6 +91,7 @@ CLANG_DIAG_ON(unused-private-field)
 #define PLUGIN_GROUP_OFX "OFX"
 #define PLUGIN_GROUP_TIME "Time"
 #define PLUGIN_GROUP_PAINT "Draw"
+#define PLUGIN_GROUP_KEYER "Keyer"
 
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
 
@@ -1318,6 +1319,8 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_DEFAULT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_KEYER) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
     } else {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     }

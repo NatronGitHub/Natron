@@ -276,6 +276,10 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"misc_low.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_KEYER_GROUPING:
+                img.load(NATRON_IMAGES_PATH"Keyer_low.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
                 img.load(NATRON_IMAGES_PATH"openeffects.png");
                 *pix = QPixmap::fromImage(img);
