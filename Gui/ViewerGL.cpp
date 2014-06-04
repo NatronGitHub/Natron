@@ -1489,9 +1489,10 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
               _imp->displayingImage && mouseInDispW) {
         _imp->pickerState = PICKER_POINT;
-        pickColor(event->x(),event->y());
-        _imp->ms = PICKING_COLOR;
-        updateGL();
+        if (pickColor(event->x(),event->y())) {
+            _imp->ms = PICKING_COLOR;
+            updateGL();
+        }
     } else if (event->button() == Qt::LeftButton &&
                event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
                _imp->displayingImage && mouseInDispW) {
@@ -1570,8 +1571,8 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     Format dispW = getDisplayWindow();
-    
-    updateInfoWidgetColorPicker(zoomPos, event->pos(),width(),height(),dispW);
+    RectI rod = getRoD();
+    updateInfoWidgetColorPicker(zoomPos, event->pos(),width(),height(),rod,dispW);
     //update the cursor if it is hovering an overlay and we're not dragging the image
     bool userRoIEnabled;
     RectI userRoI;
@@ -1834,19 +1835,29 @@ void ViewerGL::updateColorPicker(int x,int y)
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     
+    RectI rod = getRoD();
     Format dispW = getDisplayWindow();
-    if (imgPos.x() >= dispW.left() &&
-        imgPos.x() < dispW.right() &&
-        imgPos.y() >= dispW.bottom() &&
-        imgPos.y() < dispW.top() &&
+    if (imgPos.x() >= rod.left() &&
+        imgPos.x() < rod.right() &&
+        imgPos.y() >= rod.bottom() &&
+        imgPos.y() < rod.top() &&
         pos.x() >= 0 && pos.x() < width() &&
         pos.y() >= 0 && pos.y() < height())
     {
-        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-        if (mipMapLevel != 0) {
-            imgPos /= (1 << mipMapLevel);
+        ///if the clip to project format is enabled, make sure it is in the project format too
+        bool clipping = isClippingImageToProjectWindow();
+        if ((clipping &&
+            imgPos.x() >= dispW.left() &&
+             imgPos.x() < dispW.right() &&
+             imgPos.y() >= dispW.bottom() &&
+             imgPos.y() < dispW.top()) || !clipping) {
+            unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+            if (mipMapLevel != 0) {
+                imgPos /= (1 << mipMapLevel);
+            }
+            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
         }
-        picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+        
     }
     if (!picked) {
 		if (_imp->infoViewer->colorAndMouseVisible()) {
@@ -2166,38 +2177,6 @@ void ViewerGL::enterEvent(QEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    switch (_imp->pickerState) {
-        case PICKER_RECTANGLE:
-            updateRectangleColorPicker();
-            break;
-        case PICKER_POINT: {
-            
-            QPointF widgetPos;
-            {
-                QMutexLocker l(&_imp->zoomCtxMutex);
-                widgetPos = _imp->zoomCtx.toWidgetCoordinates(_imp->lastPickerPos.x(), _imp->lastPickerPos.y());
-            }
-            RectI dispW = getRoD();
-            if (_imp->lastPickerPos.x() >= dispW.left() &&
-                _imp->lastPickerPos.x() < dispW.right() &&
-                _imp->lastPickerPos.y() >= dispW.bottom() &&
-                _imp->lastPickerPos.y() < dispW.top() &&
-                widgetPos.x() >= 0 && widgetPos.x() < width() &&
-                widgetPos.y() >= 0 && widgetPos.y() < height())
-            {
-                _imp->infoViewer->showColorAndMouseInfo();
-            } else {
-                _imp->infoViewer->hideColorAndMouseInfo();
-            }
-            
-        } break;
-            
-        case PICKER_INACTIVE:
-            updateColorPicker();
-            break;
-        default:
-            break;
-    }
     setFocus();
     QGLWidget::enterEvent(event);
 }
@@ -2597,7 +2576,14 @@ ViewerTab* ViewerGL::getViewerTab() const {
     return _imp->viewerTab;
 }
 
-void ViewerGL::pickColor(double x,double y)
+namespace {
+static float clamp(float v)
+{
+    return std::min(std::max(v,0.f),1.f);
+}
+}
+
+bool ViewerGL::pickColor(double x,double y)
 {
     
     float r,g,b,a;
@@ -2617,41 +2603,62 @@ void ViewerGL::pickColor(double x,double y)
     bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
     if (picked) {
         QColor pickerColor;
-        pickerColor.setRedF(r);
-        pickerColor.setGreenF(g);
-        pickerColor.setBlueF(b);
-        pickerColor.setAlphaF(a);
+        pickerColor.setRedF(clamp(r));
+        pickerColor.setGreenF(clamp(g));
+        pickerColor.setBlueF(clamp(b));
+        pickerColor.setAlphaF(clamp(a));
         _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
         _imp->infoViewer->setColor(r,g,b,a);
         emit infoColorUnderMouseChanged();
+        return true;
     } else {
         if (_imp->infoViewer->colorAndMouseVisible()) {
             _imp->infoViewer->hideColorAndMouseInfo();
         }
+        return false;
     }
 }
 
 void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,
-                                                           int width,int height,const RectI& dispW)
+                                                           int width,int height,const RectI& rod,const RectI& dispW)
 {
     
     
-    if (imgPos.x() >= dispW.left() &&
-        imgPos.x() < dispW.right() &&
-        imgPos.y() >= dispW.bottom() &&
-        imgPos.y() < dispW.top() &&
+    if (imgPos.x() >= rod.left() &&
+        imgPos.x() < rod.right() &&
+        imgPos.y() >= rod.bottom() &&
+        imgPos.y() < rod.top() &&
         widgetPos.x() >= 0 && widgetPos.x() < width &&
-        widgetPos.y() >= 0 && widgetPos.y() < height ) {
+        widgetPos.y() >= 0 && widgetPos.y() < height) {
         
-        if (_imp->pickerState == PICKER_INACTIVE) {
-            boost::shared_ptr<VideoEngine> videoEngine = _imp->viewerTab->getInternalNode()->getVideoEngine();
-            if (!videoEngine->isWorking()) {
-                updateColorPicker(widgetPos.x(),widgetPos.y());
+        ///if the clip to project format is enabled, make sure it is in the project format too
+        if (isClippingImageToProjectWindow() &&
+            (imgPos.x() < dispW.left() ||
+            imgPos.x() >= dispW.right() ||
+            imgPos.y() < dispW.bottom() ||
+            imgPos.y() >= dispW.top())) {
+                if (_imp->infoViewer->colorAndMouseVisible()) {
+                    _imp->infoViewer->hideColorAndMouseInfo();
+                }
+            } else {
+                
+                if (_imp->pickerState == PICKER_INACTIVE) {
+                    boost::shared_ptr<VideoEngine> videoEngine = _imp->viewerTab->getInternalNode()->getVideoEngine();
+                    if (!videoEngine->isWorking()) {
+                        updateColorPicker(widgetPos.x(),widgetPos.y());
+                    }
+                } else if (_imp->pickerState == PICKER_POINT || _imp->pickerState == PICKER_RECTANGLE) {
+                    if (!_imp->infoViewer->colorAndMouseVisible()) {
+                        _imp->infoViewer->showColorAndMouseInfo();
+                    }
+                } else {
+                    ///unkwn state
+                    assert(false);
+                }
+                
+                _imp->infoViewer->setMousePos(QPoint((int)(imgPos.x()),(int)(imgPos.y())));
+                emit infoMousePosChanged();
             }
-        }
-        
-        _imp->infoViewer->setMousePos(QPoint((int)(imgPos.x()),(int)(imgPos.y())));
-        emit infoMousePosChanged();
     } else {
         if (_imp->infoViewer->colorAndMouseVisible()) {
             _imp->infoViewer->hideColorAndMouseInfo();
@@ -2710,10 +2717,10 @@ void ViewerGL::updateRectangleColorPicker()
     emit infoColorUnderMouseChanged();
     
     QColor pickerColor;
-    pickerColor.setRedF(rSum);
-    pickerColor.setGreenF(gSum);
-    pickerColor.setBlueF(bSum);
-    pickerColor.setAlphaF(aSum);
+    pickerColor.setRedF(clamp(rSum));
+    pickerColor.setGreenF(clamp(gSum));
+    pickerColor.setBlueF(clamp(bSum));
+    pickerColor.setAlphaF(clamp(aSum));
     _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
 
 }
