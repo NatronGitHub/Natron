@@ -612,26 +612,40 @@ void KnobHelper::swapOpenGLBuffers()
 
 void KnobHelper::redraw()
 {
-    assert(_imp->gui);
-    _imp->gui->redraw();
+    if (_imp->gui) {
+        _imp->gui->redraw();
+    }
 }
 
 void KnobHelper::getViewportSize(double &width, double &height) const
 {
-    assert(_imp->gui);
-    _imp->gui->getViewportSize(width, height);
+    if (_imp->gui) {
+        _imp->gui->getViewportSize(width, height);
+    } else {
+        width = 0;
+        height = 0;
+    }
 }
 
 void KnobHelper::getPixelScale(double& xScale, double& yScale) const
 {
-    assert(_imp->gui);
-    _imp->gui->getPixelScale(xScale, yScale);
+    if (_imp->gui) {
+        _imp->gui->getPixelScale(xScale, yScale);
+    } else {
+        xScale = 0;
+        yScale = 0;
+    }
 }
 
 void KnobHelper::getBackgroundColour(double &r, double &g, double &b) const
 {
-    assert(_imp->gui);
-    _imp->gui->getBackgroundColour(r, g, b);
+    if (_imp->gui) {
+        _imp->gui->getBackgroundColour(r, g, b);
+    } else {
+        r = 0;
+        g = 0;
+        b = 0;
+    }
 }
 
 void KnobHelper::setOfxParamHandle(void* ofxParamHandle)
