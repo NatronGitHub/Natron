@@ -28,6 +28,7 @@
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/FileDownloader.h"
+#include "Engine/Settings.h"
 
 using namespace Natron;
 
@@ -69,6 +70,7 @@ AppInstance::~AppInstance(){
 
 void AppInstance::checkForNewVersion() const
 {
+    
     FileDownloader* downloader = new FileDownloader(QUrl(NATRON_LAST_VERSION_URL));
     QObject::connect(downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()));
     QObject::connect(downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()));
@@ -126,8 +128,9 @@ void AppInstance::newVersionCheckError()
 
 void AppInstance::load(const QString& projectName,const QStringList& writers)
 {
+
     
-    if (getAppID() == 0) {
+    if (getAppID() == 0 && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled()) {
         checkForNewVersion();
     }
 

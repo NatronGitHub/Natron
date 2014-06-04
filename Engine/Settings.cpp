@@ -58,6 +58,10 @@ void Settings::initializeKnobs(){
     
     _generalTab = Natron::createKnob<Page_Knob>(this, "General");
     
+    _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
+    _checkForUpdates->setAnimationEnabled(false);
+    _generalTab->addKnob(_checkForUpdates);
+    
     _autoSaveDelay = Natron::createKnob<Int_Knob>(this, "Auto-save trigger delay");
     _autoSaveDelay->setAnimationEnabled(false);
     _autoSaveDelay->disableSlider();
@@ -253,6 +257,7 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _checkForUpdates->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
@@ -294,6 +299,7 @@ void Settings::saveSettings(){
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    settings.setValue("CheckUpdates", _checkForUpdates->getValue());
     settings.setValue("AutoSaveDelay", _autoSaveDelay->getValue());
     settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
     settings.setValue("LinearColorPickers",_linearPickers->getValue());
@@ -346,6 +352,9 @@ void Settings::restoreSettings(){
     notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
+    if (settings.contains("CheckUpdates")) {
+        _checkForUpdates->setValue(settings.value("CheckUpdates").toBool(), 0);
+    }
     if (settings.contains("AutoSaveDelay")) {
         _autoSaveDelay->setValue(settings.value("AutoSaveDelay").toInt(),0);
     }
@@ -690,4 +699,10 @@ int Settings::getAutoSaveDelayMS() const
 bool Settings::isSnapToNodeEnabled() const
 {
     return _snapNodesToConnections->getValue();
+}
+
+
+bool Settings::isCheckForUpdatesEnabled() const
+{
+    return _checkForUpdates->getValue();
 }

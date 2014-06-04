@@ -101,6 +101,8 @@ public:
     
     bool isSnapToNodeEnabled() const;
     
+    bool isCheckForUpdatesEnabled() const;
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -111,6 +113,7 @@ private:
 
     
     boost::shared_ptr<Page_Knob> _generalTab;
+    boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Bool_Knob> _linearPickers;
