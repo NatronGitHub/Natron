@@ -509,10 +509,8 @@ ViewerInstance::renderViewer(SequenceTime time,
     }
     
     ///The width and height of the texture must at least contain the roi
-    RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing((unsigned int)closestPowerOf2 >> 1);
+    RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing(std::log(closestPowerOf2) / std::log(2.));
     
-    //int texW = texRectClippedDownscaled.width() ;//texRect.width() > pixelRoD.width() ? pixelRoD.width() : texRect.width();
-    //int texH = texRectClippedDownscaled.height();//texRect.height() > pixelRoD.height() ? pixelRoD.height() : texRect.height();
     
     ///Texture rect contains coordinates in the image to be rendered without the scaling of the viewer applied
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
