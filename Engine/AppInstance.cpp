@@ -18,6 +18,7 @@
 #include <QThreadPool>
 #include <QUrl>
 #include <QEventLoop>
+#include <QSettings>
 
 #include <boost/bind.hpp>
 
@@ -131,7 +132,20 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
 
     
     if (getAppID() == 0 && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled()) {
-        checkForNewVersion();
+        QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+        settings.beginGroup("General");
+        bool checkUpdates = true;
+        if (!settings.contains("CheckUpdates")) {
+            Natron::StandardButton reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
+                                                                  "on launch of the application ?");
+            if (reply == Natron::No) {
+                checkUpdates = false;
+            }
+            appPTR->getCurrentSettings()->setCheckUpdatesEnabled(checkUpdates);
+        }
+        if (checkUpdates) {
+            checkForNewVersion();
+        }
     }
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.

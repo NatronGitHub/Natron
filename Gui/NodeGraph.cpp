@@ -1775,23 +1775,24 @@ void NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
     if (it != _nodesTrash.end()) {
         _nodesTrash.erase(it);
     }
-    
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
     assert(internalNode);
-    if (internalNode->hasEffect() && internalNode->isRotoNode()) {
-        getGui()->removeRotoInterface(n.get(),true);
-    }
-    ///now that we made the command dirty, delete the node everywhere in Natron
-    getGui()->getApp()->deleteNode(n);
 
-    
-    getGui()->getCurveEditor()->removeNode(n);
-    n->deleteReferences();
-    if (_nodeSelected == n) {
-        deselect();
+    if (getGui()) {
+        if (internalNode->hasEffect() && internalNode->isRotoNode()) {
+            getGui()->removeRotoInterface(n.get(),true);
+        }
+        ///now that we made the command dirty, delete the node everywhere in Natron
+        getGui()->getApp()->deleteNode(n);
+        
+        
+        getGui()->getCurveEditor()->removeNode(n);
+        n->deleteReferences();
+        if (_nodeSelected == n) {
+            deselect();
+        }
+        
     }
-    
-    
     if (_nodeClipBoard._internal && _nodeClipBoard._internal->getNode() == internalNode) {
         _nodeClipBoard._internal.reset();
         _nodeClipBoard._gui.reset();

@@ -115,6 +115,8 @@ public:
         
     Gui* getGui() const {return _gui;}
     
+    void discardGuiPointer() { _gui = 0; }
+    
     void refreshAllEdges();
 
     bool areAllPreviewTurnedOff() const {

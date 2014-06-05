@@ -103,6 +103,8 @@ public:
     
     bool isCheckForUpdatesEnabled() const;
     
+    void setCheckUpdatesEnabled(bool enabled);
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;

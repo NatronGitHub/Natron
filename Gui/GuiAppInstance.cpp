@@ -16,6 +16,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 
 #include "Engine/Project.h"
@@ -74,6 +75,7 @@ void GuiAppInstance::aboutToQuit()
 GuiAppInstance::~GuiAppInstance() {
     
 //#ifndef __NATRON_WIN32__
+    _imp->_gui->getNodeGraph()->discardGuiPointer();
     _imp->_gui->deleteLater();
     _imp->_gui = 0;
     _imp.reset();

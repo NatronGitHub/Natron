@@ -258,7 +258,7 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
-    _checkForUpdates->setDefaultValue(true);
+    _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
@@ -706,4 +706,10 @@ bool Settings::isSnapToNodeEnabled() const
 bool Settings::isCheckForUpdatesEnabled() const
 {
     return _checkForUpdates->getValue();
+}
+
+void Settings::setCheckUpdatesEnabled(bool enabled)
+{
+    _checkForUpdates->setValue(enabled, 0);
+    saveSettings();
 }
