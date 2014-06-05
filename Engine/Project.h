@@ -13,7 +13,7 @@
 
 #include <map>
 #include <vector>
-
+#include <QDateTime>
 #include <boost/noncopyable.hpp>
 
 #include "Global/Macros.h"
@@ -239,7 +239,7 @@ private:
     
     void loadProjectInternal(const QString& path,const QString& name);
     
-    void saveProjectInternal(const QString& path,const QString& name,bool autosave = false);
+    QDateTime saveProjectInternal(const QString& path,const QString& name,bool autosave = false);
     
     /**
      * @brief Remove all the autosave files from the disk.

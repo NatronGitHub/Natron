@@ -168,7 +168,7 @@ void Project::refreshViewersAndPreviews() {
     }
 }
 
-void Project::saveProject(const QString& path,const QString& name,bool autoSave){
+void Project::saveProject(const QString& path,const QString& name,bool autoS){
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if(_imp->isLoadingProject){
@@ -186,10 +186,13 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
     }
 
     try {
-        if (!autoSave) {
+        if (!autoS) {
             if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
 
                 saveProjectInternal(path,name);
+                ///also update the auto-save
+                removeAutoSaves();
+
             }
         } else {
             if (!isGraphWorthLess()) {
@@ -200,7 +203,7 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
         }
     } catch (const std::exception& e) {
         
-        if(!autoSave) {
+        if(!autoS) {
             Natron::errorDialog("Save", e.what());
         } else {
             qDebug() << "Save failure: " << e.what();
@@ -210,10 +213,9 @@ void Project::saveProject(const QString& path,const QString& name,bool autoSave)
         QMutexLocker l(&_imp->isSavingProjectMutex);
         _imp->isSavingProject = false;
     }
-    
 }
 
-void Project::saveProjectInternal(const QString& path,const QString& name,bool autoSave) {
+QDateTime Project::saveProjectInternal(const QString& path,const QString& name,bool autoSave) {
 
     QDateTime time = QDateTime::currentDateTime();
     QString timeStr = time.toString();
@@ -292,7 +294,7 @@ void Project::saveProjectInternal(const QString& path,const QString& name,bool a
         _imp->ageSinceLastSave = time;
     }
     _imp->lastAutoSave = time;
-
+    return time;
 }
 
 void Project::autoSave(){
