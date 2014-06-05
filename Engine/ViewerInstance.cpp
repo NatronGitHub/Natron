@@ -330,7 +330,9 @@ ViewerInstance::renderViewer(SequenceTime time,
     int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
 
     EffectInstance* activeInputToRender = input_other_thread(activeInput());
-    assert(activeInputToRender);
+    if (!activeInputToRender) {
+        return StatFailed;
+    }
     
     bool forceRender;
     {

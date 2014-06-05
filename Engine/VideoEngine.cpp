@@ -595,14 +595,14 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
 Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bool isSequentialRender) {
     /*pre process frame*/
     
-    Status stat = _tree.preProcessFrame();
-    if (stat == StatFailed) {
-        return stat;
-        //don't throw an exception here, this is regular behaviour when a mandatory input is not connected.
-        // We don't want to popup a dialog everytime it occurs
-        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
-    }
-    
+//    Status stat = _tree.preProcessFrame();
+//    if (stat == StatFailed) {
+//        return stat;
+//        //don't throw an exception here, this is regular behaviour when a mandatory input is not connected.
+//        // We don't want to popup a dialog everytime it occurs
+//        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
+//    }
+    Status stat;
     /*get the time at which we started rendering the frame*/
     gettimeofday(&_startRenderFrameTime, 0);
     if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
