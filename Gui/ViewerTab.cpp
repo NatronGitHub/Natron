@@ -85,6 +85,7 @@ struct ViewerTabPrivate {
     Button* _enableViewerRoI;
     Button* _refreshButton;
     Button* _activateRenderScale;
+    bool _renderScaleActive;
     ComboBox* _renderScaleCombo;
     
     /*2nd row*/
@@ -133,6 +134,7 @@ struct ViewerTabPrivate {
 
     ViewerTabPrivate(Gui* gui,ViewerInstance* node)
     : app(gui->getApp())
+    , _renderScaleActive(false)
     , _currentViewIndex(0)
     , _gui(gui)
     , _viewerNode(node)
@@ -636,7 +638,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),this,SLOT(onAutoContrastChanged(bool)));
     QObject::connect(_imp->_autoConstrastLabel,SIGNAL(clicked(bool)),_imp->_autoContrast,SLOT(setChecked(bool)));
     QObject::connect(_imp->_renderScaleCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(onRenderScaleComboIndexChanged(int)));
-    QObject::connect(_imp->_activateRenderScale,SIGNAL(clicked(bool)),this,SLOT(onRenderScaleButtonClicked(bool)));
+    QObject::connect(_imp->_activateRenderScale,SIGNAL(toggled(bool)),this,SLOT(onRenderScaleButtonClicked(bool)));
     
     
     for (std::list<NodeGui*>::const_iterator it = existingRotoNodes.begin(); it!=existingRotoNodes.end(); ++it) {
@@ -916,7 +918,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)) {
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
     } else if (event->key() == Qt::Key_P && event->modifiers().testFlag(Qt::ControlModifier)) {
-        onRenderScaleButtonClicked(!_imp->_activateRenderScale->isDown());
+        onRenderScaleButtonClicked(!_imp->_renderScaleActive);
     } else if (event->key() == Qt::Key_1 && event->modifiers().testFlag(Qt::AltModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(0);
     } else if (event->key() == Qt::Key_2 && event->modifiers().testFlag(Qt::AltModifier)) {
@@ -1392,7 +1394,7 @@ void ViewerTab::onAutoContrastChanged(bool b) {
 void ViewerTab::onRenderScaleComboIndexChanged(int index)
 {
     int level;
-    if (_imp->_activateRenderScale->isDown()) {
+    if (_imp->_renderScaleActive) {
         level = index + 1;
     } else {
         level = 0;
@@ -1402,8 +1404,11 @@ void ViewerTab::onRenderScaleComboIndexChanged(int index)
 
 void ViewerTab::onRenderScaleButtonClicked(bool checked)
 {
+    _imp->_activateRenderScale->blockSignals(true);
+    _imp->_renderScaleActive = checked;
     _imp->_activateRenderScale->setDown(checked);
     _imp->_activateRenderScale->setChecked(checked);
+    _imp->_activateRenderScale->blockSignals(false);
     onRenderScaleComboIndexChanged(_imp->_renderScaleCombo->activeIndex());
 }
 
