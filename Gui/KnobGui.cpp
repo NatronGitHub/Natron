@@ -179,6 +179,7 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
     _imp->descriptionLabel = label;
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
+        layout->addSpacing(15);
         layout->addWidget(label);
     }
     
