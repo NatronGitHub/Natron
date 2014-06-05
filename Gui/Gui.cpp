@@ -1459,14 +1459,15 @@ void Gui::openProject() {
     if (selectedFiles.size() > 0) {
         //clearing current graph
         std::string file = selectedFiles.at(0);
-        std::string path = SequenceParsing::removePath(file);
+        std::string fileUnPathed = file;
+        std::string path = SequenceParsing::removePath(fileUnPathed);
         
         ///if the current graph has no value, just load the project in the same window
         if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
-            _imp->_appInstance->getProject()->loadProject(path.c_str(), file.c_str());
+            _imp->_appInstance->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
         } else {
             AppInstance* newApp = appPTR->newAppInstance();
-            newApp->getProject()->loadProject(path.c_str(), file.c_str());
+            newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
         }
         
         QSettings settings;

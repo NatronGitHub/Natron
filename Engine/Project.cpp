@@ -569,10 +569,6 @@ void Project::clearNodes(bool emitSignal) {
     }
     nodesToDelete.clear();
     
-//    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-//        delete nodesToDelete[i];
-//    }
-    
     if (emitSignal) {
         emit nodesCleared();
     }
