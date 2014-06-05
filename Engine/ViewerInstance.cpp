@@ -443,6 +443,38 @@ ViewerInstance::renderViewer(SequenceTime time,
 #endif
             return stat;
         }
+        
+        EffectInstance* inputEffect = input_other_thread(activeInput());
+        EffectInstance* original = inputEffect;
+        while (inputEffect && inputEffect->getNode()->isNodeDisabled()) {
+            ///we forward this node to the last connected non-optional input
+            ///if there's only optional inputs connected, we return the last optional input
+            int lastOptionalInput = -1;
+            int inputNb = -1;
+            for (int i = inputEffect->maximumInputs() - 1; i >= 0; --i) {
+                bool optional = inputEffect->isInputOptional(i);
+                if (!optional && inputEffect->getNode()->input_other_thread(i)) {
+                    inputNb = i;
+                    break;
+                } else if (optional && lastOptionalInput == -1) {
+                    lastOptionalInput = i;
+                }
+            }
+            if (inputNb == -1) {
+                inputNb = lastOptionalInput;
+            }
+            inputEffect = inputEffect->input_other_thread(inputNb);
+        }
+        if (inputEffect != original && inputEffect != NULL) {
+            stat = inputEffect->getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
+        }
+        if(stat == StatFailed || !inputEffect){
+#ifdef NATRON_LOG
+            Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
+            Natron::Log::endFunction(getName(),"renderViewer");
+#endif
+            return stat;
+        }
 
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 

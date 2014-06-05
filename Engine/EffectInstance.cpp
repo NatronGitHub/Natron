@@ -612,7 +612,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 
             } else {
                 RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
-                RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
+                RoIMap inputsRoI;
+                inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), args.roi));
                 Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                             args.roi,
                                                             inputsRoI,
@@ -726,7 +727,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (inputNbIdentity != -1) {
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
-            RoIMap inputsRoI = getRegionOfInterest_public(args.time, args.scale, canonicalRoI, args.view,nodeHash);
+            RoIMap inputsRoI;
+            inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), args.roi));
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         args.roi,
                                                         inputsRoI,

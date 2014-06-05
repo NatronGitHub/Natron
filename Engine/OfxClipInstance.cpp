@@ -193,6 +193,25 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     }
     
     EffectInstance* n = getAssociatedNode();
+    while (n && n->getNode()->isNodeDisabled()) {
+        ///we forward this node to the last connected non-optional input
+        ///if there's only optional inputs connected, we return the last optional input
+        int lastOptionalInput = -1;
+        int inputNb = -1;
+        for (int i = n->maximumInputs() - 1; i >= 0; --i) {
+            bool optional = n->isInputOptional(i);
+            if (!optional && n->getNode()->input_other_thread(i)) {
+                inputNb = i;
+                break;
+            } else if (optional && lastOptionalInput == -1) {
+                lastOptionalInput = i;
+            }
+        }
+        if (inputNb == -1) {
+            inputNb = lastOptionalInput;
+        }
+        n = n->input_other_thread(inputNb);
+    }
     if (n) {
         bool isProjectFormat;
         
