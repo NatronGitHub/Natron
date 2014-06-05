@@ -2109,8 +2109,8 @@ void FileDialogComboBox::setHistory(const QStringList &paths){
 }
 void FileDialogComboBox::paintEvent(QPaintEvent *){
     QStylePainter painter(this);
-    painter.setPen(palette().color(QPalette::Text));
-
+    QColor c(255,255,255,255);
+    painter.setPen(c);
     // draw the combobox frame, focusrect and selected etc.
     QStyleOptionComboBox opt;
     initStyleOption(&opt);
