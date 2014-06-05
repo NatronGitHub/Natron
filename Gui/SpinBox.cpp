@@ -253,7 +253,6 @@ bool SpinBox::validateText() {
 
 void SpinBox::decimals(int d){
     _decimals=d;
-    setMaxLength(_decimals+3);
     if(_type == DOUBLE_SPINBOX){
         _doubleValidator->setDecimals(d);
     }
