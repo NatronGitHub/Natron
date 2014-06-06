@@ -89,7 +89,8 @@ enum HoveredState
     HOVERING_BBOX_MID_TOP,
     HOVERING_BBOX_MID_RIGHT,
     HOVERING_BBOX_MID_BTM,
-    HOVERING_BBOX_MID_LEFT
+    HOVERING_BBOX_MID_LEFT,
+    HOVERING_BBOX
 };
     
 enum SelectedCpsTransformMode {
@@ -272,6 +273,8 @@ struct RotoGui::RotoGuiPrivate
     bool isNearbyBBoxMidRight(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
     bool isNearbyBBoxMidBtm(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
     bool isNearbyBBoxMidLeft(const QPointF& p,double tolerance,const std::pair<double,double>& pixelScale) const;
+    
+    bool isNearbySelectedCpsBoundingBox(const QPointF& pos,double tolerance) const;
     
 };
 
@@ -1070,7 +1073,11 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     
     glLineWidth(1.5);
     
-    glColor4f(0.8,0.8,0.8,1.);
+    if (hoverState == HOVERING_BBOX) {
+        glColor4f(0.9,0.5,0,1.);
+    } else {
+        glColor4f(0.8,0.8,0.8,1.);
+    }
     glBegin(GL_LINE_STRIP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
@@ -1549,11 +1556,16 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 }
             } else {
                 
+                bool nearbySelectedBeziersBbox = _imp->isNearbySelectedCpsBoundingBox(pos, cpSelectionTolerance);
+                
                 if (featherBarSel.first) {
                     _imp->clearCPSSelection();
                     _imp->rotoData->featherBarBeingDragged = featherBarSel;
                     _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
                     _imp->state = DRAGGING_FEATHER_BAR;
+                } else if (nearbySelectedBeziersBbox) {
+                    _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+                    ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                 } else {
                     if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
                         if (!isStickySelectionEnabled()) {
@@ -1583,12 +1595,20 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                 }
             } else {
-                if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                    _imp->clearSelection();
-                    _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                    _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                    _imp->state = SELECTING;
+                
+                bool nearbySelectedBeziersBbox = _imp->isNearbySelectedCpsBoundingBox(pos, cpSelectionTolerance);
+                if (nearbySelectedBeziersBbox) {
+                    _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+                    ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
+                } else {
                     
+                    if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                        _imp->clearSelection();
+                        _imp->rotoData->selectionRectangle.setTopLeft(pos);
+                        _imp->rotoData->selectionRectangle.setBottomRight(pos);
+                        _imp->state = SELECTING;
+                    
+                }
                 }
             }
             
@@ -1809,6 +1829,9 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                 didSomething = true;
             } else if (_imp->isNearbyBBoxMidLeft(pos, bboxTol,pixelScale)) {
                 _imp->hoverState = HOVERING_BBOX_MID_LEFT;
+                didSomething = true;
+            } else if (_imp->isNearbySelectedCpsBoundingBox(pos, bboxTol)) {
+                _imp->hoverState = HOVERING_BBOX;
                 didSomething = true;
             } else {
                 _imp->hoverState = HOVERING_NOTHING;
@@ -2341,6 +2364,40 @@ bool RotoGui::RotoGuiPrivate::isNearbyBBoxMidLeft(const QPointF& p,double tolera
         RectD arrowBbox(center.x() - halfLength,center.y() - halfLength,center.x() + halfLength,center.y() + halfLength);
         return arrowBbox.contains(p.x(),p.y());
     }
+}
+
+bool RotoGui::RotoGuiPrivate::isNearbySelectedCpsBoundingBox(const QPointF& pos,double tolerance) const
+{
+    QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
+    QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
+    QPointF btmLeft(topLeft.x(),btmRight.y());
+    QPointF topRight(btmRight.x(),topLeft.y());
+    
+    ///check if it is nearby top edge
+    if (pos.x() >= (topLeft.x() - tolerance) && pos.x() <= (topRight.x() + tolerance) &&
+        pos.y() >= (topLeft.y() - tolerance) && pos.y() <= (topLeft.y() + tolerance)) {
+        return true;
+    }
+    
+    ///right edge
+    if (pos.x() >= (topRight.x() - tolerance) && pos.x() <= (topRight.x() + tolerance) &&
+        pos.y() >= (btmRight.y() - tolerance) && pos.y() <= (topRight.y() + tolerance)) {
+        return true;
+    }
+    
+    ///btm edge
+    if (pos.x() >= (btmLeft.x() - tolerance) && pos.x() <= (btmRight.x() + tolerance) &&
+        pos.y() >= (btmLeft.y() - tolerance) && pos.y() <= (btmLeft.y() + tolerance)) {
+        return true;
+    }
+    
+    ///left edge
+    if (pos.x() >= (btmLeft.x() - tolerance) && pos.x() <= (btmLeft.x() + tolerance) &&
+        pos.y() >= (btmLeft.y() - tolerance) && pos.y() <= (topLeft.y() + tolerance)) {
+        return true;
+    }
+    return false;
+    
 }
 
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
