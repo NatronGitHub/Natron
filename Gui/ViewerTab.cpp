@@ -896,26 +896,24 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
              && !event->modifiers().testFlag(Qt::ControlModifier)) {
         //next incr
         nextIncrement();
-    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
-               && event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->app->getTimeLine()->goToPreviousKeyframe();
-    }  else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)
-               && event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->app->getTimeLine()->goToNextKeyframe();
-    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         //first frame
         firstFrame();
-    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         //last frame
         lastFrame();
     }
     else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
             && event->modifiers().testFlag(Qt::ShiftModifier)) {
         //prev key
+        _imp->app->getTimeLine()->goToPreviousKeyframe();
     }
     else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
             &&  event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next key
+        _imp->app->getTimeLine()->goToNextKeyframe();
     } else if(event->key() == Qt::Key_F) {
         centerViewer();
         

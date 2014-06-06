@@ -171,6 +171,7 @@ void NodeGui::initialize(NodeGraph* dag,
         
         if (!requestedByLoad) {
             _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
+            _graph->getGui()->addVisibleDockablePanel(_settingsPanel);
         } else {
             setVisibleSettingsPanel(false);
         }

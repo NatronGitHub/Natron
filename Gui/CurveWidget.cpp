@@ -2412,6 +2412,16 @@ void CurveWidget::keyPressEvent(QKeyEvent *event)
         copySelectedKeyFrames();
     } else if(event->key() == Qt::Key_V && event->modifiers().testFlag(Qt::ControlModifier)) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
+    }  else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
+                && event->modifiers().testFlag(Qt::ControlModifier)) {
+        if (_imp->_timeline) {
+            _imp->_timeline->goToPreviousKeyframe();
+        }
+    }  else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)
+                && event->modifiers().testFlag(Qt::ControlModifier)) {
+        if (_imp->_timeline) {
+            _imp->_timeline->goToNextKeyframe();
+        }
     }
 }
 
