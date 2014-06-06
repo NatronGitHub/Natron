@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <list>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -498,6 +499,12 @@ public:
     void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reason);
     
     bool isNodeDisabled() const;
+    
+    /**
+     * @brief Fills keyframes with all different keyframes time that all parameters of this
+     * node have. Some keyframes might appear several times.
+     **/
+    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
 public slots:
     

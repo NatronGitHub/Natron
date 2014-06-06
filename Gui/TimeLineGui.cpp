@@ -11,7 +11,7 @@
 #include "TimeLineGui.h"
 
 #include <cmath>
-
+#include <set>
 #include <QtGui/QFont>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -76,12 +76,14 @@ struct TimelineGuiPrivate{
     QColor _cursorColor;
     QColor _boundsColor;
     QColor _cachedLineColor;
+    QColor _keyframesColor;
     QColor _clearColor;
     QColor _backgroundColor;
     QColor _ticksColor;
     QColor _scaleColor;
     QFont _font;
     bool _firstPaint;
+    
 
     TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline,Gui* gui):
         _timeline(timeline)
@@ -95,6 +97,7 @@ struct TimelineGuiPrivate{
       , _cursorColor(243,149,0)
       , _boundsColor(207,69,6)
       , _cachedLineColor(143,201,103)
+      , _keyframesColor(21,97,248)
       , _clearColor(0,0,0,255)
       , _backgroundColor(50,50,50)
       , _ticksColor(200,200,200)
@@ -124,7 +127,8 @@ TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline,Gui* gui, QWidget*
     QObject::connect(this, SIGNAL(frameChanged(SequenceTime)), timeline.get(), SLOT(onFrameChanged(SequenceTime)));
     QObject::connect(this, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                      timeline.get(), SLOT(onBoundariesChanged(SequenceTime,SequenceTime)));
-
+    
+    QObject::connect(timeline.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()));
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
 }
@@ -300,6 +304,9 @@ void TimeLineGui::paintGL()
     QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
                                                   rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
 
+    std::list<SequenceTime> keyframes;
+    _imp->_timeline->getKeyframes(&keyframes);
+    
     //draw an alpha cursor if the mouse is hovering the timeline
     glEnable(GL_POLYGON_SMOOTH);
     glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
@@ -311,8 +318,21 @@ void TimeLineGui::paintGL()
                                                           currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
         QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH /2,
                                                            currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
-
-        QColor currentColor(_imp->_cursorColor);
+        
+        int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
+        QString mouseNumber(QString::number(hoveredTime));
+        QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber)/2 ,
+                                      currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
+        QPointF mouseNumberPos = toTimeLineCoordinates(mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y());
+        
+        
+        QColor currentColor;
+        std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
+        if (foundHoveredAsKeyframe != keyframes.end()) {
+            currentColor = _imp->_keyframesColor;
+        } else {
+            currentColor = _imp->_cursorColor;
+        }
         currentColor.setAlpha(100);
 
         glColor4f(currentColor.redF(),currentColor.greenF(),currentColor.blueF(),currentColor.alphaF());
@@ -324,20 +344,25 @@ void TimeLineGui::paintGL()
         glCheckError();
 
 
-        QString mouseNumber(QString::number(std::floor(currentPosBtm.x() + 0.5)));
-        QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber)/2 ,
-                                      currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
-        QPointF mouseNumberPos = toTimeLineCoordinates(mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y());
+        
 
         renderText(mouseNumberPos.x(),mouseNumberPos.y(), mouseNumber, currentColor, _imp->_font);
     }
 
     //draw the bounds and the current time cursor
+    QColor actualCursorColor;
+    std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find(keyframes.begin(),keyframes.end(),_imp->_timeline->currentFrame());
+    if (isCurrentTimeAKeyframe != keyframes.end()) {
+        actualCursorColor = _imp->_keyframesColor;
+    } else {
+        actualCursorColor = _imp->_cursorColor;
+    }
+    
     QString currentFrameStr(QString::number(_imp->_timeline->currentFrame()));
     double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr)/2;
     double cursorTextPos = toTimeLineCoordinates(cursorTextXposWidget,0).x();
-    renderText(cursorTextPos ,cursorTopLeft.y(), currentFrameStr, _imp->_cursorColor, _imp->_font);
-    glColor4f(_imp->_cursorColor.redF(),_imp->_cursorColor.greenF(),_imp->_cursorColor.blueF(),_imp->_cursorColor.alphaF());
+    renderText(cursorTextPos ,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->_font);
+    glColor4f(actualCursorColor.redF(),actualCursorColor.greenF(),actualCursorColor.blueF(),actualCursorColor.alphaF());
     glBegin(GL_POLYGON);
     glVertex2f(cursorBtm.x(),cursorBtm.y());
     glVertex2f(cursorTopLeft.x(),cursorTopLeft.y());
@@ -391,6 +416,20 @@ void TimeLineGui::paintGL()
         glVertex2f(*i + 0.5,lineYpos);
     }
     glEnd();
+    
+    ///now draw keyframes
+    glColor4f(_imp->_keyframesColor.redF(),_imp->_keyframesColor.greenF(),_imp->_keyframesColor.blueF(),_imp->_keyframesColor.alphaF());
+    std::set<SequenceTime> alreadyDrawnKeyframes;
+    glBegin(GL_LINES);
+    for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+        std::pair<std::set<SequenceTime>::iterator,bool> success = alreadyDrawnKeyframes.insert(*i);
+        if (success.second) {
+            glVertex2f(*i - 0.5,lineYpos);
+            glVertex2f(*i + 0.5,lineYpos);
+        }
+    }
+    glEnd();
+    
     glCheckErrorIgnoreOSXBug();
     glDisable(GL_LINE_SMOOTH);
     glLineWidth(1.);
@@ -638,4 +677,9 @@ QPointF TimeLineGui::toWidgetCoordinates(double x, double y) const {
     double top =  bottom +  h / _imp->_zoomCtx.zoomFactor ;
     double right = left +  w / _imp->_zoomCtx.zoomFactor;
     return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
+}
+
+void TimeLineGui::onKeyframesIndicatorsChanged()
+{
+    repaint();
 }

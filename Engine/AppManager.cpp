@@ -1154,6 +1154,12 @@ void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
     }
 }
 
+void AppManager::onMaxPanelsOpenedChanged(int maxPanels)
+{
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+        it->second.app->onMaxPanelsOpenedChanged(maxPanels);
+    }
+}
 
 int AppManager::exec() {
     return qApp->exec();

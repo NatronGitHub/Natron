@@ -8,7 +8,7 @@
 
 #ifndef NATRON_ENGINE_TIMELINE_H_
 #define NATRON_ENGINE_TIMELINE_H_
-
+#include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
@@ -57,11 +57,27 @@ public:
     void incrementCurrentFrame(Natron::OutputEffectInstance* caller);
 
     void decrementCurrentFrame(Natron::OutputEffectInstance* caller) ;
+    
+    void removeAllKeyframesIndicators();
+    
+    void addKeyframeIndicator(SequenceTime time);
+    
+    void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys) ;
+    
+    void removeKeyFrameIndicator(SequenceTime time);
+    
+    void removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys);
+    
+    void getKeyframes(std::list<SequenceTime>* keys) const;
 
 public slots:
     void onFrameChanged(SequenceTime frame);
 
     void onBoundariesChanged(SequenceTime left,SequenceTime right);
+    
+    void goToPreviousKeyframe();
+    
+    void goToNextKeyframe();
 
 signals:
 
@@ -69,12 +85,15 @@ signals:
     void boundariesChanged(SequenceTime,SequenceTime,int reason);
     //reason being a Natron::TIMELINE_CHANGE_REASON
     void frameChanged(SequenceTime,int reason);
+    
+    void keyframeIndicatorsChanged();
 
 private:
     SequenceTime _firstFrame;
     SequenceTime _lastFrame;
     SequenceTime _currentFrame;
     SequenceTime _leftBoundary,_rightBoundary; //these boundaries are within the interval [firstFrame,lastFrame]
+    std::list<SequenceTime> _keyframes;
     mutable QMutex _lock;
     Natron::Project* _project;
 };

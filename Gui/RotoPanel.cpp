@@ -463,11 +463,13 @@ void RotoPanel::onSelectionChanged(int reason)
 void RotoPanel::onSelectedBezierKeyframeSet(int time)
 {
     _imp->updateSplinesInfosGUI(time);
+    _imp->node->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
 }
 
 void RotoPanel::onSelectedBezierKeyframeRemoved(int time)
 {
     _imp->updateSplinesInfosGUI(time);
+    _imp->node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
 }
 
 void RotoPanel::updateItemGui(QTreeWidgetItem* item)

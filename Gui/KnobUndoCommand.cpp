@@ -102,7 +102,7 @@ void PasteUndoCommand::undo()
         ++i;
     }
     if (_copyAnimation) {
-        
+        _knob->removeAllKeyframeMarkersOnTimeline(-1);
         i = 0;
         for (std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin(); it!=oldCurves.end(); ++it) {
             internalKnob->getCurve(i)->clone(*(*it));
@@ -110,7 +110,7 @@ void PasteUndoCommand::undo()
         }
         ///parameters are meaningless here, we just want to update the curve editor.
         _knob->onInternalKeySet(0, 0);
-
+        _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
     
     if (isAnimatingString) {
@@ -168,11 +168,16 @@ void PasteUndoCommand::redo()
         }
         ++i;
     }
-    
+    if (!newCurves.empty()) {
+        _knob->removeAllKeyframeMarkersOnTimeline(-1);
+    }
     i = 0;
     for (std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin(); it!=newCurves.end(); ++it) {
         internalKnob->getCurve(i)->clone(*(*it));
         ++i;
+    }
+    if (!newCurves.empty()) {
+        _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
     if (_copyAnimation && !newCurves.empty()) {
         ///parameters are meaningless here, we just want to update the curve editor.

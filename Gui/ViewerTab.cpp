@@ -368,14 +368,12 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     
     _imp->previousKeyFrame_Button=new Button(_imp->_playerButtonsContainer);
-    _imp->previousKeyFrame_Button->hide();
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
     tooltip = "Previous keyframe";
     tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(previousKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->previousKeyFrame_Button->setToolTip(tooltip);
-    _imp->_playerLayout->addWidget(_imp->previousKeyFrame_Button);
     
     
     _imp->play_Backward_Button=new Button(_imp->_playerButtonsContainer);
@@ -431,14 +429,12 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     
     _imp->nextKeyFrame_Button = new Button(_imp->_playerButtonsContainer);
-    _imp->nextKeyFrame_Button->hide();
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
     tooltip = "Next keyframe";
     tooltip.append("<p><b>Keyboard shortcut: ");
     tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->nextKeyFrame_Button->setToolTip(tooltip);
-    _imp->_playerLayout->addWidget(_imp->nextKeyFrame_Button);
     
     
     _imp->lastFrame_Button = new Button(_imp->_playerButtonsContainer);
@@ -453,6 +449,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->_playerLayout->addStretch();
     
+    _imp->_playerLayout->addWidget(_imp->previousKeyFrame_Button);
+    _imp->_playerLayout->addWidget(_imp->nextKeyFrame_Button);
+
+    _imp->_playerLayout->addStretch();
     
     _imp->previousIncrement_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
@@ -609,6 +609,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(_imp->lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
     QObject::connect(_imp->loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
+    QObject::connect(_imp->nextKeyFrame_Button,SIGNAL(clicked(bool)),_imp->app->getTimeLine().get(), SLOT(goToNextKeyframe()));
+    QObject::connect(_imp->previousKeyFrame_Button,SIGNAL(clicked(bool)),_imp->app->getTimeLine().get(), SLOT(goToPreviousKeyframe()));
     QObject::connect(_imp->app->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
     QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
@@ -886,18 +888,24 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     else if (event->key() == Qt::Key_L) {
         startPause(!_imp->play_Forward_Button->isDown());
         
-    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)) {
+    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::ControlModifier)) {
         //prev incr
         previousIncrement();
-    }
-    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)) {
+    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)
+             && !event->modifiers().testFlag(Qt::ControlModifier)) {
         //next incr
         nextIncrement();
-    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
+               && event->modifiers().testFlag(Qt::ControlModifier)) {
+        _imp->app->getTimeLine()->goToPreviousKeyframe();
+    }  else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)
+               && event->modifiers().testFlag(Qt::ControlModifier)) {
+        _imp->app->getTimeLine()->goToNextKeyframe();
+    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)) {
         //first frame
         firstFrame();
-    }
-    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)) {
         //last frame
         lastFrame();
     }

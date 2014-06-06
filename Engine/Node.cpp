@@ -1728,6 +1728,23 @@ bool Node::isNodeDisabled() const
     return _imp->disableNodeKnob->getValue();
 }
 
+void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
+{
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        int dim = knobs[i]->getDimension();
+        for (int j = 0; j < dim ;++j) {
+            KeyFrameSet kfs = knobs[i]->getCurve()->getKeyFrames_mt_safe();
+            for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+                keyframes->push_back(it->getTime());
+            }
+        }
+    }
+    if (_imp->rotoContext) {
+        _imp->rotoContext->getBeziersKeyframeTimes(keyframes);
+    }
+}
+
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)

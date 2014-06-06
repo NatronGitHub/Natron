@@ -3711,6 +3711,18 @@ void RotoContext::emitRefreshViewerOverlays()
     emit refreshViewerOverlays();
 }
 
+void RotoContext::getBeziersKeyframeTimes(std::list<int> *times) const
+{
+    std::list< boost::shared_ptr<Bezier> > splines = getCurvesByRenderOrder();
+    for (std::list< boost::shared_ptr<Bezier> > ::iterator it = splines.begin(); it!=splines.end(); ++it) {
+        std::set<int> splineKeys;
+        (*it)->getKeyframeTimes(&splineKeys);
+        for (std::set<int>::iterator it2 = splineKeys.begin(); it2!=splineKeys.end(); ++it2) {
+            times->push_back(*it2);
+        }
+    }
+}
+
 static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
 {
     if (mipmapLevel != 0) {

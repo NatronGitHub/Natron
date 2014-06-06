@@ -24,6 +24,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
+#include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
 
 // Qt
@@ -119,7 +120,11 @@ public:
     void setReadOnly_(bool readOnly,int dimension);
  
     int getKnobsCountOnSameLine() const;
-
+    
+    
+    void removeAllKeyframeMarkersOnTimeline(int dim);
+    void setAllKeyframeMarkersOnTimeline(int dim);
+    void setKeyframeMarkerOnTimeline(int time);
     
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
@@ -129,6 +134,8 @@ public:
         Knob<T>* knob = dynamic_cast<Knob<T>*>(getKnob().get());
         KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey);
         if(ret > 0){
+            assert(newKey);
+            setKeyframeMarkerOnTimeline(newKey->getTime());
             emit keyFrameSet();
         }
         updateGUI(dimension);
@@ -157,6 +164,8 @@ public slots:
     void onInternalKeySet(SequenceTime time,int dimension);
 
     void onInternalKeyRemoved(SequenceTime time,int dimension);
+    
+    void onInternalAnimationRemoved();
 
     void setSecret();
 

@@ -785,6 +785,21 @@ void DockablePanel::setClosed(bool c)
     setVisible(!c);
     _imp->_isClosed = c;
     emit closeChanged(c);
+    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (nodePanel) {
+        std::list<SequenceTime> nodeKeyframes;
+        nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
+        if (c) {
+            _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(nodeKeyframes);
+        } else {
+            _imp->_gui->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(nodeKeyframes);
+        }
+    }
+    if (!c) {
+        _imp->_gui->addVisibleDockablePanel(this);
+    } else {
+        _imp->_gui->removeVisibleDockablePanel(this);
+    }
 }
 
 void DockablePanel::closePanel() {
@@ -794,6 +809,13 @@ void DockablePanel::closePanel() {
     close();
     _imp->_isClosed = true;
     emit closeChanged(true);
+    _imp->_gui->removeVisibleDockablePanel(this);
+    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (nodePanel) {
+        std::list<SequenceTime> nodeKeyframes;
+        nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
+        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(nodeKeyframes);
+    }
     getGui()->getApp()->redrawAllViewers();
     
 }

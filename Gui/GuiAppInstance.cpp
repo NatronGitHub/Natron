@@ -443,3 +443,8 @@ bool GuiAppInstance::progressUpdate(Natron::EffectInstance* effect,double t)
     }
     return ret;
 }
+
+void GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
+{
+    _imp->_gui->onMaxVisibleDockablePanelChanged(maxPanels);
+}

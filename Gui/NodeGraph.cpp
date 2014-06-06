@@ -11,6 +11,7 @@
 #include "NodeGraph.h"
 
 #include <cstdlib>
+#include <set>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QGraphicsProxyWidget>
@@ -532,11 +533,13 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
 }
 
 void NodeGraph::deselect(){
-    QMutexLocker l(&_nodesMutex);
-    for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
-        (*it)->setSelected(false);
+    {
+        QMutexLocker l(&_nodesMutex);
+        for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+            (*it)->setSelected(false);
+        }
+        _nodeSelected.reset();
     }
-    _nodeSelected.reset();
 }
 
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
@@ -856,6 +859,7 @@ void NodeGraph::deleteNode(const boost::shared_ptr<NodeGui>& n) {
 void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n) {
     assert(n);
     _nodeSelected = n;
+    
     /*now remove previously selected node*/
     {
         QMutexLocker l(&_nodesMutex);
@@ -1617,7 +1621,7 @@ void NodeGraph::cutSelectedNode() {
         Natron::warningDialog("Cut", "You must select a node to cut first.");
         return;
     }
-    
+    _gui->getApp()->getTimeLine()->removeAllKeyframesIndicators();
     cutNode(_nodeSelected);
     
 }

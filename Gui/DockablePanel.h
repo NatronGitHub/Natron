@@ -192,6 +192,8 @@ public:
     
     bool isSelected() const {return _selected;}
     
+    boost::shared_ptr<NodeGui> getNode() const { return _nodeGUI; }
+    
 private:
     
     virtual RotoPanel* initializeRotoPanel();

@@ -87,6 +87,8 @@ public:
     virtual void endProgress(Natron::EffectInstance* effect) OVERRIDE FINAL;
     
     virtual bool progressUpdate(Natron::EffectInstance* effect,double t) OVERRIDE FINAL;
+    
+    virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
 public slots:
     
     void onProjectNodesCleared();

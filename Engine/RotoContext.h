@@ -902,6 +902,8 @@ public:
     void onItemLockedChanged(RotoItem* item);
     
     void emitRefreshViewerOverlays();
+    
+    void getBeziersKeyframeTimes(std::list<int> *times) const;
 signals:
     
     /**

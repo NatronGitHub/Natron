@@ -257,6 +257,8 @@ public slots:
     
     qint64 getTotalNodesMemoryRegistered() const;
     
+    void onMaxPanelsOpenedChanged(int maxPanels);
+    
 signals:
 
     void imageRemovedFromNodeCache(SequenceTime time);

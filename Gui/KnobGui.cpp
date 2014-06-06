@@ -133,7 +133,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(secretChanged()),this,SLOT(setSecret()));
     QObject::connect(handler,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(handler,SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
-    QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SIGNAL(keyFrameRemoved()));
+    QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SLOT(onInternalAnimationRemoved()));
     QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
     QObject::connect(handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)));
 }
@@ -611,7 +611,10 @@ void KnobGui::onHorizontalInterpActionTriggered(){
     setInterpolationForDimensions(dims,Natron::KEYFRAME_HORIZONTAL);
 }
 
-void KnobGui::setKeyframe(double time,int dimension){
+void KnobGui::setKeyframe(double time,int dimension) {
+    boost::shared_ptr<KnobI> knob = getKnob();
+    assert(knob->getHolder()->getApp());
+    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -621,6 +624,7 @@ void KnobGui::onSetKeyActionTriggered(){
     assert(knob->getHolder()->getApp());
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     for(int i = 0; i < knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
         assert(curve);
@@ -655,6 +659,9 @@ void KnobGui::onSetKeyActionTriggered(){
 void KnobGui::removeKeyFrame(double time,int dimension){
     emit keyFrameRemovedByUser(time,dimension);
     emit keyFrameRemoved();
+    boost::shared_ptr<KnobI> knob = getKnob();
+    assert(knob->getHolder()->getApp());
+    knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
     updateGUI(dimension);
     checkAnimationLevel(dimension);
 }
@@ -673,6 +680,7 @@ void KnobGui::onRemoveKeyActionTriggered(){
     assert(knob->getHolder()->getApp());
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
     std::vector<std::pair<CurveGui*,KeyFrame> > toRemove;
     for(int i = 0; i < knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
@@ -823,11 +831,15 @@ void KnobGui::onInternalValueChanged(int dimension) {
     }
 }
 
-void KnobGui::onInternalKeySet(SequenceTime,int){
+void KnobGui::onInternalKeySet(SequenceTime time,int){
+    boost::shared_ptr<KnobI> knob = getKnob();
+    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     emit keyFrameSet();
 }
 
-void KnobGui::onInternalKeyRemoved(SequenceTime,int){
+void KnobGui::onInternalKeyRemoved(SequenceTime time,int){
+    boost::shared_ptr<KnobI> knob = getKnob();
+    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     emit keyFrameRemoved();
 }
 
@@ -1165,9 +1177,11 @@ void KnobGui::onResetDefaultValuesActionTriggered() {
 }
 
 void KnobGui::resetDefault(int dimension) {
+    boost::shared_ptr<KnobI> knob = getKnob();
+    removeAllKeyframeMarkersOnTimeline(dimension);
     ///this cannot be undone for now. it's kinda lots of effort to do it and frankly not much necessary.
-    if (getKnob()->typeName() != Button_Knob::typeNameStatic()) {
-        getKnob()->resetToDefaultValue(dimension);
+    if (knob->typeName() != Button_Knob::typeNameStatic()) {
+        knob->resetToDefaultValue(dimension);
     }
 }
 
@@ -1266,3 +1280,59 @@ void KnobGui::setKnobGuiPointer()
     getKnob()->setKnobGuiPointer(this);
 }
 
+void KnobGui::onInternalAnimationRemoved()
+{
+    removeAllKeyframeMarkersOnTimeline(-1);
+    emit keyFrameRemoved();
+}
+
+void KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+    std::list<SequenceTime> times;
+    if (dimension == -1) {
+        int dim = knob->getDimension();
+        for (int i = 0; i < dim; ++i) {
+            KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
+            for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+                times.push_back(it->getTime());
+            }
+        }
+    } else {
+        KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
+        for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+            times.push_back(it->getTime());
+        }
+    }
+    timeline->removeMultipleKeyframeIndicator(times);
+
+}
+
+void KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+    std::list<SequenceTime> times;
+    if (dimension == -1) {
+        int dim = knob->getDimension();
+        for (int i = 0; i < dim; ++i) {
+            KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
+            for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+                times.push_back(it->getTime());
+            }
+        }
+    } else {
+        KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
+        for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+            times.push_back(it->getTime());
+        }
+    }
+    timeline->addMultipleKeyframeIndicatorsAdded(times);
+}
+
+void KnobGui::setKeyframeMarkerOnTimeline(int time)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+}

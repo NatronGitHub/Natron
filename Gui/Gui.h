@@ -300,6 +300,10 @@ public:
      The name of the image will be the hash key of the image.*/
     static void debugImage(const Natron::Image* image,const QString& filename = QString());
     
+    void addVisibleDockablePanel(DockablePanel* panel);
+    void removeVisibleDockablePanel(DockablePanel* panel);
+    
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -382,6 +386,12 @@ public slots:
     void renderSelectedNode();
     
     void onRotoSelectedToolChanged(int tool);
+    
+    void onMaxVisibleDockablePanelChanged(int maxPanels);
+
+    void clearAllVisiblePanels();
+    
+    void onMaxPanelsSpinBoxValueChanged(double val);
 
 private:
 

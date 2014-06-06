@@ -79,6 +79,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGui.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
+#include "Gui/SpinBox.h"
+#include "Gui/Button.h"
 #include "Gui/RotoGui.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
@@ -223,6 +225,9 @@ struct GuiPrivate {
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
     
+    Button* _clearAllPanelsButton;
+    SpinBox* _maxPanelsOpenedSpinBox;
+    
     ///The menu bar and all the menus
     QMenuBar *menubar;
     QMenu *menuFile;
@@ -257,6 +262,9 @@ struct GuiPrivate {
     AboutWindow* _aboutWindow;
     
     std::map<Natron::EffectInstance*,QProgressDialog*> _progressBars;
+    
+    ///list of the currently opened property panels
+    std::list<DockablePanel*> openedPanels;
     
     QString _openGLVersion;
     QString _glewVersion;
@@ -328,6 +336,8 @@ struct GuiPrivate {
     , _propertiesScrollArea(0)
     , _propertiesContainer(0)
     , _layoutPropertiesBin(0)
+    , _clearAllPanelsButton(0)
+    , _maxPanelsOpenedSpinBox(0)
     , menubar(0)
     , menuFile(0)
     , menuRecentFiles(0)
@@ -343,6 +353,7 @@ struct GuiPrivate {
     , _currentlyDraggedPanel(0)
     , _aboutWindow(0)
     , _progressBars()
+    , openedPanels()
     , _openGLVersion()
     , _glewVersion()
     {
@@ -829,7 +840,38 @@ void Gui::setupUi()
     _imp->_propertiesContainer->setLayout(_imp->_layoutPropertiesBin);
     _imp->_propertiesScrollArea->setWidget(_imp->_propertiesContainer);
     _imp->_propertiesScrollArea->setWidgetResizable(true);
-
+    
+    QWidget* propertiesAreaButtonsContainer = new QWidget(_imp->_propertiesContainer);
+    QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
+    propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
+    propertiesAreaButtonsLayout->setSpacing(5);
+    QPixmap closePanelPix;
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
+    _imp->_clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
+    _imp->_clearAllPanelsButton->setMaximumSize(15, 15);
+    _imp->_clearAllPanelsButton->setToolTip(Qt::convertFromPlainText("Clears all the panels in the properties bin pane.",
+                                                                     Qt::WhiteSpaceNormal));
+    QObject::connect(_imp->_clearAllPanelsButton,SIGNAL(clicked(bool)),this,SLOT(clearAllVisiblePanels()));
+    
+    
+    _imp->_maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
+    _imp->_maxPanelsOpenedSpinBox->setMaximumSize(15,15);
+    _imp->_maxPanelsOpenedSpinBox->setMinimum(0);
+    _imp->_maxPanelsOpenedSpinBox->setMaximum(100);
+    _imp->_maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText("Set the maximum of panels that can be opened at the same time "
+                                                                       "in the properties bin pane. The special value of 0 indicates "
+                                                                       "that an unlimited number of panels can be opened.",
+                                                                       Qt::WhiteSpaceNormal));
+    _imp->_maxPanelsOpenedSpinBox->setValue(appPTR->getCurrentSettings()->getMaxPanelsOpened());
+    QObject::connect(_imp->_maxPanelsOpenedSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onMaxPanelsSpinBoxValueChanged(double)));
+    
+    propertiesAreaButtonsLayout->addWidget(_imp->_maxPanelsOpenedSpinBox);
+    propertiesAreaButtonsLayout->addWidget(_imp->_clearAllPanelsButton);
+    propertiesAreaButtonsLayout->addStretch();
+    
+    _imp->_layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
+    
+    
     _imp->_propertiesPane->appendTab(_imp->_propertiesScrollArea);
     
     _imp->_middleRightSplitter->addWidget(_imp->_propertiesPane);
@@ -1072,12 +1114,13 @@ void Gui::updateViewsActions(int viewsCount){
 
 void Gui::putSettingsPanelFirst(DockablePanel* panel){
     _imp->_layoutPropertiesBin->removeWidget(panel);
-    _imp->_layoutPropertiesBin->insertWidget(0, panel);
+    _imp->_layoutPropertiesBin->insertWidget(1, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
 }
 
 void Gui::setVisibleProjectSettingsPanel() {
     putSettingsPanelFirst(_imp->_projectGui->getPanel());
+    addVisibleDockablePanel(_imp->_projectGui->getPanel());
     if(!_imp->_projectGui->isVisible()){
         _imp->_projectGui->setVisible(true);
     }
@@ -2413,4 +2456,50 @@ bool Gui::progressUpdate(Natron::EffectInstance* effect,double t)
     found->second->setValue(t * 100);
     QCoreApplication::processEvents();
     return true;
+}
+
+void Gui::addVisibleDockablePanel(DockablePanel* panel)
+{
+    assert(panel);
+    int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+    if ((int)_imp->openedPanels.size() == maxPanels && maxPanels != 0) {
+        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+        (*it)->closePanel();
+    }
+    _imp->openedPanels.push_back(panel);
+
+}
+
+void Gui::removeVisibleDockablePanel(DockablePanel* panel)
+{
+    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(),_imp->openedPanels.end(),panel);
+    if (it!=_imp->openedPanels.end()) {
+        _imp->openedPanels.erase(it);
+    }
+}
+
+void Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
+{
+    assert(maxPanels >= 0);
+    if (maxPanels == 0) {
+        return;
+    }
+    while ((int)_imp->openedPanels.size() > maxPanels) {
+        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+        (*it)->closePanel();
+    }
+    _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
+}
+
+void Gui::onMaxPanelsSpinBoxValueChanged(double val)
+{
+    appPTR->getCurrentSettings()->setMaxPanelsOpened((int)val);
+}
+
+void Gui::clearAllVisiblePanels()
+{
+    while (!_imp->openedPanels.empty()) {
+        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+        (*it)->closePanel();
+    }
 }

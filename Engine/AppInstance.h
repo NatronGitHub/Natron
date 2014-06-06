@@ -122,6 +122,8 @@ public:
      **/
     void checkForNewVersion() const;
     
+    virtual void onMaxPanelsOpenedChanged(int /*maxPanels*/) {}
+    
 public slots:
     
     void quit();

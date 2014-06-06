@@ -123,5 +123,6 @@
         <file>Resources/Images/rectangle.png</file>
         <file>Resources/Images/Keyer_low.png</file>
         <file>Resources/Images/Keyer.png</file>
+        <file>Resources/Images/closePanel.png</file>
     </qresource>
 </RCC>

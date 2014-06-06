@@ -122,6 +122,16 @@ void Settings::initializeKnobs(){
     _snapNodesToConnections->setAnimationEnabled(false);
     _generalTab->addKnob(_snapNodesToConnections);
     
+    _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of node settings panels opened");
+    _maxPanelsOpened->setHintToolTip("This property holds the number of node settings pnaels that can be "
+                                     "held by the properties dock at the same time."
+                                     "The special value of 0 indicates there can be an unlimited number of panels opened.");
+    _maxPanelsOpened->setAnimationEnabled(false);
+    _maxPanelsOpened->disableSlider();
+    _maxPanelsOpened->setMinimum(0);
+    _maxPanelsOpened->setMaximum(100);
+    _generalTab->addKnob(_maxPanelsOpened);
+    
     _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
     
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
@@ -265,6 +275,7 @@ void Settings::setDefaultValues() {
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
+    _maxPanelsOpened->setDefaultValue(10,0);
     _extraPluginPaths->setDefaultValue("",0);
     _texturesMode->setDefaultValue(0,0);
     _powerOf2Tiling->setDefaultValue(8,0);
@@ -308,6 +319,7 @@ void Settings::saveSettings(){
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
     settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
+    settings.setValue("MaxPanelsOpened", _maxPanelsOpened->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.endGroup();
     
@@ -376,6 +388,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("SnapToNode")) {
         _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
+    }
+    if (settings.contains("MaxPanelsOpened")) {
+        _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
     }
     if (settings.contains("ExtraPluginsPaths")) {
         _extraPluginPaths->setValue(settings.value("ExtraPluginsPaths").toString().toStdString(),0);
@@ -543,6 +558,8 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
         tryLoadOpenColorIOConfig();
     } else if (k == _maxUndoRedoNodeGraph.get()) {
         appPTR->setUndoRedoStackLimit(_maxUndoRedoNodeGraph->getValue());
+    } else if (k == _maxPanelsOpened.get()) {
+        appPTR->onMaxPanelsOpenedChanged(_maxPanelsOpened->getValue());
     }
 }
 
@@ -712,4 +729,14 @@ void Settings::setCheckUpdatesEnabled(bool enabled)
 {
     _checkForUpdates->setValue(enabled, 0);
     saveSettings();
+}
+
+int Settings::getMaxPanelsOpened() const
+{
+    return _maxPanelsOpened->getValue();
+}
+
+void Settings::setMaxPanelsOpened(int maxPanels)
+{
+    _maxPanelsOpened->setValue(maxPanels, 0);
 }

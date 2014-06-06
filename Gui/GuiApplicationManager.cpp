@@ -164,6 +164,10 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"close.png");
                 *pix = QPixmap::fromImage(img).scaled(15,15);
                 break;
+            case NATRON_PIXMAP_CLOSE_PANEL:
+                img.load(NATRON_IMAGES_PATH"closePanel.png");
+                *pix = QPixmap::fromImage(img).scaled(15,15);
+                break;
             case NATRON_PIXMAP_HELP_WIDGET:
                 img.load(NATRON_IMAGES_PATH"help.png");
                 *pix = QPixmap::fromImage(img).scaled(15,15);
