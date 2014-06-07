@@ -43,7 +43,8 @@ namespace Natron{
                  int channels,
                  int view,
                  const TextureRect& textureRect,
-                 const RenderScale& scale);
+                 const RenderScale& scale,
+                 int texIndex);
         
         void fillHash(Hash64* hash) const;
         
@@ -66,6 +67,7 @@ namespace Natron{
         int _view;
         TextureRect _textureRect; // texture rectangle definition (bounds in the original image + width and height)
         RenderScale _scale;
+        int _texIndex;
     };
 
     class FrameEntry : public CacheEntryHelper<U8,FrameKey>
@@ -91,7 +93,8 @@ namespace Natron{
                                 int channels,
                                 int view,
                                 const TextureRect& textureRect,
-                                const RenderScale& scale);
+                                const RenderScale& scale,
+                                int texIndex);
         
         static boost::shared_ptr<const FrameParams> makeParams(const RectI rod,
                                                                int bitDepth,

@@ -74,7 +74,7 @@ public:
      * to the current render scale.
      * Then it looks-up the ViewerCache to find an already existing frame,
      * in which case it copies directly the cached frame over to the PBO.
-     * Otherwise it just calls renderRoi(...) on the active input and
+     * Otherwise it just calls renderRoi(...) on the active input 
      * and then render to the PBO.
      **/
     Natron::Status renderViewer(SequenceTime time,bool singleThreaded,bool isSequentialRender) WARN_UNUSED_RETURN;
@@ -136,7 +136,7 @@ public:
      * than the one chosen by the user on the gui.
      * @return true if the point is inside the image and colors were set
     **/
-    bool getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear) WARN_UNUSED_RETURN;
+    bool getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex) WARN_UNUSED_RETURN;
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -150,6 +150,14 @@ public:
     void onGainChanged(double exp);
     
     void onColorSpaceChanged(ViewerInstance::ViewerColorSpace colorspace);
+    
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+    
+    void setInputA(int inputNb);
+    
+    void setInputB(int inputNb);
+    
+    void getActiveInputs(int& a,int &b) const;
 
 public slots:
 
@@ -168,11 +176,12 @@ public slots:
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
      * rendered image by the viewer.
      **/
-    boost::shared_ptr<Natron::Image> getLastRenderedImage() const;
+    boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
 
+    void executeDisconnectTextureRequestOnMainThread(int index);
 signals:
 
-    void rodChanged(RectI);
+    void rodChanged(RectI,int);
 
     void mustRedraw();
     
@@ -183,7 +192,10 @@ signals:
     void removedLRUCachedFrame();
 
     void clearedViewerCache();
-
+    
+    void activeInputsChanged();
+    
+    void disconnectTextureRequest(int index);
 private:
     /*******************************************
      *******OVERRIDEN FROM EFFECT INSTANCE******
@@ -218,6 +230,9 @@ private:
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     /*******************************************/
 
+    
+    Natron::Status renderViewer_internal(SequenceTime time,bool singleThreaded,bool isSequentialRender,
+                                         int textureIndex) WARN_UNUSED_RETURN;
 
 private:
     struct ViewerInstancePrivate;

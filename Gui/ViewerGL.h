@@ -71,12 +71,6 @@ public:
 
     void setTextFont(const QFont& f);
 
-    
-    /**
-     *@brief Toggles on/off the display on the viewer. If d is false then it will
-     *render black only.
-     **/
-    void setDisplayingImage(bool d);
 
     /**
      *@returns Returns true if the viewer is displaying something.
@@ -88,7 +82,7 @@ public:
      *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
      **/
     // MT-SAFE: don't return a reference
-    RectI getRoD() const ;
+    RectI getRoD(int textureIndex) const ;
     
     
     /**
@@ -145,7 +139,7 @@ public:
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      *of the ViewerGL.
      **/
-    void setInfoViewer(InfoViewerWidget* i);
+    void setInfoViewer(InfoViewerWidget* i,int textureIndex);
     
     /**
      *@brief Handy function that zoom automatically the viewer so it fit
@@ -174,9 +168,10 @@ public:
      * 3) glUnmapBuffer
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel) OVERRIDE FINAL;
+    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel,int textureIndex) OVERRIDE FINAL;
     
     
+    virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
      *@returns Returns true if the graphic card supports GLSL.
      **/
@@ -213,9 +208,9 @@ public:
      **/
     void zoomSlot(QString);
     
-    void setRegionOfDefinition(const RectI& rod);
+    void setRegionOfDefinition(const RectI& rod,int textureIndex);
     
-    virtual void updateColorPicker(int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
+    virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
     
         
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
@@ -231,6 +226,13 @@ public:
     virtual void removeGUI() OVERRIDE FINAL;
 
     virtual int getCurrentView() const OVERRIDE FINAL;
+    
+    /**
+     * @brief Reset the wipe position so it is in the center of the B input.
+     * If B input is disconnected it goes in the middle of the A input.
+     * Otherwise it goes in the middle of the project window
+     **/
+    void resetWipeControls();
     
 public:
 
@@ -302,8 +304,8 @@ signals:
     /**
      *@brief Signal emitted when the current data window changed.
      **/
-    void infoDataWindowChanged();
-    
+    void infoDataWindow1Changed();
+    void infoDataWindow2Changed();
     /**
      *@brief Signal emitted when the current zoom factor changed.
      **/
@@ -383,13 +385,13 @@ private:
     /**
      *@brief Starts using the RGB shader to display the frame
      **/
-    void activateShaderRGB();
+    void activateShaderRGB(int texIndex);
     
     /**
      *@brief Fill the rendering VAO with vertices and texture coordinates
      *that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel);
+    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex);
     
     /**
      *@brief Makes the viewer display black only.
@@ -404,12 +406,6 @@ private:
     QString getOpenGLVersionString() const;
     
     QString getGlewVersionString() const;
-    
-    /**
-     *@brief Initialises the black texture, drawn when the viewer is disconnected. It allows
-     *the coordinate tracker on the GUI to still work even when the viewer is not connected.
-     **/
-    void initBlackTex();// init the black texture when viewer is disconnected
     
     
     /**
@@ -426,6 +422,8 @@ private:
     void drawPickerRectangle();
     
     void drawPickerPixel();
+    
+    void drawWipeControl();
     
     /**
      *@brief Draws the persistent message if it is on.
@@ -450,7 +448,8 @@ private:
     
     bool isNearByUserRoIBottomLeft(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
 
-    void updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,int width,int height,const RectI& rod,const RectI& dispW);
+    void updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,int width,int height,
+                                     const RectI& rod,const RectI& dispW,int texIndex);
     void updateRectangleColorPicker();
     /**
      * @brief X and Y are in widget coords!

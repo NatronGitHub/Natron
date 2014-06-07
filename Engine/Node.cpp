@@ -887,10 +887,32 @@ bool Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
         }
         _imp->inputsQueue[inputNumber] = input;
     }
+    QObject::connect(input.get(), SIGNAL(nameChanged(QString)), this, SLOT(onInputNameChanged(QString)));
     emit inputChanged(inputNumber);
     onInputChanged(inputNumber);
     computeHash();
     return true;
+}
+
+void Node::onInputNameChanged(const QString& name)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    EffectInstance* inp = dynamic_cast<EffectInstance*>(sender());
+    assert(inp);
+    int inputNb = -1;
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
+            if (_imp->inputsQueue[i]->getLiveInstance() == inp) {
+                inputNb = i;
+                break;
+            }
+        }
+    }
+    if (inputNb != - 1) {
+        emit inputNameChanged(inputNb, name);
+    }
 }
 
 void Node::connectOutput(boost::shared_ptr<Node> output)
@@ -916,6 +938,7 @@ int Node::disconnectInput(int inputNumber)
         if (inputNumber < 0 || inputNumber > (int)_imp->inputsQueue.size() || _imp->inputsQueue[inputNumber] == NULL) {
             return -1;
         }
+        QObject::disconnect(_imp->inputsQueue[inputNumber].get(), SIGNAL(nameChanged(QString)), this, SLOT(onInputNameChanged(QString)));
         _imp->inputsQueue[inputNumber].reset();
     }
     emit inputChanged(inputNumber);
@@ -1733,6 +1756,11 @@ void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         int dim = knobs[i]->getDimension();
+        File_Knob* isFile = dynamic_cast<File_Knob*>(knobs[i].get());
+        if (isFile) {
+            ///skip file knobs
+            continue;
+        }
         for (int j = 0; j < dim ;++j) {
             KeyFrameSet kfs = knobs[i]->getCurve()->getKeyFrames_mt_safe();
             for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {

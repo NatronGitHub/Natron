@@ -532,6 +532,8 @@ public slots:
     
     void onMasterNodeDeactivated();
     
+    void onInputNameChanged(const QString& name);
+    
 signals:
     
     void knobsAgeChanged(U64 age);
@@ -557,6 +559,8 @@ signals:
     void canRedoChanged(bool);
     
     void nameChanged(QString);
+    
+    void inputNameChanged(int,QString);
     
     void refreshEdgesGUI();
 

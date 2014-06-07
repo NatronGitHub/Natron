@@ -56,6 +56,17 @@ CLANG_DIAG_ON(unused-private-field)
 
 using namespace Natron;
 
+namespace {
+struct InputName
+{
+    QString name;
+    EffectInstance* input;
+};
+typedef std::map<int,InputName> InputNamesMap;
+    
+
+}
+
 struct ViewerTabPrivate {
     
     /*OpenGL viewer*/
@@ -88,6 +99,12 @@ struct ViewerTabPrivate {
     bool _renderScaleActive;
     ComboBox* _renderScaleCombo;
     
+    QLabel* _firstInputLabel;
+    ComboBox* _firstInputImage;
+    ComboBox* _compositingOperator;
+    QLabel* _secondInputLabel;
+    ComboBox* _secondInputImage;
+    
     /*2nd row*/
     SpinBox* _gainBox;
     ScaleSliderQWidget* _gainSlider;
@@ -98,7 +115,7 @@ struct ViewerTabPrivate {
     int _currentViewIndex;
     QMutex _currentViewMutex;
     /*Infos*/
-    InfoViewerWidget* _infosWidget;
+    InfoViewerWidget* _infosWidget[2];
     
     
 	/*TimeLine buttons*/
@@ -128,6 +145,10 @@ struct ViewerTabPrivate {
     std::map<NodeGui*,RotoGui*> _rotoNodes;
     std::pair<NodeGui*,RotoGui*> _currentRoto;
     
+
+    InputNamesMap _inputNamesMap;
+    ViewerCompositingOperator _compOperator;
+    
     Gui* _gui;
     
     ViewerInstance* _viewerNode;// < pointer to the internal node
@@ -136,6 +157,7 @@ struct ViewerTabPrivate {
     : app(gui->getApp())
     , _renderScaleActive(false)
     , _currentViewIndex(0)
+    , _compOperator(OPERATOR_NONE)
     , _gui(gui)
     , _viewerNode(node)
     {
@@ -253,6 +275,34 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->_firstRowLayout->addStretch();
     
+    _imp->_firstInputLabel = new QLabel("A:",_imp->_firstSettingsRow);
+    _imp->_firstRowLayout->addWidget(_imp->_firstInputLabel);
+    
+    _imp->_firstInputImage = new ComboBox(_imp->_firstSettingsRow);
+    _imp->_firstInputImage->addItem(" - ");
+    QObject::connect(_imp->_firstInputImage,SIGNAL(currentIndexChanged(QString)),this,SLOT(onFirstInputNameChanged(QString)));
+    
+    _imp->_firstRowLayout->addWidget(_imp->_firstInputImage);
+    
+    _imp->_compositingOperator = new ComboBox(_imp->_firstSettingsRow);
+    QObject::connect(_imp->_compositingOperator,SIGNAL(currentIndexChanged(int)),this,SLOT(onCompositingOperatorIndexChanged(int)));
+    _imp->_compositingOperator->addItem(" - ",QIcon(),QKeySequence(),"Only the A input is used.");
+    _imp->_compositingOperator->addItem("Over",QIcon(),QKeySequence(),"A + B(1 - Aalpha)");
+    _imp->_compositingOperator->addItem("Under",QIcon(),QKeySequence(),"A(1 - Balpha) + B");
+    _imp->_compositingOperator->addItem("Minus",QIcon(),QKeySequence(),"A - B");
+    _imp->_compositingOperator->addItem("Wipe",QIcon(),QKeySequence(),"Wipe betweens A and B");
+    _imp->_firstRowLayout->addWidget(_imp->_compositingOperator);
+    
+    _imp->_secondInputLabel = new QLabel("B:",_imp->_firstSettingsRow);
+    _imp->_firstRowLayout->addWidget(_imp->_secondInputLabel);
+    
+    _imp->_secondInputImage = new ComboBox(_imp->_firstSettingsRow);
+    QObject::connect(_imp->_secondInputImage,SIGNAL(currentIndexChanged(QString)),this,SLOT(onSecondInputNameChanged(QString)));
+    _imp->_secondInputImage->addItem(" - ");
+    _imp->_firstRowLayout->addWidget(_imp->_secondInputImage);
+    
+    _imp->_firstRowLayout->addStretch();
+    
     /*2nd row of buttons*/
     _imp->_secondSettingsRow = new QWidget(this);
     _imp->_secondRowLayout = new QHBoxLayout(_imp->_secondSettingsRow);
@@ -329,10 +379,15 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_viewerSubContainerLayout->addWidget(_imp->viewer);
     
     /*info bbox & color*/
-    _imp->_infosWidget = new InfoViewerWidget(_imp->viewer,this);
-    //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
-    _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget);
-    _imp->viewer->setInfoViewer(_imp->_infosWidget);
+    for (int i = 0; i < 2 ; ++i) {
+        _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,this);
+        //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+        _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget[i]);
+        _imp->viewer->setInfoViewer(_imp->_infosWidget[i],i);
+        if (i == 1) {
+            _imp->_infosWidget[i]->hide();
+        }
+    }
     
     _imp->_viewerLayout->addWidget(_imp->_viewerSubContainer);
     
@@ -586,6 +641,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     
     /*slots & signals*/
+    boost::shared_ptr<Node> wrapperNode = _imp->_viewerNode->getNode();
+    QObject::connect(wrapperNode.get(),SIGNAL(inputChanged(int)),this,SLOT(onInputChanged(int)));
+    QObject::connect(wrapperNode.get(),SIGNAL(inputNameChanged(int,QString)),this,SLOT(onInputNameChanged(int,QString)));
+    QObject::connect(_imp->_viewerNode,SIGNAL(activeInputsChanged()),this,SLOT(onActiveInputsChanged()));
+    
     QObject::connect(_imp->_viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
                      SLOT(onColorSpaceComboBoxChanged(int)));
     QObject::connect(_imp->_zoomCombobox, SIGNAL(currentIndexChanged(QString)),_imp->viewer, SLOT(zoomSlot(QString)));
@@ -623,8 +683,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(_imp->_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
     QObject::connect(_imp->fpsBox, SIGNAL(valueChanged(double)), vengine, SLOT(setDesiredFPS(double)));
-    QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget, SLOT(setFps(double,double)));
-    QObject::connect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget,SLOT(hideFps()));
+    
+    manageSlotsForInfoWidget(0,true);
+    
     QObject::connect(vengine, SIGNAL(engineStarted(bool,int)), this, SLOT(onEngineStarted(bool,int)));
     QObject::connect(vengine, SIGNAL(engineStopped(int)), this, SLOT(onEngineStopped()));
     
@@ -1420,7 +1481,8 @@ void ViewerTab::onRenderScaleButtonClicked(bool checked)
 
 void ViewerTab::setInfoBarResolution(const Format& f)
 {
-    _imp->_infosWidget->setResolution(f);
+    _imp->_infosWidget[0]->setResolution(f);
+    _imp->_infosWidget[1]->setResolution(f);
 }
 
 void ViewerTab::createRotoInterface(NodeGui* n)
@@ -1584,4 +1646,207 @@ void ViewerTab::notifyAppClosing()
 {
     _imp->_gui = 0;
     _imp->app = 0;
+}
+
+void ViewerTab::onCompositingOperatorIndexChanged(int index)
+{
+    switch (index) {
+        case 0:
+            _imp->_compOperator = OPERATOR_NONE;
+            break;
+        case 1:
+            _imp->_compOperator = OPERATOR_OVER;
+            break;
+        case 2:
+            _imp->_compOperator = OPERATOR_UNDER;
+            break;
+        case 3:
+            _imp->_compOperator = OPERATOR_MINUS;
+            break;
+        case 4:
+            _imp->_compOperator = OPERATOR_WIPE;
+            break;
+        default:
+            break;
+    }
+    _imp->viewer->updateGL();
+}
+
+void ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
+{
+    int comboIndex ;
+    switch (op) {
+        case Natron::OPERATOR_NONE:
+            comboIndex = 0;
+            break;
+        case Natron::OPERATOR_OVER:
+            comboIndex = 1;
+            break;
+        case Natron::OPERATOR_UNDER:
+            comboIndex = 2;
+            break;
+        case Natron::OPERATOR_MINUS:
+            comboIndex = 3;
+            break;
+        case Natron::OPERATOR_WIPE:
+            comboIndex = 4;
+            break;
+        default:
+            break;
+    }
+    _imp->_compOperator = op;
+    _imp->_compositingOperator->setCurrentIndex_no_emit(comboIndex);
+    _imp->viewer->updateGL();
+}
+
+ViewerCompositingOperator ViewerTab::getCompositingOperator() const
+{
+    return _imp->_compOperator;
+}
+
+void ViewerTab::onFirstInputNameChanged(const QString& text)
+{
+    int inputIndex = -1;
+    for (InputNamesMap::iterator it = _imp->_inputNamesMap.begin(); it!= _imp->_inputNamesMap.end(); ++it) {
+        if (it->second.name == text) {
+            inputIndex = it->first;
+            break;
+        }
+    }
+    _imp->_viewerNode->setInputA(inputIndex);
+    _imp->_viewerNode->refreshAndContinueRender(false);
+}
+
+void ViewerTab::onSecondInputNameChanged(const QString& text)
+{
+    int inputIndex = -1;
+    for (InputNamesMap::iterator it = _imp->_inputNamesMap.begin(); it!= _imp->_inputNamesMap.end(); ++it) {
+        if (it->second.name == text) {
+            inputIndex = it->first;
+            break;
+        }
+    }
+    _imp->_viewerNode->setInputB(inputIndex);
+    if (inputIndex == -1) {
+        manageSlotsForInfoWidget(1, false);
+        _imp->_infosWidget[1]->hide();
+    } else {
+        if (!_imp->_infosWidget[1]->isVisible()) {
+            _imp->_infosWidget[1]->show();
+        }
+    }
+    _imp->_viewerNode->refreshAndContinueRender(false);
+}
+
+void ViewerTab::onActiveInputsChanged()
+{
+    int activeInputs[2];
+    _imp->_viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
+    InputNamesMap::iterator foundA = _imp->_inputNamesMap.find(activeInputs[0]);
+    if (foundA != _imp->_inputNamesMap.end()) {
+        int indexInA = _imp->_firstInputImage->itemIndex(foundA->second.name);
+        assert(indexInA != -1);
+        _imp->_firstInputImage->setCurrentIndex_no_emit(indexInA);
+    } else {
+        _imp->_firstInputImage->setCurrentIndex_no_emit(0);
+    }
+    
+    InputNamesMap::iterator foundB = _imp->_inputNamesMap.find(activeInputs[1]);
+    if (foundB != _imp->_inputNamesMap.end()) {
+        int currentIndex = _imp->_secondInputImage->activeIndex();
+        int indexInB = _imp->_secondInputImage->itemIndex(foundB->second.name);
+        if (currentIndex != indexInB) {
+            _imp->viewer->resetWipeControls();
+        }
+        if (currentIndex == 0 && indexInB != 0 && getCompositingOperator() != OPERATOR_WIPE) {
+            setCompositingOperator(OPERATOR_WIPE);
+        }
+        assert(indexInB != -1);
+        _imp->_secondInputImage->setCurrentIndex_no_emit(indexInB);
+        if (!_imp->_infosWidget[1]->isVisible()) {
+            _imp->_infosWidget[1]->show();
+            manageSlotsForInfoWidget(1, true);
+        }
+    } else {
+        _imp->_secondInputImage->setCurrentIndex_no_emit(0);
+        manageSlotsForInfoWidget(1, false);
+        _imp->_infosWidget[1]->hide();
+    }
+}
+
+void ViewerTab::onInputChanged(int inputNb)
+{
+    ///rebuild the name maps
+    EffectInstance* inp = _imp->_viewerNode->input(inputNb);
+    if (inp) {
+        InputNamesMap::iterator found = _imp->_inputNamesMap.find(inputNb);
+        if (found != _imp->_inputNamesMap.end()) {
+            const std::string& curInputName = found->second.input->getName();
+            found->second.input = inp;
+            int indexInA = _imp->_firstInputImage->itemIndex(curInputName.c_str());
+            int indexInB = _imp->_secondInputImage->itemIndex(curInputName.c_str());
+            assert(indexInA != -1 && indexInB != -1);
+            found->second.name = inp->getName().c_str();
+            _imp->_firstInputImage->setItemText(indexInA, found->second.name);
+            _imp->_secondInputImage->setItemText(indexInB, found->second.name);
+        } else {
+            InputName inpName;
+            inpName.input = inp;
+            inpName.name = inp->getName().c_str();
+            _imp->_inputNamesMap.insert(std::make_pair(inputNb,inpName));
+            _imp->_firstInputImage->addItem(inpName.name);
+            _imp->_secondInputImage->addItem(inpName.name);
+        }
+    } else {
+        InputNamesMap::iterator found = _imp->_inputNamesMap.find(inputNb);
+        
+        ///The input has been disconnected it must exist!
+        assert(found != _imp->_inputNamesMap.end());
+        const std::string& curInputName = found->second.input->getName();
+        _imp->_firstInputImage->removeItem(curInputName.c_str());
+        _imp->_secondInputImage->removeItem(curInputName.c_str());
+        _imp->_inputNamesMap.erase(found);
+    }
+}
+
+void ViewerTab::onInputNameChanged(int inputNb,const QString& name)
+{
+    InputNamesMap::iterator found = _imp->_inputNamesMap.find(inputNb);
+    assert(found != _imp->_inputNamesMap.end());
+    int indexInA = _imp->_firstInputImage->itemIndex(found->second.name);
+    int indexInB = _imp->_secondInputImage->itemIndex(found->second.name);
+    assert(indexInA != -1 && indexInB != -1);
+    _imp->_firstInputImage->setItemText(indexInA, found->second.name);
+    _imp->_secondInputImage->setItemText(indexInB, found->second.name);
+    found->second.name = name;
+    
+}
+
+void ViewerTab::manageSlotsForInfoWidget(int textureIndex,bool connect)
+{
+    VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
+    if (connect) {
+        QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget[textureIndex], SLOT(setFps(double,double)));
+        QObject::connect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget[textureIndex],SLOT(hideFps()));
+        QObject::connect(_imp->viewer,SIGNAL(infoMousePosChanged()), _imp->_infosWidget[textureIndex], SLOT(updateCoordMouse()));
+        QObject::connect(_imp->viewer,SIGNAL(infoColorUnderMouseChanged()),_imp->_infosWidget[textureIndex],SLOT(updateColor()));
+        QObject::connect(_imp->viewer,SIGNAL(infoResolutionChanged()),_imp->_infosWidget[textureIndex],SLOT(changeResolution()));
+        if (textureIndex == 0) {
+            QObject::connect(_imp->viewer,SIGNAL(infoDataWindow1Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData1Window()));
+        } else {
+            QObject::connect(_imp->viewer,SIGNAL(infoDataWindow2Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData2Window()));
+        }
+    } else {
+        QObject::disconnect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget[textureIndex], SLOT(setFps(double,double)));
+        QObject::disconnect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget[textureIndex],SLOT(hideFps()));
+        QObject::disconnect(_imp->viewer,SIGNAL(infoMousePosChanged()), _imp->_infosWidget[textureIndex], SLOT(updateCoordMouse()));
+        QObject::disconnect(_imp->viewer,SIGNAL(infoColorUnderMouseChanged()),_imp->_infosWidget[textureIndex],SLOT(updateColor()));
+        QObject::disconnect(_imp->viewer,SIGNAL(infoResolutionChanged()),_imp->_infosWidget[textureIndex],SLOT(changeResolution()));
+        if (textureIndex == 0) {
+            QObject::disconnect(_imp->viewer,SIGNAL(infoDataWindow1Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData1Window()));
+        } else {
+            QObject::disconnect(_imp->viewer,SIGNAL(infoDataWindow2Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData2Window()));
+        }
+
+    }
 }

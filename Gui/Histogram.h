@@ -58,7 +58,7 @@ public slots:
     void computeHistogramAndRefresh(bool forceEvenIfNotVisible = false);
 
     void populateViewersChoices();
-    
+        
 #endif
     
     void onDisplayModeChanged(QAction*);

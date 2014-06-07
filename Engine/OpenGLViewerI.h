@@ -74,13 +74,18 @@ public:
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
     **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel) = 0;
+    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel,int textureIndex) = 0;
+    
+    /**
+     * @brief Called when the input of a viewer should render black.
+     **/
+    virtual void disconnectInputTexture(int textureIndex) = 0;
 
     /**
      * @brief This function should update the color picker values (as a label or numbers) right away.
      * If x and y are INT_MAX then the viewer should just use the current position of the cursor.
     **/
-    virtual void updateColorPicker(int x = INT_MAX,int y = INT_MAX) = 0;
+    virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) = 0;
 
     /**
      * @brief Make the OpenGL context current to the thread.

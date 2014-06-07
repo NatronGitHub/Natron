@@ -44,7 +44,8 @@ public slots:
     void updateColor();
     void updateCoordMouse();
     void changeResolution();
-    void changeDataWindow();
+    void changeData1Window();
+    void changeData2Window();
     void changeUserRect();
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();

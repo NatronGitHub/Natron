@@ -227,6 +227,15 @@ namespace Natron{
         ImageComponentRGB,
         ImageComponentRGBA
     };
+    
+    enum ViewerCompositingOperator
+    {
+        OPERATOR_NONE,
+        OPERATOR_OVER,
+        OPERATOR_MINUS,
+        OPERATOR_UNDER,
+        OPERATOR_WIPE
+    };
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

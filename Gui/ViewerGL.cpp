@@ -71,6 +71,15 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define USER_ROI_SELECTION_POINT_SIZE 8.f
 #define USER_ROI_CLICK_TOLERANCE 8.f
 
+#define WIPE_MIX_HANDLE_LENGTH 50.
+#define WIPE_ROTATE_HANDLE_LENGTH 100.
+#define WIPE_ROTATE_OFFSET 30
+
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
 
@@ -97,7 +106,17 @@ enum MOUSE_STATE{
     DRAGGING_ROI_CROSS,
     PICKING_COLOR,
     BUILDING_PICKER_RECTANGLE,
+    DRAGGING_WIPE_CENTER,
+    DRAGGING_WIPE_MIX_HANDLE,
+    ROTATING_WIPE_HANDLE,
     UNDEFINED};
+    
+enum HOVER_STATE{
+    HOVERING_NOTHING = 0,
+    HOVERING_WIPE_MIX,
+    HOVERING_WIPE_ROTATE_HANDLE
+    
+};
 } // namespace
 
 enum PickerState {
@@ -113,23 +132,22 @@ struct ViewerGL::Implementation {
     , vboVerticesId(0)
     , vboTexturesId(0)
     , iboTriangleStripId(0)
-    , defaultDisplayTexture(0)
-    , blackTex(0)
+    , activeTextures()
+    , displayTextures()
     , shaderRGB(0)
     , shaderBlack(0)
     , shaderLoaded(false)
-    , infoViewer(0)
+    , infoViewer()
     , viewerTab(parent)
     , zoomOrPannedSinceLastFit(false)
     , oldClick()
     , blankViewerInfos()
-    , displayingImage(false)
-    , displayingImageGain(1.)
-    , displayingImageOffset(0.)
+    , displayingImageGain()
+    , displayingImageOffset()
     , displayingImageMipMapLevel(0)
     , displayingImageLut(ViewerInstance::sRGB)
-    , must_initBlackTex(true)
     , ms(UNDEFINED)
+    , hs(HOVERING_NOTHING)
     , textRenderingColor(200,200,200,255)
     , displayWindowOverlayColor(125,125,125,255)
     , rodOverlayColor(100,100,100,255)
@@ -154,7 +172,19 @@ struct ViewerGL::Implementation {
     , userRoI() // protected by mutex
     , zoomCtx() // protected by mutex
     , clipToDisplayWindow(true) // protected by mutex
+    , wipeControlsMutex()
+    , mixAmount(1.) // protected by mutex
+    , wipeAngle(M_PI / 2.) // protected by mutex
+    , wipeCenter()
     {
+        infoViewer[0] = 0;
+        infoViewer[1] = 0;
+        displayTextures[0] = 0;
+        displayTextures[1] = 0;
+        activeTextures[0] = 0;
+        activeTextures[1] = 0;
+        displayingImageGain[0] = displayingImageGain[1] = 1.;
+        displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         assert(qApp && qApp->thread() == QThread::currentThread());
     }
 
@@ -166,26 +196,25 @@ struct ViewerGL::Implementation {
     GLuint vboVerticesId; //!< VBO holding the vertices for the texture mapping.
     GLuint vboTexturesId; //!< VBO holding texture coordinates.
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
-    Texture* defaultDisplayTexture;/*!< A pointer to the current texture used to display.*/
-    Texture* blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
+    
+    Texture* activeTextures[2];/*!< A pointer to the current textures used to display. One for A and B. May point to blackTex */
+    Texture* displayTextures[2];/*!< A pointer to the textures that would be used if A and B are displayed*/
     QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
     QGLShaderProgram* shaderBlack;/*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
-    InfoViewerWidget* infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
+    InfoViewerWidget* infoViewer[2];/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
     ViewerTab* const viewerTab;/*!< Pointer to the viewer tab GUI*/
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
     QPoint oldClick;
     ImageInfo blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
 
-    bool displayingImage;/*!< True if the viewer is connected and not displaying black.*/
-    double displayingImageGain;
-    double displayingImageOffset;
+    double displayingImageGain[2];
+    double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
     ViewerInstance::ViewerColorSpace displayingImageLut;
-    bool must_initBlackTex;
 
     MOUSE_STATE ms;/*!< Holds the mouse state*/
-
+    HOVER_STATE hs;
 
     const QColor textRenderingColor;
     const QColor displayWindowOverlayColor;
@@ -213,9 +242,9 @@ struct ViewerGL::Implementation {
     QPoint lastMousePosition;
     
     /////// currentViewerInfos
-    ImageInfo currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
-    QString currentViewerInfos_btmLeftBBOXoverlay;/*!< The string holding the bottom left corner coordinates of the dataWindow*/
-    QString currentViewerInfos_topRightBBOXoverlay;/*!< The string holding the top right corner coordinates of the dataWindow*/
+    ImageInfo currentViewerInfos[2];/*!< Pointer to the ViewerInfos  used for rendering*/
+    QString currentViewerInfos_btmLeftBBOXoverlay[2];/*!< The string holding the bottom left corner coordinates of the dataWindow*/
+    QString currentViewerInfos_topRightBBOXoverlay[2];/*!< The string holding the top right corner coordinates of the dataWindow*/
     QString currentViewerInfos_resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
 
     ///////Picker infos, used only by the main-thread
@@ -230,13 +259,27 @@ struct ViewerGL::Implementation {
     RectI userRoI; //< in canonical coords
 
     ZoomContext zoomCtx;/*!< All zoom related variables are packed into this object. */
-    QMutex zoomCtxMutex; /// protectx zoomCtx*
+    mutable QMutex zoomCtxMutex; /// protectx zoomCtx*
 
     QMutex clipToDisplayWindowMutex;
     bool clipToDisplayWindow;
  
+    
+    mutable QMutex wipeControlsMutex;
+    double mixAmount; /// the amount of the second input to blend, by default 1.
+    double wipeAngle; /// the angle to the X axis
+    QPointF wipeCenter; /// the center of the wipe control
+    
+    
+    bool isNearbyWipeCenter(const QPointF& pos,double tolerance) const;
+    bool isNearbyWipeRotateBar(const QPointF& pos,double tolerance) const;
+    bool isNearbyWipeMixHandle(const QPointF& pos,double tolerance) const;
+    
+    void drawArcOfCircle(const QPointF& center,double radius,double startAngle,double endAngle);
+
 };
 
+#if 0
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
  the texture format GL_UNSIGNED_INT_8_8_8_8_REV
@@ -249,7 +292,7 @@ toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
-
+#endif
 //static const GLfloat renderingTextureCoordinates[32] = {
 //    0 , 1 , //0
 //    0 , 1 , //1
@@ -296,7 +339,7 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  |/  |/  |/  |
  12--13--14--15
  */
-void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
+void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -304,7 +347,11 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
-    const TextureRect &r = _imp->displayingImage ? _imp->defaultDisplayTexture->getTextureRect() : _imp->blackTex->getTextureRect();
+    const TextureRect &r = _imp->activeTextures[textureIndex]->getTextureRect();
+    
+    ///The compositing operator to apply to the second texture
+    ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
+    assert(textureIndex == 0 || (textureIndex == 1 && compOp != OPERATOR_NONE));
     
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
@@ -312,7 +359,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     
     
     ///the RoD of the iamge in canonical coords.
-    RectI rod = getRoD();
+    RectI rod = getRoD(textureIndex);
     bool clipToDisplayWindow;
     {
         QMutexLocker l(&_imp->clipToDisplayWindowMutex);
@@ -355,28 +402,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
         texRectClipped.intersect(rod, &texRectClipped);
     }
     
-    
-    ///Vertices are in canonical coords
-    GLfloat vertices[32] = {
-        (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
-        (GLfloat)texRectClipped.x1       , (GLfloat)rod.top()  , //1
-        (GLfloat)texRectClipped.x2 , (GLfloat)rod.top()  , //2
-        (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
-        (GLfloat)rod.left(), (GLfloat)texRectClipped.y2, //4
-        (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y2, //5
-        (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y2, //6
-        (GLfloat)rod.right(),(GLfloat)texRectClipped.y2, //7
-        (GLfloat)rod.left() ,(GLfloat)texRectClipped.y1      , //8
-        (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y1      , //9
-        (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y1      , //10
-        (GLfloat)rod.right(),(GLfloat)texRectClipped.y1      , //11
-        (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
-        (GLfloat)texRectClipped.x1      ,  (GLfloat)rod.bottom(), //13
-        (GLfloat)texRectClipped.x2,  (GLfloat)rod.bottom(), //14
-        (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
-    };
-    
-   
     ////The texture real size (r.w,r.h) might be slightly bigger than the actual
     ////pixel coordinates bounds r.x1,r.x2 r.y1 r.y2 because we clipped these bounds against the pixelRoD
     ////in the ViewerInstance::renderViewer function. That means we need to draw actually only the part of
@@ -388,67 +413,317 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel)
     texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
     texLeft = 0;
     texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
-    
-    ///Now  the texture coordinates must be adjusted according to the clipping we applied.
-    GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
+
     
     assert((texRect.y2  - texRect.y1) > 0 &&(texRect.x2  - texRect.x1) > 0 &&
            (texRectClipped.y1 - texRect.y1) <= (texRect.y2 - texRect.y1) &&
            (texRectClipped.x1 - texRect.x1) <= (texRect.x2 - texRect.x1) &&
            texRectClipped.y2 <= texRect.y2 &&
            texRectClipped.x2 <= texRect.x2);
-    
-    texBottomTmp = (GLfloat)(texRectClipped.y1 - texRect.y1) / (GLfloat) (texRect.y2 - texRect.y1) * (texTop - texBottom);
-    texTopTmp = (GLfloat)(texRectClipped.y2 - texRect.y1) / (GLfloat) (texRect.y2  - texRect.y1) * (texTop - texBottom);
-    texLeftTmp = (GLfloat)(texRectClipped.x1 - texRect.x1) / (GLfloat) (texRect.x2 - texRect.x1) * (texRight - texLeft);
-    texRightTmp = (GLfloat)(texRectClipped.x2  - texRect.x1) / (GLfloat) (texRect.x2  - texRect.x1) * (texRight - texLeft);
-    texBottom = texBottomTmp;
-    texTop = texTopTmp;
-    texLeft = texLeftTmp;
-    texRight = texRightTmp;
-    
-    GLfloat renderingTextureCoordinates[32] = {
-        texLeft , texTop , //0
-        texLeft , texTop , //1
-        texRight , texTop ,//2
-        texRight , texTop , //3
-        texLeft , texTop , //4
-        texLeft , texTop , //5
-        texRight , texTop , //6
-        texRight , texTop , //7
-        texLeft , texBottom , //8
-        texLeft , texBottom , //9
-        texRight , texBottom ,  //10
-        texRight , texBottom , //11
-        texLeft , texBottom , // 12
-        texLeft , texBottom , //13
-        texRight , texBottom , //14
-        texRight , texBottom   //15
-    };
-    
-    glCheckError();
 
-    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 0, 0);
     
-    glBindBuffer(GL_ARRAY_BUFFER, _imp->vboTexturesId);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), renderingTextureCoordinates);
-    glClientActiveTexture(GL_TEXTURE0);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glTexCoordPointer(2, GL_FLOAT, 0 , 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER,0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
-    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
-    glCheckErrorIgnoreOSXBug();
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glCheckError();
+    bool useStandardTexDrawing = true;
+    if (textureIndex == 1) {
+        useStandardTexDrawing = false;
+        /// draw only  the plane defined by the wipe handle
+        QPointF wipeCenter;
+        double wipeAngle;
+        double wipeMix;
+        {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            wipeCenter = _imp->wipeCenter;
+            wipeAngle = _imp->wipeAngle;
+            wipeMix = _imp->mixAmount;
+        }
+        ///Compute a second point on the plane separator line
+        ///we don't really care how far it is from the center point, it just has to be on the line
+        QPointF firstPoint,secondPoint;
+        double mpi2 = M_PI / 2.;
+        
+        ///extrapolate the line to at least twice the maximum size of the RoD so we're sure the line
+        ///intersection algorithm works
+        double maxSize = std::max(rod.x2 - rod.x1,rod.y2 - rod.y1) * 2.;
+        firstPoint.setX(wipeCenter.x() - std::cos(wipeAngle + mpi2) * maxSize);
+        firstPoint.setY(wipeCenter.y() - std::sin(wipeAngle + mpi2) * maxSize);
+        secondPoint.setX(wipeCenter.x() + std::cos(wipeAngle + mpi2) * maxSize);
+        secondPoint.setY(wipeCenter.y() + std::sin(wipeAngle + mpi2) * maxSize);
+        
+        QLineF inter(firstPoint,secondPoint);
+        QLineF::IntersectType intersectionTypes[4];
+        QPointF intersections[4];
+        
+        QLineF topEdge(texRectClipped.x1,texRectClipped.y2,texRectClipped.x2,texRectClipped.y2);
+        QLineF rightEdge(texRectClipped.x2,texRectClipped.y2,texRectClipped.x2,texRectClipped.y1);
+        QLineF bottomEdge(texRectClipped.x2,texRectClipped.y1,texRectClipped.x1,texRectClipped.y1);
+        QLineF leftEdge(texRectClipped.x1,texRectClipped.y1,texRectClipped.x1,texRectClipped.y2);
+        
+        bool crossingTop = false,crossingRight = false,crossingLeft = false,crossingBtm = false;
+        int validIntersectionsIndex[2];
+        validIntersectionsIndex[0] = validIntersectionsIndex[1] = -1;
+        int numIntersec = 0;
+        intersectionTypes[0] = inter.intersect(topEdge, &intersections[0]);
+        if (intersectionTypes[0] == QLineF::BoundedIntersection) {
+            validIntersectionsIndex[numIntersec] = 0;
+            crossingTop = true;
+            ++numIntersec;
+        }
+        intersectionTypes[1] = inter.intersect(rightEdge, &intersections[1]);
+        if (intersectionTypes[1]  == QLineF::BoundedIntersection) {
+            validIntersectionsIndex[numIntersec] = 1;
+            crossingRight = true;
+            ++numIntersec;
+        }
+        intersectionTypes[2] = inter.intersect(bottomEdge, &intersections[2]);
+        if (intersectionTypes[2]  == QLineF::BoundedIntersection) {
+            validIntersectionsIndex[numIntersec] = 2;
+            crossingBtm = true;
+            ++numIntersec;
+        }
+        intersectionTypes[3] = inter.intersect(leftEdge, &intersections[3]);
+        if (intersectionTypes[3]  == QLineF::BoundedIntersection) {
+            validIntersectionsIndex[numIntersec] = 3;
+            crossingLeft = true;
+            ++numIntersec;
+        }
+        
+        assert(numIntersec == 0 || numIntersec == 2);
+        
+        ///determine the orientation of the planes
+        double crossProd  = (secondPoint.x() - wipeCenter.x()) * (texRectClipped.y1 - wipeCenter.y())
+        - (secondPoint.y() - wipeCenter.y()) * (texRectClipped.x1 - wipeCenter.x());
+        if (numIntersec == 0) {
+            
+            ///the bottom left corner is on the left plane
+            if (crossProd > 0 && (wipeCenter.x() >= texRectClipped.x2 || wipeCenter.y() >= texRectClipped.y2)) {
+                ///the plane is invisible because the wipe handle is below or on the left of the texRectClipped
+                return;
+            }
+            ///otherwise we draw the entire texture as usual
+            useStandardTexDrawing = true;
+        } else {
+            ///we have 2 intersects
+            assert(validIntersectionsIndex[0] != -1 && validIntersectionsIndex[1] != -1);
+            QPolygonF polygonPoints;
+            bool isBottomLeftOnLeftPlane = crossProd > 0;
+            
+            ///there are 6 cases
+            if (crossingBtm && crossingLeft) {
+                if (isBottomLeftOnLeftPlane) {
+                    //btm intersect is the first
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                    polygonPoints.insert(4 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[0]]);
+                } else {
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
+                }
+                
+            } else if (crossingBtm && crossingTop) {
+                if (isBottomLeftOnLeftPlane) {
+                    ///btm intersect is the second
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+                    
+                } else {
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+                }
+            } else if (crossingBtm && crossingRight) {
+                if (isBottomLeftOnLeftPlane) {
+                    ///btm intersect is the second
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[1]]);
+                } else {
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                    polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[1]]);
+                }
+                
+            } else if (crossingLeft && crossingTop) {
+                if (isBottomLeftOnLeftPlane) {
+                    ///left intersect is the second
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[1]]);
+                } else {
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                    polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[1]]);
+                }
+            } else if (crossingLeft && crossingRight) {
+                if (isBottomLeftOnLeftPlane) {
+                    ///left intersect is the second
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+                    
+                } else {
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+                }
+            } else if (crossingTop && crossingRight) {
+                if (isBottomLeftOnLeftPlane) {
+                    ///right is second
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(1 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                    polygonPoints.insert(2 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
+                } else {
+                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
+                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                    polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[0]]);
+                }
+            } else {
+                assert(false);
+            }
+            
+            QPolygonF polygonTexCoords(polygonPoints.size());
+            for (int i = 0; i < polygonPoints.size(); ++i) {
+                const QPointF& polygonPoint = polygonPoints.at(i);
+                QPointF texCoord;
+                texCoord.setX((polygonPoint.x() - texRect.x1) / (texRect.x2 - texRect.x1) * (texRight - texLeft));
+                texCoord.setY((polygonPoint.y() - texRect.y1) / (texRect.y2 - texRect.y1) * (texTop - texBottom));
+                polygonTexCoords[i] = texCoord;
+            }
+            
+            
+            
+            glPushAttrib(GL_COLOR_BUFFER_BIT);
+            glEnable(GL_BLEND);
+            glBlendColor(1, 1, 1, wipeMix);
+#pragma message WARN("There might be bugs left here I did it fast")
+            if (compOp == OPERATOR_WIPE) {
+                glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
+            } else if (compOp == OPERATOR_OVER) {
+                glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
+            } else if (compOp == OPERATOR_UNDER) {
+                glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+            } else if (compOp == OPERATOR_MINUS) {
+                glBlendFunc(GL_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
+                glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+            }
+            glBegin(GL_POLYGON);
+            for (int i = 0; i < polygonTexCoords.size(); ++i) {
+                const QPointF& tCoord = polygonTexCoords[i];
+                const QPointF& vCoord = polygonPoints[i];
+                glTexCoord2d(tCoord.x(), tCoord.y());
+                glVertex2d(vCoord.x(), vCoord.y());
+            }
+            glEnd();
+            glDisable(GL_BLEND);
+            glPopAttrib();
+        }
+    }
+    
+    if (useStandardTexDrawing) {
+        ///Vertices are in canonical coords
+        GLfloat vertices[32] = {
+            (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
+            (GLfloat)texRectClipped.x1       , (GLfloat)rod.top()  , //1
+            (GLfloat)texRectClipped.x2 , (GLfloat)rod.top()  , //2
+            (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
+            (GLfloat)rod.left(), (GLfloat)texRectClipped.y2, //4
+            (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y2, //5
+            (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y2, //6
+            (GLfloat)rod.right(),(GLfloat)texRectClipped.y2, //7
+            (GLfloat)rod.left() ,(GLfloat)texRectClipped.y1      , //8
+            (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y1      , //9
+            (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y1      , //10
+            (GLfloat)rod.right(),(GLfloat)texRectClipped.y1      , //11
+            (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
+            (GLfloat)texRectClipped.x1      ,  (GLfloat)rod.bottom(), //13
+            (GLfloat)texRectClipped.x2,  (GLfloat)rod.bottom(), //14
+            (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
+        };
+        
+        
+        
+        ///Now  the texture coordinates must be adjusted according to the clipping we applied.
+        GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
+        
+        texBottomTmp = (GLfloat)(texRectClipped.y1 - texRect.y1) / (GLfloat) (texRect.y2 - texRect.y1) * (texTop - texBottom);
+        texTopTmp = (GLfloat)(texRectClipped.y2 - texRect.y1) / (GLfloat) (texRect.y2  - texRect.y1) * (texTop - texBottom);
+        texLeftTmp = (GLfloat)(texRectClipped.x1 - texRect.x1) / (GLfloat) (texRect.x2 - texRect.x1) * (texRight - texLeft);
+        texRightTmp = (GLfloat)(texRectClipped.x2  - texRect.x1) / (GLfloat) (texRect.x2  - texRect.x1) * (texRight - texLeft);
+        texBottom = texBottomTmp;
+        texTop = texTopTmp;
+        texLeft = texLeftTmp;
+        texRight = texRightTmp;
+        
+        GLfloat renderingTextureCoordinates[32] = {
+            texLeft , texTop , //0
+            texLeft , texTop , //1
+            texRight , texTop ,//2
+            texRight , texTop , //3
+            texLeft , texTop , //4
+            texLeft , texTop , //5
+            texRight , texTop , //6
+            texRight , texTop , //7
+            texLeft , texBottom , //8
+            texLeft , texBottom , //9
+            texRight , texBottom ,  //10
+            texRight , texBottom , //11
+            texLeft , texBottom , // 12
+            texLeft , texBottom , //13
+            texRight , texBottom , //14
+            texRight , texBottom   //15
+        };
+        
+        
+        
+        glCheckError();
+        
+        glBindBuffer(GL_ARRAY_BUFFER, _imp->vboVerticesId);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(2, GL_FLOAT, 0, 0);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, _imp->vboTexturesId);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), renderingTextureCoordinates);
+        glClientActiveTexture(GL_TEXTURE0);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glTexCoordPointer(2, GL_FLOAT, 0 , 0);
+        
+        glBindBuffer(GL_ARRAY_BUFFER,0);
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imp->iboTriangleStripId);
+        glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
+        glCheckErrorIgnoreOSXBug();
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glCheckError();
+    }
+    
 }
 
 #if 0
@@ -509,10 +784,12 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 
     _imp->blankViewerInfos.setRoD(projectFormat);
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
-    setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
+    setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),0);
+    setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),1);
+    resetWipeControls();
     onProjectFormatChanged(projectFormat);
     
-    QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectI)), this, SLOT(setRegionOfDefinition(RectI)));
+    QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectI,int)), this, SLOT(setRegionOfDefinition(RectI,int)));
 
 }
 
@@ -532,8 +809,8 @@ ViewerGL::~ViewerGL()
         delete _imp->shaderBlack;
         
     }
-    delete _imp->blackTex;
-    delete _imp->defaultDisplayTexture;
+    delete _imp->displayTextures[0]; 
+    delete _imp->displayTextures[1];
     glCheckError();
     for(U32 i = 0; i < _imp->pboIds.size();++i){
         glDeleteBuffers(1,&_imp->pboIds[i]);
@@ -567,19 +844,6 @@ void ViewerGL::setTextFont(const QFont& f)
     *_imp->textFont = f;
 }
 
-/**
- *@brief Toggles on/off the display on the viewer. If d is false then it will
- *render black only.
- **/
-void ViewerGL::setDisplayingImage(bool d)
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->displayingImage = d;
-    if (!_imp->displayingImage) {
-        _imp->must_initBlackTex = true;
-    };
-}
 
 /**
  *@returns Returns true if the viewer is displaying something.
@@ -588,7 +852,7 @@ bool ViewerGL::displayingImage() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    return _imp->displayingImage;
+    return _imp->activeTextures[0] != 0 || _imp->activeTextures[1] != 0;
 }
 
 void ViewerGL::resizeGL(int width, int height)
@@ -622,9 +886,7 @@ void ViewerGL::paintGL()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     glCheckError();
-    if (_imp->must_initBlackTex) {
-        initBlackTex();
-    }
+   
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
 
@@ -652,42 +914,33 @@ void ViewerGL::paintGL()
     glCheckErrorIgnoreOSXBug();
     
     glEnable (GL_TEXTURE_2D);
-    if(_imp->displayingImage) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _imp->defaultDisplayTexture->getTexID());
-        // debug (so the OpenGL debugger can make a breakpoint here)
-        //GLfloat d;
-        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-        if (_imp->supportsGLSL) {
-            activateShaderRGB();
-        }
-        glCheckError();
-    } else {
-        glBindTexture(GL_TEXTURE_2D, _imp->blackTex->getTexID());
-        glCheckError();
-        if (_imp->supportsGLSL && !_imp->shaderBlack->bind()) {
-            cout << qPrintable(_imp->shaderBlack->log()) << endl;
-            glCheckError();
-        }
-        if(_imp->supportsGLSL) {
-            _imp->shaderBlack->setUniformValue("Tex", 0);
-        }
-        glCheckError();
-    }
-
     
-    drawRenderingVAO(_imp->displayingImageMipMapLevel);
-    glCheckError();
-
-    if (_imp->displayingImage) {
-        if (_imp->supportsGLSL) {
-            _imp->shaderRGB->release();
+    for (int i = 0; i < 2 ;++i ){
+        if (i == 1 && _imp->viewerTab->getCompositingOperator() == OPERATOR_NONE) {
+            break;
         }
-    } else {
-        if (_imp->supportsGLSL)
-            _imp->shaderBlack->release();
+        if(_imp->activeTextures[i]) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, _imp->activeTextures[i]->getTexID());
+            // debug (so the OpenGL debugger can make a breakpoint here)
+            //GLfloat d;
+            //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+            if (_imp->supportsGLSL) {
+                activateShaderRGB(i);
+            }
+            
+            glCheckError();
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,i);
+            
+            if (_imp->supportsGLSL) {
+                _imp->shaderRGB->release();
+            }
+            glCheckError();
+            glBindTexture(GL_TEXTURE_2D, 0);
+            
+        }
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
+    
 
     glCheckError();
     if (_imp->overlay) {
@@ -756,46 +1009,48 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     
     glEnd();
     glCheckErrorIgnoreOSXBug();
-
-    RectI dataW = getRoD();
-
-    if(dataW != dispW){
+    
+    for (int i = 0 ; i< 2 ;++i) {
+        RectI dataW = getRoD(i);
         
-        
-        renderText(dataW.right(), dataW.top(),
-                   _imp->currentViewerInfos_topRightBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
-        renderText(dataW.left(), dataW.bottom(),
-                   _imp->currentViewerInfos_btmLeftBBOXoverlay, _imp->rodOverlayColor,*_imp->textFont);
-        
-        
-        
-        QPoint topRight2(dataW.right(), dataW.top());
-        QPoint topLeft2(dataW.left(),dataW.top());
-        QPoint btmLeft2(dataW.left(),dataW.bottom() );
-        QPoint btmRight2(dataW.right(),dataW.bottom() );
-        glPushAttrib(GL_LINE_BIT);
-        glLineStipple(2, 0xAAAA);
-        glEnable(GL_LINE_STIPPLE);
-        glBegin(GL_LINES);
-        glColor4f( _imp->rodOverlayColor.redF(),
-                  _imp->rodOverlayColor.greenF(),
-                  _imp->rodOverlayColor.blueF(),
-                  _imp->rodOverlayColor.alphaF() );
-        glVertex3f(btmRight2.x(),btmRight2.y(),1);
-        glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
-        
-        glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
-        glVertex3f(topLeft2.x(),topLeft2.y(),1);
-        
-        glVertex3f(topLeft2.x(),topLeft2.y(),1);
-        glVertex3f(topRight2.x(),topRight2.y(),1);
-        
-        glVertex3f(topRight2.x(),topRight2.y(),1);
-        glVertex3f(btmRight2.x(),btmRight2.y(),1);
-        glEnd();
-        glDisable(GL_LINE_STIPPLE);
-        glPopAttrib();
-        glCheckError();
+        if(dataW != dispW){
+            
+            
+            renderText(dataW.right(), dataW.top(),
+                       _imp->currentViewerInfos_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
+            renderText(dataW.left(), dataW.bottom(),
+                       _imp->currentViewerInfos_btmLeftBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
+            
+            
+            
+            QPoint topRight2(dataW.right(), dataW.top());
+            QPoint topLeft2(dataW.left(),dataW.top());
+            QPoint btmLeft2(dataW.left(),dataW.bottom() );
+            QPoint btmRight2(dataW.right(),dataW.bottom() );
+            glPushAttrib(GL_LINE_BIT);
+            glLineStipple(2, 0xAAAA);
+            glEnable(GL_LINE_STIPPLE);
+            glBegin(GL_LINES);
+            glColor4f( _imp->rodOverlayColor.redF(),
+                      _imp->rodOverlayColor.greenF(),
+                      _imp->rodOverlayColor.blueF(),
+                      _imp->rodOverlayColor.alphaF() );
+            glVertex3f(btmRight2.x(),btmRight2.y(),1);
+            glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
+            
+            glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
+            glVertex3f(topLeft2.x(),topLeft2.y(),1);
+            
+            glVertex3f(topLeft2.x(),topLeft2.y(),1);
+            glVertex3f(topRight2.x(),topRight2.y(),1);
+            
+            glVertex3f(topRight2.x(),topRight2.y(),1);
+            glVertex3f(btmRight2.x(),btmRight2.y(),1);
+            glEnd();
+            glDisable(GL_LINE_STIPPLE);
+            glPopAttrib();
+            glCheckError();
+        }
     }
     
     bool userRoIEnabled;
@@ -805,6 +1060,11 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     }
     if (userRoIEnabled) {
         drawUserRoI();
+    }
+    
+    ViewerCompositingOperator compOperator = _imp->viewerTab->getCompositingOperator();
+    if (compOperator != OPERATOR_NONE) {
+        drawWipeControl();
     }
     
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
@@ -941,6 +1201,148 @@ void ViewerGL::drawUserRoI()
     glEnd();
 }
 
+void ViewerGL::drawWipeControl()
+{
+    double wipeAngle;
+    QPointF wipeCenter;
+    double mixAmount;
+    {
+        QMutexLocker l(&_imp->wipeControlsMutex);
+        wipeAngle = _imp->wipeAngle;
+        wipeCenter = _imp->wipeCenter;
+        mixAmount = _imp->mixAmount;
+    }
+    double alphaMix1,alphaMix0,alphaCurMix;
+    double mpi8 = M_PI / 8;
+    alphaMix1 = wipeAngle + mpi8;
+    alphaMix0 = wipeAngle + 3. * mpi8;
+    alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
+    QPointF mix0Pos,mixPos,mix1Pos;
+    
+    double mixLength,rotateLenght,rotateOffset,zoomFactor;
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        zoomFactor = _imp->zoomCtx.factor();
+    }
+    mixLength = WIPE_MIX_HANDLE_LENGTH / zoomFactor;
+    rotateLenght = WIPE_ROTATE_HANDLE_LENGTH / zoomFactor,
+    rotateOffset = WIPE_ROTATE_OFFSET / zoomFactor;
+    
+
+    
+    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixLength);
+    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixLength);
+    mix0Pos.setX(wipeCenter.x() + std::cos(alphaMix0) * mixLength);
+    mix0Pos.setY(wipeCenter.y() + std::sin(alphaMix0) * mixLength);
+    mix1Pos.setX(wipeCenter.x() + std::cos(alphaMix1) * mixLength);
+    mix1Pos.setY(wipeCenter.y() + std::sin(alphaMix1) * mixLength);
+    
+    QPointF oppositeAxisBottom,oppositeAxisTop,rotateAxisLeft,rotateAxisRight;
+    rotateAxisRight.setX(wipeCenter.x() + std::cos(wipeAngle) * (rotateLenght - rotateOffset));
+    rotateAxisRight.setY(wipeCenter.y() + std::sin(wipeAngle) * (rotateLenght - rotateOffset));
+    rotateAxisLeft.setX(wipeCenter.x() - std::cos(wipeAngle) * rotateOffset);
+    rotateAxisLeft.setY(wipeCenter.y() - (std::sin(wipeAngle) * rotateOffset));
+    
+    oppositeAxisTop.setX(wipeCenter.x() + std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
+    oppositeAxisTop.setY(wipeCenter.y() + std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
+    oppositeAxisBottom.setX(wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
+    oppositeAxisBottom.setY(wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
+    
+    glLineWidth(2);
+    glBegin(GL_LINES);
+    if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
+        glColor4f(0., 1., 0., 1.);
+    } else {
+        glColor4f(0.8, 0.8, 0.8, 1.);
+    }
+    glVertex2d(rotateAxisLeft.x(), rotateAxisLeft.y());
+    glVertex2d(rotateAxisRight.x(), rotateAxisRight.y());
+    glColor4f(0.8, 0.8, 0.8, 1.);
+    glVertex2d(oppositeAxisBottom.x(), oppositeAxisBottom.y());
+    glVertex2d(oppositeAxisTop.x(), oppositeAxisTop.y());
+    glVertex2d(wipeCenter.x(),wipeCenter.y());
+    glVertex2d(mixPos.x(), mixPos.y());
+    glEnd();
+    glLineWidth(1.);
+
+    ///if hovering the rotate handle or dragging it show a small bended arrow
+    if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
+        
+        glColor4f(0., 1., 0., 1.);
+        double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
+        ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
+        OfxPointD arrowRadius;
+        arrowRadius.x = 5. / zoomFactor;
+        arrowRadius.y = 10. / zoomFactor;
+        
+        glPushMatrix ();
+        glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
+        glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
+        //  center the oval at x_center, y_center
+        glTranslatef (arrowCenterX, 0., 0);
+        //  draw the oval using line segments
+        glBegin (GL_LINE_STRIP);
+        glVertex2f (0, arrowRadius.y);
+        glVertex2f (arrowRadius.x, 0.);
+        glVertex2f (0, -arrowRadius.y);
+        glEnd ();
+        
+        
+        glBegin(GL_LINES);
+        ///draw the top head
+        glVertex2f(0., arrowRadius.y);
+        glVertex2f(0., arrowRadius.y -  arrowRadius.x );
+        
+        glVertex2f(0., arrowRadius.y);
+        glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
+        
+        ///draw the bottom head
+        glVertex2f(0., -arrowRadius.y);
+        glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
+        
+        glVertex2f(0., -arrowRadius.y);
+        glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
+        
+        glEnd();
+        
+        glPopMatrix ();
+    }
+    
+    glPointSize(5.);
+    glBegin(GL_POINTS);
+    glVertex2d(wipeCenter.x(), wipeCenter.y());
+    if ((_imp->hs == HOVERING_WIPE_MIX && _imp->ms != ROTATING_WIPE_HANDLE) || _imp->ms == DRAGGING_WIPE_MIX_HANDLE) {
+        glColor4f(0., 1., 0., 1.);
+    } else {
+        glColor4f(0.8, 0.8, 0.8, 1.);
+    }
+    glVertex2d(mixPos.x(), mixPos.y());
+    glEnd();
+    glPointSize(1.);
+    
+    _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+    
+}
+
+void ViewerGL::Implementation::drawArcOfCircle(const QPointF& center,double radius,double startAngle,double endAngle)
+{
+    double alpha = startAngle;
+    double x,y;
+    if (hs == HOVERING_WIPE_MIX || ms == DRAGGING_WIPE_MIX_HANDLE) {
+        glColor3f(0, 1, 0);
+    } else {
+        glColor3f(0.8, 0.8, 0.8);
+    }
+    glBegin(GL_POINTS);
+    while (alpha <= endAngle) {
+        x = center.x()  + radius * std::cos(alpha);
+        y = center.y()  + radius * std::sin(alpha);
+        glVertex2d(x, y);
+        alpha += 0.01;
+    }
+    glEnd();
+}
+
 void ViewerGL::drawPickerRectangle()
 {
     glColor3f(0.9, 0.7, 0.);
@@ -1053,8 +1455,8 @@ void ViewerGL::initializeGL()
     assert(qApp && qApp->thread() == QThread::currentThread());
 	makeCurrent();
     initAndCheckGlExtensions();
-    _imp->blackTex = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
-    _imp->defaultDisplayTexture = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
+    _imp->displayTextures[0] = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
+    _imp->displayTextures[1] = new Texture(GL_TEXTURE_2D,GL_LINEAR,GL_NEAREST);
     
     
     // glGenVertexArrays(1, &_vaoId);
@@ -1081,7 +1483,6 @@ void ViewerGL::initializeGL()
         glCheckError();
     }
     
-    initBlackTex();
     glCheckError();
 }
 
@@ -1247,13 +1648,12 @@ void ViewerGL::initAndCheckGlExtensions()
 }
 
 
-void ViewerGL::activateShaderRGB()
+void ViewerGL::activateShaderRGB(int texIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(QGLContext::currentContext() == context());
 
-    assert(_imp->displayingImage);
     // we assume that:
     // - 8-bits textures are stored non-linear and must be displayer as is
     // - floating-point textures are linear and must be decompressed according to the given lut
@@ -1268,8 +1668,8 @@ void ViewerGL::activateShaderRGB()
     }
     
     _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("gain", (float)_imp->displayingImageGain);
-    _imp->shaderRGB->setUniformValue("offset", (float)_imp->displayingImageOffset);
+    _imp->shaderRGB->setUniformValue("gain", (float)_imp->displayingImageGain[texIndex]);
+    _imp->shaderRGB->setUniformValue("offset", (float)_imp->displayingImageOffset[texIndex]);
     _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->displayingImageLut);
 
     
@@ -1330,37 +1730,10 @@ void ViewerGL::restoreGLState()
     glPopAttrib();
 }
 
-void ViewerGL::initBlackTex()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    assert(QGLContext::currentContext() == context());
-    
-    TextureRect texSize(0, 0, 2048, 1556,2048,1556,1);
-    
-    glCheckErrorAssert();
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(0));
-    glCheckError();
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.x2 * texSize.y2 *sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
-    glCheckError();
-    U32* frameData = (U32*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    glCheckError();
-    assert(frameData);
-    for(int i = 0 ; i < texSize.x2 * texSize.y2 ; ++i) {
-        frameData[i] = toBGRA(0, 0, 0, 255);
-    }
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-    glCheckError();
-    _imp->blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
-    
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    glCheckError();
-    _imp->must_initBlackTex = false;
-}
 
 
 
-void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel)
+void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t bytesCount, const TextureRect& region, double gain, double offset, int lut, int pboIndex,unsigned int mipMapLevel,int textureIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1385,28 +1758,40 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     glCheckError();
     
     OpenGLViewerI::BitDepth bd = getBitDepth();
+    assert(textureIndex == 0 || textureIndex == 1);
     if (bd == OpenGLViewerI::BYTE) {
-        _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::BYTE);
     } else if(bd == OpenGLViewerI::FLOAT || bd == OpenGLViewerI::HALF_FLOAT) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        _imp->defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region,Texture::FLOAT);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glCheckError();
-    _imp->displayingImage = true;
-    _imp->displayingImageGain = gain;
-    _imp->displayingImageOffset = offset;
+    _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
+    _imp->displayingImageGain[textureIndex] = gain;
+    _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
 
     emit imageChanged();
 }
 
+void ViewerGL::disconnectInputTexture(int textureIndex)
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(textureIndex == 0 || textureIndex == 1);
+    _imp->activeTextures[textureIndex] = 0;
+    
+}
+
 void ViewerGL::setGain(double d)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->displayingImageGain = d;
+    _imp->displayingImageGain[0] = d;
+    _imp->displayingImageGain[1] = d;
 }
 
 void ViewerGL::setLut(int lut)
@@ -1453,7 +1838,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-    RectI rod = getRoD();
+    RectI rod = getRoD(0);
 
     RectI userRoI;
     {
@@ -1480,14 +1865,26 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     
     if (event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-        _imp->displayingImage) {
+        displayingImage()) {
         _imp->pickerState = PICKER_INACTIVE;
         updateGL();
     }
     
-    if(event->button() == Qt::LeftButton &&
+    double wipeSelectionTol;
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        wipeSelectionTol = 8. / _imp->zoomCtx.factor();
+    }
+    
+    if (_imp->overlay && event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
+        _imp->ms = DRAGGING_WIPE_CENTER;
+    } else if (_imp->overlay &&  event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+        _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
+    } else if (_imp->overlay &&  event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+        _imp->ms = ROTATING_WIPE_HANDLE;
+    }  else if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-              _imp->displayingImage && mouseInDispW) {
+              displayingImage() && mouseInDispW) {
         _imp->pickerState = PICKER_POINT;
         if (pickColor(event->x(),event->y())) {
             _imp->ms = PICKING_COLOR;
@@ -1495,7 +1892,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         }
     } else if (event->button() == Qt::LeftButton &&
                event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
-               _imp->displayingImage && mouseInDispW) {
+               displayingImage() && mouseInDispW) {
         _imp->pickerState = PICKER_RECTANGLE;
         _imp->pickerRect.setTopLeft(zoomPos);
         _imp->pickerRect.setBottomRight(zoomPos);
@@ -1571,8 +1968,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     Format dispW = getDisplayWindow();
-    RectI rod = getRoD();
-    updateInfoWidgetColorPicker(zoomPos, event->pos(),width(),height(),rod,dispW);
+    for (int i = 0; i< 2; ++i) {
+        RectI rod = getRoD(i);
+        updateInfoWidgetColorPicker(zoomPos, event->pos(),width(),height(),rod,dispW,i);
+    }
     //update the cursor if it is hovering an overlay and we're not dragging the image
     bool userRoIEnabled;
     RectI userRoI;
@@ -1582,30 +1981,53 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         userRoIEnabled = _imp->userRoIEnabled;
     }
 
-    if (_imp->ms != DRAGGING_IMAGE && _imp->overlay && userRoIEnabled) {
-        if (isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-            || isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-            || _imp->ms == DRAGGING_ROI_BOTTOM_EDGE
-            || _imp->ms == DRAGGING_ROI_TOP_EDGE) {
-            setCursor(QCursor(Qt::SizeVerCursor));
-        } else if(isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || _imp->ms == DRAGGING_ROI_LEFT_EDGE
-                  || _imp->ms == DRAGGING_ROI_RIGHT_EDGE) {
-            setCursor(QCursor(Qt::SizeHorCursor));
-        } else if(isNearByUserRoIMiddleHandle(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || _imp->ms == DRAGGING_ROI_CROSS) {
+    bool mustRedraw = false;
+    bool wasHovering = _imp->hs != HOVERING_NOTHING;
+    
+    if (_imp->ms != DRAGGING_IMAGE && _imp->overlay) {
+        
+        double wipeSelectionTol;
+        {
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            wipeSelectionTol = 8 / _imp->zoomCtx.factor();
+        }
+        
+        _imp->hs = HOVERING_NOTHING;
+        if (_imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
             setCursor(QCursor(Qt::SizeAllCursor));
-        } else if(isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || isNearByUserRoITopLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || _imp->ms == DRAGGING_ROI_BOTTOM_RIGHT) {
-            setCursor(QCursor(Qt::SizeFDiagCursor));
-
-        } else if(isNearByUserRoIBottomLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || isNearByUserRoITopRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                  || _imp->ms == DRAGGING_ROI_BOTTOM_LEFT) {
-            setCursor(QCursor(Qt::SizeBDiagCursor));
-
+        } else if (_imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+            _imp->hs = HOVERING_WIPE_MIX;
+            mustRedraw = true;
+        } else if (_imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+            _imp->hs = HOVERING_WIPE_ROTATE_HANDLE;
+            mustRedraw = true;
+        } else if (userRoIEnabled) {
+            if (isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                || isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                || _imp->ms == DRAGGING_ROI_BOTTOM_EDGE
+                || _imp->ms == DRAGGING_ROI_TOP_EDGE) {
+                setCursor(QCursor(Qt::SizeVerCursor));
+            } else if(isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || _imp->ms == DRAGGING_ROI_LEFT_EDGE
+                      || _imp->ms == DRAGGING_ROI_RIGHT_EDGE) {
+                setCursor(QCursor(Qt::SizeHorCursor));
+            } else if(isNearByUserRoIMiddleHandle(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || _imp->ms == DRAGGING_ROI_CROSS) {
+                setCursor(QCursor(Qt::SizeAllCursor));
+            } else if(isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || isNearByUserRoITopLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || _imp->ms == DRAGGING_ROI_BOTTOM_RIGHT) {
+                setCursor(QCursor(Qt::SizeFDiagCursor));
+                
+            } else if(isNearByUserRoIBottomLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || isNearByUserRoITopRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                      || _imp->ms == DRAGGING_ROI_BOTTOM_LEFT) {
+                setCursor(QCursor(Qt::SizeBDiagCursor));
+                
+            } else {
+                setCursor(QCursor(Qt::ArrowCursor));
+            }
         } else {
             setCursor(QCursor(Qt::ArrowCursor));
         }
@@ -1613,6 +2035,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         setCursor(QCursor(Qt::ArrowCursor));
     }
 
+    if (_imp->hs == HOVERING_NOTHING && wasHovering) {
+        mustRedraw = true;
+    }
+    
     QPoint newClick = event->pos();
     QPoint oldClick = _imp->oldClick;
 
@@ -1636,11 +2062,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->zoomCtx.translate(dx, dy);
             }
             _imp->oldClick = newClick;
-            if(_imp->displayingImage){
+            if(displayingImage()){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
             //  else {
-            updateGL();
+            mustRedraw = true;
             // }
             _imp->zoomOrPannedSinceLastFit = true;
             // no need to update the color picker or mouse posn: they should be unchanged
@@ -1650,10 +2076,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
                 _imp->userRoI.y1 -= dySinceLastMove;
                 l.unlock();
-                if(_imp->displayingImage){
+                if(displayingImage()){
                     _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
-                updateGL();
+                mustRedraw = true;
             }
         } break;
         case DRAGGING_ROI_LEFT_EDGE: {
@@ -1661,10 +2087,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             if ((_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
                 _imp->userRoI.x1 -= dxSinceLastMove;
                 l.unlock();
-                if(_imp->displayingImage){
+                if(displayingImage()){
                     _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
-                updateGL();
+                mustRedraw = true;
             }
         } break;
         case DRAGGING_ROI_RIGHT_EDGE: {
@@ -1672,10 +2098,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
                 _imp->userRoI.x2 -= dxSinceLastMove;
                 l.unlock();
-                if(_imp->displayingImage){
+                if(displayingImage()){
                     _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
-                updateGL();
+                mustRedraw = true;
             }
         } break;
         case DRAGGING_ROI_TOP_EDGE: {
@@ -1683,10 +2109,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             if ((_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
                 _imp->userRoI.y2 -= dySinceLastMove;
                 l.unlock();
-                if(_imp->displayingImage){
+                if(displayingImage()){
                     _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
                 }
-                updateGL();
+                mustRedraw = true;
             }
         } break;
         case DRAGGING_ROI_CROSS: {
@@ -1694,10 +2120,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 QMutexLocker l(&_imp->userRoIMutex);
                 _imp->userRoI.move(-dxSinceLastMove,-dySinceLastMove);
             }
-            if(_imp->displayingImage){
+            if(displayingImage()){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
-            updateGL();
+            mustRedraw = true;
         } break;
         case DRAGGING_ROI_TOP_LEFT: {
             QMutexLocker l(&_imp->userRoIMutex);
@@ -1708,10 +2134,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.x1 -= dxSinceLastMove;
             }
             l.unlock();
-            if(_imp->displayingImage){
+            if(displayingImage()){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
-            updateGL();
+            mustRedraw = true;
         } break;
         case DRAGGING_ROI_TOP_RIGHT: {
             QMutexLocker l(&_imp->userRoIMutex);
@@ -1722,10 +2148,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.x2 -= dxSinceLastMove;
             }
             l.unlock();
-            if(_imp->displayingImage){
+            if(displayingImage()){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
-            updateGL();        } break;
+            mustRedraw = true;
+        } break;
         case DRAGGING_ROI_BOTTOM_RIGHT: {
             QMutexLocker l(&_imp->userRoIMutex);
             if ((_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
@@ -1735,10 +2162,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.y1 -= dySinceLastMove;
             }
             l.unlock();
-            if(_imp->displayingImage){
+            if(displayingImage()){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
-            updateGL();        } break;
+            mustRedraw = true;
+        } break;
         case DRAGGING_ROI_BOTTOM_LEFT: {
             if ((_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
                 _imp->userRoI.y1 -= dySinceLastMove;
@@ -1747,29 +2175,62 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
                 _imp->userRoI.x1 -= dxSinceLastMove;
             }
             _imp->userRoIMutex.unlock();
-            if(_imp->displayingImage){
+            if(displayingImage()){
                 _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
             }
-            updateGL();
+            mustRedraw = true;
         } break;
+        case DRAGGING_WIPE_CENTER: {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            _imp->wipeCenter.rx() -= dxSinceLastMove;
+            _imp->wipeCenter.ry() -= dySinceLastMove;
+            mustRedraw = true;
+        }   break;
+        case DRAGGING_WIPE_MIX_HANDLE: {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            
+            double angle = std::atan2(zoomPos.y() - _imp->wipeCenter.y() , zoomPos.x() - _imp->wipeCenter.x());
+            double prevAngle = std::atan2(oldPosition_opengl.y() - _imp->wipeCenter.y() ,
+                                          oldPosition_opengl.x() - _imp->wipeCenter.x());
+            _imp->mixAmount -= (angle - prevAngle);
+            _imp->mixAmount = std::max(0.,std::min(_imp->mixAmount,1.));
+            mustRedraw = true;
+            
+        }   break;
+        case ROTATING_WIPE_HANDLE: {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            double angle = std::atan2(zoomPos.y() - _imp->wipeCenter.y() , zoomPos.x() - _imp->wipeCenter.x());
+            _imp->wipeAngle = angle;
+            double mpi2 = M_PI / 2.;
+            double closestPI2 = mpi2 * std::floor((_imp->wipeAngle + M_PI / 4.) / mpi2);
+            if (std::fabs(_imp->wipeAngle - closestPI2) < 0.1) {
+                // snap to closest multiple of PI / 2.
+                _imp->wipeAngle = closestPI2;
+            }
+
+            mustRedraw = true;
+        }   break;
         case PICKING_COLOR: {
             pickColor(newClick.x(), newClick.y());
-            updateGL();
+            mustRedraw = true;
         }   break;
         case BUILDING_PICKER_RECTANGLE: {
             QPointF btmRight = _imp->pickerRect.bottomRight();
             btmRight.rx() -= dxSinceLastMove;
             btmRight.ry() -= dySinceLastMove;
             _imp->pickerRect.setBottomRight(btmRight);
-            updateGL();
+            mustRedraw = true;
         } break;
         default: {
             if (_imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
-                updateGL();
+                mustRedraw = true;
             }
         } break;
     }
   
+    if (mustRedraw) {
+        updateGL();
+    }
     _imp->lastMousePosition = newClick;
     //FIXME: This is bugged, somehow we can't set our custom picker cursor...
 //    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
@@ -1794,7 +2255,7 @@ void ViewerGL::mouseDoubleClickEvent(QMouseEvent* event)
     QGLWidget::mouseDoubleClickEvent(event);
 }
 
-void ViewerGL::updateColorPicker(int x,int y)
+void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
 {
     if (_imp->pickerState != PICKER_INACTIVE) {
         return;
@@ -1802,8 +2263,8 @@ void ViewerGL::updateColorPicker(int x,int y)
 
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (!_imp->displayingImage && _imp->infoViewer->colorAndMouseVisible()) {
-        _imp->infoViewer->hideColorAndMouseInfo();
+    if (!displayingImage() && _imp->infoViewer[textureIndex]->colorAndMouseVisible()) {
+        _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
         return;
     }
     
@@ -1835,7 +2296,7 @@ void ViewerGL::updateColorPicker(int x,int y)
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     
-    RectI rod = getRoD();
+    RectI rod = getRoD(0);
     Format dispW = getDisplayWindow();
     if (imgPos.x() >= rod.left() &&
         imgPos.x() < rod.right() &&
@@ -1855,19 +2316,19 @@ void ViewerGL::updateColorPicker(int x,int y)
             if (mipMapLevel != 0) {
                 imgPos /= (1 << mipMapLevel);
             }
-            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
+            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,textureIndex);
         }
         
     }
     if (!picked) {
-		if (_imp->infoViewer->colorAndMouseVisible()) {
-			_imp->infoViewer->hideColorAndMouseInfo();
+		if (_imp->infoViewer[textureIndex]->colorAndMouseVisible()) {
+			_imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
 		}
     } else {
-		if (!_imp->infoViewer->colorAndMouseVisible()) {
-			_imp->infoViewer->showColorAndMouseInfo();
+		if (!_imp->infoViewer[textureIndex]->colorAndMouseVisible()) {
+			_imp->infoViewer[textureIndex]->showColorAndMouseInfo();
 		}
-        _imp->infoViewer->setColor(r,g,b,a);
+        _imp->infoViewer[textureIndex]->setColor(r,g,b,a);
         emit infoColorUnderMouseChanged();
     }
 }
@@ -1908,7 +2369,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
 
     _imp->zoomOrPannedSinceLastFit = true;
 
-    if (_imp->displayingImage) {
+    if (displayingImage()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
     updateGL();
@@ -1936,7 +2397,7 @@ void ViewerGL::zoomSlot(int v)
         _imp->zoomCtx.zoom(centerX, centerY, scale);
     }
 
-    if(_imp->displayingImage){
+    if(displayingImage()){
         // appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     } else {
@@ -1962,7 +2423,7 @@ void ViewerGL::fitImageToFormat()
     assert(qApp && qApp->thread() == QThread::currentThread());
     double w,h,zoomPAR;
     
-    const Format& format = _imp->currentViewerInfos.getDisplayWindow();
+    const Format& format = _imp->currentViewerInfos[0].getDisplayWindow();
     h = format.height();
     w = format.width();
     zoomPAR = format.getPixelAspect();
@@ -2023,15 +2484,12 @@ void ViewerGL::turnOffOverlay()
     _imp->overlay=false;
 }
 
-void ViewerGL::setInfoViewer(InfoViewerWidget* i )
+void ViewerGL::setInfoViewer(InfoViewerWidget* i,int textureIndex )
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->infoViewer = i;
-    QObject::connect(this,SIGNAL(infoMousePosChanged()), _imp->infoViewer, SLOT(updateCoordMouse()));
-    QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_imp->infoViewer,SLOT(updateColor()));
-    QObject::connect(this,SIGNAL(infoResolutionChanged()),_imp->infoViewer,SLOT(changeResolution()));
-    QObject::connect(this,SIGNAL(infoDataWindowChanged()),_imp->infoViewer,SLOT(changeDataWindow()));
+    _imp->infoViewer[textureIndex] = i;
+
 }
 
 
@@ -2040,44 +2498,52 @@ void ViewerGL::disconnectViewer()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     if (displayingImage()) {
-        setRegionOfDefinition(_imp->blankViewerInfos.getRoD());
+        setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),0);
+        setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),1);
     }
+    resetWipeControls();
     clearViewer();
 }
 
 
 
 /*The dataWindow of the currentFrame(BBOX)*/
-RectI ViewerGL::getRoD() const
+RectI ViewerGL::getRoD(int textureIndex) const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    return _imp->currentViewerInfos.getRoD();
+    return _imp->currentViewerInfos[textureIndex].getRoD();
 }
 
-/*The displayWindow of the currentFrame(Resolution)*/
+/*The displayWindow of the currentFrame(Resolution)
+ This is the same for both as we only use the display window as to indicate the project window.*/
 Format ViewerGL::getDisplayWindow() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    return _imp->currentViewerInfos.getDisplayWindow();
+    return _imp->currentViewerInfos[0].getDisplayWindow();
 }
 
 
-void ViewerGL::setRegionOfDefinition(const RectI& rod)
+void ViewerGL::setRegionOfDefinition(const RectI& rod,int textureIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->currentViewerInfos.setRoD(rod);
-    emit infoDataWindowChanged();
-    _imp->currentViewerInfos_btmLeftBBOXoverlay.clear();
-    _imp->currentViewerInfos_btmLeftBBOXoverlay.append(QString::number(rod.left()));
-    _imp->currentViewerInfos_btmLeftBBOXoverlay.append(",");
-    _imp->currentViewerInfos_btmLeftBBOXoverlay.append(QString::number(rod.bottom()));
-    _imp->currentViewerInfos_topRightBBOXoverlay.clear();
-    _imp->currentViewerInfos_topRightBBOXoverlay.append(QString::number(rod.right()));
-    _imp->currentViewerInfos_topRightBBOXoverlay.append(",");
-    _imp->currentViewerInfos_topRightBBOXoverlay.append(QString::number(rod.top()));
+    _imp->currentViewerInfos[textureIndex].setRoD(rod);
+    if (textureIndex == 0) {
+        emit infoDataWindow1Changed();
+    } else {
+        assert(textureIndex == 1);
+        emit infoDataWindow2Changed();
+    }
+    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].clear();
+    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(rod.left()));
+    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(rod.bottom()));
+    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].clear();
+    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(QString::number(rod.right()));
+    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(",");
+    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(QString::number(rod.top()));
 }
 
 
@@ -2089,7 +2555,8 @@ void ViewerGL::onProjectFormatChanged(const Format& format)
     _imp->blankViewerInfos.setRoD(format);
     emit infoResolutionChanged();
     
-    _imp->currentViewerInfos.setDisplayWindow(format);
+    _imp->currentViewerInfos[0].setDisplayWindow(format);
+    _imp->currentViewerInfos[1].setDisplayWindow(format);
     _imp->currentViewerInfos_resolutionOverlay.clear();
     _imp->currentViewerInfos_resolutionOverlay.append(QString::number(format.width()));
     _imp->currentViewerInfos_resolutionOverlay.append("x");
@@ -2100,7 +2567,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format)
         fitImageToFormat();
     }
     
-    if(_imp->displayingImage) {
+    if(displayingImage()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
 
@@ -2140,9 +2607,8 @@ void ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (_imp->displayingImage) {
-        setDisplayingImage(false);
-    }
+    _imp->activeTextures[0] = 0;
+    _imp->activeTextures[1] = 0;
     updateGL();
 }
 
@@ -2185,7 +2651,8 @@ void ViewerGL::leaveEvent(QEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->infoViewer->hideColorAndMouseInfo();
+    _imp->infoViewer[0]->hideColorAndMouseInfo();
+    _imp->infoViewer[1]->hideColorAndMouseInfo();
     QGLWidget::leaveEvent(event);
 }
 
@@ -2345,7 +2812,7 @@ void ViewerGL::setUserRoIEnabled(bool b)
         QMutexLocker(&_imp->userRoIMutex);
         _imp->userRoIEnabled = b;
     }
-    if (_imp->displayingImage) {
+    if (displayingImage()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
     }
     update();
@@ -2600,27 +3067,31 @@ bool ViewerGL::pickColor(double x,double y)
     
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-    bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear);
-    if (picked) {
-        QColor pickerColor;
-        pickerColor.setRedF(clamp(r));
-        pickerColor.setGreenF(clamp(g));
-        pickerColor.setBlueF(clamp(b));
-        pickerColor.setAlphaF(clamp(a));
-        _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
-        _imp->infoViewer->setColor(r,g,b,a);
-        emit infoColorUnderMouseChanged();
-        return true;
-    } else {
-        if (_imp->infoViewer->colorAndMouseVisible()) {
-            _imp->infoViewer->hideColorAndMouseInfo();
+    bool ret = false;
+    for (int i = 0; i< 2 ;++i ) {
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,i);
+        if (picked) {
+            QColor pickerColor;
+            pickerColor.setRedF(clamp(r));
+            pickerColor.setGreenF(clamp(g));
+            pickerColor.setBlueF(clamp(b));
+            pickerColor.setAlphaF(clamp(a));
+            _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+            _imp->infoViewer[i]->setColor(r,g,b,a);
+            emit infoColorUnderMouseChanged();
+            ret = true;
+        } else {
+            if (_imp->infoViewer[i]->colorAndMouseVisible()) {
+                _imp->infoViewer[i]->hideColorAndMouseInfo();
+            }
         }
-        return false;
     }
+    return ret;
 }
 
 void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,
-                                                           int width,int height,const RectI& rod,const RectI& dispW)
+                                           int width,int height,const RectI& rod,const RectI& dispW,
+                                           int texIndex)
 {
     
     
@@ -2637,31 +3108,31 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
             imgPos.x() >= dispW.right() ||
             imgPos.y() < dispW.bottom() ||
             imgPos.y() >= dispW.top())) {
-                if (_imp->infoViewer->colorAndMouseVisible()) {
-                    _imp->infoViewer->hideColorAndMouseInfo();
+                if (_imp->infoViewer[texIndex]->colorAndMouseVisible()) {
+                    _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
                 }
             } else {
                 
                 if (_imp->pickerState == PICKER_INACTIVE) {
                     boost::shared_ptr<VideoEngine> videoEngine = _imp->viewerTab->getInternalNode()->getVideoEngine();
                     if (!videoEngine->isWorking()) {
-                        updateColorPicker(widgetPos.x(),widgetPos.y());
+                        updateColorPicker(texIndex,widgetPos.x(),widgetPos.y());
                     }
                 } else if (_imp->pickerState == PICKER_POINT || _imp->pickerState == PICKER_RECTANGLE) {
-                    if (!_imp->infoViewer->colorAndMouseVisible()) {
-                        _imp->infoViewer->showColorAndMouseInfo();
+                    if (!_imp->infoViewer[texIndex]->colorAndMouseVisible()) {
+                        _imp->infoViewer[texIndex]->showColorAndMouseInfo();
                     }
                 } else {
                     ///unkwn state
                     assert(false);
                 }
                 
-                _imp->infoViewer->setMousePos(QPoint((int)(imgPos.x()),(int)(imgPos.y())));
+                _imp->infoViewer[texIndex]->setMousePos(QPoint((int)(imgPos.x()),(int)(imgPos.y())));
                 emit infoMousePosChanged();
             }
     } else {
-        if (_imp->infoViewer->colorAndMouseVisible()) {
-            _imp->infoViewer->hideColorAndMouseInfo();
+        if (_imp->infoViewer[texIndex]->colorAndMouseVisible()) {
+            _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
         }
     }
 
@@ -2692,13 +3163,15 @@ void ViewerGL::updateRectangleColorPicker()
                 rx /= (1 << mipMapLevel);
                 ry /= (1 << mipMapLevel);
             }
-            bool picked = _imp->viewerTab->getInternalNode()->getColorAt(rx,ry, &r, &g, &b, &a, linear);
-            if (picked) {
-                rSum += r;
-                gSum += g;
-                bSum += b;
-                aSum += a;
-                ++samples;
+            for (int i = 0; i < 2; ++i) {
+                bool picked = _imp->viewerTab->getInternalNode()->getColorAt(rx,ry, &r, &g, &b, &a, linear,i);
+                if (picked) {
+                    rSum += r;
+                    gSum += g;
+                    bSum += b;
+                    aSum += a;
+                    ++samples;
+                }
             }
         }
     }
@@ -2709,11 +3182,13 @@ void ViewerGL::updateRectangleColorPicker()
         aSum /= (float)samples;
     }
     
-    if (!_imp->infoViewer->colorAndMouseVisible()) {
-        _imp->infoViewer->showColorAndMouseInfo();
-        
+    for (int i = 0; i< 2; ++i) {
+        if (!_imp->infoViewer[i]->colorAndMouseVisible()) {
+            _imp->infoViewer[i]->showColorAndMouseInfo();
+            
+        }
+        _imp->infoViewer[i]->setColor(rSum,gSum,bSum,aSum);
     }
-    _imp->infoViewer->setColor(rSum,gSum,bSum,aSum);
     emit infoColorUnderMouseChanged();
     
     QColor pickerColor;
@@ -2722,5 +3197,112 @@ void ViewerGL::updateRectangleColorPicker()
     pickerColor.setBlueF(clamp(bSum));
     pickerColor.setAlphaF(clamp(aSum));
     _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+
+}
+
+void ViewerGL::resetWipeControls()
+{
+    RectI rod;
+    if (_imp->activeTextures[1]) {
+        rod = getRoD(1);
+    } else if (_imp->activeTextures[0]) {
+        rod = getRoD(0);
+    } else {
+        rod = getDisplayWindow();
+    }
+    {
+        QMutexLocker l(&_imp->wipeControlsMutex);
+        _imp->wipeCenter.setX(rod.width() / 2.);
+        _imp->wipeCenter.setY(rod.height() / 2.);
+        _imp->wipeAngle = 0;
+        _imp->mixAmount = 1.;
+    }
+}
+
+bool ViewerGL::Implementation::isNearbyWipeCenter(const QPointF& pos,double tolerance) const
+{
+    QMutexLocker l(&wipeControlsMutex);
+    if (pos.x() >= (wipeCenter.x() - tolerance) && pos.x() <= (wipeCenter.x() + tolerance) &&
+        pos.y() >= (wipeCenter.y() - tolerance) && pos.y() <= (wipeCenter.y() + tolerance)) {
+        return true;
+    }
+    return false;
+}
+
+bool ViewerGL::Implementation::isNearbyWipeRotateBar(const QPointF& pos,double tolerance) const
+{
+    
+    double rotateLenght,rotateOffset;
+    {
+        QMutexLocker l(&zoomCtxMutex);
+        rotateLenght = WIPE_ROTATE_HANDLE_LENGTH / zoomCtx.factor();
+        rotateOffset = WIPE_ROTATE_OFFSET / zoomCtx.factor();
+    }
+    QMutexLocker l(&wipeControlsMutex);
+    QPointF outterPoint;
+    outterPoint.setX(wipeCenter.x() + std::cos(wipeAngle) * (rotateLenght - rotateOffset));
+    outterPoint.setY(wipeCenter.y() + std::sin(wipeAngle) * (rotateLenght - rotateOffset));
+    if (((pos.y() >= (wipeCenter.y() - tolerance) && pos.y() <= (outterPoint.y() + tolerance)) ||
+         (pos.y() >= (outterPoint.y() - tolerance) && pos.y() <= (wipeCenter.y() + tolerance))) &&
+        ((pos.x() >= (wipeCenter.x() - tolerance) && pos.x() <= (outterPoint.x() + tolerance)) ||
+         (pos.x() >= (outterPoint.x() - tolerance) && pos.x() <= (wipeCenter.x() + tolerance)))) {
+            Point a;
+            a.x = (outterPoint.x() - wipeCenter.x());
+            a.y = (outterPoint.y() - wipeCenter.y());
+            double norm = sqrt(a.x * a.x + a.y * a.y);
+            
+            ///The point is in the bounding box of the segment, if it is vertical it must be on the segment anyway
+            if (norm == 0) {
+                return false;
+            }
+            
+            a.x /= norm;
+            a.y /= norm;
+            Point b;
+            b.x = (pos.x() - wipeCenter.x());
+            b.y = (pos.y() - wipeCenter.y());
+            norm = sqrt(b.x * b.x + b.y * b.y);
+            
+            ///This vector is not vertical
+            if (norm != 0) {
+                
+                b.x /= norm;
+                b.y /= norm;
+                
+                double crossProduct = b.y * a.x - b.x * a.y;
+                if (std::abs(crossProduct) <  0.1) {
+                    return true;
+                }
+            }
+
+        }
+    return false;
+}
+
+bool ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF& pos,double tolerance) const
+{
+    QMutexLocker l(&wipeControlsMutex);
+    ///mix 1 is at rotation bar + pi / 8
+    ///mix 0 is at rotation bar + 3pi / 8
+    double alphaMix1,alphaMix0,alphaCurMix;
+    double mpi8 = M_PI / 8;
+    alphaMix1 = wipeAngle + mpi8;
+    alphaMix0 = wipeAngle + 3. * mpi8;
+    alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
+    QPointF mixPos;
+    
+    double mixLength;
+    {
+        QMutexLocker l(&zoomCtxMutex);
+        mixLength = WIPE_MIX_HANDLE_LENGTH / zoomCtx.factor();
+    }
+    
+    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixLength);
+    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixLength);
+    if (pos.x() >= (mixPos.x() - tolerance) && pos.x() <= (mixPos.x() + tolerance) &&
+        pos.y() >= (mixPos.y() - tolerance) && pos.y() <= (mixPos.y() + tolerance)) {
+        return true;
+    }
+    return false;
 
 }

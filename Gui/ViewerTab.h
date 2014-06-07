@@ -142,6 +142,10 @@ public:
     
     void onRotoEvaluatedForThisViewer();
     
+    Natron::ViewerCompositingOperator getCompositingOperator() const;
+    
+    void setCompositingOperator(Natron::ViewerCompositingOperator op);
+    
 public slots:
     
     void startPause(bool);
@@ -191,8 +195,23 @@ public slots:
     void onGainSliderChanged(double v);
     
     void onColorSpaceComboBoxChanged(int v);
+    
+    void onCompositingOperatorIndexChanged(int index);
+    
+    void onFirstInputNameChanged(const QString& text);
+    
+    void onSecondInputNameChanged(const QString& text);
+    
+    void onActiveInputsChanged();
+    
+    void onInputNameChanged(int inputNb,const QString& name);
+    
+    void onInputChanged(int inputNb);
+    
 private:
-        
+    
+    void manageSlotsForInfoWidget(int textureIndex,bool connect);
+    
     bool eventFilter(QObject *target, QEvent *event);
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

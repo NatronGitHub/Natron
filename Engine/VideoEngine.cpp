@@ -555,10 +555,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
             
         }
         
-        if(stat == StatFailed){
-            if (viewer) {
-                viewer->disconnectViewer();
-            }
+        if (stat == StatFailed) {
             return;
         }
         
@@ -606,8 +603,8 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
     /*get the time at which we started rendering the frame*/
     gettimeofday(&_startRenderFrameTime, 0);
     if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
-        
-        stat = _tree.outputAsViewer()->renderViewer(time,singleThreaded,isSequentialRender);
+        ViewerInstance* viewer = _tree.outputAsViewer();
+        stat = viewer->renderViewer(time,singleThreaded,isSequentialRender);
         
         if (!_currentRunArgs._sameFrame) {
             QMutexLocker timerLocker(&_timerMutex);
@@ -621,6 +618,10 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
             
         }
         
+        if (stat == StatFailed) {
+            viewer->disconnectViewer();
+        }
+    
     } else {
         RenderScale scale;
         scale.x = scale.y = 1.;

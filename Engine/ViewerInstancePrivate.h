@@ -63,6 +63,7 @@ struct UpdateViewerParams
 {
     UpdateViewerParams()
     : ramBuffer(NULL)
+    , textureIndex(0)
     , textureRect()
     , bytesCount(0)
     , gain(1.)
@@ -72,6 +73,7 @@ struct UpdateViewerParams
     {}
 
     unsigned char* ramBuffer;
+    int textureIndex;
     TextureRect textureRect;
     size_t bytesCount;
     double gain;
@@ -105,8 +107,13 @@ public:
     , lastRenderedImage()
     , threadIdMutex()
     , threadIdVideoEngine(NULL)
+    , activeInputsMutex()
+    , activeInputs()
     {
-        connect(this,SIGNAL(doUpdateViewer(boost::shared_ptr<UpdateViewerParams>)),this,SLOT(updateViewer(boost::shared_ptr<UpdateViewerParams>)));
+        connect(this,SIGNAL(doUpdateViewer(boost::shared_ptr<UpdateViewerParams>)),this,
+                SLOT(updateViewer(boost::shared_ptr<UpdateViewerParams>)));
+        activeInputs[0] = -1;
+        activeInputs[1] = -1;
     }
 
     void assertVideoEngine()
@@ -175,11 +182,16 @@ public:
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
 
     mutable QMutex lastRenderedImageMutex;
-    boost::shared_ptr<Natron::Image> lastRenderedImage; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
+    boost::shared_ptr<Natron::Image> lastRenderedImage[2]; //< A ptr to the last returned image by renderRoI. @see getLastRenderedImage()
 
     // store the threadId of the VideoEngine thread - used for debugging purposes
     mutable QMutex threadIdMutex;
     QThread *threadIdVideoEngine;
+    
+    mutable QMutex activeInputsMutex;
+    int activeInputs[2]; //< indexes of the inputs used for the wipe
+    
+    
 };
 //} // namespace Natron
 

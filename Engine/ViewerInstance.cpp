@@ -140,6 +140,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     if(node) {
         connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
+    QObject::connect(this,SIGNAL(disconnectTextureRequest(int)),this,SLOT(executeDisconnectTextureRequestOnMainThread(int)));
 }
 
 ViewerInstance::~ViewerInstance()
@@ -169,8 +170,15 @@ ViewerInstance::~ViewerInstance()
         _imp->bufferAllocated = 0;
     }
     
-    if (_imp->lastRenderedImage) {
-        unregisterPluginMemory(_imp->lastRenderedImage->size());
+    U64 sizeToUnregister = 0;
+    if (_imp->lastRenderedImage[0]) {
+        sizeToUnregister += _imp->lastRenderedImage[0]->size();
+    }
+    if (_imp->lastRenderedImage[1]) {
+        sizeToUnregister += _imp->lastRenderedImage[1]->size();
+    }
+    if (sizeToUnregister != 0) {
+        unregisterPluginMemory(sizeToUnregister);
     }
 }
 
@@ -304,10 +312,32 @@ ViewerInstance::getFrameRange(SequenceTime *first,
 }
 
 
+void ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->uiContext->disconnectInputTexture(index);
+}
 
 Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded,bool isSequentialRender)
+{
+    Natron::Status ret[2];
+    for (int i = 0; i < 2; ++i) {
+        ret[i] = renderViewer_internal(time, singleThreaded, isSequentialRender, i);
+        if (ret[i] == StatFailed) {
+            emit disconnectTextureRequest(i);
+        }
+    }
+    if (ret[0] == StatFailed && ret[1] == StatFailed) {
+        return StatFailed;
+    }
+    return StatOK;
+}
+
+Natron::Status
+ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool isSequentialRender,
+                                     int textureIndex)
 {
     // always running in the VideoEngine thread
     _imp->assertVideoEngine();
@@ -329,7 +359,16 @@ ViewerInstance::renderViewer(SequenceTime time,
     int viewsCount = getRenderViewsCount();
     int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
 
-    EffectInstance* activeInputToRender = input_other_thread(activeInput());
+    int activeInputIndex;
+    if (textureIndex == 0) {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        activeInputIndex =  _imp->activeInputs[0];
+    } else {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        activeInputIndex =  _imp->activeInputs[1];
+    }
+    
+    EffectInstance* activeInputToRender = input_other_thread(activeInputIndex);
     if (!activeInputToRender) {
         return StatFailed;
     }
@@ -422,11 +461,11 @@ ViewerInstance::renderViewer(SequenceTime time,
         bool registerMem = false;
         {
             QMutexLocker l(&_imp->lastRenderedImageMutex);
-            if (_imp->lastRenderedImage != inputImage) {
+            if (_imp->lastRenderedImage[textureIndex] != inputImage) {
                 if (_imp->lastRenderedImage) {
-                    unregisterPluginMemory(_imp->lastRenderedImage->size());
+                    unregisterPluginMemory(_imp->lastRenderedImage[textureIndex]->size());
                 }
-                _imp->lastRenderedImage = inputImage;
+                _imp->lastRenderedImage[textureIndex] = inputImage;
                 registerMem = true;
             }
         }
@@ -437,7 +476,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         }
         
     }  else {
-        Status stat = getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
+        Status stat = activeInputToRender->getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
         if(stat == StatFailed){
 #ifdef NATRON_LOG
             Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
@@ -446,8 +485,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             return stat;
         }
         
-        EffectInstance* inputEffect = input_other_thread(activeInput());
-        EffectInstance* original = inputEffect;
+        EffectInstance* inputEffect = activeInputToRender;
         while (inputEffect && inputEffect->getNode()->isNodeDisabled()) {
             ///we forward this node to the last connected non-optional input
             ///if there's only optional inputs connected, we return the last optional input
@@ -467,7 +505,7 @@ ViewerInstance::renderViewer(SequenceTime time,
             }
             inputEffect = inputEffect->input_other_thread(inputNb);
         }
-        if (inputEffect != original && inputEffect != NULL) {
+        if (inputEffect != activeInputToRender && inputEffect != NULL) {
             stat = inputEffect->getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
         }
         if(stat == StatFailed || !inputEffect){
@@ -485,7 +523,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         pixelRoD = rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
 
-    emit rodChanged(rod);
+    emit rodChanged(rod,textureIndex);
 
     bool isClippingToProjectWindow = _imp->uiContext->isClippingImageToProjectWindow();
     if (!isClippingToProjectWindow) {
@@ -586,7 +624,8 @@ ViewerInstance::renderViewer(SequenceTime time,
                  channels,
                  view,
                  textureRect,
-                 scale);
+                 scale,
+                 textureIndex);
 
     /////////////////////////////////////
     // start UpdateViewerParams scope
@@ -696,8 +735,7 @@ ViewerInstance::renderViewer(SequenceTime time,
                 renderedCompletely = true;
             }
         }
-        int inputIndex = activeInput();
-        _node->notifyInputNIsRendering(inputIndex);
+        _node->notifyInputNIsRendering(activeInputIndex);
 
       
         
@@ -732,11 +770,11 @@ ViewerInstance::renderViewer(SequenceTime time,
                     bool registerMem = false;
                     {
                         QMutexLocker l(&_imp->lastRenderedImageMutex);
-                        if (_imp->lastRenderedImage != lastRenderedImage) {
-                            if (_imp->lastRenderedImage) {
-                                unregisterPluginMemory(_imp->lastRenderedImage->size());
+                        if (_imp->lastRenderedImage[textureIndex] != lastRenderedImage) {
+                            if (_imp->lastRenderedImage[textureIndex]) {
+                                unregisterPluginMemory(_imp->lastRenderedImage[textureIndex]->size());
                             }
-                            _imp->lastRenderedImage = lastRenderedImage;
+                            _imp->lastRenderedImage[textureIndex] = lastRenderedImage;
                             registerMem = true;  
                         }
                     }
@@ -747,12 +785,12 @@ ViewerInstance::renderViewer(SequenceTime time,
                     }
                 }
             } catch (...) {
-                _node->notifyInputNIsFinishedRendering(inputIndex);
+                _node->notifyInputNIsFinishedRendering(activeInputIndex);
                 throw;
             }
             
         }
-        _node->notifyInputNIsFinishedRendering(inputIndex);
+        _node->notifyInputNIsFinishedRendering(activeInputIndex);
         
         
         
@@ -898,7 +936,7 @@ ViewerInstance::renderViewer(SequenceTime time,
         params->offset = offset;
         params->lut = lut;
         params->mipMapLevel = (unsigned int)mipMapLevel;
-
+        params->textureIndex = textureIndex;
         if (!aborted()) {
             if (singleThreaded) {
                 locker.unlock();
@@ -1243,11 +1281,12 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                                   params->offset,
                                                   params->lut,
                                                   updateViewerPboIndex,
-                                                  params->mipMapLevel);
+                                                  params->mipMapLevel,
+                                                  params->textureIndex);
             updateViewerPboIndex = (updateViewerPboIndex+1)%2;
         }
 
-        uiContext->updateColorPicker();
+        uiContext->updateColorPicker(params->textureIndex);
         uiContext->redraw();
         
         updateViewerRunning = false;
@@ -1379,16 +1418,17 @@ ViewerInstance::disconnectViewer()
 }
 
 bool
-ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear)
+ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(r && g && b && a);
+    assert(textureIndex == 0 || textureIndex == 1);
     QMutexLocker l(&_imp->lastRenderedImageMutex);
-    if (!_imp->lastRenderedImage) {
+    if (!_imp->lastRenderedImage[textureIndex]) {
         return false;
     }
-    const float* pix = _imp->lastRenderedImage->pixelAt(x, y);
+    const float* pix = _imp->lastRenderedImage[textureIndex]->pixelAt(x, y);
     if (!pix) {
         return false;
     }
@@ -1438,7 +1478,7 @@ ViewerInstance::redrawViewer()
 }
 
 boost::shared_ptr<Natron::Image>
-ViewerInstance::getLastRenderedImage() const
+ViewerInstance::getLastRenderedImage(int textureIndex) const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1447,7 +1487,7 @@ ViewerInstance::getLastRenderedImage() const
         return boost::shared_ptr<Natron::Image>();
     }
     QMutexLocker l(&_imp->lastRenderedImageMutex);
-    return _imp->lastRenderedImage;
+    return _imp->lastRenderedImage[textureIndex];
 }
 
 int
@@ -1497,4 +1537,49 @@ void ViewerInstance::addAcceptedComponents(int /*inputNb*/,std::list<Natron::Ima
 int ViewerInstance::getCurrentView() const
 {
     return _imp->uiContext->getCurrentView();
+}
+
+void ViewerInstance::onInputChanged(int inputNb)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    EffectInstance* inp = input(inputNb);
+    {
+        QMutexLocker l(&_imp->activeInputsMutex);
+        if (!inp) {
+            ///check if the input was one of the active ones if so set to -1
+            if (_imp->activeInputs[0] == inputNb) {
+                _imp->activeInputs[0] = -1;
+            } else if (_imp->activeInputs[1] == inputNb) {
+                _imp->activeInputs[1] = -1;
+            }
+        } else {
+            if (_imp->activeInputs[0] == -1) {
+                _imp->activeInputs[0] = inputNb;
+            } else {
+                _imp->activeInputs[1] = inputNb;
+            }
+        }
+    }
+    emit activeInputsChanged();
+}
+
+void ViewerInstance::getActiveInputs(int& a,int &b) const
+{
+    QMutexLocker l(&_imp->activeInputsMutex);
+    a = _imp->activeInputs[0];
+    b = _imp->activeInputs[1];
+}
+
+void ViewerInstance::setInputA(int inputNb)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->activeInputsMutex);
+    _imp->activeInputs[0] = inputNb;
+}
+
+void ViewerInstance::setInputB(int inputNb)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->activeInputsMutex);
+    _imp->activeInputs[1] = inputNb;
 }

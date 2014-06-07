@@ -56,6 +56,8 @@ struct HistogramPrivate
     , rightClickMenu(NULL)
     , histogramSelectionMenu(NULL)
     , histogramSelectionGroup(NULL)
+    , viewerCurrentInputMenu(NULL)
+    , viewerCurrentInputGroup(NULL)
     , modeMenu(NULL)
     , fullImage(NULL)
     , filterMenu(NULL)
@@ -133,6 +135,9 @@ struct HistogramPrivate
 
     QMenu* histogramSelectionMenu;
     QActionGroup* histogramSelectionGroup;
+    
+    QMenu* viewerCurrentInputMenu;
+    QActionGroup* viewerCurrentInputGroup;
 
     QActionGroup* modeActions;
     QMenu* modeMenu;
@@ -254,6 +259,23 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     _imp->rightClickMenu->addAction(_imp->histogramSelectionMenu->menuAction());
     
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
+    
+    _imp->viewerCurrentInputMenu = new QMenu("Viewer input",_imp->rightClickMenu);
+    _imp->rightClickMenu->addAction(_imp->viewerCurrentInputMenu->menuAction());
+    
+    _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
+    
+    QAction* inputAAction = new QAction(_imp->viewerCurrentInputMenu);
+    inputAAction->setText("Input A");
+    inputAAction->setData(0);
+    QObject::connect(inputAAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
+    _imp->viewerCurrentInputGroup->addAction(inputAAction);
+    
+    QAction* inputBAction = new QAction(_imp->viewerCurrentInputMenu);
+    inputBAction->setText("Input B");
+    inputBAction->setData(1);
+    QObject::connect(inputBAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
+    _imp->viewerCurrentInputGroup->addAction(inputBAction);
     
     _imp->modeMenu = new QMenu("Display mode",_imp->rightClickMenu);
     _imp->rightClickMenu->addAction(_imp->modeMenu->menuAction());
@@ -382,6 +404,12 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         viewerName = selectedHistAction->text().toStdString();
     }
     
+    int textureIndex = -1;
+    QAction* selectedInputAction = viewerCurrentInputGroup->checkedAction();
+    if (selectedInputAction) {
+        textureIndex = selectedInputAction->data().toInt();
+    }
+    
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
@@ -391,7 +419,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         ViewerTab* lastSelectedViewer = gui->getLastSelectedViewer();
         boost::shared_ptr<Natron::Image> ret;
         if (lastSelectedViewer) {
-            ret = lastSelectedViewer->getInternalNode()->getLastRenderedImage();
+            ret = lastSelectedViewer->getInternalNode()->getLastRenderedImage(textureIndex);
         }
         if (ret) {
             if (!useImageRoD) {
@@ -408,7 +436,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         const std::list<ViewerTab*>& viewerTabs = gui->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ((*it)->getInternalNode()->getName() == viewerName) {
-                ret = (*it)->getInternalNode()->getLastRenderedImage();
+                ret = (*it)->getInternalNode()->getLastRenderedImage(textureIndex);
                 if (ret) {
                     if (!useImageRoD) {
                         *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD());
@@ -431,7 +459,6 @@ void HistogramPrivate::showMenu(const QPoint& globalPos)
 
     rightClickMenu->exec(globalPos);
 }
-
 
 void Histogram::populateViewersChoices()
 {

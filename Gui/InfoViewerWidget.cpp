@@ -48,10 +48,10 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent)
     
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-        .arg(viewer->getRoD().left())
-        .arg(viewer->getRoD().bottom())
-        .arg(viewer->getRoD().right())
-        .arg(viewer->getRoD().top());
+        .arg(viewer->getRoD(0).left())
+        .arg(viewer->getRoD(0).bottom())
+        .arg(viewer->getRoD(0).right())
+        .arg(viewer->getRoD(0).top());
     
     _fpsLabel = new QLabel(this);
     
@@ -231,10 +231,10 @@ void InfoViewerWidget::changeResolution()
     setResolution(f);
 }
 
-void InfoViewerWidget::changeDataWindow()
+void InfoViewerWidget::changeData1Window()
 {
     QString bbox;
-    RectI rod = viewer->getRoD();
+    RectI rod = viewer->getRoD(0);
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
     .arg(rod.left())
     .arg(rod.bottom())
@@ -243,6 +243,20 @@ void InfoViewerWidget::changeDataWindow()
 
     coordDispWindow->setText(bbox);
 }
+
+void InfoViewerWidget::changeData2Window()
+{
+    QString bbox;
+    RectI rod = viewer->getRoD(1);
+    bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
+    .arg(rod.left())
+    .arg(rod.bottom())
+    .arg(rod.right())
+    .arg(rod.top());
+    
+    coordDispWindow->setText(bbox);
+}
+
 void InfoViewerWidget::changeUserRect(){
     cout << "NOT IMPLEMENTED YET" << endl;
 }

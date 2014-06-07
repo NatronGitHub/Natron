@@ -15,11 +15,12 @@
 
 #include "Engine/FrameEntry.h"
 #include "Engine/TextureRectSerialization.h"
-
+#include <boost/serialization/version.hpp>
+#define FRAME_KEY_INTRODUCES_TEX_INDEX 2
+#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_TEX_INDEX
 template<class Archive>
 void Natron::FrameKey::serialize(Archive & ar, const unsigned int version)
 {
-    (void)version;
     ar & boost::serialization::make_nvp("Time", _time);
     ar & boost::serialization::make_nvp("TreeVersion", _treeVersion);
     ar & boost::serialization::make_nvp("Gain", _gain);
@@ -30,8 +31,11 @@ void Natron::FrameKey::serialize(Archive & ar, const unsigned int version)
     ar & boost::serialization::make_nvp("TextureRect", _textureRect);
     ar & boost::serialization::make_nvp("ScaleX", _scale.x);
     ar & boost::serialization::make_nvp("ScaleY", _scale.y);
+    if (version >= FRAME_KEY_VERSION) {
+        ar & boost::serialization::make_nvp("TexIndex", _texIndex);
+    }
 }
 
-
+BOOST_CLASS_VERSION(Natron::FrameKey, FRAME_KEY_VERSION)
 
 #endif // FRAMEENTRYSERIALIZATION_H

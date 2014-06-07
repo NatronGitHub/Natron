@@ -317,9 +317,10 @@ void ComboBox::removeItem(const QString& item){
     for (U32 i = 0; i < _actions.size(); ++i) {
         assert(_actions[i]);
         if (_actions[i]->text() == item) {
+            QString currentText = getCurrentIndexText();
             _actions.erase(_actions.begin()+i);
             assert(_currentText);
-            if (_currentText->text() == item) {
+            if (currentText == item) {
                 setCurrentIndex(i-1);
             }
             /*adjust separators that were placed after this item*/

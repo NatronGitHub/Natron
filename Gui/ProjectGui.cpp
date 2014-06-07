@@ -204,7 +204,7 @@ void AddFormatDialog::onCopyFromViewer(){
         if(nodes[i]->getName() == activeText.toStdString()){
             ViewerInstance* v = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             ViewerTab* tab = _gui->getViewerTabForInstance(v);
-            RectI f = tab->getViewer()->getRoD();
+            RectI f = tab->getViewer()->getRoD(0);
             Format format = tab->getViewer()->getDisplayWindow();
             _widthSpinBox->setValue(f.width());
             _heightSpinBox->setValue(f.height());
