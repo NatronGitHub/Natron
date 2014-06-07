@@ -11,7 +11,7 @@
 
 #ifndef NATRON_ENGINE_FRAMEENTRY_H_
 #define NATRON_ENGINE_FRAMEENTRY_H_
-
+#include <string>
 #include <boost/shared_ptr.hpp>
 
 #include <QtCore/QObject>
@@ -44,7 +44,7 @@ namespace Natron{
                  int view,
                  const TextureRect& textureRect,
                  const RenderScale& scale,
-                 int texIndex);
+                 const std::string& inputName);
         
         void fillHash(Hash64* hash) const;
         
@@ -67,7 +67,7 @@ namespace Natron{
         int _view;
         TextureRect _textureRect; // texture rectangle definition (bounds in the original image + width and height)
         RenderScale _scale;
-        int _texIndex;
+        std::string _inputName;
     };
 
     class FrameEntry : public CacheEntryHelper<U8,FrameKey>
@@ -94,7 +94,7 @@ namespace Natron{
                                 int view,
                                 const TextureRect& textureRect,
                                 const RenderScale& scale,
-                                int texIndex);
+                                const std::string& inputName);
         
         static boost::shared_ptr<const FrameParams> makeParams(const RectI rod,
                                                                int bitDepth,

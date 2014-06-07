@@ -625,7 +625,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                  view,
                  textureRect,
                  scale,
-                 textureIndex);
+                 activeInputToRender->getNode()->getName_mt_safe());
 
     /////////////////////////////////////
     // start UpdateViewerParams scope
