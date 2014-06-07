@@ -1729,10 +1729,14 @@ void ViewerTab::onSecondInputNameChanged(const QString& text)
     _imp->_viewerNode->setInputB(inputIndex);
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
+        setCompositingOperator(Natron::OPERATOR_NONE);
         _imp->_infosWidget[1]->hide();
     } else {
         if (!_imp->_infosWidget[1]->isVisible()) {
             _imp->_infosWidget[1]->show();
+            if (_imp->_compOperator == Natron::OPERATOR_NONE) {
+                setCompositingOperator(Natron::OPERATOR_WIPE);
+            }
         }
     }
     _imp->_viewerNode->refreshAndContinueRender(false);
@@ -1767,8 +1771,13 @@ void ViewerTab::onActiveInputsChanged()
             _imp->_infosWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
         }
+        if (_imp->_compOperator == Natron::OPERATOR_NONE) {
+            setCompositingOperator(Natron::OPERATOR_WIPE);
+        }
+
     } else {
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
+        setCompositingOperator(Natron::OPERATOR_NONE);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
     }
