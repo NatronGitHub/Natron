@@ -20,10 +20,12 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
-
+#include <boost/serialization/version.hpp>
 #include "Engine/Rect.h"
 #include "Gui/NodeGuiSerialization.h"
 
+#define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING
 class ProjectGui;
 
 struct ViewerData {
@@ -40,12 +42,14 @@ struct ViewerData {
     int mipMapLevel;
     std::string colorSpace;
     std::string channels;
+    bool zoomOrPanSinceLastFit;
+    int wipeCompositingOp;
     
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
     {
-        (void)version;
+        
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
@@ -59,10 +63,14 @@ struct ViewerData {
         ar & boost::serialization::make_nvp("Channels",channels);
         ar & boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
         ar & boost::serialization::make_nvp("MipMapLevel",mipMapLevel);
+        if (version >= VIEWER_DATA_SERIALIZATION_VERSION) {
+            ar & boost::serialization::make_nvp("ZoomOrPanSinceFit",zoomOrPanSinceLastFit);
+            ar & boost::serialization::make_nvp("CompositingOP",wipeCompositingOp);
+        }
     }
 };
 
-
+BOOST_CLASS_VERSION(ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
 
 struct PaneLayout{
     

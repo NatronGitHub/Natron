@@ -316,6 +316,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->setClipToProject(found->second.isClippedToProject);
                 tab->setRenderScaleActivated(found->second.renderScaleActivated);
                 tab->setMipMapLevel(found->second.mipMapLevel);
+                tab->setCompositingOperator((Natron::ViewerCompositingOperator)found->second.wipeCompositingOp);
+                tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
             }
         }
         

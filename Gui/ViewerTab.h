@@ -123,6 +123,10 @@ public:
     
     bool getRenderScaleActivated() const;
     
+    void setZoomOrPannedSinceLastFit(bool enabled);
+    
+    bool getZoomOrPannedSinceLastFit() const;
+    
     void setInfoBarResolution(const Format& f);
     
     void createRotoInterface(NodeGui* n);

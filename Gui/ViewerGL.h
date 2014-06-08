@@ -288,6 +288,10 @@ public:
     
     bool isWipeHandleVisible() const;
     
+    void setZoomOrPannedSinceLastFit(bool enabled);
+    
+    bool getZoomOrPannedSinceLastFit() const;
+    
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.

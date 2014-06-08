@@ -862,16 +862,18 @@ void ViewerGL::resizeGL(int width, int height)
         return;
     }
     glViewport (0, 0, width, height);
+    bool zoomSinceLastFit;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         _imp->zoomCtx.setScreenSize(width, height);
+        zoomSinceLastFit = _imp->zoomOrPannedSinceLastFit;
     }
     glCheckError();
     _imp->ms = UNDEFINED;
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (!_imp->zoomOrPannedSinceLastFit) {
+    if (!zoomSinceLastFit) {
         fitImageToFormat();
     }
     if (viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
@@ -2071,6 +2073,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             {
                 QMutexLocker l(&_imp->zoomCtxMutex);
                 _imp->zoomCtx.translate(dx, dy);
+                _imp->zoomOrPannedSinceLastFit = true;
             }
             _imp->oldClick = newClick;
             if(displayingImage()){
@@ -2079,7 +2082,6 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             //  else {
             mustRedraw = true;
             // }
-            _imp->zoomOrPannedSinceLastFit = true;
             // no need to update the color picker or mouse posn: they should be unchanged
         } break;
         case DRAGGING_ROI_BOTTOM_EDGE: {
@@ -2370,6 +2372,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+        _imp->zoomOrPannedSinceLastFit = true;
     }
     int zoomValue = (int)(100*zoomFactor);
     if (zoomValue == 0) {
@@ -2378,7 +2381,6 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
     assert(zoomValue > 0);
     emit zoomChanged(zoomValue);
 
-    _imp->zoomOrPannedSinceLastFit = true;
 
     if (displayingImage()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false);
@@ -2460,6 +2462,7 @@ void ViewerGL::fitImageToFormat()
         double zoomBottom = h/2.f - (_imp->zoomCtx.screenHeight()/(2.*zoomFactor)) * zoomPAR;
         _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
 #endif
+        _imp->zoomOrPannedSinceLastFit = false;
     }
     _imp->oldClick = QPoint(); // reset mouse posn
 
@@ -2471,7 +2474,6 @@ void ViewerGL::fitImageToFormat()
         emit zoomChanged(zoomFactorInt);
     }
 
-    _imp->zoomOrPannedSinceLastFit = false;
 }
 
 
@@ -2811,8 +2813,6 @@ void ViewerGL::setProjection(double zoomLeft, double zoomBottom, double zoomFact
     assert(qApp && qApp->thread() == QThread::currentThread());
     QMutexLocker l(&_imp->zoomCtxMutex);
     _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
-#pragma message WARN("zoomOrPannedSinceLastFit should be set/serialized separately")
-    _imp->zoomOrPannedSinceLastFit = true;
 }
 
 void ViewerGL::setUserRoIEnabled(bool b)
@@ -3322,4 +3322,16 @@ bool ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF& pos,double t
 bool ViewerGL::isWipeHandleVisible() const
 {
     return _imp->viewerTab->getCompositingOperator() != OPERATOR_NONE;
+}
+
+void ViewerGL::setZoomOrPannedSinceLastFit(bool enabled)
+{
+    QMutexLocker l(&_imp->zoomCtxMutex);
+    _imp->zoomOrPannedSinceLastFit = enabled;
+}
+
+bool ViewerGL::getZoomOrPannedSinceLastFit() const
+{
+    QMutexLocker l(&_imp->zoomCtxMutex);
+    return _imp->zoomOrPannedSinceLastFit;
 }

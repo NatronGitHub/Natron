@@ -57,6 +57,8 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
              viewerData.channels = tab->getChannelsString();
              viewerData.renderScaleActivated = tab->getRenderScaleActivated();
              viewerData.mipMapLevel = tab->getMipMapLevel();
+             viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
+             viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
              _viewersData.insert(std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData));
          }
      }

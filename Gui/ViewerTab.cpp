@@ -147,6 +147,7 @@ struct ViewerTabPrivate {
     
 
     InputNamesMap _inputNamesMap;
+    mutable QMutex compOperatorMutex;
     ViewerCompositingOperator _compOperator;
     
     Gui* _gui;
@@ -1408,6 +1409,16 @@ bool ViewerTab::getRenderScaleActivated() const
     return _imp->_viewerNode->getMipMapLevel() != 0;
 }
 
+void ViewerTab::setZoomOrPannedSinceLastFit(bool enabled)
+{
+    _imp->viewer->setZoomOrPannedSinceLastFit(enabled);
+}
+
+bool ViewerTab::getZoomOrPannedSinceLastFit() const
+{
+    return _imp->viewer->getZoomOrPannedSinceLastFit();
+}
+
 std::string ViewerTab::getChannelsString() const {
     ViewerInstance::DisplayChannels c = _imp->_viewerNode->getChannels();
     switch (c) {
@@ -1647,27 +1658,30 @@ void ViewerTab::notifyAppClosing()
 
 void ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
-    switch (index) {
-        case 0:
-            _imp->_compOperator = OPERATOR_NONE;
-            _imp->_secondInputImage->setEnabled(false);
-            manageSlotsForInfoWidget(1, false);
-            _imp->_infosWidget[1]->hide();
-            break;
-        case 1:
-            _imp->_compOperator = OPERATOR_OVER;
-            break;
-        case 2:
-            _imp->_compOperator = OPERATOR_UNDER;
-            break;
-        case 3:
-            _imp->_compOperator = OPERATOR_MINUS;
-            break;
-        case 4:
-            _imp->_compOperator = OPERATOR_WIPE;
-            break;
-        default:
-            break;
+    {
+        QMutexLocker l(&_imp->compOperatorMutex);
+        switch (index) {
+            case 0:
+                _imp->_compOperator = OPERATOR_NONE;
+                _imp->_secondInputImage->setEnabled(false);
+                manageSlotsForInfoWidget(1, false);
+                _imp->_infosWidget[1]->hide();
+                break;
+            case 1:
+                _imp->_compOperator = OPERATOR_OVER;
+                break;
+            case 2:
+                _imp->_compOperator = OPERATOR_UNDER;
+                break;
+            case 3:
+                _imp->_compOperator = OPERATOR_MINUS;
+                break;
+            case 4:
+                _imp->_compOperator = OPERATOR_WIPE;
+                break;
+            default:
+                break;
+        }
     }
     if (_imp->_compOperator != OPERATOR_NONE && !_imp->_secondInputImage->isEnabled()) {
         _imp->_secondInputImage->setEnabled(true);
@@ -1700,13 +1714,17 @@ void ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
         default:
             break;
     }
-    _imp->_compOperator = op;
+    {
+        QMutexLocker l(&_imp->compOperatorMutex);
+        _imp->_compOperator = op;
+    }
     _imp->_compositingOperator->setCurrentIndex_no_emit(comboIndex);
     _imp->viewer->updateGL();
 }
 
 ViewerCompositingOperator ViewerTab::getCompositingOperator() const
 {
+    QMutexLocker l(&_imp->compOperatorMutex);
     return _imp->_compOperator;
 }
 
