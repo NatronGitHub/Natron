@@ -268,14 +268,20 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     QAction* inputAAction = new QAction(_imp->viewerCurrentInputMenu);
     inputAAction->setText("Input A");
     inputAAction->setData(0);
+    inputAAction->setCheckable(true);
+    inputAAction->setChecked(true);
     QObject::connect(inputAAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
     _imp->viewerCurrentInputGroup->addAction(inputAAction);
+    _imp->viewerCurrentInputMenu->addAction(inputAAction);
     
     QAction* inputBAction = new QAction(_imp->viewerCurrentInputMenu);
     inputBAction->setText("Input B");
     inputBAction->setData(1);
+    inputBAction->setCheckable(true);
+    inputBAction->setChecked(false);
     QObject::connect(inputBAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
+    _imp->viewerCurrentInputMenu->addAction(inputBAction);
     
     _imp->modeMenu = new QMenu("Display mode",_imp->rightClickMenu);
     _imp->rightClickMenu->addAction(_imp->modeMenu->menuAction());
