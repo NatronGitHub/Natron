@@ -1266,7 +1266,10 @@ void ConnectCommand::redo() {
         (*it)->updateTreeAndRender();
     }
     
-    _graph->getGui()->getApp()->triggerAutoSave();
+    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(_edge->getDest()->getNode()->getLiveInstance());
+    if (!isDstAViewer) {
+        _graph->getGui()->getApp()->triggerAutoSave();
+    }
     
     
     
