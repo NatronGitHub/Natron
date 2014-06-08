@@ -3747,10 +3747,10 @@ void convertCairoImageToNatronImage(cairo_surface_t* cairoImg,Natron::Image* ima
         
         for (int x = 0; x < pixelRod.width(); ++x) {
             if (comps == 1) {
-                dstPix[x] = PIX(srcPix[x] / 255.f) * maxValue;
+                dstPix[x] = PIX((float)srcPix[x] / 255.f) * maxValue;
             } else {
                 assert(comps == 4);
-                dstPix[x * 4 + 3] = PIX(srcPix[x] / 255.f) * maxValue;
+                dstPix[x * 4 + 3] = PIX((float)srcPix[x] / 255.f) * maxValue;
             }
         }
     }

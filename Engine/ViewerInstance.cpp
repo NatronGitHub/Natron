@@ -1492,6 +1492,7 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,float* r,float* g,float
     *g = nComps < 2 ? 0 : (float)(*(pix + 1)) / maxValue;
     *b = nComps < 3 ? 0 : (float)(*(pix + 2)) / maxValue;
     *a = nComps < 4 ? 0 : (float)(*(pix + 3)) / maxValue;
+    return true;
 }
 
 bool

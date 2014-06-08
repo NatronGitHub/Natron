@@ -69,7 +69,7 @@ TEST(ImageKeyTest,Equality) {
     int view1 = 0;
     double pa1 = 1.;
 
-    Natron::ImageKey key1(randomHashKey1,time1,level1,view1,pa1);
+    Natron::ImageKey key1(randomHashKey1,time1,level1,view1,Natron::IMAGE_FLOAT,pa1);
     U64 keyHash1 = key1.getHash();
 
 
@@ -80,7 +80,7 @@ TEST(ImageKeyTest,Equality) {
     int view2 = view1;
     double pa2 = pa1;
 
-    Natron::ImageKey key2(randomHashKey2,time2,level2,view2,pa2);
+    Natron::ImageKey key2(randomHashKey2,time2,level2,view2,Natron::IMAGE_FLOAT,pa2);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 
@@ -96,7 +96,7 @@ TEST(ImageKeyTest,Difference) {
     int view1 = 0;
     double pa1 = 1.;
 
-    Natron::ImageKey key1(randomHashKey1,time1,level1,view1,pa1);
+    Natron::ImageKey key1(randomHashKey1,time1,level1,view1,Natron::IMAGE_FLOAT,pa1);
     U64 keyHash1 = key1.getHash();
 
 
@@ -107,7 +107,7 @@ TEST(ImageKeyTest,Difference) {
     int view2 = view1;
     double pa2 = pa1;
 
-    Natron::ImageKey key2(randomHashKey2,time2,level2,view2,pa2);
+    Natron::ImageKey key2(randomHashKey2,time2,level2,view2,Natron::IMAGE_FLOAT,pa2);
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 != keyHash2);
 
