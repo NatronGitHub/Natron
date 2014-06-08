@@ -80,7 +80,10 @@ Natron::OfxHost::OfxHost()
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
     
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0); 
+    _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthShort,1);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthByte,2);
+
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
@@ -494,13 +497,16 @@ void Natron::OfxHost::loadingStatus(const std::string & pluginId) {
     }
 }
 
-bool Natron::OfxHost::pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const
+bool Natron::OfxHost::pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin */*plugin*/, std::string &/*reason*/) const
 {
+    ///Update: we support all bit depths and all components.
+    
+    
     // check that the plugin supports kOfxBitDepthFloat
-    if (plugin->getDescriptor().getParamSetProps().findStringPropValueIndex(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthFloat) == -1) {
-        reason = "32-bits floating-point bit depth not supported by plugin";
-        return false;
-    }
+//    if (plugin->getDescriptor().getParamSetProps().findStringPropValueIndex(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthFloat) == -1) {
+//        reason = "32-bits floating-point bit depth not supported by plugin";
+//        return false;
+//    }
 
     return true;
 }

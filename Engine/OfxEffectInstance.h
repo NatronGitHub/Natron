@@ -210,6 +210,8 @@ public:
                                    bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
+
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     /**

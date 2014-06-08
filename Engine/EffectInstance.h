@@ -245,6 +245,19 @@ public:
      **/
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) = 0;
     
+    
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const = 0;
+    
+    /**
+     * @brief Must return the deepest bit depth that this plug-in can support.
+     * If 32 float is supported then return Natron::IMAGE_FLOAT, otherwise
+     * return IMAGE_SHORT if 16 bits is supported, and as a last resort, return
+     * IMAGE_BYTE. At least one must be returned.
+     **/
+    Natron::ImageBitDepth getBitDepth() const;
+    
+    bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;
+    
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
@@ -282,9 +295,9 @@ public:
     
     /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
-     * Pre-condition: preProcess must have been called.
+     * @param hashUsed, if not null, it will be set to the hash of this effect used to render.
      **/
-    boost::shared_ptr<Image> renderRoI(const RenderRoIArgs& args) WARN_UNUSED_RETURN;
+    boost::shared_ptr<Image> renderRoI(const RenderRoIArgs& args,U64* hashUsed = NULL) WARN_UNUSED_RETURN;
     
     /**
      * @brief Same as renderRoI(SequenceTime,RenderScale,int,RectI,bool) but takes in parameter

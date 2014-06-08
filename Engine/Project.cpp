@@ -498,6 +498,28 @@ void Project::initializeKnobs(){
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
     _imp->previewMode->setDefaultValue(autoPreviewEnabled,0);
     
+    std::vector<std::string> colorSpaces;
+    colorSpaces.push_back("Linear");
+    colorSpaces.push_back("sRGB");
+    colorSpaces.push_back("Rect709");
+    _imp->colorSpace8bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8 bits images");
+    _imp->colorSpace8bits->setHintToolTip("Defines the color-space in which 8 bits images are assumed to be by default.");
+    _imp->colorSpace8bits->setAnimationEnabled(false);
+    _imp->colorSpace8bits->populateChoices(colorSpaces);
+    _imp->colorSpace8bits->setDefaultValue(1);
+    
+    _imp->colorSpace16bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16 bits images");
+    _imp->colorSpace16bits->setHintToolTip("Defines the color-space in which 16 bits images are assumed to be by default.");
+    _imp->colorSpace16bits->setAnimationEnabled(false);
+    _imp->colorSpace16bits->populateChoices(colorSpaces);
+    _imp->colorSpace16bits->setDefaultValue(2);
+    
+    _imp->colorSpace32bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32 bits fp images");
+    _imp->colorSpace32bits->setHintToolTip("Defines the color-space in which 32 bits floating point images are assumed to be by default.");
+    _imp->colorSpace32bits->setAnimationEnabled(false);
+    _imp->colorSpace32bits->populateChoices(colorSpaces);
+    _imp->colorSpace32bits->setDefaultValue(0);
+    
     emit knobsInitialized();
     
 }
@@ -1236,6 +1258,21 @@ boost::shared_ptr<Natron::Node> Project::getNodePointer(Natron::Node* n) const
         }
     }
     return boost::shared_ptr<Natron::Node>();
+}
+    
+Natron::ImageDefaultColorSpace Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
+{
+    switch (bitdepth) {
+        case Natron::IMAGE_BYTE:
+            return (Natron::ImageDefaultColorSpace)_imp->colorSpace8bits->getValue();
+        case Natron::IMAGE_SHORT:
+            return (Natron::ImageDefaultColorSpace)_imp->colorSpace16bits->getValue();
+        case Natron::IMAGE_FLOAT:
+            return (Natron::ImageDefaultColorSpace)_imp->colorSpace32bits->getValue();
+        default:
+            assert(false);
+            break;
+    }
 }
     
 } //namespace Natron

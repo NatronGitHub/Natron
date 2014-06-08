@@ -37,6 +37,7 @@ namespace Natron {
         SequenceTime _time;
         unsigned int _mipMapLevel;
         int _view;
+        Natron::ImageBitDepth _bitdepth;
         double _pixelAspect;
 
         ImageKey();
@@ -45,6 +46,7 @@ namespace Natron {
                  SequenceTime time,
                  unsigned int mipMapLevel,
                  int view,
+                 Natron::ImageBitDepth bitdepth,
                  double pixelAspect = 1.);
         
         void fillHash(Hash64* hash) const;
@@ -111,7 +113,7 @@ namespace Natron {
 
     
     
-    class Image  : public CacheEntryHelper<float,ImageKey>
+    class Image  : public CacheEntryHelper<unsigned char,ImageKey>
     {
         
         ImageComponents _components;
@@ -129,17 +131,19 @@ namespace Natron {
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel);
+        Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel,Natron::ImageBitDepth bitdepth);
         
         virtual ~Image(){}
         
         static ImageKey makeKey(U64 nodeHashKey,
                                 SequenceTime time,
                                 unsigned int mipMapLevel,
+                                Natron::ImageBitDepth bitdepth,
                                 int view);
         
         static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,ImageComponents components,
+                                                         Natron::ImageBitDepth bitdepth,
                                                          int inputNbIdentity,int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> >& framesNeeded) ;
         
@@ -166,13 +170,17 @@ namespace Natron {
         
         ImageComponents getComponents() const {return this->_components;}
         
+        Natron::ImageBitDepth getBitDepth() const {return this->_key._bitdepth;}
+        
         void setPixelAspect(double pa) { this->_key._pixelAspect = pa; }
         
         double getPixelAspect() const { return this->_key._pixelAspect; }
         
-        float* pixelAt(int x,int y);
-        
-        const float* pixelAt(int x,int y) const;
+        /**
+         * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
+         **/
+        unsigned char* pixelAt(int x,int y);
+        const unsigned char* pixelAt(int x,int y) const;
         
         /**
          * @brief Same as getElementsCount(getComponents()) * getPixelRoD().width()
@@ -274,16 +282,21 @@ namespace Natron {
          * 2) RGBA to alpha
          * 3) RGB to RGBA
          * 4) RGB to alpha
+         *
+         * Also this function converts to the output bit depth.
+         *
          * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
          * fill the alpha. If it is -1 it indicates you want to clear the mask.
          *
          * @param invert If true the channels will be inverted when converting.
          *
-         * WARNING: The bitmap is NOT copied when converting. This function is not meant to cache images
-         * that's why it allocates itself the return value.
-         * The caller is responsible for freeing the image afterwards.
+         * The bitmap will also be copied.
+         * Note that this function is mainly used for the following conversion:
+         * RGBA --> Alpha
+         * or bit depth conversion
+         * Implementation should tend to optimize these cases.
          **/
-        Natron::Image* convertToFormat(Natron::ImageComponents comp,int channelForAlpha,bool invert) const;
+        void convertToFormat(Natron::Image* dstImg,int channelForAlpha,bool invert) const;
         
 
         

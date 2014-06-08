@@ -2236,10 +2236,15 @@ TabWidget* Gui::getWorkshopPane() const { return _imp->_workshopPane; }
 const std::map<std::string,QWidget*>& Gui::getRegisteredTabs() const { return _imp->_registeredTabs; }
 
 void Gui::debugImage(const Natron::Image* image,const QString& filename ) {
+    
+    if (image->getBitDepth() != Natron::IMAGE_FLOAT) {
+        qDebug() << "Debug image only works on float images.";
+        return;
+    }
     const RectI& rod = image->getPixelRoD();
     QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
-    const float* from = image->pixelAt(rod.left(), rod.bottom());
+    const float* from = (const float*)image->pixelAt(rod.left(), rod.bottom());
     
     ///offset the pointer to 0,0
     from -= ((rod.bottom() * image->getRowElements()) + rod.left() * image->getComponentsCount());

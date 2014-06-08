@@ -236,6 +236,20 @@ namespace Natron{
         OPERATOR_UNDER,
         OPERATOR_WIPE
     };
+    
+    enum ImageBitDepth
+    {
+        IMAGE_BYTE = 0,
+        IMAGE_SHORT,
+        IMAGE_FLOAT
+    };
+    
+    enum ImageDefaultColorSpace
+    {
+        IMAGE_LINEAR = 0,
+        IMAGE_SRGB,
+        IMAGE_REC709
+    };
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

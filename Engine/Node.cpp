@@ -94,6 +94,7 @@ struct Node::Implementation {
         , rotoContext()
         , imagesBeingRenderedMutex()
         , imagesBeingRendered()
+        , supportedDepths()
     {
     }
     
@@ -164,6 +165,8 @@ struct Node::Implementation {
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+    
+    std::list <Natron::ImageBitDepth> supportedDepths;
 };
 
 /**
@@ -218,6 +221,14 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     } else { //ofx plugin
         _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization);
         _imp->liveInstance->initializeOverlayInteract();
+    }
+    
+    _imp->liveInstance->addSupportedBitDepth(&_imp->supportedDepths);
+    
+    if (_imp->supportedDepths.empty()) {
+        //From the spec:
+        //The default for a plugin is to have none set, the plugin \em must define at least one in its describe action.
+        throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
     }
     
     initializeInputs();
@@ -1150,15 +1161,73 @@ boost::shared_ptr<KnobI> Node::getKnobByName(const std::string& name) const
 
 
 namespace {
-static float bilinearFiltering(const float* srcPixelsFloor,const float* srcPixelsCeil,int fx,int cx,
+template<typename PIX,int maxValue>
+PIX bilinearFiltering(const PIX* srcPixelsFloor,const PIX* srcPixelsCeil,int fx,int cx,
                                int elementsCount,int comp,double dx,double dy,const RectI& srcRoD)
 {
-    const double Icc = (!srcPixelsFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx * elementsCount + comp];
-    const double Inc = (!srcPixelsFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx * elementsCount + comp];
-    const double Icn = (!srcPixelsCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx * elementsCount + comp];
-    const double Inn = (!srcPixelsCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx * elementsCount + comp];
-    return Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc);
+    double Icc = (!srcPixelsFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx * elementsCount + comp];
+    double Inc = (!srcPixelsFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx * elementsCount + comp];
+    double Icn = (!srcPixelsCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx * elementsCount + comp];
+    double Inn = (!srcPixelsCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx * elementsCount + comp];
+    Icc /= maxValue;
+    Inc /= maxValue;
+    Icn /= maxValue;
+    Inn /= maxValue;
+    return (Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc)) * maxValue;
 }
+    
+
+///output is always RGBA with alpha = 255
+template<typename PIX,int maxValue>
+void renderPreview(const Natron::Image& srcImg,
+                       const RectI& srcRoD,
+                       int elemCount,
+                       int dstWidth,
+                       int dstHeight,
+                       bool convertToSrgb,
+                       unsigned int* dstPixels)
+{
+    
+    const PIX* srcPixels = (const PIX*)srcImg.pixelAt(srcRoD.x1, srcRoD.y1);
+    //offset to 0
+    //srcPixels -= (srcRoD.y1 * srcRoD.width() * elemCount + srcRoD.x1 * elemCount);
+    
+    ///recompute it after the rescaling
+    double yZoomFactor = (double)dstHeight/(double)srcRoD.height();
+    double xZoomFactor = (double)dstWidth/(double)srcRoD.width();
+    
+    for (int i = 0; i < dstHeight; ++i) {
+        double y = (double)i/yZoomFactor + srcRoD.y1;
+        int yFloor = std::floor(y);
+        int yCeil = std::ceil(y);
+        double dy = std::max(0., std::min(y - yFloor, 1.));
+        
+        U32 *dst_pixels = dstPixels + dstWidth * (dstHeight-1-i);
+        
+        const PIX* src_pixels_floor = (const PIX*)srcImg.pixelAt(srcRoD.x1, yFloor);
+        const PIX* src_pixels_ceil = (const PIX*)srcImg.pixelAt(srcRoD.x1, yCeil);
+        for (int j = 0; j < dstWidth; ++j) {
+            
+            double x = (double)j/xZoomFactor + srcRoD.x1;
+            int xFloor = std::floor(x);
+            int xCeil = std::ceil(x);
+            double dx = std::max(0., std::min(x - xFloor, 1.));
+            
+            PIX rFilt = bilinearFiltering<PIX,maxValue>(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 0, dx, dy, srcRoD);
+            PIX gFilt = bilinearFiltering<PIX,maxValue>(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 1, dx, dy, srcRoD);
+            PIX bFilt = bilinearFiltering<PIX,maxValue>(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 2, dx, dy, srcRoD);
+            
+            
+            int r = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(rFilt) : rFilt);
+            int g = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(gFilt) : gFilt);
+            int b = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(bFilt) : bFilt);
+            dst_pixels[j] = toBGRA(r, g, b, 255);
+            
+        }
+    }
+
+}
+
 }
 
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
@@ -1229,43 +1298,28 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
   
     ///update the Rod to the scaled image rod
     rod = img->getPixelRoD();
-
+    
     ImageComponents components = img->getComponents();
     int elemCount = getElementsCountForComponents(components);
-    
-    ///recompute it after the rescaling
-    yZoomFactor = (double)height/(double)rod.height();
-    xZoomFactor = (double)width/(double)rod.width();
-    
-    for (int i = 0; i < height; ++i) {
-        double y = (double)i/yZoomFactor + rod.y1;
-        int yFloor = std::floor(y);
-        int yCeil = std::ceil(y);
-        double dy = std::max(0., std::min(y - yFloor, 1.));
-        
-        U32 *dst_pixels = buf + width * (height-1-i);
-        
-        const float* src_pixels_floor = img->pixelAt(rod.x1, yFloor);
-        const float* src_pixels_ceil = img->pixelAt(rod.x1, yCeil);
-        for (int j = 0; j < width; ++j) {
-            
-            double x = (double)j/xZoomFactor + rod.x1;
-            int xFloor = std::floor(x);
-            int xCeil = std::ceil(x);
-            double dx = std::max(0., std::min(x - xFloor, 1.));
-            
-#pragma message WARN("Preview only support RGB or RGBA images")
-            float rFilt = bilinearFiltering(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 0, dx, dy, rod);
-            float gFilt = bilinearFiltering(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 1, dx, dy, rod);
-            float bFilt = bilinearFiltering(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 2, dx, dy, rod);
-            
-            int r = Color::floatToInt<256>(Natron::Color::to_func_srgb(rFilt));
-            int g = Color::floatToInt<256>(Natron::Color::to_func_srgb(gFilt));
-            int b = Color::floatToInt<256>(Natron::Color::to_func_srgb(bFilt));
-            dst_pixels[j] = toBGRA(r, g, b, 255);
 
-        }
+    ///we convert only when input is Linear.
+    //Rec709 and srGB is acceptable for preview
+    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth(img->getBitDepth()) == Natron::IMAGE_LINEAR;
+    
+    switch (img->getBitDepth()) {
+        case Natron::IMAGE_BYTE: {
+            renderPreview<unsigned char, 255>(*img, rod, elemCount, width, height,convertToSrgb, buf);
+        } break;
+        case Natron::IMAGE_SHORT: {
+            renderPreview<unsigned short, 65535>(*img, rod, elemCount, width, height,convertToSrgb, buf);
+        } break;
+        case Natron::IMAGE_FLOAT: {
+            renderPreview<float, 1>(*img, rod, elemCount, width, height,convertToSrgb, buf);
+        } break;
+        default:
+            break;
     }
+    
     _imp->computingPreview = false;
     _imp->computingPreviewCond.wakeOne();
 #ifdef NATRON_LOG
@@ -1770,6 +1824,35 @@ void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     if (_imp->rotoContext) {
         _imp->rotoContext->getBeziersKeyframeTimes(keyframes);
     }
+}
+
+Natron::ImageBitDepth Natron::Node::getBitDepth() const
+{
+    bool foundShort = false;
+    bool foundByte = false;
+    for (std::list<ImageBitDepth>::const_iterator it = _imp->supportedDepths.begin(); it!= _imp->supportedDepths.end(); ++it) {
+        if (*it == Natron::IMAGE_FLOAT) {
+            return Natron::IMAGE_FLOAT;
+        } else if (*it == Natron::IMAGE_BYTE) {
+            foundByte = true;
+        } else if (*it == Natron::IMAGE_SHORT) {
+            foundShort = true;
+        }
+    }
+    
+    if (foundShort) {
+        return Natron::IMAGE_SHORT;
+    } else if (foundByte) {
+        return Natron::IMAGE_BYTE;
+    } else {
+        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
+        assert(false);
+    }
+}
+
+bool Node::isSupportedBitDepth(Natron::ImageBitDepth depth) const
+{
+    return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
 
 //////////////////////////////////

@@ -26,6 +26,21 @@ namespace Natron {
         }
     }
     
+    inline int getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
+    {
+        switch (bitdepth) {
+            case Natron::IMAGE_BYTE:
+                return sizeof(unsigned char);
+            case Natron::IMAGE_SHORT:
+                return sizeof(unsigned short);
+            case Natron::IMAGE_FLOAT:
+                return sizeof(float);
+            default:
+                assert(false);
+                break;
+        }
+    }
+    
 class ImageParams : public NonKeyParams
 {
     
@@ -57,10 +72,10 @@ public:
         
     }
     
-    ImageParams(int cost,const RectI& rod,const RectI& pixelRoD,
+    ImageParams(int cost,const RectI& rod,const RectI& pixelRoD,Natron::ImageBitDepth bitdepth,
                 bool isRoDProjectFormat,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> >& framesNeeded)
-    : NonKeyParams(cost,pixelRoD.area() * getElementsCountForComponents(components))
+    : NonKeyParams(cost,pixelRoD.area() * getElementsCountForComponents(components) * getSizeOfForBitDepth(bitdepth))
     , _rod(rod)
     , _pixelRoD(pixelRoD)
     , _isRoDProjectFormat(isRoDProjectFormat)

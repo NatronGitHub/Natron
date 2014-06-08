@@ -209,6 +209,8 @@ public:
      **/
     boost::shared_ptr<Natron::Node> getNodePointer(Natron::Node* n) const;
     
+    Natron::ImageDefaultColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
+    
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);

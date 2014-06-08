@@ -505,6 +505,11 @@ public:
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
+    Natron::ImageBitDepth getBitDepth() const;
+    
+    bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;
+
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;

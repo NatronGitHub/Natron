@@ -389,7 +389,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
-        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time, view, mipMapLevel, byPassCache);
+        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,getBitDepth(), view, mipMapLevel, byPassCache);
     }
     
     
@@ -402,9 +402,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.
     QThreadPool::globalInstance()->reserveThread();
+    U64 inputNodeHash;
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
                 RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
-                              byPassCache, NULL));
+                              byPassCache, NULL),&inputNodeHash);
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
@@ -412,28 +413,57 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 		return inputImg;
 	}
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
-    
-    ///if the plug-in doesn't support the image components
-    if (!isSupportedComponent(inputNb, inputImg->getComponents())) {
+
+    ///if the plug-in doesn't support the image components or doesn't support the given bitdepth,
+    ///convert to another format
+    if (!isSupportedComponent(inputNb, inputImg->getComponents()) && !isSupportedBitDepth(inputImg->getBitDepth())) {
+        
+        ///The output image parameters
         Natron::ImageComponents mappedComp = findClosestSupportedComponents(inputNb, inputImg->getComponents());
+        Natron::ImageBitDepth bitDepth = getBitDepth();
+        ///Special case when converting for masks
         int channelForAlpha = isMask ? getMaskChannel(inputNb) : 3;
         
-        Natron::Image* remappedImg;
+        boost::shared_ptr<Natron::Image> remappedImg;
         
-        if (isMask && (mappedComp == Natron::ImageComponentAlpha) && (channelForAlpha == -1 || !isMaskEnabled(inputNb))) {
-            return boost::shared_ptr<Natron::Image>();
-        } else {
-            ///convert the fetched input image
-            bool invert = isMask && isMaskInverted(inputNb);
-            remappedImg = inputImg->convertToFormat(mappedComp, channelForAlpha,invert);
+        ///We will cache this remapped image because it can be quite expensive to regenerate everytimes.
+        Natron::ImageKey key = Natron::Image::makeKey(inputNodeHash, time,mipMapLevel ,bitDepth,view);
+        
+        FramesNeededMap framesNeeded;
+        boost::shared_ptr<const ImageParams> cachedImgParams = Natron::Image::makeParams(0, inputImg->getRoD(),
+                                                                                         inputImgMipMapLevel,false,
+                                                                                         mappedComp,
+                                                                                         bitDepth,
+                                                                                         -1, 0,
+                                                                                         framesNeeded);
+        
+        
+        bool cached = appPTR->getImageOrCreate(key, cachedImgParams, &remappedImg);
+        if (!cached) {
+            if (isMask && (mappedComp == Natron::ImageComponentAlpha) && (channelForAlpha == -1 || !isMaskEnabled(inputNb))) {
+                ///If this is a mask and it is not enabled (i.e: the checkbox is unchecked or the choice is set to "None")
+                ///return a null pointer.
+                ///This is crude, but the plug-in should've called getConnected() on this clip before.
+                return remappedImg;
+            } else {
+                ///convert the fetched input image
+                bool invert = isMask && isMaskInverted(inputNb);
+                inputImg->convertToFormat(remappedImg.get(), channelForAlpha,invert);
+            }
+            
+
         }
         
-        inputImg.reset(remappedImg);
+        ///change the pointer to the image we need to fetch
+        inputImg = remappedImg;
     }
-    
-    if (!supportsRenderScale() && inputImgMipMapLevel > 0) {
+
+    ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
+    ///Note that we do NOT cache it
+    if (inputImgMipMapLevel > 0 && !supportsRenderScale()) {
         RectI upscaledRoD = inputImg->getPixelRoD().upscalePowerOfTwo(inputImgMipMapLevel);
-        boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0));
+        Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
+        boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0,bitdepth));
         inputImg->upscale_mipmap(inputImg->getPixelRoD(), upscaledImg.get(), inputImgMipMapLevel);
         return upscaledImg;
     } else {
@@ -526,7 +556,7 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
 
 
 
-boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& args)
+boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& args,U64* hashUsed)
 {
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
@@ -545,12 +575,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         byPassCache = true;
     }
     
+    ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
+    ///through all the rendering of this frame.
     U64 nodeHash = hash();
+    if (hashUsed) {
+        *hashUsed = nodeHash;
+    }
     
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
+    
+    Natron::ImageBitDepth bitdepth = getBitDepth();
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel ,args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel ,bitdepth,args.view);
     
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -670,6 +707,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
       
         cachedImgParams = Natron::Image::makeParams(cost, rod,args.mipMapLevel,isProjectFormat,
                                                     components,
+                                                    bitdepth,
                                                     inputNbIdentity, inputTimeIdentity,
                                                     framesNeeded);
     
@@ -707,7 +745,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         if (!supportsRenderScale() && args.mipMapLevel != 0) {
             ///Allocate the upscaled image
-            image.reset(new Natron::Image(components,rod,0));
+            image.reset(new Natron::Image(components,rod,0,bitdepth));
         }
         
         
@@ -767,7 +805,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             downscaledImage = image;
             
             ///Allocate the upscaled image
-            boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,cachedImgParams->getRoD(),0));
+            boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,cachedImgParams->getRoD(),0,bitdepth));
             downscaledImage->scale_box_generic(downscaledImage->getPixelRoD(),upscaledImage.get());
             image = upscaledImage;
         }
@@ -973,7 +1011,8 @@ bool EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scal
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
             boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, nodeHash,rotoAge,
-                                                                        cachedImgParams->getRoD() ,time, view, mipMapLevel, byPassCache);
+                                                                        cachedImgParams->getRoD() ,time,getBitDepth(),
+                                                                        view, mipMapLevel, byPassCache);
             inputImages.push_back(mask);
         }
         
@@ -1649,6 +1688,16 @@ void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime la
 bool EffectInstance::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
 {
     return _node->isSupportedComponent(inputNb, comp);
+}
+
+Natron::ImageBitDepth EffectInstance::getBitDepth() const
+{
+    return _node->getBitDepth();
+}
+
+bool EffectInstance::isSupportedBitDepth(Natron::ImageBitDepth depth) const
+{
+    return _node->isSupportedBitDepth(depth);
 }
 
 Natron::ImageComponents EffectInstance::findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const

@@ -244,10 +244,12 @@ computeHisto(const HistogramRequest& request, int upscale, std::vector<float> *h
 
     double binSize = (request.vmax - request.vmin) / histo->size();
 
-
+    ///Images come from the viewer which is in float.
+    assert(request.image->getBitDepth() == Natron::IMAGE_FLOAT);
+    
     for (int y = request.rect.bottom() ; y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {
-            float *pix = request.image->pixelAt(x, y) ;
+            float *pix = (float*)request.image->pixelAt(x, y) ;
             float v = pix_func(pix);
             if (request.vmin <= v && v < request.vmax) {
                 int index = (int)((v - request.vmin) / binSize);

@@ -3732,10 +3732,32 @@ static void adjustToPointToScale(unsigned int mipmapLevel,double &x,double &y)
     }
 }
 
-
+template <typename PIX,int maxValue>
+void convertCairoImageToNatronImage(cairo_surface_t* cairoImg,Natron::Image* image,const RectI& pixelRod)
+{
+    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
+    unsigned char* srcPix = cdata;
+    int stride = cairo_image_surface_get_stride(cairoImg);
+    
+    int comps = (int)image->getComponentsCount();
+    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
+        
+        PIX* dstPix = (PIX*)image->pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        assert(dstPix);
+        
+        for (int x = 0; x < pixelRod.width(); ++x) {
+            if (comps == 1) {
+                dstPix[x] = PIX(srcPix[x] / 255.f) * maxValue;
+            } else {
+                assert(comps == 4);
+                dstPix[x * 4 + 3] = PIX(srcPix[x] / 255.f) * maxValue;
+            }
+        }
+    }
+}
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
-                                            int view,unsigned int mipmapLevel,bool byPassCache)
+                                            Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache)
 {
     
 
@@ -3748,7 +3770,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     hash.append(ageToRender);
     hash.computeHash();
 
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel, view);
+    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel,depth, view);
     boost::shared_ptr<const Natron::ImageParams> params;
     boost::shared_ptr<Natron::Image> image;
     
@@ -3769,9 +3791,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         Natron::ImageComponents maskComps = Natron::ImageComponentAlpha;
         
         params = Natron::Image::makeParams(0, nodeRoD,mipmapLevel,false,
-                                                    maskComps,
-                                                    -1, time,
-                                                    std::map<int, std::vector<RangeD> >());
+                                           maskComps,
+                                           depth,
+                                           -1, time,
+                                           std::map<int, std::vector<RangeD> >());
         
         cached = appPTR->getImageOrCreate(key, params, &image);
         if (!image) {
@@ -3805,24 +3828,19 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     ///We could also propose the user to render a mask to SVG
     _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
    
-    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
-    unsigned char* srcPix = cdata;
-    int stride = cairo_image_surface_get_stride(cairoImg);
-    
-    int comps = (int)image->getComponentsCount();
-    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
-        
-        float* dstPix = image->pixelAt(pixelRod.x1, pixelRod.y1 + y);
-        assert(dstPix);
-        
-        for (int x = 0; x < pixelRod.width(); ++x) {
-            if (comps == 1) {
-                dstPix[x] = srcPix[x] / 255.f;
-            } else {
-                assert(comps == 4);
-                dstPix[x * 4 + 3] = srcPix[x] / 255.f;
-            }
-        }
+    switch (depth) {
+        case Natron::IMAGE_FLOAT:
+            convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod);
+            break;
+        case Natron::IMAGE_BYTE:
+            convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod);
+            break;
+        case Natron::IMAGE_SHORT:
+            convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod);
+            break;
+        default:
+            assert(false);
+            break;
     }
     
     cairo_destroy(cr);

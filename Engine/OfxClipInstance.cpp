@@ -229,7 +229,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         boost::shared_ptr<Image> image;
         
         
-        Natron::ImageKey key = Natron::Image::makeKey(nodeHash, time,mipmapLevel,view);
+        Natron::ImageKey key = Natron::Image::makeKey(nodeHash, time,mipmapLevel,n->getBitDepth(),view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
         Format f;
         n->getRenderFormat(&f);

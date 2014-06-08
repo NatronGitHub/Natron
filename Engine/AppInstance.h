@@ -124,6 +124,8 @@ public:
     
     virtual void onMaxPanelsOpenedChanged(int /*maxPanels*/) {}
     
+    Natron::ImageDefaultColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
+    
 public slots:
     
     void quit();

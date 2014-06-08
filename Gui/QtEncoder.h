@@ -67,6 +67,8 @@ public:
                                   boost::shared_ptr<Natron::Image> /*output*/) OVERRIDE;
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
+
+    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
 protected:
     
     

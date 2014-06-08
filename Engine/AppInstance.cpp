@@ -398,3 +398,8 @@ void AppInstance::clearOpenFXPluginsCaches(){
 void AppInstance::quit() {
     appPTR->quit(this);
 }
+
+Natron::ImageDefaultColorSpace AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
+{
+    return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
+}

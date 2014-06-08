@@ -1308,3 +1308,24 @@ void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::Imag
     }
 
 }
+
+static Natron::ImageBitDepth ofxBitDepthToNatron(const std::string& bitDepth)
+{
+    if (bitDepth == kOfxBitDepthFloat) {
+        return Natron::IMAGE_FLOAT;
+    } else if (bitDepth == kOfxBitDepthByte) {
+        return Natron::IMAGE_BYTE;
+    } else {
+        return Natron::IMAGE_SHORT;
+    }
+}
+
+void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+{
+    const OFX::Host::Property::Set& prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
+    int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
+    for (int i = 0; i < dim ; ++i) {
+        depths->push_back(ofxBitDepthToNatron(prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths,i)));
+    }
+}
+

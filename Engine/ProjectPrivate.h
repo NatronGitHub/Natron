@@ -75,6 +75,8 @@ struct ProjectPrivate {
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     mutable QMutex previewModeMutex;
     
+    boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
+    
     mutable QMutex timelineMutex;
     boost::shared_ptr<TimeLine> timeline; // global timeline
     
