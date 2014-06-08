@@ -375,7 +375,7 @@ public slots:
     
     void onNodeNameChanged(const QString& name);
     
-    void onViewerImageChanged();
+    void onViewerImageChanged(int texIndex);
         
     boost::shared_ptr<Natron::Node> createReader();
     

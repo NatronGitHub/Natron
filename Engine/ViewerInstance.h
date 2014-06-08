@@ -168,7 +168,7 @@ public slots:
     void onNodeNameChanged(const QString&);
 
     /**
-     * @brief Emits the mustRedraw() signal so that the attached OpenGL viewer will call updateGL().
+     * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
      **/
     void redrawViewer();
 
@@ -182,8 +182,6 @@ public slots:
 signals:
 
     void rodChanged(RectI,int);
-
-    void mustRedraw();
     
     void viewerDisconnected();
 

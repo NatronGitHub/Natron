@@ -134,6 +134,8 @@ public:
 
     /// function that emits the signal to call updateViewer() from the main thread
     void updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params);
+    
+    void redrawViewer() { emit mustRedrawViewer(); }
 
     public slots:
     /**
@@ -147,6 +149,8 @@ signals:
      *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the viewer
      **/
     void doUpdateViewer(boost::shared_ptr<UpdateViewerParams> params);
+    
+    void mustRedrawViewer();
 
 public:
     const ViewerInstance* const instance;

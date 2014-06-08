@@ -533,7 +533,7 @@ void Histogram::onCurrentViewerChanged(QAction*)
     computeHistogramAndRefresh();
 }
 
-void Histogram::onViewerImageChanged(ViewerGL* viewer)
+void Histogram::onViewerImageChanged(ViewerGL* viewer,int texIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -552,9 +552,13 @@ void Histogram::onViewerImageChanged(ViewerGL* viewer)
             
             if ((actionIndex == 1 && lastSelectedViewer == viewer->getViewerTab())
                 || (actionIndex > 1 && selectedHistAction->text() == viewerName)) {
+                
+                QAction* currentInput = _imp->viewerCurrentInputGroup->checkedAction();
+                if (currentInput && currentInput->data().toInt() == texIndex) {
                     computeHistogramAndRefresh();
                 }
-        
+            }
+            
         }
     }
 }

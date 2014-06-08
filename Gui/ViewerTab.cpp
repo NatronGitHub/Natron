@@ -689,9 +689,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(vengine, SIGNAL(engineStarted(bool,int)), this, SLOT(onEngineStarted(bool,int)));
     QObject::connect(vengine, SIGNAL(engineStopped(int)), this, SLOT(onEngineStopped()));
     
-    
-    QObject::connect(_imp->_viewerNode, SIGNAL(mustRedraw()), _imp->viewer, SLOT(update()));
-    
     QObject::connect(_imp->_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
     
     QObject::connect(_imp->_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));

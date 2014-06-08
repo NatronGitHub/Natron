@@ -1184,7 +1184,7 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     }
     
     ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,this,viewer,_imp->_viewersPane);
-    QObject::connect(tab->getViewer(),SIGNAL(imageChanged()),this,SLOT(onViewerImageChanged()));
+    QObject::connect(tab->getViewer(),SIGNAL(imageChanged(int)),this,SLOT(onViewerImageChanged(int)));
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
@@ -1194,13 +1194,13 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     return tab;
 }
 
-void Gui::onViewerImageChanged() {
+void Gui::onViewerImageChanged(int texIndex) {
     ///notify all histograms a viewer image changed
     ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
     if (viewer) {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
-            (*it)->onViewerImageChanged(viewer);
+            (*it)->onViewerImageChanged(viewer,texIndex);
         }
     }
 }

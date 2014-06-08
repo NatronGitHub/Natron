@@ -833,7 +833,11 @@ void KnobGui::onInternalValueChanged(int dimension) {
 
 void KnobGui::onInternalKeySet(SequenceTime time,int){
     boost::shared_ptr<KnobI> knob = getKnob();
-    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    
+    ///For file knobs do not add keys
+    if (!dynamic_cast<File_Knob*>(knob.get())) {
+        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    }
     emit keyFrameSet();
 }
 

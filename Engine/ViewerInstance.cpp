@@ -141,6 +141,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
         connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
     QObject::connect(this,SIGNAL(disconnectTextureRequest(int)),this,SLOT(executeDisconnectTextureRequestOnMainThread(int)));
+    QObject::connect(_imp.get(),SIGNAL(mustRedrawViewer()),this,SLOT(redrawViewer()));
 }
 
 ViewerInstance::~ViewerInstance()
@@ -329,6 +330,9 @@ ViewerInstance::renderViewer(SequenceTime time,
             emit disconnectTextureRequest(i);
         }
     }
+    
+    _imp->redrawViewer();
+    
     if (ret[0] == StatFailed && ret[1] == StatFailed) {
         return StatFailed;
     }
@@ -462,7 +466,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         {
             QMutexLocker l(&_imp->lastRenderedImageMutex);
             if (_imp->lastRenderedImage[textureIndex] != inputImage) {
-                if (_imp->lastRenderedImage) {
+                if (_imp->lastRenderedImage[textureIndex]) {
                     unregisterPluginMemory(_imp->lastRenderedImage[textureIndex]->size());
                 }
                 _imp->lastRenderedImage[textureIndex] = inputImage;
@@ -791,7 +795,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             
         }
         _node->notifyInputNIsFinishedRendering(activeInputIndex);
-        
         
         
         if (!lastRenderedImage) {
@@ -1287,7 +1290,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         }
 
         uiContext->updateColorPicker(params->textureIndex);
-        uiContext->redraw();
         
         updateViewerRunning = false;
     }
@@ -1316,7 +1318,7 @@ ViewerInstance::onGainChanged(double exp)
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false);
     } else {
-        emit mustRedraw();
+        _imp->uiContext->redraw();
     }
     
 }
@@ -1375,7 +1377,7 @@ ViewerInstance::onColorSpaceChanged(ViewerInstance::ViewerColorSpace colorspace)
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false);
     } else {
-        emit mustRedraw();
+        _imp->uiContext->redraw();
     }
 }
 
@@ -1473,8 +1475,7 @@ ViewerInstance::redrawViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-
-    emit mustRedraw();
+    _imp->uiContext->redraw();
 }
 
 boost::shared_ptr<Natron::Image>

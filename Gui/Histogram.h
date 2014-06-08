@@ -67,7 +67,7 @@ public slots:
     
     void onCurrentViewerChanged(QAction*);
 
-    void onViewerImageChanged(ViewerGL* viewer);
+    void onViewerImageChanged(ViewerGL* viewer,int texIndex);
     
 private:
     

@@ -915,6 +915,9 @@ void ViewerGL::paintGL()
     
     glEnable (GL_TEXTURE_2D);
     
+    // don't even bind the shader on 8-bits gamma-compressed textures
+    bool useShader = getBitDepth() != OpenGLViewerI::BYTE && _imp->supportsGLSL;
+    
     for (int i = 0; i < 2 ;++i ){
         if (i == 1 && _imp->viewerTab->getCompositingOperator() == OPERATOR_NONE) {
             break;
@@ -925,14 +928,14 @@ void ViewerGL::paintGL()
             // debug (so the OpenGL debugger can make a breakpoint here)
             //GLfloat d;
             //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-            if (_imp->supportsGLSL) {
+            if (useShader) {
                 activateShaderRGB(i);
             }
             
             glCheckError();
             drawRenderingVAO(_imp->displayingImageMipMapLevel,i);
             
-            if (_imp->supportsGLSL) {
+            if (useShader) {
                 _imp->shaderRGB->release();
             }
             glCheckError();
@@ -1659,10 +1662,7 @@ void ViewerGL::activateShaderRGB(int texIndex)
     // - floating-point textures are linear and must be decompressed according to the given lut
 
     assert(_imp->supportsGLSL );
-    // don't even bind the shader on 8-bits gamma-compressed textures
-    if (getBitDepth() == OpenGLViewerI::BYTE) {
-        return;
-    }
+    
     if (!_imp->shaderRGB->bind()) {
         cout << qPrintable(_imp->shaderRGB->log()) << endl;
     }
@@ -1774,7 +1774,7 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     _imp->displayingImageMipMapLevel = mipMapLevel;
     _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
 
-    emit imageChanged();
+    emit imageChanged(textureIndex);
 }
 
 void ViewerGL::disconnectInputTexture(int textureIndex)
@@ -1876,11 +1876,14 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         wipeSelectionTol = 8. / _imp->zoomCtx.factor();
     }
     
-    if (_imp->overlay && event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
+    if (_imp->overlay && isWipeHandleVisible() &&
+        event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
         _imp->ms = DRAGGING_WIPE_CENTER;
-    } else if (_imp->overlay &&  event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+    } else if (_imp->overlay &&  isWipeHandleVisible() &&
+               event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
         _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
-    } else if (_imp->overlay &&  event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+    } else if (_imp->overlay &&  isWipeHandleVisible() &&
+               event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
         _imp->ms = ROTATING_WIPE_HANDLE;
     }  else if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
@@ -1993,12 +1996,12 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
         }
         
         _imp->hs = HOVERING_NOTHING;
-        if (_imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
+        if (isWipeHandleVisible() && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
             setCursor(QCursor(Qt::SizeAllCursor));
-        } else if (_imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+        } else if (isWipeHandleVisible() && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
             _imp->hs = HOVERING_WIPE_MIX;
             mustRedraw = true;
-        } else if (_imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+        } else if (isWipeHandleVisible() && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
             _imp->hs = HOVERING_WIPE_ROTATE_HANDLE;
             mustRedraw = true;
         } else if (userRoIEnabled) {
@@ -3305,4 +3308,9 @@ bool ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF& pos,double t
     }
     return false;
 
+}
+
+bool ViewerGL::isWipeHandleVisible() const
+{
+    return _imp->viewerTab->getCompositingOperator() != OPERATOR_NONE;
 }

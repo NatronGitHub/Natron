@@ -285,6 +285,9 @@ public:
     void setGain(double d);
     
     void setLut(int lut);
+    
+    bool isWipeHandleVisible() const;
+    
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.
@@ -314,7 +317,7 @@ signals:
     /**
      * @brief Emitted when the image texture changes.
      **/
-    void imageChanged();
+    void imageChanged(int texIndex);
 
 private:
     /**
