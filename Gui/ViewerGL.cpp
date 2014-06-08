@@ -351,7 +351,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
     
     ///The compositing operator to apply to the second texture
     ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
-    assert(textureIndex == 0 || (textureIndex == 1 && compOp != OPERATOR_NONE));
     
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
@@ -423,7 +422,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
 
     
     bool useStandardTexDrawing = true;
-    if (textureIndex == 1) {
+    if (textureIndex == 1 && compOp != OPERATOR_NONE) {
         useStandardTexDrawing = false;
         /// draw only  the plane defined by the wipe handle
         QPointF wipeCenter;
@@ -918,10 +917,15 @@ void ViewerGL::paintGL()
     // don't even bind the shader on 8-bits gamma-compressed textures
     bool useShader = getBitDepth() != OpenGLViewerI::BYTE && _imp->supportsGLSL;
     
+    ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator() ;
     for (int i = 0; i < 2 ;++i ){
-        if (i == 1 && _imp->viewerTab->getCompositingOperator() == OPERATOR_NONE) {
-            break;
+        if (!_imp->activeTextures[i] ||
+            (i == 1 && _imp->activeTextures[0] == _imp->activeTextures[1] )
+            || (i == 1 && compOp != OPERATOR_NONE && !_imp->activeTextures[0])
+            || (i == 1 && _imp->activeTextures[0] && _imp->activeTextures[1] && compOp == OPERATOR_NONE)) {
+            continue;
         }
+        
         if(_imp->activeTextures[i]) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, _imp->activeTextures[i]->getTexID());
@@ -1013,9 +1017,10 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     glEnd();
     glCheckErrorIgnoreOSXBug();
     
+    
     for (int i = 0 ; i< 2 ;++i) {
         if (!_imp->activeTextures[i]) {
-            continue;
+            break;
         }
         RectI dataW = getRoD(i);
         
@@ -3101,7 +3106,8 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
 {
     
     
-    if (imgPos.x() >= rod.left() &&
+    if (_imp->activeTextures[texIndex] &&
+        imgPos.x() >= rod.left() &&
         imgPos.x() < rod.right() &&
         imgPos.y() >= rod.bottom() &&
         imgPos.y() < rod.top() &&

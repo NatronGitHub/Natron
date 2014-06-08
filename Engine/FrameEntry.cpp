@@ -64,7 +64,7 @@ void FrameKey::fillHash(Hash64* hash) const {
     hash->append(_textureRect.h);
     hash->append(_textureRect.closestPo2);
     hash->append(_scale.x);
-    hash->append(_scale.y);
+    hash->append(_scale.y); 
     for (size_t i = 0; i < _inputName.size(); ++i) {
         hash->append(_inputName.at(i));
     }

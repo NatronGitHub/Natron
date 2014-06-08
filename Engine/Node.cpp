@@ -253,14 +253,21 @@ void Node::computeHash() {
         
         ///append all inputs hash
         {
-            InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
+            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
             QMutexLocker l(&_imp->inputsMutex);
-            for (U32 i = 0; i < _imp->inputsQueue.size();++i) {
-                if (isInspector && isInspector->activeInput() != (int)i) {
-                    continue;
+            if (isViewer) {
+                int activeInput[2];
+                isViewer->getActiveInputs(activeInput[0], activeInput[1]);
+                for (int i = 0; i < 2; ++i) {
+                    if (activeInput[i] >= 0 && _imp->inputsQueue[i]) {
+                        _imp->hash.append(_imp->inputsQueue[i]->getHashValue());
+                    }
                 }
-                if (_imp->inputsQueue[i]) {
-                    _imp->hash.append(_imp->inputsQueue[i]->getHashValue());
+            } else {
+                for (U32 i = 0; i < _imp->inputsQueue.size();++i) {
+                    if (_imp->inputsQueue[i]) {
+                        _imp->hash.append(_imp->inputsQueue[i]->getHashValue());
+                    }
                 }
             }
         }

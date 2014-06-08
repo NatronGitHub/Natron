@@ -760,14 +760,8 @@ void RenderTree::fillGraph(const boost::shared_ptr<Natron::Node>& node,std::vect
     /*call fillGraph recursivly on all the node's inputs*/
     node->updateRenderInputs();
     const std::vector<boost::shared_ptr<Node> >& inputs = node->getInputs_other_thread();
-    const InspectorNode* insp = dynamic_cast<const InspectorNode*>(node.get());
     for (U32 i = 0; i < inputs.size(); ++i) {
         if(inputs[i]){
-            /*if the node is an inspector we're interested just by the active input*/
-            
-            if (insp && (int)i != insp->activeInput()) {
-                continue;
-            }
             fillGraph(inputs[i],markedNodes);
         }
     }
