@@ -653,6 +653,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
     unsigned char* ramBuffer = NULL;
 
+    bool usingRAMBuffer = false;
+    
     if (isCached) {
         /*Found in viewer cache, we execute the cached engine and leave*/
 
@@ -688,6 +690,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 }
             }
             ramBuffer = (unsigned char*)_imp->buffer;
+            usingRAMBuffer = true;
 
         } else {
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams =
@@ -927,8 +930,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     {
         QMutexLocker locker(&_imp->updateViewerMutex);
         // wait until previous updateViewer (if any) finishes
-        while (_imp->updateViewerRunning) {
-            _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
+        
+        if (!usingRAMBuffer) {
+            while (_imp->updateViewerRunning) {
+                _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
+            }
         }
         assert(!_imp->updateViewerRunning);
         _imp->updateViewerRunning = true;
@@ -948,6 +954,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 assert(!_imp->updateViewerRunning);
             } else {
                 _imp->updateViewerVideoEngine(params);
+            }
+        }
+        if (usingRAMBuffer) {
+            while (_imp->updateViewerRunning) {
+                _imp->updateViewerCond.wait(&_imp->updateViewerMutex);
             }
         }
     }
