@@ -1314,7 +1314,10 @@ ViewerInstance::isInputOptional(int n) const
     //activeInput() is MT-safe
     int activeInputs[2];
     getActiveInputs(activeInputs[0], activeInputs[1]);
-    return n != activeInputs[0] && n != activeInputs[1];
+    if (n == 0 && activeInputs[0] == -1 && activeInputs[1] == -1) {
+        return false;
+    }
+    return (n != activeInputs[0] && n != activeInputs[1]);
 }
 
 void
