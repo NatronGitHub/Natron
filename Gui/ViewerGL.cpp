@@ -440,9 +440,9 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
         QPointF firstPoint,secondPoint;
         double mpi2 = M_PI / 2.;
         
-        ///extrapolate the line to at least twice the maximum size of the RoD so we're sure the line
+        ///extrapolate the line to the maximum size of the RoD so we're sure the line
         ///intersection algorithm works
-        double maxSize = std::max(rod.x2 - rod.x1,rod.y2 - rod.y1) * 2.;
+        double maxSize = std::max(rod.x2 - rod.x1,rod.y2 - rod.y1) * 100000.;
         firstPoint.setX(wipeCenter.x() - std::cos(wipeAngle + mpi2) * maxSize);
         firstPoint.setY(wipeCenter.y() - std::sin(wipeAngle + mpi2) * maxSize);
         secondPoint.setX(wipeCenter.x() + std::cos(wipeAngle + mpi2) * maxSize);
