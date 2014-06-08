@@ -1014,6 +1014,9 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     glCheckErrorIgnoreOSXBug();
     
     for (int i = 0 ; i< 2 ;++i) {
+        if (!_imp->activeTextures[i]) {
+            continue;
+        }
         RectI dataW = getRoD(i);
         
         if(dataW != dispW){
