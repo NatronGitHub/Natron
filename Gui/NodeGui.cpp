@@ -63,6 +63,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _graph(NULL)
 , _internalNode()
 , _selected(false)
+, _settingNameFromGui(false)
 , _nameItem(NULL)
 , _boundingBox(NULL)
 , _channelsPixmap(NULL)
@@ -113,7 +114,7 @@ void NodeGui::initialize(NodeGraph* dag,
     _graph = dag;
     _menu = new QMenu(dag);
     
-    QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode.get(), SLOT(onGUINameChanged(QString)));
+    QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode.get(), SLOT(setName(QString)));
     
     QObject::connect(_internalNode.get(), SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
     QObject::connect(_internalNode.get(), SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
@@ -606,11 +607,16 @@ bool NodeGui::isNearby(QPointF &point){
 }
 
 void NodeGui::setName(const QString& name_){
+    _settingNameFromGui = true;
     onInternalNameChanged(name_);
     emit nameChanged(name_);
+    _settingNameFromGui = false;
 }
 
 void NodeGui::onInternalNameChanged(const QString& s){
+    if (_settingNameFromGui) {
+        return;
+    }
     _nameItem->setPlainText(s);
     QRectF rect = _boundingBox->boundingRect();
     updateShape(rect.width(), rect.height());

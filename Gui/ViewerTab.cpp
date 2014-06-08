@@ -1859,8 +1859,8 @@ void ViewerTab::onInputNameChanged(int inputNb,const QString& name)
     int indexInA = _imp->_firstInputImage->itemIndex(found->second.name);
     int indexInB = _imp->_secondInputImage->itemIndex(found->second.name);
     assert(indexInA != -1 && indexInB != -1);
-    _imp->_firstInputImage->setItemText(indexInA, found->second.name);
-    _imp->_secondInputImage->setItemText(indexInB, found->second.name);
+    _imp->_firstInputImage->setItemText(indexInA, name);
+    _imp->_secondInputImage->setItemText(indexInB, name);
     found->second.name = name;
     
 }

@@ -207,7 +207,7 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     
     bool nameSet = false;
     if (!serialization.isNull() && !dontLoadName) {
-        setName(serialization.getPluginLabel());
+        setName(serialization.getPluginLabel().c_str());
         nameSet = true;
     }
     
@@ -515,14 +515,14 @@ std::string Node::getName_mt_safe() const {
     return _imp->name;
 }
 
-void Node::setName(const std::string& name)
+void Node::setName(const QString& name)
 {
     {
         QMutexLocker l(&_imp->nameMutex);
-        _imp->name = name;
+        _imp->name = name.toStdString();
     }
 
-    emit nameChanged(name.c_str());
+    emit nameChanged(name);
 }
 
 AppInstance* Node::getApp() const
@@ -536,14 +536,6 @@ bool Node::isActivated() const
     return _imp->activated;
 }
 
-void Node::onGUINameChanged(const QString& str) {
-    
-    ////Only called by the main-thread
-    assert(QThread::currentThread() == qApp->thread());
-    
-    QMutexLocker l(&_imp->nameMutex);
-    _imp->name = str.toStdString();
-}
 
 void Node::initializeKnobs(const NodeSerialization& serialization) {
     ////Only called by the main-thread
@@ -904,14 +896,14 @@ bool Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
 void Node::onInputNameChanged(const QString& name)
 {
     assert(QThread::currentThread() == qApp->thread());
-    EffectInstance* inp = dynamic_cast<EffectInstance*>(sender());
+    Natron::Node* inp = dynamic_cast<Natron::Node*>(sender());
     assert(inp);
     int inputNb = -1;
     
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-            if (_imp->inputsQueue[i]->getLiveInstance() == inp) {
+            if (_imp->inputsQueue[i].get() == inp) {
                 inputNb = i;
                 break;
             }

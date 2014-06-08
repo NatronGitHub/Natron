@@ -315,7 +315,6 @@ public:
     
     std::string getName_mt_safe() const;
 
-    void setName(const std::string& name);
 
     /**
      * @brief Forwarded to the live effect instance
@@ -510,8 +509,9 @@ public slots:
     
     void setKnobsAge(U64 newAge) ;
     
-    void onGUINameChanged(const QString& str);
+    void setName(const QString& name);
 
+    
     void doRefreshEdgesGUI(){
         emit refreshEdgesGUI();
     }

@@ -307,6 +307,7 @@ private:
     bool _selected;
 
     /*A pointer to the graphical text displaying the name.*/
+    bool _settingNameFromGui;
     QGraphicsTextItem *_nameItem;
         
     /*A pointer to the rectangle of the node.*/

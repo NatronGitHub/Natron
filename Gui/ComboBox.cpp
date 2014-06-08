@@ -359,6 +359,9 @@ void ComboBox::setItemText(int index,const QString& item){
     assert(_actions[index]);
     _actions[index]->setText(item);
     growMaximumWidthFromText(item);
+    if (index == _currentIndex) {
+        setCurrentText_internal(item);
+    }
 #if IS_MAXIMUMTEXTSIZE_USEFUL
     /*we also need to re-calculate the maximum text size*/
     _maximumTextSize = 0;
