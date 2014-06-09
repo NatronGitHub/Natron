@@ -711,7 +711,7 @@ private:
     
     enum RenderRoIStatus {
         eImageAlreadyRendered = 0, // there was nothing left to render
-        eImageRendered // we rendered what was missing
+        eImageRendered, // we rendered what was missing
         eImageRenderFailed // render failed
     };
     /**
