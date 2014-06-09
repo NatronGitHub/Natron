@@ -1095,11 +1095,21 @@ void Image::clearBitmap()
     _bitmap.clear();
 }
 
-template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
-DSTPIX convertPixelDepth(SRCPIX pix)
-{
-    return DSTPIX(((float)pix / srcMaxValue) * dstMaxValue);
-}
+template <typename SRCPIX,typename DSTPIX>
+DSTPIX convertPixelDepth(SRCPIX pix);
+
+///explicit template instantiations
+template <> float convertPixelDepth(unsigned char pix) { return (float)(pix) / 255.f; }
+template <> unsigned short convertPixelDepth(unsigned char pix) { return (unsigned short)(pix) * 255.f; }
+template <> unsigned char convertPixelDepth(unsigned char pix) { return pix; }
+
+template <> unsigned char convertPixelDepth(unsigned short pix) { return (unsigned char)(pix / 255.f); }
+template <> float convertPixelDepth(unsigned short pix) { return (float)(pix) / 65535.f; }
+template <> unsigned short convertPixelDepth(unsigned short pix) { return pix; }
+
+template <> unsigned char convertPixelDepth(float pix) { return (unsigned char)(pix * 255); }
+template <> unsigned short convertPixelDepth(float pix) { return (unsigned short)(pix * 65535); }
+template <> float convertPixelDepth(float pix) { return pix; }
 
 ///Fast version when components are the same
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
@@ -1128,7 +1138,7 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
             
             for (int k = 0; k < nComp; ++k) {
                 
-                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue>(srcPixels[k]);
+                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
                 
             }
@@ -1193,7 +1203,7 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
             
             if (dstComp == Natron::ImageComponentAlpha) {
                 assert(channelForAlpha < srcNComp && channelForAlpha >= 0);
-                *dstPixels = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue>(srcPixels[channelForAlpha])
+                *dstPixels = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha])
                 : srcPixels[channelForAlpha];
                 if (invert) {
                     *dstPixels = dstMaxValue - *dstPixels;
@@ -1201,7 +1211,7 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
             } else {
                 for (int k = 0; k < dstNComp; ++k) {
                     if (k < srcNComp) {
-                        DSTPIX pix = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue>(srcPixels[k]) : srcPixels[k];
+                        DSTPIX pix = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]) : srcPixels[k];
                         dstPixels[k] = invert ? dstMaxValue - pix : pix;
                     } else {
                         dstPixels[k] = k == 3 ? dstMaxValue :  0.;
