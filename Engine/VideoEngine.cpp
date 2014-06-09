@@ -635,7 +635,17 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
             // by the HostSupport library.
             stat = _tree.getOutput()->getRegionOfDefinition_public(time,scale,i, &rod,&isProjectFormat);
             if(stat != StatFailed){
-                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, scale,0,i ,rod,isSequentialRender,false,false,NULL));
+                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time,
+                                                                                 scale,
+                                                                                 0,
+                                                                                 i ,
+                                                                                 rod,
+                                                                                 isSequentialRender,
+                                                                                 false,
+                                                                                 false,
+                                                                                 NULL,
+                                                                                 Natron::ImageComponentRGBA,
+                                                                                 _tree.getOutput()->getBitDepth()));
             } else {
                 break;
             }

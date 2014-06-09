@@ -598,8 +598,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
     
-#pragma message WARN("Specify image components here")
+    ///For the viewer we always request RGBA at least so the user can visualize quickly all the channels afterwards
+    ///instead of re-rendering everything if we were in RGB and then the user selects alpha
+    
     ImageComponents components = Natron::ImageComponentRGBA;
+
     size_t bytesCount = textureRect.w * textureRect.h * getElementsCountForComponents(components);
     
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
@@ -769,7 +772,17 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 } else {
                     
                     lastRenderedImage = activeInputToRender->renderRoI(
-                    EffectInstance::RenderRoIArgs(time, scale,mipMapLevel,view,texRectClipped,isSequentialRender,true,byPassCache,&rod));
+                    EffectInstance::RenderRoIArgs(time,
+                                                  scale,
+                                                  mipMapLevel,
+                                                  view,
+                                                  texRectClipped,
+                                                  isSequentialRender,
+                                                  true,
+                                                  byPassCache,
+                                                  &rod,
+                                                  components,
+                                                  activeInputToRender->getBitDepth())); //< render the input depth as the viewer can handle it
                     
                     if (!lastRenderedImage) {
                         return StatFailed;
@@ -1133,7 +1146,6 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
 
 }
 
-#pragma message WARN("Adjust the 8bits and 32bits functions to take into account the image components.")
 void
 scaleToTexture8bits(std::pair<int,int> yRange,
                     const RenderViewerArgs& args,

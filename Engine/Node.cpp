@@ -1277,7 +1277,17 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
-        img = _imp->liveInstance->renderRoI(EffectInstance::RenderRoIArgs(time, scale,mipMapLevel, 0,scaledRod,false,true,false,NULL));
+        img = _imp->liveInstance->renderRoI(EffectInstance::RenderRoIArgs(time,
+                                                                          scale,
+                                                                          mipMapLevel,
+                                                                          0,
+                                                                          scaledRod,
+                                                                          false,
+                                                                          true,
+                                                                          false,
+                                                                          NULL,
+                                                                          Natron::ImageComponentRGB,
+                                                                          getBitDepth())); //< preview is always rgb...
     } catch (const std::exception& e) {
         qDebug() << "Error: Cannot create preview" << ": " << e.what();
         _imp->computingPreview = false;

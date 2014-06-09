@@ -52,6 +52,7 @@ const std::string& OfxClipInstance::getUnmappedBitDepth() const
 
 const std::string &OfxClipInstance::getUnmappedComponents() const
 {
+#pragma message WARN("This feels kinda wrong as the getClipPref will always try to remap from RGBA even for masks...")
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
@@ -330,7 +331,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     int view;
     if (!_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
         qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-        "not controlled by Natron (proabably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+        "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
         "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
         std::list<ViewerInstance*> viewersConnected;
         _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
@@ -356,7 +357,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,co
                                                                  int view, OfxRectD */*optionalBounds*/){
     assert(!isOutput());
     // input has been rendered just find it in the cache
-    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view);
+    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view,
+                                                                     ofxComponentsToNatronComponents(getComponents()));
     if(!image){
         return NULL;
     }else{

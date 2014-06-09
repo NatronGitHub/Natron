@@ -285,18 +285,24 @@ namespace Natron {
          *
          * Also this function converts to the output bit depth.
          *
+         * This function only works for images with the same region of definition and mipmaplevel.
+         *
+         *
+         * @param renderWindow The rectangle to convert
+         *
          * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
          * fill the alpha. If it is -1 it indicates you want to clear the mask.
          *
          * @param invert If true the channels will be inverted when converting.
          *
-         * The bitmap will also be copied.
+         * @param copyBitMap The bitmap will also be copied.
+         *
          * Note that this function is mainly used for the following conversion:
          * RGBA --> Alpha
          * or bit depth conversion
          * Implementation should tend to optimize these cases.
          **/
-        void convertToFormat(Natron::Image* dstImg,int channelForAlpha,bool invert) const;
+        void convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int channelForAlpha,bool invert,bool copyBitMap) const;
         
 
         

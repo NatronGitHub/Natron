@@ -58,6 +58,8 @@ public:
         bool isRenderUserInteraction; // is this render due to user interaction ? (parameter tweek)
         bool byPassCache; //< use the cache to look-up existing images ? (false when a refresh is forced)
         const RectI* preComputedRoD; //<  pre-computed region of definition for this effect to speed-up the call to renderRoi
+        Natron::ImageComponents components; //< the requested image components
+        Natron::ImageBitDepth bitdepth; //< the requested bit depth
         
         RenderRoIArgs(SequenceTime time_,
                       RenderScale scale_,
@@ -67,7 +69,9 @@ public:
                       bool isSequentialRender_,
                       bool isRenderUserInteraction_,
                       bool byPassCache_,
-                      const RectI* preComputedRoD_)
+                      const RectI* preComputedRoD_,
+                      Natron::ImageComponents components_,
+                      Natron::ImageBitDepth bitdepth_)
         : time(time_)
         , scale(scale_)
         , mipMapLevel(mipMapLevel_)
@@ -77,6 +81,8 @@ public:
         , isRenderUserInteraction(isRenderUserInteraction_)
         , byPassCache(byPassCache_)
         , preComputedRoD(preComputedRoD_)
+        , components(components_)
+        , bitdepth(bitdepth_)
         {
         }
     };
@@ -360,7 +366,7 @@ public:
      * RenderSafety::UNSAFE - indicating that only a single 'render' call can be made at any time amoung all instances,
      * RenderSafety::INSTANCE_SAFE - indicating that any instance can have a single 'render' call at any one time,
      * RenderSafety::FULLY_SAFE - indicating that any instance of a plugin can have multiple renders running simultaneously
-     
+     * RenderSafety::FULLY_SAFE_FRAME - Same as FULLY_SAFE but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
     virtual RenderSafety renderThreadSafety() const WARN_UNUSED_RETURN = 0;
     
@@ -382,7 +388,7 @@ public:
     
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view) WARN_UNUSED_RETURN;
+    boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view,Natron::ImageComponents comp) WARN_UNUSED_RETURN;
     
 protected:
     
@@ -702,11 +708,17 @@ private:
     
     struct RenderArgs;
     
+    
+    enum RenderRoIStatus {
+        eImageAlreadyRendered = 0, // there was nothing left to render
+        eImageRendered // we rendered what was missing
+        eImageRenderFailed // render failed
+    };
     /**
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    bool renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
+    RenderRoIStatus renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
                            int view,const RectI& renderWindow, //< renderWindow in pixel coordinates
                            const boost::shared_ptr<const ImageParams>& cachedImgParams,
                            const boost::shared_ptr<Image>& image,
@@ -731,7 +743,9 @@ private:
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,
                                          const RectI& roi,
                                          boost::shared_ptr<Natron::Image> downscaledOutput,
-                                         boost::shared_ptr<Natron::Image> output);
+                                         boost::shared_ptr<Natron::Image> fullScaleOutput,
+                                         boost::shared_ptr<Natron::Image> downscaledMappedOutput,
+                                         boost::shared_ptr<Natron::Image> fullScaleMappedOutput);
     
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
