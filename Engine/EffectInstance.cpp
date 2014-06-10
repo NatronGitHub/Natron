@@ -564,6 +564,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
         }
         
+        if (image->getComponents() != args.components) {
+            ///Convert the image to the requested components
+            boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
+            image->convertToFormat(image->getPixelRoD(), remappedImage.get(), 3, false, true);
+            
+            ///switch the pointer
+            image = remappedImage;
+        }
+        
         if (isCached && byPassCache) {
             ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
             ///we're sure renderRoIInternal will compute the whole image again.
@@ -816,9 +825,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     EffectInstance::RenderRoIStatus retCode;
     
     ///First off check if the requested components and bitdepth are supported by the output clip
-    Natron::ImageComponents outputComponents = image->getComponents();
     Natron::ImageBitDepth outputDepth = image->getBitDepth();
-    
+    Natron::ImageComponents outputComponents = image->getComponents();
     bool supportsRequestedComps = isSupportedComponent(-1, outputComponents);
     bool supportsRequestedDepth = isSupportedBitDepth(outputDepth);
     
@@ -1204,7 +1212,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 }
             } else {
                 if (!supportsRequestedComps || !supportsRequestedDepth) {
-                    downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(), 3, false, true);
+                    downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(), 3, false, false);
                 }
             }
             
@@ -1234,6 +1242,13 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         if (renderStatus != StatOK) {
             break;
         }
+    }
+    
+    ///special case: the image was already fully rendered but not in a supported format, convert it.
+    if (rectsToRender.empty() && (!supportsRequestedDepth || !supportsRequestedComps)) {
+        assert((fullScaleMappedImage != image && useFullResImage) ||
+               (downscaledMappedImage != downscaledImage && !useFullResImage));
+        fullScaleMappedImage->convertToFormat(renderWindow, image.get(), 3, false, false);
     }
     
     if (renderStatus != StatOK) {

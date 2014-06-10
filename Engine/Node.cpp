@@ -861,16 +861,16 @@ void Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
     
     QMutexLocker l(&_imp->inputsMutex);
     
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].get() == input) {
+    for (U32 i = 0; i  < _imp->inputsQueue.size(); ++i) {
+        if (_imp->inputsQueue[i].get() == input) {
             *ok = true;
             return;
         }
     }
     *ok = false;
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->isNodeUpstream(input, ok);
+    for (U32 i = 0; i  < _imp->inputsQueue.size(); ++i) {
+        if (_imp->inputsQueue[i]) {
+            _imp->inputsQueue[i]->isNodeUpstream(input, ok);
             if (*ok) {
                 return;
             }
