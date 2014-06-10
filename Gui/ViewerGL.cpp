@@ -276,7 +276,36 @@ struct ViewerGL::Implementation {
     bool isNearbyWipeMixHandle(const QPointF& pos,double tolerance) const;
     
     void drawArcOfCircle(const QPointF& center,double radius,double startAngle,double endAngle);
+    
+    void bindTextureAndActivateShader(int i,bool useShader)
+    {
+        assert(activeTextures[i]);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, activeTextures[i]->getTexID());
+        // debug (so the OpenGL debugger can make a breakpoint here)
+        //GLfloat d;
+        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        if (useShader) {
+            activateShaderRGB(i);
+        }
+        glCheckError();
+        
+        
+    }
 
+    void unbindTextureAndReleaseShader(bool useShader)
+    {
+        if (useShader) {
+            shaderRGB->release();
+        }
+        glCheckError();
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    
+    /**
+     *@brief Starts using the RGB shader to display the frame
+     **/
+    void activateShaderRGB(int texIndex);
 };
 
 #if 0
@@ -296,7 +325,7 @@ toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 //static const GLfloat renderingTextureCoordinates[32] = {
 //    0 , 1 , //0
 //    0 , 1 , //1
-//    1 , 1 ,//2
+//    1 , 1 , //2
 //    1 , 1 , //3
 //    0 , 1 , //4
 //    0 , 1 , //5
@@ -304,9 +333,9 @@ toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 //    1 , 1 , //7
 //    0 , 0 , //8
 //    0 , 0 , //9
-//    1 , 0 ,  //10
+//    1 , 0 , //10
 //    1 , 0 , //11
-//    0 , 0 , // 12
+//    0 , 0 , //12
 //    0 , 0 , //13
 //    1 , 0 , //14
 //    1 , 0   //15
@@ -339,7 +368,7 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  |/  |/  |/  |
  12--13--14--15
  */
-void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
+void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool drawOnlyWipePolygon,ViewerCompositingOperator compOp)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -348,9 +377,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
     const TextureRect &r = _imp->activeTextures[textureIndex]->getTextureRect();
-    
-    ///The compositing operator to apply to the second texture
-    ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
     
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
@@ -421,9 +447,22 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
            texRectClipped.x2 <= texRect.x2);
 
     
-    bool useStandardTexDrawing = true;
-    if (textureIndex == 1 && compOp != OPERATOR_NONE) {
-        useStandardTexDrawing = false;
+    glPushAttrib(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_BLEND);
+#pragma message WARN("There might be bugs left here I did it fast")
+    if (compOp == OPERATOR_WIPE) {
+        glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
+    } else if (compOp == OPERATOR_OVER) {
+        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA);
+    } else if (compOp == OPERATOR_UNDER) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    } else if (compOp == OPERATOR_MINUS) {
+        glBlendFunc(GL_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
+        glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+    }
+
+    
+    if (drawOnlyWipePolygon) {
         /// draw only  the plane defined by the wipe handle
         QPointF wipeCenter;
         double wipeAngle;
@@ -434,6 +473,9 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
             wipeAngle = _imp->wipeAngle;
             wipeMix = _imp->mixAmount;
         }
+        glBlendColor(1, 1, 1, wipeMix);
+
+        
         ///Compute a second point on the plane separator line
         ///we don't really care how far it is from the center point, it just has to be on the line
         QPointF firstPoint,secondPoint;
@@ -495,10 +537,12 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
             ///the bottom left corner is on the left plane
             if (crossProd > 0 && (wipeCenter.x() >= texRectClipped.x2 || wipeCenter.y() >= texRectClipped.y2)) {
                 ///the plane is invisible because the wipe handle is below or on the left of the texRectClipped
+                glDisable(GL_BLEND);
+                glPopAttrib();
                 return;
             }
             ///otherwise we draw the entire texture as usual
-            useStandardTexDrawing = true;
+            drawOnlyWipePolygon = false;
         } else {
             ///we have 2 intersects
             assert(validIntersectionsIndex[0] != -1 && validIntersectionsIndex[1] != -1);
@@ -615,20 +659,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
             
             
             
-            glPushAttrib(GL_COLOR_BUFFER_BIT);
-            glEnable(GL_BLEND);
-            glBlendColor(1, 1, 1, wipeMix);
-#pragma message WARN("There might be bugs left here I did it fast")
-            if (compOp == OPERATOR_WIPE) {
-                glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-            } else if (compOp == OPERATOR_OVER) {
-                glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
-            } else if (compOp == OPERATOR_UNDER) {
-                glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-            } else if (compOp == OPERATOR_MINUS) {
-                glBlendFunc(GL_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
-                glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-            }
             glBegin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
                 const QPointF& tCoord = polygonTexCoords[i];
@@ -637,12 +667,12 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
                 glVertex2d(vCoord.x(), vCoord.y());
             }
             glEnd();
-            glDisable(GL_BLEND);
-            glPopAttrib();
+
+           
         }
     }
     
-    if (useStandardTexDrawing) {
+    if (!drawOnlyWipePolygon) {
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -722,7 +752,8 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex)
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         glCheckError();
     }
-    
+    glDisable(GL_BLEND);
+    glPopAttrib();
 }
 
 #if 0
@@ -919,37 +950,44 @@ void ViewerGL::paintGL()
     // don't even bind the shader on 8-bits gamma-compressed textures
     bool useShader = getBitDepth() != OpenGLViewerI::BYTE && _imp->supportsGLSL;
     
-    ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator() ;
-    for (int i = 0; i < 2 ;++i ){
-        if (!_imp->activeTextures[i] ||
-            (i == 1 && _imp->activeTextures[0] == _imp->activeTextures[1] )
-            || (i == 1 && compOp != OPERATOR_NONE && !_imp->activeTextures[0])
-            || (i == 1 && _imp->activeTextures[0] && _imp->activeTextures[1] && compOp == OPERATOR_NONE)) {
-            continue;
-        }
-        
-        if(_imp->activeTextures[i]) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, _imp->activeTextures[i]->getTexID());
-            // debug (so the OpenGL debugger can make a breakpoint here)
-            //GLfloat d;
-            //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-            if (useShader) {
-                activateShaderRGB(i);
-            }
-            
-            glCheckError();
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,i);
-            
-            if (useShader) {
-                _imp->shaderRGB->release();
-            }
-            glCheckError();
-            glBindTexture(GL_TEXTURE_2D, 0);
-            
-        }
-    }
+    ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
     
+    bool dontDrawTexture[2];
+    dontDrawTexture[0] = !_imp->activeTextures[0];
+    dontDrawTexture[1] = !_imp->activeTextures[1] ||  ///the texture is null
+    (_imp->activeTextures[0] == _imp->activeTextures[1] ) //or it is the input B and it is equal to the input A
+    || (compOp != OPERATOR_NONE && !_imp->activeTextures[0]) //or it is input B and comp is not NONE and there is no input A
+    || (_imp->activeTextures[0] && _imp->activeTextures[1] && compOp == OPERATOR_NONE); //or it is input B and input A  and B
+                                                                                                  //are valid but comp OP is NONE.
+    
+    if (compOp != OPERATOR_OVER) {
+        ///In wipe mode draw first the input A then only the portion we are interested in the input B
+        for (int i = 0; i < 2 ; ++i) {
+            
+            if (dontDrawTexture[i]) { continue; }
+            
+            _imp->bindTextureAndActivateShader(i, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,i, i == 1,compOp);
+            _imp->unbindTextureAndReleaseShader(useShader);
+            
+        }
+
+    } else if (compOp == OPERATOR_OVER) {
+        ///draw first B then A then just the portion we're interested in of B
+        for (int i = 1; i >= 0 ; --i) {
+            
+           if (dontDrawTexture[i]) { continue; }
+            
+            _imp->bindTextureAndActivateShader(i, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,i, i == 1,compOp);
+            _imp->unbindTextureAndReleaseShader(useShader);
+        }
+        if (!dontDrawTexture[1]) {
+            _imp->bindTextureAndActivateShader(1, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,1, true,OPERATOR_WIPE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+        }
+    } else
 
     glCheckError();
     if (_imp->overlay) {
@@ -1661,26 +1699,25 @@ void ViewerGL::initAndCheckGlExtensions()
 }
 
 
-void ViewerGL::activateShaderRGB(int texIndex)
+void ViewerGL::Implementation::activateShaderRGB(int texIndex)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    assert(QGLContext::currentContext() == context());
 
     // we assume that:
     // - 8-bits textures are stored non-linear and must be displayer as is
     // - floating-point textures are linear and must be decompressed according to the given lut
 
-    assert(_imp->supportsGLSL );
+    assert(supportsGLSL );
     
-    if (!_imp->shaderRGB->bind()) {
-        cout << qPrintable(_imp->shaderRGB->log()) << endl;
+    if (!shaderRGB->bind()) {
+        cout << qPrintable(shaderRGB->log()) << endl;
     }
     
-    _imp->shaderRGB->setUniformValue("Tex", 0);
-    _imp->shaderRGB->setUniformValue("gain", (float)_imp->displayingImageGain[texIndex]);
-    _imp->shaderRGB->setUniformValue("offset", (float)_imp->displayingImageOffset[texIndex]);
-    _imp->shaderRGB->setUniformValue("lut", (GLint)_imp->displayingImageLut);
+    shaderRGB->setUniformValue("Tex", 0);
+    shaderRGB->setUniformValue("gain", (float)displayingImageGain[texIndex]);
+    shaderRGB->setUniformValue("offset", (float)displayingImageOffset[texIndex]);
+    shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
 
     
 }
@@ -3334,4 +3371,9 @@ bool ViewerGL::getZoomOrPannedSinceLastFit() const
 {
     QMutexLocker l(&_imp->zoomCtxMutex);
     return _imp->zoomOrPannedSinceLastFit;
+}
+
+Natron::ViewerCompositingOperator ViewerGL::getCompositingOperator() const
+{
+    return _imp->viewerTab->getCompositingOperator();
 }

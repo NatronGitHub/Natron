@@ -292,6 +292,8 @@ public:
     
     bool getZoomOrPannedSinceLastFit() const;
     
+    virtual Natron::ViewerCompositingOperator getCompositingOperator() const OVERRIDE FINAL;
+    
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.
@@ -390,15 +392,10 @@ private:
     void initShaderGLSL(); // init shaders
     
     /**
-     *@brief Starts using the RGB shader to display the frame
-     **/
-    void activateShaderRGB(int texIndex);
-    
-    /**
      *@brief Fill the rendering VAO with vertices and texture coordinates
      *that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex);
+    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool drawOnlyWipePolygon,Natron::ViewerCompositingOperator comp);
     
     /**
      *@brief Makes the viewer display black only.

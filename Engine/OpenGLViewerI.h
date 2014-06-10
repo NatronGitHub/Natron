@@ -112,6 +112,11 @@ public:
      * @brief Must return the current view displayed if multi-view is enabled, 0 otherwise.
      **/
     virtual int getCurrentView() const = 0;
+    
+    /**
+     * @brief Must return the current compositing operator applied to the viewer input A and B.
+     **/
+    virtual Natron::ViewerCompositingOperator getCompositingOperator() const = 0;
 
 };
 

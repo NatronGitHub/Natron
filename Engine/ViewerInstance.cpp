@@ -829,6 +829,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
         }
+        
+        ViewerCompositingOperator compOp = _imp->uiContext->getCompositingOperator();
+        
+        bool renderAlpha = compOp == OPERATOR_UNDER || compOp == OPERATOR_OVER;
 
         if (singleThreaded) {
             if (autoContrast) {
@@ -853,7 +857,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                         bitDepth,
                                         gain,
                                         offset,
-                                        lutFromColorspace(lut));
+                                        lutFromColorspace(lut),
+                                        renderAlpha);
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
@@ -917,7 +922,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                         bitDepth,
                                         gain,
                                         offset,
-                                        lutFromColorspace(lut));
+                                        lutFromColorspace(lut),
+                                        renderAlpha);
 
             QtConcurrent::map(splitRows,
                               boost::bind(&renderFunctor,
@@ -1099,12 +1105,12 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                 
                 if (srcIndex >= ( args.texRect.x2 - args.texRect.x1)) {
                     break;
-                    //dst_pixels[dstIndex] = toBGRA(0,0,0,255);
                 } else {
                     
                     double r = (double)(src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / maxValue;
                     double g = (double)(src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / maxValue;
                     double b = (double)(src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / maxValue;
+                    double a = (!args.renderAlpha || nComps < 4) ? 255 : src_pixels[srcIndex * nComps + 3] * 255;
                     r =  r * args.gain + args.offset;
                     g =  g * args.gain + args.offset;
                     b =  b * args.gain + args.offset;
@@ -1119,7 +1125,7 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                         dst_pixels[dstIndex] = toBGRA(Color::floatToInt<256>(r),
                                                       Color::floatToInt<256>(g),
                                                       Color::floatToInt<256>(b),
-                                                      255);
+                                                      a);
                     } else {
                         error_r = (error_r&0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
                         error_g = (error_g&0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
@@ -1128,7 +1134,7 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                         dst_pixels[dstIndex] = toBGRA((U8)(error_r >> 8),
                                                       (U8)(error_g >> 8),
                                                       (U8)(error_b >> 8),
-                                                      255);
+                                                      a);
                     }
                 }
                 if (backward) {
@@ -1208,7 +1214,7 @@ template <typename PIX,int maxValue>
 void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                                   const RenderViewerArgs& args,
                                   float *output,
-                                  int rOffset,int gOffset,int bOffset)
+                                  int rOffset,int gOffset,int bOffset,int nComps)
 {
     
     const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
@@ -1231,7 +1237,8 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
             double r = (double)(src_pixels[rOffset]) / maxValue;
             double g = (double)src_pixels[gOffset] / maxValue;
             double b = (double)src_pixels[bOffset] / maxValue;
-            if(luminance){
+            double a = (!args.renderAlpha || nComps < 4) ? 1. : src_pixels[3];
+            if (luminance) {
                 r = 0.299 * r + 0.587 * g + 0.114 * b;
                 g = r;
                 b = r;
@@ -1239,7 +1246,7 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
             *dst_pixels++ = r;
             *dst_pixels++ = g;
             *dst_pixels++ = b;
-            *dst_pixels++ = 1.;
+            *dst_pixels++ = a;
             
             src_pixels += args.closestPowerOf2 * 4;
         }
@@ -1293,13 +1300,13 @@ scaleToTexture32bits(std::pair<int,int> yRange,
     }
     switch (args.inputImage->getBitDepth()) {
         case Natron::IMAGE_FLOAT:
-            scaleToTexture32bitsInternal<float, 1>(yRange, args, output, rOffset, gOffset, bOffset);
+            scaleToTexture32bitsInternal<float, 1>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
             break;
         case Natron::IMAGE_BYTE:
-            scaleToTexture32bitsInternal<unsigned char, 255>(yRange, args, output, rOffset, gOffset, bOffset);
+            scaleToTexture32bitsInternal<unsigned char, 255>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
             break;
         case Natron::IMAGE_SHORT:
-            scaleToTexture32bitsInternal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset);
+            scaleToTexture32bitsInternal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
             break;
         default:
             break;

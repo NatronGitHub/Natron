@@ -36,7 +36,8 @@ struct RenderViewerArgs {
                      int bitDepth_,
                      double gain_,
                      double offset_,
-                     const Natron::Color::Lut* colorSpace_)
+                     const Natron::Color::Lut* colorSpace_,
+                     bool renderAlpha_)
     : inputImage(inputImage_)
     , texRect(texRect_)
     , channels(channels_)
@@ -45,6 +46,7 @@ struct RenderViewerArgs {
     , gain(gain_)
     , offset(offset_)
     , colorSpace(colorSpace_)
+    , renderAlpha(renderAlpha_)
     {
     }
 
@@ -56,6 +58,7 @@ struct RenderViewerArgs {
     double gain;
     double offset;
     const Natron::Color::Lut* colorSpace;
+    bool renderAlpha;
 };
 
 /// parameters send from the VideoEngine thread to updateViewer() (which runs in the main thread)
