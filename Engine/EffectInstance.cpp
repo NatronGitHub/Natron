@@ -797,8 +797,8 @@ void EffectInstance::renderRoI(SequenceTime time,const RenderScale& scale,unsign
                                bool isRenderMadeInResponseToUserInteraction,
                                bool byPassCache,
                                U64 nodeHash) {
-    bool success = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash);
-    if (!success) {
+   EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash);
+    if (renderRetCode == eImageRenderFailed) {
         throw std::runtime_error("Rendering Failed");
     }
 }
@@ -911,7 +911,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     boost::shared_ptr<RotoContext> rotoContext = _node->getRotoContext();
     U64 rotoAge = rotoContext ? rotoContext->getAge() : 0;
     
-    Natron::Status renderStatus;
+    Natron::Status renderStatus = StatOK;
     
     if (rectsToRender.empty()) {
         retCode = EffectInstance::eImageAlreadyRendered;

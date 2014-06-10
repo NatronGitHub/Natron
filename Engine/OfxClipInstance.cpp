@@ -173,13 +173,25 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     RectI rod;
     
+    unsigned int mipmapLevel;
+    int view;
     if (!_lastRenderArgs.hasLocalData() || !_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
-        qDebug() << "";
+        qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
+        std::list<ViewerInstance*> viewersConnected;
+        _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
+        if (viewersConnected.empty()) {
+            view = 0;
+            mipmapLevel = 0;
+        } else {
+            view = viewersConnected.front()->getCurrentView();
+            mipmapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
+        }
+    } else {
+        mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
+        view = _lastRenderArgs.localData().view;
+
     }
-    unsigned int mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
-    int view = _lastRenderArgs.localData().view;
     
-   
     
     if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
