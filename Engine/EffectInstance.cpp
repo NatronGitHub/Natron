@@ -784,9 +784,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                                       args.isRenderUserInteraction ,byPassCache,nodeHash);
     
     
-    if (aborted() || renderRetCode == eImageRenderFailed) {
+    if (aborted()) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
+    }
+    if (renderRetCode == eImageRenderFailed) {
         throw std::runtime_error("Rendering Failed");
     }
 #ifdef NATRON_LOG
@@ -1041,7 +1043,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 if (aborted()) {
                     //if render was aborted, remove the frame from the cache as it contains only garbage
                     appPTR->removeFromNodeCache(image);
-                    return eImageRenderFailed;
+                    return eImageRendered;
                 }
             }
         }
