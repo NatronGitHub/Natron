@@ -1901,7 +1901,29 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     bool mouseInDispW = rod.contains(zoomPos.x(), zoomPos.y());
     
     bool overlaysCaught = false;
-    if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED) {
+    
+    
+    double wipeSelectionTol;
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        wipeSelectionTol = 8. / _imp->zoomCtx.factor();
+    }
+    
+    if (_imp->overlay && isWipeHandleVisible() &&
+        event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
+        _imp->ms = DRAGGING_WIPE_CENTER;
+        return;
+    } else if (_imp->overlay &&  isWipeHandleVisible() &&
+               event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+        _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
+        return;
+    } else if (_imp->overlay &&  isWipeHandleVisible() &&
+               event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+        _imp->ms = ROTATING_WIPE_HANDLE;
+        return;
+    }
+    
+    if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED && _imp->overlay) {
         unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
         overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos);
         if (overlaysCaught) {
@@ -1917,22 +1939,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         updateGL();
     }
     
-    double wipeSelectionTol;
-    {
-        QMutexLocker l(&_imp->zoomCtxMutex);
-        wipeSelectionTol = 8. / _imp->zoomCtx.factor();
-    }
-    
-    if (_imp->overlay && isWipeHandleVisible() &&
-        event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
-        _imp->ms = DRAGGING_WIPE_CENTER;
-    } else if (_imp->overlay &&  isWipeHandleVisible() &&
-               event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
-        _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
-    } else if (_imp->overlay &&  isWipeHandleVisible() &&
-               event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
-        _imp->ms = ROTATING_WIPE_HANDLE;
-    }  else if(event->button() == Qt::LeftButton &&
+    if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
               displayingImage() && mouseInDispW) {
         _imp->pickerState = PICKER_POINT;
@@ -2272,7 +2279,8 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             mustRedraw = true;
         } break;
         default: {
-            if (_imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
+            if (_imp->overlay &&
+                _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
                 mustRedraw = true;
             }
         } break;
