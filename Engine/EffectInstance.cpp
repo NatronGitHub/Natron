@@ -541,9 +541,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     boost::shared_ptr<const ImageParams> cachedImgParams;
     boost::shared_ptr<Image> image;
     
-    Natron::ImageBitDepth bitdepth = getBitDepth();
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel ,bitdepth,args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel ,args.bitdepth,args.view);
     
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -670,7 +669,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         ///Cache the image with the requested components instead of the remapped ones
         cachedImgParams = Natron::Image::makeParams(cost, rod,args.mipMapLevel,isProjectFormat,
                                                     args.components,
-                                                    bitdepth,
+                                                    args.bitdepth,
                                                     inputNbIdentity, inputTimeIdentity,
                                                     framesNeeded);
     
@@ -708,7 +707,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         if (!supportsRenderScale() && args.mipMapLevel != 0) {
             ///Allocate the upscaled image
-            image.reset(new Natron::Image(args.components,rod,0,bitdepth));
+            image.reset(new Natron::Image(args.components,rod,0,args.bitdepth));
         }
         
         
@@ -768,7 +767,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             downscaledImage = image;
             
             ///Allocate the upscaled image
-            boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(args.components,cachedImgParams->getRoD(),0,bitdepth));
+            boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(args.components,cachedImgParams->getRoD(),0,args.bitdepth));
             downscaledImage->scale_box_generic(downscaledImage->getPixelRoD(),upscaledImage.get());
             image = upscaledImage;
         }
