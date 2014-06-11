@@ -304,12 +304,30 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     SequenceTime inpFirst = 0,inpLast = 0;
-    EffectInstance* n = input_other_thread(activeInput());
-    if (n) {
-        n->getFrameRange_public(&inpFirst,&inpLast);
+    int activeInputs[2];
+    getActiveInputs(activeInputs[0], activeInputs[1]);
+    EffectInstance* n1 = input_other_thread(activeInputs[0]);
+    if (n1) {
+        n1->getFrameRange_public(&inpFirst,&inpLast);
     }
     *first = inpFirst;
     *last = inpLast;
+    
+    inpFirst = 0;
+    inpLast = 0;
+    
+    EffectInstance* n2 = input_other_thread(activeInputs[1]);
+    if (n2) {
+        n2->getFrameRange_public(&inpFirst,&inpLast);
+    }
+    
+    if (inpFirst < *first) {
+        *first = inpFirst;
+    }
+    
+    if (inpLast > *last) {
+        *last = inpLast;
+    }
 }
 
 
