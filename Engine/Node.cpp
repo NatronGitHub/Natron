@@ -1762,11 +1762,14 @@ boost::shared_ptr<Natron::Image> Node::getImageBeingRendered(int time,unsigned i
 
 void Node::onInputChanged(int inputNb)
 {
+    assert(QThread::currentThread() == qApp->thread());
     
     std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.find(inputNb);
     if (it != _imp->enableMaskKnob.end()) {
         boost::shared_ptr<Node> inp = input(inputNb);
+        it->second->setEvaluateOnChange(false);
         it->second->setValue(inp ? true : false, 0);
+        it->second->setEvaluateOnChange(true);
     }
     _imp->liveInstance->onInputChanged(inputNb);
     
@@ -1776,7 +1779,9 @@ void Node::onMultipleInputChanged()
 {
     for (std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.begin(); it!=_imp->enableMaskKnob.end(); ++it) {
         boost::shared_ptr<Node> inp = input(it->first);
+        it->second->setEvaluateOnChange(false);
         it->second->setValue(inp ? true : false, 0);
+        it->second->setEvaluateOnChange(true);
     }
     _imp->liveInstance->onMultipleInputsChanged();
 }

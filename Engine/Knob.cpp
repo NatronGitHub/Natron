@@ -555,6 +555,7 @@ void KnobHelper::setDirty(bool d)
 
 void KnobHelper::setEvaluateOnChange(bool b)
 {
+    assert(QThread::currentThread() == qApp->thread());
     _imp->EvaluateOnChange = b;
 }
 
