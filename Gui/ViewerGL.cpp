@@ -145,7 +145,7 @@ struct ViewerGL::Implementation {
     , displayingImageGain()
     , displayingImageOffset()
     , displayingImageMipMapLevel(0)
-    , displayingImageLut(ViewerInstance::sRGB)
+    , displayingImageLut(Natron::sRGB)
     , ms(UNDEFINED)
     , hs(HOVERING_NOTHING)
     , textRenderingColor(200,200,200,255)
@@ -211,7 +211,7 @@ struct ViewerGL::Implementation {
     double displayingImageGain[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel;
-    ViewerInstance::ViewerColorSpace displayingImageLut;
+    Natron::ViewerColorSpace displayingImageLut;
 
     MOUSE_STATE ms;/*!< Holds the mouse state*/
     HOVER_STATE hs;
@@ -1818,7 +1818,7 @@ void ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer, size_t
     _imp->displayingImageGain[textureIndex] = gain;
     _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel = mipMapLevel;
-    _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
+    _imp->displayingImageLut = (Natron::ViewerColorSpace)lut;
 
     emit imageChanged(textureIndex);
 }
@@ -1844,7 +1844,7 @@ void ViewerGL::setLut(int lut)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    _imp->displayingImageLut = (ViewerInstance::ViewerColorSpace)lut;
+    _imp->displayingImageLut = (Natron::ViewerColorSpace)lut;
 }
 
 /**

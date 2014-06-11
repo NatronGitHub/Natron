@@ -83,20 +83,20 @@ toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 }
 
 static const Natron::Color::Lut*
-lutFromColorspace(ViewerInstance::ViewerColorSpace cs) WARN_UNUSED_RETURN;
+lutFromColorspace(Natron::ViewerColorSpace cs) WARN_UNUSED_RETURN;
 
 static const Natron::Color::Lut*
-lutFromColorspace(ViewerInstance::ViewerColorSpace cs)
+lutFromColorspace(Natron::ViewerColorSpace cs)
 {
     const Natron::Color::Lut* lut;
     switch (cs) {
-        case ViewerInstance::sRGB:
+        case Natron::sRGB:
             lut = Natron::Color::LutManager::sRGBLut();
             break;
-        case ViewerInstance::Rec709:
+        case Natron::Rec709:
             lut = Natron::Color::LutManager::Rec709Lut();
             break;
-        case ViewerInstance::Linear:
+        case Natron::Linear:
         default:
             lut = 0;
             break;
@@ -422,10 +422,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     
     
     U64 inputNodeHash = activeInputToRender->hash();
-    
-    Natron::ImageBitDepth inputBitDepth = activeInputToRender->getBitDepth();
-    
-    Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,inputBitDepth,view);
+        
+    Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
     RectI rod,pixelRoD;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
@@ -450,7 +448,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
         EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
-            inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, mipMapLevel,inputBitDepth,view);
+            inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, mipMapLevel,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
             if (isInputImgCached) {
                 inputIdentityNumber = cachedImgParams->getInputNbIdentity();
@@ -634,7 +632,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     double gain;
     double offset = 0.; // 0 except for autoContrast
     bool autoContrast;
-    ViewerInstance::ViewerColorSpace lut;
+    Natron::ViewerColorSpace lut;
     ViewerInstance::DisplayChannels channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
@@ -1462,7 +1460,7 @@ ViewerInstance::isAutoContrastEnabled() const
 }
 
 void
-ViewerInstance::onColorSpaceChanged(ViewerInstance::ViewerColorSpace colorspace)
+ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());

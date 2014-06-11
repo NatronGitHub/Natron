@@ -37,7 +37,6 @@ namespace Natron {
         SequenceTime _time;
         unsigned int _mipMapLevel;
         int _view;
-        Natron::ImageBitDepth _bitdepth;
         double _pixelAspect;
 
         ImageKey();
@@ -46,7 +45,6 @@ namespace Natron {
                  SequenceTime time,
                  unsigned int mipMapLevel,
                  int view,
-                 Natron::ImageBitDepth bitdepth,
                  double pixelAspect = 1.);
         
         void fillHash(Hash64* hash) const;
@@ -116,6 +114,7 @@ namespace Natron {
     class Image  : public CacheEntryHelper<unsigned char,ImageKey>
     {
         
+        Natron::ImageBitDepth _bitDepth;
         ImageComponents _components;
         mutable QReadWriteLock _lock;
         Bitmap _bitmap;
@@ -138,7 +137,6 @@ namespace Natron {
         static ImageKey makeKey(U64 nodeHashKey,
                                 SequenceTime time,
                                 unsigned int mipMapLevel,
-                                Natron::ImageBitDepth bitdepth,
                                 int view);
         
         static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
@@ -170,7 +168,7 @@ namespace Natron {
         
         ImageComponents getComponents() const {return this->_components;}
         
-        Natron::ImageBitDepth getBitDepth() const {return this->_key._bitdepth;}
+        Natron::ImageBitDepth getBitDepth() const {return this->_bitDepth;}
         
         void setPixelAspect(double pa) { this->_key._pixelAspect = pa; }
         
@@ -290,6 +288,10 @@ namespace Natron {
          *
          * @param renderWindow The rectangle to convert
          *
+         * @param srcColorSpace Input data will be taken to be in this color-space
+         *
+         * @param dstColorSpace Output data will be converted to this color-space.
+         *
          * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
          * fill the alpha. If it is -1 it indicates you want to clear the mask.
          *
@@ -302,7 +304,10 @@ namespace Natron {
          * or bit depth conversion
          * Implementation should tend to optimize these cases.
          **/
-        void convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int channelForAlpha,bool invert,bool copyBitMap) const;
+        void convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,
+                             Natron::ViewerColorSpace srcColorSpace,
+                             Natron::ViewerColorSpace dstColorSpace,
+                             int channelForAlpha,bool invert,bool copyBitMap) const;
         
 
         

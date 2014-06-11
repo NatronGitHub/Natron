@@ -1314,7 +1314,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
 
     ///we convert only when input is Linear.
     //Rec709 and srGB is acceptable for preview
-    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth(img->getBitDepth()) == Natron::IMAGE_LINEAR;
+    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth(img->getBitDepth()) == Natron::Linear;
     
     switch (img->getBitDepth()) {
         case Natron::IMAGE_BYTE: {

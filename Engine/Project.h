@@ -209,7 +209,7 @@ public:
      **/
     boost::shared_ptr<Natron::Node> getNodePointer(Natron::Node* n) const;
     
-    Natron::ImageDefaultColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
+    Natron::ViewerColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
     
 public slots:
 

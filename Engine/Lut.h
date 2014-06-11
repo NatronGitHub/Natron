@@ -171,6 +171,9 @@ namespace Natron {
             void fillTables() const;
             
             
+            
+        public:
+            
             /* @brief Converts a float ranging in [0 - 1.f] in the desired color-space to linear color-space also ranging in [0 - 1.f]
              * This function is not fast!
              * @see fromColorSpaceFloatToLinearFloatFast(float)
@@ -182,8 +185,7 @@ namespace Natron {
              * @see toColorSpaceFloatFromLinearFloatFast(float)
              */
             float toColorSpaceFloatFromLinearFloat(float v) const { return _toFunc(v); }
-            
-        public:
+
             
             //Called by all public members
             void validate() const {

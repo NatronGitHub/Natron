@@ -3770,12 +3770,17 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     hash.append(ageToRender);
     hash.computeHash();
 
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel,depth, view);
+    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel, view);
     boost::shared_ptr<const Natron::ImageParams> params;
     boost::shared_ptr<Natron::Image> image;
     
     bool cached = Natron::getImageFromCache(key, &params, &image);
    
+    if (cached && image->getBitDepth() != depth) {
+        cached = false;
+        image.reset();
+        params.reset();
+    }
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
     if (cached) {

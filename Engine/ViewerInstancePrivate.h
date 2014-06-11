@@ -72,7 +72,7 @@ struct UpdateViewerParams
     , gain(1.)
     , offset(0.)
     , mipMapLevel(0)
-    , lut(ViewerInstance::sRGB)
+    , lut(Natron::sRGB)
     {}
 
     unsigned char* ramBuffer;
@@ -82,7 +82,7 @@ struct UpdateViewerParams
     double gain;
     double offset;
     unsigned int mipMapLevel;
-    ViewerInstance::ViewerColorSpace lut;
+    Natron::ViewerColorSpace lut;
     boost::shared_ptr<Natron::FrameEntry> cachedFrame; //!< put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
 };
 
@@ -102,7 +102,7 @@ public:
     , bufferAllocated(0)
     , viewerParamsMutex()
     , viewerParamsGain(1.)
-    , viewerParamsLut(ViewerInstance::sRGB)
+    , viewerParamsLut(Natron::sRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels(ViewerInstance::RGB)
     , viewerMipMapLevel(0)
@@ -182,7 +182,7 @@ public:
     // viewerParams: The viewer parameters that may be accessed from the GUI
     mutable QMutex   viewerParamsMutex; //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
     double           viewerParamsGain ;/*!< Current gain setting in the GUI. Not affected by autoContrast. */
-    ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
+    Natron::ViewerColorSpace viewerParamsLut; /*!< a value coding the current color-space used to render.
                                        0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool             viewerParamsAutoContrast;
     DisplayChannels  viewerParamsChannels;

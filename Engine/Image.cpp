@@ -15,6 +15,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/ImageParams.h"
+#include "Engine/Lut.h"
 
 using namespace Natron;
 
@@ -34,13 +35,11 @@ ImageKey::ImageKey(U64 nodeHashKey,
                    SequenceTime time,
                    unsigned int mipMapLevel,
                    int view,
-                   Natron::ImageBitDepth bitdepth,
                    double pixelAspect)
 : KeyHelper<U64>()
 , _nodeHashKey(nodeHashKey)
 , _time(time)
 , _view(view)
-, _bitdepth(bitdepth)
 , _pixelAspect(pixelAspect)
 { _mipMapLevel = mipMapLevel; }
 
@@ -49,7 +48,6 @@ void ImageKey::fillHash(Hash64* hash) const {
     hash->append(_mipMapLevel);
     hash->append(_time);
     hash->append(_view);
-    hash->append(_bitdepth);
     hash->append(_pixelAspect);
 }
 
@@ -60,7 +58,6 @@ bool ImageKey::operator==(const ImageKey& other) const {
     _mipMapLevel == other._mipMapLevel &&
     _time == other._time &&
     _view == other._view &&
-    _bitdepth == other._bitdepth &&
     _pixelAspect == other._pixelAspect;
     
 }
@@ -326,6 +323,7 @@ CacheEntryHelper<unsigned char,ImageKey>(key,params,restore,path)
 {
     const ImageParams* p = dynamic_cast<const ImageParams*>(params.get());
     _components = p->getComponents();
+    _bitDepth = p->getBitDepth();
     _bitmap.initialize(p->getPixelRoD());
     _rod = p->getRoD();
     _pixelRod = p->getPixelRoD();
@@ -340,7 +338,7 @@ CacheEntryHelper<unsigned char,ImageKey>(key,params,restore,path)
  then be handled by the user. Note that no view number is passed in parameter
  as it is not needed.*/
 Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel,Natron::ImageBitDepth bitdepth)
-: CacheEntryHelper<unsigned char,ImageKey>(makeKey(0,0,mipMapLevel,bitdepth,0),
+: CacheEntryHelper<unsigned char,ImageKey>(makeKey(0,0,mipMapLevel,0),
             boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
                                                 regionOfDefinition,
                                                 regionOfDefinition.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
@@ -357,6 +355,7 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
     
     const ImageParams* p = dynamic_cast<const ImageParams*>(_params.get());
     _components = components;
+    _bitDepth = bitdepth;
     _bitmap.initialize(p->getPixelRoD());
     _rod = regionOfDefinition;
     _pixelRod = p->getPixelRoD();
@@ -365,9 +364,8 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
 ImageKey Image::makeKey(U64 nodeHashKey,
                         SequenceTime time,
                         unsigned int mipMapLevel,
-                        Natron::ImageBitDepth bitdepth,
                         int view){
-    return ImageKey(nodeHashKey,time,mipMapLevel,view,bitdepth);
+    return ImageKey(nodeHashKey,time,mipMapLevel,view);
 }
 
 boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
@@ -1095,6 +1093,19 @@ void Image::clearBitmap()
     _bitmap.clear();
 }
 
+template <typename PIX,int maxValue>
+PIX clamp(PIX p)
+{
+    if (p > maxValue) {
+        return maxValue;
+    }
+    if (p < 0) {
+        return 0;
+    }
+    
+    return p;
+}
+
 template <typename SRCPIX,typename DSTPIX>
 DSTPIX convertPixelDepth(SRCPIX pix);
 
@@ -1107,13 +1118,39 @@ template <> unsigned char convertPixelDepth(unsigned short pix) { return (unsign
 template <> float convertPixelDepth(unsigned short pix) { return (float)(pix) / 65535.f; }
 template <> unsigned short convertPixelDepth(unsigned short pix) { return pix; }
 
-template <> unsigned char convertPixelDepth(float pix) { return (unsigned char)(pix * 255); }
-template <> unsigned short convertPixelDepth(float pix) { return (unsigned short)(pix * 65535); }
+template <> unsigned char convertPixelDepth(float pix) { return (unsigned char)clamp<float, 255>(pix * 255); }
+template <> unsigned short convertPixelDepth(float pix) { return (unsigned short)clamp<float, 65535>(pix * 65535); }
 template <> float convertPixelDepth(float pix) { return pix; }
+
+
+static const Natron::Color::Lut*
+lutFromColorspace(Natron::ViewerColorSpace cs)
+{
+    const Natron::Color::Lut* lut;
+    switch (cs) {
+        case Natron::sRGB:
+            lut = Natron::Color::LutManager::sRGBLut();
+            break;
+        case Natron::Rec709:
+            lut = Natron::Color::LutManager::Rec709Lut();
+            break;
+        case Natron::Linear:
+        default:
+            lut = 0;
+            break;
+    }
+    if (lut) {
+        lut->validate();
+    }
+    return lut;
+}
 
 ///Fast version when components are the same
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
-void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& srcImg,Image& dstImg,bool invert,bool copyBitmap)
+void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& srcImg,Image& dstImg,
+                                       Natron::ViewerColorSpace srcColorSpace,
+                                       Natron::ViewerColorSpace dstColorSpace,
+                                       bool invert,bool copyBitmap)
 {
     const RectI& r = srcImg.getPixelRoD();
 
@@ -1122,28 +1159,75 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
         return;
     }
     
+    Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
+    
     int nComp = (int)srcImg.getComponentsCount();
 
-    ///This is by how much we need to offset the pointer once a row is finished to go to the next one
-    int rowExtraOffset = r.width() * nComp - intersection.width() * nComp;
+    const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
+    const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
     
-    const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1, intersection.y1);
-    DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
+    ///no colorspace conversion applied when luts are the same
+    if (srcLut == dstLut) {
+        srcLut = dstLut = 0;
+    }
     
-    for (int y = 0; y < intersection.height();
-         ++y, srcPixels += rowExtraOffset , dstPixels += rowExtraOffset) {
+    for (int y = 0; y < intersection.height();++y) {
         
-        for (int x = 0; x < intersection.width();
-             ++x,srcPixels += nComp,dstPixels += nComp) {
+        int start = rand() % intersection.width();
+        
+        const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
+        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
+        const SRCPIX* srcStart = srcPixels;
+        DSTPIX* dstStart = dstPixels;
+        
+        for (int backward = 0;backward < 2; ++backward) {
+            int x = backward ? start - 1 : start;
+            int end = backward ? -1 : intersection.width();
             
-            for (int k = 0; k < nComp; ++k) {
+            unsigned error[3] = { 0x80,0x80,0x80 };
+            
+            while (x != end && x >= 0 && x < intersection.width()) {
                 
-                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
-                dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                for (int k = 0; k < nComp; ++k) {
+                    
+                    if (k <= 2 && (srcLut || dstLut)) {
+                        float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                        if (srcLut) {
+                            ///use slow function otherwise I can't see how we can avoid complicated code to cover all cases
+                            pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                        }
+                        
+                        DSTPIX pix;
+                        if (dstDepth == IMAGE_BYTE) {
+                            ///small increase in perf we use Luts. This should be anyway the most used case.
+                            error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
+                            pix = error[k] >> 8;
+                        } else {
+                            pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                            pix = convertPixelDepth<float, DSTPIX>(pixFloat);
+                        }
+                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                        
+                    } else {
+                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                    }
+                }
                 
+                if (backward) {
+                    --x;
+                    srcPixels -= nComp;
+                    dstPixels -= nComp;
+                } else {
+                    ++x;
+                    srcPixels += nComp;
+                    dstPixels += nComp;
+                }
             }
+            srcPixels = srcStart - nComp;
+            dstPixels = dstStart - nComp;
         }
-        
+
         if (copyBitmap) {
             const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
             char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
@@ -1153,7 +1237,10 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
 }
 
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
-void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image& dstImg,int channelForAlpha,bool invert,bool copyBitmap)
+void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image& dstImg,
+                             Natron::ViewerColorSpace srcColorSpace,
+                             Natron::ViewerColorSpace dstColorSpace,
+                             int channelForAlpha,bool invert,bool copyBitmap)
 {
     
     const RectI& r = srcImg.getPixelRoD();
@@ -1164,24 +1251,17 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
     }
     
     Natron::ImageComponents dstComp = dstImg.getComponents();
+    Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
     
     bool sameBitDepth = srcImg.getBitDepth() == dstImg.getBitDepth();
 
-    DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
-    const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1, intersection.y1);
-
     int dstNComp = getElementsCountForComponents(dstComp);
     int srcNComp = getElementsCountForComponents(srcImg.getComponents());
-    
-    ///This is by how much we need to offset the pointer once a row is finished to go to the next one
-    int srcExtraOffset = r.width() * srcNComp - intersection.width() * srcNComp;
-    int dstExtraOffset = r.width() * dstNComp - intersection.width() * dstNComp;
-    
-    assert(srcPixels);
-    assert(dstPixels);
 
     ///special case comp == alpha && channelForAlpha = -1 clear out the mask
     if (dstComp == Natron::ImageComponentAlpha && channelForAlpha == -1) {
+        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
+        
         for (int y = 0; y < intersection.height();
              ++y, dstPixels += (r.width() * dstNComp)) {
             std::fill(dstPixels, dstPixels + intersection.width() * dstNComp, 0.);
@@ -1194,46 +1274,102 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
         return;
     }
     
+    const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
+    const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
 
-    for (int y = 0; y < intersection.height();
-         ++y, srcPixels += srcExtraOffset, dstPixels += dstExtraOffset) {
+    
+    for (int y = 0; y < intersection.height(); ++y) {
         
-        for (int x = 0; x < intersection.width();
-             ++x,srcPixels += srcNComp,dstPixels += dstNComp) {
+        int start = rand() % intersection.width();
+        
+        const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
+        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
+        const SRCPIX* srcStart = srcPixels;
+        DSTPIX* dstStart = dstPixels;
+        
+        for (int backward = 0;backward < 2; ++backward) {
+            int x = backward ? start - 1 : start;
+            int end = backward ? -1 : intersection.width();
             
-            if (dstComp == Natron::ImageComponentAlpha) {
-                assert(channelForAlpha < srcNComp && channelForAlpha >= 0);
-                *dstPixels = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha])
-                : srcPixels[channelForAlpha];
-                if (invert) {
-                    *dstPixels = dstMaxValue - *dstPixels;
-                }
-            } else {
-                for (int k = 0; k < dstNComp; ++k) {
-                    if (k < srcNComp) {
-                        DSTPIX pix = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]) : srcPixels[k];
-                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                    } else {
-                        dstPixels[k] = k == 3 ? dstMaxValue :  0.;
-                        if (invert) {
-                            dstPixels[k] = dstMaxValue - dstPixels[k];
+            unsigned error[3] = { 0x80,0x80,0x80 };
+            
+            while (x != end && x >= 0 && x < intersection.width()) {
+                
+                if (dstComp == Natron::ImageComponentAlpha) {
+                    assert(channelForAlpha < srcNComp && channelForAlpha >= 0);
+                    *dstPixels = !sameBitDepth ? convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha])
+                    : srcPixels[channelForAlpha];
+                    if (invert) {
+                        *dstPixels = dstMaxValue - *dstPixels;
+                    }
+                } else {
+                    for (int k = 0; k < dstNComp; ++k) {
+                        if (k < srcNComp) {
+                            
+                            if (k <= 2 && (srcLut || dstLut)) {
+                                float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                
+                                if (srcLut) {
+                                    ///use slow function otherwise I can't see how we can avoid complicated code to cover all cases
+                                    pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                }
+
+                                
+                                DSTPIX pix;
+                                if (dstDepth == IMAGE_BYTE) {
+                                    error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
+                                    pix = error[k] >> 8;
+                                } else {
+                                    pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                    pix = convertPixelDepth<float, DSTPIX>(pixFloat);
+                                }
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                                
+                            } else {
+                                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                            }
+
+                        } else {
+                            dstPixels[k] = k == 3 ? dstMaxValue :  0.;
+                            if (invert) {
+                                dstPixels[k] = dstMaxValue - dstPixels[k];
+                            }
                         }
                     }
                 }
-            }
-            if (copyBitmap) {
-                const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-                char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
-                memcpy(dstBitmap, srcBitmap, intersection.width());
-            }
-        }
-    }
 
+                if (backward) {
+                    --x;
+                    srcPixels -= srcNComp;
+                    dstPixels -= dstNComp;
+                } else {
+                    ++x;
+                    srcPixels += srcNComp;
+                    dstPixels += dstNComp;
+                }
+            }
+            srcPixels = srcStart - srcNComp;
+            dstPixels = dstStart - dstNComp;
+        }
+        
+        
+        if (copyBitmap) {
+            const char* srcBitmap = srcImg.getBitmapAt(intersection.x1, intersection.y1 + y);
+            char* dstBitmap = dstImg.getBitmapAt(intersection.x1, intersection.y1 + y);
+            memcpy(dstBitmap, srcBitmap, intersection.width());
+        }
+        
+    }
+    
 }
 
 
 
-void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int channelForAlpha,bool invert,bool copyBitmap) const
+void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,
+                            Natron::ViewerColorSpace srcColorSpace,
+                            Natron::ViewerColorSpace dstColorSpace,
+                            int channelForAlpha,bool invert,bool copyBitmap) const
 {
     assert(getPixelRoD() == dstImg->getPixelRoD());
     
@@ -1244,15 +1380,18 @@ void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int 
                     case IMAGE_BYTE:
                         ///Same as a copy
                         convertToFormatInternal_sameComps<unsigned char, unsigned char, 255, 255>(renderWindow,*this, *dstImg,
-                                                                                                  invert,copyBitmap);
+                                                                                                  srcColorSpace,
+                                                                                                  dstColorSpace,invert,copyBitmap);
                         break;
                     case IMAGE_SHORT:
                         convertToFormatInternal_sameComps<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg,
-                                                                                                     invert,copyBitmap);
+                                                                                                     srcColorSpace,
+                                                                                                     dstColorSpace,invert,copyBitmap);
                         break;
                     case IMAGE_FLOAT:
                         convertToFormatInternal_sameComps<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
-                                                                                        invert,copyBitmap);
+                                                                                        srcColorSpace,
+                                                                                        dstColorSpace,invert,copyBitmap);
                         break;
                     default:
                         break;
@@ -1262,16 +1401,19 @@ void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int 
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
                         convertToFormatInternal_sameComps<unsigned char, unsigned short, 255, 65535>(renderWindow,*this, *dstImg,
-                                                                                                     invert,copyBitmap);
+                                                                                                     srcColorSpace,
+                                                                                                     dstColorSpace,invert,copyBitmap);
                         break;
                     case IMAGE_SHORT:
                         ///Same as a copy
                         convertToFormatInternal_sameComps<unsigned short, unsigned short, 65535, 65535>(renderWindow,*this, *dstImg,
-                                                                                                        invert,copyBitmap);
+                                                                                                        srcColorSpace,
+                                                                                                        dstColorSpace,invert,copyBitmap);
                         break;
                     case IMAGE_FLOAT:
                         convertToFormatInternal_sameComps<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
-                                                                                           invert,copyBitmap);
+                                                                                           srcColorSpace,
+                                                                                           dstColorSpace,invert,copyBitmap);
                         break;
                     default:
                         break;
@@ -1281,16 +1423,19 @@ void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int 
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
                         convertToFormatInternal_sameComps<unsigned char, float, 255, 1>(renderWindow,*this, *dstImg,
-                                                                                        invert,copyBitmap);
+                                                                                        srcColorSpace,
+                                                                                        dstColorSpace,invert,copyBitmap);
                         break;
                     case IMAGE_SHORT:
                         convertToFormatInternal_sameComps<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
-                                                                                           invert,copyBitmap);
+                                                                                           srcColorSpace,
+                                                                                           dstColorSpace,invert,copyBitmap);
                         break;
                     case IMAGE_FLOAT:
                         ///Same as a copy
                         convertToFormatInternal_sameComps<float, float, 1, 1>(renderWindow,*this, *dstImg,
-                                                                              invert,copyBitmap);
+                                                                              srcColorSpace,
+                                                                              dstColorSpace,invert,copyBitmap);
                         break;
                     default:
                         break;
@@ -1305,15 +1450,24 @@ void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int 
             case IMAGE_BYTE: {
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
-                        convertToFormatInternal<unsigned char, unsigned char, 255, 255>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<unsigned char, unsigned char, 255, 255>(renderWindow,*this, *dstImg,
+                                                                                        srcColorSpace,
+                                                                                        dstColorSpace,
+                                                                                        channelForAlpha,
                                                                                         invert,copyBitmap);
                         break;
                     case IMAGE_SHORT:
-                        convertToFormatInternal<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg,
+                                                                                           srcColorSpace,
+                                                                                           dstColorSpace,
+                                                                                           channelForAlpha,
                                                                                            invert,copyBitmap);
                         break;
                     case IMAGE_FLOAT:
-                        convertToFormatInternal<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
+                                                                              srcColorSpace,
+                                                                              dstColorSpace,
+                                                                              channelForAlpha,
                                                                               invert,copyBitmap);
                         break;
                     default:
@@ -1323,15 +1477,22 @@ void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int 
             case IMAGE_SHORT: {
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
-                        convertToFormatInternal<unsigned char, unsigned short, 255, 65535>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<unsigned char, unsigned short, 255, 65535>(renderWindow,*this, *dstImg,
+                                                                                           srcColorSpace,
+                                                                                           dstColorSpace,
+                                                                                           channelForAlpha,
                                                                                            invert,copyBitmap);
                         break;
                     case IMAGE_SHORT:
                         convertToFormatInternal<unsigned short, unsigned short, 65535, 65535>(renderWindow,*this, *dstImg,
-                                                                                              channelForAlpha, invert,copyBitmap);
+                                                                                              srcColorSpace,
+                                                                                              dstColorSpace,channelForAlpha, invert,copyBitmap);
                         break;
                     case IMAGE_FLOAT:
-                        convertToFormatInternal<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
+                                                                                 srcColorSpace,
+                                                                                 dstColorSpace,
+                                                                                 channelForAlpha,
                                                                                  invert,copyBitmap);
                         break;
                     default:
@@ -1341,15 +1502,21 @@ void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,int 
             case IMAGE_FLOAT: {
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
-                        convertToFormatInternal<unsigned char, float, 255, 1>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<unsigned char, float, 255, 1>(renderWindow,*this, *dstImg,
+                                                                              srcColorSpace,
+                                                                              dstColorSpace, channelForAlpha,
                                                                               invert,copyBitmap);
                         break;
                     case IMAGE_SHORT:
-                        convertToFormatInternal<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
+                                                                                 srcColorSpace,
+                                                                                 dstColorSpace, channelForAlpha,
                                                                                  invert,copyBitmap);
                         break;
                     case IMAGE_FLOAT:
-                        convertToFormatInternal<float, float, 1, 1>(renderWindow,*this, *dstImg, channelForAlpha,
+                        convertToFormatInternal<float, float, 1, 1>(renderWindow,*this, *dstImg,
+                                                                    srcColorSpace,
+                                                                    dstColorSpace, channelForAlpha,
                                                                     invert,copyBitmap);
                         break;
                     default:

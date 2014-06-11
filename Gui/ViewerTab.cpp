@@ -712,13 +712,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
 
 void ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    ViewerInstance::ViewerColorSpace colorspace;
+    Natron::ViewerColorSpace colorspace;
     if (v == 0) {
-        colorspace = ViewerInstance::Linear;
+        colorspace = Natron::Linear;
     } else if (1) {
-        colorspace = ViewerInstance::sRGB;
+        colorspace = Natron::sRGB;
     } else if (2) {
-       colorspace = ViewerInstance::Rec709;
+       colorspace = Natron::Rec709;
     } else {
         assert(false);
     }
@@ -1328,15 +1328,15 @@ bool ViewerTab::isClippedToProject() const {
 }
 
 std::string ViewerTab::getColorSpace() const {
-    ViewerInstance::ViewerColorSpace lut = (ViewerInstance::ViewerColorSpace)_imp->_viewerNode->getLutType();
+    Natron::ViewerColorSpace lut = (Natron::ViewerColorSpace)_imp->_viewerNode->getLutType();
     switch (lut) {
-        case ViewerInstance::Linear:
+        case Natron::Linear:
             return "Linear(None)";
             break;
-        case ViewerInstance::sRGB:
+        case Natron::sRGB:
             return "sRGB";
             break;
-        case ViewerInstance::Rec709:
+        case Natron::Rec709:
             return "Rec.709";
             break;
         default:

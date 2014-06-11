@@ -43,12 +43,6 @@ public:
         LUMINANCE
     };
     
-    enum ViewerColorSpace{
-        sRGB = 0,
-        Linear,
-        Rec709
-    };
-    
 
 public:
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
@@ -149,7 +143,7 @@ public:
     
     void onGainChanged(double exp);
     
-    void onColorSpaceChanged(ViewerInstance::ViewerColorSpace colorspace);
+    void onColorSpaceChanged(Natron::ViewerColorSpace colorspace);
     
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     

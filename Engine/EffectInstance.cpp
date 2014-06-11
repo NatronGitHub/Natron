@@ -542,7 +542,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     boost::shared_ptr<Image> image;
     
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel ,args.bitdepth,args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel,args.view);
     
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -563,10 +563,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
         }
         
-        if (image->getComponents() != args.components) {
+        if (image->getComponents() != args.components || image->getBitDepth() != args.bitdepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
-            image->convertToFormat(image->getPixelRoD(), remappedImage.get(), 3, false, true);
+            image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
+                                   getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
+                                   getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
+                                   3, false, true);
             
             ///switch the pointer
             image = remappedImage;
@@ -854,21 +857,6 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     assert((image == downscaledImage && (supportsRenderScale() || mipMapLevel == 0)) ||
            (image != downscaledImage && !supportsRenderScale() && mipMapLevel != 0));
     
-    ///These are the image passed to the plug-in to render
-    boost::shared_ptr<Image> fullScaleMappedImage,downscaledMappedImage;
-    
-    if (!supportsRequestedDepth || !supportsRequestedComps) {
-        if (useFullResImage) {
-            fullScaleMappedImage.reset(new Image(outputComponents,image->getRoD(),image->getMipMapLevel(),outputDepth));
-            downscaledMappedImage = downscaledImage;
-        } else {
-            downscaledMappedImage.reset(new Image(outputComponents,downscaledImage->getRoD(),downscaledImage->getMipMapLevel(),outputDepth));
-            fullScaleMappedImage = image;
-        }
-    } else {
-        fullScaleMappedImage = image;
-        downscaledMappedImage = downscaledImage;
-    }
     
     ///Add the window to the project's available formats if the effect is a reader
     ///This is the only reliable place where I could put these lines...which don't seem to feel right here.
@@ -928,6 +916,24 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         retCode = EffectInstance::eImageRendered;
     }
 
+    
+    ///These are the image passed to the plug-in to render
+    boost::shared_ptr<Image> fullScaleMappedImage,downscaledMappedImage;
+    if (!rectsToRender.empty()) {
+        if (!supportsRequestedDepth || !supportsRequestedComps) {
+            if (useFullResImage) {
+                fullScaleMappedImage.reset(new Image(outputComponents,image->getRoD(),image->getMipMapLevel(),outputDepth));
+                downscaledMappedImage = downscaledImage;
+            } else {
+                downscaledMappedImage.reset(new Image(outputComponents,downscaledImage->getRoD(),downscaledImage->getMipMapLevel(),outputDepth));
+                fullScaleMappedImage = image;
+            }
+        } else {
+            fullScaleMappedImage = image;
+            downscaledMappedImage = downscaledImage;
+        }
+    }
+    
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         
         RectI rectToRender = *it;
@@ -1206,14 +1212,20 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             if (useFullResImage) {
                 ///First demap the fullScaleMappedImage to the original image if it needs to
                 if (!supportsRequestedComps || !supportsRequestedDepth) {
-                    fullScaleMappedImage->convertToFormat(canonicalRectToRender, image.get(), 3, false, true);
+                    fullScaleMappedImage->convertToFormat(canonicalRectToRender, image.get(),
+                                                          getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
+                                                          getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
+                                                          3, false, true);
                 }
                 if (mipMapLevel != 0) {
                     image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
                 }
             } else {
                 if (!supportsRequestedComps || !supportsRequestedDepth) {
-                    downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(), 3, false, false);
+                    downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(),
+                                                           getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
+                                                           getApp()->getDefaultColorSpaceForBitDepth(downscaledImage->getBitDepth()),
+                                                           3, false, false);
                 }
             }
             
@@ -1245,17 +1257,9 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         }
     }
     
-    ///special case: the image was already fully rendered but not in a supported format, convert it.
-    if (rectsToRender.empty() && (!supportsRequestedDepth || !supportsRequestedComps)) {
-        assert((fullScaleMappedImage != image && useFullResImage) ||
-               (downscaledMappedImage != downscaledImage && !useFullResImage));
-        fullScaleMappedImage->convertToFormat(renderWindow, image.get(), 3, false, false);
-    }
-    
     if (renderStatus != StatOK) {
         retCode = eImageRenderFailed;
     }
-    
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
     return retCode;
@@ -1298,14 +1302,20 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
         if (useFullResImage) {
             ///First demap the fullScaleMappedImage to the original image if it needs to
             if (fullScaleOutput != fullScaleMappedOutput) {
-                fullScaleMappedOutput->convertToFormat(roi, fullScaleOutput.get(), 3, false, true);
+                fullScaleMappedOutput->convertToFormat(roi, fullScaleOutput.get(),
+                                                       getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedOutput->getBitDepth()),
+                                                       getApp()->getDefaultColorSpaceForBitDepth(fullScaleOutput->getBitDepth()),
+                                                       3, false, true);
             }
             if (args._mipMapLevel != 0) {
                 fullScaleOutput->downscale_mipmap(roi,downscaledOutput.get(), args._mipMapLevel);
             }
         } else {
             if (fullScaleOutput != fullScaleMappedOutput) {
-                downscaledMappedOutput->convertToFormat(roi, downscaledOutput.get(), 3, false, true);
+                downscaledMappedOutput->convertToFormat(roi, downscaledOutput.get(),
+                                                        getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedOutput->getBitDepth()),
+                                                        getApp()->getDefaultColorSpaceForBitDepth(downscaledOutput->getBitDepth()),
+                                                        3, false, true);
             }
         }
     }

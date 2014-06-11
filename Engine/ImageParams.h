@@ -83,6 +83,7 @@ public:
     , _inputTimeIdentity(inputTimeIdentity)
     , _framesNeeded(framesNeeded)
     , _components(components)
+    , _bitdepth(bitdepth)
     {
         
     }
@@ -98,7 +99,9 @@ public:
     int getInputTimeIdentity() const { return _inputTimeIdentity; }
     
     bool isRodProjectFormat() const { return _isRoDProjectFormat; }
-        
+    
+    Natron::ImageBitDepth getBitDepth() const { return _bitdepth; }
+    
     const std::map<int, std::vector<RangeD> >& getFramesNeeded() const { return _framesNeeded; }
     
     ImageComponents getComponents() const { return _components; }
@@ -131,7 +134,8 @@ private:
         return _rod == imgParams._rod
         && _inputNbIdentity == imgParams._inputNbIdentity
         && _inputTimeIdentity == imgParams._inputTimeIdentity
-        && _components == imgParams._components;
+        && _components == imgParams._components
+        && _bitdepth == imgParams._bitdepth;
     }
     
     RectI _rod;
@@ -146,7 +150,8 @@ private:
     int _inputNbIdentity; // -1 if not an identity
     double _inputTimeIdentity;
     std::map<int, std::vector<RangeD> > _framesNeeded;
-    ImageComponents _components;
+    Natron::ImageComponents _components;
+    Natron::ImageBitDepth _bitdepth;
 };
 
 
