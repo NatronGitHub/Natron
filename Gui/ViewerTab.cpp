@@ -1658,6 +1658,7 @@ void ViewerTab::notifyAppClosing()
 
 void ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
+    ViewerCompositingOperator newOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         switch (index) {
@@ -1682,18 +1683,18 @@ void ViewerTab::onCompositingOperatorIndexChanged(int index)
             default:
                 break;
         }
-        if (_imp->_compOperator != OPERATOR_NONE && !_imp->_secondInputImage->isEnabled()) {
-            _imp->_secondInputImage->setEnabled(true);
-            manageSlotsForInfoWidget(1, true);
-            _imp->_infosWidget[1]->show();
-        } else if (_imp->_compOperator == OPERATOR_NONE) {
-            _imp->_secondInputImage->setEnabled(false);
-            manageSlotsForInfoWidget(1, false);
-            _imp->_infosWidget[1]->hide();
-        }
+        newOp = _imp->_compOperator;
 
     }
-
+    if (_imp->_compOperator != OPERATOR_NONE && !_imp->_secondInputImage->isEnabled()) {
+        _imp->_secondInputImage->setEnabled(true);
+        manageSlotsForInfoWidget(1, true);
+        _imp->_infosWidget[1]->show();
+    } else if (_imp->_compOperator == OPERATOR_NONE) {
+        _imp->_secondInputImage->setEnabled(false);
+        manageSlotsForInfoWidget(1, false);
+        _imp->_infosWidget[1]->hide();
+    }
     
     _imp->viewer->updateGL();
 }
