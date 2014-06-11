@@ -413,6 +413,34 @@ Natron::ImageComponents OfxClipInstance::ofxComponentsToNatronComponents(const s
     }
 }
 
+Natron::ImageBitDepth OfxClipInstance::ofxDepthToNatronDepth(const std::string& depth)
+{
+    if (depth == kOfxBitDepthByte) {
+        return Natron::IMAGE_BYTE;
+    } else if (depth == kOfxBitDepthShort) {
+        return Natron::IMAGE_SHORT;
+    } else if (depth == kOfxBitDepthFloat) {
+        return Natron::IMAGE_FLOAT;
+    } else {
+        assert(false);//< shouldve been caught earlier
+    }
+}
+
+std::string OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
+{
+    switch (depth) {
+        case Natron::IMAGE_BYTE:
+            return kOfxBitDepthByte;
+        case Natron::IMAGE_SHORT:
+            return kOfxBitDepthShort;
+        case Natron::IMAGE_FLOAT:
+            return kOfxBitDepthFloat;
+        default:
+            assert(false);//< shouldve been caught earlier
+            break;
+    }
+}
+
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip):
 OFX::Host::ImageEffect::Image(clip)
 ,_bitDepth(OfxImage::eBitDepthFloat)
@@ -439,9 +467,9 @@ OFX::Host::ImageEffect::Image(clip)
     // row bytes
     setIntProperty(kOfxImagePropRowBytes, pixelrod.width() *
                    Natron::getElementsCountForComponents(internalImage->getComponents()) *
-                   sizeof(float));
+                   getSizeOfForBitDepth(internalImage->getBitDepth()));
     setStringProperty(kOfxImageEffectPropComponents, OfxClipInstance::natronsComponentsToOfxComponents(internalImage->getComponents()));
-    setStringProperty(kOfxImageEffectPropPixelDepth, clip.getPixelDepth());
+    setStringProperty(kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth(internalImage->getBitDepth()));
     setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
     setStringProperty(kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString());

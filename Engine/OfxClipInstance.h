@@ -172,6 +172,10 @@ public:
     static std::string natronsComponentsToOfxComponents(Natron::ImageComponents comp);
     
     static Natron::ImageComponents ofxComponentsToNatronComponents(const std::string& comp);
+    
+    static Natron::ImageBitDepth ofxDepthToNatronDepth(const std::string& depth);
+    
+    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepth depth);
 
 private:
     
