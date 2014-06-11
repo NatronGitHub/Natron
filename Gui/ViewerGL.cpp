@@ -449,6 +449,16 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool d
     
     glPushAttrib(GL_COLOR_BUFFER_BIT);
     glEnable(GL_BLEND);
+    QPointF wipeCenter;
+    double wipeAngle;
+    double wipeMix;
+    {
+        QMutexLocker l(&_imp->wipeControlsMutex);
+        wipeCenter = _imp->wipeCenter;
+        wipeAngle = _imp->wipeAngle;
+        wipeMix = _imp->mixAmount;
+    }
+    glBlendColor(1, 1, 1, wipeMix);
 #pragma message WARN("There might be bugs left here I did it fast")
     if (compOp == OPERATOR_WIPE) {
         glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
@@ -464,18 +474,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool d
     
     if (drawOnlyWipePolygon) {
         /// draw only  the plane defined by the wipe handle
-        QPointF wipeCenter;
-        double wipeAngle;
-        double wipeMix;
-        {
-            QMutexLocker l(&_imp->wipeControlsMutex);
-            wipeCenter = _imp->wipeCenter;
-            wipeAngle = _imp->wipeAngle;
-            wipeMix = _imp->mixAmount;
-        }
-        glBlendColor(1, 1, 1, wipeMix);
-
-        
+    
         ///Compute a second point on the plane separator line
         ///we don't really care how far it is from the center point, it just has to be on the line
         QPointF firstPoint,secondPoint;
