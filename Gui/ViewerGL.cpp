@@ -951,10 +951,12 @@ void ViewerGL::paintGL()
     
     ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
     
+    int activeInputs[2];
+    _imp->viewerTab->getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
     bool dontDrawTexture[2];
     dontDrawTexture[0] = !_imp->activeTextures[0];
     dontDrawTexture[1] = !_imp->activeTextures[1] ||  ///the texture is null
-    (_imp->activeTextures[0] == _imp->activeTextures[1] ) //or it is the input B and it is equal to the input A
+    (activeInputs[0] == activeInputs[1] ) //or it is the input B and it is equal to the input A
     || (compOp != OPERATOR_NONE && !_imp->activeTextures[0]) //or it is input B and comp is not NONE and there is no input A
     || (_imp->activeTextures[0] && _imp->activeTextures[1] && compOp == OPERATOR_NONE); //or it is input B and input A  and B
                                                                                                   //are valid but comp OP is NONE.
