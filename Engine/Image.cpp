@@ -1203,7 +1203,9 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
                             error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
                             pix = error[k] >> 8;
                         } else {
-                            pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                            if (dstLut) {
+                                pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                            }
                             pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                         }
                         dstPixels[k] = invert ? dstMaxValue - pix : pix;
@@ -1320,7 +1322,9 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
                                     error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
                                     pix = error[k] >> 8;
                                 } else {
-                                    pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                    if (dstLut) {
+                                        pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                    }
                                     pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                 }
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
