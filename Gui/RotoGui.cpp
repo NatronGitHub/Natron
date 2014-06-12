@@ -190,6 +190,8 @@ struct RotoGui::RotoGuiPrivate
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
     bool evaluateOnKeyUp ; //< if true the next key up will call context->evaluateChange()
     
+    bool iSelectingwithCtrlA;
+    
     RotoGuiPrivate(RotoGui* pub,NodeGui* n,ViewerTab* tab,const boost::shared_ptr<RotoGuiSharedData>& sharedData)
     : publicInterface(pub)
     , node(n)
@@ -213,6 +215,7 @@ struct RotoGui::RotoGuiPrivate
     , rotoData(sharedData)
     , evaluateOnPenUp(false)
     , evaluateOnKeyUp(false)
+    , iSelectingwithCtrlA(false)
     {
         if (n->getNode()->isRotoPaintingNode()) {
             type = ROTOPAINTING;
@@ -1549,9 +1552,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                     if (found == _imp->rotoData->selectedBeziers.end()) {
                         _imp->handleBezierSelection(nearbyBezier);
-                    } else if (found != _imp->rotoData->selectedBeziers.end() && _imp->rotoData->showCpsBbox){
-                        _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
-                        ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                     }
                 }
             } else {
@@ -1590,26 +1590,17 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                 if (found == _imp->rotoData->selectedBeziers.end()) {
                     _imp->handleBezierSelection(nearbyBezier);
-                } else if (found != _imp->rotoData->selectedBeziers.end() && _imp->rotoData->showCpsBbox){
-                    _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
-                    ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                 }
             } else {
                 
-                bool nearbySelectedBeziersBbox = _imp->isNearbySelectedCpsBoundingBox(pos, cpSelectionTolerance);
-                if (nearbySelectedBeziersBbox) {
-                    _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
-                    ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
-                } else {
-                    
-                    if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                        _imp->clearSelection();
-                        _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                        _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                        _imp->state = SELECTING;
+                if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                    _imp->clearSelection();
+                    _imp->rotoData->selectionRectangle.setTopLeft(pos);
+                    _imp->rotoData->selectionRectangle.setBottomRight(pos);
+                    _imp->state = SELECTING;
                     
                 }
-                }
+                
             }
             
             break;
@@ -1829,9 +1820,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                 didSomething = true;
             } else if (_imp->isNearbyBBoxMidLeft(pos, bboxTol,pixelScale)) {
                 _imp->hoverState = HOVERING_BBOX_MID_LEFT;
-                didSomething = true;
-            } else if (_imp->isNearbySelectedCpsBoundingBox(pos, bboxTol)) {
-                _imp->hoverState = HOVERING_BBOX;
                 didSomething = true;
             } else {
                 _imp->hoverState = HOVERING_NOTHING;
@@ -2117,6 +2105,16 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 {
     bool didSomething = false;
     _imp->modifiers = QtEnumConvert::fromQtModifiers(e->modifiers());
+    
+    if (e->modifiers().testFlag(Qt::ControlModifier)) {
+        
+        if (!_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && e->key() == Qt::Key_Control) {
+            _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+            ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
+            didSomething = true;
+        }
+    }
+    
     if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->rotoData->selectedCps.empty()) {
@@ -2137,6 +2135,7 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
             didSomething = true;
         }
     } else if (e->key() == Qt::Key_A && e->modifiers().testFlag(Qt::ControlModifier)) {
+        _imp->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
         if (_imp->rotoData->selectedBeziers.empty()) {
             std::list<boost::shared_ptr<Bezier> > bez = _imp->context->getCurvesByRenderOrder();
@@ -2174,13 +2173,27 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 bool RotoGui::keyUp(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
 {
     _imp->modifiers = QtEnumConvert::fromQtModifiers(e->modifiers());
+    
+    bool didSomething = false;
+    if (!_imp->modifiers.testFlag(Natron::ControlModifier)) {
+        if (!_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && e->key() == Qt::Key_Control) {
+            _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
+            ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
+            didSomething = true;
+        }
+    }
+    
+    if (e->key() == Qt::Key_Control && _imp->iSelectingwithCtrlA) {
+        _imp->iSelectingwithCtrlA = false;
+    }
+    
     if (_imp->evaluateOnKeyUp) {
         _imp->context->evaluateChange();
         _imp->node->getNode()->getApp()->triggerAutoSave();
         _imp->viewerTab->onRotoEvaluatedForThisViewer();
         _imp->evaluateOnKeyUp = false;
     }
-    return false;
+    return didSomething;
 }
 
 bool RotoGui::RotoGuiPrivate::isNearbySelectedCpsCrossHair(const QPointF& pos) const
