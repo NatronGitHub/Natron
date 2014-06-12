@@ -1123,10 +1123,10 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                     break;
                 } else {
                     
-                    double r = (double)(src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / maxValue;
-                    double g = (double)(src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / maxValue;
-                    double b = (double)(src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / maxValue;
-                    double a = (!args.renderAlpha || nComps < 4) ? 255 : src_pixels[srcIndex * nComps + 3] * 255;
+                    double r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
+                    double g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
+                    double b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
+                    int a = (!args.renderAlpha || nComps < 4) ? 255 : Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
                     r =  r * args.gain + args.offset;
                     g =  g * args.gain + args.offset;
                     b =  b * args.gain + args.offset;
