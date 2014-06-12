@@ -1161,21 +1161,6 @@ boost::shared_ptr<KnobI> Node::getKnobByName(const std::string& name) const
 
 
 namespace {
-template<typename PIX,int maxValue>
-PIX bilinearFiltering(const PIX* srcPixelsFloor,const PIX* srcPixelsCeil,int fx,int cx,
-                               int elementsCount,int comp,double dx,double dy,const RectI& srcRoD)
-{
-    double Icc = (!srcPixelsFloor || fx < srcRoD.x1) ? 0. : srcPixelsFloor[fx * elementsCount + comp];
-    double Inc = (!srcPixelsFloor || cx >= srcRoD.x2) ? 0. : srcPixelsFloor[cx * elementsCount + comp];
-    double Icn = (!srcPixelsCeil || fx < srcRoD.x1) ? 0. : srcPixelsCeil[fx * elementsCount + comp];
-    double Inn = (!srcPixelsCeil || cx >= srcRoD.x2) ? 0. : srcPixelsCeil[cx * elementsCount + comp];
-    Icc /= maxValue;
-    Inc /= maxValue;
-    Icn /= maxValue;
-    Inn /= maxValue;
-    return (Icc + dx*(Inc-Icc + dy*(Icc+Inn-Icn-Inc)) + dy*(Icn-Icc)) * maxValue;
-}
-    
 
 ///output is always RGBA with alpha = 255
 template<typename PIX,int maxValue>
@@ -1187,42 +1172,44 @@ void renderPreview(const Natron::Image& srcImg,
                        bool convertToSrgb,
                        unsigned int* dstPixels)
 {
-    
-    const PIX* srcPixels = (const PIX*)srcImg.pixelAt(srcRoD.x1, srcRoD.y1);
-    //offset to 0
-    //srcPixels -= (srcRoD.y1 * srcRoD.width() * elemCount + srcRoD.x1 * elemCount);
-    
     ///recompute it after the rescaling
-    double yZoomFactor = (double)dstHeight/(double)srcRoD.height();
-    double xZoomFactor = (double)dstWidth/(double)srcRoD.width();
-    
+    double yZoomFactor = dstHeight/(double)srcRoD.height();
+    double xZoomFactor = dstWidth/(double)srcRoD.width();
+
+    double zoomFactor = std::min(xZoomFactor, yZoomFactor);
+
     for (int i = 0; i < dstHeight; ++i) {
-        double y = (double)i/yZoomFactor + srcRoD.y1;
-        int yFloor = std::floor(y);
-        int yCeil = std::ceil(y);
-        double dy = std::max(0., std::min(y - yFloor, 1.));
-        
+        double y = (i - dstHeight/2.)/zoomFactor + (srcRoD.y1 + srcRoD.y2)/2.;
+        int yi = std::floor(y+0.5);
+
         U32 *dst_pixels = dstPixels + dstWidth * (dstHeight-1-i);
         
-        const PIX* src_pixels_floor = (const PIX*)srcImg.pixelAt(srcRoD.x1, yFloor);
-        const PIX* src_pixels_ceil = (const PIX*)srcImg.pixelAt(srcRoD.x1, yCeil);
-        for (int j = 0; j < dstWidth; ++j) {
-            
-            double x = (double)j/xZoomFactor + srcRoD.x1;
-            int xFloor = std::floor(x);
-            int xCeil = std::ceil(x);
-            double dx = std::max(0., std::min(x - xFloor, 1.));
-            
-            PIX rFilt = bilinearFiltering<PIX,maxValue>(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 0, dx, dy, srcRoD);
-            PIX gFilt = bilinearFiltering<PIX,maxValue>(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 1, dx, dy, srcRoD);
-            PIX bFilt = bilinearFiltering<PIX,maxValue>(src_pixels_floor, src_pixels_ceil, xFloor, xCeil, elemCount, 2, dx, dy, srcRoD);
-            
-            
-            int r = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(rFilt) : rFilt);
-            int g = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(gFilt) : gFilt);
-            int b = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(bFilt) : bFilt);
-            dst_pixels[j] = toBGRA(r, g, b, 255);
-            
+        const PIX* src_pixels = (const PIX*)srcImg.pixelAt(srcRoD.x1, yi);
+        if (!src_pixels) {
+            // out of bounds
+            for (int j = 0; j < dstWidth; ++j) {
+                dst_pixels[j] = toBGRA(0, 0, 0, 0);
+            }
+        } else {
+            for (int j = 0; j < dstWidth; ++j) {
+                // bilinear interpolation is pointless when downscaling a lot, and this is a preview anyway.
+                // just use nearest neighbor
+                double x = (j- dstWidth/2.)/zoomFactor + (srcRoD.x1 + srcRoD.x2)/2.;
+
+                int xi = std::floor(x+0.5); // round to nearest
+                if (xi < 0 || xi >=(srcRoD.x2-srcRoD.x1)) {
+                    dst_pixels[j] = toBGRA(0, 0, 0, 0);
+                } else {
+                    float rFilt = src_pixels[xi * elemCount + 0]/(float)maxValue;
+                    float gFilt = src_pixels[xi * elemCount + 1]/(float)maxValue;
+                    float bFilt = src_pixels[xi * elemCount + 2]/(float)maxValue;
+
+                    int r = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(rFilt) : rFilt);
+                    int g = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(gFilt) : gFilt);
+                    int b = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(bFilt) : bFilt);
+                    dst_pixels[j] = toBGRA(r, g, b, 255);
+                }
+            }
         }
     }
 
