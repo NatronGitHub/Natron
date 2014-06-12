@@ -380,8 +380,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_viewerSubContainerLayout->addWidget(_imp->viewer);
     
     /*info bbox & color*/
+    QString inputNames[2] = { "A:" , "B:" };
     for (int i = 0; i < 2 ; ++i) {
-        _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,this);
+        _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
         //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
         _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget[i]);
         _imp->viewer->setInfoViewer(_imp->_infosWidget[i],i);

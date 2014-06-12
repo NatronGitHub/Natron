@@ -24,7 +24,7 @@
 using std::cout; using std::endl;
 using namespace Natron;
 
-InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent)
+InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent)
 : QWidget(parent)
 , mousePos(0,0)
 , rectUser(0,0)
@@ -38,6 +38,9 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent)
     setStyleSheet(QString("background-color:black"));
 
     layout = new QHBoxLayout(this);
+    
+    descriptionLabel = new QLabel(description,this);
+    
     QString reso("<font color=\"#DBE0E0\">");
     reso.append(viewer->getDisplayWindow().getName().c_str());
     reso.append("\t");
@@ -78,6 +81,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent)
     hvl_lastOption = new QLabel(this);
     hvl_lastOption->setContentsMargins(10, 0, 0, 0);
 
+    layout->addWidget(descriptionLabel);
     layout->addWidget(resolution);
     layout->addWidget(coordDispWindow);
     layout->addWidget(_fpsLabel);

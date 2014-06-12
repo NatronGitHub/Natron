@@ -31,7 +31,7 @@ class InfoViewerWidget: public QWidget{
     Q_OBJECT
     
 public:
-    explicit InfoViewerWidget(ViewerGL* v,QWidget* parent=0);
+    explicit InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent=0);
     virtual ~InfoViewerWidget() OVERRIDE;
     void setColor(float r,float g,float b,float a);
     void setMousePos(QPoint p){mousePos =p;}
@@ -60,6 +60,7 @@ private:
 private:
     
     QHBoxLayout* layout;
+    QLabel* descriptionLabel;
     QLabel* resolution;
     Format format;
     QLabel* coordDispWindow;
