@@ -1093,34 +1093,57 @@ void Image::clearBitmap()
     _bitmap.clear();
 }
 
-template <typename PIX,int maxValue>
-PIX clamp(PIX p)
-{
-    if (p > maxValue) {
-        return maxValue;
-    }
-    if (p < 0) {
-        return 0;
-    }
-    
-    return p;
-}
-
 template <typename SRCPIX,typename DSTPIX>
 DSTPIX convertPixelDepth(SRCPIX pix);
 
 ///explicit template instantiations
-template <> float convertPixelDepth(unsigned char pix) { return (float)(pix) / 255.f; }
-template <> unsigned short convertPixelDepth(unsigned char pix) { return (unsigned short)(pix) * 255.f; }
-template <> unsigned char convertPixelDepth(unsigned char pix) { return pix; }
 
-template <> unsigned char convertPixelDepth(unsigned short pix) { return (unsigned char)(pix / 255.f); }
-template <> float convertPixelDepth(unsigned short pix) { return (float)(pix) / 65535.f; }
-template <> unsigned short convertPixelDepth(unsigned short pix) { return pix; }
+template <> float convertPixelDepth(unsigned char pix)
+{
+    return Color::intToFloat<65536>(pix);
+}
 
-template <> unsigned char convertPixelDepth(float pix) { return (unsigned char)clamp<float, 255>(pix * 255); }
-template <> unsigned short convertPixelDepth(float pix) { return (unsigned short)clamp<float, 65535>(pix * 65535); }
-template <> float convertPixelDepth(float pix) { return pix; }
+template <> unsigned short convertPixelDepth(unsigned char pix)
+{
+    // 0x01 -> 0x0101, 0x02 -> 0x0202, ..., 0xff -> 0xffff
+    return (unsigned short)((pix << 8) + pix);
+}
+
+template <> unsigned char convertPixelDepth(unsigned char pix)
+{
+    return pix;
+}
+
+template <> unsigned char convertPixelDepth(unsigned short pix)
+{
+    // the following is from ImageMagick's quantum.h
+    return (unsigned char)(((pix+128UL)-((pix+128UL) >> 8)) >> 8);
+}
+
+template <> float convertPixelDepth(unsigned short pix)
+{
+    return Color::intToFloat<65536>(pix);
+}
+
+template <> unsigned short convertPixelDepth(unsigned short pix)
+{
+    return pix;
+}
+
+template <> unsigned char convertPixelDepth(float pix)
+{
+    return (unsigned char)Color::floatToInt<256>(pix);
+}
+
+template <> unsigned short convertPixelDepth(float pix)
+{
+    return (unsigned short)Color::floatToInt<65536>(pix);
+}
+
+template <> float convertPixelDepth(float pix)
+{
+    return pix;
+}
 
 
 static const Natron::Color::Lut*
@@ -1200,7 +1223,7 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
                         DSTPIX pix;
                         if (dstDepth == IMAGE_BYTE) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
-                            error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
+                            error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) : Color::floatToInt<0xff01>(pixFloat));
                             pix = error[k] >> 8;
                         } else {
                             if (dstLut) {

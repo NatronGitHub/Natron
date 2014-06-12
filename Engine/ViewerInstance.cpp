@@ -1123,10 +1123,10 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                     break;
                 } else {
                     
-                    double r = (double)(src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / maxValue;
-                    double g = (double)(src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / maxValue;
-                    double b = (double)(src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / maxValue;
-                    double a = (!args.renderAlpha || nComps < 4) ? 255 : src_pixels[srcIndex * nComps + 3] * 255;
+                    double r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
+                    double g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
+                    double b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
+                    int a = (!args.renderAlpha || nComps < 4) ? 255 : Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
                     r =  r * args.gain + args.offset;
                     g =  g * args.gain + args.offset;
                     b =  b * args.gain + args.offset;
@@ -1516,17 +1516,19 @@ ViewerInstance::disconnectViewer()
 }
 
 template <typename PIX,int maxValue>
+static
 bool getColorAtInternal(Natron::Image* image,int x,int y,float* r,float* g,float* b,float* a)
 {
     const PIX* pix = (const PIX*)image->pixelAt(x, y);
     if (!pix) {
         return false;
     }
-    int nComps = (int)image->getComponentsCount();
-    *r = *pix;
-    *g = nComps < 2 ? 0 : (float)(*(pix + 1)) / maxValue;
-    *b = nComps < 3 ? 0 : (float)(*(pix + 2)) / maxValue;
-    *a = nComps < 4 ? 0 : (float)(*(pix + 3)) / maxValue;
+#pragma message WARN("BUG: byte and short RGB components should be linearized here (not alpha)")
+    int nComps = image->getComponentsCount();
+    *r = *pix / (float)maxValue;
+    *g = (nComps < 2) ? 0. : (*(pix + 1) / (float)maxValue);
+    *b = (nComps < 3) ? 0. : (*(pix + 2) / (float)maxValue);
+    *a = (nComps < 4) ? 0. : (*(pix + 3) / (float)maxValue);
     return true;
 }
 
