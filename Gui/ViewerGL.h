@@ -391,11 +391,18 @@ private:
      **/
     void initShaderGLSL(); // init shaders
     
+    
+    enum DrawPolygonMode {
+        ALL_PLANE = 0,
+        WIPE_LEFT_PLANE,
+        WIPE_RIGHT_PLANE
+    };
+    
     /**
      *@brief Fill the rendering VAO with vertices and texture coordinates
      *that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool drawOnlyWipePolygon,Natron::ViewerCompositingOperator comp);
+    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonMode polygonMode);
     
     /**
      *@brief Makes the viewer display black only.

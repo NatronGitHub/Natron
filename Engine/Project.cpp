@@ -548,10 +548,10 @@ void Project::initNodeCountersAndSetName(Node* n) {
     std::map<std::string,int>::iterator it = _imp->nodeCounters.find(n->pluginID());
     if(it != _imp->nodeCounters.end()){
         it->second++;
-        n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(it->second)));
+        n->setName(QString(QString(n->pluginLabel().c_str()) + QString::number(it->second)));
     }else{
         _imp->nodeCounters.insert(make_pair(n->pluginID(), 1));
-        n->setName(QString(QString(n->pluginLabel().c_str())+ "_" + QString::number(1)));
+        n->setName(QString(QString(n->pluginLabel().c_str()) + QString::number(1)));
     }
 }
     

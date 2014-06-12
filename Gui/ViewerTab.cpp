@@ -1658,9 +1658,10 @@ void ViewerTab::notifyAppClosing()
 
 void ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
-    ViewerCompositingOperator newOp;
+    ViewerCompositingOperator newOp,oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
+        oldOp = _imp->_compOperator;
         switch (index) {
             case 0:
                 _imp->_compOperator = OPERATOR_NONE;
@@ -1694,6 +1695,9 @@ void ViewerTab::onCompositingOperatorIndexChanged(int index)
         _imp->_secondInputImage->setEnabled(false);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
+    }
+    if (oldOp == OPERATOR_NONE && newOp != OPERATOR_NONE) {
+        _imp->viewer->resetWipeControls();
     }
     
     _imp->viewer->updateGL();

@@ -306,6 +306,21 @@ struct ViewerGL::Implementation {
      *@brief Starts using the RGB shader to display the frame
      **/
     void activateShaderRGB(int texIndex);
+    
+    enum WipePolygonType
+    {
+        POLYGON_EMPTY = 0 , // don't draw anything
+        POLYGON_FULL , // draw the whole texture as usual
+        POLYGON_PARTIAL, // use the polygon returned to draw
+    };
+    
+    WipePolygonType getWipePolygon(const RectI& texRectClipped,QPolygonF& polygonPoints,bool rightPlane) const;
+    
+    static void getBaseTextureCoordinates(const TextureRect& texRect,GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right);
+    
+    static void getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const TextureRect& texRect,
+                                             GLfloat bottom,GLfloat top,GLfloat left,GLfloat right,
+                                             QPolygonF& texCoords);
 };
 
 #if 0
@@ -368,7 +383,7 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  |/  |/  |/  |
  12--13--14--15
  */
-void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool drawOnlyWipePolygon,ViewerCompositingOperator compOp)
+void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,ViewerGL::DrawPolygonMode polygonMode)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -434,10 +449,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool d
     ////Notice that r.w and r.h are scaled to the closest Po2 of the current scaling factor, so we need to scale it up
     ////So it is in the same coordinates as the bounds.
     GLfloat texBottom,texLeft,texRight,texTop;
-    texBottom =  0;
-    texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
-    texLeft = 0;
-    texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
+    _imp->getBaseTextureCoordinates(r, texBottom, texTop, texLeft, texRight);
 
     
     assert((texRect.y2  - texRect.y1) > 0 &&(texRect.x2  - texRect.x1) > 0 &&
@@ -445,218 +457,17 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool d
            (texRectClipped.x1 - texRect.x1) <= (texRect.x2 - texRect.x1) &&
            texRectClipped.y2 <= texRect.y2 &&
            texRectClipped.x2 <= texRect.x2);
-
     
-    glPushAttrib(GL_COLOR_BUFFER_BIT);
-    glEnable(GL_BLEND);
-    QPointF wipeCenter;
-    double wipeAngle;
-    double wipeMix;
-    {
-        QMutexLocker l(&_imp->wipeControlsMutex);
-        wipeCenter = _imp->wipeCenter;
-        wipeAngle = _imp->wipeAngle;
-        wipeMix = _imp->mixAmount;
-    }
-    glBlendColor(1, 1, 1, wipeMix);
-#pragma message WARN("There might be bugs left here I did it fast")
-    if (compOp == OPERATOR_WIPE) {
-        glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-    } else if (compOp == OPERATOR_OVER) {
-        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA);
-    } else if (compOp == OPERATOR_UNDER) {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    } else if (compOp == OPERATOR_MINUS) {
-        glBlendFunc(GL_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
-        glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-    }
-
-    
-    if (drawOnlyWipePolygon) {
+    if (polygonMode != ALL_PLANE) {
         /// draw only  the plane defined by the wipe handle
-    
-        ///Compute a second point on the plane separator line
-        ///we don't really care how far it is from the center point, it just has to be on the line
-        QPointF firstPoint,secondPoint;
-        double mpi2 = M_PI / 2.;
+        QPolygonF polygonPoints,polygonTexCoords;
+        Implementation::WipePolygonType polyType = _imp->getWipePolygon(texRectClipped, polygonPoints, polygonMode == WIPE_RIGHT_PLANE);
         
-        ///extrapolate the line to the maximum size of the RoD so we're sure the line
-        ///intersection algorithm works
-        double maxSize = std::max(rod.x2 - rod.x1,rod.y2 - rod.y1) * 100000.;
-        firstPoint.setX(wipeCenter.x() - std::cos(wipeAngle + mpi2) * maxSize);
-        firstPoint.setY(wipeCenter.y() - std::sin(wipeAngle + mpi2) * maxSize);
-        secondPoint.setX(wipeCenter.x() + std::cos(wipeAngle + mpi2) * maxSize);
-        secondPoint.setY(wipeCenter.y() + std::sin(wipeAngle + mpi2) * maxSize);
-        
-        QLineF inter(firstPoint,secondPoint);
-        QLineF::IntersectType intersectionTypes[4];
-        QPointF intersections[4];
-        
-        QLineF topEdge(texRectClipped.x1,texRectClipped.y2,texRectClipped.x2,texRectClipped.y2);
-        QLineF rightEdge(texRectClipped.x2,texRectClipped.y2,texRectClipped.x2,texRectClipped.y1);
-        QLineF bottomEdge(texRectClipped.x2,texRectClipped.y1,texRectClipped.x1,texRectClipped.y1);
-        QLineF leftEdge(texRectClipped.x1,texRectClipped.y1,texRectClipped.x1,texRectClipped.y2);
-        
-        bool crossingTop = false,crossingRight = false,crossingLeft = false,crossingBtm = false;
-        int validIntersectionsIndex[2];
-        validIntersectionsIndex[0] = validIntersectionsIndex[1] = -1;
-        int numIntersec = 0;
-        intersectionTypes[0] = inter.intersect(topEdge, &intersections[0]);
-        if (intersectionTypes[0] == QLineF::BoundedIntersection) {
-            validIntersectionsIndex[numIntersec] = 0;
-            crossingTop = true;
-            ++numIntersec;
-        }
-        intersectionTypes[1] = inter.intersect(rightEdge, &intersections[1]);
-        if (intersectionTypes[1]  == QLineF::BoundedIntersection) {
-            validIntersectionsIndex[numIntersec] = 1;
-            crossingRight = true;
-            ++numIntersec;
-        }
-        intersectionTypes[2] = inter.intersect(bottomEdge, &intersections[2]);
-        if (intersectionTypes[2]  == QLineF::BoundedIntersection) {
-            validIntersectionsIndex[numIntersec] = 2;
-            crossingBtm = true;
-            ++numIntersec;
-        }
-        intersectionTypes[3] = inter.intersect(leftEdge, &intersections[3]);
-        if (intersectionTypes[3]  == QLineF::BoundedIntersection) {
-            validIntersectionsIndex[numIntersec] = 3;
-            crossingLeft = true;
-            ++numIntersec;
-        }
-        
-        assert(numIntersec == 0 || numIntersec == 2);
-        
-        ///determine the orientation of the planes
-        double crossProd  = (secondPoint.x() - wipeCenter.x()) * (texRectClipped.y1 - wipeCenter.y())
-        - (secondPoint.y() - wipeCenter.y()) * (texRectClipped.x1 - wipeCenter.x());
-        if (numIntersec == 0) {
-            
-            ///the bottom left corner is on the left plane
-            if (crossProd > 0 && (wipeCenter.x() >= texRectClipped.x2 || wipeCenter.y() >= texRectClipped.y2)) {
-                ///the plane is invisible because the wipe handle is below or on the left of the texRectClipped
-                glDisable(GL_BLEND);
-                glPopAttrib();
-                return;
-            }
-            ///otherwise we draw the entire texture as usual
-            drawOnlyWipePolygon = false;
-        } else {
-            ///we have 2 intersects
-            assert(validIntersectionsIndex[0] != -1 && validIntersectionsIndex[1] != -1);
-            QPolygonF polygonPoints;
-            bool isBottomLeftOnLeftPlane = crossProd > 0;
-            
-            ///there are 6 cases
-            if (crossingBtm && crossingLeft) {
-                if (isBottomLeftOnLeftPlane) {
-                    //btm intersect is the first
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y2));
-                    polygonPoints.insert(4 ,QPointF(texRectClipped.x2,texRectClipped.y1));
-                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[0]]);
-                } else {
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y1));
-                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
-                }
-                
-            } else if (crossingBtm && crossingTop) {
-                if (isBottomLeftOnLeftPlane) {
-                    ///btm intersect is the second
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y1));
-                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
-                    
-                } else {
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
-                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
-                }
-            } else if (crossingBtm && crossingRight) {
-                if (isBottomLeftOnLeftPlane) {
-                    ///btm intersect is the second
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
-                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[1]]);
-                } else {
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y2));
-                    polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y1));
-                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[1]]);
-                }
-                
-            } else if (crossingLeft && crossingTop) {
-                if (isBottomLeftOnLeftPlane) {
-                    ///left intersect is the second
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
-                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[1]]);
-                } else {
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y1));
-                    polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y1));
-                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[1]]);
-                }
-            } else if (crossingLeft && crossingRight) {
-                if (isBottomLeftOnLeftPlane) {
-                    ///left intersect is the second
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,QPointF(texRectClipped.x1,texRectClipped.y2));
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
-                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
-                    
-                } else {
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
-                    polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
-                }
-            } else if (crossingTop && crossingRight) {
-                if (isBottomLeftOnLeftPlane) {
-                    ///right is second
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(1 ,QPointF(texRectClipped.x2,texRectClipped.y2));
-                    polygonPoints.insert(2 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
-                } else {
-                    polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
-                    polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
-                    polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
-                    polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
-                    polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y2));
-                    polygonPoints.insert(5 ,intersections[validIntersectionsIndex[0]]);
-                }
-            } else {
-                assert(false);
-            }
-            
-            QPolygonF polygonTexCoords(polygonPoints.size());
-            for (int i = 0; i < polygonPoints.size(); ++i) {
-                const QPointF& polygonPoint = polygonPoints.at(i);
-                QPointF texCoord;
-                texCoord.setX((polygonPoint.x() - texRect.x1) / (texRect.x2 - texRect.x1) * (texRight - texLeft));
-                texCoord.setY((polygonPoint.y() - texRect.y1) / (texRect.y2 - texRect.y1) * (texTop - texBottom));
-                polygonTexCoords[i] = texCoord;
-            }
-            
-            
+        if (polyType == Implementation::POLYGON_EMPTY) {
+            ///don't draw anything
+            return;
+        } else if (polyType == Implementation::POLYGON_PARTIAL) {
+            _imp->getPolygonTextureCoordinates(polygonPoints, r, texBottom, texTop, texLeft, texRight, polygonTexCoords);
             
             glBegin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
@@ -666,12 +477,14 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool d
                 glVertex2d(vCoord.x(), vCoord.y());
             }
             glEnd();
-
-           
+        } else {
+            ///draw the all polygon as usual
+            polygonMode = ALL_PLANE;
         }
+        
     }
     
-    if (!drawOnlyWipePolygon) {
+    if (polygonMode == ALL_PLANE) {
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
@@ -751,45 +564,214 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,bool d
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         glCheckError();
     }
-    glDisable(GL_BLEND);
-    glPopAttrib();
+ 
 }
 
-#if 0
-void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent)
+void ViewerGL::Implementation::getBaseTextureCoordinates(const TextureRect& r,GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right)
 {
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if( error == GL_FRAMEBUFFER_UNDEFINED)
-        cout << where << ": Framebuffer undefined" << endl;
-    else if(error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-        cout << where << ": Framebuffer incomplete attachment " << endl;
-    else if(error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-        cout << where << ": Framebuffer incomplete missing attachment" << endl;
-    else if( error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER)
-        cout << where << ": Framebuffer incomplete draw buffer" << endl;
-    else if( error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER)
-        cout << where << ": Framebuffer incomplete read buffer" << endl;
-    else if( error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)
-        cout << where << ": Framebuffer incomplete read buffer" << endl;
-    else if( error== GL_FRAMEBUFFER_UNSUPPORTED)
-        cout << where << ": Framebuffer unsupported" << endl;
-    else if( error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE)
-        cout << where << ": Framebuffer incomplete multisample" << endl;
-    else if( error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT)
-        cout << where << ": Framebuffer incomplete layer targets" << endl;
-    else if(error == GL_FRAMEBUFFER_COMPLETE ){
-        if(!silent)
-            cout << where << ": Framebuffer complete" << endl;
-    }
-    else if ( error == 0)
-        cout << where << ": an error occured determining the status of the framebuffer" << endl;
-    else
-        cout << where << ": UNDEFINED FRAMEBUFFER STATUS" << endl;
-    glCheckError();
+    bottom =  0;
+    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
+    left = 0;
+    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
 }
-#endif
+
+void ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const TextureRect& texRect,
+                                                            GLfloat bottom,GLfloat top,GLfloat left,GLfloat right,
+                                                            QPolygonF& texCoords)
+{
+    texCoords.resize(polygonPoints.size());
+    for (int i = 0; i < polygonPoints.size(); ++i) {
+        const QPointF& polygonPoint = polygonPoints.at(i);
+        QPointF texCoord;
+        texCoord.setX((polygonPoint.x() - texRect.x1) / (texRect.x2 - texRect.x1) * (right - left));
+        texCoord.setY((polygonPoint.y() - texRect.y1) / (texRect.y2 - texRect.y1) * (top - bottom));
+        texCoords[i] = texCoord;
+    }
+}
+
+ViewerGL::Implementation::WipePolygonType ViewerGL::Implementation::getWipePolygon(const RectI& texRectClipped,
+                                                                                   QPolygonF& polygonPoints,
+                                                                                   bool rightPlane) const
+{
+    ///Compute a second point on the plane separator line
+    ///we don't really care how far it is from the center point, it just has to be on the line
+    QPointF firstPoint,secondPoint;
+    double mpi2 = M_PI / 2.;
+    QPointF center;
+    double angle;
+    {
+        QMutexLocker l(&wipeControlsMutex);
+        center = wipeCenter;
+        angle = wipeAngle;
+    }
+    
+    ///extrapolate the line to the maximum size of the RoD so we're sure the line
+    ///intersection algorithm works
+    double maxSize = std::max(texRectClipped.x2 - texRectClipped.x1,texRectClipped.y2 - texRectClipped.y1) * 100000.;
+    firstPoint.setX(center.x() - std::cos(angle + mpi2) * maxSize);
+    firstPoint.setY(center.y() - std::sin(angle + mpi2) * maxSize);
+    secondPoint.setX(center.x() + std::cos(angle + mpi2) * maxSize);
+    secondPoint.setY(center.y() + std::sin(angle + mpi2) * maxSize);
+    
+    QLineF inter(firstPoint,secondPoint);
+    QLineF::IntersectType intersectionTypes[4];
+    QPointF intersections[4];
+    
+    QLineF topEdge(texRectClipped.x1,texRectClipped.y2,texRectClipped.x2,texRectClipped.y2);
+    QLineF rightEdge(texRectClipped.x2,texRectClipped.y2,texRectClipped.x2,texRectClipped.y1);
+    QLineF bottomEdge(texRectClipped.x2,texRectClipped.y1,texRectClipped.x1,texRectClipped.y1);
+    QLineF leftEdge(texRectClipped.x1,texRectClipped.y1,texRectClipped.x1,texRectClipped.y2);
+    
+    bool crossingTop = false,crossingRight = false,crossingLeft = false,crossingBtm = false;
+    int validIntersectionsIndex[2];
+    validIntersectionsIndex[0] = validIntersectionsIndex[1] = -1;
+    int numIntersec = 0;
+    intersectionTypes[0] = inter.intersect(topEdge, &intersections[0]);
+    if (intersectionTypes[0] == QLineF::BoundedIntersection) {
+        validIntersectionsIndex[numIntersec] = 0;
+        crossingTop = true;
+        ++numIntersec;
+    }
+    intersectionTypes[1] = inter.intersect(rightEdge, &intersections[1]);
+    if (intersectionTypes[1]  == QLineF::BoundedIntersection) {
+        validIntersectionsIndex[numIntersec] = 1;
+        crossingRight = true;
+        ++numIntersec;
+    }
+    intersectionTypes[2] = inter.intersect(bottomEdge, &intersections[2]);
+    if (intersectionTypes[2]  == QLineF::BoundedIntersection) {
+        validIntersectionsIndex[numIntersec] = 2;
+        crossingBtm = true;
+        ++numIntersec;
+    }
+    intersectionTypes[3] = inter.intersect(leftEdge, &intersections[3]);
+    if (intersectionTypes[3]  == QLineF::BoundedIntersection) {
+        validIntersectionsIndex[numIntersec] = 3;
+        crossingLeft = true;
+        ++numIntersec;
+    }
+    
+    assert(numIntersec == 0 || numIntersec == 2);
+    
+    ///determine the orientation of the planes
+    double crossProd  = (secondPoint.x() - center.x()) * (texRectClipped.y1 - center.y())
+    - (secondPoint.y() - center.y()) * (texRectClipped.x1 - center.x());
+    if (numIntersec == 0) {
+        
+        ///the bottom left corner is on the left plane
+        if (crossProd > 0 && (center.x() >= texRectClipped.x2 || center.y() >= texRectClipped.y2)) {
+            ///the plane is invisible because the wipe handle is below or on the left of the texRectClipped
+            return rightPlane ? ViewerGL::Implementation::POLYGON_EMPTY : ViewerGL::Implementation::POLYGON_FULL;
+        }
+        ///otherwise we draw the entire texture as usual
+        return rightPlane ? ViewerGL::Implementation::POLYGON_FULL : ViewerGL::Implementation::POLYGON_EMPTY;
+    } else {
+        ///we have 2 intersects
+        assert(validIntersectionsIndex[0] != -1 && validIntersectionsIndex[1] != -1);
+        bool isBottomLeftOnLeftPlane = crossProd > 0;
+        
+        ///there are 6 cases
+        if (crossingBtm && crossingLeft) {
+            if ((isBottomLeftOnLeftPlane && rightPlane) || (!isBottomLeftOnLeftPlane && !rightPlane)) {
+                //btm intersect is the first
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                polygonPoints.insert(4 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                polygonPoints.insert(5 ,intersections[validIntersectionsIndex[0]]);
+            } else {
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
+            }
+            
+        } else if (crossingBtm && crossingTop) {
+            if ((isBottomLeftOnLeftPlane && rightPlane) || (!isBottomLeftOnLeftPlane && !rightPlane)) {
+                ///btm intersect is the second
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+                
+            } else {
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+            }
+        } else if (crossingBtm && crossingRight) {
+            if ((isBottomLeftOnLeftPlane && rightPlane) || (!isBottomLeftOnLeftPlane && !rightPlane)) {
+                ///btm intersect is the second
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                polygonPoints.insert(3 ,intersections[validIntersectionsIndex[1]]);
+            } else {
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                polygonPoints.insert(5 ,intersections[validIntersectionsIndex[1]]);
+            }
+            
+        } else if (crossingLeft && crossingTop) {
+            if ((isBottomLeftOnLeftPlane && rightPlane) || (!isBottomLeftOnLeftPlane && !rightPlane)) {
+                ///left intersect is the second
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                polygonPoints.insert(3 ,intersections[validIntersectionsIndex[1]]);
+            } else {
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                polygonPoints.insert(5 ,intersections[validIntersectionsIndex[1]]);
+            }
+        } else if (crossingLeft && crossingRight) {
+            if ((isBottomLeftOnLeftPlane && rightPlane) || (!isBottomLeftOnLeftPlane && !rightPlane)) {
+                ///left intersect is the second
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+                
+            } else {
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                polygonPoints.insert(4 ,intersections[validIntersectionsIndex[1]]);
+            }
+        } else if (crossingTop && crossingRight) {
+            if ((isBottomLeftOnLeftPlane && rightPlane) || (!isBottomLeftOnLeftPlane && !rightPlane)) {
+                ///right is second
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(1 ,QPointF(texRectClipped.x2,texRectClipped.y2));
+                polygonPoints.insert(2 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(3 ,intersections[validIntersectionsIndex[0]]);
+            } else {
+                polygonPoints.insert(0 ,intersections[validIntersectionsIndex[0]]);
+                polygonPoints.insert(1 ,intersections[validIntersectionsIndex[1]]);
+                polygonPoints.insert(2 ,QPointF(texRectClipped.x2,texRectClipped.y1));
+                polygonPoints.insert(3 ,QPointF(texRectClipped.x1,texRectClipped.y1));
+                polygonPoints.insert(4 ,QPointF(texRectClipped.x1,texRectClipped.y2));
+                polygonPoints.insert(5 ,intersections[validIntersectionsIndex[0]]);
+            }
+        } else {
+            assert(false);
+        }
+        
+    }
+    return ViewerGL::Implementation::POLYGON_PARTIAL;
+}
 
 ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 : QGLWidget(parent,shareWidget)
@@ -951,45 +933,78 @@ void ViewerGL::paintGL()
     
     ViewerCompositingOperator compOp = _imp->viewerTab->getCompositingOperator();
     
+    ///Determine whether we need to draw each texture or not
     int activeInputs[2];
     _imp->viewerTab->getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
-    bool dontDrawTexture[2];
-    dontDrawTexture[0] = !_imp->activeTextures[0];
-    dontDrawTexture[1] = !_imp->activeTextures[1] ||  ///the texture is null
-    (activeInputs[0] == activeInputs[1] ) //or it is the input B and it is equal to the input A
-    || (compOp != OPERATOR_NONE && !_imp->activeTextures[0]) //or it is input B and comp is not NONE and there is no input A
-    || (_imp->activeTextures[0] && _imp->activeTextures[1] && compOp == OPERATOR_NONE); //or it is input B and input A  and B
-                                                                                                  //are valid but comp OP is NONE.
+    bool drawTexture[2];
+    drawTexture[0] = _imp->activeTextures[0];
+    drawTexture[1] = _imp->activeTextures[1] &&
+    activeInputs[0] != activeInputs[1]
+    && compOp != OPERATOR_NONE ;
     
-    if (compOp != OPERATOR_OVER) {
+    double wipeMix;
+    {
+        QMutexLocker l(&_imp->wipeControlsMutex);
+        wipeMix = _imp->mixAmount;
+    }
+
+    glPushAttrib(GL_COLOR_BUFFER_BIT);
+    glBlendColor(1, 1, 1, wipeMix);
+
+    if (compOp == OPERATOR_WIPE || compOp == OPERATOR_MINUS) {
         ///In wipe mode draw first the input A then only the portion we are interested in the input B
-        for (int i = 0; i < 2 ; ++i) {
-            
-            if (dontDrawTexture[i]) { continue; }
-            
-            _imp->bindTextureAndActivateShader(i, useShader);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,i, i == 1,compOp);
+        
+        if (drawTexture[0]) {
+            _imp->bindTextureAndActivateShader(0, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
             _imp->unbindTextureAndReleaseShader(useShader);
-            
         }
+        if (drawTexture[1]) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+            if (compOp == OPERATOR_MINUS) {
+                glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+            }
 
-    } else if (compOp == OPERATOR_OVER) {
-        ///draw first B then A then just the portion we're interested in of B
-        for (int i = 1; i >= 0 ; --i) {
-            
-           if (dontDrawTexture[i]) { continue; }
-            
-            _imp->bindTextureAndActivateShader(i, useShader);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,i, i == 1,compOp);
-            _imp->unbindTextureAndReleaseShader(useShader);
-        }
-        if (!dontDrawTexture[1]) {
             _imp->bindTextureAndActivateShader(1, useShader);
-            drawRenderingVAO(_imp->displayingImageMipMapLevel,1, true,OPERATOR_WIPE);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+            glDisable(GL_BLEND);
+        }
+    } else if (compOp == OPERATOR_OVER) {
+        ///draw first B then A
+        if (drawTexture[1]) {
+            _imp->bindTextureAndActivateShader(1, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
             _imp->unbindTextureAndReleaseShader(useShader);
         }
-    } else
+        if (drawTexture[0]) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            _imp->bindTextureAndActivateShader(0, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+            glDisable(GL_BLEND);
+        
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_LEFT_PLANE);
+        
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,WIPE_RIGHT_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+            glDisable(GL_BLEND);
+        }
+    } else {
+        if (drawTexture[0]) {
+            _imp->bindTextureAndActivateShader(0, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+        }
 
+    }
+
+    glPopAttrib();
+
+    
     glCheckError();
     if (_imp->overlay) {
         drawOverlay(_imp->displayingImageMipMapLevel);
