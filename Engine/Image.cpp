@@ -1223,7 +1223,7 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
                         DSTPIX pix;
                         if (dstDepth == IMAGE_BYTE) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
-                            error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
+                            error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) : Color::floatToInt<0xff01>(pixFloat));
                             pix = error[k] >> 8;
                         } else {
                             if (dstLut) {
