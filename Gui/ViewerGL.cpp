@@ -951,7 +951,7 @@ void ViewerGL::paintGL()
     glPushAttrib(GL_COLOR_BUFFER_BIT);
     glBlendColor(1, 1, 1, wipeMix);
 
-    if (compOp == OPERATOR_WIPE || compOp == OPERATOR_MINUS) {
+    if (compOp == OPERATOR_WIPE) {
         ///In wipe mode draw first the input A then only the portion we are interested in the input B
         
         if (drawTexture[0]) {
@@ -962,15 +962,50 @@ void ViewerGL::paintGL()
         if (drawTexture[1]) {
             glEnable(GL_BLEND);
             glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-            if (compOp == OPERATOR_MINUS) {
-                glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-            }
+            
 
             _imp->bindTextureAndActivateShader(1, useShader);
             drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
             _imp->unbindTextureAndReleaseShader(useShader);
             glDisable(GL_BLEND);
         }
+    } else if (compOp == OPERATOR_MINUS) {
+        if (drawTexture[0]) {
+            _imp->bindTextureAndActivateShader(0, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+        }
+        if (drawTexture[1]) {
+            _imp->bindTextureAndActivateShader(1, useShader);
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+            glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+           
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+            glDisable(GL_BLEND);
+        }
+    } else if (compOp == OPERATOR_UNDER) {
+        if (drawTexture[0]) {
+            _imp->bindTextureAndActivateShader(0, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,0,ALL_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+        }
+        if (drawTexture[1]) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+            _imp->bindTextureAndActivateShader(1, useShader);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+            glDisable(GL_BLEND);
+            
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
+            drawRenderingVAO(_imp->displayingImageMipMapLevel,1,WIPE_RIGHT_PLANE);
+            _imp->unbindTextureAndReleaseShader(useShader);
+            glDisable(GL_BLEND);
+        }
+
     } else if (compOp == OPERATOR_OVER) {
         ///draw first B then A
         if (drawTexture[1]) {
