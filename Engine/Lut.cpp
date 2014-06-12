@@ -1151,7 +1151,7 @@ namespace Natron {
 
         // r,g,b values are from 0 to 1
         // h = [0,360], s = [0,1], v = [0,1]
-        //		if s == 0, then h = -1 (undefined)
+        //		if s == 0, then h = 0 (undefined)
         void rgb_to_hsv( float r, float g, float b, float *h, float *s, float *v )
         {
             float min, max, delta;
@@ -1162,26 +1162,28 @@ namespace Natron {
 
             delta = max - min;
 
-            if( max != 0 )
+            if (max != 0.) {
                 *s = delta / max;		// s
-            else {
+            } else {
                 // r = g = b = 0		// s = 0, v is undefined
-                *s = 0;
-                *h = -1;
+                *s = 0.;
+                *h = 0.;
                 return;
             }
 
-            if( r == max )
-                *h = ( g - b ) / delta;		// between yellow & magenta
-            else if( g == max )
-                *h = 2 + ( b - r ) / delta;	// between cyan & yellow
-            else
-                *h = 4 + ( r - g ) / delta;	// between magenta & cyan
-
+            if (delta == 0.) {
+                *h = 0.; // gray
+            } else if (r == max) {
+                *h = (g - b) / delta;		// between yellow & magenta
+            } else if(g == max) {
+                *h = 2 + (b - r) / delta;	// between cyan & yellow
+            } else {
+                *h = 4 + (r - g) / delta;	// between magenta & cyan
+            }
             *h *= 60;				// degrees
-            if( *h < 0 )
+            if (*h < 0) {
                 *h += 360;
-            
+            }
         }
     }
 }
