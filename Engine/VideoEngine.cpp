@@ -547,9 +547,11 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         } catch (const std::exception &e) {
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
-            Natron::errorDialog("Error while rendering", ss.str());
             if (viewer) {
+                viewer->setPersistentMessage(Natron::ERROR_MESSAGE, ss.str());
                 viewer->disconnectViewer();
+            } else {
+                std::cout << ss.str() << std::endl;
             }
             return;
             
