@@ -1516,17 +1516,19 @@ ViewerInstance::disconnectViewer()
 }
 
 template <typename PIX,int maxValue>
+static
 bool getColorAtInternal(Natron::Image* image,int x,int y,float* r,float* g,float* b,float* a)
 {
     const PIX* pix = (const PIX*)image->pixelAt(x, y);
     if (!pix) {
         return false;
     }
-    int nComps = (int)image->getComponentsCount();
-    *r = *pix;
-    *g = nComps < 2 ? 0 : (float)(*(pix + 1)) / maxValue;
-    *b = nComps < 3 ? 0 : (float)(*(pix + 2)) / maxValue;
-    *a = nComps < 4 ? 0 : (float)(*(pix + 3)) / maxValue;
+#pragma message WARN("BUG: byte and short RGB components should be linearized here (not alpha)")
+    int nComps = image->getComponentsCount();
+    *r = *pix / (float)maxValue;
+    *g = (nComps < 2) ? 0. : (*(pix + 1) / (float)maxValue);
+    *b = (nComps < 3) ? 0. : (*(pix + 2) / (float)maxValue);
+    *a = (nComps < 4) ? 0. : (*(pix + 3) / (float)maxValue);
     return true;
 }
 
