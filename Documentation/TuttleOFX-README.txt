@@ -646,13 +646,13 @@ make CXX="/opt/llvm/bin/clang++ -fsanitize=thread -fPIE -pie" LINK="/opt/llvm/bi
 
 ** on ubuntu:
 
-- install boost >= 1.54.0 in /opt/boost, see http://www.boost.org/doc/html/bbv2/installation.html
 
 - install dependencies
 
 [[[[ Special note for Ubuntu 12.04 (Precise):
 we alse require
 - boost >= 1.49 for Natron
+- install boost >= 1.54.0 in /opt/boost, see http://www.boost.org/doc/html/bbv2/installation.html
 - ilmbase, openexr, opencolorio, openimageio for TuttleOFX
 - opencv for the opencv plugins
 
@@ -731,8 +731,8 @@ libturbojpeg \
 libopenimageio-dev liblcms2-dev freeglut3-dev libmagick++-dev libopenjpeg-dev libmagickcore-dev libopencv-dev qt-sdk doxygen bison flex \
 yasm libmp3lame-dev libvorbis-dev libopus-dev libtheora-dev libschroedinger-dev libopenjpeg-dev libmodplug-dev libvpx-dev libspeex-dev libass-dev libbluray-dev libgnutls-dev libfreetype6-dev libfontconfig1-dev libx264-dev libxvidcore-dev libopencore-amrnb-dev libopencore-amrwb-dev
 
-# fix a bug in Ubuntu 13.10 saucy's libturbojpeg package
-sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so
+# [Ubuntu 13.10 saucy] fix a bug in libturbojpeg package
+#sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so
 
 - checkout sources
 
