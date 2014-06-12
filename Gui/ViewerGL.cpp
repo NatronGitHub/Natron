@@ -1350,7 +1350,9 @@ void ViewerGL::drawWipeControl()
     oppositeAxisBottom.setX(wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
     oppositeAxisBottom.setY(wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
     
-    glLineWidth(2);
+    glLineWidth(1.5);
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
     glBegin(GL_LINES);
     if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
         glColor4f(0., 1., 0., 1.);
@@ -1411,6 +1413,7 @@ void ViewerGL::drawWipeControl()
     }
     
     glPointSize(5.);
+    glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
     glVertex2d(wipeCenter.x(), wipeCenter.y());
     if ((_imp->hs == HOVERING_WIPE_MIX && _imp->ms != ROTATING_WIPE_HANDLE) || _imp->ms == DRAGGING_WIPE_MIX_HANDLE) {
@@ -1422,8 +1425,11 @@ void ViewerGL::drawWipeControl()
     glEnd();
     glPointSize(1.);
     
-    _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
     
+    _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+    glDisable(GL_POINT_SMOOTH);
+    glDisable(GL_LINE_SMOOTH);
+
 }
 
 void ViewerGL::Implementation::drawArcOfCircle(const QPointF& center,double radius,double startAngle,double endAngle)
