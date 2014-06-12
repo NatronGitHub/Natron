@@ -82,6 +82,10 @@ public slots:
  
 
 private:
+    
+    void setValue_internal(double d,bool ignoreDecimals);
+
+    
     QString setNum(double cur);
 
     SPINBOX_TYPE _type;

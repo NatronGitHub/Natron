@@ -70,13 +70,19 @@ SpinBox::~SpinBox(){
             break;
     }
 }
-void SpinBox::setValue(double d){
+
+void SpinBox::setValue_internal(double d, bool ignoreDecimals)
+{
     _valueWhenEnteringFocus = d;
     clear();
     QString str;
     switch (_type) {
         case DOUBLE_SPINBOX:
-            str.setNum(d,'f',_decimals);
+            if (!ignoreDecimals) {
+                str.setNum(d,'f',_decimals);
+            } else {
+                str.setNum(d,'f',10); //< we should actually do something automatic
+            }
             break;
         case INT_SPINBOX:
             str.setNum((int)d);
@@ -86,6 +92,10 @@ void SpinBox::setValue(double d){
     home(false);
     _hasChangedSinceLastValidation = false;
     _valueAfterLastValidation = value();
+}
+
+void SpinBox::setValue(double d){
+    setValue_internal(d,false);
 }
 void SpinBox::interpretReturn(){
     if (validateText()) {
@@ -227,10 +237,10 @@ bool SpinBox::validateText() {
             int tmp;
             QValidator::State st = _doubleValidator->validate(txt,tmp);
             if(st == QValidator::Invalid || txt.toDouble() < miniD || txt.toDouble() > maxiD){
-                setValue(_valueAfterLastValidation);
+                setValue_internal(_valueAfterLastValidation,true);
                 return false;
             } else {
-                setValue(value());
+                setValue_internal(value(),true);
                 return true;
             }
         } break;
@@ -252,10 +262,7 @@ bool SpinBox::validateText() {
 }
 
 void SpinBox::decimals(int d){
-    _decimals=d;
-    if(_type == DOUBLE_SPINBOX){
-        _doubleValidator->setDecimals(d);
-    }
+    _decimals = d;
 }
 
 void SpinBox::setMaximum(double t) {

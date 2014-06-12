@@ -212,7 +212,7 @@ void Int_KnobGui::onSpinBoxValueChanged()
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         newValues.push_back(_spinBoxes[i].first->value());
     }
-    pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValueForEachDimension_mt_safe(),newValues));
+    pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValueForEachDimension_mt_safe(),newValues,false));
 }
 
 void Int_KnobGui::_hide()
@@ -578,7 +578,7 @@ void Double_KnobGui::onSpinBoxValueChanged()
         valueAccordingToType(true, 0, &v);
         newValues.push_back(v);
     }
-    pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValueForEachDimension_mt_safe(),newValues));
+    pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValueForEachDimension_mt_safe(),newValues,false));
 }
 void Double_KnobGui::_hide()
 {
@@ -1625,7 +1625,7 @@ Color_KnobGui::onColorChanged()
         }
     }
     
-    pushUndoCommand(new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues));
+    pushUndoCommand(new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues,false));
 }
 
 

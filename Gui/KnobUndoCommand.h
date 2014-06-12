@@ -39,7 +39,7 @@ class KnobUndoCommand : public QUndoCommand
 {
 public:
     
-    KnobUndoCommand(KnobGui *knob, const T &oldValue, const T &newValue,int dimension = 0, QUndoCommand *parent = 0)
+    KnobUndoCommand(KnobGui *knob, const T &oldValue, const T &newValue,int dimension = 0,bool refreshGui = true, QUndoCommand *parent = 0)
     : QUndoCommand(parent)
     , _dimension(dimension)
     , _oldValue()
@@ -49,6 +49,8 @@ public:
     , _newKeys(1)
     , _oldKeys(1)
     , _merge(true)
+    , _refreshGuiFirstTime(refreshGui)
+    , _firstRedoCalled(false)
     {
         _oldValue.push_back(oldValue);
         _newValue.push_back(newValue);
@@ -57,7 +59,7 @@ public:
     
     ///We moved from std::vector to std::list instead because std::vector<bool> expands to a bit field(std::_Bit_reference)
     ///and produces an unresolved symbol error.
-    KnobUndoCommand(KnobGui *knob, const std::list<T> &oldValue, const std::list<T> &newValue, QUndoCommand *parent = 0)
+    KnobUndoCommand(KnobGui *knob, const std::list<T> &oldValue, const std::list<T> &newValue,bool refreshGui = true, QUndoCommand *parent = 0)
     : QUndoCommand(parent)
     , _dimension(-1)
     , _oldValue(oldValue)
@@ -67,6 +69,8 @@ public:
     , _newKeys(oldValue.size())
     , _oldKeys(oldValue.size())
     , _merge(true)
+    , _refreshGuiFirstTime(refreshGui)
+    , _firstRedoCalled(false)
     {
         
     }
@@ -84,7 +88,7 @@ private:
             
             int dimension = _dimension == -1 ? i : _dimension;
             
-            _knob->setValue(dimension,*it,NULL);
+            _knob->setValue(dimension,*it,NULL,true);
             if (_knob->getKnob()->getHolder()->getApp()) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                     _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
@@ -128,7 +132,13 @@ private:
             bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
             (void)found; // we don't care if it existed or not
             
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i]);
+            bool refreshGui;
+            if (_firstRedoCalled) {
+                refreshGui = true;
+            } else {
+                refreshGui = _refreshGuiFirstTime;
+            }
+            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui);
             if(_valueChangedReturnCode[i] != KnobHelper::NO_KEYFRAME_ADDED){
                 modifiedKeyFrames = true;
             }
@@ -148,6 +158,7 @@ private:
         setText(QObject::tr("Set value of %1")
                 .arg(_knob->getKnob()->getDescription().c_str()));
 
+        _firstRedoCalled = true;
     }
 
     virtual int id() const OVERRIDE FINAL
@@ -184,6 +195,8 @@ private:
     std::vector<KeyFrame> _newKeys;
     std::vector<KeyFrame>  _oldKeys;
     bool _merge;
+    bool _refreshGuiFirstTime;
+    bool _firstRedoCalled;
 };
 
 

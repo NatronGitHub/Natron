@@ -326,13 +326,13 @@ void MultipleKnobEditsUndoCommand::redo()
                 Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                 Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                 if (isInt) {
-                    it->first->setValue<int>(i, it2->toInt(), &k);
+                    it->first->setValue<int>(i, it2->toInt(), &k,true);
                 } else if (isBool) {
-                    it->first->setValue<bool>(i, it2->toBool(), &k);
+                    it->first->setValue<bool>(i, it2->toBool(), &k,true);
                 } else if (isDouble) {
-                    it->first->setValue<double>(i, it2->toDouble(), &k);
+                    it->first->setValue<double>(i, it2->toDouble(), &k,true);
                 } else if (isString) {
-                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k);
+                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true);
                 } else {
                     assert(false);
                 }
