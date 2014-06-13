@@ -148,6 +148,7 @@ void NodeGui::initialize(NodeGraph* dag,
 	
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor(QColor(0,0,0,255));
+    _nameItem->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
     _nameItem->setZValue(0.6);
     
     _persistentMessage = new QGraphicsTextItem("",this);
