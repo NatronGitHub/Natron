@@ -1105,7 +1105,7 @@ DSTPIX convertPixelDepth(SRCPIX pix);
 
 template <> float convertPixelDepth(unsigned char pix)
 {
-    return Color::intToFloat<65536>(pix);
+    return Color::intToFloat<256>(pix);
 }
 
 template <> unsigned short convertPixelDepth(unsigned char pix)
