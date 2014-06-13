@@ -607,8 +607,8 @@ bool NodeGui::isNearby(QPointF &point){
 }
 
 void NodeGui::setName(const QString& name_){
-    _settingNameFromGui = true;
     onInternalNameChanged(name_);
+    _settingNameFromGui = true;
     emit nameChanged(name_);
     _settingNameFromGui = false;
 }
