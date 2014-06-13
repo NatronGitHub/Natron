@@ -1354,7 +1354,9 @@ void ViewerGL::drawWipeControl()
     
     glLineWidth(1.5);
     glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
     glBegin(GL_LINES);
     if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
         glColor4f(0., 1., 0., 1.);
@@ -1431,7 +1433,7 @@ void ViewerGL::drawWipeControl()
     _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
     glDisable(GL_POINT_SMOOTH);
     glDisable(GL_LINE_SMOOTH);
-
+    glDisable(GL_BLEND);
 }
 
 void ViewerGL::Implementation::drawArcOfCircle(const QPointF& center,double radius,double startAngle,double endAngle)
