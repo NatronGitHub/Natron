@@ -1159,8 +1159,8 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                             a = 255;
                             break;
                         case Natron::ImageComponentAlpha:
-                            a = Color::floatToInt<256>(src_pixels[srcIndex]/ (double)maxValue);
-                            r = g = b = a;
+                            r = src_pixels ? src_pixels[srcIndex] / (double)maxValue : 0.;
+                            g = b = r;
                             a = 255;
                             break;
                         default:
