@@ -77,7 +77,7 @@ void ComboBox::paintEvent(QPaintEvent *e)
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
     
-    if (!e->buttons().testFlag(Qt::RightButton) && e->buttons().testFlag(Qt::LeftButton)) {
+    if (!e->buttons().testFlag(Qt::RightButton) && e->buttons().testFlag(Qt::LeftButton) && _currentText->isEnabled()) {
         QPixmap pixC;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
         _dropDownIcon->setPixmap(pixC);
@@ -401,9 +401,14 @@ void ComboBox::setReadOnly(bool readOnly)
 {
     
     _currentText->setEnabled(!readOnly);
-    _dropDownIcon->setEnabled(!readOnly);
+    //   _dropDownIcon->setEnabled(!readOnly);
     _currentText->setReadOnly(readOnly);
     _dropDownIcon->setReadOnly(readOnly);
+}
+
+void ComboBox::setEnabled_natron(bool enabled)
+{
+    _currentText->setEnabled(enabled);
 }
 
 void ComboBox::setAnimation(int i){

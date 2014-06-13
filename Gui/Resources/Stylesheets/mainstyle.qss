@@ -217,6 +217,11 @@ ClickableLabel[readOnly="true"][dirty="true"]{
     background-color: black;
     color : %8;
 }
+QLabel:disabled {
+    background-color: %2;
+    color : black;
+}
+
 
 TabWidget{background-color: %2;}
 

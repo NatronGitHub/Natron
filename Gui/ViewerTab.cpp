@@ -1666,7 +1666,7 @@ void ViewerTab::onCompositingOperatorIndexChanged(int index)
         switch (index) {
             case 0:
                 _imp->_compOperator = OPERATOR_NONE;
-                _imp->_secondInputImage->setEnabled(false);
+                _imp->_secondInputImage->setEnabled_natron(false);
                 manageSlotsForInfoWidget(1, false);
                 _imp->_infosWidget[1]->hide();
                 break;
@@ -1688,17 +1688,18 @@ void ViewerTab::onCompositingOperatorIndexChanged(int index)
         newOp = _imp->_compOperator;
 
     }
+    if (oldOp == OPERATOR_NONE && newOp != OPERATOR_NONE) {
+        _imp->viewer->resetWipeControls();
+    }
+
     if (_imp->_compOperator != OPERATOR_NONE && !_imp->_secondInputImage->isEnabled()) {
-        _imp->_secondInputImage->setEnabled(true);
+        _imp->_secondInputImage->setEnabled_natron(true);
         manageSlotsForInfoWidget(1, true);
         _imp->_infosWidget[1]->show();
     } else if (_imp->_compOperator == OPERATOR_NONE) {
-        _imp->_secondInputImage->setEnabled(false);
+        _imp->_secondInputImage->setEnabled_natron(false);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
-    }
-    if (oldOp == OPERATOR_NONE && newOp != OPERATOR_NONE) {
-        _imp->viewer->resetWipeControls();
     }
     
 
@@ -1774,7 +1775,7 @@ void ViewerTab::onSecondInputNameChanged(const QString& text)
         if (!_imp->_infosWidget[1]->isVisible()) {
             _imp->_infosWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
-            _imp->_secondInputImage->setEnabled(true);
+            _imp->_secondInputImage->setEnabled_natron(true);
             if (_imp->_compOperator == Natron::OPERATOR_NONE) {
                 setCompositingOperator(Natron::OPERATOR_WIPE);
             }
@@ -1808,7 +1809,7 @@ void ViewerTab::onActiveInputsChanged()
         _imp->_secondInputImage->setCurrentIndex_no_emit(indexInB);
         if (!_imp->_infosWidget[1]->isVisible()) {
             _imp->_infosWidget[1]->show();
-            _imp->_secondInputImage->setEnabled(true);
+            _imp->_secondInputImage->setEnabled_natron(true);
             manageSlotsForInfoWidget(1, true);
         }
 
@@ -1817,7 +1818,7 @@ void ViewerTab::onActiveInputsChanged()
         setCompositingOperator(Natron::OPERATOR_NONE);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
-        _imp->_secondInputImage->setEnabled(false);
+        _imp->_secondInputImage->setEnabled_natron(false);
     }
     
     if ((activeInputs[0] == -1 || activeInputs[1] == -1 || activeInputs[0] == activeInputs[1]) //only 1 input is valid
@@ -1825,7 +1826,7 @@ void ViewerTab::onActiveInputsChanged()
         setCompositingOperator(OPERATOR_NONE);
         _imp->_infosWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
-        _imp->_secondInputImage->setEnabled(false);
+        _imp->_secondInputImage->setEnabled_natron(false);
     } else if (activeInputs[0] != -1 && activeInputs[1] != -1 && activeInputs[0] != activeInputs[1]
                && getCompositingOperator() == OPERATOR_NONE) {
         setCompositingOperator(Natron::OPERATOR_WIPE);

@@ -118,7 +118,7 @@ public slots:
     void setCurrentText_no_emit(const QString& text);
     
     
-    
+    void setEnabled_natron(bool enabled);
     
 signals:
     

@@ -777,7 +777,7 @@ void Choice_KnobGui::_show()
 void Choice_KnobGui::setEnabled()
 {
     bool b = getKnob()->isEnabled(0);
-    _comboBox->setEnabled(b);
+    _comboBox->setEnabled_natron(b);
 }
 
 
