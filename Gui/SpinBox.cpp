@@ -22,21 +22,21 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Global/Macros.h"
 
-SpinBox::SpinBox(QWidget* parent,SPINBOX_TYPE type):
-LineEdit(parent)
-,_type(type)
-,_decimals(2)
-,_increment(1.0)
-,_mini()
-,_maxi()
-,_doubleValidator(0)
-,_intValidator(0)
-,animation(0)
-,_valueWhenEnteringFocus(0)
-,_currentDelta(0)
-,_hasChangedSinceLastValidation(false)
-,_valueAfterLastValidation(0)
-,dirty(false)
+SpinBox::SpinBox(QWidget* parent, SPINBOX_TYPE type)
+: LineEdit(parent)
+, _type(type)
+, _decimals(2)
+, _increment(1.0)
+, _mini()
+, _maxi()
+, _doubleValidator(0)
+, _intValidator(0)
+, animation(0)
+, _valueWhenEnteringFocus(0)
+, _currentDelta(0)
+, _hasChangedSinceLastValidation(false)
+, _valueAfterLastValidation(0)
+, dirty(false)
 {
     switch (_type) {
         case DOUBLE_SPINBOX:
@@ -60,7 +60,9 @@ LineEdit(parent)
     setMinimumWidth(35);
     decimals(_decimals);
 }
-SpinBox::~SpinBox(){
+
+SpinBox::~SpinBox()
+{
     switch (_type) {
         case DOUBLE_SPINBOX:
             delete _doubleValidator;
@@ -71,7 +73,8 @@ SpinBox::~SpinBox(){
     }
 }
 
-void SpinBox::setValue_internal(double d, bool ignoreDecimals)
+void
+SpinBox::setValue_internal(double d, bool ignoreDecimals)
 {
     _valueWhenEnteringFocus = d;
     clear();
@@ -94,20 +97,28 @@ void SpinBox::setValue_internal(double d, bool ignoreDecimals)
     _valueAfterLastValidation = value();
 }
 
-void SpinBox::setValue(double d){
+void
+SpinBox::setValue(double d)
+{
     setValue_internal(d,false);
 }
-void SpinBox::interpretReturn(){
+
+void
+SpinBox::interpretReturn()
+{
     if (validateText()) {
         emit valueChanged(value());
     }
 }
 
-void SpinBox::mousePressEvent(QMouseEvent* e){
+void
+SpinBox::mousePressEvent(QMouseEvent* e)
+{
     LineEdit::mousePressEvent(e);
 }
 
-QString SpinBox::setNum(double cur)
+QString
+SpinBox::setNum(double cur)
 {
     switch (_type) {
         case INT_SPINBOX:
@@ -118,11 +129,13 @@ QString SpinBox::setNum(double cur)
     }
 }
 
-void SpinBox::wheelEvent(QWheelEvent *e) {
+void
+SpinBox::wheelEvent(QWheelEvent *e)
+{
     if (e->orientation() != Qt::Vertical) {
         return;
     }
-    if(isEnabled() && !isReadOnly()){
+    if (isEnabled() && !isReadOnly()) {
         bool ok;
         double cur = text().toDouble(&ok);
         double old = cur;
@@ -153,15 +166,19 @@ void SpinBox::wheelEvent(QWheelEvent *e) {
     }
 }
 
-void SpinBox::focusInEvent(QFocusEvent* event){
+void
+SpinBox::focusInEvent(QFocusEvent* event)
+{
     _valueWhenEnteringFocus = text().toDouble();
     LineEdit::focusInEvent(event);
 }
 
-void SpinBox::focusOutEvent(QFocusEvent * event){
+void
+SpinBox::focusOutEvent(QFocusEvent * event)
+{
     double newValue = text().toDouble();
-    if(newValue != _valueWhenEnteringFocus){
-        if(validateText()) {
+    if (newValue != _valueWhenEnteringFocus) {
+        if (validateText()) {
             emit valueChanged(value());
         }
     }
@@ -169,8 +186,10 @@ void SpinBox::focusOutEvent(QFocusEvent * event){
 
 }
 
-void SpinBox::keyPressEvent(QKeyEvent *e){
-    if(isEnabled() && !isReadOnly()){
+void
+SpinBox::keyPressEvent(QKeyEvent *e)
+{
+    if (isEnabled() && !isReadOnly()) {
         bool ok;
         double cur = text().toDouble(&ok);
         double old = cur;
@@ -188,19 +207,23 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
         }
         if(e->key() == Qt::Key_Up){
 
-            if(cur+_increment <= maxiD)
+            if (cur+_increment <= maxiD) {
                 cur+=_increment;
-            if(cur < miniD || cur > maxiD)
+            }
+            if (cur < miniD || cur > maxiD) {
                 return;
+            }
             if ( cur != old ) {
                 setValue(cur);
                 emit valueChanged(cur);
             }
-        }else if(e->key() == Qt::Key_Down){
-            if(cur-_increment >= miniD)
+        } else if (e->key() == Qt::Key_Down) {
+            if(cur-_increment >= miniD) {
                 cur-=_increment;
-            if(cur < miniD || cur > maxiD)
+            }
+            if(cur < miniD || cur > maxiD) {
                 return;
+            }
             if ( cur != old ) {
                 setValue(cur);
                 emit valueChanged(cur);
@@ -212,8 +235,9 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
     }
 }
 
-bool SpinBox::validateText() {
-    
+bool
+SpinBox::validateText()
+{
     if (!_hasChangedSinceLastValidation) {
         return true;
     }
@@ -263,11 +287,15 @@ bool SpinBox::validateText() {
     return false;
 }
 
-void SpinBox::decimals(int d){
+void
+SpinBox::decimals(int d)
+{
     _decimals = d;
 }
 
-void SpinBox::setMaximum(double t) {
+void
+SpinBox::setMaximum(double t)
+{
     switch (_type) {
         case DOUBLE_SPINBOX:
             _maxi.setValue<double>(t);
@@ -280,7 +308,9 @@ void SpinBox::setMaximum(double t) {
     }
 }
 
-void SpinBox::setMinimum(double b){
+void
+SpinBox::setMinimum(double b)
+{
     switch (_type) {
         case DOUBLE_SPINBOX:
             _mini.setValue<double>(b);
@@ -293,20 +323,26 @@ void SpinBox::setMinimum(double b){
     }
 }
 
-void SpinBox::setAnimation(int i){
+void
+SpinBox::setAnimation(int i)
+{
     animation = i;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
 }
 
-void SpinBox::setDirty(bool d) {
+void
+SpinBox::setDirty(bool d)
+{
     dirty = d;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
 }
 
-QMenu* SpinBox::getRightClickMenu() {
+QMenu*
+SpinBox::getRightClickMenu()
+{
     return createStandardContextMenu();
 }
