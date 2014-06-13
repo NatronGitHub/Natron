@@ -467,7 +467,8 @@ void RemoveCurveUndoCommand::redo()
 
 ////////////////////////////////
 
-MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,double dx,double dy,int time,const boost::shared_ptr<BezierCP>& cp,bool left)
+MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,double dx,double dy,int time,const boost::shared_ptr<BezierCP>& cp,bool left,
+                                               bool breakTangents)
 : QUndoCommand()
 , _firstRedoCalled(false)
 , _roto(roto)
@@ -480,6 +481,7 @@ MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,double dx,double dy
 , _oldCp()
 , _oldFp()
 , _left(left)
+, _breakTangents(breakTangents)
 {
     roto->getSelection(&_selectedCurves, &_selectedPoints);
     boost::shared_ptr<BezierCP> counterPart;
@@ -504,7 +506,7 @@ MoveTangentUndoCommand::~MoveTangentUndoCommand()
 
 namespace {
     
-    static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying)
+    static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying,bool breakTangents)
     {
         double leftX,leftY,rightX,rightY,x,y;
         bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY);
@@ -524,15 +526,15 @@ namespace {
         p.getKeyframeTimes(&times);
         
         if (left) {
-            double rightDiffX = x + std::cos(alpha) * dist - rightX;
-            double rightDiffY = y + std::sin(alpha) * dist - rightY;
+            double rightDiffX = breakTangents ? 0 : x + std::cos(alpha) * dist - rightX;
+            double rightDiffY = breakTangents ? 0 : y + std::sin(alpha) * dist - rightY;
             if (autoKeying || isOnKeyframe) {
                 p.getCurve()->movePointLeftAndRightIndex(p, time, dx, dy, rightDiffX, rightDiffY);
             }
             
         } else {
-            double leftDiffX = x + std::cos(alpha) * dist - leftX;
-            double leftDiffY = y + std::sin(alpha) * dist - leftY;
+            double leftDiffX = breakTangents ? 0 : x + std::cos(alpha) * dist - leftX;
+            double leftDiffY = breakTangents ? 0 : y + std::sin(alpha) * dist - leftY;
             if (autoKeying || isOnKeyframe) {
                 p.getCurve()->movePointLeftAndRightIndex(p, time, leftDiffX , leftDiffY , dx , dy);
             }
@@ -582,9 +584,9 @@ void MoveTangentUndoCommand::redo()
     }
     
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
-    dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying);
+    dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_breakTangents);
     if (_featherLinkEnabled) {
-        dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying);
+        dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying,_breakTangents);
     }
     
     if (_firstRedoCalled) {

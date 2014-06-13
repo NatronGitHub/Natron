@@ -207,7 +207,8 @@ class MoveTangentUndoCommand : public QUndoCommand
 {
 public:
     
-    MoveTangentUndoCommand(RotoGui* roto,double dx,double dy,int time,const boost::shared_ptr<BezierCP>& cp,bool left);
+    MoveTangentUndoCommand(RotoGui* roto,double dx,double dy,int time,const boost::shared_ptr<BezierCP>& cp,bool left,
+                           bool breakTangents);
     
     virtual ~MoveTangentUndoCommand();
     
@@ -232,6 +233,7 @@ private:
     boost::shared_ptr<BezierCP> _tangentBeingDragged,_oldCp,_oldFp;
     
     bool _left;
+    bool _breakTangents;
 };
 
 

@@ -1938,14 +1938,16 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
         case DRAGGING_LEFT_TANGENT:
         {
             assert(_imp->rotoData->tangentBeingDragged);
-            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->rotoData->tangentBeingDragged,true));
+            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->rotoData->tangentBeingDragged,true,
+                                                       _imp->modifiers.testFlag(Natron::ControlModifier)));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
         case DRAGGING_RIGHT_TANGENT:
         {
             assert(_imp->rotoData->tangentBeingDragged);
-            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->rotoData->tangentBeingDragged,false));
+            pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->rotoData->tangentBeingDragged,false,
+                                                        _imp->modifiers.testFlag(Natron::ControlModifier)));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
