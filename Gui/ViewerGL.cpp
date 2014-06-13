@@ -318,7 +318,7 @@ struct ViewerGL::Implementation {
     
     static void getBaseTextureCoordinates(const TextureRect& texRect,GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right);
     
-    static void getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const TextureRect& texRect,
+    static void getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const RectI& texRect,
                                              GLfloat bottom,GLfloat top,GLfloat left,GLfloat right,
                                              QPolygonF& texCoords);
 };
@@ -467,7 +467,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,Viewer
             ///don't draw anything
             return;
         } else if (polyType == Implementation::POLYGON_PARTIAL) {
-            _imp->getPolygonTextureCoordinates(polygonPoints, r, texBottom, texTop, texLeft, texRight, polygonTexCoords);
+            _imp->getPolygonTextureCoordinates(polygonPoints, texRectClipped, texBottom, texTop, texLeft, texRight, polygonTexCoords);
             
             glBegin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
@@ -575,7 +575,7 @@ void ViewerGL::Implementation::getBaseTextureCoordinates(const TextureRect& r,GL
     right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
 }
 
-void ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const TextureRect& texRect,
+void ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const RectI& texRect,
                                                             GLfloat bottom,GLfloat top,GLfloat left,GLfloat right,
                                                             QPolygonF& texCoords)
 {
