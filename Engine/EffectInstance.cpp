@@ -566,7 +566,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
         ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
-        if ((image->getComponents() != args.components && Image::areCompsConvertibleWithoutDamage(image->getComponents(),args.components)) ||
+        if ((image->getComponents() != args.components && Image::hasEnoughDataToConvert(image->getComponents(),args.components)) ||
             image->getBitDepth() != args.bitdepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
@@ -578,9 +578,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             ///switch the pointer
             image = remappedImage;
         } else if (image->getComponents() != args.components) {
-            assert(!Image::areCompsConvertibleWithoutDamage(image->getComponents(),args.components));
+            assert(!Image::hasEnoughDataToConvert(image->getComponents(),args.components));
             ///we cannot convert without loosing data of some channels, we better off render everything again
             isCached = false;
+            appPTR->removeFromNodeCache(image);
             cachedImgParams.reset();
             image.reset();
         }

@@ -168,7 +168,12 @@ namespace Natron {
         
         ImageComponents getComponents() const {return this->_components;}
         
-        static bool areCompsConvertibleWithoutDamage(Natron::ImageComponents from,Natron::ImageComponents to);
+        /**
+         * @brief This function returns true if the components 'from' have enough components to
+         * convert to the 'to' components.
+         * e.g: RGBA to RGB would return true , the opposite would return false.
+         **/
+        static bool hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to);
         
         Natron::ImageBitDepth getBitDepth() const {return this->_bitDepth;}
         

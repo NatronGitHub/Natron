@@ -511,9 +511,9 @@ unsigned int Image::getComponentsCount() const
     return getElementsCountForComponents(getComponents());
 }
 
-bool Image::areCompsConvertibleWithoutDamage(Natron::ImageComponents from,Natron::ImageComponents to)
+bool Image::hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to)
 {
-    return getElementsCountForComponents(to) >= getElementsCountForComponents(from);
+    return getElementsCountForComponents(from) >= getElementsCountForComponents(to);
 }
 
 unsigned int Image::getRowElements() const

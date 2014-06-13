@@ -449,7 +449,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
         ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
         if ((inputImage->getComponents() != components &&
-             Image::areCompsConvertibleWithoutDamage(inputImage->getComponents(),components)) ||
+             Image::hasEnoughDataToConvert(inputImage->getComponents(),components)) ||
             inputImage->getBitDepth() != imageDepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(components,inputImage->getRoD(),mipMapLevel,imageDepth));
@@ -461,9 +461,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             ///switch the pointer
             inputImage = remappedImage;
         } else if (inputImage->getComponents() != components) {
-            assert(!Image::areCompsConvertibleWithoutDamage(inputImage->getComponents(),components));
+            assert(!Image::hasEnoughDataToConvert(inputImage->getComponents(),components));
             ///we cannot convert without loosing data of some channels, we better off render everything again
             isInputImgCached = false;
+            appPTR->removeFromNodeCache(inputImage);
             cachedImgParams.reset();
             inputImage.reset();
         }
