@@ -1188,6 +1188,7 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
     }
     
     Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
+    Natron::ImageBitDepth srcDepth = srcImg.getBitDepth();
     
     int nComp = (int)srcImg.getComponentsCount();
 
@@ -1219,18 +1220,43 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
                 for (int k = 0; k < nComp; ++k) {
                     
                     if (k <= 2 && (srcLut || dstLut)) {
-                        float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                        float pixFloat;
+                        
                         if (srcLut) {
-                            ///use slow function otherwise I can't see how we can avoid complicated code to cover all cases
-                            pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                            if (srcDepth == IMAGE_BYTE) {
+                                pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                            } else if (srcDepth == IMAGE_SHORT) {
+                                pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
+                            } else {
+                                pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                            }
+                        } else {
+                            pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                         }
                         
+//                        if (dstDepth == IMAGE_BYTE) {
+//                            error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
+//                            pix = error[k] >> 8;
+//                        } else if (dstDepth == IMAGE_SHORT) {
+//                            pix = dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat);
+//                        } else {
+//                            if (dstLut) {
+//                                pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+//                            }
+//                            pix = convertPixelDepth<float, DSTPIX>(pixFloat);
+//                        }
+//                        
                         DSTPIX pix;
                         if (dstDepth == IMAGE_BYTE) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
-                            error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) : Color::floatToInt<0xff01>(pixFloat));
+                            error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                                          Color::floatToInt<0xff01>(pixFloat));
                             pix = error[k] >> 8;
+                        } else if (dstDepth == IMAGE_SHORT) {
+                            pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                            convertPixelDepth<float, DSTPIX>(pixFloat);
                         } else {
+                            
                             if (dstLut) {
                                 pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
                             }
@@ -1282,6 +1308,7 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
     
     Natron::ImageComponents dstComp = dstImg.getComponents();
     Natron::ImageBitDepth dstDepth = dstImg.getBitDepth();
+    Natron::ImageBitDepth srcDepth = srcImg.getBitDepth();
     
     bool sameBitDepth = srcImg.getBitDepth() == dstImg.getBitDepth();
 
@@ -1337,23 +1364,37 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
                         if (k < srcNComp) {
                             
                             if (k <= 2 && (srcLut || dstLut)) {
-                                float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                
+                                
+                                float pixFloat;
                                 
                                 if (srcLut) {
-                                    ///use slow function otherwise I can't see how we can avoid complicated code to cover all cases
-                                    pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                    if (srcDepth == IMAGE_BYTE) {
+                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                                    } else if (srcDepth == IMAGE_SHORT) {
+                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
+                                    } else {
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                    }
+                                } else {
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                                 }
 
                                 
                                 DSTPIX pix;
                                 if (dstDepth == IMAGE_BYTE) {
-                                    error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
+                                    error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat):
+                                                                  Color::floatToInt<0xff01>(pixFloat));
                                     pix = error[k] >> 8;
+                                } else if (dstDepth == IMAGE_SHORT) {
+                                    pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                                    convertPixelDepth<float, DSTPIX>(pixFloat);
                                 } else {
                                     if (dstLut) {
                                         pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                    } else {
+                                        pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                     }
-                                    pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                 }
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
                                 
