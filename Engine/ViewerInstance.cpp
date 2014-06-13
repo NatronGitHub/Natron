@@ -424,6 +424,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     ImageBitDepth imageDepth;
     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
     
+    emit imageFormatChanged(textureIndex,components, imageDepth);
     
     U64 inputNodeHash = activeInputToRender->hash();
         

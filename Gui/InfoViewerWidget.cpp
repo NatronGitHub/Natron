@@ -41,6 +41,8 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidge
     
     descriptionLabel = new QLabel(description,this);
     
+    imageFormat = new QLabel("",this);
+    
     QString reso("<font color=\"#DBE0E0\">");
     reso.append(viewer->getDisplayWindow().getName().c_str());
     reso.append("\t");
@@ -82,6 +84,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidge
     hvl_lastOption->setContentsMargins(10, 0, 0, 0);
 
     layout->addWidget(descriptionLabel);
+    layout->addWidget(imageFormat);
     layout->addWidget(resolution);
     layout->addWidget(coordDispWindow);
     layout->addWidget(_fpsLabel);
@@ -271,4 +274,34 @@ void InfoViewerWidget::setColor(float r,float g,float b,float a){
     colorUnderMouse.setW(a);
 }
 
-
+void InfoViewerWidget::setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth)
+{
+    QString s;
+    switch (comp) {
+        case Natron::ImageComponentRGBA:
+            s += "RGBA";
+            break;
+        case Natron::ImageComponentRGB:
+            s += "RGB";
+            break;
+        case Natron::ImageComponentAlpha:
+            s += "Alpha";
+            break;
+        default:
+            break;
+    }
+    switch (depth) {
+        case Natron::IMAGE_BYTE:
+            s += "8u";
+            break;
+        case Natron::IMAGE_SHORT:
+            s += "16u";
+            break;
+        case Natron::IMAGE_FLOAT:
+            s += "32f";
+            break;
+        default:
+            break;
+    }
+    imageFormat->setText(s);
+}

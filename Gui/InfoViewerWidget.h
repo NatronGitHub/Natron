@@ -40,6 +40,7 @@ public:
     
     void setResolution(const Format& f);
     
+    void setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth);
 public slots:
     void updateColor();
     void updateCoordMouse();
@@ -61,6 +62,7 @@ private:
     
     QHBoxLayout* layout;
     QLabel* descriptionLabel;
+    QLabel* imageFormat;
     QLabel* resolution;
     Format format;
     QLabel* coordDispWindow;

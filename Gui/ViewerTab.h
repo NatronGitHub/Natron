@@ -212,6 +212,8 @@ public slots:
     
     void onInputChanged(int inputNb);
     
+    void onImageFormatChanged(int,int,int);
+
 private:
     
     void manageSlotsForInfoWidget(int textureIndex,bool connect);
