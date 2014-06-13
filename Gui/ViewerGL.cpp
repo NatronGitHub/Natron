@@ -608,10 +608,12 @@ ViewerGL::Implementation::WipePolygonType ViewerGL::Implementation::getWipePolyg
     ///extrapolate the line to the maximum size of the RoD so we're sure the line
     ///intersection algorithm works
     double maxSize = std::max(texRectClipped.x2 - texRectClipped.x1,texRectClipped.y2 - texRectClipped.y1) * 100000.;
-    firstPoint.setX(center.x() - std::cos(angle + mpi2) * maxSize);
-    firstPoint.setY(center.y() - std::sin(angle + mpi2) * maxSize);
-    secondPoint.setX(center.x() + std::cos(angle + mpi2) * maxSize);
-    secondPoint.setY(center.y() + std::sin(angle + mpi2) * maxSize);
+    double xmax = std::cos(angle + mpi2) * maxSize;
+    double ymax = std::sin(angle + mpi2) * maxSize;
+    firstPoint.setX(center.x() - xmax);
+    firstPoint.setY(center.y() - ymax);
+    secondPoint.setX(center.x() + xmax);
+    secondPoint.setY(center.y() + ymax);
     
     QLineF inter(firstPoint,secondPoint);
     QLineF::IntersectType intersectionTypes[4];

@@ -846,10 +846,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             return StatOK;
         }
         
-        ViewerCompositingOperator compOp = _imp->uiContext->getCompositingOperator();
-        
-        bool renderAlpha = compOp == OPERATOR_UNDER || compOp == OPERATOR_OVER;
-
         if (singleThreaded) {
             if (autoContrast) {
                 double vmin, vmax;
@@ -873,8 +869,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                         bitDepth,
                                         gain,
                                         offset,
-                                        lutFromColorspace(lut),
-                                        renderAlpha);
+                                        lutFromColorspace(lut));
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
                           args,
@@ -938,8 +933,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                         bitDepth,
                                         gain,
                                         offset,
-                                        lutFromColorspace(lut),
-                                        renderAlpha);
+                                        lutFromColorspace(lut));
 
             QtConcurrent::map(splitRows,
                               boost::bind(&renderFunctor,
@@ -1126,7 +1120,7 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                     double r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
                     double g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
                     double b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
-                    int a = (!args.renderAlpha || nComps < 4) ? 255 : Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
+                    int a = (nComps < 4) ? 255 : Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
                     r =  r * args.gain + args.offset;
                     g =  g * args.gain + args.offset;
                     b =  b * args.gain + args.offset;
@@ -1253,7 +1247,7 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
             double r = (double)(src_pixels[rOffset]) / maxValue;
             double g = (double)src_pixels[gOffset] / maxValue;
             double b = (double)src_pixels[bOffset] / maxValue;
-            double a = (!args.renderAlpha || nComps < 4) ? 1. : src_pixels[3];
+            double a = (nComps < 4) ? 1. : src_pixels[3];
             if (luminance) {
                 r = 0.299 * r + 0.587 * g + 0.114 * b;
                 g = r;

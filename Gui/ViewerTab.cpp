@@ -1701,6 +1701,7 @@ void ViewerTab::onCompositingOperatorIndexChanged(int index)
         _imp->viewer->resetWipeControls();
     }
     
+
     _imp->viewer->updateGL();
 }
 
