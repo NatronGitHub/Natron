@@ -286,7 +286,8 @@ std::string EffectInstance::inputLabel(int inputNb) const
     return out;
 }
 
-boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view,Natron::ImageComponents comp)
+boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,
+                                                          int view,Natron::ImageComponents comp,Natron::ImageBitDepth depth)
 {
     
     bool isMask = isInputMask(inputNb);
@@ -389,7 +390,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
-        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,getBitDepth(), view, mipMapLevel, byPassCache);
+        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
     }
     
     
@@ -405,7 +406,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     U64 inputNodeHash;
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
                 RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
-                              byPassCache, NULL,comp,getBitDepth()),&inputNodeHash);
+                              byPassCache, NULL,comp,depth),&inputNodeHash);
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
@@ -563,7 +564,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
         }
         
-        if (image->getComponents() != args.components || image->getBitDepth() != args.bitdepth) {
+        ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
+        ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
+        if ((image->getComponents() != args.components && Image::areCompsConvertibleWithoutDamage(image->getComponents(),args.components)) ||
+            image->getBitDepth() != args.bitdepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
             image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
@@ -573,6 +577,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             
             ///switch the pointer
             image = remappedImage;
+        } else if (image->getComponents() != args.components) {
+            assert(!Image::areCompsConvertibleWithoutDamage(image->getComponents(),args.components));
+            ///we cannot convert without loosing data of some channels, we better off render everything again
+            isCached = false;
+            cachedImgParams.reset();
+            image.reset();
         }
         
         if (isCached && byPassCache) {
@@ -628,7 +638,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                             0);
                 
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,args.components);
+                image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,args.components,args.bitdepth);
                 
                 ///if we bypass the cache, don't cache the result of isIdentity
                 if (byPassCache) {
@@ -744,7 +754,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         byPassCache,
                                                         nodeHash,
                                                         0);
-            return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,args.components);
+            return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,args.components,args.bitdepth);
         }
         
 #ifdef NATRON_DEBUG
@@ -829,20 +839,12 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     EffectInstance::RenderRoIStatus retCode;
     
     ///First off check if the requested components and bitdepth are supported by the output clip
-    Natron::ImageBitDepth outputDepth = image->getBitDepth();
-    Natron::ImageComponents outputComponents = image->getComponents();
-    bool supportsRequestedComps = isSupportedComponent(-1, outputComponents);
-    bool supportsRequestedDepth = isSupportedBitDepth(outputDepth);
+    Natron::ImageBitDepth outputDepth ;
+    Natron::ImageComponents outputComponents;
+    getPreferredDepthAndComponents(-1, &outputComponents, &outputDepth);
+    bool imageConversionNeeded = outputComponents != image->getComponents() || outputDepth != image->getBitDepth();
     
-    if (!supportsRequestedComps) {
-        ///We are remapping the output components, we will need to convert to the requested type in the end.
-        outputComponents = findClosestSupportedComponents(-1, outputComponents);
-    }
-    
-    if (!supportsRequestedDepth) {
-        ///We are remapping the bitdepth
-        outputDepth = getBitDepth();
-    }
+    assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
     
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
     ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
@@ -920,7 +922,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     ///These are the image passed to the plug-in to render
     boost::shared_ptr<Image> fullScaleMappedImage,downscaledMappedImage;
     if (!rectsToRender.empty()) {
-        if (!supportsRequestedDepth || !supportsRequestedComps) {
+        if (imageConversionNeeded) {
             if (useFullResImage) {
                 fullScaleMappedImage.reset(new Image(outputComponents,image->getRoD(),image->getMipMapLevel(),outputDepth));
                 downscaledMappedImage = downscaledImage;
@@ -1020,10 +1022,9 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 for (U32 range = 0; range < it2->second.size(); ++range) {
                     for (U32 f = it2->second[range].min; f <= it2->second[range].max; ++f) {
                         
-                        ///Note that here we ask to render the bit depth and the components that THIS effect
-                        ///supports. Hence it may have to convert it. We have to do this because we known this
-                        ///image will be asked for in the EffectInstance::getImage with those exact components.
-                        ///If we don't do this then the call to getImage will recompute another image.
+                        Natron::ImageComponents inputPrefComps;
+                        Natron::ImageBitDepth inputPrefDepth;
+                        inputEffect->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                         
                         boost::shared_ptr<Natron::Image> inputImg =
                         inputEffect->renderRoI(RenderRoIArgs(f, //< time
@@ -1035,8 +1036,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                                                              isRenderMadeInResponseToUserInteraction, // < user interaction ?
                                                              byPassCache, //< look-up the cache for existing images ?
                                                              NULL,// < did we precompute any RoD to speed-up the call ?
-                                                             fullScaleMappedImage->getComponents(), //< requested comps
-                                                             fullScaleMappedImage->getBitDepth())); //< requested bitdepth
+                                                             inputPrefComps, //< requested comps
+                                                             inputPrefDepth)); //< requested bitdepth
                         
                         if (inputImg) {
                             inputImages.push_back(inputImg);
@@ -1211,7 +1212,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             ///copy the rectangle rendered in the full scale image to the downscaled output
             if (useFullResImage) {
                 ///First demap the fullScaleMappedImage to the original image if it needs to
-                if (!supportsRequestedComps || !supportsRequestedDepth) {
+                if (imageConversionNeeded) {
                     fullScaleMappedImage->convertToFormat(canonicalRectToRender, image.get(),
                                                           getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
                                                           getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
@@ -1221,7 +1222,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                     image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
                 }
             } else {
-                if (!supportsRequestedComps || !supportsRequestedDepth) {
+                if (imageConversionNeeded) {
                     downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(),
                                                            getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
                                                            getApp()->getDefaultColorSpaceForBitDepth(downscaledImage->getBitDepth()),
@@ -1745,6 +1746,15 @@ bool EffectInstance::isSupportedBitDepth(Natron::ImageBitDepth depth) const
 Natron::ImageComponents EffectInstance::findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const
 {
     return _node->findClosestSupportedComponents(inputNb,comp);
+}
+
+void EffectInstance::getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const
+{
+    ///find closest to RGBA
+    *comp = findClosestSupportedComponents(inputNb, Natron::ImageComponentRGBA);
+    
+    ///find deepest bitdepth
+    *depth = getBitDepth();
 }
 
 int EffectInstance::getMaskChannel(int inputNb) const

@@ -198,7 +198,7 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
                                 bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
                                 boost::shared_ptr<Natron::Image> output){
     
-    boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view,output->getComponents());
+    boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view,output->getComponents(),output->getBitDepth());
     
     if(hasOutputConnected()){
         output->copy(*src,src->getRoD());

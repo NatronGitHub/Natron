@@ -511,6 +511,11 @@ unsigned int Image::getComponentsCount() const
     return getElementsCountForComponents(getComponents());
 }
 
+bool Image::areCompsConvertibleWithoutDamage(Natron::ImageComponents from,Natron::ImageComponents to)
+{
+    return getElementsCountForComponents(to) >= getElementsCountForComponents(from);
+}
+
 unsigned int Image::getRowElements() const
 {
     return getComponentsCount() * _pixelRod.width();

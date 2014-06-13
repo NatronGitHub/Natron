@@ -420,6 +420,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         mipMapLevel = _imp->viewerMipMapLevel;
     }
     
+    ImageComponents components;
+    ImageBitDepth imageDepth;
+    activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+    
     
     U64 inputNodeHash = activeInputToRender->hash();
         
@@ -440,6 +444,28 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             ///We must use the cache facility anyway because we rely on it for caching the results
             ///of actions which is necessary to avoid recursive actions.
             inputImage->clearBitmap();
+        }
+        
+        ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
+        ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
+        if ((inputImage->getComponents() != components &&
+             Image::areCompsConvertibleWithoutDamage(inputImage->getComponents(),components)) ||
+            inputImage->getBitDepth() != imageDepth) {
+            ///Convert the image to the requested components
+            boost::shared_ptr<Image> remappedImage(new Image(components,inputImage->getRoD(),mipMapLevel,imageDepth));
+            inputImage->convertToFormat(inputImage->getPixelRoD(), remappedImage.get(),
+                                   getApp()->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
+                                   getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
+                                   3, false, true);
+            
+            ///switch the pointer
+            inputImage = remappedImage;
+        } else if (inputImage->getComponents() != components) {
+            assert(!Image::areCompsConvertibleWithoutDamage(inputImage->getComponents(),components));
+            ///we cannot convert without loosing data of some channels, we better off render everything again
+            isInputImgCached = false;
+            cachedImgParams.reset();
+            inputImage.reset();
         }
     }
     
@@ -614,12 +640,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
     //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
     
-    ///For the viewer we always request RGBA at least so the user can visualize quickly all the channels afterwards
-    ///instead of re-rendering everything if we were in RGB and then the user selects alpha
-    
-    ImageComponents components = Natron::ImageComponentRGBA;
 
-    size_t bytesCount = textureRect.w * textureRect.h * getElementsCountForComponents(components);
+    
+    
+    size_t bytesCount = textureRect.w * textureRect.h * 4;
     
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
     
@@ -798,7 +822,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                                   byPassCache,
                                                   &rod,
                                                   components,
-                                                  activeInputToRender->getBitDepth())); //< render the input depth as the viewer can handle it
+                                                  imageDepth)); //< render the input depth as the viewer can handle it
                     
                     if (!lastRenderedImage) {
                         return StatFailed;
@@ -1086,6 +1110,7 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                                   int rOffset,int gOffset,int bOffset,int nComps)
 {
     
+    Natron::ImageComponents comps = args.inputImage->getComponents();
     const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
 
     ///offset the output buffer at the starting point
@@ -1117,10 +1142,31 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                     break;
                 } else {
                     
-                    double r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
-                    double g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
-                    double b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
-                    int a = (nComps < 4) ? 255 : Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
+                    double r,g,b;
+                    int a;
+                    switch (comps) {
+                        case Natron::ImageComponentRGBA:
+                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
+                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
+                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
+                            a = Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
+                            break;
+                        case Natron::ImageComponentRGB:
+                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
+                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
+                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
+                            a = 255;
+                            break;
+                        case Natron::ImageComponentAlpha:
+                            a = Color::floatToInt<256>(src_pixels[srcIndex]/ (double)maxValue);
+                            r = g = b = a;
+                            a = 255;
+                            break;
+                        default:
+                            assert(false);
+                            break;
+                    }
+
                     r =  r * args.gain + args.offset;
                     g =  g * args.gain + args.offset;
                     b =  b * args.gain + args.offset;
@@ -1227,6 +1273,7 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                                   int rOffset,int gOffset,int bOffset,int nComps)
 {
     
+    Natron::ImageComponents comps = args.inputImage->getComponents();
     const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
 
     ///the width of the output buffer multiplied by the channels count
@@ -1244,10 +1291,33 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
         
         ///we fill the scan-line with all the pixels of the input image
         for (int x = args.texRect.x1; x < args.texRect.x2; x += args.closestPowerOf2) {
-            double r = (double)(src_pixels[rOffset]) / maxValue;
-            double g = (double)src_pixels[gOffset] / maxValue;
-            double b = (double)src_pixels[bOffset] / maxValue;
-            double a = (nComps < 4) ? 1. : src_pixels[3];
+            
+            double r,g,b,a;
+            
+            switch (comps) {
+                case Natron::ImageComponentRGBA:
+                    r = (double)(src_pixels[rOffset]) / maxValue;
+                    g = (double)src_pixels[gOffset] / maxValue;
+                    b = (double)src_pixels[bOffset] / maxValue;
+                    a = (nComps < 4) ? 1. : src_pixels[3];
+                    break;
+                case Natron::ImageComponentRGB:
+                    r = (double)(src_pixels[rOffset]) / maxValue;
+                    g = (double)src_pixels[gOffset] / maxValue;
+                    b = (double)src_pixels[bOffset] / maxValue;
+                    a = 1.;
+                    break;
+                case Natron::ImageComponentAlpha:
+                    a = (nComps < 4) ? 1. : *src_pixels;
+                    r = g = b = a;
+                    a = 1.;
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+
+            
             if (luminance) {
                 r = 0.299 * r + 0.587 * g + 0.114 * b;
                 g = r;
@@ -1522,13 +1592,31 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
         return false;
     }
 
-    int nComps = image->getComponentsCount();
+    Natron::ImageComponents comps = image->getComponents();
+    switch (comps) {
+        case Natron::ImageComponentRGBA:
+            *r = *pix / (float)maxValue;
+            *g = (*(pix + 1) / (float)maxValue);
+            *b = (*(pix + 2) / (float)maxValue);
+            *a = (*(pix + 3) / (float)maxValue);
+            break;
+        case Natron::ImageComponentRGB:
+            *r = *pix / (float)maxValue;
+            *g = (*(pix + 1) / (float)maxValue);
+            *b = (*(pix + 2) / (float)maxValue);
+            *a = 1.;
+            break;
+        case Natron::ImageComponentAlpha:
+            *a = (*(pix + 3) / (float)maxValue);
+            *r = 0.;
+            *g = 0.;
+            *b = 0.;
+            break;
+        default:
+            assert(false);
+            break;
+    }
 
-    
-    *r = *pix / (float)maxValue;
-    *g = (nComps < 2) ? 0. : (*(pix + 1) / (float)maxValue);
-    *b = (nComps < 3) ? 0. : (*(pix + 2) / (float)maxValue);
-    *a = (nComps < 4) ? 0. : (*(pix + 3) / (float)maxValue);
     
     ///convert to linear
     if (srcColorSpace) {

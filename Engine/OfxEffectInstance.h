@@ -212,6 +212,8 @@ public:
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
 
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
+
+    virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     /**

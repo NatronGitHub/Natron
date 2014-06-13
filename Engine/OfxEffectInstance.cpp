@@ -1329,3 +1329,16 @@ void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* d
     }
 }
 
+void OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const
+{
+    OfxClipInstance* clip;
+    if (inputNb == -1) {
+        clip = dynamic_cast<OfxClipInstance*>(effect_->getClip(kOfxImageEffectOutputClipName));
+    } else {
+        clip = getClipCorrespondingToInput(inputNb);
+    }
+    assert(clip);
+    *comp = OfxClipInstance::ofxComponentsToNatronComponents(clip->getComponents());
+    *depth = OfxClipInstance::ofxDepthToNatronDepth(clip->getPixelDepth());
+}
+

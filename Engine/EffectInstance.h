@@ -277,6 +277,12 @@ public:
     Natron::ImageComponents findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const WARN_UNUSED_RETURN;
     
     /**
+     * @brief Returns the preferred depth and components for the given input.
+     * If inputNb equals -1 then this function will check the output components.
+     **/
+    virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const;
+    
+    /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
      **/
     virtual std::string inputLabel(int inputNb) const WARN_UNUSED_RETURN;
@@ -388,7 +394,8 @@ public:
     
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view,Natron::ImageComponents comp) WARN_UNUSED_RETURN;
+    boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,
+                                      int view,Natron::ImageComponents comp,Natron::ImageBitDepth depth) WARN_UNUSED_RETURN;
     
 protected:
     

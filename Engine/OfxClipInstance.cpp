@@ -369,7 +369,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,co
     assert(!isOutput());
     // input has been rendered just find it in the cache
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view,
-                                                                     ofxComponentsToNatronComponents(getComponents()));
+                                                                     ofxComponentsToNatronComponents(getComponents()),
+                                                                     ofxDepthToNatronDepth(getPixelDepth()));
     if(!image){
         return NULL;
     }else{

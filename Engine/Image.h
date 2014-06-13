@@ -168,6 +168,8 @@ namespace Natron {
         
         ImageComponents getComponents() const {return this->_components;}
         
+        static bool areCompsConvertibleWithoutDamage(Natron::ImageComponents from,Natron::ImageComponents to);
+        
         Natron::ImageBitDepth getBitDepth() const {return this->_bitDepth;}
         
         void setPixelAspect(double pa) { this->_key._pixelAspect = pa; }
