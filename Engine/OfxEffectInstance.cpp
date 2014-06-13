@@ -494,6 +494,7 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
 void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
 {
     effect_->runGetClipPrefsConditionally();
+    const std::string& outputClipDepth = effect_->getClip(kOfxImageEffectOutputClipName)->getPixelDepth();
 
     ///for all inputs we run getClipPrefs too on their output clip
     for (int i = 0; i < maximumInputs() ; ++i) {
@@ -506,11 +507,21 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
             instance->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
             instance->effectInstance()->runGetClipPrefsConditionally();
             
-            const std::string& input_outputClipComps = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName)->getComponents();
+            OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
+            const std::string& input_outputClipComps = inputOutputClip->getComponents();
             if (clip->isSupportedComponent(input_outputClipComps)) {
                 clip->setComponents(input_outputClipComps);
             }
             
+            const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
+            if (isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth))) {
+                bool depthsDifferent = input_outputDepth != outputClipDepth;
+                if ((effect_->supportsMultipleClipDepths() && depthsDifferent) || !depthsDifferent) {
+                    clip->setPixelDepth(input_outputDepth);
+                }
+            }
+
+
             ///validate with an instance changed action
             effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
             effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, scale);
