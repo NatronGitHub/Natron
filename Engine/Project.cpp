@@ -187,13 +187,13 @@ void Project::saveProject(const QString& path,const QString& name,bool autoS){
 
     try {
         if (!autoS) {
-            if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
+            //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
 
                 saveProjectInternal(path,name);
                 ///also update the auto-save
                 removeAutoSaves();
 
-            }
+            //}
         } else {
             if (!isGraphWorthLess()) {
 
