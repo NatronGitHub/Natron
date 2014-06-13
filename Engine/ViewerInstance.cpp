@@ -1511,18 +1511,44 @@ ViewerInstance::disconnectViewer()
 
 template <typename PIX,int maxValue>
 static
-bool getColorAtInternal(Natron::Image* image,int x,int y,float* r,float* g,float* b,float* a)
+bool getColorAtInternal(Natron::Image* image,int x,int y,
+                        bool forceLinear,
+                        const Natron::Color::Lut* srcColorSpace,
+                        const Natron::Color::Lut* dstColorSpace,
+                        float* r,float* g,float* b,float* a)
 {
     const PIX* pix = (const PIX*)image->pixelAt(x, y);
     if (!pix) {
         return false;
     }
-#pragma message WARN("BUG: byte and short RGB components should be linearized here (not alpha)")
+
     int nComps = image->getComponentsCount();
+
+    
     *r = *pix / (float)maxValue;
     *g = (nComps < 2) ? 0. : (*(pix + 1) / (float)maxValue);
     *b = (nComps < 3) ? 0. : (*(pix + 2) / (float)maxValue);
     *a = (nComps < 4) ? 0. : (*(pix + 3) / (float)maxValue);
+    
+    ///convert to linear
+    if (srcColorSpace) {
+        *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
+        *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
+        *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
+    }
+    
+    if (!forceLinear && dstColorSpace) {
+        ///convert to dst color space
+        float from[3];
+        from[0] = *r;
+        from[1] = *g;
+        from[2] = *b;
+        float to[3];
+        dstColorSpace->to_float_planar(to, from, 3);
+        *r = to[0];
+        *g = to[1];
+        *b = to[2];
+    }
     return true;
 }
 
@@ -1537,18 +1563,51 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     if (!_imp->lastRenderedImage[textureIndex]) {
         return false;
     }
+    
+    ViewerColorSpace lut;
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        lut = _imp->viewerParamsLut;
+    }
+    const Natron::Color::Lut* dstColorSpace = lutFromColorspace(lut);
+    
     Natron::ImageBitDepth depth = _imp->lastRenderedImage[textureIndex]->getBitDepth();
     bool queried = true;
     switch (depth) {
-        case IMAGE_BYTE:
-            queried = getColorAtInternal<unsigned char, 255>(_imp->lastRenderedImage[textureIndex].get(), x, y, r, g, b, a);
-            break;
-        case IMAGE_SHORT:
-            queried = getColorAtInternal<unsigned short, 65535>(_imp->lastRenderedImage[textureIndex].get(), x, y, r, g, b, a);
-            break;
-        case IMAGE_FLOAT:
-            queried = getColorAtInternal<float, 1>(_imp->lastRenderedImage[textureIndex].get(), x, y, r, g, b, a);
-            break;
+        case IMAGE_BYTE: {
+            ViewerColorSpace bytesCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_BYTE);
+            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(bytesCS);
+            if (srcColorSpace == dstColorSpace) {
+                srcColorSpace = 0;
+                dstColorSpace = 0;
+            }
+            queried = getColorAtInternal<unsigned char, 255>(_imp->lastRenderedImage[textureIndex].get(), x, y,forceLinear,
+                                                             srcColorSpace,
+                                                             dstColorSpace,r, g, b, a);
+        }   break;
+        case IMAGE_SHORT: {
+            ViewerColorSpace shortCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_SHORT);
+            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(shortCS);
+            if (srcColorSpace == dstColorSpace) {
+                srcColorSpace = 0;
+                dstColorSpace = 0;
+            }
+
+            queried = getColorAtInternal<unsigned short, 65535>(_imp->lastRenderedImage[textureIndex].get(), x, y, forceLinear,
+                                                                srcColorSpace,
+                                                                dstColorSpace,r, g, b, a);
+        }   break;
+        case IMAGE_FLOAT: {
+            ViewerColorSpace floatCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_FLOAT);
+            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(floatCS);
+            if (srcColorSpace == dstColorSpace) {
+                srcColorSpace = 0;
+                dstColorSpace = 0;
+            }
+            queried = getColorAtInternal<float, 1>(_imp->lastRenderedImage[textureIndex].get(), x, y,forceLinear,
+                                                   srcColorSpace,
+                                                   dstColorSpace, r, g, b, a);
+        }   break;
             
         default:
             break;
@@ -1557,23 +1616,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
     if (!queried) {
         return false;
     }
-    ViewerColorSpace lut;
-    {
-        QMutexLocker l(&_imp->viewerParamsMutex);
-        lut = _imp->viewerParamsLut;
-    }
-    const Natron::Color::Lut* colorSpace = lutFromColorspace(lut);
-    if (!forceLinear && colorSpace) {
-        float from[3];
-        from[0] = *r;
-        from[1] = *g;
-        from[2] = *b;
-        float to[3];
-        colorSpace->to_float_planar(to, from, 3);
-        *r = to[0];
-        *g = to[1];
-        *b = to[2];
-    }
+   
     return true;
 }
 
