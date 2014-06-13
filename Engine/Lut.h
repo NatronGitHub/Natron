@@ -217,13 +217,22 @@ namespace Natron {
              */
             unsigned short toColorSpaceUint8xxFromLinearFloatFast(float v) const;
 
-            
-            /* @brief Converts a float ranging in [0 - 255] in the destination color-space using the look-up tables.
+            /* @brief Converts a float ranging in [0 - 1.f] in linear color-space using the look-up tables.
+             * @return An unsigned short in [0 - 65535] in the destination color-space.
+             * This function uses localluy linear approximations of the transfer function.
+             */
+            unsigned short toColorSpaceUint16FromLinearFloatFast(float v) const;
+
+            /* @brief Converts a byte ranging in [0 - 255] in the destination color-space using the look-up tables.
              * @return A float in [0 - 1.f] in linear color-space.
              */
             float fromColorSpaceUint8ToLinearFloatFast(unsigned char v) const;
-            
-            
+
+            /* @brief Converts a short ranging in [0 - 65535] in the destination color-space using the look-up tables.
+             * @return A float in [0 - 1.f] in linear color-space.
+             */
+            float fromColorSpaceUint16ToLinearFloatFast(unsigned short v) const;
+
             
             /////@TODO the following functions expects a float input buffer, one could extend it to cover all bitdepths.
             

@@ -182,16 +182,70 @@ namespace Natron {
         unsigned char Lut::toColorSpaceUint8FromLinearFloatFast(float v) const
         {
             assert(init_);
-            return Color::uint8xxToChar(toFunc_hipart_to_uint8xx[hipart(v)]);        }
+            return Color::uint8xxToChar(toFunc_hipart_to_uint8xx[hipart(v)]);
+        }
         
         unsigned short Lut::toColorSpaceUint8xxFromLinearFloatFast(float v) const
         {
             assert(init_);
             return toFunc_hipart_to_uint8xx[hipart(v)];
         }
-        
-        
-        
+
+        // the following only works for increasing LUTs
+        unsigned short Lut::toColorSpaceUint16FromLinearFloatFast(float v) const
+        {
+            assert(init_);
+            // algorithm:
+            // - convert to 8 bits -> val8u
+            // - convert val8u-1, val8u and val8u+1 to float
+            // - interpolate linearly in the right interval
+            unsigned char v8u = toColorSpaceUint8FromLinearFloatFast(v);
+            unsigned char v8u_next, v8u_prev;
+            float v32f_next, v32f_prev;
+            if (v8u == 0) {
+                v8u_prev = 0;
+                v8u_next = 1;
+                v32f_prev = fromColorSpaceUint8ToLinearFloatFast(0);
+                v32f_next = fromColorSpaceUint8ToLinearFloatFast(1);
+            } else if (v8u == 255) {
+                v8u_prev = 254;
+                v8u_next = 255;
+                v32f_prev = fromColorSpaceUint8ToLinearFloatFast(254);
+                v32f_next = fromColorSpaceUint8ToLinearFloatFast(255);
+            } else {
+                float v32f = fromColorSpaceUint8ToLinearFloatFast(v8u);
+                // we suppose the LUT is an increasing func
+                if (v < v32f) {
+                    v8u_prev = v8u - 1;
+                    v32f_prev = fromColorSpaceUint8ToLinearFloatFast(v8u_prev);
+                    v8u_next = v8u;
+                    v32f_next = v32f;
+                } else {
+                    v8u_prev = v8u;
+                    v32f_prev = v32f;
+                    v8u_next = v8u + 1;
+                    v32f_next = fromColorSpaceUint8ToLinearFloatFast(v8u_next);
+                }
+            }
+            // interpolate linearly
+            return (v8u_prev << 8) + v8u_prev + (v - v32f_prev) * (((v8u_next-v8u_prev)<<8) + (v8u_next+v8u_prev)) / (v32f_next-v32f_prev) + 0.5;
+        }
+
+        float Lut::fromColorSpaceUint16ToLinearFloatFast(unsigned short v) const
+        {
+            assert(init_);
+            // the following is from ImageMagick's quantum.h
+            unsigned char v8u_prev = (v - (v>>8))>>8;
+            unsigned char v8u_next = v8u_prev + 1;
+            unsigned short v16u_prev = (v8u_prev<<8) + v8u_prev;
+            unsigned short v16u_next = (v8u_next<<8) + v8u_next;
+            float v32f_prev = fromColorSpaceUint8ToLinearFloatFast(v8u_prev);
+            float v32f_next = fromColorSpaceUint8ToLinearFloatFast(v8u_next);
+            // interpolate linearly
+            return v32f_prev + (v-v16u_prev) * (v32f_next-v32f_prev)/(v16u_next-v16u_prev);
+        }
+
+
         void Lut::fillTables() const
         {
             if (init_) {
