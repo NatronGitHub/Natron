@@ -188,28 +188,7 @@ void TransformUndoCommand::undo()
 
 void TransformUndoCommand::transformPoint(const boost::shared_ptr<BezierCP>& point)
 {
-    int index = !point->isFeatherPoint() ? point->getCurve()->getControlPointIndex(point) :
-    point->getCurve()->getFeatherPointIndex(point);
-    assert(index != -1);
-    Transform::Point3D cp,leftCp,rightCp;
-    point->getPositionAtTime(_time, &cp.x, &cp.y);
-    point->getLeftBezierPointAtTime(_time, &leftCp.x, &leftCp.y);
-    point->getRightBezierPointAtTime(_time, &rightCp.x, &rightCp.y);
-    cp.z = 1.;
-    leftCp.z = 1.;
-    rightCp.z = 1.;
-    
-    cp = matApply(*_matrix, cp);
-    leftCp = matApply(*_matrix, leftCp);
-    rightCp = matApply(*_matrix, rightCp);
-    
-    cp.x /= cp.z; cp.y /= cp.z;
-    leftCp.x /= leftCp.z; leftCp.y /= leftCp.z;
-    rightCp.x /= rightCp.z; rightCp.y /= rightCp.z;
-    
-    point->getCurve()->setPointAtIndex(point->isFeatherPoint(), index, _time, cp.x, cp.y,
-                                            leftCp.x,leftCp.y, rightCp.x, rightCp.y);
-
+    point->getCurve()->transformPoint(point, _time, _matrix.get());
 }
 
 void TransformUndoCommand::redo()
@@ -525,7 +504,7 @@ MoveTangentUndoCommand::~MoveTangentUndoCommand()
 
 namespace {
     
-    static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying,bool rippleEdit)
+    static void dragTangent(int time,BezierCP& p,double dx,double dy,bool left,bool autoKeying)
     {
         double leftX,leftY,rightX,rightY,x,y;
         bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY);
@@ -545,27 +524,19 @@ namespace {
         p.getKeyframeTimes(&times);
         
         if (left) {
-            rightX = std::cos(alpha) * dist;
-            rightY = std::sin(alpha) * dist;
+            double rightDiffX = x + std::cos(alpha) * dist - rightX;
+            double rightDiffY = y + std::sin(alpha) * dist - rightY;
             if (autoKeying || isOnKeyframe) {
-                p.getCurve()->setPointLeftAndRightIndex(p, time, leftX, leftY, x + rightX, y + rightY);
+                p.getCurve()->movePointLeftAndRightIndex(p, time, dx, dy, rightDiffX, rightDiffY);
             }
-            if (rippleEdit) {
-                for (std::set<int>::iterator it = times.begin(); it!=times.end() ; ++it) {
-                    p.getCurve()->setPointLeftAndRightIndex(p, *it, leftX, leftY, x + rightX, y + rightY);
-                }
-            }
+            
         } else {
-            leftX = std::cos(alpha) * dist;
-            leftY = std::sin(alpha) * dist;
+            double leftDiffX = x + std::cos(alpha) * dist - leftX;
+            double leftDiffY = y + std::sin(alpha) * dist - leftY;
             if (autoKeying || isOnKeyframe) {
-                p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
+                p.getCurve()->movePointLeftAndRightIndex(p, time, leftDiffX , leftDiffY , dx , dy);
             }
-            if (rippleEdit) {
-                for (std::set<int>::iterator it = times.begin(); it!=times.end() ; ++it) {
-                    p.getCurve()->setPointLeftAndRightIndex(p, time, x + leftX , y + leftY , rightX , rightY);
-                }
-            }
+            
         }
         
     }
@@ -611,9 +582,9 @@ void MoveTangentUndoCommand::redo()
     }
     
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
-    dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_rippleEditEnabled);
+    dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying);
     if (_featherLinkEnabled) {
-        dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying,_rippleEditEnabled);
+        dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying);
     }
     
     if (_firstRedoCalled) {
@@ -769,22 +740,9 @@ void MoveFeatherBarUndoCommand::redo()
         delta.y = delta.y * dotProduct;
     }
     
-    Point extent;
-    
-    extent.x = featherPoint.x + delta.x;
-    extent.y = featherPoint.y + delta.y;
-    
     if (_roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
         int index = fp->getCurve()->getFeatherPointIndex(fp);
-        double leftX,leftY,rightX,rightY;
-        
-        fp->getLeftBezierPointAtTime(_time, &leftX, &leftY);
-        fp->getRightBezierPointAtTime(_time, &rightX, &rightY);
-        
-        fp->getCurve()->setPointAtIndex(true, index, _time, extent.x,extent.y,
-                                        leftX + delta.x, leftY + delta.y,
-                                        rightX + delta.x, rightY + delta.y);
-        
+        fp->getCurve()->moveFeatherByIndex(index, _time, delta.x, delta.y);
     }
     if (_firstRedoCalled) {
         _roto->evaluate(true);

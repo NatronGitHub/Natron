@@ -176,6 +176,11 @@ public:
  **/
 class RotoContext;
 class RotoLayer;
+
+namespace Transform {
+    class Matrix3x3;
+}
+
 struct RotoItemPrivate;
 class RotoItem : public QObject
 {
@@ -495,6 +500,11 @@ public:
     void moveRightBezierPoint(int index,int time,double dx,double dy);
     
     /**
+     * @brief Transforms the given point at the given time by the given matrix.
+     **/
+    void transformPoint(const boost::shared_ptr<BezierCP>& point,int time,Transform::Matrix3x3* matrix);
+    
+    /**
      * @brief Provided for convenience. It set the left bezier point of the control point at the given index to
      * the position given by (x,y) at the given time.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
@@ -522,7 +532,7 @@ public:
     /**
      * @brief Set the left and right bezier point of the control point.
      **/
-    void setPointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry);
+    void movePointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry);
     
     void clonePoint(BezierCP& p,const BezierCP& to) const;
     

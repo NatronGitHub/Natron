@@ -1172,7 +1172,7 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     }
     
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
-
+    glCheckError();
     if (_imp->pickerState == PICKER_RECTANGLE) {
         drawPickerRectangle();
     } else if (_imp->pickerState == PICKER_POINT) {
