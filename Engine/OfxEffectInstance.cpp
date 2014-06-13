@@ -483,7 +483,12 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
     effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
     effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
     effect_->endInstanceChangedAction(kOfxChangeUserEdited);
-    effect_->runGetClipPrefsConditionally();
+    
+    ///if all non optional clips are connected, call getClipPrefs
+    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
+    if (effect_->areAllNonOptionalClipsConnected()) {
+        effect_->runGetClipPrefsConditionally();
+    }
 }
 
 void OfxEffectInstance::onMultipleInputsChanged() {

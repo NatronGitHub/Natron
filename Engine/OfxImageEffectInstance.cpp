@@ -619,3 +619,13 @@ void OfxImageEffectInstance::discardClipsHash()
         dynamic_cast<OfxClipInstance*>(it->second)->discardAttachedNodeHash();
     }
 }
+
+bool OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        if (!it->second->isOutput() && !it->second->isOptional() && !it->second->getConnected()) {
+            return false;
+        }
+    }
+    return true;
+}

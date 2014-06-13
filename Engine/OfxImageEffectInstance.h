@@ -180,6 +180,8 @@ public:
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
     void addParamsToTheirParents();
     
+    bool areAllNonOptionalClipsConnected() const;
+    
     void setClipsMipMapLevel(unsigned int mipMapLevel);
 
     void setClipsView(int view);
