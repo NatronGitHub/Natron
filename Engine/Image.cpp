@@ -1349,53 +1349,66 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
                         *dstPixels = dstMaxValue - *dstPixels;
                     }
                 } else {
-                    for (int k = 0; k < dstNComp; ++k) {
-                        if (k < srcNComp) {
-                            
-                            if (k <= 2 && (srcLut || dstLut)) {
-                                
-                                
-                                float pixFloat;
-                                
-                                if (srcLut) {
-                                    if (srcDepth == IMAGE_BYTE) {
-                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
-                                    } else if (srcDepth == IMAGE_SHORT) {
-                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
-                                    } else {
-                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
-                                    }
-                                } else {
-                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
-                                }
-
-                                
-                                DSTPIX pix;
-                                if (dstDepth == IMAGE_BYTE) {
-                                    error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat):
-                                                                  Color::floatToInt<0xff01>(pixFloat));
-                                    pix = error[k] >> 8;
-                                } else if (dstDepth == IMAGE_SHORT) {
-                                    pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
-                                    convertPixelDepth<float, DSTPIX>(pixFloat);
-                                } else {
-                                    if (dstLut) {
-                                        pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
-                                    } else {
-                                        pix = convertPixelDepth<float, DSTPIX>(pixFloat);
-                                    }
-                                }
-                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                                
-                            } else {
-                                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                    if (srcImg.getComponents() == Natron::ImageComponentAlpha) {
+                        if (dstComp == Natron::ImageComponentRGB) {
+                            for (int k = 0; k < dstNComp; ++k) {
+                                DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             }
-
                         } else {
-                            dstPixels[k] = k == 3 ? dstMaxValue :  0.;
-                            if (invert) {
-                                dstPixels[k] = dstMaxValue - dstPixels[k];
+                            assert(dstComp == Natron::ImageComponentRGBA);
+                            for (int k = 0; k < dstComp - 1; ++k) {
+                                dstPixels[k] = invert ? dstMaxValue : 0;
+                            }
+                            DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
+                            dstPixels[3] = invert ? dstMaxValue : pix;
+                        }
+                    } else {
+                        for (int k = 0; k < dstNComp; ++k) {
+                            if (k < srcNComp) {
+                                if (k <= 2 && (srcLut || dstLut)) {
+                                    float pixFloat;
+                                    
+                                    if (srcLut) {
+                                        if (srcDepth == IMAGE_BYTE) {
+                                            pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                                        } else if (srcDepth == IMAGE_SHORT) {
+                                            pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
+                                        } else {
+                                            pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
+                                        }
+                                    } else {
+                                        pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    }
+                                    
+                                    
+                                    DSTPIX pix;
+                                    if (dstDepth == IMAGE_BYTE) {
+                                        error[k] = (error[k]&0xff) + (dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat):
+                                                                      Color::floatToInt<0xff01>(pixFloat));
+                                        pix = error[k] >> 8;
+                                    } else if (dstDepth == IMAGE_SHORT) {
+                                        pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                                        convertPixelDepth<float, DSTPIX>(pixFloat);
+                                    } else {
+                                        if (dstLut) {
+                                            pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                        } else {
+                                            pix = convertPixelDepth<float, DSTPIX>(pixFloat);
+                                        }
+                                    }
+                                    dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                                    
+                                } else {
+                                    DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                                    dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                                }
+                                
+                            } else {
+                                dstPixels[k] = k == 3 ? dstMaxValue :  0.;
+                                if (invert) {
+                                    dstPixels[k] = dstMaxValue - dstPixels[k];
+                                }
                             }
                         }
                     }

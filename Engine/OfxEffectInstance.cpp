@@ -483,7 +483,7 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
     effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
     effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
     effect_->endInstanceChangedAction(kOfxChangeUserEdited);
-    
+    effect_->runGetClipPrefsConditionally();
 }
 
 void OfxEffectInstance::onMultipleInputsChanged() {
