@@ -487,7 +487,35 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if (effect_->areAllNonOptionalClipsConnected()) {
-        effect_->runGetClipPrefsConditionally();
+        checkClipPrefs(time,s);
+    }
+}
+
+void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
+{
+    effect_->runGetClipPrefsConditionally();
+
+    ///for all inputs we run getClipPrefs too on their output clip
+    for (int i = 0; i < maximumInputs() ; ++i) {
+        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(input(i));
+        OfxClipInstance* clip = getClipCorrespondingToInput(i);
+        ///pointer might be null if it is not an OpenFX plug-in.
+        if (instance) {
+            instance->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+            instance->effectInstance()->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, scale);
+            instance->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+            instance->effectInstance()->runGetClipPrefsConditionally();
+            
+            const std::string& input_outputClipComps = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName)->getComponents();
+            if (clip->isSupportedComponent(input_outputClipComps)) {
+                clip->setComponents(input_outputClipComps);
+            }
+            
+            ///validate with an instance changed action
+            effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
+            effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, scale);
+            effect_->endInstanceChangedAction(kOfxChangeUserEdited);
+        }
     }
 }
 

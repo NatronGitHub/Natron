@@ -231,7 +231,9 @@ signals:
     void syncPrivateDataRequested();
 
 private:
-    
+
+    void checkClipPrefs(double time,const RenderScale& scale);
+
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
     void tryInitializeOverlayInteracts();

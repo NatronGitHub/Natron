@@ -133,7 +133,11 @@ bool OfxClipInstance::getConnected() const
             if (isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb)) {
                 return false;
             }
-            return _nodeInstance->input_other_thread(inputNb) != NULL;
+            if (QThread::currentThread() == qApp->thread()) {
+                return _nodeInstance->input(inputNb) != NULL;
+            } else {
+                return _nodeInstance->input_other_thread(inputNb) != NULL;
+            }
         }
     }
 }
