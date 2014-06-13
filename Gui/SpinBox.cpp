@@ -82,9 +82,9 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
     switch (_type) {
         case DOUBLE_SPINBOX:
             if (!ignoreDecimals) {
-                str.setNum(d,'g',_decimals);
+                str.setNum(d, 'f', _decimals);
             } else {
-                str.setNum(d,'g',16);
+                str.setNum(d, 'g', 16);
             }
             break;
         case INT_SPINBOX:
