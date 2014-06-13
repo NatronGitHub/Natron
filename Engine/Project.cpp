@@ -16,6 +16,7 @@
 #include <QtConcurrentRun>
 #include <QCoreApplication>
 #include <QTimer>
+#include <QTemporaryFile>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -214,6 +215,18 @@ void Project::saveProject(const QString& path,const QString& name,bool autoS){
         _imp->isSavingProject = false;
     }
 }
+    
+static bool fileCopy(const QString& source,const QString& dest) {
+    QFile sourceFile(source);
+    QFile destFile(dest);
+    bool success = true;
+    success &= sourceFile.open( QFile::ReadOnly );
+    success &= destFile.open( QFile::WriteOnly | QFile::Truncate );
+    success &= destFile.write( sourceFile.readAll() ) >= 0;
+    sourceFile.close();
+    destFile.close();
+    return success;
+}
 
 QDateTime Project::saveProjectInternal(const QString& path,const QString& name,bool autoSave) {
 
@@ -261,10 +274,16 @@ QDateTime Project::saveProjectInternal(const QString& path,const QString& name,b
     } else {
         filePath = path+actualFileName;
     }
+    
+    ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
+    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::TempLocation);
+    tmpFilename.append(QDir::separator());
+    tmpFilename.append(QString::number(time.toMSecsSinceEpoch()));
+    
     std::ofstream ofile;
     try {
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        ofile.open(filePath.toStdString().c_str(),std::ofstream::out);
+        ofile.open(tmpFilename.toStdString().c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure& e) {
         throw std::runtime_error(std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what());
     }
@@ -272,16 +291,29 @@ QDateTime Project::saveProjectInternal(const QString& path,const QString& name,b
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
-    boost::archive::xml_oarchive oArchive(ofile);
-    bool bgProject = appPTR->isBackground();
-    oArchive << boost::serialization::make_nvp("Background_project",bgProject);
-    ProjectSerialization projectSerializationObj(getApp());
-    save(&projectSerializationObj);
-    oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
-    if(!bgProject){
-        getApp()->saveProjectGui(oArchive);
+    
+    {
+        boost::archive::xml_oarchive oArchive(ofile);
+        bool bgProject = appPTR->isBackground();
+        oArchive << boost::serialization::make_nvp("Background_project",bgProject);
+        ProjectSerialization projectSerializationObj(getApp());
+        save(&projectSerializationObj);
+        oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
+        if(!bgProject){
+            getApp()->saveProjectGui(oArchive);
+        }
     }
+    ofile.close();
 
+    QFile::remove(filePath);
+    int nAttemps = 0;
+    
+    while (nAttemps < 10 && !fileCopy(tmpFilename, filePath)) {
+        ++nAttemps;
+    }
+    
+    QFile::remove(tmpFilename);
+    
     _imp->projectName = name;
     if (!autoSave) {
         emit projectNameChanged(name); //< notify the gui so it can update the title
