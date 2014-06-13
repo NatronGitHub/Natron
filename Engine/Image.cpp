@@ -1228,24 +1228,13 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
                             } else if (srcDepth == IMAGE_SHORT) {
                                 pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
                             } else {
-                                pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
                             }
                         } else {
                             pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                         }
                         
-//                        if (dstDepth == IMAGE_BYTE) {
-//                            error[k] = (error[k]&0xff) + dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat);
-//                            pix = error[k] >> 8;
-//                        } else if (dstDepth == IMAGE_SHORT) {
-//                            pix = dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat);
-//                        } else {
-//                            if (dstLut) {
-//                                pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
-//                            }
-//                            pix = convertPixelDepth<float, DSTPIX>(pixFloat);
-//                        }
-//                        
+
                         DSTPIX pix;
                         if (dstDepth == IMAGE_BYTE) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
@@ -1374,7 +1363,7 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
                                     } else if (srcDepth == IMAGE_SHORT) {
                                         pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
                                     } else {
-                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
                                     }
                                 } else {
                                     pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
