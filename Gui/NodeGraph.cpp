@@ -654,10 +654,12 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     ///find out if the node is already connected to what the edge is connected
                     bool alreadyConnected = false;
                     const std::vector<boost::shared_ptr<Natron::Node> >& inpNodes = _nodeSelected->getNode()->getInputs_mt_safe();
-                    for (U32 i = 0; i < inpNodes.size();++i) {
-                        if (inpNodes[i] == src->getNode()) {
-                            alreadyConnected = true;
-                            break;
+                    if (src) {
+                        for (U32 i = 0; i < inpNodes.size();++i) {
+                            if (inpNodes[i] == src->getNode()) {
+                                alreadyConnected = true;
+                                break;
+                            }
                         }
                     }
                     
@@ -703,7 +705,16 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         
         ///try to find a nearby edge
         boost::shared_ptr<Natron::Node> internalNode = _nodeSelected->getNode();
-        if (appPTR->getCurrentSettings()->isConnectionHintEnabled()) {
+        bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
+        
+        ///for readers already connected don't show hint
+        if (internalNode->maximumInputs() == 0 && internalNode->hasOutputConnected()) {
+            doHints = false;
+        } else if (internalNode->maximumInputs() > 0 && internalNode->hasInputConnected() && internalNode->hasOutputConnected()) {
+            doHints = false;
+        }
+        
+        if (doHints) {
             QRectF rect = _nodeSelected->mapToParent(_nodeSelected->boundingRect()).boundingRect();
             double tolerance = 20;
             rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
