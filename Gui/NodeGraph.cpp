@@ -538,8 +538,10 @@ void NodeGraph::deselect(){
         for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
             (*it)->setSelected(false);
         }
+        
         _nodeSelected.reset();
     }
+    
 }
 
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
@@ -758,7 +760,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     
     if (!_gui->getLastSelectedViewer()) {
-        return;
+        _gui->getApp()->createNode("Viewer");
     }
     
     ///get a pointer to the last user selected viewer

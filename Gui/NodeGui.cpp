@@ -812,14 +812,41 @@ void NodeGui::deactivate() {
         _slaveMasterLink->hide();
     }
     
-    if(_internalNode->pluginID() != "Viewer"){
+    if (_internalNode->pluginID() != "Viewer") {
         if(isSettingsPanelVisible()){
             setVisibleSettingsPanel(false);
         }
         
-    }else{
+    } else {
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+        assert(viewer);
+        
+        ViewerGL* viewerGui = dynamic_cast<ViewerGL*>(viewer->getUiContext());
+        assert(viewerGui);
+        
+        const std::list<ViewerTab*>& viewerTabs = _graph->getGui()->getViewersList();
+        ViewerTab* currentlySelectedViewer = _graph->getGui()->getLastSelectedViewer();
+        
+        if (currentlySelectedViewer == viewerGui->getViewerTab()) {
+            bool foundOne = false;
+            for(std::list<ViewerTab*>::const_iterator it = viewerTabs.begin();it!=viewerTabs.end();++it) {
+                if((*it)->getViewer() != viewerGui && (*it)->getInternalNode()->getNode()->isActivated()) {
+                    foundOne = true;
+                    _graph->getGui()->setLastSelectedViewer((*it));
+                    break;
+                }
+            }
+            if (!foundOne) {
+                _graph->getGui()->setLastSelectedViewer(NULL);
+            }
+        }
+        
+        
+        
+        
+        
         _graph->getGui()->deactivateViewerTab(viewer);
+        
     }
     
     if (_internalNode->isRotoNode()) {
