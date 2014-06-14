@@ -113,6 +113,9 @@ public:
     
     bool isConnectionHintEnabled() const;
     
+    bool loadBundledPlugins() const;
+    
+    bool preferBundledPlugins() const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -134,6 +137,8 @@ private:
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Int_Knob> _maxPanelsOpened;
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
+    boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
+    boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;

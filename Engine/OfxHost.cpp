@@ -348,7 +348,14 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     
     QDir dir(QCoreApplication::applicationDirPath());
     dir.cdUp();
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath(QString(dir.absolutePath()+  "/Plugins").toStdString());
+    std::string natronBundledPluginsPath = QString(dir.absolutePath()+  "/Plugins").toStdString();
+    if (appPTR->getCurrentSettings()->loadBundledPlugins()) {
+        if (appPTR->getCurrentSettings()->preferBundledPlugins()) {
+            OFX::Host::PluginCache::getPluginCache()->prependFileToPath(natronBundledPluginsPath);
+        } else {
+            OFX::Host::PluginCache::getPluginCache()->addFileToPath(natronBundledPluginsPath);
+        }
+    }
     
     /// now read an old cache
     // The cache location depends on the OS.

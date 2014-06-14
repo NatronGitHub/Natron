@@ -46,7 +46,7 @@ static QString getDefaultOcioConfigPath() {
         binaryPath += QDir::separator();
     }
 #ifdef __NATRON_LINUX__
-    return binaryPath + "../share/OpenColorIO-Configs";
+    return binaryPath + "/usr/share/OpenColorIO-Configs";
 #elif defined(__NATRON_WIN32__)
     return binaryPath + "../Resources/OpenColorIO-Configs";
 #elif defined(__NATRON_OSX__)
@@ -151,6 +151,19 @@ void Settings::initializeKnobs(){
                                       " upon the next launch of " NATRON_APPLICATION_NAME);
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
+    
+    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer" NATRON_APPLICATION_NAME  " bundled plug-ins over system-wide");
+    _preferBundledPlugins->setHintToolTip("When checked, if a plug-in is found system-wide and in " NATRON_APPLICATION_NAME "'s plug-ins ""directory, " NATRON_APPLICATION_NAME " will prefer the plug-ins within its own directory.");
+    _preferBundledPlugins->setAllDimensionsEnabled(false);
+    _generalTab->addKnob(_preferBundledPlugins);
+    
+    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Load bundled plug-ins");
+    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will load the plug-ins located in the plug-ins"
+                                        " directory next to Natron's binary. When unchecked, only system-wide plug-ins will be loaded."
+                                        "Look at the tooltip of the Extra plug-ins search paths parameter to know where plug-ins are "
+                                        "located system-wide.");
+    _loadBundledPlugins->setAnimationEnabled(false);
+    _generalTab->addKnob(_loadBundledPlugins);
     
     boost::shared_ptr<Page_Knob> ocioTab = Natron::createKnob<Page_Knob>(this, "OpenColorIO");
     
@@ -285,6 +298,8 @@ void Settings::setDefaultValues() {
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _maxPanelsOpened->setDefaultValue(10,0);
     _extraPluginPaths->setDefaultValue("",0);
+    _preferBundledPlugins->setDefaultValue(true);
+    _loadBundledPlugins->setDefaultValue(true);
     _texturesMode->setDefaultValue(0,0);
     _powerOf2Tiling->setDefaultValue(8,0);
     _maxRAMPercent->setDefaultValue(50,0);
@@ -330,6 +345,8 @@ void Settings::saveSettings(){
     settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
     settings.setValue("MaxPanelsOpened", _maxPanelsOpened->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
+    settings.setValue("PreferBundledPlugins", _preferBundledPlugins->getValue());
+    settings.setValue("LoadBundledPlugins", _loadBundledPlugins->getValue());
     settings.endGroup();
     
     settings.beginGroup("OpenColorIO");
@@ -406,6 +423,12 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("ExtraPluginsPaths")) {
         _extraPluginPaths->setValue(settings.value("ExtraPluginsPaths").toString().toStdString(),0);
+    }
+    if (settings.contains("PreferBundledPlugins")) {
+        _preferBundledPlugins->setValue(settings.value("PreferBundledPlugins").toBool(),0);
+    }
+    if (settings.contains("LoadBundledPlugins")) {
+        _loadBundledPlugins->setValue(settings.value("LoadBundledPlugins").toBool(), 0);
     }
     settings.endGroup();
     
@@ -761,4 +784,14 @@ void Settings::setConnectionHintsEnabled(bool enabled)
 bool Settings::isConnectionHintEnabled() const
 {
     return _useNodeGraphHints->getValue();
+}
+
+bool Settings::loadBundledPlugins() const
+{
+    return _loadBundledPlugins->getValue();
+}
+
+bool Settings::preferBundledPlugins() const
+{
+    return _preferBundledPlugins->getValue();
 }
