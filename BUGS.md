@@ -12,8 +12,6 @@ Here is a list of know bugs, ordered by priority from high to low:
 
 - black borders around the viewer when zooming out and multithreading is disabled
 
-- String_KnobGui: kOfxParamStringIsRichTextFormat  is not supported (it should use a QTextEdit and not convert the string to plain text)
-
 - Tab traversal is not set up properly, and sometimes couter-intuitive.
   Many users still have a keyboard and use it, so this should be fixed.
   Refs:
@@ -27,12 +25,6 @@ Missing and wanted features
 Here is a list of non-blocking bugs / wanted features:
 
 - the nodegraph should have scrollbars (or a birds eye view) when the graph is too large.
-
-- support Parameter Interacts, which are OpenGL "widgets" integrated in the parameters panel
-http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersInteracts
-  An example can be found in the "Prop Tester" plugin from the Support
-  plugins ("OFX Test" plugin group). The "RGB Custom" and "RGB Custom
-  2" parameters have parameter interacts.
 
 - implement Fields and Field Rendering:
   http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectsFieldRendering

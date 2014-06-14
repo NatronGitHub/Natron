@@ -796,6 +796,7 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, cons
 String_Knob::String_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin):
 AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
 , _multiLine(false)
+, _richText(false)
 , _isLabel(false)
 , _isCustom(false)
 {

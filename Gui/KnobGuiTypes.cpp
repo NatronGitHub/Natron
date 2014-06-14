@@ -1867,7 +1867,14 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
     if (_knob->isMultiLine()) {
         _textEdit = new AnimatingTextEdit(layout->parentWidget());
         if (hasToolTip()) {
-            _textEdit->setToolTip(toolTip());
+            QString tt = toolTip();
+            if (_knob->usesRichText()) {
+                tt += " This text area supports html encoding. "
+                "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ";
+            }
+            _textEdit->setAcceptRichText(_knob->usesRichText());
+            _textEdit->setToolTip(tt);
+            
         }
         layout->addWidget(_textEdit);
         QObject::connect(_textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()));
@@ -1877,6 +1884,8 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
 
+        
+        
     } else if (_knob->isLabel()) {
         _label = new QLabel(layout->parentWidget());
         if (hasToolTip()) {
@@ -1932,8 +1941,16 @@ void String_KnobGui::updateGUI(int /*dimension*/)
         int pos = cursor.position();
         _textEdit->clear();
         QString txt = value.c_str();
-        _textEdit->setPlainText(txt);
-        cursor.setPosition(pos);
+        if (_knob->usesRichText()) {
+            _textEdit->setHtml(Qt::convertFromPlainText(txt,Qt::WhiteSpaceNormal));
+        } else {
+            _textEdit->setPlainText(Qt::convertFromPlainText(txt,Qt::WhiteSpaceNormal));
+        }
+        if (pos < txt.size()) {
+            cursor.setPosition(pos);
+        } else {
+            cursor.movePosition(QTextCursor::End);
+        }
         _textEdit->setTextCursor(cursor);
         QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
     } else if (_knob->isLabel()) {

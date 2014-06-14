@@ -464,9 +464,13 @@ public:
     
     static const std::string& typeNameStatic();
     
-    void setAsMultiLine() { _multiLine = true; }
+    void setAsMultiLine() { _multiLine = true;  }
+    
+    void setUsesRichText(bool useRichText) { _richText = useRichText; }
     
     bool isMultiLine() const { return _multiLine; }
+    
+    bool usesRichText() const { return _richText; }
     
     void setAsLabel() {
         setAnimationEnabled(false); //< labels cannot animate
@@ -489,6 +493,7 @@ private:
     static const std::string _typeNameStr;
     
     bool _multiLine;
+    bool _richText;
     bool _isLabel;
     bool _isCustom;
 

@@ -311,6 +311,8 @@ public slots:
     void refreshOutputEdgeVisibility();
     
     void toggleBitDepthIndicator(bool on,const QString& tooltip);
+    
+    void onNodeExtraLabelChanged(const QString& label);
 
 signals:
     
@@ -387,6 +389,8 @@ private:
     
     bool _magnecEnabled;
     QPoint _magnecStartingPos;
+    
+    QString _nodeLabel;
 
 };
 

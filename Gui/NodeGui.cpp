@@ -91,6 +91,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _masterNodeGui()
 , _magnecEnabled(false)
 , _magnecStartingPos()
+, _nodeLabel()
 {
     
 }
@@ -140,6 +141,7 @@ void NodeGui::initialize(NodeGraph* dag,
     QObject::connect(_internalNode.get(), SIGNAL(previewKnobToggled()),this,SLOT(onPreviewKnobToggled()));
     QObject::connect(_internalNode.get(), SIGNAL(disabledKnobToggled(bool)),this,SLOT(onDisabledKnobToggled(bool)));
     QObject::connect(_internalNode.get(), SIGNAL(bitDepthWarningToggled(bool,QString)),this,SLOT(toggleBitDepthIndicator(bool,QString)));
+    QObject::connect(_internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)),this,SLOT(onNodeExtraLabelChanged(QString)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(1);
@@ -230,12 +232,17 @@ void NodeGui::initialize(NodeGraph* dag,
     gettimeofday(&_lastRenderStartedSlotCallTime, 0);
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
     
+    _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
     onInternalNameChanged(_internalNode->getName().c_str());
     
     if (!_internalNode->isOutputNode()) {
         _outputEdge = new Edge(thisAsShared,parentItem());
     }
-
+    
+    if (_internalNode->isNodeDisabled()) {
+        onDisabledKnobToggled(true);
+    }
+    
 }
 
 void NodeGui::beginEditKnobs() {
@@ -304,7 +311,7 @@ void NodeGui::updateShape(int width,int height){
     
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
-    int nameWidth = metrics.width(_nameItem->toPlainText());
+    int nameWidth = metrics.width(_internalNode->getName().c_str());
     _nameItem->setX(topLeft.x() + (width / 2) - (nameWidth / 2));
     _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
     
@@ -641,7 +648,7 @@ void NodeGui::onInternalNameChanged(const QString& s){
     if (_settingNameFromGui) {
         return;
     }
-    _nameItem->setPlainText(s);
+    _nameItem->setHtml(s + _nodeLabel);
     QRectF rect = _boundingBox->boundingRect();
     updateShape(rect.width(), rect.height());
     if(_settingsPanel)
@@ -1444,4 +1451,19 @@ Edge* NodeGui::getInputArrow(int inputNb) const
         return it->second;
     }
     return NULL;
+}
+
+void NodeGui::onNodeExtraLabelChanged(const QString& label)
+{
+    _nodeLabel = label;
+    _nameItem->setHtml(_internalNode->getName().c_str() + _nodeLabel);
+    
+    QRectF rect = _boundingBox->boundingRect();
+    QPointF topLeft = rect.topLeft();
+    QFontMetrics metrics = _nameItem->font();
+    
+    int nameWidth = metrics.width(_internalNode->getName().c_str());
+    _nameItem->setX(topLeft.x() + (rect.width() / 2) - (nameWidth / 2));
+    _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
+
 }

@@ -511,6 +511,8 @@ public:
 
     void toggleBitDepthWarning(bool on,const QString& tooltip) { emit bitDepthWarningToggled(on, tooltip); }
     
+    std::string getNodeExtraLabel() const;
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -596,6 +598,7 @@ signals:
     
     void bitDepthWarningToggled(bool,QString);
     
+    void nodeExtraLabelChanged(QString);
 protected:
 
     /**
@@ -619,7 +622,6 @@ private:
      * @brief Forwarded to the live effect instance
      **/
     void initializeKnobs(const NodeSerialization& serialization);
-
     
     void loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization);
     

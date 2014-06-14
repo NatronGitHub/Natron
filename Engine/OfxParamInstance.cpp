@@ -1872,6 +1872,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
     
+    bool richText = mode == kOfxParamStringIsRichTextFormat;
     if (mode == kOfxParamStringIsFilePath) {
         
         int fileIsImage = (node->isReader() || node->isWriter()) && (getScriptName() == "filename");
@@ -1900,14 +1901,16 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     } else if (mode == kOfxParamStringIsDirectoryPath) {
         _pathKnob = Natron::createKnob<Path_Knob>(node, getParamLabel(this));
         _pathKnob->setMultiPath(false);
-    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine) {
+    } else if (mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel || mode == kOfxParamStringIsMultiLine || richText) {
         
         _stringKnob = Natron::createKnob<String_Knob>(node, getParamLabel(this));
         if (mode == kOfxParamStringIsLabel) {
             _stringKnob->setAllDimensionsEnabled(false);
             _stringKnob->setAsLabel();
         }
-        if(mode == kOfxParamStringIsMultiLine) {
+        if(mode == kOfxParamStringIsMultiLine || richText) {
+            ///only QTextArea support rich text anyway
+            _stringKnob->setUsesRichText(richText);
             _stringKnob->setAsMultiLine();
         }
     }

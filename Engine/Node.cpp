@@ -89,6 +89,7 @@ struct Node::Implementation {
         , maskChannelKnob()
         , invertMaskKnob()
         , nodeSettingsPage()
+        , nodeLabelKnob()
         , previewEnabledKnob()
         , disableNodeKnob()
         , rotoContext()
@@ -157,6 +158,7 @@ struct Node::Implementation {
     std::map<int,boost::shared_ptr<Bool_Knob> > invertMaskKnob;
     
     boost::shared_ptr<Page_Knob> nodeSettingsPage;
+    boost::shared_ptr<String_Knob> nodeLabelKnob;
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
     boost::shared_ptr<Bool_Knob> disableNodeKnob;
     
@@ -233,7 +235,7 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     
     initializeInputs();
     initializeKnobs(serialization);
-    
+
     if (!nameSet) {
          getApp()->getProject()->initNodeCountersAndSetName(this);
     }
@@ -604,8 +606,19 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     
     _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance, NATRON_EXTRA_PARAMETER_PAGE_NAME,1,false);
     
+    _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance, "Label",1,false);
+    _imp->nodeLabelKnob->setName("label_natron");
+    _imp->nodeLabelKnob->setAnimationEnabled(false);
+    _imp->nodeLabelKnob->setEvaluateOnChange(false);
+    _imp->nodeLabelKnob->setAsMultiLine();
+    _imp->nodeLabelKnob->setUsesRichText(true);
+    _imp->nodeLabelKnob->setHintToolTip("This label gets appended to the node name on the node graph.");
+    _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
+    loadKnob(_imp->nodeLabelKnob, serialization);
+    
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
     _imp->previewEnabledKnob->setDefaultValue(makePreviewByDefault());
+    _imp->previewEnabledKnob->setName("preview_enabled_natron");
     _imp->previewEnabledKnob->setAnimationEnabled(false);
     _imp->previewEnabledKnob->setIsPersistant(false);
     _imp->previewEnabledKnob->setEvaluateOnChange(false);
@@ -615,8 +628,10 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Disable",1,false);
     _imp->disableNodeKnob->setAnimationEnabled(false);
     _imp->disableNodeKnob->setDefaultValue(false);
+    _imp->disableNodeKnob->setName("disable_natron");
     _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
     _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
+    loadKnob(_imp->disableNodeKnob, serialization);
     
     emit knobsInitialized();
 }
@@ -1799,6 +1814,8 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
         }
     } else if (what == _imp->disableNodeKnob.get()) {
         emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
+    } else if (what == _imp->nodeLabelKnob.get()) {
+        emit nodeExtraLabelChanged(_imp->nodeLabelKnob->getValue().c_str());
     }
 }
 
@@ -1856,6 +1873,11 @@ Natron::ImageBitDepth Natron::Node::getBitDepth() const
 bool Node::isSupportedBitDepth(Natron::ImageBitDepth depth) const
 {
     return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
+}
+
+std::string Node::getNodeExtraLabel() const
+{
+    return _imp->nodeLabelKnob->getValue();
 }
 
 //////////////////////////////////

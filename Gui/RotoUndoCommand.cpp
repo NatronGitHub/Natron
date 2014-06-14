@@ -994,11 +994,12 @@ void MakeBezierUndoCommand::undo()
     _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
     assert(_lastPointAdded != -1);
     _oldCurve->clone(*_newCurve);
-    _newCurve->removeControlPointByIndex(_lastPointAdded);
-    if (_newCurve->getControlPointsCount() == 0) {
+    if (_newCurve->getControlPointsCount() == 1) {
          _curveNonExistant = true;
         _roto->removeCurve(_newCurve.get());
     }
+    _newCurve->removeControlPointByIndex(_lastPointAdded);
+
     if (!_curveNonExistant) {
         _roto->setSelection(_newCurve, std::make_pair(CpPtr(), CpPtr()));
         _roto->setBuiltBezier(_newCurve);

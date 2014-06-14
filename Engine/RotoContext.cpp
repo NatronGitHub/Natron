@@ -1259,10 +1259,8 @@ boost::shared_ptr<BezierCP> Bezier::addControlPoint(double x,double y)
     assert(QThread::currentThread() == qApp->thread());
     boost::shared_ptr<BezierCP> p;
     bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool firstPoint;
     {
         QMutexLocker l(&itemMutex);
-        firstPoint = _imp->points.empty();
         assert(!_imp->finished);
         
         int keyframeTime;
@@ -1271,9 +1269,11 @@ boost::shared_ptr<BezierCP> Bezier::addControlPoint(double x,double y)
         if (_imp->points.empty()) {
             keyframeTime = getContext()->getTimelineCurrentTime();
         } else {
-            ///there must be at least 1 keyframe!
+            
             keyframeTime = _imp->points.front()->getKeyframeTime(0);
-            assert((keyframeTime != INT_MAX && autoKeying) || !autoKeying);
+            if (keyframeTime == INT_MAX) {
+                keyframeTime = getContext()->getTimelineCurrentTime();
+            }
         }
         p.reset(new BezierCP(this));
         if (autoKeying) {
@@ -1299,10 +1299,7 @@ boost::shared_ptr<BezierCP> Bezier::addControlPoint(double x,double y)
         }
         _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
     }
-    if (autoKeying && firstPoint) {
-        int time = getContext()->getTimelineCurrentTime();
-        emit keyframeSet(time);
-    }
+
     return p;
 }
 
@@ -2972,9 +2969,12 @@ boost::shared_ptr<Bezier> RotoContext::makeBezier(double x,double y,const std::s
 
     clearSelection(RotoContext::OTHER);
     select(curve, RotoContext::OTHER);
-    curve->addControlPoint(x, y);
-
     
+    if (isAutoKeyingEnabled()) {
+        curve->setKeyframe(getTimelineCurrentTime());
+    }
+    curve->addControlPoint(x, y);
+   
     return curve;
 }
 
