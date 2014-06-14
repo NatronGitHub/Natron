@@ -1042,6 +1042,9 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                         
                         if (inputImg) {
                             inputImages.push_back(inputImg);
+                        } else {
+                            _node->notifyInputNIsFinishedRendering(it2->first);
+                            return eImageRenderFailed;
                         }
                     }
                 }
