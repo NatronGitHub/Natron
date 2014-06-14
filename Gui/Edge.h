@@ -49,12 +49,13 @@ public:
     
     bool contains(const QPointF &point) const;
     
-    void setSource(const boost::shared_ptr<NodeGui>& src){
-        this->source=src;
-        initLine();
-    }
+    void setSource(const boost::shared_ptr<NodeGui>& src) ;
+    
+    void setSourceAndDestination(const boost::shared_ptr<NodeGui>& src,const boost::shared_ptr<NodeGui>& dst) ;
     
     int getInputNumber() const {return inputNb;}
+    
+    void setInputNumber(int i) { inputNb = i; }
     
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0);
     
@@ -76,7 +77,11 @@ public:
     
     void turnOffRenderingColor() { _useRenderingColor = false; update(); }
     
+    void setUseHighlight(bool highlight);
+    
     bool isOutputEdge() const { return _isOutputEdge; }
+    
+    void setDefaultColor(const QColor& color) { _defaultColor = color; }
     
 private:
 
@@ -90,6 +95,7 @@ private:
     QColor _defaultColor;
     QColor _renderingColor;
     bool _useRenderingColor;
+    bool _useHighlight;
 };
 
 #endif // NATRON_GUI_EDGE_H_

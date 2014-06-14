@@ -459,6 +459,7 @@ std::vector<std::string> Node::getInputNames() const
 
 int Node::getPreferredInputForConnection() const {
     
+    assert(QThread::currentThread() == qApp->thread());
     if (maximumInputs() == 0) {
         return -1;
     }
@@ -468,8 +469,8 @@ int Node::getPreferredInputForConnection() const {
     std::list<int> optionalEmptyInputs;
     {
         QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputs.size() ; ++i) {
-            if (!_imp->inputs[i]) {
+        for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
+            if (!_imp->inputsQueue[i]) {
                 if (!_imp->liveInstance->isInputOptional(i)) {
                     if (firstNonOptionalEmptyInput == -1) {
                         firstNonOptionalEmptyInput = i;

@@ -153,7 +153,10 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _propertyBin(0),
     _refreshOverlays(true),
     _previewsTurnedOff(false),
-    _nodeClipBoard()
+    _nodeClipBoard(),
+    _highLightedEdge(NULL),
+    _hintInputEdge(NULL),
+    _hintOutputEdge(NULL)
 {
     setAcceptDrops(true);
     
@@ -217,6 +220,13 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _undoStack->setUndoLimit(appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph());
     _gui->registerNewUndoStack(_undoStack); 
     
+    _hintInputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_root);
+    _hintInputEdge->setDefaultColor(QColor(0,255,0,100));
+    _hintInputEdge->hide();
+    
+    _hintOutputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_root);
+    _hintOutputEdge->setDefaultColor(QColor(0,255,0,100));
+    _hintOutputEdge->hide();
     
     _tL = new QGraphicsTextItem(0);
     _tL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -248,7 +258,22 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     
 }
 
-NodeGraph::~NodeGraph(){
+NodeGraph::~NodeGraph() {
+    
+    QGraphicsScene* scene = _hintInputEdge->scene();
+    if (scene) {
+        scene->removeItem(_hintInputEdge);
+    }
+    _hintInputEdge->setParentItem(NULL);
+    delete _hintInputEdge;
+    
+    scene = _hintOutputEdge->scene();
+    if (scene) {
+        scene->removeItem(_hintOutputEdge);
+    }
+    _hintOutputEdge->setParentItem(NULL);
+    delete _hintOutputEdge;
+
     QObject::disconnect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
     _nodeCreationShortcutEnabled = false;
 
@@ -607,10 +632,39 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         nodeHoldingEdge->refreshEdges();
         scene()->update();
-    } else if(state == NODE_DRAGGING) {
-        if(_nodeSelected) {
+    } else if (state == NODE_DRAGGING) {
+        if (_nodeSelected) {
             _undoStack->setActive();
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
+            
+            ///now if there was a hint displayed, use it to actually make connections.
+            if (_highLightedEdge) {
+                if (_highLightedEdge->isOutputEdge()) {
+                    int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
+                    if (prefInput != -1) {
+                        Edge* inputEdge = _nodeSelected->getInputArrow(prefInput);
+                        assert(inputEdge);
+                        _undoStack->push(new ConnectCommand(this,inputEdge,inputEdge->getSource(),_highLightedEdge->getSource()));
+                    }
+                } else {
+                    
+                    boost::shared_ptr<NodeGui> src = _highLightedEdge->getSource();
+                    _undoStack->push(new ConnectCommand(this,_highLightedEdge,_highLightedEdge->getSource(),_nodeSelected));
+                    if (src) {
+                        ///push a second command... this is a bit dirty but I don't have time to add a whole new command just for this
+                        int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
+                        if (prefInput != -1) {
+                            Edge* inputEdge = _nodeSelected->getInputArrow(prefInput);
+                            assert(inputEdge);
+                            _undoStack->push(new ConnectCommand(this,inputEdge,inputEdge->getSource(),src));
+                        }
+                    }
+                }
+                _highLightedEdge->setUseHighlight(false);
+                _highLightedEdge = 0;
+                _hintInputEdge->hide();
+                _hintOutputEdge->hide();
+            }
         }
     }
     scene()->update();
@@ -631,14 +685,83 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 
     }else if(_evtState == NODE_DRAGGING && _nodeSelected){
         
-        //QPointF op = _nodeSelected->mapFromScene(_lastScenePosClick);
-        //QPointF np = _nodeSelected->mapFromScene(newPos);
-        //qreal diffx=np.x()-op.x();
-        //qreal diffy=np.y()-op.y();
-        //QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
         QSize size = _nodeSelected->getSize();
         newPos = _nodeSelected->mapToParent(_nodeSelected->mapFromScene(newPos));
         _nodeSelected->refreshPosition(newPos.x() - size.width() / 2,newPos.y() - size.height() / 2);
+        
+        
+        ///try to find a nearby edge
+        boost::shared_ptr<Natron::Node> internalNode = _nodeSelected->getNode();
+        if (appPTR->getCurrentSettings()->isConnectionHintEnabled()) {
+            QRectF rect = _nodeSelected->mapToParent(_nodeSelected->boundingRect()).boundingRect();
+            double tolerance = 20;
+            rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
+            
+            Edge* edge = 0;
+            {
+                QMutexLocker l(&_nodesMutex);
+                for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it){
+                    boost::shared_ptr<NodeGui>& n = *it;
+                    if (n != _nodeSelected) {
+                        edge = n->hasEdgeNearbyRect(rect);
+                        if (edge && edge->getSource() == _nodeSelected) {
+                            edge = 0;
+                        }
+                        if (edge && ((edge->isOutputEdge() && _nodeSelected->getInputsArrows().empty())
+                                     || (!edge->isOutputEdge() && (edge->getSource() || _nodeSelected->getNode()->pluginID() == "Viewer")))) {
+                            edge = 0;
+                        }
+                        if (edge) {
+                            edge->setUseHighlight(true);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (_highLightedEdge && _highLightedEdge != edge) {
+                _highLightedEdge->setUseHighlight(false);
+                _hintInputEdge->hide();
+                _hintOutputEdge->hide();
+            }
+            
+            _highLightedEdge = edge;
+            
+            if (edge && edge->getSource() && edge->getDest()) {
+                ///setup the hints edge
+                if (!_hintInputEdge->isVisible()) {
+                    int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
+                    _hintInputEdge->setInputNumber(prefInput);
+                    _hintInputEdge->setSourceAndDestination(edge->getSource(), _nodeSelected);
+                    _hintOutputEdge->setInputNumber(edge->getInputNumber());
+                    _hintOutputEdge->setSourceAndDestination(_nodeSelected, edge->getDest());
+                    _hintInputEdge->setVisible(true);
+                    _hintOutputEdge->setVisible(true);
+                } else {
+                    _hintInputEdge->initLine();
+                    _hintOutputEdge->initLine();
+                }
+            } else if (edge) {
+                ///setup only 1 of the hints edge
+
+                if (_highLightedEdge && !_hintInputEdge->isVisible()) {
+                    if (edge->isOutputEdge()) {
+                        int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
+                        _hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
+                        _hintInputEdge->setSourceAndDestination(edge->getSource(), _nodeSelected);
+                        
+                    } else {
+                        _hintInputEdge->setInputNumber(edge->getInputNumber());
+                        _hintInputEdge->setSourceAndDestination(_nodeSelected,edge->getDest());
+                        
+                    }
+                    _hintInputEdge->setVisible(true);
+                } else if (_highLightedEdge && _hintInputEdge->isVisible()) {
+                    _hintInputEdge->initLine();
+                }
+            }
+            
+        }
+        
         setCursor(QCursor(Qt::ClosedHandCursor));
     }else if(_evtState == MOVING_AREA){
         
@@ -759,6 +882,8 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         decloneSelectedNode();
     } else if (e->key() == Qt::Key_F) {
         centerOnAllNodes();
+    } else if (e->key() == Qt::Key_H) {
+        toggleConnectionHints();
     }
 
     
@@ -1474,6 +1599,13 @@ void NodeGraph::populateMenu(){
     QObject::connect(turnOffPreviewAction,SIGNAL(triggered()),this,SLOT(turnOffPreviewForAllNodes()));
     _menu->addAction(turnOffPreviewAction);
     
+    QAction* connectionHints = new QAction(tr("Use connections hint"),this);
+    connectionHints->setCheckable(true);
+    connectionHints->setChecked(appPTR->getCurrentSettings()->isConnectionHintEnabled());
+    QObject::connect(connectionHints,SIGNAL(triggered()),this,SLOT(toggleConnectionHints()));
+    _menu->addAction(connectionHints);
+
+    
     QAction* autoPreview = new QAction(tr("Auto preview"),this);
     autoPreview->setCheckable(true);
     autoPreview->setChecked(_gui->getApp()->getProject()->isAutoPreviewEnabled());
@@ -1859,4 +1991,9 @@ void NodeGraph::centerOnAllNodes()
     fitInView(rect,Qt::KeepAspectRatio);
     _refreshOverlays = true;
     repaint();
+}
+
+void NodeGraph::toggleConnectionHints()
+{
+    appPTR->getCurrentSettings()->setConnectionHintsEnabled(!appPTR->getCurrentSettings()->isConnectionHintEnabled());
 }

@@ -118,9 +118,15 @@ void Settings::initializeKnobs(){
     _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
     _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap them to positions where it lines them up "
                                             "with the inputs and output nodes.");
-    _snapNodesToConnections->setDefaultValue(true);
     _snapNodesToConnections->setAnimationEnabled(false);
     _generalTab->addKnob(_snapNodesToConnections);
+    
+    _useNodeGraphHints = Natron::createKnob<Bool_Knob>(this, "Use connection hints");
+    _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
+                                       "nearby will display a hint for possible connections. Releasing the mouse on such a "
+                                       "hint will perform the connection for you.");
+    _useNodeGraphHints->setAnimationEnabled(false);
+    _generalTab->addKnob(_useNodeGraphHints);
     
     _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of node settings panels opened");
     _maxPanelsOpened->setHintToolTip("This property holds the number of node settings pnaels that can be "
@@ -272,6 +278,8 @@ void Settings::setDefaultValues() {
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
+    _snapNodesToConnections->setDefaultValue(true);
+    _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
@@ -319,6 +327,7 @@ void Settings::saveSettings(){
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
     settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
+    settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
     settings.setValue("MaxPanelsOpened", _maxPanelsOpened->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.endGroup();
@@ -388,6 +397,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("SnapToNode")) {
         _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
+    }
+    if (settings.contains("ConnectionHints")) {
+        _useNodeGraphHints->setValue(settings.value("ConnectionHints").toBool(), 0);
     }
     if (settings.contains("MaxPanelsOpened")) {
         _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
@@ -739,4 +751,14 @@ int Settings::getMaxPanelsOpened() const
 void Settings::setMaxPanelsOpened(int maxPanels)
 {
     _maxPanelsOpened->setValue(maxPanels, 0);
+}
+
+void Settings::setConnectionHintsEnabled(bool enabled)
+{
+    _useNodeGraphHints->setValue(enabled, 0);
+}
+
+bool Settings::isConnectionHintEnabled() const
+{
+    return _useNodeGraphHints->getValue();
 }

@@ -744,6 +744,38 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
     return NULL;
 }
 
+Edge* NodeGui::hasEdgeNearbyRect(const QRectF& rect)
+{
+    ///try with all 4 corners
+
+    QLineF rectEdges[4] =
+    {
+        QLineF(rect.topLeft(),rect.topRight()),
+        QLineF(rect.topRight(),rect.bottomRight()),
+        QLineF(rect.bottomRight(),rect.bottomLeft()),
+        QLineF(rect.bottomLeft(),rect.topLeft())
+    };
+    
+    QPointF intersection;
+    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
+        QLineF edgeLine = i->second->line();
+        for (int j = 0; j < 4; ++j) {
+            if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                return i->second;
+            }
+        }
+    }
+    if (_outputEdge) {
+        QLineF edgeLine = _outputEdge->line();
+        for (int j = 0; j < 4; ++j) {
+            if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                return _outputEdge;
+            }
+        }
+    }
+    return NULL;
+}
+
 void NodeGui::activate() {
     show();
     setActive(true);
@@ -1390,4 +1422,26 @@ void NodeGui::setScale_natron(double scale)
         (*it)->doRefreshEdgesGUI();
     }
 
+}
+
+void NodeGui::removeHighlightOnAllEdges()
+{
+    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        it->second->setUseHighlight(false);
+    }
+    if (_outputEdge) {
+        _outputEdge->setUseHighlight(false);
+    }
+}
+
+Edge* NodeGui::getInputArrow(int inputNb) const
+{
+    if (inputNb == -1) {
+        return _outputEdge;
+    }
+    std::map<int, Edge*>::const_iterator it = _inputEdges.find(inputNb);
+    if (it!= _inputEdges.end()) {
+        return it->second;
+    }
+    return NULL;
 }

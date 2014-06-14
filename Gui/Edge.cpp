@@ -40,10 +40,10 @@ Edge::Edge(int inputNb_, double angle_,const boost::shared_ptr<NodeGui>& dest_, 
 , _defaultColor(Qt::black)
 , _renderingColor(243,149,0)
 , _useRenderingColor(false)
+, _useHighlight(false)
 {
-    assert(dest);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    if (inputNb != -1) {
+    if (inputNb != -1 && dest) {
         label = new QGraphicsTextItem(QString(dest->getNode()->getInputLabel(inputNb).c_str()),this);
         label->setDefaultTextColor(QColor(200,200,200));
     }
@@ -65,6 +65,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
 , _defaultColor(Qt::black)
 , _renderingColor(243,149,0)
 , _useRenderingColor(false)
+, _useHighlight(false)
 {
     assert(src);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
@@ -79,6 +80,31 @@ Edge::~Edge()
     if (dest) {
         dest->markInputNull(this);
     }
+}
+
+void Edge::setSource(const boost::shared_ptr<NodeGui>& src) {
+    this->source = src;
+    initLine();
+}
+
+
+void Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui>& src,const boost::shared_ptr<NodeGui>& dst) {
+    this->source = src;
+    this->dest = dst;
+    if (!label) {
+        label = new QGraphicsTextItem(QString(dest->getNode()->getInputLabel(inputNb).c_str()),this);
+        label->setDefaultTextColor(QColor(200,200,200));
+    } else {
+        label->setPlainText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
+    }
+    initLine();
+}
+
+
+void Edge::setUseHighlight(bool highlight)
+{
+    _useHighlight = highlight;
+    update();
 }
 
 void Edge::initLine()
@@ -291,11 +317,6 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
 
      QPen myPen = pen();
      
-     if (_useRenderingColor) {
-         myPen.setColor(_renderingColor);
-     } else {
-         myPen.setColor(_defaultColor);
-     }
      if(dest && dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
          QVector<qreal> dashStyle;
          qreal space = 4;
@@ -305,14 +326,18 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
          myPen.setStyle(Qt::SolidLine);
      }
      
-     painter->setPen(myPen);
-     if (_useRenderingColor) {
-         painter->setBrush(_renderingColor);
+     if (_useHighlight) {
+         myPen.setColor(Qt::green);
+     } else if (_useRenderingColor) {
+         myPen.setColor(_renderingColor);
      } else {
-         painter->setBrush(_defaultColor);
+         myPen.setColor(_defaultColor);
      }
+ 
+     painter->setPen(myPen);
+
      painter->drawLine(line());
-     
+
      myPen.setStyle(Qt::SolidLine);
      painter->setPen(myPen);
      painter->drawPolygon(arrowHead);

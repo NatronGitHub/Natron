@@ -179,6 +179,8 @@ public slots:
     void decloneSelectedNode();
     
     void centerOnAllNodes();
+    
+    void toggleConnectionHints();
 
 private:
     
@@ -300,6 +302,11 @@ private:
     
     NodeClipBoard _nodeClipBoard;
     
+    Edge* _highLightedEdge;
+    
+    ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
+    Edge* _hintInputEdge;
+    Edge* _hintOutputEdge;
     
 };
 

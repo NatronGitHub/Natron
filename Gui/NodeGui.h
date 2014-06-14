@@ -142,7 +142,7 @@ public:
      to query the src and dst of a specific arrow.*/
     const std::map<int,Edge*>& getInputsArrows() const {return _inputEdges;}
     
-   
+    Edge* getInputArrow(int inputNb) const;
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
@@ -188,6 +188,7 @@ public:
      point pt. pt is in scene coord.*/
     Edge* hasEdgeNearbyPoint(const QPointF& pt);
     
+    Edge* hasEdgeNearbyRect(const QRectF& rect);
     
     void refreshPosition(double x,double y);
     
@@ -225,6 +226,8 @@ public:
     
     ///same as setScale() but also scales the arrows
     void setScale_natron(double scale);
+    
+    void removeHighlightOnAllEdges();
     
 public slots:
   
