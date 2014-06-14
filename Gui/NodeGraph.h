@@ -199,6 +199,8 @@ private:
     virtual void leaveEvent(QEvent *event) OVERRIDE FINAL;
 
     virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+    
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
 
     virtual bool event(QEvent* event) OVERRIDE FINAL;
 
@@ -242,6 +244,8 @@ private:
     EVENT_STATE _evtState;
     
     boost::shared_ptr<NodeGui> _nodeSelected;
+    double _nodeSelectedScaleBeforeMagnif;
+    bool _magnifOn;
     
     Edge* _arrowSelected;
     

@@ -87,6 +87,8 @@ void Edge::initLine()
         return;
     }
     
+    double sc = scale();
+
     QRectF sourceBBOX = source ? mapFromItem(source.get(),source->boundingRect()).boundingRect() : QRectF(0,0,1,1);
     QRectF destBBOX = dest ? mapFromItem(dest.get(),dest->boundingRect()).boundingRect()  : QRectF(0,0,1,1);
     
@@ -131,9 +133,8 @@ void Edge::initLine()
     
     } else if (!source && dest) {
         ///// The edge is an input edge which is unconnected
-        
-        srcpt = QPointF(dst.x() + (std::cos(angle)*UNATTACHED_ARROW_LENGTH),
-                        dst.y() - (std::sin(angle) * UNATTACHED_ARROW_LENGTH));
+        srcpt = QPointF(dst.x() + (std::cos(angle) * UNATTACHED_ARROW_LENGTH * sc),
+                        dst.y() - (std::sin(angle) * UNATTACHED_ARROW_LENGTH * sc));
         
         if (label) {
             double cosinus = std::cos(angle);
@@ -193,12 +194,14 @@ void Edge::initLine()
         }
     }
     
-    qreal a;
-    a = std::acos(line().dx() / line().length());
+    ///This is the angle the edge forms with the X axis
+    qreal a = std::acos(line().dx() / line().length());
+    
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
     }
-    qreal arrowSize = 5;
+    
+    qreal arrowSize = 5. * sc;
     QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
                                             std::cos(a + M_PI / 3) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
@@ -309,6 +312,9 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
          painter->setBrush(_defaultColor);
      }
      painter->drawLine(line());
+     
+     myPen.setStyle(Qt::SolidLine);
+     painter->setPen(myPen);
      painter->drawPolygon(arrowHead);
 
   }

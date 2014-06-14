@@ -148,6 +148,8 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _gui(gui),
     _evtState(DEFAULT),
     _nodeSelected(),
+    _nodeSelectedScaleBeforeMagnif(1.),
+    _magnifOn(false),
     _propertyBin(0),
     _refreshOverlays(true),
     _previewsTurnedOff(false),
@@ -538,7 +540,11 @@ void NodeGraph::deselect(){
         for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
             (*it)->setSelected(false);
         }
-        
+        if (_nodeSelected && _magnifOn) {
+            _magnifOn = false;
+            _nodeSelected->setScale_natron(_nodeSelectedScaleBeforeMagnif);
+            
+        }
         _nodeSelected.reset();
     }
     
@@ -833,13 +839,28 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if(factor < 0.07 || factor > 10)
         return;
-    scale(scaleFactor,scaleFactor);
-    _refreshOverlays = true;
+    
+    if (event->modifiers().testFlag(Qt::ControlModifier) && _nodeSelected) {
+        if (!_magnifOn) {
+            _magnifOn = true;
+            _nodeSelectedScaleBeforeMagnif = _nodeSelected->scale();
+        }
+        _nodeSelected->setScale_natron(_nodeSelected->scale() * scaleFactor);
+    } else {
+        scale(scaleFactor,scaleFactor);
+        _refreshOverlays = true;
+    }
     QPointF newPos = mapToScene(event->pos());
     _lastScenePosClick = newPos;
 }
 
-
+void NodeGraph::keyReleaseEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Control && _magnifOn) {
+        _magnifOn = false;
+        _nodeSelected->setScale_natron(_nodeSelectedScaleBeforeMagnif);
+    }
+}
 
 void NodeGraph::deleteSelectedNode(){
     if(_nodeSelected){
@@ -859,6 +880,12 @@ void NodeGraph::deleteNode(const boost::shared_ptr<NodeGui>& n) {
 
 
 void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n) {
+    if (_nodeSelected && _nodeSelected != n && _magnifOn) {
+        _magnifOn = false;
+        _nodeSelected->setScale_natron(_nodeSelectedScaleBeforeMagnif);
+        
+    }
+    
     assert(n);
     _nodeSelected = n;
     
@@ -878,6 +905,8 @@ void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n) {
             }
         }
     }
+    
+    
     n->setSelected(true);
 }
 

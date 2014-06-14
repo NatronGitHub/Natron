@@ -223,6 +223,8 @@ public:
     
     void setPos_mt_safe(const QPointF& pos);
     
+    ///same as setScale() but also scales the arrows
+    void setScale_natron(double scale);
     
 public slots:
   

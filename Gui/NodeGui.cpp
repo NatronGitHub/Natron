@@ -604,7 +604,13 @@ QPainterPath NodeGui::shape() const
 }
 
 QRectF NodeGui::boundingRect() const{
-    return _boundingBox->boundingRect();
+    QTransform t;
+    QRectF bbox = _boundingBox->boundingRect();
+    QPointF center = bbox.center();
+    t.translate(center.x(), center.y());
+    t.scale(scale(), scale());
+    t.translate(-center.x(), -center.y());
+    return t.mapRect(bbox);
 }
 QRectF NodeGui::boundingRectWithEdges() const{
     QRectF ret;
@@ -1363,4 +1369,25 @@ void NodeGuiIndicator::refreshPosition(const QPointF& topLeft)
     QFont font = _imp->textItem->font();
     QFontMetrics fm(font);
     _imp->textItem->setPos(topLeft.x()  - 2 * r.width() / 3, topLeft.y() - 2 * fm.height() / 3);
+}
+
+///////////////////
+
+void NodeGui::setScale_natron(double scale)
+{
+    setScale(scale);
+    for (std::map<int,Edge*>::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        it->second->setScale(scale);
+    }
+    
+    if (_outputEdge) {
+        _outputEdge->setScale(scale);
+    }
+    refreshEdges();
+    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        assert(*it);
+        (*it)->doRefreshEdgesGUI();
+    }
+
 }
