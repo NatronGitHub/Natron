@@ -687,7 +687,7 @@ void GuiApplicationManager::initializeQApp(int argc,char* argv[]) const {
     QApplication* app = new QApplication(argc, argv);
 	app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
-    app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_10));
+    app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
 }
 
 void GuiApplicationManager::setUndoRedoStackLimit(int limit)

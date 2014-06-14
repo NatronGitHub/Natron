@@ -20,17 +20,18 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 class Button : public QPushButton {
+    
 public:
-    explicit Button(QWidget* parent = 0): QPushButton(parent){
-        setAttribute(Qt::WA_LayoutUsesWidgetRect);
-    }
-    explicit Button(const QString & text, QWidget * parent = 0) : QPushButton(text,parent){
-        setAttribute(Qt::WA_LayoutUsesWidgetRect);
-    }
-    Button(const QIcon & icon, const QString & text, QWidget * parent = 0) : QPushButton(icon,text,parent){
-        setAttribute(Qt::WA_LayoutUsesWidgetRect);
-    }
+    
+    explicit Button(QWidget* parent = 0);
+    
+    explicit Button(const QString & text, QWidget * parent = 0);
+    
+    Button(const QIcon & icon, const QString & text, QWidget * parent = 0);
    
+private:
+    
+    void setFont_internal();
 };
 
 #endif

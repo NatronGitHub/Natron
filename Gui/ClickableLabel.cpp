@@ -6,6 +6,19 @@
 #include "ClickableLabel.h"
 #include <QEvent>
 #include <QStyle>
+
+ClickableLabel::ClickableLabel(const QString &text, QWidget *parent):
+QLabel(text, parent),
+_toggled(false) ,
+dirty(false) ,
+readOnly(false),
+animation(0),
+sunkenStyle(false)
+{
+    setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+}
+
+
 void ClickableLabel::mousePressEvent(QMouseEvent *e) {
     if (isEnabled()) {
         _toggled = !_toggled;

@@ -25,14 +25,7 @@ class ClickableLabel : public QLabel
     Q_PROPERTY( bool sunkenStyle READ isSunken WRITE setSunken)
 public:
 
-    ClickableLabel(const QString &text, QWidget *parent):
-    QLabel(text, parent),
-    _toggled(false) ,
-    dirty(false) ,
-    readOnly(false),
-    animation(0),
-    sunkenStyle(false)
-    {}
+    ClickableLabel(const QString &text, QWidget *parent);
 
     virtual ~ClickableLabel() OVERRIDE {}
 

@@ -5,3 +5,22 @@
 
 #include "Button.h"
 
+Button::Button(QWidget* parent): QPushButton(parent) {
+    setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    setFont_internal();
+}
+
+Button::Button(const QString & text, QWidget * parent) : QPushButton(text,parent){
+    setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    setFont_internal();
+}
+
+Button::Button(const QIcon & icon, const QString & text, QWidget * parent) : QPushButton(icon,text,parent){
+    setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    setFont_internal();
+}
+
+void Button::setFont_internal()
+{
+    setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+}
