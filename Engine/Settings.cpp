@@ -152,7 +152,7 @@ void Settings::initializeKnobs(){
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
     
-    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer" NATRON_APPLICATION_NAME  " bundled plug-ins over system-wide");
+    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer " NATRON_APPLICATION_NAME  "'s plug-ins over system-wide");
     _preferBundledPlugins->setHintToolTip("When checked, if a plug-in is found system-wide and in " NATRON_APPLICATION_NAME "'s plug-ins ""directory, " NATRON_APPLICATION_NAME " will prefer the plug-ins within its own directory.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _generalTab->addKnob(_preferBundledPlugins);
