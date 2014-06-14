@@ -637,9 +637,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                             byPassCache,
                                                             nodeHash,
                                                             0);
-                
+                Natron::ImageComponents inputPrefComps;
+                Natron::ImageBitDepth inputPrefDepth;
+                Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
+                assert(inputEffectIdentity);
+                inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,args.components,args.bitdepth);
+                image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,inputPrefComps,inputPrefDepth);
                 
                 ///if we bypass the cache, don't cache the result of isIdentity
                 if (byPassCache) {
@@ -755,7 +759,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         byPassCache,
                                                         nodeHash,
                                                         0);
-            return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,args.components,args.bitdepth);
+            Natron::ImageComponents inputPrefComps;
+            Natron::ImageBitDepth inputPrefDepth;
+            Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
+            assert(inputEffectIdentity);
+            inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
+            return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,inputPrefComps,inputPrefDepth); 
         }
         
 #ifdef NATRON_DEBUG

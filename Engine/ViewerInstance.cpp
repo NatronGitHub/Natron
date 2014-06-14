@@ -390,10 +390,33 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         activeInputIndex =  _imp->activeInputs[1];
     }
     
+    
+    ///Iterate while nodes are disabled to find the first active input
     EffectInstance* activeInputToRender = input_other_thread(activeInputIndex);
+    while (activeInputToRender && activeInputToRender->getNode()->isNodeDisabled()) {
+        ///we forward this node to the last connected non-optional input
+        ///if there's only optional inputs connected, we return the last optional input
+        int lastOptionalInput = -1;
+        int inputNb = -1;
+        for (int i = activeInputToRender->maximumInputs() - 1; i >= 0; --i) {
+            bool optional = activeInputToRender->isInputOptional(i);
+            if (!optional && activeInputToRender->getNode()->input_other_thread(i)) {
+                inputNb = i;
+                break;
+            } else if (optional && lastOptionalInput == -1) {
+                lastOptionalInput = i;
+            }
+        }
+        if (inputNb == -1) {
+            inputNb = lastOptionalInput;
+        }
+        activeInputToRender = activeInputToRender->input_other_thread(inputNb);
+    }
     if (!activeInputToRender) {
         return StatFailed;
     }
+    
+
     
     bool forceRender;
     {
@@ -535,38 +558,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 #endif
             return stat;
         }
-        
-        EffectInstance* inputEffect = activeInputToRender;
-        while (inputEffect && inputEffect->getNode()->isNodeDisabled()) {
-            ///we forward this node to the last connected non-optional input
-            ///if there's only optional inputs connected, we return the last optional input
-            int lastOptionalInput = -1;
-            int inputNb = -1;
-            for (int i = inputEffect->maximumInputs() - 1; i >= 0; --i) {
-                bool optional = inputEffect->isInputOptional(i);
-                if (!optional && inputEffect->getNode()->input_other_thread(i)) {
-                    inputNb = i;
-                    break;
-                } else if (optional && lastOptionalInput == -1) {
-                    lastOptionalInput = i;
-                }
-            }
-            if (inputNb == -1) {
-                inputNb = lastOptionalInput;
-            }
-            inputEffect = inputEffect->input_other_thread(inputNb);
-        }
-        if (inputEffect != activeInputToRender && inputEffect != NULL) {
-            stat = inputEffect->getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
-        }
-        if(stat == StatFailed || !inputEffect){
-#ifdef NATRON_LOG
-            Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
-            Natron::Log::endFunction(getName(),"renderViewer");
-#endif
-            return stat;
-        }
-
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 
         // For the viewer, we need the enclosing rectangle to avoid black borders.
