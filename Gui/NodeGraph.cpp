@@ -650,7 +650,18 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     
                     boost::shared_ptr<NodeGui> src = _highLightedEdge->getSource();
                     _undoStack->push(new ConnectCommand(this,_highLightedEdge,_highLightedEdge->getSource(),_nodeSelected));
-                    if (src) {
+                    
+                    ///find out if the node is already connected to what the edge is connected
+                    bool alreadyConnected = false;
+                    const std::vector<boost::shared_ptr<Natron::Node> >& inpNodes = _nodeSelected->getNode()->getInputs_mt_safe();
+                    for (U32 i = 0; i < inpNodes.size();++i) {
+                        if (inpNodes[i] == src->getNode()) {
+                            alreadyConnected = true;
+                            break;
+                        }
+                    }
+                    
+                    if (src && !alreadyConnected) {
                         ///push a second command... this is a bit dirty but I don't have time to add a whole new command just for this
                         int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
                         if (prefInput != -1) {
@@ -704,13 +715,43 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
                     boost::shared_ptr<NodeGui>& n = *it;
                     if (n != _nodeSelected) {
                         edge = n->hasEdgeNearbyRect(rect);
+                        
+                        ///if the edge input is the selected node don't continue
                         if (edge && edge->getSource() == _nodeSelected) {
                             edge = 0;
                         }
-                        if (edge && ((edge->isOutputEdge() && _nodeSelected->getInputsArrows().empty())
-                                     || (!edge->isOutputEdge() && (edge->getSource() || _nodeSelected->getNode()->pluginID() == "Viewer")))) {
-                            edge = 0;
+                        
+                        if (edge && edge->isOutputEdge()) {
+                            ///if the edge is an output edge but the node doesn't have any inputs don't continue
+                            if (_nodeSelected->getInputsArrows().empty()) {
+                                edge = 0;
+
+                            }
+                            ///if the source of that edge is already connected also skip
+                            const std::vector<boost::shared_ptr<Natron::Node> >& inpNodes = _nodeSelected->getNode()->getInputs_mt_safe();
+                            for (U32 i = 0; i < inpNodes.size();++i) {
+                                if (inpNodes[i] == edge->getSource()->getNode()) {
+                                    edge = 0;
+                                    break;
+                                }
+                            }
+                            
                         }
+                        
+                        if (edge && !edge->isOutputEdge()) {
+                            ///if the edge is an input edge but the selected node is a viewer don't continue (viewer can't have output)
+                            if ( _nodeSelected->getNode()->pluginID() == "Viewer") {
+                                edge = 0;
+                            }
+                            
+                            ///if the selected node doesn't have any input but the edge has an input don't continue
+                            if (_nodeSelected->getInputsArrows().empty() && edge->getSource()) {
+                                edge = 0;
+                            }
+                        }
+                        
+                        
+                        
                         if (edge) {
                             edge->setUseHighlight(true);
                             break;
@@ -728,16 +769,32 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
             
             if (edge && edge->getSource() && edge->getDest()) {
                 ///setup the hints edge
+                
+                ///find out if the node is already connected to what the edge is connected
+                bool alreadyConnected = false;
+                const std::vector<boost::shared_ptr<Natron::Node> >& inpNodes = _nodeSelected->getNode()->getInputs_mt_safe();
+                for (U32 i = 0; i < inpNodes.size();++i) {
+                    if (inpNodes[i] == edge->getSource()->getNode()) {
+                        alreadyConnected = true;
+                        break;
+                    }
+                }
+                
                 if (!_hintInputEdge->isVisible()) {
-                    int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
-                    _hintInputEdge->setInputNumber(prefInput);
-                    _hintInputEdge->setSourceAndDestination(edge->getSource(), _nodeSelected);
+                    if (!alreadyConnected) {
+                        int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
+                        _hintInputEdge->setInputNumber(prefInput);
+                        _hintInputEdge->setSourceAndDestination(edge->getSource(), _nodeSelected);
+                        _hintInputEdge->setVisible(true);
+                        
+                    }
                     _hintOutputEdge->setInputNumber(edge->getInputNumber());
                     _hintOutputEdge->setSourceAndDestination(_nodeSelected, edge->getDest());
-                    _hintInputEdge->setVisible(true);
                     _hintOutputEdge->setVisible(true);
                 } else {
-                    _hintInputEdge->initLine();
+                    if (!alreadyConnected) {
+                        _hintInputEdge->initLine();
+                    }
                     _hintOutputEdge->initLine();
                 }
             } else if (edge) {
