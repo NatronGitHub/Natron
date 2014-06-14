@@ -166,11 +166,11 @@ std::string File_Knob::getValueAtTimeConditionally(int f, bool loadNearestIfNotF
         if (!loadNearestIfNotFound) {
             int ksIndex = getKeyFrameIndex(0, f);
             if (ksIndex == -1) {
-                return "";
+                return getValue();
             }
         }
         if (getKeyFramesCount(0) == 0) {
-            return "";
+            return getValue();
         } else {
             return getValueAtTime(f, 0);
         }
