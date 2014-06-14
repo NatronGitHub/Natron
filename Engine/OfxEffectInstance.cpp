@@ -493,9 +493,15 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
 
 void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     effect_->runGetClipPrefsConditionally();
     const std::string& outputClipDepth = effect_->getClip(kOfxImageEffectOutputClipName)->getPixelDepth();
 
+    QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
+                            "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
+    bool setBitDepthWarning = false;
+    
     ///for all inputs we run getClipPrefs too on their output clip
     for (int i = 0; i < maximumInputs() ; ++i) {
         OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(input(i));
@@ -514,10 +520,24 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
             }
             
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
-            if (isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth))) {
-                bool depthsDifferent = input_outputDepth != outputClipDepth;
+            Natron::ImageBitDepth input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
+            Natron::ImageBitDepth outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
+            
+            if (isSupportedBitDepth(input_outputNatronDepth)) {
+                bool depthsDifferent = input_outputNatronDepth != outputClipDepthNatron;
                 if ((effect_->supportsMultipleClipDepths() && depthsDifferent) || !depthsDifferent) {
                     clip->setPixelDepth(input_outputDepth);
+                }
+            } else {
+                
+                if (Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron)) {
+                    bitDepthWarning.append(instance->getName().c_str());
+                    bitDepthWarning.append(" (" + QString(Image::getDepthString(input_outputNatronDepth).c_str()) + ")");
+                    bitDepthWarning.append(" ----> ");
+                    bitDepthWarning.append(getName().c_str());
+                    bitDepthWarning.append(" (" + QString(Image::getDepthString(outputClipDepthNatron).c_str()) + ")");
+                    bitDepthWarning.append('\n');
+                    setBitDepthWarning = true;
                 }
             }
 
@@ -528,6 +548,7 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
             effect_->endInstanceChangedAction(kOfxChangeUserEdited);
         }
     }
+    getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
 }
 
 void OfxEffectInstance::onMultipleInputsChanged() {

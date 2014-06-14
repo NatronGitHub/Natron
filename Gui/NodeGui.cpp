@@ -49,6 +49,8 @@
 
 #define NATRON_MAGNETIC_GRID_RELEASE_DISTANCE 25
 
+#define NATRON_ELLIPSE_WARN_DIAMETER 10
+
 using namespace Natron;
 
 using std::make_pair;
@@ -71,6 +73,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _persistentMessage(NULL)
 , _lastPersistentMessageType(0)
 , _stateIndicator(NULL)
+, _bitDepthWarning(NULL)
 , _inputEdges()
 , _outputEdge(NULL)
 , _panelDisplayed(false)
@@ -100,6 +103,7 @@ NodeGui::~NodeGui(){
     delete _selectedGradient;
     delete _defaultGradient;
     delete _disabledGradient;
+    delete _bitDepthWarning;
 }
 
 
@@ -135,6 +139,7 @@ void NodeGui::initialize(NodeGraph* dag,
     QObject::connect(_internalNode.get(), SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()));
     QObject::connect(_internalNode.get(), SIGNAL(previewKnobToggled()),this,SLOT(onPreviewKnobToggled()));
     QObject::connect(_internalNode.get(), SIGNAL(disabledKnobToggled(bool)),this,SLOT(onDisabledKnobToggled(bool)));
+    QObject::connect(_internalNode.get(), SIGNAL(bitDepthWarningToggled(bool,QString)),this,SLOT(toggleBitDepthIndicator(bool,QString)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(1);
@@ -161,6 +166,15 @@ void NodeGui::initialize(NodeGraph* dag,
     _stateIndicator = new QGraphicsRectItem(this);
     _stateIndicator->setZValue(-1);
     _stateIndicator->hide();
+    
+    QPointF bitDepthPos = mapFromParent(pos());
+    QGradientStops bitDepthGrad;
+    bitDepthGrad.push_back(qMakePair(0., QColor(Qt::white)));
+    bitDepthGrad.push_back(qMakePair(0.3, QColor(Qt::yellow)));
+    bitDepthGrad.push_back(qMakePair(1., QColor(243,137,0)));
+    _bitDepthWarning = new NodeGuiIndicator("C",bitDepthPos,NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+                                            bitDepthGrad,QColor(0,0,0,255),this);
+    _bitDepthWarning->setActive(false);
     
     /*building settings panel*/
     if(_internalNode->pluginID() != "Viewer"){
@@ -291,13 +305,16 @@ void NodeGui::updateShape(int width,int height){
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
     int nameWidth = metrics.width(_nameItem->toPlainText());
-    _nameItem->setX(topLeft.x()+(_boundingBox->rect().width()/2)-(nameWidth/2));
-    _nameItem->setY(topLeft.y()+10 - metrics.height()/2);
+    _nameItem->setX(topLeft.x() + (width / 2) - (nameWidth / 2));
+    _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
     
     QString persistentMessage = _persistentMessage->toPlainText();
     f.setPixelSize(25);
     metrics = QFontMetrics(f);
     int pMWidth = metrics.width(persistentMessage);
+    
+    QPointF bitDepthPos(topLeft.x() + width / 2,0);
+    _bitDepthWarning->refreshPosition(bitDepthPos);
     
     _persistentMessage->setPos(topLeft.x() + (width/2) - (pMWidth/2), topLeft.y() + height/2 - metrics.height()/2);
     _stateIndicator->setRect(topLeft.x()-NATRON_STATE_INDICATOR_OFFSET,topLeft.y()-NATRON_STATE_INDICATOR_OFFSET,
@@ -1215,4 +1232,108 @@ void NodeGui::onDisabledKnobToggled(bool disabled) {
         _boundingBox->setBrush(*_defaultGradient);
         _nameItem->setDefaultTextColor(QColor(0,0,0));
     }
+}
+
+void NodeGui::toggleBitDepthIndicator(bool on,const QString& tooltip)
+{
+    if (on) {
+        setToolTip(Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal));
+        _bitDepthWarning->setToolTip(tooltip);
+    } else {
+        setToolTip("");
+        _bitDepthWarning->setToolTip("");
+    }
+    _bitDepthWarning->setActive(on);
+    
+}
+
+////////////////////////////////////////// NodeGuiIndicator ////////////////////////////////////////////////////////
+
+struct NodeGuiIndicatorPrivate
+{
+    
+    QGraphicsEllipseItem* ellipse;
+    QGraphicsTextItem* textItem;
+    QGradientStops gradStops;
+    
+    NodeGuiIndicatorPrivate(const QString& text,
+                            const QPointF& topLeft,
+                            int width,int height,
+                            const QGradientStops& gradient,
+                            const QColor& textColor,
+                            QGraphicsItem* parent)
+    : ellipse(NULL)
+    , textItem(NULL)
+    , gradStops(gradient)
+    {
+        ellipse = new QGraphicsEllipseItem(parent);
+        int ellipseRad = width / 2;
+        QPoint ellipsePos(topLeft.x()+ (width / 2) -ellipseRad, -ellipseRad);
+        QRectF ellipseRect(ellipsePos.x(),ellipsePos.y(),width,height);
+        ellipse->setRect(ellipseRect);
+        ellipse->setZValue(0.7);
+        
+        QPointF ellipseCenter = ellipseRect.center();
+
+        QRadialGradient radialGrad(ellipseCenter,ellipseRad);
+        radialGrad.setStops(gradStops);
+        ellipse->setBrush(radialGrad);
+
+        
+        textItem = new QGraphicsTextItem(text,parent);
+        QFont font(NATRON_FONT_ALT, NATRON_FONT_SIZE_10);
+        QFontMetrics fm(font);
+        textItem->setPos(topLeft.x()  - 2 * width / 3, topLeft.y() - 2 * fm.height() / 3);
+        textItem->setFont(font);
+        textItem->setDefaultTextColor(textColor);
+        textItem->setZValue(0.8);
+        textItem->scale(0.8, 0.8);
+    }
+};
+
+NodeGuiIndicator::NodeGuiIndicator(const QString& text,
+                                   const QPointF& topLeft,
+                                   int width,int height,
+                                   const QGradientStops& gradient,
+                                   const QColor& textColor,
+                                   QGraphicsItem* parent)
+: _imp(new NodeGuiIndicatorPrivate(text,topLeft,width,height,gradient,textColor,parent))
+{
+    
+}
+
+NodeGuiIndicator::~NodeGuiIndicator()
+{
+    
+}
+
+void NodeGuiIndicator::setToolTip(const QString& tooltip)
+{
+    _imp->ellipse->setToolTip(Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal));
+}
+
+void NodeGuiIndicator::setActive(bool active)
+{
+    _imp->ellipse->setActive(active);
+    _imp->textItem->setActive(active);
+    _imp->ellipse->setVisible(active);
+    _imp->textItem->setVisible(active);
+}
+
+void NodeGuiIndicator::refreshPosition(const QPointF& topLeft)
+{
+    QRectF r = _imp->ellipse->rect();
+    int ellipseRad = r.width() / 2;
+    QPoint ellipsePos(topLeft.x() - ellipseRad, topLeft.y() - ellipseRad);
+
+    QRectF ellipseRect(ellipsePos.x(), ellipsePos.y(), r.width(), r.height());
+    _imp->ellipse->setRect(ellipseRect);
+    
+    QRadialGradient radialGrad(ellipseRect.center(),ellipseRad);
+    radialGrad.setStops(_imp->gradStops);
+    _imp->ellipse->setBrush(radialGrad);
+ 
+    QFont font = _imp->textItem->font();
+    QFontMetrics fm(font);
+    _imp->textItem->setPos(topLeft.x()  - 2 * r.width() / 3, topLeft.y() - 2 * fm.height() / 3);
 }

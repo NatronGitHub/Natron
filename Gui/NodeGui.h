@@ -14,13 +14,14 @@
 
 #include <map>
 #include <boost/shared_ptr.hpp>
-
+#include <boost/scoped_ptr.hpp>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QRectF>
 #include <QtCore/QMutex>
 #include <QGraphicsItem>
+#include <QGradient>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -45,6 +46,31 @@ namespace Natron {
 class ChannelSet;
 class Node;
 }
+
+struct NodeGuiIndicatorPrivate;
+class NodeGuiIndicator
+{
+public:
+    
+    NodeGuiIndicator(const QString& text,
+                     const QPointF& topLeft,
+                     int width,int height,
+                     const QGradientStops& gradient,
+                     const QColor& textColor,
+                     QGraphicsItem* parent);
+    
+    ~NodeGuiIndicator();
+    
+    void setToolTip(const QString& tooltip);
+    
+    void setActive(bool active);
+    
+    void refreshPosition(const QPointF& topLeft);
+    
+private:
+    
+    boost::scoped_ptr<NodeGuiIndicatorPrivate> _imp;
+};
 
 class NodeGui : public QObject,public QGraphicsItem
 {
@@ -278,6 +304,8 @@ public slots:
     void duplicateNode();
     
     void refreshOutputEdgeVisibility();
+    
+    void toggleBitDepthIndicator(bool on,const QString& tooltip);
 
 signals:
     
@@ -322,6 +350,8 @@ private:
     QGraphicsTextItem* _persistentMessage;
     int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
+    
+    NodeGuiIndicator* _bitDepthWarning;
     
     /*the graphical input arrows*/
     std::map<int,Edge*> _inputEdges;

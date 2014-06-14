@@ -175,6 +175,11 @@ namespace Natron {
          **/
         static bool hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to);
         
+        static std::string getFormatString(Natron::ImageComponents comps,Natron::ImageBitDepth depth);
+        static std::string getDepthString(Natron::ImageBitDepth depth);
+        
+        static bool isBitDepthConversionLossy(Natron::ImageBitDepth from,Natron::ImageBitDepth to);
+        
         Natron::ImageBitDepth getBitDepth() const {return this->_bitDepth;}
         
         void setPixelAspect(double pa) { this->_key._pixelAspect = pa; }

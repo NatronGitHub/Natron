@@ -509,6 +509,7 @@ public:
     
     bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;
 
+    void toggleBitDepthWarning(bool on,const QString& tooltip) { emit bitDepthWarningToggled(on, tooltip); }
     
 public slots:
     
@@ -592,6 +593,8 @@ signals:
     void previewKnobToggled();
     
     void disabledKnobToggled(bool disabled);
+    
+    void bitDepthWarningToggled(bool,QString);
     
 protected:
 

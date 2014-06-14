@@ -516,6 +516,52 @@ bool Image::hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageCom
     return getElementsCountForComponents(from) >= getElementsCountForComponents(to);
 }
 
+std::string Image::getFormatString(Natron::ImageComponents comps,Natron::ImageBitDepth depth)
+{
+    std::string s;
+    switch (comps) {
+        case Natron::ImageComponentRGBA:
+            s += "RGBA";
+            break;
+        case Natron::ImageComponentRGB:
+            s += "RGB";
+            break;
+        case Natron::ImageComponentAlpha:
+            s += "Alpha";
+            break;
+        default:
+            break;
+    }
+    s.append(getDepthString(depth));
+    return s;
+}
+
+std::string Image::getDepthString(Natron::ImageBitDepth depth)
+{
+    std::string s;
+    switch (depth) {
+        case Natron::IMAGE_BYTE:
+            s += "8u";
+            break;
+        case Natron::IMAGE_SHORT:
+            s += "16u";
+            break;
+        case Natron::IMAGE_FLOAT:
+            s += "32f";
+            break;
+        default:
+            break;
+    }
+    return s;
+}
+
+bool Image::isBitDepthConversionLossy(Natron::ImageBitDepth from,Natron::ImageBitDepth to)
+{
+    int sizeOfFrom = getSizeOfForBitDepth(from);
+    int sizeOfTo = getSizeOfForBitDepth(to);
+    return sizeOfTo < sizeOfFrom;
+}
+
 unsigned int Image::getRowElements() const
 {
     return getComponentsCount() * _pixelRod.width();

@@ -19,6 +19,7 @@
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"
+#include "Engine/Image.h"
 #include "Gui/ViewerGL.h"
 
 using std::cout; using std::endl;
@@ -276,32 +277,6 @@ void InfoViewerWidget::setColor(float r,float g,float b,float a){
 
 void InfoViewerWidget::setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth)
 {
-    QString s;
-    switch (comp) {
-        case Natron::ImageComponentRGBA:
-            s += "RGBA";
-            break;
-        case Natron::ImageComponentRGB:
-            s += "RGB";
-            break;
-        case Natron::ImageComponentAlpha:
-            s += "Alpha";
-            break;
-        default:
-            break;
-    }
-    switch (depth) {
-        case Natron::IMAGE_BYTE:
-            s += "8u";
-            break;
-        case Natron::IMAGE_SHORT:
-            s += "16u";
-            break;
-        case Natron::IMAGE_FLOAT:
-            s += "32f";
-            break;
-        default:
-            break;
-    }
-    imageFormat->setText(s);
+    std::string format = Natron::Image::getFormatString(comp, depth);
+    imageFormat->setText(format.c_str());
 }
