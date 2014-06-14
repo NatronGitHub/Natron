@@ -640,10 +640,13 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 Natron::ImageComponents inputPrefComps;
                 Natron::ImageBitDepth inputPrefDepth;
                 Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
-                assert(inputEffectIdentity);
-                inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-                ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,inputPrefComps,inputPrefDepth);
+                if (inputEffectIdentity) {
+                    inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
+                    ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
+                    image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,inputPrefComps,inputPrefDepth);
+                } else {
+                    return image;
+                }
                 
                 ///if we bypass the cache, don't cache the result of isIdentity
                 if (byPassCache) {
@@ -762,9 +765,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             Natron::ImageComponents inputPrefComps;
             Natron::ImageBitDepth inputPrefDepth;
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
-            assert(inputEffectIdentity);
-            inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-            return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,inputPrefComps,inputPrefDepth); 
+            if (inputEffectIdentity) {
+                inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
+                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,inputPrefComps,inputPrefDepth);
+            } else {
+                return boost::shared_ptr<Image>();
+            }
         }
         
 #ifdef NATRON_DEBUG
