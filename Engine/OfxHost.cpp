@@ -365,9 +365,10 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
     writeOFXCache();
 
     /*Filling node name list and plugin grouping*/
-    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache->getPlugins();
-    for (unsigned int i = 0 ; i < ofxPlugins.size(); ++i) {
-        OFX::Host::ImageEffect::ImageEffectPlugin* p = ofxPlugins[i];
+    const std::map<std::string,OFX::Host::ImageEffect::ImageEffectPlugin *>& ofxPlugins = _imageEffectPluginCache->getPluginsByID();
+    for (std::map<std::string,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
+         it != ofxPlugins.end(); ++it) {
+        OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
         assert(p);
         if(p->getContexts().size() == 0)
             continue;
