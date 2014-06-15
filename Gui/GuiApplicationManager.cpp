@@ -437,6 +437,22 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"rippleEditDisabled.png");
                 *pix = QPixmap::fromImage(img).scaled(15, 15);
                 break;
+            case NATRON_PIXMAP_BOLD_CHECKED:
+                img.load(NATRON_IMAGES_PATH"bold_checked.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_BOLD_UNCHECKED:
+                img.load(NATRON_IMAGES_PATH"bold_unchecked.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_ITALIC_UNCHECKED:
+                img.load(NATRON_IMAGES_PATH"italic_unchecked.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_ITALIC_CHECKED:
+                img.load(NATRON_IMAGES_PATH"italic_checked.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
             default:
                 assert(!"Missing image.");
         }

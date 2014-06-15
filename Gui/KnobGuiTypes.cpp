@@ -28,6 +28,7 @@ CLANG_DIAG_OFF(unused-private-field)
 #include <QKeyEvent>
 CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
+#include <QFontComboBox>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"
@@ -46,8 +47,18 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ProjectGui.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/ClickableLabel.h"
 
 #define SLIDER_MAX_RANGE 100000
+
+#define kFontSizeTag "<font size=\""
+#define kFontColorTag "color=\""
+#define kFontFaceTag "face=\""
+#define kFontEndTag "</font>"
+#define kBoldStartTag "<b>"
+#define kBoldEndTag "</b>"
+#define kItalicStartTag "<i>"
+#define kItalicEndTag "</i>"
 
 using namespace Natron;
 using std::make_pair;
@@ -1854,7 +1865,16 @@ void AnimatingTextEdit::paintEvent(QPaintEvent* e) {
 String_KnobGui::String_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container)
 : KnobGui(knob, container)
 , _lineEdit(0)
+, _container(0)
+, _mainLayout(0)
 , _textEdit(0)
+, _richTextOptions(0)
+, _richTextOptionsLayout(0)
+, _fontCombo(0)
+, _setBoldButton(0)
+, _setItalicButton(0)
+, _fontSizeSpinBox(0)
+, _fontColorButton(0)
 , _label(0)
 {
     _knob = boost::dynamic_pointer_cast<String_Knob>(knob);
@@ -1862,29 +1882,102 @@ String_KnobGui::String_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *con
 
 void String_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    
+
 
     if (_knob->isMultiLine()) {
-        _textEdit = new AnimatingTextEdit(layout->parentWidget());
+        
+        _container = new QWidget(layout->parentWidget());
+        _mainLayout = new QVBoxLayout(_container);
+        _mainLayout->setContentsMargins(0, 0, 0, 0);
+        _mainLayout->setSpacing(0);
+        
+        bool useRichText = _knob->usesRichText();
+        _textEdit = new AnimatingTextEdit(_container);
         if (hasToolTip()) {
             QString tt = toolTip();
-            if (_knob->usesRichText()) {
+            if (useRichText) {
                 tt += " This text area supports html encoding. "
                 "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ";
             }
-            _textEdit->setAcceptRichText(_knob->usesRichText());
+            _textEdit->setAcceptRichText(useRichText);
             _textEdit->setToolTip(tt);
-            
+
         }
-        layout->addWidget(_textEdit);
-        QObject::connect(_textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()));
+        
+        _mainLayout->addWidget(_textEdit);
+        
+        QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
-
         
+        if (useRichText) {
+            _richTextOptions = new QWidget(_container);
+            _richTextOptionsLayout = new QHBoxLayout(_richTextOptions);
+            _richTextOptionsLayout->setContentsMargins(0, 0, 0, 0);
+            _richTextOptionsLayout->setSpacing(8);
+            
+            _fontCombo = new QFontComboBox(_richTextOptions);
+            QFont font("Verdana",NATRON_FONT_SIZE_12);
+            _fontCombo->setCurrentFont(font);
+            _fontCombo->setToolTip("Font");
+            QObject::connect(_fontCombo,SIGNAL(currentFontChanged(QFont)),this,SLOT(onCurrentFontChanged(QFont)));
+            _richTextOptionsLayout->addWidget(_fontCombo);
+            
+            _fontSizeSpinBox = new SpinBox(_richTextOptions);
+            _fontSizeSpinBox->setMinimum(1);
+            _fontSizeSpinBox->setMaximum(100);
+            _fontSizeSpinBox->setValue(6);
+            QObject::connect(_fontSizeSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onFontSizeChanged(double)));
+            _fontSizeSpinBox->setToolTip("Font size");
+            _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
+            
+            QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
+            appPTR->getIcon(NATRON_PIXMAP_BOLD_CHECKED,&pixBoldChecked);
+            appPTR->getIcon(NATRON_PIXMAP_BOLD_UNCHECKED,&pixBoldUnchecked);
+            appPTR->getIcon(NATRON_PIXMAP_ITALIC_CHECKED,&pixItalicChecked);
+            appPTR->getIcon(NATRON_PIXMAP_ITALIC_UNCHECKED,&pixItalicUnchecked);
+            QIcon boldIcon;
+            boldIcon.addPixmap(pixBoldChecked,QIcon::Normal,QIcon::On);
+            boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
+            _setBoldButton = new Button(boldIcon,"",_richTextOptions);
+            _setBoldButton->setCheckable(true);
+            _setBoldButton->setToolTip("Bold");
+            _setBoldButton->setMaximumSize(18, 18);
+            QObject::connect(_setBoldButton,SIGNAL(clicked(bool)),this,SLOT(boldChanged(bool)));
+            _richTextOptionsLayout->addWidget(_setBoldButton);
+            
+            QIcon italicIcon;
+            italicIcon.addPixmap(pixItalicChecked,QIcon::Normal,QIcon::On);
+            italicIcon.addPixmap(pixItalicUnchecked,QIcon::Normal,QIcon::Off);
+
+            _setItalicButton = new Button(italicIcon,"",_richTextOptions);
+            _setItalicButton->setCheckable(true);
+            _setItalicButton->setToolTip("Italic");
+            _setItalicButton->setMaximumSize(18,18);
+            QObject::connect(_setItalicButton,SIGNAL(clicked(bool)),this,SLOT(italicChanged(bool)));
+            _richTextOptionsLayout->addWidget(_setItalicButton);
+            
+            QPixmap pixBlack(15,15);
+            pixBlack.fill(Qt::black);
+            _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
+            _fontColorButton->setCheckable(false);
+            _fontColorButton->setToolTip("Font color");
+            _fontColorButton->setMaximumSize(18, 18);
+            QObject::connect(_fontColorButton, SIGNAL(clicked(bool)), this, SLOT(colorFontButtonClicked()));
+            _richTextOptionsLayout->addWidget(_fontColorButton);
+            
+            _richTextOptionsLayout->addStretch();
+            
+            _mainLayout->addWidget(_richTextOptions);
+            
+            restoreTextInfosFromString();
+        }
+        
+        layout->addWidget(_container);
+
         
     } else if (_knob->isLabel()) {
         _label = new QLabel(layout->parentWidget());
@@ -1916,7 +2009,7 @@ String_KnobGui::~String_KnobGui()
 {
     delete _lineEdit;
     delete _label;
-    delete _textEdit;
+    delete _container;
 }
 
 void String_KnobGui::onLineChanged()
@@ -1926,9 +2019,332 @@ void String_KnobGui::onLineChanged()
 
 void String_KnobGui::onTextChanged()
 {
-    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),_textEdit->toPlainText().toStdString()));
+    QString txt = addHtmlTags(_textEdit->toPlainText());
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),txt.toStdString()));
 }
 
+QString String_KnobGui::addHtmlTags(QString text) const
+{
+    QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+    .arg(_fontSize)
+    .arg(_fontColor.name())
+    .arg(_fontFamily);
+    text.prepend(fontTag);
+    text.append(kFontEndTag);
+    
+    if (_boldActivated) {
+        text.prepend(kBoldStartTag);
+        text.append(kBoldEndTag);
+    }
+    if (_italicActivated) {
+        text.prepend(kItalicStartTag);
+        text.append(kItalicEndTag);
+    }
+    return text;
+}
+
+void String_KnobGui::restoreTextInfosFromString()
+{
+    QString text(_knob->getValue().c_str());
+    if (text.isEmpty()) {
+        _fontSize = _fontSizeSpinBox->value();
+        _fontColor = Qt::black;
+        _fontFamily = _fontCombo->currentFont().family();
+        _boldActivated = false;
+        _italicActivated = false;
+        QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+        .arg(_fontSize)
+        .arg(_fontColor.name())
+        .arg(_fontFamily);
+        text.prepend(fontTag);
+        text.append(kFontEndTag);
+        _knob->setValue(text.toStdString(), 0);
+    } else {
+        
+        
+        QString toFind = QString(kItalicStartTag);
+        int i = text.indexOf(toFind);
+        if (i != -1) {
+            _italicActivated = true;
+        } else {
+            _italicActivated = false;
+        }
+        
+        _setItalicButton->setChecked(_italicActivated);
+        _setItalicButton->setDown(_italicActivated);
+        
+        toFind = QString(kBoldStartTag);
+        i = text.indexOf(toFind);
+        if (i != -1) {
+            _boldActivated = true;
+        } else {
+            _boldActivated = false;
+        }
+        
+        _setBoldButton->setChecked(_boldActivated);
+        _setBoldButton->setDown(_boldActivated);
+        
+        QString fontSizeString;
+        QString fontColorString;
+        toFind = QString(kFontSizeTag);
+        i = text.indexOf(toFind);
+        if (i != -1) {
+            i += toFind.size();
+            while (i < text.size() && text.at(i).isDigit()) {
+                fontSizeString.append(text.at(i));
+                ++i;
+            }
+        }
+        toFind = QString(kFontColorTag);
+        i = text.indexOf(toFind,i);
+        if (i != -1) {
+            i += toFind.size();
+            while (i < text.size() && text.at(i) != QChar('"')) {
+                fontColorString.append(text.at(i));
+                ++i;
+            }
+        }
+        toFind = QString(kFontFaceTag);
+        i = text.indexOf(toFind,i);
+        if (i != -1) {
+            i += toFind.size();
+            while (i < text.size() && text.at(i) != QChar('"')) {
+                _fontFamily.append(text.at(i));
+                ++i;
+            }
+        }
+        
+        _fontCombo->setCurrentFont(QFont(_fontFamily));
+        
+        _fontSize = fontSizeString.toInt();
+        
+        _fontSizeSpinBox->setValue(_fontSize);
+        
+        _fontColor = QColor(fontColorString);
+        updateFontColorIcon(_fontColor);
+        
+    }
+    
+}
+
+void String_KnobGui::updateFontColorIcon(const QColor& color)
+{
+    QPixmap p(18,18);
+    p.fill(color);
+    _fontColorButton->setIcon(QIcon(p));
+}
+
+void String_KnobGui::onCurrentFontChanged(const QFont& font)
+{
+    assert(_textEdit);
+    QString text(_knob->getValue().c_str());
+    //find the first font tag
+    QString toFind = QString(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    assert(i != -1);
+    toFind = QString(kFontFaceTag);
+    i = text.indexOf(toFind,i);
+    assert(i != -1);
+    i += toFind.size();
+    ///erase the current font face (family)
+    QString currentFontFace;
+    int j = i;
+    while (j < text.size() && text.at(j) != QChar('"')) {
+        currentFontFace.push_back(text.at(j));
+        ++j;
+    }
+    text.remove(i, currentFontFace.size());
+    text.insert(i, font.family());
+    _fontFamily = font.family();
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
+    
+}
+
+void String_KnobGui::onFontSizeChanged(double size)
+{
+    assert(_textEdit);
+    QString text(_knob->getValue().c_str());
+    //find the first font tag
+    QString toFind = QString(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    assert(i != -1);
+    i += toFind.size();
+    ///erase the current font face (family)
+    QString currentSize;
+    int j = i;
+    while (j < text.size() && text.at(j).isDigit()) {
+        currentSize.push_back(text.at(j));
+        ++j;
+    }
+    text.remove(i, currentSize.size());
+    text.insert(i, QString::number(size));
+    _fontSize = size;
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
+
+}
+
+void String_KnobGui::boldChanged(bool toggled)
+{
+    assert(_textEdit);
+    QString text(_knob->getValue().c_str());
+    QString toFind = QString(kBoldStartTag);
+    int i = text.indexOf(toFind);
+    
+    assert((toggled && i == -1) || (!toggled && i != -1));
+    
+    if (!toggled) {
+        text.remove(i, toFind.size());
+        toFind = QString(kBoldEndTag);
+        i = text.lastIndexOf(toFind);
+        assert (i != -1);
+        text.remove(i,toFind.size());
+    } else {
+        ///insert right prior to the font size
+        toFind = QString(kFontSizeTag);
+        i = text.indexOf(toFind);
+        assert(i != -1);
+        text.insert(i, kBoldStartTag);
+        toFind = QString(kFontEndTag);
+        i = text.lastIndexOf(toFind);
+        assert(i != -1);
+        i += toFind.size();
+        text.insert(i, kBoldEndTag);
+    }
+    
+    _boldActivated = toggled;
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
+}
+
+void String_KnobGui::mergeFormat(const QTextCharFormat& fmt)
+{
+    QTextCursor cursor = _textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        cursor.mergeCharFormat(fmt);
+        _textEdit->mergeCurrentCharFormat(fmt);
+    }
+}
+
+void String_KnobGui::colorFontButtonClicked()
+{
+    assert(_textEdit);
+
+    QColorDialog dialog(_textEdit);
+    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(updateFontColorIcon(QColor)));
+    dialog.setCurrentColor(_fontColor);
+    if (dialog.exec()) {
+        _fontColor = dialog.currentColor();
+        
+        QString text(_knob->getValue().c_str());
+        //find the first font tag
+        QString toFind = QString(kFontSizeTag);
+        int i = text.indexOf(toFind);
+        assert(i != -1);
+        toFind = QString(kFontColorTag);
+        i = text.indexOf(toFind,i);
+        assert(i != -1);
+        i += toFind.size();
+        QString currentColor;
+        int j = i;
+        while (j < text.size() && text.at(j) != QChar('"')) {
+            currentColor.push_back(text.at(j));
+            ++j;
+        }
+        text.remove(i,currentColor.size());
+        text.insert(i, _fontColor.name());
+        
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
+    }
+    updateFontColorIcon(_fontColor);
+    
+}
+
+void String_KnobGui::italicChanged(bool toggled)
+{
+    QString text(_knob->getValue().c_str());
+    //find the first font tag
+    QString toFind = QString(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    assert(i != -1);
+    
+    ///search before i
+    toFind = QString(kItalicStartTag);
+    int foundItalic = text.lastIndexOf(toFind,i);
+    assert((toggled && foundItalic == -1) || (!toggled && foundItalic != -1));
+    if (!toggled) {
+        text.remove(foundItalic, toFind.size());
+        toFind = QString(kItalicEndTag);
+        foundItalic = text.lastIndexOf(toFind);
+        assert(foundItalic != -1);
+        text.remove(foundItalic, toFind.size());
+    } else {
+        int foundBold = text.lastIndexOf(kBoldStartTag,i);
+        assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
+        
+        ///if bold is activated, insert prior to bold
+        if (foundBold != -1) {
+            foundBold = foundBold == 0 ? 0 : foundBold - 1;
+            text.insert(foundBold, kItalicStartTag);
+        } else {
+            //there's no bold
+            i = i == 0 ? 0 : i - 1;
+            text.insert(i, kItalicStartTag);
+        }
+        text.append(kItalicEndTag); //< this is always the last tag
+    }
+    _italicActivated = toggled;
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
+}
+
+QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
+{
+    QString toFind = QString(kFontSizeTag);
+    int i = text.indexOf(toFind);
+    assert(i != -1);
+    
+    QString boldStr(kBoldStartTag);
+    int foundBold = text.lastIndexOf(boldStr,i);
+    assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
+    
+    if (foundBold != -1) {
+        text.remove(foundBold, boldStr.size());
+        boldStr = QString(kBoldEndTag);
+        foundBold = text.lastIndexOf(boldStr);
+        assert(foundBold != -1);
+        text.remove(foundBold,boldStr.size());
+    }
+    
+    ///refresh the index
+    i = text.indexOf(toFind);
+
+    QString italStr(kItalicStartTag);
+    int foundItal = text.lastIndexOf(italStr,i);
+    assert((_italicActivated && foundItal != -1) || (!_italicActivated && foundItal == -1));
+    
+    if (foundItal != -1) {
+        text.remove(foundItal, italStr.size());
+        italStr = QString(kItalicEndTag);
+        foundItal = text.lastIndexOf(italStr);
+        assert(foundItal != -1);
+        text.remove(foundItal,italStr.size());
+    }
+
+    ///refresh the index
+    i = text.indexOf(toFind);
+    
+    QString endTag("\">");
+    int foundEndTag = text.indexOf(endTag,i);
+    assert(foundEndTag != -1);
+    foundEndTag += endTag.size();
+    
+    ///remove the whole font tag
+    text.remove(i,foundEndTag - i);
+    
+    endTag = QString(kFontEndTag);
+    foundEndTag = text.lastIndexOf(endTag);
+    assert(foundEndTag != -1);
+    text.remove(foundEndTag, endTag.size());
+    return text;
+}
 
 void String_KnobGui::updateGUI(int /*dimension*/)
 {
@@ -1936,13 +2352,18 @@ void String_KnobGui::updateGUI(int /*dimension*/)
     std::string value = _knob->getValue();
     if (_knob->isMultiLine()) {
         assert(_textEdit);
-        QObject::disconnect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+        _textEdit->blockSignals(true);
         QTextCursor cursor = _textEdit->textCursor();
         int pos = cursor.position();
-        _textEdit->clear();
-        QString txt = value.c_str();
+        int selectionStart = cursor.selectionStart();
+        int selectionEnd = cursor.selectionEnd();
+        
+        QString txt(value.c_str());
+        txt = removeAutoAddedHtmlTags(txt);
+        
         if (_knob->usesRichText()) {
-            _textEdit->setHtml(Qt::convertFromPlainText(txt,Qt::WhiteSpaceNormal));
+            _textEdit->setPlainText(txt);
+            
         } else {
             _textEdit->setPlainText(Qt::convertFromPlainText(txt,Qt::WhiteSpaceNormal));
         }
@@ -1951,8 +2372,13 @@ void String_KnobGui::updateGUI(int /*dimension*/)
         } else {
             cursor.movePosition(QTextCursor::End);
         }
+        
+        ///restore selection
+        cursor.setPosition(selectionStart);
+        cursor.setPosition(selectionEnd,QTextCursor::KeepAnchor);
+        
         _textEdit->setTextCursor(cursor);
-        QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+        _textEdit->blockSignals(false);
     } else if (_knob->isLabel()) {
         assert(_label);
         QString txt = value.c_str();

@@ -620,6 +620,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     _imp->previewEnabledKnob->setDefaultValue(makePreviewByDefault());
     _imp->previewEnabledKnob->setName("preview_enabled_natron");
     _imp->previewEnabledKnob->setAnimationEnabled(false);
+    _imp->previewEnabledKnob->turnOffNewLine();
     _imp->previewEnabledKnob->setIsPersistant(false);
     _imp->previewEnabledKnob->setEvaluateOnChange(false);
     _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
@@ -2038,8 +2039,10 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
         _activeInput = inputNb;
     }
     computeHash();
+    onInputChanged(inputNb);
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
     }
+
 }
 

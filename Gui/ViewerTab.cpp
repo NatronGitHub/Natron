@@ -1770,7 +1770,7 @@ void ViewerTab::onSecondInputNameChanged(const QString& text)
     _imp->_viewerNode->setInputB(inputIndex);
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
-        setCompositingOperator(Natron::OPERATOR_NONE);
+        //setCompositingOperator(Natron::OPERATOR_NONE);
         _imp->_infosWidget[1]->hide();
     } else {
         if (!_imp->_infosWidget[1]->isVisible()) {
@@ -1816,18 +1816,18 @@ void ViewerTab::onActiveInputsChanged()
 
     } else {
         _imp->_secondInputImage->setCurrentIndex_no_emit(0);
-        setCompositingOperator(Natron::OPERATOR_NONE);
+        //setCompositingOperator(Natron::OPERATOR_NONE);
         manageSlotsForInfoWidget(1, false);
         _imp->_infosWidget[1]->hide();
-        _imp->_secondInputImage->setEnabled_natron(false);
+        //_imp->_secondInputImage->setEnabled_natron(false);
     }
     
     if ((activeInputs[0] == -1 || activeInputs[1] == -1 || activeInputs[0] == activeInputs[1]) //only 1 input is valid
         && getCompositingOperator() != OPERATOR_NONE) {
-        setCompositingOperator(OPERATOR_NONE);
+        //setCompositingOperator(OPERATOR_NONE);
         _imp->_infosWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
-        _imp->_secondInputImage->setEnabled_natron(false);
+        // _imp->_secondInputImage->setEnabled_natron(false);
     } else if (activeInputs[0] != -1 && activeInputs[1] != -1 && activeInputs[0] != activeInputs[1]
                && getCompositingOperator() == OPERATOR_NONE) {
         setCompositingOperator(Natron::OPERATOR_WIPE);

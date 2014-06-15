@@ -818,6 +818,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                                   imageDepth)); //< render the input depth as the viewer can handle it
                     
                     if (!lastRenderedImage) {
+                         _node->notifyInputNIsFinishedRendering(activeInputIndex);
                         return StatFailed;
                     }
                     

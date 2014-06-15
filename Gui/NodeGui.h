@@ -72,6 +72,32 @@ private:
     boost::scoped_ptr<NodeGuiIndicatorPrivate> _imp;
 };
 
+///A richer text item which allows text alignmenent
+class TextItem : public QGraphicsTextItem
+{
+    Q_OBJECT
+    
+public:
+    
+    enum { Type = UserType + 1 };
+    
+    TextItem(QGraphicsItem* parent = 0);
+    TextItem(const QString& text, QGraphicsItem* parent = 0);
+    
+    void setAlignment(Qt::Alignment alignment);
+    virtual int type() const;
+    
+public slots:
+    
+    void updateGeometry(int, int, int);
+    void updateGeometry();
+    
+private:
+    void init();
+    
+    Qt::Alignment _alignement;
+};
+
 class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
@@ -323,6 +349,8 @@ signals:
     void settingsPanelClosed(bool b);
     
 private:
+    
+    void setNameItemHtml(const QString& name,const QString& label);
     
     void togglePreview_internal();
     

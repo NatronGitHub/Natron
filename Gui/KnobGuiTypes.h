@@ -39,6 +39,7 @@ class QHBoxLayout;
 class QTreeWidget;
 class QTreeWidgetItem;
 class QScrollArea;
+class QFontComboBox;
 
 // Engine
 class KnobI;
@@ -593,6 +594,7 @@ private:
 };
 
 /*****************************/
+class QTextCharFormat;
 class String_KnobGui : public KnobGui
 {
     Q_OBJECT
@@ -616,6 +618,23 @@ public slots:
 
     ///if the knob is multiline
     void onTextChanged();
+    
+    ///if the knob is multiline
+    void onCurrentFontChanged(const QFont& font);
+    
+    ///if the knob is multiline
+    void onFontSizeChanged(double size);
+    
+    ///is bold activated
+    void boldChanged(bool toggled);
+    
+    ///is italic activated
+    void italicChanged(bool toggled);
+        
+    void colorFontButtonClicked();
+    
+    void updateFontColorIcon(const QColor& color);
+
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
@@ -634,10 +653,37 @@ private:
     
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
 
-
+    void mergeFormat(const QTextCharFormat& fmt);
+    
+    void restoreTextInfosFromString();
+    
+    /**
+     * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
+     * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
+     **/
+    QString removeAutoAddedHtmlTags(QString text) const;
+    
+    QString addHtmlTags(QString text) const;
+    
 private:
     LineEdit *_lineEdit; //< if single line
+    QWidget* _container; //< only used when multiline is on
+    QVBoxLayout* _mainLayout; //< only used when multiline is on
     AnimatingTextEdit *_textEdit; //< if multiline
+    QWidget* _richTextOptions;
+    QHBoxLayout* _richTextOptionsLayout;
+    
+    QFontComboBox* _fontCombo;
+    Button* _setBoldButton;
+    Button* _setItalicButton;
+    SpinBox* _fontSizeSpinBox;
+    Button* _fontColorButton;
+
+    int _fontSize;
+    bool _boldActivated;
+    bool _italicActivated;
+    QString _fontFamily;
+    QColor _fontColor;
     QLabel *_label; //< if label
     boost::shared_ptr<String_Knob> _knob;
 };

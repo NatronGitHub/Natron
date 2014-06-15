@@ -1298,24 +1298,25 @@ void KnobGui::onInternalAnimationRemoved()
 void KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
-    std::list<SequenceTime> times;
-    if (dimension == -1) {
-        int dim = knob->getDimension();
-        for (int i = 0; i < dim; ++i) {
-            KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
+    if (knob->getHolder() && knob->getHolder()->getApp()) {
+        boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+        std::list<SequenceTime> times;
+        if (dimension == -1) {
+            int dim = knob->getDimension();
+            for (int i = 0; i < dim; ++i) {
+                KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+                    times.push_back(it->getTime());
+                }
+            }
+        } else {
+            KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
             for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
                 times.push_back(it->getTime());
             }
         }
-    } else {
-        KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
-        for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
-            times.push_back(it->getTime());
-        }
+        timeline->removeMultipleKeyframeIndicator(times);
     }
-    timeline->removeMultipleKeyframeIndicator(times);
-
 }
 
 void KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)

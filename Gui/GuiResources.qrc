@@ -124,5 +124,9 @@
         <file>Resources/Images/Keyer_low.png</file>
         <file>Resources/Images/Keyer.png</file>
         <file>Resources/Images/closePanel.png</file>
+        <file>Resources/Images/bold_checked.png</file>
+        <file>Resources/Images/italic_checked.png</file>
+        <file>Resources/Images/italic_unchecked.png</file>
+        <file>Resources/Images/bold_unchecked.png</file>
     </qresource>
 </RCC>

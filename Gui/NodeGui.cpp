@@ -19,6 +19,8 @@
 #include <QFontMetrics>
 #include <QMenu>
 #include <QTextDocument> // for Qt::convertFromPlainText
+#include <QTextBlockFormat>
+#include <QTextCursor>
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
@@ -58,6 +60,11 @@ using std::make_pair;
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
+
+static QString replaceLineBreaksWithHtmlParagraph(QString txt) {
+    txt.replace("\n", "<br>");
+    return txt;
+}
 
 NodeGui::NodeGui(QGraphicsItem *parent)
 : QObject()
@@ -156,10 +163,10 @@ void NodeGui::initialize(NodeGraph* dag,
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor(QColor(0,0,0,255));
     _nameItem->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
-    _nameItem->setZValue(0.6);
+    _nameItem->setZValue(0.7);
     
     _persistentMessage = new QGraphicsTextItem("",this);
-    _persistentMessage->setZValue(0.7);
+    _persistentMessage->setZValue(0.8);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
     _persistentMessage->setFont(f);
@@ -233,6 +240,8 @@ void NodeGui::initialize(NodeGraph* dag,
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
     
     _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
+    _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+ 
     onInternalNameChanged(_internalNode->getName().c_str());
     
     if (!_internalNode->isOutputNode()) {
@@ -311,7 +320,7 @@ void NodeGui::updateShape(int width,int height){
     
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
-    int nameWidth = metrics.width(_internalNode->getName().c_str());
+    int nameWidth = _nameItem->boundingRect().width();
     _nameItem->setX(topLeft.x() + (width / 2) - (nameWidth / 2));
     _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
     
@@ -648,7 +657,9 @@ void NodeGui::onInternalNameChanged(const QString& s){
     if (_settingNameFromGui) {
         return;
     }
-    _nameItem->setHtml(s + _nodeLabel);
+    
+    setNameItemHtml(s,_nodeLabel);
+    
     QRectF rect = _boundingBox->boundingRect();
     updateShape(rect.width(), rect.height());
     if(_settingsPanel)
@@ -1453,17 +1464,145 @@ Edge* NodeGui::getInputArrow(int inputNb) const
     return NULL;
 }
 
-void NodeGui::onNodeExtraLabelChanged(const QString& label)
+static void parseFont(const QString& label,QFont& f)
 {
-    _nodeLabel = label;
-    _nameItem->setHtml(_internalNode->getName().c_str() + _nodeLabel);
+    QString toFind = QString("<font size=\"");
+    int startFontTag = label.indexOf(toFind);
+    assert(startFontTag != -1);
+    startFontTag += toFind.size();
+    int j = startFontTag;
     
-    QRectF rect = _boundingBox->boundingRect();
-    QPointF topLeft = rect.topLeft();
-    QFontMetrics metrics = _nameItem->font();
+    QString sizeStr;
+    while (j < label.size() && label.at(j).isDigit()) {
+        sizeStr.push_back(label.at(j));
+        ++j;
+    }
     
-    int nameWidth = metrics.width(_internalNode->getName().c_str());
-    _nameItem->setX(topLeft.x() + (rect.width() / 2) - (nameWidth / 2));
+    toFind = QString("face=\"");
+    startFontTag = label.indexOf(toFind,startFontTag);
+    assert(startFontTag != -1);
+    
+    j = startFontTag;
+    QString faceStr;
+    while (j < label.size() && label.at(j) != QChar('"')) {
+        faceStr.push_back(label.at(j));
+        ++j;
+    }
+    
+    f.setPointSize(sizeStr.toInt());
+    f.setFamily(faceStr);
+}
+
+void NodeGui::setNameItemHtml(const QString& name,const QString& label)
+{
+    QString textLabel;
+    textLabel.append("<div align=\"center\">");
+    if (!label.isEmpty()) {
+        QString labelCopy = label;
+        
+        ///add the node name into the html encoded label
+        int startFontTag = labelCopy.indexOf("<font size=");
+        assert(startFontTag != -1);
+        
+        QString toFind("\">");
+        int endFontTag = labelCopy.indexOf(toFind,startFontTag);
+        assert(endFontTag != -1);
+        
+        int i = endFontTag += toFind.size();
+        labelCopy.insert(i, name + "<br>");
+        
+        textLabel.append(labelCopy);
+    } else {
+        ///Default to something not too bad
+        QString fontTag = QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+        .arg(6)
+        .arg(QColor(Qt::black).name())
+        .arg("Verdana");
+        textLabel.append(fontTag);
+        textLabel.append(name);
+        textLabel.append("</font>");
+    }
+    textLabel.append("</div>");
+    _nameItem->setHtml(textLabel);
+    _nameItem->adjustSize();
+
+    
+    ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
+    ///of the font size.
+    QFont f;
+    parseFont(textLabel, f);
+    _nameItem->setFont(f);
+    
+    QFontMetrics metrics(f);
+    QPointF topLeft = mapFromParent(pos());
+    _nameItem->setX(topLeft.x() + (_boundingBox->rect().width() / 2) - (_nameItem->boundingRect().width() / 2));
     _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
 
+}
+
+void NodeGui::onNodeExtraLabelChanged(const QString& label)
+{
+    _nodeLabel = replaceLineBreaksWithHtmlParagraph(label); ///< maybe we should do this in the knob itself when the user writes ?
+    setNameItemHtml(_internalNode->getName().c_str(),_nodeLabel);
+}
+
+///////////////////
+
+TextItem::TextItem(QGraphicsItem* parent )
+: QGraphicsTextItem(parent)
+, _alignement(Qt::AlignCenter)
+{
+    init();
+}
+
+TextItem::TextItem(const QString& text, QGraphicsItem* parent)
+: QGraphicsTextItem(text,parent)
+, _alignement(Qt::AlignCenter)
+{
+    init();
+}
+
+void TextItem::setAlignment(Qt::Alignment alignment)
+{
+    _alignement = alignment;
+    QTextBlockFormat format;
+    format.setAlignment(alignment);
+    QTextCursor cursor = textCursor();      // save cursor position
+    int position = textCursor().position();
+    cursor.select(QTextCursor::Document);
+    cursor.mergeBlockFormat(format);
+    cursor.clearSelection();
+    cursor.setPosition(position);           // restore cursor position
+    setTextCursor(cursor);
+}
+
+int TextItem::type() const
+{
+    return Type;
+}
+
+void TextItem::updateGeometry(int, int, int)
+{
+    updateGeometry();
+}
+
+void TextItem::updateGeometry()
+{
+    QPointF topRightPrev = boundingRect().topRight();
+    setTextWidth(-1);
+    setTextWidth(boundingRect().width());
+    setAlignment(_alignement);
+    QPointF topRight = boundingRect().topRight();
+    
+    if (_alignement & Qt::AlignRight)
+    {
+        setPos(pos() + (topRightPrev - topRight));
+    }
+}
+
+void TextItem::init()
+{
+    updateGeometry();
+    connect(document(), SIGNAL(contentsChange(int, int, int)),
+            this, SLOT(updateGeometry(int, int, int)));
 }
