@@ -141,30 +141,45 @@ void Settings::initializeKnobs(){
     _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
     
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
-    _extraPluginPaths->setHintToolTip("All paths in this variable are separated by ';' and indicate"
-                                      " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
-                                      NATRON_APPLICATION_NAME " already searchs for plug-ins at these locations:\n "
-                                      " C:\\Program Files\\Common Files\\OFX\\Plugins on Windows, \n "
-                                      " /usr/OFX/Plugins on Linux and \n "
-                                      " /Library/OFX/Plugins on MacOSX. \n"
-                                      " The changes made to the OpenFX plugins search paths will take effect"
-                                      " upon the next launch of " NATRON_APPLICATION_NAME);
+    _extraPluginPaths->setHintToolTip(std::string("All paths in this variable are separated by ';' and indicate"
+                                                  " extra search paths where " NATRON_APPLICATION_NAME " should scan for plug-ins. "
+                                                  "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
+                                                  "The priority order for system-wide plugins, from high to low, is:\n"
+                                                  "- plugins found in OFX_PLUGIN_PATH\n"
+                                                  "- plugins found in \""
+#if defined(WINDOWS)
+                                                  ) + getStdOFXPluginPath() +
+                                      std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
+#endif
+#if defined(__linux__)
+                                                  "/usr/OFX/Plugins"
+#endif
+#if defined(__APPLE__)
+                                                  "/Library/OFX/Plugins"
+#endif
+                                                  "\".\n"
+                                                  "Plugins bundled with the binary distribution of Natron may have either "
+                                                  "higher or lower priority, depending on the \"Prefer bundled plug-ins over "
+                                                  "system-wide plug-ins\" setting.\n"
+                                                  "Any change will take effect on the next launch of " NATRON_APPLICATION_NAME "."));
     _extraPluginPaths->setMultiPath(true);
     _generalTab->addKnob(_extraPluginPaths);
     
-    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer " NATRON_APPLICATION_NAME  "'s plug-ins over system-wide");
-    _preferBundledPlugins->setHintToolTip("When checked, if a plug-in is found system-wide and in " NATRON_APPLICATION_NAME "'s plug-ins ""directory, " NATRON_APPLICATION_NAME " will prefer the plug-ins within its own directory.");
+    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plug-ins");
+    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will also use the plug-ins bundled "
+                                        "with the binary distribution.\n"
+                                        "When unchecked, only system-wide plug-ins will be loaded (more information can be "
+                                        "found in the help for the \"Extra plugins search paths\" setting).");
+    _loadBundledPlugins->setAnimationEnabled(false);
+    _generalTab->addKnob(_loadBundledPlugins);
+
+    _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plug-ins over system-wide plug-ins");
+    _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the "
+                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plug-ins.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _generalTab->addKnob(_preferBundledPlugins);
     
-    _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Load bundled plug-ins");
-    _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will load the plug-ins located in the plug-ins"
-                                        " directory next to Natron's binary. When unchecked, only system-wide plug-ins will be loaded."
-                                        "Look at the tooltip of the Extra plug-ins search paths parameter to know where plug-ins are "
-                                        "located system-wide.");
-    _loadBundledPlugins->setAnimationEnabled(false);
-    _generalTab->addKnob(_loadBundledPlugins);
-    
+
     boost::shared_ptr<Page_Knob> ocioTab = Natron::createKnob<Page_Knob>(this, "OpenColorIO");
     
     

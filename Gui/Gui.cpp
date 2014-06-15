@@ -1761,21 +1761,22 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 }
 void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB)
 {
-    if(type == 0){
-        QMessageBox critical(QMessageBox::Critical,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+    QString msg = Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
+    if (type == 0) {
+        QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
         critical.exec();
-    }else if(type == 1){
-        QMessageBox warning(QMessageBox::Warning,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+    } else if (type == 1) {
+        QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
         warning.exec();
-    }else if(type == 2){
-        QMessageBox info(QMessageBox::Information,title,content,QMessageBox::NoButton,this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+    } else if (type == 2) {
+        QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
         info.exec();
-    }else{
-        QMessageBox ques(QMessageBox::Question,title,content,QtEnumConvert::toQtStandarButtons(buttons),
-                         this,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+    } else {
+        QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
+                         this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         ques.setDefaultButton(QtEnumConvert::toQtStandardButton((Natron::StandardButton)defaultB));
         if (ques.exec()) {
             _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton(ques.standardButton(ques.clickedButton()));
