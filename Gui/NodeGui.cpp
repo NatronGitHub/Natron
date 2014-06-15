@@ -1533,8 +1533,8 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
     
     
     bool hasPreview =  _internalNode->isPreviewEnabled();
-    double nodeHeight = hasPreview ? NODE_WITH_PREVIEW_HEIGHT : NODE_HEIGHT;
-    double nodeWidth = hasPreview ? NODE_WITH_PREVIEW_LENGTH : NODE_LENGTH;
+    double nodeHeight = hasPreview ? NodeGui::NODE_WITH_PREVIEW_HEIGHT : NodeGui::NODE_HEIGHT;
+    double nodeWidth = hasPreview ? NodeGui::NODE_WITH_PREVIEW_LENGTH : NodeGui::NODE_LENGTH;
     QRectF labelBbox = _nameItem->boundingRect();
     updateShape(nodeWidth, std::max(nodeHeight,labelBbox.height()));
     
