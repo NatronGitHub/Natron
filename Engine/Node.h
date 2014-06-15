@@ -513,6 +513,13 @@ public:
     
     std::string getNodeExtraLabel() const;
     
+    /**
+     * @brief The given label is appended in the node's label but will not be editable
+     * by the user from the settings panel.
+     * If a custom data tag is found, it will replace any custom data.
+     **/
+    void replaceCustomDataInlabel(const QString& data);
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;

@@ -1817,7 +1817,48 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
         emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
     } else if (what == _imp->nodeLabelKnob.get()) {
         emit nodeExtraLabelChanged(_imp->nodeLabelKnob->getValue().c_str());
+    } else if (QString(pluginID().c_str()).contains("MergeOFX") && what->getName() == "operationString") {
+        //special hack for the merge node so we can retrieve the operation as a string and display it in the node's label
+        String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
+        if (what) {
+            QString operation = strKnob->getValue().c_str();
+            replaceCustomDataInlabel('(' + operation + ')');
+        }
     }
+}
+
+void Node::replaceCustomDataInlabel(const QString& data)
+{
+    
+    assert(QThread::currentThread() == qApp->thread());
+    
+    QString label = _imp->nodeLabelKnob->getValue().c_str();
+    ///Since the label is html encoded, find the text's start
+    
+    int foundFontTag = label.indexOf("<font");
+    assert(foundFontTag != -1);
+    ///we're sure this end tag is the one of the font tag
+    QString endFont("\">");
+    int endFontTag = label.indexOf(endFont,foundFontTag);
+    assert(endFontTag != -1);
+    
+    QString customTagStart(NATRON_CUSTOM_HTML_TAG_START);
+    QString customTagEnd(NATRON_CUSTOM_HTML_TAG_END);
+    int foundNatronCustomDataTag = label.indexOf(customTagStart,endFontTag);
+    if (foundNatronCustomDataTag != -1) {
+        ///remove the current custom data
+        int foundNatronEndTag = label.indexOf(customTagEnd,foundNatronCustomDataTag);
+        assert(foundNatronEndTag != -1);
+        
+        foundNatronEndTag += customTagEnd.size();
+        label.remove(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
+    }
+    
+    int i = endFontTag + endFont.size();
+    label.insert(i, customTagStart);
+    label.insert(i + customTagStart.size(), data);
+    label.insert(i + customTagStart.size() + data.size(), customTagEnd);
+    _imp->nodeLabelKnob->setValue(label.toStdString(), 0);
 }
 
 bool Node::isNodeDisabled() const

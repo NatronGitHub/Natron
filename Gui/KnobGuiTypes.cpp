@@ -2040,6 +2040,32 @@ QString String_KnobGui::addHtmlTags(QString text) const
         text.prepend(kItalicStartTag);
         text.append(kItalicEndTag);
     }
+    
+    ///if the knob had custom data, set them
+    QString knobOldtext(_knob->getValue().c_str());
+    QString startCustomTag(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = knobOldtext.indexOf(startCustomTag);
+    if (startCustomData != -1) {
+        QString customEndTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = knobOldtext.indexOf(customEndTag,startCustomData);
+        assert(endCustomData != -1);
+        startCustomData += startCustomTag.size();
+        
+        int fontStart = text.indexOf(kFontSizeTag);
+        assert(fontStart != -1);
+        
+        QString endFontTag("\">");
+        int fontTagEnd = text.indexOf(endFontTag,fontStart);
+        assert(fontTagEnd != -1);
+        fontTagEnd += endFontTag.size();
+        
+        QString customData = knobOldtext.mid(startCustomData,endCustomData - startCustomData);
+        
+        text.insert(fontTagEnd, startCustomTag);
+        text.insert(fontTagEnd + startCustomTag.size(), customData);
+        text.insert(fontTagEnd + startCustomTag.size() + customData.size(), customEndTag);
+    }
+    
     return text;
 }
 
@@ -2047,6 +2073,23 @@ void String_KnobGui::restoreTextInfosFromString()
 {
     QString text(_knob->getValue().c_str());
     if (text.isEmpty()) {
+        
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
+        ///For the merge operator, restore the operation string in the label
+        if (effect && QString(effect->pluginID().c_str()).contains("MergeOFX") && _knob->getName() == "label_natron") {
+            boost::shared_ptr<KnobI> knob = effect->getKnobByName("operationString");
+            if (knob) {
+                String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
+                if (strKnob) {
+                    QString operation = strKnob->getValue().c_str();
+                    text.append(NATRON_CUSTOM_HTML_TAG_START);
+                    text.append('(' + operation + ')');
+                    text.append(NATRON_CUSTOM_HTML_TAG_END);
+                }
+            }
+        }
+
+        
         _fontSize = _fontSizeSpinBox->value();
         _fontColor = Qt::black;
         _fontFamily = _fontCombo->currentFont().family();
@@ -2058,6 +2101,8 @@ void String_KnobGui::restoreTextInfosFromString()
         .arg(_fontFamily);
         text.prepend(fontTag);
         text.append(kFontEndTag);
+        
+        
         _knob->setValue(text.toStdString(), 0);
     } else {
         
@@ -2343,6 +2388,17 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     foundEndTag = text.lastIndexOf(endTag);
     assert(foundEndTag != -1);
     text.remove(foundEndTag, endTag.size());
+    
+    ///we also remove any custom data added by natron so the user doesn't see it
+    int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);
+    if (startCustomData != -1) {
+        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = text.indexOf(endTag,startCustomData);
+        assert(endCustomData != -1);
+        endCustomData += endTag.size();
+        text.remove(startCustomData, endCustomData - startCustomData);
+    }
+    
     return text;
 }
 

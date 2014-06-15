@@ -1502,6 +1502,18 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
     if (!label.isEmpty()) {
         QString labelCopy = label;
         
+        ///remove any custom data tag natron might have added
+        QString startCustomTag(NATRON_CUSTOM_HTML_TAG_START);
+        int startCustomData = labelCopy.indexOf(startCustomTag);
+        if (startCustomData != -1) {
+            labelCopy.remove(startCustomData, startCustomTag.size());
+            
+            QString endCustomTag(NATRON_CUSTOM_HTML_TAG_END);
+            int endCustomData = labelCopy.indexOf(endCustomTag,startCustomData);
+            assert(endCustomData != -1);
+            labelCopy.remove(endCustomData, endCustomTag.size());
+        }
+        
         ///add the node name into the html encoded label
         int startFontTag = labelCopy.indexOf("<font size=");
         assert(startFontTag != -1);
