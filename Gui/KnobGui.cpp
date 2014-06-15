@@ -1298,7 +1298,13 @@ void KnobGui::onInternalAnimationRemoved()
 void KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+    assert(knob);
+    KnobHolder* knobholder = knob->getHolder();
+    assert(knobholder);
+    AppInstance* app = knobholder->getApp();
+    assert(app);
+    boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+    assert(timeline);
     std::list<SequenceTime> times;
     if (dimension == -1) {
         int dim = knob->getDimension();
