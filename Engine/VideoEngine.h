@@ -141,7 +141,9 @@ public:
     
     void debug() const;
     
-    void refreshInputsAndClearMessage();
+    void refreshRenderInputs();
+    
+    void clearPersistentMessages();
         
 private:
     /*called by resetAndSort(...) to fill the structure

@@ -417,7 +417,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(output);
         
         /*update the tree inputs */
-        _tree.refreshInputsAndClearMessage();
+        _tree.refreshRenderInputs();
         
         
         if(viewer){
@@ -536,6 +536,9 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
                 return;
             }
         }
+        
+        ///before rendering the frame, clear any persistent message that may be left
+        _tree.clearPersistentMessages();
         
         ////////////////////////
         // Render currentFrame
@@ -784,14 +787,19 @@ void RenderTree::fillGraph(const boost::shared_ptr<Natron::Node>& node,std::vect
     }
 }
 
-void RenderTree::refreshInputsAndClearMessage()
+void RenderTree::refreshRenderInputs()
 {
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
         (*it)->updateRenderInputs();
-        (*it)->clearPersistentMessage();
     }
 }
 
+void RenderTree::clearPersistentMessages()
+{
+    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->clearPersistentMessage();
+    }
+}
 
 ViewerInstance* RenderTree::outputAsViewer() const {
     if(_output && _isViewer){

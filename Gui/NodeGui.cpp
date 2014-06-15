@@ -978,7 +978,11 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     updateShape(rect.width(), rect.height());
 }
 
-void NodeGui::onPersistentMessageCleared(){
+void NodeGui::onPersistentMessageCleared() {
+    
+    if (!_persistentMessage->isVisible()) {
+        return;
+    }
     _persistentMessage->hide();
     _stateIndicator->hide();
     
