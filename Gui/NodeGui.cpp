@@ -660,8 +660,6 @@ void NodeGui::onInternalNameChanged(const QString& s){
     
     setNameItemHtml(s,_nodeLabel);
     
-    QRectF rect = _boundingBox->boundingRect();
-    updateShape(rect.width(), rect.height());
     if(_settingsPanel)
         _settingsPanel->onNameChanged(s);
     scene()->update();
@@ -1533,10 +1531,13 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
     parseFont(textLabel, f);
     _nameItem->setFont(f);
     
-    QFontMetrics metrics(f);
-    QPointF topLeft = mapFromParent(pos());
-    _nameItem->setX(topLeft.x() + (_boundingBox->rect().width() / 2) - (_nameItem->boundingRect().width() / 2));
-    _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
+    
+    bool hasPreview =  _internalNode->isPreviewEnabled();
+    double nodeHeight = hasPreview ? NODE_WITH_PREVIEW_HEIGHT : NODE_HEIGHT;
+    double nodeWidth = hasPreview ? NODE_WITH_PREVIEW_LENGTH : NODE_LENGTH;
+    QRectF labelBbox = _nameItem->boundingRect();
+    updateShape(nodeWidth, std::max(nodeHeight,labelBbox.height()));
+    
 
 }
 
