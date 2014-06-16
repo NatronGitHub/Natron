@@ -269,7 +269,51 @@ bool TabWidget::removeSplit(TabWidget* tab,bool* orientation){
     return false;
 }
 
-void TabWidget::closePane(){
+static void getOtherTabWidget(Splitter* parentSplitter,TabWidget* thisWidget,QWidget*& other)
+{
+    for (int i = 0; i < parentSplitter->count(); ++i) {
+        QWidget* w = parentSplitter->widget(i);
+        if (w == thisWidget) {
+            continue;
+        }
+        other = w;
+        break;
+    }
+    
+}
+
+static void getTabWidgetRecursively(Splitter* parentSplitter,TabWidget*& tab) {
+    bool found = false;
+    for (int i = 0; i < parentSplitter->count(); ++i) {
+        QWidget* w = parentSplitter->widget(i);
+        TabWidget* isTab = dynamic_cast<TabWidget*>(w);
+        if (isTab) {
+            tab = isTab;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        Splitter* parent = dynamic_cast<Splitter*>(parentSplitter->parentWidget());
+        assert(parent);
+        getTabWidgetRecursively(parent, tab);
+    }
+}
+
+void TabWidget::removeTagNameRecursively(TabWidget* widget, bool horizontal)
+{
+    QString name = widget->objectName();
+    QString toRemove = horizontal ? TabWidget::splitHorizontallyTag : TabWidget::splitVerticallyTag;
+    int i = name.indexOf(toRemove);
+    assert(i != -1);
+    name.remove(i, toRemove.size());
+    widget->setObjectName_mt_safe(name);
+    for (std::map<TabWidget*,bool>::iterator it = widget->_userSplits.begin();it != widget->_userSplits.end();++it) {
+        removeTagNameRecursively(it->first,horizontal);
+    }
+}
+
+void TabWidget::closePane() {
     /*If it is floating we do not need to re-arrange the splitters containing the tab*/
     if (isFloating()) {
         parentWidget()->close();
@@ -296,67 +340,55 @@ void TabWidget::closePane(){
 
     
     /*identifying the other tab*/
-    TabWidget* other = 0;
-    for (int i = 0; i < container->count(); ++i) {
-        TabWidget* tab = dynamic_cast<TabWidget*>(container->widget(i));
-        if (tab && tab != this) {
-            other = tab;
-            break;
-        }
-    }
+    QWidget* other = 0;
+    getOtherTabWidget(container,this,other);
     assert(other);
     
-    TabWidget* parentOther = 0;
-    for (int i = 0; i < parentContainer->count(); ++i) {
-        TabWidget* tab = dynamic_cast<TabWidget*>(parentContainer->widget(i));
-        if (tab && tab != this) {
-            parentOther = tab;
-            break;
-        }
-    }
+    bool vertical;
+    bool removeOk = false;
     
-    bool orientation;
-    bool removeOk = other->removeSplit(this,&orientation);
-    
-    Splitter* parentSplitter = parentContainer;
-    ///The only reason becasue this is not ok is because we split this TabWidget again
-    while (!removeOk) {
-        
-        TabWidget* parent = 0;
-        for (int i = 0; i < parentSplitter->count(); ++i) {
-            TabWidget* tab = dynamic_cast<TabWidget*>(parentSplitter->widget(i));
-            if (tab && tab != this) {
-                parent = tab;
-                break;
+    {
+        Splitter*  parentSplitter = container;
+        ///The only reason becasue this is not ok is because we split this TabWidget again
+        while (!removeOk && parentSplitter) {
+            
+            for (int i = 0; i < parentSplitter->count(); ++i) {
+                TabWidget* tab = dynamic_cast<TabWidget*>(parentSplitter->widget(i));
+                if (tab && tab != this) {
+                    removeOk = tab->removeSplit(this,&vertical);
+                    if (removeOk) {
+                        break;
+                    }
+                }
             }
+            
+            parentSplitter = dynamic_cast<Splitter*>(parentSplitter->parentWidget());
         }
-        
-        ///Explanation: This Tab is a split and we removed it's parent earlier, hence we can't find it and it has no point removing
-        ///this split
-        if (!parent) {
-            break;
-        }
-
-        removeOk = parent->removeSplit(this,&orientation);
-        parentSplitter = dynamic_cast<Splitter*>(parentSplitter->parentWidget());
-        
-        
     }
     
-    if (parentOther) {
-        ///now we have to move the other to the parentOther as a split
-        parentOther->_userSplits.insert(std::make_pair(other, orientation));
-        other->setParent(parentOther);
+    ///iterate recursively over parents splitter to find a tabwidget where to move the tabs
+    TabWidget* firstParentTabWidget = NULL;
+    getTabWidgetRecursively(parentContainer,firstParentTabWidget);
+    assert(firstParentTabWidget);
+    Splitter* firstParentSplitter = dynamic_cast<Splitter*>(firstParentTabWidget->parentWidget());
+    assert(firstParentSplitter);
+
+    ///move this tab's splits to the first parent tab widget
+    for (std::map<TabWidget*,bool>::iterator it = _userSplits.begin();it != _userSplits.end();++it) {
+        firstParentTabWidget->_userSplits.insert(*it);
+        removeTagNameRecursively(it->first,!vertical);
     }
     
     
     
     /*Removing "what" from the container and delete it*/
     setVisible(false);
-    //move all its tabs to the other TabWidget
+    //move all its tabs to the  firstParentTabWidget
+    
     while(count() > 0) {
-        moveTab(tabAt(0), other);
+        moveTab(tabAt(0), firstParentTabWidget);
     }
+    
     // delete what;
     
     /*Removing the container from the mainContainer*/
@@ -454,9 +486,9 @@ void TabWidget::floatTab(QWidget* tab) {
     std::vector<QWidget*>::iterator it = std::find(_tabs.begin(),_tabs.end(),tab);
     if (it != _tabs.end()) {
         TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
+        removeTab(*it);
         newTab->appendTab(*it);
         newTab->floatPane();
-        removeTab(*it);
         if(_tabBar->count() == 0){
             _floatButton->setEnabled(false);
         }
@@ -596,6 +628,7 @@ bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
         _gui->registerTab(widget);
         
         _tabs.push_back(widget);
+        widget->setParent(this);
         _tabBar->blockSignals(true);
         _tabBar->addTab(icon,title);
         _tabBar->blockSignals(false);

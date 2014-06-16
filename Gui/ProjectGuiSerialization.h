@@ -99,7 +99,7 @@ class ProjectGuiSerialization {
     
     std::list< NodeGuiSerialization > _serializedNodes;
     
-    
+    ///widget name, pane layout
     std::map<std::string,PaneLayout> _layout;
     
     //splitter name, splitter serialization

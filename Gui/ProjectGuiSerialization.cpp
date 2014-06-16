@@ -129,13 +129,25 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
 
 void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::iterator it){
     QString nameCpy = it->first.c_str();
-    int index = nameCpy.indexOf(TabWidget::splitVerticallyTag);
-    if(index != -1){
+    int indexOfVerticalTag = nameCpy.lastIndexOf(TabWidget::splitVerticallyTag);
+    int indexOfHorizontalTag = nameCpy.lastIndexOf(TabWidget::splitHorizontallyTag);
+    bool horizontalSplit;
+    if (indexOfHorizontalTag != -1 && indexOfVerticalTag != -1) {
+        horizontalSplit = indexOfHorizontalTag > indexOfVerticalTag;
+    } else if (indexOfHorizontalTag != -1 && indexOfVerticalTag == -1) {
+        horizontalSplit = true;
+    } else if (indexOfHorizontalTag == - 1 && indexOfVerticalTag != -1) {
+        horizontalSplit = false;
+    } else {
+        ///not a child
+        return;
+    }
+    if (!horizontalSplit) {
         //this is a vertical split, find the parent widget and insert this widget as child
         
         ///The goal of the next lines is to erase the split tag string from the name of the tab widget
         /// to find out the name of the tab widget from whom this tab was originated
-        nameCpy = nameCpy.remove(index, TabWidget::splitVerticallyTag.size());
+        nameCpy = nameCpy.remove(indexOfVerticalTag, TabWidget::splitVerticallyTag.size());
         //we now have the name of the parent
         std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
         assert(foundParent != _layout.end());
@@ -150,11 +162,10 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
         
         //call this recursively
         createParenting(foundParent);
-    }else{
-        index = nameCpy.indexOf(TabWidget::splitHorizontallyTag);
-        if(index != -1){
+    } else {
+        if (indexOfHorizontalTag != -1)  {
             //this is a horizontal split, find the parent widget and insert this widget as child
-            nameCpy = nameCpy.remove(index, TabWidget::splitVerticallyTag.size());
+            nameCpy = nameCpy.remove(indexOfHorizontalTag, TabWidget::splitVerticallyTag.size());
             //we now have the name of the parent
             std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
             assert(foundParent != _layout.end());

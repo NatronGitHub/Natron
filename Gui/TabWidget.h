@@ -268,6 +268,8 @@ private:
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
 private:
+    
+    static void removeTagNameRecursively(TabWidget* widget, bool horizontal);
         
     // FIXME: PIMPL
     Gui* _gui;
