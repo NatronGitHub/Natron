@@ -36,6 +36,7 @@ struct RenderViewerArgs {
                      int bitDepth_,
                      double gain_,
                      double offset_,
+                     const Natron::Color::Lut* srcColorSpace_,
                      const Natron::Color::Lut* colorSpace_)
     : inputImage(inputImage_)
     , texRect(texRect_)
@@ -44,6 +45,7 @@ struct RenderViewerArgs {
     , bitDepth(bitDepth_)
     , gain(gain_)
     , offset(offset_)
+    , srcColorSpace(srcColorSpace_)
     , colorSpace(colorSpace_)
     {
     }
@@ -55,6 +57,7 @@ struct RenderViewerArgs {
     int bitDepth;
     double gain;
     double offset;
+    const Natron::Color::Lut* srcColorSpace;
     const Natron::Color::Lut* colorSpace;
 };
 

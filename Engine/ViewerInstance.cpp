@@ -864,6 +864,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             return StatOK;
         }
         
+        ViewerColorSpace srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth(lastRenderedImage->getBitDepth());
+        
         if (singleThreaded) {
             if (autoContrast) {
                 double vmin, vmax;
@@ -887,6 +889,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                         bitDepth,
                                         gain,
                                         offset,
+                                        lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(lut));
 
             renderFunctor(std::make_pair(texRectClipped.y1,texRectClipped.y2),
@@ -951,6 +954,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                         bitDepth,
                                         gain,
                                         offset,
+                                        lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(lut));
 
             QtConcurrent::map(splitRows,
@@ -1140,24 +1144,57 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                     int a;
                     switch (comps) {
                         case Natron::ImageComponentRGBA:
-                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
-                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
-                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
-                            a = Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]/ (double)maxValue);
+                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
+                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
+                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) ;
+                            a = Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]);
                             break;
                         case Natron::ImageComponentRGB:
-                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.) / (double)maxValue;
-                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.) / (double)maxValue;
-                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) / (double)maxValue;
+                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
+                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
+                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
                             a = 255;
                             break;
                         case Natron::ImageComponentAlpha:
-                            r = src_pixels ? src_pixels[srcIndex] / (double)maxValue : 0.;
+                            r = src_pixels ? src_pixels[srcIndex] : 0.;
                             g = b = r;
                             a = 255;
                             break;
                         default:
                             assert(false);
+                            break;
+                    }
+                    switch (args.inputImage->getBitDepth()) {
+                        case Natron::IMAGE_BYTE:
+                            if (args.srcColorSpace) {
+                                r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast((unsigned char)r);
+                                g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast((unsigned char)g);
+                                b = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast((unsigned char)b);
+                            } else {
+                                r = (double)convertPixelDepth<unsigned char, float>((unsigned char)r);
+                                g = (double)convertPixelDepth<unsigned char, float>((unsigned char)g);
+                                b = (double)convertPixelDepth<unsigned char, float>((unsigned char)b);
+                            }
+                            break;
+                        case Natron::IMAGE_SHORT:
+                            if (args.srcColorSpace) {
+                                r = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast((unsigned short)r);
+                                g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast((unsigned short)g);
+                                b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast((unsigned short)b);
+                            } else {
+                                r = (double)convertPixelDepth<unsigned short, float>((unsigned char)r);
+                                g = (double)convertPixelDepth<unsigned short, float>((unsigned char)g);
+                                b = (double)convertPixelDepth<unsigned short, float>((unsigned char)b);
+                            }
+                            break;
+                        case Natron::IMAGE_FLOAT:
+                            if (args.srcColorSpace) {
+                                r = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
+                                g = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
+                                b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
+                            }
+                            break;
+                        default:
                             break;
                     }
 
@@ -1290,15 +1327,15 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
             
             switch (comps) {
                 case Natron::ImageComponentRGBA:
-                    r = (double)(src_pixels[rOffset]) / maxValue;
-                    g = (double)src_pixels[gOffset] / maxValue;
-                    b = (double)src_pixels[bOffset] / maxValue;
+                    r = (double)(src_pixels[rOffset]);
+                    g = (double)src_pixels[gOffset] ;
+                    b = (double)src_pixels[bOffset] ;
                     a = (nComps < 4) ? 1. : src_pixels[3];
                     break;
                 case Natron::ImageComponentRGB:
-                    r = (double)(src_pixels[rOffset]) / maxValue;
-                    g = (double)src_pixels[gOffset] / maxValue;
-                    b = (double)src_pixels[bOffset] / maxValue;
+                    r = (double)(src_pixels[rOffset]) ;
+                    g = (double)src_pixels[gOffset] ;
+                    b = (double)src_pixels[bOffset] ;
                     a = 1.;
                     break;
                 case Natron::ImageComponentAlpha:
@@ -1310,6 +1347,41 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                     assert(false);
                     break;
             }
+            
+            switch (args.inputImage->getBitDepth()) {
+                case Natron::IMAGE_BYTE:
+                    if (args.srcColorSpace) {
+                        r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast((unsigned char)r);
+                        g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast((unsigned char)g);
+                        b = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast((unsigned char)b);
+                    } else {
+                        r = (double)convertPixelDepth<unsigned char, float>((unsigned char)r);
+                        g = (double)convertPixelDepth<unsigned char, float>((unsigned char)g);
+                        b = (double)convertPixelDepth<unsigned char, float>((unsigned char)b);
+                    }
+                    break;
+                case Natron::IMAGE_SHORT:
+                    if (args.srcColorSpace) {
+                        r = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast((unsigned short)r);
+                        g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast((unsigned short)g);
+                        b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast((unsigned short)b);
+                    } else {
+                        r = (double)convertPixelDepth<unsigned short, float>((unsigned char)r);
+                        g = (double)convertPixelDepth<unsigned short, float>((unsigned char)g);
+                        b = (double)convertPixelDepth<unsigned short, float>((unsigned char)b);
+                    }
+                    break;
+                case Natron::IMAGE_FLOAT:
+                    if (args.srcColorSpace) {
+                        r = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
+                        g = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
+                        b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
 
             
             if (luminance) {

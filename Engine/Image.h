@@ -343,7 +343,10 @@ namespace Natron {
          * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
          **/
         void halve1DImage(const RectI& roi,Natron::Image* output) const;
-    };    
+    };
+    
+    template <typename SRCPIX,typename DSTPIX>
+    DSTPIX convertPixelDepth(SRCPIX pix);
     
 }//namespace Natron
 
