@@ -156,10 +156,10 @@ void NodeGui::initialize(NodeGraph* dag,
     QObject::connect(_internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)),this,SLOT(onNodeExtraLabelChanged(QString)));
     
     setCacheMode(DeviceCoordinateCache);
-    setZValue(1);
+    setZValue(4);
     
     _boundingBox = new QGraphicsRectItem(this);
-    _boundingBox->setZValue(0.5);
+    _boundingBox->setZValue(0);
 	
     QPixmap pixmap;
     appPTR->getIcon(NATRON_PIXMAP_RGBA_CHANNELS,&pixmap);
@@ -168,17 +168,18 @@ void NodeGui::initialize(NodeGraph* dag,
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor(QColor(0,0,0,255));
     _nameItem->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
-    _nameItem->setZValue(0.7);
+    _nameItem->setZValue(1);
+
     
     _persistentMessage = new QGraphicsTextItem("",this);
-    _persistentMessage->setZValue(0.8);
+    _persistentMessage->setZValue(3);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
     
     _stateIndicator = new QGraphicsRectItem(this);
-    _stateIndicator->setZValue(-1);
+    _stateIndicator->setZValue(0);
     _stateIndicator->hide();
     
     QPointF bitDepthPos = mapFromParent(pos());
@@ -272,9 +273,11 @@ void NodeGui::togglePreview_internal()
             prev.fill(Qt::black);
             QPixmap prev_pixmap = QPixmap::fromImage(prev);
             _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
-            _previewPixmap->setZValue(0.6);
+            _previewPixmap->setZValue(1);
+           
         }
         updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
+        _previewPixmap->stackBefore(_nameItem);
         _previewPixmap->show();
     }else{
         if (_previewPixmap) {
@@ -294,18 +297,6 @@ void NodeGui::togglePreview(){
     togglePreview_internal();
 }
 
-QSize NodeGui::nodeSize(bool withPreview) {
-    QSize ret;
-    if (withPreview) {
-        ret.setWidth(NODE_WITH_PREVIEW_WIDTH);
-        ret.setHeight(NODE_WITH_PREVIEW_HEIGHT);
-    } else {
-        ret.setWidth(NODE_WIDTH);
-        ret.setHeight(NODE_HEIGHT);
-    }
-    return ret;
-}
-
 
 void NodeGui::removeUndoStack(){
     if(getUndoStack()){
@@ -320,12 +311,16 @@ void NodeGui::removeSettingsPanel(){
 
 void NodeGui::updateShape(int width,int height){
     QPointF topLeft = mapFromParent(pos());
-    _boundingBox->setRect(topLeft.x(),topLeft.y(),width,height);
+    
+    QRectF labelBbox = _nameItem->boundingRect();
+    double realHeight =  std::max((double)height,labelBbox.height());
+    
+    _boundingBox->setRect(topLeft.x(),topLeft.y(),width,realHeight);
     //_channelsPixmap->setPos(topLeft.x()+1,topLeft.y()+1);
     
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
-    int nameWidth = _nameItem->boundingRect().width();
+    int nameWidth = labelBbox.width();
     _nameItem->setX(topLeft.x() + (width / 2) - (nameWidth / 2));
     _nameItem->setY(topLeft.y()+10 - metrics.height() / 2);
     
@@ -1185,7 +1180,7 @@ void NodeGui::onSlaveStateChanged(bool b) {
         QObject::connect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
         QObject::connect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
         _slaveMasterLink = new QGraphicsLineItem(parentItem());
-        _slaveMasterLink->setZValue(-1);
+        _slaveMasterLink->setZValue(0);
         QPen pen;
         pen.setWidth(3);
         pen.setBrush(QColor(200,100,100));
@@ -1299,11 +1294,8 @@ void NodeGui::deleteReferences()
 
 QSize NodeGui::getSize() const
 {
-    if (_previewPixmap && _previewPixmap->isVisible()) {
-        return QSize(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
-    } else {
-        return QSize(NODE_WIDTH,NODE_HEIGHT);
-    }
+    QRectF bbox = _boundingBox->rect();
+    return QSize(bbox.width(),bbox.height());
 }
 
 
@@ -1361,7 +1353,7 @@ struct NodeGuiIndicatorPrivate
         QPoint ellipsePos(topLeft.x()+ (width / 2) -ellipseRad, -ellipseRad);
         QRectF ellipseRect(ellipsePos.x(),ellipsePos.y(),width,height);
         ellipse->setRect(ellipseRect);
-        ellipse->setZValue(0.7);
+        ellipse->setZValue(2);
         
         QPointF ellipseCenter = ellipseRect.center();
 
@@ -1376,7 +1368,7 @@ struct NodeGuiIndicatorPrivate
         textItem->setPos(topLeft.x()  - 2 * width / 3, topLeft.y() - 2 * fm.height() / 3);
         textItem->setFont(font);
         textItem->setDefaultTextColor(textColor);
-        textItem->setZValue(0.8);
+        textItem->setZValue(2);
         textItem->scale(0.8, 0.8);
     }
 };

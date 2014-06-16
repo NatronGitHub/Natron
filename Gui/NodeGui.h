@@ -201,9 +201,7 @@ public:
 
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 20;
 
-    
-    static QSize nodeSize(bool withPreview);
-    
+        
     QSize getSize() const;
     
         

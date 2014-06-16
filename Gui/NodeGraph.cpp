@@ -455,8 +455,8 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
     }
     ///pop it above the selected node
     else if(behavior == 1) {
-        QSize selectedNodeSize = NodeGui::nodeSize(_nodeSelected->getNode()->isPreviewEnabled());
-        QSize createdNodeSize = NodeGui::nodeSize(node->getNode()->isPreviewEnabled());
+        QSize selectedNodeSize = _nodeSelected->getSize();
+        QSize createdNodeSize = node->getSize();
         QPointF selectedNodeMiddlePos = _nodeSelected->scenePos() + QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
         
 
@@ -476,8 +476,8 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
     }
     ///pop it below the selected node
     else {
-        QSize selectedNodeSize = NodeGui::nodeSize(_nodeSelected->getNode()->isPreviewEnabled());
-        QSize createdNodeSize = NodeGui::nodeSize(node->getNode()->isPreviewEnabled());
+        QSize selectedNodeSize = _nodeSelected->getSize();
+        QSize createdNodeSize = node->getSize();
         QPointF selectedNodeMiddlePos = _nodeSelected->scenePos() + QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
         
         ///actually move the created node where the selected node is

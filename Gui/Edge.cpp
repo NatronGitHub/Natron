@@ -50,7 +50,7 @@ Edge::Edge(int inputNb_, double angle_,const boost::shared_ptr<NodeGui>& dest_, 
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
-    setZValue(1);
+    setZValue(4);
 }
 
 Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
@@ -72,7 +72,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
-    setZValue(1);
+    setZValue(4);
 }
 
 Edge::~Edge()
