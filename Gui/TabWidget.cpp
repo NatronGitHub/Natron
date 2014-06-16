@@ -259,8 +259,9 @@ void TabWidget::closeFloatingPane(){
 void TabWidget::removeSplit(TabWidget* tab){
     QMutexLocker l(&_tabWidgetStateMutex);
     std::map<TabWidget*,bool> ::iterator it = _userSplits.find(tab);
-    assert(it!= _userSplits.end());
-    _userSplits.erase(it);
+    if (it!= _userSplits.end()) {
+        _userSplits.erase(it);
+    }
 }
 
 void TabWidget::closePane(){
