@@ -10,6 +10,7 @@
  */
 
 #include "Node.h"
+#include "ofxNatron.h"
 
 #include <limits>
 
@@ -1817,7 +1818,7 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
         emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
     } else if (what == _imp->nodeLabelKnob.get()) {
         emit nodeExtraLabelChanged(_imp->nodeLabelKnob->getValue().c_str());
-    } else if (QString(pluginID().c_str()).contains("MergeOFX") && what->getName() == "operationString") {
+    } else if (what->getName() == kOfxParamStringSublabelName) {
         //special hack for the merge node so we can retrieve the operation as a string and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
         if (what) {
