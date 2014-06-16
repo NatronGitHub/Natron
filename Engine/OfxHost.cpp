@@ -100,6 +100,9 @@ Natron::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
+    
+    ///we provide sequential render if needed
+    _properties.setIntProperty(kOfxImageEffectPropSequentialRenderStatus, 2);
 
 }
 

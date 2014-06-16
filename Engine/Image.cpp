@@ -1144,56 +1144,57 @@ void Image::clearBitmap()
     _bitmap.clear();
 }
 
-
+namespace Natron {
 ///explicit template instantiations
 
-template <> float Natron::convertPixelDepth(unsigned char pix)
+template <> float convertPixelDepth(unsigned char pix)
 {
     return Color::intToFloat<256>(pix);
 }
 
-template <> unsigned short Natron::convertPixelDepth(unsigned char pix)
+template <> unsigned short convertPixelDepth(unsigned char pix)
 {
     // 0x01 -> 0x0101, 0x02 -> 0x0202, ..., 0xff -> 0xffff
     return (unsigned short)((pix << 8) + pix);
 }
 
-template <> unsigned char Natron::convertPixelDepth(unsigned char pix)
+template <> unsigned char convertPixelDepth(unsigned char pix)
 {
     return pix;
 }
 
-template <> unsigned char Natron::convertPixelDepth(unsigned short pix)
+template <> unsigned char convertPixelDepth(unsigned short pix)
 {
     // the following is from ImageMagick's quantum.h
     return (unsigned char)(((pix+128UL)-((pix+128UL) >> 8)) >> 8);
 }
 
-template <> float Natron::convertPixelDepth(unsigned short pix)
+template <> float convertPixelDepth(unsigned short pix)
 {
     return Color::intToFloat<65536>(pix);
 }
 
-template <> unsigned short Natron::convertPixelDepth(unsigned short pix)
+template <> unsigned short convertPixelDepth(unsigned short pix)
 {
     return pix;
 }
 
-template <> unsigned char Natron::convertPixelDepth(float pix)
+template <> unsigned char convertPixelDepth(float pix)
 {
     return (unsigned char)Color::floatToInt<256>(pix);
 }
 
-template <> unsigned short Natron::convertPixelDepth(float pix)
+template <> unsigned short convertPixelDepth(float pix)
 {
     return (unsigned short)Color::floatToInt<65536>(pix);
 }
 
-template <> float Natron::convertPixelDepth(float pix)
+template <> float convertPixelDepth(float pix)
 {
     return pix;
 }
 
+}
 
 static const Natron::Color::Lut*
 lutFromColorspace(Natron::ViewerColorSpace cs)
