@@ -935,7 +935,6 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                     
                     if (colorChanged) {
                         glColor3d(0.85, 0.67, 0.);
-                        colorChanged = false;
                     }
 
                     

@@ -608,7 +608,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
 //        // We don't want to popup a dialog everytime it occurs
 //        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
 //    }
-    Status stat;
+    Status stat = StatOK;
     /*get the time at which we started rendering the frame*/
     gettimeofday(&_startRenderFrameTime, 0);
     if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {

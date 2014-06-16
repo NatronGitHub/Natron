@@ -178,7 +178,7 @@ class RotoContext;
 class RotoLayer;
 
 namespace Transform {
-    class Matrix3x3;
+    struct Matrix3x3;
 }
 
 struct RotoItemPrivate;

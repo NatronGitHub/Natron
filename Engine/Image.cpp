@@ -684,7 +684,7 @@ void halve1DImageInternal(const Image& srcImg,Image& dstImg,const RectI& roi,int
         
         const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, roi.y1);
         PIX* dst = (PIX*)dstImg.pixelAt(dstImg.getRoD().x1, dstImg.getRoD().y1);
-        
+        assert(src && dst);
         for (int x = 0; x < halfWidth; ++x) {
             for (int k = 0; k < components; ++k) {
                 *dst++ = PIX((float)(*src + *(src + components)) / 2.);
@@ -699,7 +699,7 @@ void halve1DImageInternal(const Image& srcImg,Image& dstImg,const RectI& roi,int
         
         const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, roi.y1);
         PIX* dst = (PIX*)dstImg.pixelAt(dstImg.getRoD().x1, dstImg.getRoD().y1);
-        
+        assert(src && dst);
         for (int y = 0; y < halfHeight; ++y) {
             for (int k = 0; k < components;++k) {
                 *dst++ = PIX((float)(*src + (*src + rowSize)) / 2.);
@@ -769,7 +769,7 @@ void upscale_mipmapInternal(const Image& srcImg,Image& dstImg,const RectI& srcRo
 {
     const PIX *src = (const PIX*)srcImg.pixelAt(srcRod.x1, srcRod.y1);
     PIX* dst = (PIX*)dstImg.pixelAt(dstRod.x1, dstRod.y1);
-    
+    assert(src && dst);
     for (int y = 0; y < srcRod.height(); ++y) {
         const PIX *srcLineStart = src + y*srcRowSize;
         PIX *dstLineStart = dst + y*scale*dstRowSize;
@@ -843,7 +843,7 @@ void scale_box_genericInternal(const Image& srcImg,const RectI& srcRod,Image& ds
     
     const PIX *src = (const PIX*)srcImg.pixelAt(srcRod.x1, srcRod.y1);
     PIX* dst = (PIX*)dstImg.pixelAt(dstRod.x1, dstRod.y1);
-    
+    assert(src && dst);
     assert(dstImg.getComponents() == srcImg.getComponents());
     int components = getElementsCountForComponents(srcImg.getComponents());
     

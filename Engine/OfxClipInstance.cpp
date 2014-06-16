@@ -98,6 +98,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
     if(n) {
        n->getFrameRange_public(&first, &last);
     } else {
+        assert(_nodeInstance);
         assert(_nodeInstance->getApp());
         assert(_nodeInstance->getApp()->getTimeLine());
         first = _nodeInstance->getApp()->getTimeLine()->leftBound();
@@ -506,6 +507,7 @@ int OfxClipInstance::getInputNb() const{
 
 Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 {
+    assert(_nodeInstance);
     if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
         return _nodeInstance;
     }
