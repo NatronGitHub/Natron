@@ -614,6 +614,7 @@ QWidget*  TabWidget::removeTab(int index) {
             l.relock();
         }
     }
+    tab->setParent(NULL);
     return tab;
 }
 
