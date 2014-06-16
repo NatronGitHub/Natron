@@ -98,8 +98,10 @@ void InfoViewerWidget::setFps(double actualFps,double desiredFps){
     }
 }
 
-void InfoViewerWidget::hideFps(){
-    _fpsLabel->hide();
+void InfoViewerWidget::hideFps() {
+    if (_fpsLabel->isVisible()) {
+        _fpsLabel->hide();
+    }
 }
 
 bool InfoViewerWidget::colorAndMouseVisible()

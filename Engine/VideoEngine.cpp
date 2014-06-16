@@ -618,7 +618,7 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
         if (!_currentRunArgs._sameFrame) {
             QMutexLocker timerLocker(&_timerMutex);
             _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
-            if ((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0) {
+            if ((_timerFrameCount % NATRON_FPS_REFRESH_RATE) == 0 && _currentRunArgs._frameRequestsCount == -1) {
                 emit fpsChanged(_timer->actualFrameRate(),_timer->getDesiredFrameRate()); // refreshing fps display on the GUI
                 _timerFrameCount = 1; //reseting to 1
             } else {
