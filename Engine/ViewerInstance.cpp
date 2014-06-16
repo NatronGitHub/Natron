@@ -1907,3 +1907,8 @@ void ViewerInstance::setInputB(int inputNb)
     QMutexLocker l(&_imp->activeInputsMutex);
     _imp->activeInputs[1] = inputNb;
 }
+
+bool ViewerInstance::isFrameRangeLocked() const
+{
+    return _imp->uiContext->isFrameRangeLocked();
+}

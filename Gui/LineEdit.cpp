@@ -31,6 +31,7 @@ LineEdit::LineEdit(QWidget* parent)
 , dirty(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect,0);
+    connect(this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
 }
 
 LineEdit::~LineEdit()
@@ -60,6 +61,10 @@ void LineEdit::dropEvent(QDropEvent* event) {
 
     }
 
+}
+
+void LineEdit::onEditingFinished() {
+    clearFocus();
 }
 
 void LineEdit::dragEnterEvent(QDragEnterEvent *ev) {

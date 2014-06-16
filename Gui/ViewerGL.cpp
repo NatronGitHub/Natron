@@ -3446,3 +3446,8 @@ Natron::ViewerCompositingOperator ViewerGL::getCompositingOperator() const
 {
     return _imp->viewerTab->getCompositingOperator();
 }
+
+bool ViewerGL::isFrameRangeLocked() const
+{
+    return _imp->viewerTab->isFrameRangeLocked();
+}

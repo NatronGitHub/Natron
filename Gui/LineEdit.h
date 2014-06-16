@@ -45,6 +45,10 @@ public:
     
     void setDirty(bool b);
     
+public slots:
+    
+    void onEditingFinished();
+    
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     
@@ -55,6 +59,7 @@ private:
     void dragMoveEvent(QDragMoveEvent* e);
 
     void dragLeaveEvent(QDragLeaveEvent* e);
+    
     
     
     int animation;

@@ -294,6 +294,8 @@ public:
     
     virtual Natron::ViewerCompositingOperator getCompositingOperator() const OVERRIDE FINAL;
     
+    virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
+    
 signals:
     /**
      *@brief Signal emitted when the mouse position changed on the viewport.

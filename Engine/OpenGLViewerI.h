@@ -117,6 +117,11 @@ public:
      * @brief Must return the current compositing operator applied to the viewer input A and B.
      **/
     virtual Natron::ViewerCompositingOperator getCompositingOperator() const = 0;
+    
+    /**
+     * @brief Returns whether the user sould be able to edit the frame range or not.
+     **/
+    virtual bool isFrameRangeLocked() const = 0;
 
 };
 

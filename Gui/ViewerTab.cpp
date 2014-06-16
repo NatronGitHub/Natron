@@ -29,6 +29,7 @@ CLANG_DIAG_OFF(unused-private-field)
 #include <QtGui/QKeyEvent>
 CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QKeySequence>
+#include <QTextDocument>
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/VideoEngine.h"
@@ -136,6 +137,11 @@ struct ViewerTabPrivate {
     Button* nextIncrement_Button;
     Button* loopMode_Button;
     
+    LineEdit* frameRangeEdit;
+    Button* lockFrameRangeButton;
+    mutable QMutex frameRangeLockedMutex;
+    bool frameRangeLocked;
+    
     QLabel* fpsName;
     SpinBox* fpsBox;
     
@@ -158,6 +164,7 @@ struct ViewerTabPrivate {
     : app(gui->getApp())
     , _renderScaleActive(false)
     , _currentViewIndex(0)
+    , frameRangeLocked(true)
     , _compOperator(OPERATOR_NONE)
     , _gui(gui)
     , _viewerNode(node)
@@ -548,6 +555,39 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->_playerLayout->addStretch();
     
+    _imp->frameRangeEdit = new LineEdit(_imp->_playerButtonsContainer);
+    QObject::connect(_imp->frameRangeEdit,SIGNAL(editingFinished()),this,SLOT(onFrameRangeEditingFinished()));
+    _imp->frameRangeEdit->setReadOnly(true);
+    _imp->frameRangeEdit->setToolTip(Qt::convertFromPlainText("Define here the timeline bounds in which the cursor will playback. Alternatively"
+                                                              " you can drag the red markers on the timeline. To activate editing, unlock the"
+                                                              " button on the right.",
+                                                              Qt::WhiteSpaceNormal));
+    boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
+    onTimelineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), 0);
+    
+    _imp->_playerLayout->addWidget(_imp->frameRangeEdit);
+    
+    QPixmap pixRangeLocked,pixRangeUnlocked;
+    appPTR->getIcon(NATRON_PIXMAP_LOCKED, &pixRangeLocked);
+    appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, &pixRangeUnlocked);
+    QIcon rangeLockedIC;
+    rangeLockedIC.addPixmap(pixRangeLocked,QIcon::Normal,QIcon::On);
+    rangeLockedIC.addPixmap(pixRangeUnlocked,QIcon::Normal,QIcon::Off);
+    _imp->lockFrameRangeButton = new Button(rangeLockedIC,"",_imp->_playerButtonsContainer);
+    _imp->lockFrameRangeButton->setCheckable(true);
+    _imp->lockFrameRangeButton->setChecked(true);
+    _imp->lockFrameRangeButton->setDown(true);
+    _imp->lockFrameRangeButton->setToolTip(Qt::convertFromPlainText("When locked, the timeline bounds will be automatically set by "
+                                                                    NATRON_APPLICATION_NAME " so it defines the real frame range as "
+                                                                    "informed by the Readers. When unchecked, the bounds will no longer "
+                                                                    "be automatically set, and you're free to set them in the edit line "
+                                                                    "on the left or by dragging the timeline markers."
+                                                                    ,Qt::WhiteSpaceNormal));
+    QObject::connect(_imp->lockFrameRangeButton,SIGNAL(clicked(bool)),this,SLOT(onLockFrameRangeButtonClicked(bool)));
+    _imp->_playerLayout->addWidget(_imp->lockFrameRangeButton);
+    
+    _imp->_playerLayout->addStretch();
+    
     _imp->fpsName = new QLabel("fps",_imp->_playerButtonsContainer);
     _imp->_playerLayout->addWidget(_imp->fpsName);
     _imp->fpsBox = new SpinBox(_imp->_playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
@@ -674,8 +714,12 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
     QObject::connect(_imp->nextKeyFrame_Button,SIGNAL(clicked(bool)),_imp->app->getTimeLine().get(), SLOT(goToNextKeyframe()));
     QObject::connect(_imp->previousKeyFrame_Button,SIGNAL(clicked(bool)),_imp->app->getTimeLine().get(), SLOT(goToPreviousKeyframe()));
-    QObject::connect(_imp->app->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),
+    
+    QObject::connect(timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),
                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
+    QObject::connect(timeline.get(),SIGNAL(boundariesChanged(SequenceTime,SequenceTime,int)),this,
+                     SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime,int)));
+    
     QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
                      SLOT(onCachedFrameAdded(SequenceTime)));
     QObject::connect(_imp->_viewerNode,SIGNAL(removedLRUCachedFrame()),_imp->_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
@@ -1914,4 +1958,74 @@ void ViewerTab::manageSlotsForInfoWidget(int textureIndex,bool connect)
 void ViewerTab::onImageFormatChanged(int texIndex,int components,int bitdepth)
 {
     _imp->_infosWidget[texIndex]->setImageFormat((ImageComponents)components, (ImageBitDepth)bitdepth);
+}
+
+void ViewerTab::onFrameRangeEditingFinished()
+{
+    QString text = _imp->frameRangeEdit->text();
+    ///try to parse the frame range, if failed set it back to what the timeline currently is
+    int i = 0;
+    QString firstStr;
+    while (i < text.size() && text.at(i).isDigit()) {
+        firstStr.push_back(text.at(i));
+        ++i;
+    }
+    
+    ///advance the marker to the second digit if any
+    while (i < text.size() && !text.at(i).isDigit()) {
+        ++i;
+    }
+    
+    boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
+    
+    bool ok;
+    int first = firstStr.toInt(&ok);
+    if (!ok) {
+        QString text = QString("%1 - %2").arg(timeline->leftBound()).arg(timeline->rightBound());
+        _imp->frameRangeEdit->setText(text);
+        _imp->frameRangeEdit->adjustSize();
+        return;
+    }
+    
+    if (i == text.size()) {
+        ///there's no second marker, set the timeline's boundaries to be the same frame
+        timeline->setFrameRange(first, first);
+    } else {
+        QString secondStr;
+        while (i < text.size() && text.at(i).isDigit()) {
+            secondStr.push_back(text.at(i));
+            ++i;
+        }
+        int second = secondStr.toInt(&ok);
+        if (!ok) {
+            ///there's no second marker, set the timeline's boundaries to be the same frame
+            timeline->setFrameRange(first, first);
+        } else {
+            timeline->setFrameRange(first,second);
+        }
+    }
+    _imp->frameRangeEdit->adjustSize();
+}
+
+void ViewerTab::onLockFrameRangeButtonClicked(bool toggled)
+{
+    _imp->lockFrameRangeButton->setDown(toggled);
+    _imp->frameRangeEdit->setReadOnly(toggled);
+    {
+        QMutexLocker l(&_imp->frameRangeLockedMutex);
+        _imp->frameRangeLocked = toggled;
+    }
+}
+
+void ViewerTab::onTimelineBoundariesChanged(SequenceTime first,SequenceTime second,int /*reason*/)
+{
+    QString text = QString("%1 - %2").arg(first).arg(second);
+    _imp->frameRangeEdit->setText(text);
+    _imp->frameRangeEdit->adjustSize();
+}
+
+bool ViewerTab::isFrameRangeLocked() const
+{
+    QMutexLocker l(&_imp->frameRangeLockedMutex);
+    return _imp->frameRangeLocked;
 }

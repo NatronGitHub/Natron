@@ -150,6 +150,8 @@ public:
     
     void setCompositingOperator(Natron::ViewerCompositingOperator op);
     
+    bool isFrameRangeLocked() const;
+    
 public slots:
     
     void startPause(bool);
@@ -213,6 +215,12 @@ public slots:
     void onInputChanged(int inputNb);
     
     void onImageFormatChanged(int,int,int);
+    
+    void onFrameRangeEditingFinished();
+    
+    void onLockFrameRangeButtonClicked(bool toggled);
+    
+    void onTimelineBoundariesChanged(SequenceTime,SequenceTime,int);
 
 private:
     

@@ -152,6 +152,8 @@ public:
     void setInputB(int inputNb);
     
     void getActiveInputs(int& a,int &b) const;
+    
+    bool isFrameRangeLocked() const;
 
 public slots:
 

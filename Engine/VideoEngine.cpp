@@ -445,7 +445,11 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
                 }
                 
             }
-            _timeline->setFrameRange(_firstFrame, _lastFrame);
+            
+            //If the frame range is not locked, let the user define it.
+            if (viewer->isFrameRangeLocked()) {
+                _timeline->setFrameRange(_firstFrame, _lastFrame);
+            }
         }
         
         int firstFrame,lastFrame;
