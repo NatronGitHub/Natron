@@ -31,6 +31,7 @@ void AnimationButton::mousePressEvent(QMouseEvent* event){
         _dragPos = event->pos();
         _dragging = true;
     }
+    emit animationMenuRequested();
     QPushButton::mousePressEvent(event);
 }
 

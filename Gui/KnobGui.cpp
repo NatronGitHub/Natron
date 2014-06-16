@@ -229,7 +229,7 @@ void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     _imp->animationButton = new AnimationButton(this,QIcon(pix),"",layout->parentWidget());
     _imp->animationButton->setFixedSize(20, 20);
     _imp->animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->animationButton,SIGNAL(clicked()),this,SLOT(showAnimationMenu()));
+    QObject::connect(_imp->animationButton,SIGNAL(animationMenuRequested()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_imp->animationButton);
     
     if (getKnob()->getIsSecret()) {
@@ -264,7 +264,9 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         return;
     }
     
-    _imp->copyRightClickMenu->clear();
+    createAnimationMenu(_imp->copyRightClickMenu);
+    
+    _imp->copyRightClickMenu->addSeparator();
     
     bool isSlave = knob->isSlave(dimension);
     
@@ -349,9 +351,9 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
 
 }
 
-void KnobGui::createAnimationMenu(){
+void KnobGui::createAnimationMenu(QMenu* menu) {
     boost::shared_ptr<KnobI> knob = getKnob();
-    _imp->animationMenu->clear();
+    menu->clear();
     bool isOnKeyFrame = false;
     for(int i = 0; i < knob->getDimension();++i){
         if(knob->getAnimationLevel(i) == Natron::ON_KEYFRAME){
@@ -380,24 +382,24 @@ void KnobGui::createAnimationMenu(){
     
     if(!isSlave) {
         if (!isOnKeyFrame) {
-            QAction* setKeyAction = new QAction(tr("Set Key"),_imp->animationMenu);
+            QAction* setKeyAction = new QAction(tr("Set Key"),menu);
             QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
-            _imp->animationMenu->addAction(setKeyAction);
+            menu->addAction(setKeyAction);
             if (!isEnabled) {
                 setKeyAction->setEnabled(false);
             }
         } else {
-            QAction* removeKeyAction = new QAction(tr("Remove Key"),_imp->animationMenu);
+            QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
             QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
-            _imp->animationMenu->addAction(removeKeyAction);
+            menu->addAction(removeKeyAction);
             if (!isEnabled) {
                 removeKeyAction->setEnabled(false);
             }
         }
         
-        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),_imp->animationMenu);
+        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
         QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
-        _imp->animationMenu->addAction(removeAnyAnimationAction);
+        menu->addAction(removeAnyAnimationAction);
         if (!hasAnimation || !isEnabled) {
             removeAnyAnimationAction->setEnabled(false);
         }
@@ -410,16 +412,16 @@ void KnobGui::createAnimationMenu(){
     
     if(!isSlave) {
         
-        QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),_imp->animationMenu);
+        QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
         QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
-        _imp->animationMenu->addAction(showInCurveEditorAction);
+        menu->addAction(showInCurveEditorAction);
         if (!hasAnimation || !isEnabled) {
             showInCurveEditorAction->setEnabled(false);
         }
         
-        QMenu* interpolationMenu = new QMenu(_imp->animationMenu);
+        QMenu* interpolationMenu = new QMenu(menu);
         interpolationMenu->setTitle("Interpolation");
-        _imp->animationMenu->addAction(interpolationMenu->menuAction());
+        menu->addAction(interpolationMenu->menuAction());
         if (!isEnabled) {
             interpolationMenu->menuAction()->setEnabled(false);
         }
@@ -450,9 +452,9 @@ void KnobGui::createAnimationMenu(){
         
     }
 
-    QAction* copyAnimationAction = new QAction(tr("Copy animation"),_imp->animationMenu);
+    QAction* copyAnimationAction = new QAction(tr("Copy animation"),menu);
     QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
-    _imp->animationMenu->addAction(copyAnimationAction);
+    menu->addAction(copyAnimationAction);
     if (!hasAnimation) {
         copyAnimationAction->setEnabled(false);
     }
@@ -471,9 +473,9 @@ void KnobGui::createAnimationMenu(){
         
         appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
         
-        QAction* pasteAction = new QAction(tr("Paste animation"),_imp->animationMenu);
+        QAction* pasteAction = new QAction(tr("Paste animation"),menu);
         QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
-        _imp->animationMenu->addAction(pasteAction);
+        menu->addAction(pasteAction);
         if (!copyAnimation || isClipBoardEmpty || !isEnabled) {
             pasteAction->setEnabled(false);
         }
@@ -509,7 +511,7 @@ void KnobGui::setSecret() {
 }
 
 void KnobGui::showAnimationMenu(){
-    createAnimationMenu();
+    createAnimationMenu(_imp->animationMenu);
     _imp->animationMenu->exec(_imp->animationButton->mapToGlobal(QPoint(0,0)));
 }
 

@@ -301,7 +301,7 @@ private:
     /*Calls reflectAnimationLevel with good parameters. Called right away after updateGUI() */
     void checkAnimationLevel(int dimension);
     
-    void createAnimationMenu();
+    void createAnimationMenu(QMenu* menu);
     
     void createAnimationButton(QHBoxLayout* layout);
     

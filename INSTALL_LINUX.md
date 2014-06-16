@@ -75,6 +75,10 @@ cairo: PKGCONFIG -= cairo
 EOF
 ----- end -----
 
+Note that the last line for cairo is only if the package for cairo in your distribution
+is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).
+If your distribution provide already better packages
+
 ### Build:
 
 The <srcPath> must be absolute and <buildPath> must not be a subdir of <srcPath>

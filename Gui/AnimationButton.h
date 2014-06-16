@@ -19,6 +19,9 @@ class KnobGui;
 
 class AnimationButton : public Button
 {
+    
+    Q_OBJECT
+    
 public:
     
     explicit AnimationButton(KnobGui* knob,QWidget* parent = 0)
@@ -47,6 +50,10 @@ public:
         setAcceptDrops(true);
 
     }
+    
+signals:
+    
+    void animationMenuRequested();
     
 private:
     
