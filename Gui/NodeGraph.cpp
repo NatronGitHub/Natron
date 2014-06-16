@@ -741,7 +741,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
                             ///if the source of that edge is already connected also skip
                             const std::vector<boost::shared_ptr<Natron::Node> >& inpNodes = _nodeSelected->getNode()->getInputs_mt_safe();
                             for (U32 i = 0; i < inpNodes.size();++i) {
-                                if (inpNodes[i] == edge->getSource()->getNode()) {
+                                if (edge && inpNodes[i] == edge->getSource()->getNode()) {
                                     edge = 0;
                                     break;
                                 }
@@ -756,7 +756,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
                             }
                             
                             ///if the selected node doesn't have any input but the edge has an input don't continue
-                            if (_nodeSelected->getInputsArrows().empty() && edge->getSource()) {
+                            if (edge && _nodeSelected->getInputsArrows().empty() && edge->getSource()) {
                                 edge = 0;
                             }
                         }
