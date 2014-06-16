@@ -33,21 +33,22 @@ class InfoViewerWidget: public QWidget{
 public:
     explicit InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent=0);
     virtual ~InfoViewerWidget() OVERRIDE;
-    void setColor(float r,float g,float b,float a);
-    void setMousePos(QPoint p){mousePos =p;}
-    void setUserRect(QPoint p){rectUser=p;}
+    
+    
     bool colorAndMouseVisible();
     
     void setResolution(const Format& f);
     
+    void setDataWindow(const RectI& r);
+    
     void setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth);
+    
+    void setColor(float r,float g,float b,float a);
+    
+    void setMousePos(QPoint p);
+    
 public slots:
-    void updateColor();
-    void updateCoordMouse();
-    void changeResolution();
-    void changeData1Window();
-    void changeData2Window();
-    void changeUserRect();
+
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
     void setFps(double actualFps,double desiredFps);
@@ -67,16 +68,11 @@ private:
     Format format;
     QLabel* coordDispWindow;
     QLabel* coordMouse;
-    QPoint mousePos;
-    QPoint rectUser;
     QLabel* rectUserLabel;
-    QVector4D colorUnderMouse;
     QLabel* rgbaValues;
     QLabel* color;
     QLabel* hvl_lastOption;
-    bool floatingPoint;
     QLabel* _fpsLabel;
-    float _fps;
     ViewerGL* viewer;
     
     

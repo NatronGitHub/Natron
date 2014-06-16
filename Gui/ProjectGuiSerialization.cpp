@@ -139,7 +139,12 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
         //we now have the name of the parent
         std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
         assert(foundParent != _layout.end());
-        foundParent->second.splitsNames.push_back(it->first);
+        std::list<std::string>::iterator foundSplit = std::find(foundParent->second.splitsNames.begin(),
+                                                                foundParent->second.splitsNames.end(),it->first);
+        
+        if (foundSplit == foundParent->second.splitsNames.end()) {
+            foundParent->second.splitsNames.push_back(it->first);
+        }
         it->second.parentName = nameCpy.toStdString();
         it->second.parentingCreated = true;
         
@@ -153,7 +158,14 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
             //we now have the name of the parent
             std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
             assert(foundParent != _layout.end());
-            foundParent->second.splitsNames.push_back(it->first);
+            
+            std::list<std::string>::iterator foundSplit = std::find(foundParent->second.splitsNames.begin(),
+                                                                    foundParent->second.splitsNames.end(),it->first);
+            
+            if (foundSplit == foundParent->second.splitsNames.end()) {
+                foundParent->second.splitsNames.push_back(it->first);
+            }
+            
             it->second.parentName = nameCpy.toStdString();
             it->second.parentingCreated = true;
             

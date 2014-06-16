@@ -27,10 +27,6 @@ using namespace Natron;
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent)
 : QWidget(parent)
-, mousePos(0,0)
-, rectUser(0,0)
-, colorUnderMouse(0,0,0,0)
-, _fps(0)
 {
     this->viewer = v;
     setObjectName(QString::fromUtf8("infoViewer"));
@@ -42,32 +38,16 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidge
     
     descriptionLabel = new QLabel(description,this);
     
-    imageFormat = new QLabel("",this);
-    
-    QString reso("<font color=\"#DBE0E0\">");
-    reso.append(viewer->getDisplayWindow().getName().c_str());
-    reso.append("\t");
-    reso.append("</font>");
-    resolution = new QLabel(reso,this);
+    imageFormat = new QLabel(this);
+
+    resolution = new QLabel(this);
     resolution->setContentsMargins(0, 0, 0, 0);
 
     
-    QString bbox;
-    bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-        .arg(viewer->getRoD(0).left())
-        .arg(viewer->getRoD(0).bottom())
-        .arg(viewer->getRoD(0).right())
-        .arg(viewer->getRoD(0).top());
-    
     _fpsLabel = new QLabel(this);
     
-    coordDispWindow = new QLabel(bbox,this);
+    coordDispWindow = new QLabel(this);
     coordDispWindow->setContentsMargins(0, 0, 0, 0);
-    
-    QString coord;
-    coord = QString("<font color=\"#DBE0E0\">x=%1 y=%2</font>")
-        .arg(mousePos.x())
-        .arg(mousePos.y());
     
     coordMouse = new QLabel(this);
     //coordMouse->setText(coord);
@@ -150,14 +130,8 @@ static double clamp(double v)
     return std::max(std::min(1.,v), 0.);
 }
 
-void InfoViewerWidget::updateColor()
+void InfoViewerWidget::setColor(float r, float g, float b, float a)
 {
-    float r = colorUnderMouse.x();
-    float g = colorUnderMouse.y();
-    float b = colorUnderMouse.z();
-    float a = colorUnderMouse.w();
-
-    
     QString values;
     //values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
     // the following three colors have an equal luminance (=0.4), which makes the text easier to read.
@@ -198,13 +172,12 @@ void InfoViewerWidget::updateColor()
     hvl_lastOption->repaint();
 }
 
-void InfoViewerWidget::updateCoordMouse(){
+void InfoViewerWidget::setMousePos(QPoint p) {
     QString coord;
     coord = QString("<font color=\"#DBE0E0\">x=%1 y=%2</font>")
-    .arg(mousePos.x())
-    .arg(mousePos.y());
+    .arg(p.x())
+    .arg(p.y());
     coordMouse->setText(coord);
-    //coordMouse->repaint();
 }
 
 void InfoViewerWidget::setResolution(const Format& f)
@@ -229,51 +202,19 @@ void InfoViewerWidget::setResolution(const Format& f)
     }
 }
 
-void InfoViewerWidget::changeResolution()
-{
-    Format f = viewer->getDisplayWindow();
-    unsigned int mmLvl = viewer->getInternalNode()->getMipMapLevel();
-    if (mmLvl != 0) {
-        f = f.downscalePowerOfTwoLargestEnclosed(mmLvl);
-    }
-    setResolution(f);
-}
 
-void InfoViewerWidget::changeData1Window()
+void InfoViewerWidget::setDataWindow(const RectI& r)
 {
     QString bbox;
-    RectI rod = viewer->getRoD(0);
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-    .arg(rod.left())
-    .arg(rod.bottom())
-    .arg(rod.right())
-    .arg(rod.top());
-
-    coordDispWindow->setText(bbox);
-}
-
-void InfoViewerWidget::changeData2Window()
-{
-    QString bbox;
-    RectI rod = viewer->getRoD(1);
-    bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-    .arg(rod.left())
-    .arg(rod.bottom())
-    .arg(rod.right())
-    .arg(rod.top());
+    .arg(r.left())
+    .arg(r.bottom())
+    .arg(r.right())
+    .arg(r.top());
     
     coordDispWindow->setText(bbox);
 }
 
-void InfoViewerWidget::changeUserRect(){
-    cout << "NOT IMPLEMENTED YET" << endl;
-}
-void InfoViewerWidget::setColor(float r,float g,float b,float a){
-    colorUnderMouse.setX(r);
-    colorUnderMouse.setY(g);
-    colorUnderMouse.setZ(b);
-    colorUnderMouse.setW(a);
-}
 
 void InfoViewerWidget::setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth)
 {

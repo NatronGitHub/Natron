@@ -179,7 +179,7 @@ void NodeGui::initialize(NodeGraph* dag,
     _persistentMessage->hide();
     
     _stateIndicator = new QGraphicsRectItem(this);
-    _stateIndicator->setZValue(0);
+    _stateIndicator->setZValue(-1);
     _stateIndicator->hide();
     
     QPointF bitDepthPos = mapFromParent(pos());

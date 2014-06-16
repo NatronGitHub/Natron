@@ -1951,14 +1951,9 @@ bool InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber) 
     }
     
     
-    /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while (_inputsCount <= inputNumber) {
-        
-        ///this function might not succeed if we already have 10 inputs OR the last input is already empty
-        addEmptyInput();
-    }
+   
     
-    ///If the node 'input' is already an input of the inspector, find it.
+    ///If the node 'input' is already to an input of the inspector, find it.
     ///If it has the same input number as what we want just return, otherwise
     ///disconnect it and continue as usual.
     int inputAlreadyConnected = inputIndex(input.get());
@@ -1968,6 +1963,13 @@ bool InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber) 
         } else {
             disconnectInput(inputAlreadyConnected);
         }
+    }
+    
+    /*Adding all empty edges so it creates at least the inputNB'th one.*/
+    while (_inputsCount <= inputNumber) {
+        
+        ///this function might not succeed if we already have 10 inputs OR the last input is already empty
+        addEmptyInput();
     }
 
     int oldActiveInput;

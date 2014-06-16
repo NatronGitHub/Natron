@@ -183,9 +183,9 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
         layout->addWidget(label);
     }
     
-    QString tt = toolTip();
+    QString tt(getKnob()->getHintToolTip().c_str());
     if (!tt.isEmpty()) {
-        label->setToolTip(tt);
+        label->setToolTip(Qt::convertFromPlainText(tt,Qt::WhiteSpaceNormal));
     }
     
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();

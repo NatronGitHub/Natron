@@ -197,7 +197,7 @@ public:
         return _userSplits;
     }
     
-    void removeSplit(TabWidget* tab);
+    bool removeSplit(TabWidget* tab,bool* orientation = NULL);
     
     static void moveTab(QWidget* what,TabWidget* where);
     

@@ -1867,7 +1867,7 @@ void ViewerTab::onActiveInputsChanged()
         //_imp->_secondInputImage->setEnabled_natron(false);
     }
     
-    if ((activeInputs[0] == -1 || activeInputs[1] == -1 || activeInputs[0] == activeInputs[1]) //only 1 input is valid
+    if ((activeInputs[0] == -1 || activeInputs[1] == -1) //only 1 input is valid
         && getCompositingOperator() != OPERATOR_NONE) {
         //setCompositingOperator(OPERATOR_NONE);
         _imp->_infosWidget[1]->hide();
@@ -1905,12 +1905,13 @@ void ViewerTab::onInputChanged(int inputNb)
     } else {
         InputNamesMap::iterator found = _imp->_inputNamesMap.find(inputNb);
         
-        ///The input has been disconnected it must exist!
-        assert(found != _imp->_inputNamesMap.end());
-        const std::string& curInputName = found->second.input->getName();
-        _imp->_firstInputImage->removeItem(curInputName.c_str());
-        _imp->_secondInputImage->removeItem(curInputName.c_str());
-        _imp->_inputNamesMap.erase(found);
+        ///The input has been disconnected
+        if (found != _imp->_inputNamesMap.end()) {
+            const std::string& curInputName = found->second.input->getName();
+            _imp->_firstInputImage->removeItem(curInputName.c_str());
+            _imp->_secondInputImage->removeItem(curInputName.c_str());
+            _imp->_inputNamesMap.erase(found);
+        }
     }
 }
 
@@ -1933,26 +1934,10 @@ void ViewerTab::manageSlotsForInfoWidget(int textureIndex,bool connect)
     if (connect) {
         QObject::connect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget[textureIndex], SLOT(setFps(double,double)));
         QObject::connect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget[textureIndex],SLOT(hideFps()));
-        QObject::connect(_imp->viewer,SIGNAL(infoMousePosChanged()), _imp->_infosWidget[textureIndex], SLOT(updateCoordMouse()));
-        QObject::connect(_imp->viewer,SIGNAL(infoColorUnderMouseChanged()),_imp->_infosWidget[textureIndex],SLOT(updateColor()));
-        QObject::connect(_imp->viewer,SIGNAL(infoResolutionChanged()),_imp->_infosWidget[textureIndex],SLOT(changeResolution()));
-        if (textureIndex == 0) {
-            QObject::connect(_imp->viewer,SIGNAL(infoDataWindow1Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData1Window()));
-        } else {
-            QObject::connect(_imp->viewer,SIGNAL(infoDataWindow2Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData2Window()));
-        }
+
     } else {
         QObject::disconnect(vengine, SIGNAL(fpsChanged(double,double)), _imp->_infosWidget[textureIndex], SLOT(setFps(double,double)));
         QObject::disconnect(vengine,SIGNAL(engineStopped(int)),_imp->_infosWidget[textureIndex],SLOT(hideFps()));
-        QObject::disconnect(_imp->viewer,SIGNAL(infoMousePosChanged()), _imp->_infosWidget[textureIndex], SLOT(updateCoordMouse()));
-        QObject::disconnect(_imp->viewer,SIGNAL(infoColorUnderMouseChanged()),_imp->_infosWidget[textureIndex],SLOT(updateColor()));
-        QObject::disconnect(_imp->viewer,SIGNAL(infoResolutionChanged()),_imp->_infosWidget[textureIndex],SLOT(changeResolution()));
-        if (textureIndex == 0) {
-            QObject::disconnect(_imp->viewer,SIGNAL(infoDataWindow1Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData1Window()));
-        } else {
-            QObject::disconnect(_imp->viewer,SIGNAL(infoDataWindow2Changed()),_imp->_infosWidget[textureIndex],SLOT(changeData2Window()));
-        }
-
     }
 }
 

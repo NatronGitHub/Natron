@@ -297,26 +297,7 @@ public:
     virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
     
 signals:
-    /**
-     *@brief Signal emitted when the mouse position changed on the viewport.
-     **/
-    void infoMousePosChanged();
-    
-    /**
-     *@brief Signal emitted when the mouse position changed on the viewport.
-     **/
-    void infoColorUnderMouseChanged();
-    
-    /**
-     *@brief Signal emitted when the current display window changed.
-     **/
-    void infoResolutionChanged();
-    
-    /**
-     *@brief Signal emitted when the current data window changed.
-     **/
-    void infoDataWindow1Changed();
-    void infoDataWindow2Changed();
+
     /**
      *@brief Signal emitted when the current zoom factor changed.
      **/

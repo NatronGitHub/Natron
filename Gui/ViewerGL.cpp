@@ -2448,7 +2448,6 @@ void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
 			_imp->infoViewer[textureIndex]->showColorAndMouseInfo();
 		}
         _imp->infoViewer[textureIndex]->setColor(r,g,b,a);
-        emit infoColorUnderMouseChanged();
     }
 }
 
@@ -2649,12 +2648,10 @@ void ViewerGL::setRegionOfDefinition(const RectI& rod,int textureIndex)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->currentViewerInfos[textureIndex].setRoD(rod);
-    if (textureIndex == 0) {
-        emit infoDataWindow1Changed();
-    } else {
-        assert(textureIndex == 1);
-        emit infoDataWindow2Changed();
+    if (_imp->infoViewer[textureIndex]) {
+        _imp->infoViewer[textureIndex]->setDataWindow(rod);
     }
+
     _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].clear();
     _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(rod.left()));
     _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(",");
@@ -2672,7 +2669,11 @@ void ViewerGL::onProjectFormatChanged(const Format& format)
     assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->blankViewerInfos.setDisplayWindow(format);
     _imp->blankViewerInfos.setRoD(format);
-    emit infoResolutionChanged();
+    for (int i = 0; i< 2 ; ++i) {
+        if (_imp->infoViewer[i]) {
+            _imp->infoViewer[i]->setResolution(format);
+        }
+    }
     
     _imp->currentViewerInfos[0].setDisplayWindow(format);
     _imp->currentViewerInfos[1].setDisplayWindow(format);
@@ -3195,7 +3196,6 @@ bool ViewerGL::pickColor(double x,double y)
             pickerColor.setAlphaF(clamp(a));
             _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             _imp->infoViewer[i]->setColor(r,g,b,a);
-            emit infoColorUnderMouseChanged();
             ret = true;
         } else {
             if (_imp->infoViewer[i]->colorAndMouseVisible()) {
@@ -3246,7 +3246,6 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
                 }
                 
                 _imp->infoViewer[texIndex]->setMousePos(QPoint((int)(imgPos.x()),(int)(imgPos.y())));
-                emit infoMousePosChanged();
             }
     } else {
         if (_imp->infoViewer[texIndex]->colorAndMouseVisible()) {
@@ -3307,7 +3306,6 @@ void ViewerGL::updateRectangleColorPicker()
         }
         _imp->infoViewer[i]->setColor(rSum,gSum,bSum,aSum);
     }
-    emit infoColorUnderMouseChanged();
     
     QColor pickerColor;
     pickerColor.setRedF(clamp(rSum));

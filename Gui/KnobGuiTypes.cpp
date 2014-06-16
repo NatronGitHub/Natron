@@ -2487,7 +2487,9 @@ void String_KnobGui::setEnabled()
     } else {
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
-        _lineEdit->setReadOnly(!b);
+        if (!_knob->isCustomKnob()) {
+            _lineEdit->setReadOnly(!b);
+        }
     }
  }
 
@@ -2537,7 +2539,9 @@ void String_KnobGui::setReadOnly(bool readOnly, int /*dimension*/) {
         _textEdit->setReadOnlyNatron(readOnly);
     } else {
         assert(_lineEdit);
-        _lineEdit->setReadOnly(readOnly);
+        if (!_knob->isCustomKnob()) {
+            _lineEdit->setReadOnly(readOnly);
+        }
     }
 }
 
