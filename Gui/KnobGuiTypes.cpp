@@ -2021,7 +2021,10 @@ void String_KnobGui::onLineChanged()
 
 void String_KnobGui::onTextChanged()
 {
-    QString txt = addHtmlTags(_textEdit->toPlainText());
+    QString txt = _textEdit->toPlainText();
+    if (_knob->usesRichText()) {
+        txt = addHtmlTags(txt);
+    }
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),txt.toStdString()));
 }
 
@@ -2423,12 +2426,8 @@ void String_KnobGui::updateGUI(int /*dimension*/)
         QString txt(value.c_str());
         txt = removeAutoAddedHtmlTags(txt);
         
-        if (_knob->usesRichText()) {
-            _textEdit->setPlainText(txt);
-            
-        } else {
-            _textEdit->setPlainText(Qt::convertFromPlainText(txt,Qt::WhiteSpaceNormal));
-        }
+        _textEdit->setPlainText(txt);
+
         if (pos < txt.size()) {
             cursor.setPosition(pos);
         } else {
