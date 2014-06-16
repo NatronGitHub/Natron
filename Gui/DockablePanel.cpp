@@ -20,17 +20,22 @@
 #include <QUndoCommand>
 #include <QDebug>
 #include <QToolTip>
+#include <QColorDialog>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QPaintEvent>
 CLANG_DIAG_ON(unused-private-field)
 #include <QTextDocument> // for Qt::convertFromPlainText
+#include <QPainter>
+#include <QImage>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Settings.h"
+#include "Engine/Image.h"
 
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -92,6 +97,9 @@ struct DockablePanelPrivate
     Button* _floatButton;
     Button* _cross;
     
+    mutable QMutex _currentColorMutex; //< protects _currentColor
+    QColor _currentColor; //< accessed by the serialization thread
+    Button* _colorButton;
     Button* _undoButton;
     Button* _redoButton;
     Button* _restoreDefaultsButton;
@@ -137,6 +145,8 @@ struct DockablePanelPrivate
     ,_minimize(NULL)
     ,_floatButton(NULL)
     ,_cross(NULL)
+    , _currentColor()
+    ,_colorButton(NULL)
     ,_undoButton(NULL)
     ,_redoButton(NULL)
     ,_restoreDefaultsButton(NULL)
@@ -171,7 +181,22 @@ struct DockablePanelPrivate
                                  bool makeNewLine,
                                  QWidget* lastRowWidget,
                     const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >());
+    
 };
+
+static QPixmap getColorButtonDefaultPixmap()
+{
+    QImage img(15,15,QImage::Format_ARGB32);
+    QColor gray(Qt::gray);
+    img.fill(gray.rgba());
+    QPainter p(&img);
+    QPen pen;
+    pen.setColor(Qt::black);
+    pen.setWidth(2);
+    p.setPen(pen);
+    p.drawLine(0, 0, 14, 14);
+    return QPixmap::fromImage(img);
+}
 
 DockablePanel::DockablePanel(Gui* gui
                              , KnobHolder* holder
@@ -238,6 +263,17 @@ DockablePanel::DockablePanel(Gui* gui
         QObject::connect(_imp->_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
         
         
+        float r,g,b;
+        appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
+        _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
+        _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
+        _imp->_colorButton->setToolTip(Qt::convertFromPlainText("Set here the color of the node in the nodegraph. "
+                                                                "By default the color of the node is the one set in the "
+                                                                "preferences of " NATRON_APPLICATION_NAME
+                                                                ,Qt::WhiteSpaceNormal));
+        QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
+        _imp->_colorButton->setFixedSize(15,15);
+        
         QPixmap pixUndo ;
         appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
         QPixmap pixUndo_gray ;
@@ -288,6 +324,7 @@ DockablePanel::DockablePanel(Gui* gui
         
         _imp->_headerLayout->addStretch();
         
+        _imp->_headerLayout->addWidget(_imp->_colorButton);
         _imp->_headerLayout->addWidget(_imp->_undoButton);
         _imp->_headerLayout->addWidget(_imp->_redoButton);
         _imp->_headerLayout->addWidget(_imp->_restoreDefaultsButton);
@@ -923,6 +960,46 @@ QUndoStack* DockablePanel::getUndoStack() const { return _imp->_undoStack; }
 
 bool DockablePanel::isClosed() const { return _imp->_isClosed; }
 
+void DockablePanel::onColorDialogColorChanged(const QColor& color)
+{
+    QPixmap p(15,15);
+    p.fill(color);
+    _imp->_colorButton->setIcon(QIcon(p));
+}
+
+void DockablePanel::onColorButtonClicked()
+{
+    QColorDialog dialog(this);
+    {
+        QMutexLocker locker(&_imp->_currentColorMutex);
+        dialog.setCurrentColor(_imp->_currentColor);
+    }
+    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onColorDialogColorChanged(QColor)));
+    if (dialog.exec()) {
+        QColor c = dialog.currentColor();
+        {
+            QMutexLocker locker(&_imp->_currentColorMutex);
+            _imp->_currentColor = c;
+        }
+
+        emit colorChanged(c);
+    }
+}
+
+QColor DockablePanel::getCurrentColor() const
+{
+    QMutexLocker locker(&_imp->_currentColorMutex);
+    return _imp->_currentColor;
+}
+
+void DockablePanel::setCurrentColor(const QColor& c)
+{
+    {
+        QMutexLocker locker(&_imp->_currentColorMutex);
+        _imp->_currentColor = c;
+    }
+    onColorDialogColorChanged(c);
+}
 
 NodeSettingsPanel::NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
 :DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),

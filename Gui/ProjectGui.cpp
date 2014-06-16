@@ -300,6 +300,14 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 nGui->togglePreview();
             }
         }
+        if (it->colorWasFound()) {
+            float r,g,b;
+            it->getColor(&r, &g, &b);
+            QColor color;
+            color.setRgbF(r, g, b);
+            nGui->setDefaultGradientColor(color);
+            nGui->setCurrentColor(color);
+        }
         
         if (nGui->getNode()->pluginID() == "Viewer") {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);

@@ -35,6 +35,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/TimeLine.h"
 #include "Engine/Lut.h"
 #include "Engine/Project.h"
+#include "Engine/Image.h"
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
@@ -1558,6 +1560,7 @@ Color_KnobGui::showColorDialog()
     curColor.setGreenF(curG);
     curColor.setBlueF(curB);
     dialog.setCurrentColor(curColor);
+    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(updateLabel(QColor)));
     if (dialog.exec()) {
         
         ///if only the first dimension is displayed, switch back to all dimensions
@@ -1597,50 +1600,44 @@ Color_KnobGui::showColorDialog()
             realColor.setBlue(userColor.blue());
             realColor.setAlpha(userColor.alpha());
         }
-        updateLabel(realColor);
         
         onColorChanged();
+    } else {
+        updateLabel(curColor);
     }
-}
-
-float Clamp(float v, float min, float max)
-{
-    if(v < min) return min;
-    if(v > max) return max;
-    return v;
 }
 
 
 void
 Color_KnobGui::onColorChanged()
 {
-    //   QColor color;
-//    color.setRedF(Clamp(_rBox->value(),0.f,1.f));
-//    color.setGreenF(color.redF());
-//    color.setBlueF(color.greenF());
+
     std::list<double> newValues;
-    newValues.push_back(_rBox->value());
+    QColor color;
+    color.setRedF(Natron::clamp(_rBox->value()));
+    newValues.push_back(color.redF());
     if (_dimensionSwitchButton->isChecked()) {
         if (_dimension >= 3) {
-            //color.setGreenF(Clamp(_gBox->value(),0.f,1.f));
-            //      color.setBlueF(Clamp(_bBox->value(),0.f,1.f));
-            newValues.push_back(_gBox->value());
-            newValues.push_back(_bBox->value());
+            color.setGreenF(Natron::clamp(_gBox->value()));
+            newValues.push_back(color.greenF());
+            color.setBlueF(Natron::clamp(_bBox->value()));
+            newValues.push_back(color.blueF());
         }
         if (_dimension >= 4) {
-            //     color.setAlphaF(Clamp(_aBox->value(),0.f,1.f));
-            newValues.push_back(_aBox->value());
+            color.setAlphaF(Natron::clamp(_aBox->value()));
+            newValues.push_back(color.alphaF());
         }
     } else {
         if (_dimension >= 3) {
-            newValues.push_back(_rBox->value());
-            newValues.push_back(_rBox->value());
+            newValues.push_back(color.redF());
+            newValues.push_back(color.redF());
         }
         if (_dimension >= 4) {
-            newValues.push_back(_rBox->value());
+            newValues.push_back(color.redF());
         }
     }
-    
+
+    updateLabel(color);
     pushUndoCommand(new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues,false));
 }
 

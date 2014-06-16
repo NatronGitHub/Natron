@@ -12,8 +12,11 @@
 
 #include "NodeGuiSerialization.h"
 
+#include <QColor>
 #include "Gui/NodeGui.h"
+
 #include "Engine/Node.h"
+
 
 void NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui>& n)
 {
@@ -24,4 +27,8 @@ void NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui>& n)
     _posX = pos.x();
     _posY = pos.y();
     _previewEnabled = n->getNode()->isPreviewEnabled();
+    QColor color = n->getCurrentColor();
+    _r = color.redF();
+    _g = color.greenF();
+    _b = color.blueF();
 }

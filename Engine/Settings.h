@@ -36,6 +36,7 @@ class Int_Knob;
 class Bool_Knob;
 class Choice_Knob;
 class Path_Knob;
+class Color_Knob;
 
 class Settings : public KnobHolder
 {
@@ -116,6 +117,8 @@ public:
     bool loadBundledPlugins() const;
     
     bool preferBundledPlugins() const;
+    
+    void getDefaultNodeColor(float *r,float *g,float *b) const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -128,13 +131,10 @@ private:
     boost::shared_ptr<Page_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
-    boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Bool_Knob> _linearPickers;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
-    boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
-    boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Int_Knob> _maxPanelsOpened;
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
@@ -151,6 +151,13 @@ private:
     boost::shared_ptr<Page_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
     boost::shared_ptr<Int_Knob> _powerOf2Tiling;
+    
+    boost::shared_ptr<Page_Knob> _nodegraphTab;
+    boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
+    boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
+    boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
+    boost::shared_ptr<Color_Knob> _defaultNodeColor;
+
     
     boost::shared_ptr<Page_Knob> _readersTab;
     std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;

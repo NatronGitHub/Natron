@@ -73,16 +73,6 @@ void Settings::initializeKnobs(){
                                    " wait until it is done to actually auto-save.");
     _generalTab->addKnob(_autoSaveDelay);
     
-    _maxUndoRedoNodeGraph = Natron::createKnob<Int_Knob>(this, "Maximum undo/redo for the node graph");
-    _maxUndoRedoNodeGraph->setAnimationEnabled(false);
-    _maxUndoRedoNodeGraph->disableSlider();
-    _maxUndoRedoNodeGraph->setMinimum(0);
-    _maxUndoRedoNodeGraph->setMaximum(100);
-    _maxUndoRedoNodeGraph->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME
-                                 " will remember. Past this limit, older events will be deleted permanantly "
-                                 " allowing to re-use the RAM for better purposes since Nodes can hold a significant amount of RAM. \n"
-                                          "Changing this value will clear the undo/redo stack.");
-    _generalTab->addKnob(_maxUndoRedoNodeGraph);
     
     _linearPickers = Natron::createKnob<Bool_Knob>(this, "Linear color pickers");
     _linearPickers->setAnimationEnabled(false);
@@ -115,18 +105,6 @@ void Settings::initializeKnobs(){
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
     
     
-    _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
-    _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap them to positions where it lines them up "
-                                            "with the inputs and output nodes.");
-    _snapNodesToConnections->setAnimationEnabled(false);
-    _generalTab->addKnob(_snapNodesToConnections);
-    
-    _useNodeGraphHints = Natron::createKnob<Bool_Knob>(this, "Use connection hints");
-    _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
-                                       "nearby will display a hint for possible connections. Releasing the mouse on such a "
-                                       "hint will perform the connection for you.");
-    _useNodeGraphHints->setAnimationEnabled(false);
-    _generalTab->addKnob(_useNodeGraphHints);
     
     _maxPanelsOpened = Natron::createKnob<Int_Knob>(this, "Maximum number of node settings panels opened");
     _maxPanelsOpened->setHintToolTip("This property holds the number of node settings pnaels that can be "
@@ -201,7 +179,7 @@ void Settings::initializeKnobs(){
     }
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
     _ocioConfigKnob->populateChoices(configs);
-    _ocioConfigKnob->setValue(defaultIndex,0);
+    _ocioConfigKnob->setDefaultValue(defaultIndex,0);
     _ocioConfigKnob->setHintToolTip("Select the OpenColorIO config you would like to use globally for all "
                                     "operators that use OpenColorIO. Note that changing it will set the OCIO "
                                     "environment variable, hence any change to this parameter will be "
@@ -250,6 +228,41 @@ void Settings::initializeKnobs(){
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
+    /////////// Nodegraph tab
+    _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
+    
+    _snapNodesToConnections = Natron::createKnob<Bool_Knob>(this, "Snap to node");
+    _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap them to positions where it lines them up "
+                                            "with the inputs and output nodes.");
+    _snapNodesToConnections->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_snapNodesToConnections);
+    
+    _useNodeGraphHints = Natron::createKnob<Bool_Knob>(this, "Use connection hints");
+    _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
+                                       "nearby will display a hint for possible connections. Releasing the mouse on such a "
+                                       "hint will perform the connection for you.");
+    _useNodeGraphHints->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_useNodeGraphHints);
+    
+    _maxUndoRedoNodeGraph = Natron::createKnob<Int_Knob>(this, "Maximum undo/redo for the node graph");
+    _maxUndoRedoNodeGraph->setAnimationEnabled(false);
+    _maxUndoRedoNodeGraph->disableSlider();
+    _maxUndoRedoNodeGraph->setMinimum(0);
+    _maxUndoRedoNodeGraph->setMaximum(100);
+    _maxUndoRedoNodeGraph->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME
+                                          " will remember. Past this limit, older events will be deleted permanantly "
+                                          " allowing to re-use the RAM for better purposes since Nodes can hold a significant amount of RAM. \n"
+                                          "Changing this value will clear the undo/redo stack.");
+    _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
+
+    
+    _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
+    _defaultNodeColor->setAnimationEnabled(false);
+    _defaultNodeColor->setHintToolTip("This is default color which nodes have when created.");
+    
+    _nodegraphTab->addKnob(_defaultNodeColor);
+    
+    /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
     
     _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
@@ -320,7 +333,12 @@ void Settings::setDefaultValues() {
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
     _maxDiskCacheGB->setDefaultValue(10,0);
+    _defaultNodeColor->setDefaultValue(0.6,0);
+    _defaultNodeColor->setDefaultValue(0.6,1);
+    _defaultNodeColor->setDefaultValue(0.6,2);
 
+    
+#pragma message WARN("This is kinda a big hack to promote the OpenImageIO plug-in, we should use Tuttle's notation extension")
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
         for (U32 j = 0; j < entries.size(); ++j) {
@@ -351,13 +369,10 @@ void Settings::saveSettings(){
     settings.beginGroup("General");
     settings.setValue("CheckUpdates", _checkForUpdates->getValue());
     settings.setValue("AutoSaveDelay", _autoSaveDelay->getValue());
-    settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
     settings.setValue("LinearColorPickers",_linearPickers->getValue());
     settings.setValue("Number of threads", _numberOfThreads->getValue());
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
-    settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
-    settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
     settings.setValue("MaxPanelsOpened", _maxPanelsOpened->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.setValue("PreferBundledPlugins", _preferBundledPlugins->getValue());
@@ -381,6 +396,15 @@ void Settings::saveSettings(){
     settings.beginGroup("Viewers");
     settings.setValue("ByteTextures", _texturesMode->getValue());
     settings.setValue("TilesPowerOf2", _powerOf2Tiling->getValue());
+    settings.endGroup();
+    
+    settings.beginGroup("Nodegraph");
+    settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
+    settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
+    settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
+    settings.setValue("DefaultNodeColor_r", _defaultNodeColor->getValue(0));
+    settings.setValue("DefaultNodeColor_g", _defaultNodeColor->getValue(1));
+    settings.setValue("DefaultNodeColor_b", _defaultNodeColor->getValue(2));
     settings.endGroup();
     
     settings.beginGroup("Readers");
@@ -412,9 +436,6 @@ void Settings::restoreSettings(){
     if (settings.contains("AutoSaveDelay")) {
         _autoSaveDelay->setValue(settings.value("AutoSaveDelay").toInt(),0);
     }
-    if (settings.contains("MaximumUndoRedoNodeGraph")) {
-        _maxUndoRedoNodeGraph->setValue(settings.value("MaximumUndoRedoNodeGraph").toInt(), 0);
-    }
     if(settings.contains("LinearColorPickers")){
         _linearPickers->setValue(settings.value("LinearColorPickers").toBool(),0);
     }
@@ -427,12 +448,7 @@ void Settings::restoreSettings(){
     if (settings.contains("AutoPreviewDefault")) {
         _autoPreviewEnabledForNewProjects->setValue(settings.value("AutoPreviewDefault").toBool(),0);
     }
-    if (settings.contains("SnapToNode")) {
-        _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
-    }
-    if (settings.contains("ConnectionHints")) {
-        _useNodeGraphHints->setValue(settings.value("ConnectionHints").toBool(), 0);
-    }
+
     if (settings.contains("MaxPanelsOpened")) {
         _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
     }
@@ -477,6 +493,27 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("TilesPowerOf2")) {
         _powerOf2Tiling->setValue(settings.value("TilesPowerOf2").toInt(),0);
+    }
+    settings.endGroup();
+    
+    settings.beginGroup("Nodegraph");
+    if (settings.contains("SnapToNode")) {
+        _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
+    }
+    if (settings.contains("ConnectionHints")) {
+        _useNodeGraphHints->setValue(settings.value("ConnectionHints").toBool(), 0);
+    }
+    if (settings.contains("MaximumUndoRedoNodeGraph")) {
+        _maxUndoRedoNodeGraph->setValue(settings.value("MaximumUndoRedoNodeGraph").toInt(), 0);
+    }
+    if (settings.contains("DefaultNodeColor_r")) {
+        _defaultNodeColor->setValue(settings.value("DefaultNodeColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultNodeColor_g")) {
+        _defaultNodeColor->setValue(settings.value("DefaultNodeColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultNodeColor_b")) {
+        _defaultNodeColor->setValue(settings.value("DefaultNodeColor_b").toDouble(), 2);
     }
     settings.endGroup();
     
@@ -809,4 +846,11 @@ bool Settings::loadBundledPlugins() const
 bool Settings::preferBundledPlugins() const
 {
     return _preferBundledPlugins->getValue();
+}
+
+void Settings::getDefaultNodeColor(float *r,float *g,float *b) const
+{
+    *r = _defaultNodeColor->getValue(0);
+    *g = _defaultNodeColor->getValue(1);
+    *b = _defaultNodeColor->getValue(2);
 }

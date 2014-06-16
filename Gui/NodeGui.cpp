@@ -41,6 +41,7 @@
 #include "Engine/Timer.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
+#include "Engine/Image.h"
 #include "Engine/Settings.h"
 
 #define NATRON_STATE_INDICATOR_OFFSET 5
@@ -198,6 +199,8 @@ void NodeGui::initialize(NodeGraph* dag,
         _settingsPanel = new NodeSettingsPanel(_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
         QObject::connect(_settingsPanel, SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
+        QObject::connect(_settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(setDefaultGradientColor(QColor)));
+
         dockContainer->addWidget(_settingsPanel);
         
         if (!requestedByLoad) {
@@ -228,8 +231,8 @@ void NodeGui::initialize(NodeGraph* dag,
     _selectedGradient->setColorAt(1, QColor(150,187,81));
     
     _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
-    _defaultGradient->setColorAt(0, QColor(224,224,224));
-    _defaultGradient->setColorAt(1, QColor(142,142,142));
+    QColor defaultColor = getCurrentColor();
+    setDefaultGradientColor(defaultColor);
     
     _clonedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
     _clonedGradient->setColorAt(0, QColor(200,70,100));
@@ -239,6 +242,7 @@ void NodeGui::initialize(NodeGraph* dag,
     _disabledGradient->setColorAt(0,QColor(0,0,0));
     _disabledGradient->setColorAt(1, QColor(20,20,20));
     
+
     _boundingBox->setBrush(*_defaultGradient);
 
     
@@ -258,6 +262,17 @@ void NodeGui::initialize(NodeGraph* dag,
         onDisabledKnobToggled(true);
     }
     
+}
+
+void NodeGui::setDefaultGradientColor(const QColor& color)
+{
+    _defaultGradient->setColorAt(1,color);
+    QColor colorBrightened;
+    colorBrightened.setRedF(Natron::clamp(color.redF() * 1.5));
+    colorBrightened.setGreenF(Natron::clamp(color.greenF() * 1.5));
+    colorBrightened.setBlueF(Natron::clamp(color.blueF() * 1.5));
+    _defaultGradient->setColorAt(0, colorBrightened);
+    refreshCurrentBrush();
 }
 
 void NodeGui::beginEditKnobs() {
@@ -678,12 +693,10 @@ Edge* NodeGui::firstAvailableEdge(){
     return NULL;
 }
 
-
-
-void NodeGui::setSelected(bool b){
-    _selected = b;
+void NodeGui::refreshCurrentBrush()
+{
     if (!_internalNode->isNodeDisabled()) {
-        if (b) {
+        if (_selected) {
             _boundingBox->setBrush(*_selectedGradient);
         } else {
             if (_slaveMasterLink) {
@@ -692,7 +705,15 @@ void NodeGui::setSelected(bool b){
                 _boundingBox->setBrush(*_defaultGradient);
             }
         }
+
+    } else {
+        _boundingBox->setBrush(*_disabledGradient);
     }
+}
+
+void NodeGui::setSelected(bool b){
+    _selected = b;
+    refreshCurrentBrush();
     update();
     if(_settingsPanel){
         _settingsPanel->setSelected(b);
@@ -1301,19 +1322,11 @@ QSize NodeGui::getSize() const
 
 void NodeGui::onDisabledKnobToggled(bool disabled) {
     if (disabled) {
-        _boundingBox->setBrush(*_disabledGradient);
         _nameItem->setDefaultTextColor(QColor(120,120,120));
     } else {
-        if (_slaveMasterLink) {
-            _boundingBox->setBrush(*_clonedGradient);
-        } else if (isSelected()) {
-            _boundingBox->setBrush(*_selectedGradient);
-        } else {
-            _boundingBox->setBrush(*_defaultGradient);
-        }
-        _boundingBox->setBrush(*_defaultGradient);
         _nameItem->setDefaultTextColor(QColor(0,0,0));
     }
+    refreshCurrentBrush();
 }
 
 void NodeGui::toggleBitDepthIndicator(bool on,const QString& tooltip)
@@ -1558,6 +1571,18 @@ void NodeGui::onNodeExtraLabelChanged(const QString& label)
 {
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(label); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(_internalNode->getName().c_str(),_nodeLabel);
+}
+
+QColor NodeGui::getCurrentColor() const
+{
+    return _settingsPanel ? _settingsPanel->getCurrentColor() : QColor(142,142,142);
+}
+
+void NodeGui::setCurrentColor(const QColor& c)
+{
+    if (_settingsPanel) {
+        _settingsPanel->setCurrentColor(c);
+    }
 }
 
 ///////////////////

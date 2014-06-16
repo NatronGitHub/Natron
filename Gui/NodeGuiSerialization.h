@@ -21,13 +21,16 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/version.hpp>
 
+#define NODE_GUI_INTRODUCES_COLOR 2
+#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_COLOR
+
 class NodeGui;
 class NodeGuiSerialization
 {
     
 public:
     
-    NodeGuiSerialization(){}
+    NodeGuiSerialization() : _colorWasFound(false) {}
     
     void initialize(const boost::shared_ptr<NodeGui>& n);
 
@@ -38,26 +41,44 @@ public:
     bool isPreviewEnabled() const {return _previewEnabled;}
     
     const std::string& getName() const {return _nodeName;}
+    
+    void getColor(float* r,float *g,float* b) const
+    {
+        *r = _r;
+        *g = _g;
+        *b = _b;
+    }
+    
+    bool colorWasFound() const { return _colorWasFound; }
+    
 private:
 
     std::string _nodeName;
     double _posX,_posY;
     bool _previewEnabled;
+    float _r,_g,_b; //< color
+    bool _colorWasFound;
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
-        (void)version;
+
         ar & boost::serialization::make_nvp("Name",_nodeName);
         ar & boost::serialization::make_nvp("X_position",_posX);
         ar & boost::serialization::make_nvp("Y_position",_posY);
         ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
+        if (version >= NODE_GUI_INTRODUCES_COLOR) {
+            ar & boost::serialization::make_nvp("r",_r);
+            ar & boost::serialization::make_nvp("g",_g);
+            ar & boost::serialization::make_nvp("b",_b);
+            _colorWasFound = true;
+        }
     }
 
 
 };
-BOOST_CLASS_VERSION(NodeGuiSerialization, 1)
+BOOST_CLASS_VERSION(NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)
 
 
 #endif // NODEGUISERIALIZATION_H

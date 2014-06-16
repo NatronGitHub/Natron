@@ -63,6 +63,7 @@ SOURCES += \
     KnobUndoCommand.cpp \
     LineEdit.cpp \
     MenuWithToolTips.cpp \
+    NodeBackDrop.cpp \
     NodeGraph.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
@@ -117,6 +118,7 @@ HEADERS += \
     KnobUndoCommand.h \
     LineEdit.h \
     MenuWithToolTips.h \
+    NodeBackDrop.h \
     NodeGraph.h \
     NodeGui.h \
     NodeGuiSerialization.h \

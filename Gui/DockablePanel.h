@@ -98,6 +98,11 @@ public:
 
     KnobGui* getKnobGui(const boost::shared_ptr<KnobI>& knob) const;
     
+    ///MT-safe
+    QColor getCurrentColor() const;
+    
+    ///MT-safe
+    void setCurrentColor(const QColor& c);
 public slots:
     
     /*Internal slot, not meant to be called externally.*/
@@ -132,6 +137,13 @@ public slots:
     void floatPanel();
     
     void setClosed(bool c);
+    
+    void onColorButtonClicked();
+    
+    void onColorDialogColorChanged(const QColor& color);
+    
+    
+    
 signals:
     
     /*emitted when the panel is clicked*/
@@ -153,6 +165,8 @@ signals:
     void maximized();
     
     void closeChanged(bool closed);
+    
+    void colorChanged(QColor);
     
 protected:
     

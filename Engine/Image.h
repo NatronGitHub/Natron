@@ -348,6 +348,9 @@ namespace Natron {
     template <typename SRCPIX,typename DSTPIX>
     DSTPIX convertPixelDepth(SRCPIX pix);
     
+    template <typename PIX>
+    PIX clamp(PIX v);
+    
 }//namespace Natron
 
 

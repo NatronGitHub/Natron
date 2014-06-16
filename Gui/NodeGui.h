@@ -250,7 +250,13 @@ public:
     
     void removeHighlightOnAllEdges();
     
+    QColor getCurrentColor() const;
+    
+    void setCurrentColor(const QColor& c);
+    
 public slots:
+    
+    void setDefaultGradientColor(const QColor& color);
   
     void togglePreview();
     
@@ -334,6 +340,7 @@ public slots:
     void toggleBitDepthIndicator(bool on,const QString& tooltip);
     
     void onNodeExtraLabelChanged(const QString& label);
+    
 
 signals:
     
@@ -354,6 +361,8 @@ private:
     void computePreviewImage(int time);
     
     void populateMenu();
+    
+    void refreshCurrentBrush();
     
     /*pointer to the dag*/
     NodeGraph* _graph;
