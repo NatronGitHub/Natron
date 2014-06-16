@@ -563,6 +563,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
                                                               " button on the right.",
                                                               Qt::WhiteSpaceNormal));
     boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
+    _imp->frameRangeEdit->setMaximumWidth(70);
     onTimelineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), 0);
     
     _imp->_playerLayout->addWidget(_imp->frameRangeEdit);
