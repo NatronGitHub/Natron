@@ -625,19 +625,19 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
 
    // the srcRoD of the output should be enclosed in half the roi.
     // It does not have to be exactly half of the input.
-    assert(dstRoD.x1*2 >= roi.x1 &&
-           dstRoD.x2*2 <= roi.x2 &&
-           dstRoD.y1*2 >= roi.y1 &&
-           dstRoD.y2*2 <= roi.y2 &&
-           dstRoD.width()*2 <= roi.width() &&
-           dstRoD.height()*2 <= roi.height());
+//    assert(dstRoD.x1*2 >= roi.x1 &&
+//           dstRoD.x2*2 <= roi.x2 &&
+//           dstRoD.y1*2 >= roi.y1 &&
+//           dstRoD.y2*2 <= roi.y2 &&
+//           dstRoD.width()*2 <= roi.width() &&
+//           dstRoD.height()*2 <= roi.height());
     assert(getComponents() == output->getComponents());
     
     int components = getElementsCountForComponents(getComponents());
 
     RectI srcRoI = roi;
     srcRoI.intersect(srcRoD, &srcRoI); // intersect srcRoI with the region of definition
-    srcRoI = srcRoI.roundPowerOfTwoSmallestEnclosing(1);
+    srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
     
     RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
     // a few checks...
@@ -667,7 +667,7 @@ void Image::halveRoI(const RectI& roi,Natron::Image* output) const
             halveRoIInternal<unsigned short,65535>(*this,srcRoD, *output, dstRoD, srcRoI, dstRoI, components);
             break;
         case IMAGE_FLOAT:
-            halveRoIInternal<unsigned char,1>(*this,srcRoD, *output, dstRoD, srcRoI, dstRoI, components);
+            halveRoIInternal<float,1>(*this,srcRoD, *output, dstRoD, srcRoI, dstRoI, components);
             break;
         default:
             break;
@@ -748,7 +748,7 @@ void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int
     assert(level > 0);
     
     ///This is the portion we computed in buildMipMapLevel
-    RectI dstRoI = roi.downscalePowerOfTwoLargestEnclosed(level);
+    RectI dstRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
     
     ///Even if the roi is this image's RoD, the
     ///resulting mipmap of that roi should fit into output.

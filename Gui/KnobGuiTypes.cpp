@@ -2346,7 +2346,11 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
 {
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
-    assert(i != -1);
+    
+    if (i == -1) {
+        ///the plugin probably edited the text, don't bother parsing html
+        return text;
+    }
     
     QString boldStr(kBoldStartTag);
     int foundBold = text.lastIndexOf(boldStr,i);
