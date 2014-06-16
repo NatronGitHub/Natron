@@ -49,6 +49,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/DockablePanel.h"
 #include "Gui/ClickableLabel.h"
 
+#include "ofxNatron.h"
+
 #define SLIDER_MAX_RANGE 100000
 
 #define kFontSizeTag "<font size=\""
@@ -2076,8 +2078,8 @@ void String_KnobGui::restoreTextInfosFromString()
         
         EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
         ///For the merge operator, restore the operation string in the label
-        if (effect && QString(effect->pluginID().c_str()).contains("MergeOFX") && _knob->getName() == "label_natron") {
-            boost::shared_ptr<KnobI> knob = effect->getKnobByName("operationString");
+        if (effect && _knob->getName() == "label_natron") {
+            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kOfxParamStringSublabelName);
             if (knob) {
                 String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
                 if (strKnob) {
