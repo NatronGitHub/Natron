@@ -198,10 +198,7 @@ public:
     
     const std::map<boost::shared_ptr<KnobI>,KnobGui*>& getKnobs() const;
     
-    static const int NODE_LENGTH = 80;
-    static const int NODE_HEIGHT = 30;
-    static const int NODE_WITH_PREVIEW_LENGTH = NODE_LENGTH / 2 + NATRON_PREVIEW_WIDTH ;
-    static const int NODE_WITH_PREVIEW_HEIGHT = NODE_HEIGHT + NATRON_PREVIEW_HEIGHT;
+
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 20;
 
     

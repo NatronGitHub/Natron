@@ -53,6 +53,11 @@
 
 #define NATRON_ELLIPSE_WARN_DIAMETER 10
 
+#define NODE_WIDTH 80
+#define NODE_HEIGHT 30
+#define NODE_WITH_PREVIEW_WIDTH NODE_WIDTH / 2 + NATRON_PREVIEW_WIDTH
+#define NODE_WITH_PREVIEW_HEIGHT NODE_HEIGHT + NATRON_PREVIEW_HEIGHT
+
 using namespace Natron;
 
 using std::make_pair;
@@ -211,7 +216,7 @@ void NodeGui::initialize(NodeGraph* dag,
         togglePreview_internal();
         
     }else{
-        updateShape(NODE_LENGTH,NODE_HEIGHT);
+        updateShape(NODE_WIDTH,NODE_HEIGHT);
     }
     
     
@@ -269,13 +274,13 @@ void NodeGui::togglePreview_internal()
             _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
             _previewPixmap->setZValue(0.6);
         }
-        updateShape(NODE_WITH_PREVIEW_LENGTH,NODE_WITH_PREVIEW_HEIGHT);
+        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
         _previewPixmap->show();
     }else{
         if (_previewPixmap) {
             _previewPixmap->hide();
         }
-        updateShape(NODE_LENGTH,NODE_HEIGHT);
+        updateShape(NODE_WIDTH,NODE_HEIGHT);
     }
 }
 
@@ -292,11 +297,11 @@ void NodeGui::togglePreview(){
 QSize NodeGui::nodeSize(bool withPreview) {
     QSize ret;
     if (withPreview) {
-        ret.setWidth(NodeGui::NODE_WITH_PREVIEW_LENGTH);
-        ret.setHeight(NodeGui::NODE_WITH_PREVIEW_HEIGHT);
+        ret.setWidth(NODE_WITH_PREVIEW_WIDTH);
+        ret.setHeight(NODE_WITH_PREVIEW_HEIGHT);
     } else {
-        ret.setWidth(NodeGui::NODE_LENGTH);
-        ret.setHeight(NodeGui::NODE_HEIGHT);
+        ret.setWidth(NODE_WIDTH);
+        ret.setHeight(NODE_HEIGHT);
     }
     return ret;
 }
@@ -1295,9 +1300,9 @@ void NodeGui::deleteReferences()
 QSize NodeGui::getSize() const
 {
     if (_previewPixmap && _previewPixmap->isVisible()) {
-        return QSize(NODE_WITH_PREVIEW_LENGTH,NODE_WITH_PREVIEW_HEIGHT);
+        return QSize(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
     } else {
-        return QSize(NODE_LENGTH,NODE_HEIGHT);
+        return QSize(NODE_WIDTH,NODE_HEIGHT);
     }
 }
 
@@ -1549,8 +1554,8 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
     
     
     bool hasPreview =  _internalNode->isPreviewEnabled();
-    double nodeHeight = hasPreview ? NodeGui::NODE_WITH_PREVIEW_HEIGHT : NodeGui::NODE_HEIGHT;
-    double nodeWidth = hasPreview ? NodeGui::NODE_WITH_PREVIEW_LENGTH : NodeGui::NODE_LENGTH;
+    double nodeHeight = hasPreview ? NODE_WITH_PREVIEW_HEIGHT : NODE_HEIGHT;
+    double nodeWidth = hasPreview ? NODE_WITH_PREVIEW_WIDTH : NODE_WIDTH;
     QRectF labelBbox = _nameItem->boundingRect();
     updateShape(nodeWidth, std::max(nodeHeight,labelBbox.height()));
     
