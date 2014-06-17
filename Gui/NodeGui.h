@@ -168,6 +168,8 @@ public:
      to query the src and dst of a specific arrow.*/
     const std::map<int,Edge*>& getInputsArrows() const {return _inputEdges;}
     
+    Edge* getOutputArrow() const;
+    
     Edge* getInputArrow(int inputNb) const;
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
@@ -211,7 +213,7 @@ public:
     
     Edge* hasEdgeNearbyRect(const QRectF& rect);
     
-    void refreshPosition(double x,double y);
+    void refreshPosition(double x,double y,bool skipMagnet = false);
     
     void changePosition(double dx,double dy);
     

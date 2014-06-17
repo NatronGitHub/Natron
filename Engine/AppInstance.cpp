@@ -224,6 +224,13 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
 }
 
 boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog) {
+    
+    ///use the same entry point to create backdrops.
+    ///Since they are purely GUI we don't actually return a node.
+    if (name == NATRON_BACKDROP_NODE_NAME) {
+        createBackDrop();
+        return boost::shared_ptr<Natron::Node>();
+    }
     return createNodeInternal(name, majorVersion, minorVersion, false,
                               openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
 }

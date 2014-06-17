@@ -69,6 +69,9 @@ public:
      * If requestedByLoad is true then it will never attempt to do this auto-connection.
      * If openImageFileDialog is true then if the node has a file knob indicating an image file it will automatically
      * prompt the user with a file dialog.
+     *
+     * You can use this function to create backdrops also which are purely GUI stuff. In this case the pointer returned will
+     * be NULL.
      **/
     boost::shared_ptr<Natron::Node> createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,
                                                bool openImageFileDialog = true);
@@ -157,6 +160,11 @@ protected:
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 private:
+    
+    /**
+     * @brief Override to create a backdrop node. This is purely GUI.
+     **/
+    virtual void createBackDrop() {}
     
     
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,

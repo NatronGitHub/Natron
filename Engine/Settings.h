@@ -119,6 +119,10 @@ public:
     bool preferBundledPlugins() const;
     
     void getDefaultNodeColor(float *r,float *g,float *b) const;
+    
+    void getDefaultSelectedNodeColor(float *r,float *g,float *b) const;
+    
+    void getDefaultBackDropColor(float *r,float *g,float *b) const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -157,6 +161,8 @@ private:
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
+    boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
+    boost::shared_ptr<Color_Knob> _defaultBackdropColor;
 
     
     boost::shared_ptr<Page_Knob> _readersTab;

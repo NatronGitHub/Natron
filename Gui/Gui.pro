@@ -64,6 +64,7 @@ SOURCES += \
     LineEdit.cpp \
     MenuWithToolTips.cpp \
     NodeBackDrop.cpp \
+    NodeBackDropSerialization.cpp \
     NodeGraph.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
@@ -119,6 +120,7 @@ HEADERS += \
     LineEdit.h \
     MenuWithToolTips.h \
     NodeBackDrop.h \
+    NodeBackDropSerialization.h \
     NodeGraph.h \
     NodeGui.h \
     NodeGuiSerialization.h \

@@ -124,6 +124,13 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
      for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
          _histograms.push_back((*it)->objectName().toStdString());
      }
+    
+    std::list<NodeBackDrop*> backdrops = projectGui->getGui()->getNodeGraph()->getActiveBackDrops();
+    for (std::list<NodeBackDrop*>::iterator it = backdrops.begin(); it!=backdrops.end();++it) {
+        NodeBackDropSerialization s;
+        s.initialize(*it);
+        _backdrops.push_back(s);
+    }
      
 }
 

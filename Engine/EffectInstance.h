@@ -39,7 +39,7 @@ class ImageParams;
  * A live instance is always living throughout the lifetime of a Node and other copies are
  * created on demand when a render is needed.
  **/
-class EffectInstance : public KnobHolder
+class EffectInstance : public NamedKnobHolder
 {
 public:
     
@@ -135,7 +135,7 @@ public:
      * @brief Forwarded to the node's name
      **/
     const std::string& getName() const WARN_UNUSED_RETURN;
-    std::string getName_mt_safe() const WARN_UNUSED_RETURN;
+    virtual std::string getName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /**
      * @brief Forwarded to the node's render format

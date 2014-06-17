@@ -40,6 +40,8 @@ namespace boost {
 class Splitter;
 class QUndoStack;
 class QScrollArea;
+class NodeBackDrop;
+class QVBoxLayout;
 
 //Natron gui
 class GuiAppInstance;
@@ -247,6 +249,8 @@ public:
     
     CurveEditor* getCurveEditor() const;
     
+    QVBoxLayout* getPropertiesLayout() const;
+    
     QScrollArea* getPropertiesScrollArea() const;
     
     TabWidget* getWorkshopPane() const;
@@ -303,7 +307,7 @@ public:
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
     
-    
+    NodeBackDrop* createBackDrop(bool requestedByLoad) ;
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

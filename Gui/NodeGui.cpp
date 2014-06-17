@@ -33,6 +33,7 @@
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/KnobGuiTypes.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
@@ -227,8 +228,6 @@ void NodeGui::initialize(NodeGraph* dag,
     QRectF rect = _boundingBox->rect();
     
     _selectedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
-    _selectedGradient->setColorAt(0, QColor(249,187,81));
-    _selectedGradient->setColorAt(1, QColor(150,187,81));
     
     _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
     QColor defaultColor = getCurrentColor();
@@ -365,13 +364,13 @@ void NodeGui::updateShape(int width,int height){
 
 
 
-void NodeGui::refreshPosition(double x,double y){
+void NodeGui::refreshPosition(double x,double y,bool skipMagnet){
     
     
     QRectF bbox = mapRectToScene(_boundingBox->rect());
     const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
 
-    if (appPTR->getCurrentSettings()->isSnapToNodeEnabled()) {
+    if (appPTR->getCurrentSettings()->isSnapToNodeEnabled() && !skipMagnet) {
         
         
         if (_magnecEnabled) {
@@ -697,6 +696,16 @@ void NodeGui::refreshCurrentBrush()
 {
     if (!_internalNode->isNodeDisabled()) {
         if (_selected) {
+            float selectedR,selectedG,selectedB;
+            appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&selectedR, &selectedG, &selectedB);
+            QColor selColor;
+            selColor.setRgbF(selectedR, selectedG, selectedB);
+            QColor brightenedSelColor ;
+            brightenedSelColor.setRgbF(Natron::clamp(selColor.redF() * 1.2)
+                                       ,Natron::clamp(selColor.greenF() * 1.2)
+                                       ,Natron::clamp(selColor.blueF() * 1.2));
+            _selectedGradient->setColorAt(1, selColor);
+            _selectedGradient->setColorAt(0, brightenedSelColor);
             _boundingBox->setBrush(*_selectedGradient);
         } else {
             if (_slaveMasterLink) {
@@ -1049,15 +1058,18 @@ void NodeGui::populateMenu(){
     QObject::connect(duplicateAction,SIGNAL(triggered()),this,SLOT(duplicateNode()));
     _menu->addAction(duplicateAction);
     
+    bool isCloned = _internalNode->getMasterNode() != NULL;
+    
     QAction* cloneAction = new QAction(tr("Clone"),_menu);
     cloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_K));
     QObject::connect(cloneAction,SIGNAL(triggered()),this,SLOT(cloneNode()));
+    cloneAction->setEnabled(!isCloned);
     _menu->addAction(cloneAction);
     
     QAction* decloneAction = new QAction(tr("Declone"),_menu);
     decloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::ShiftModifier + Qt::Key_K));
     QObject::connect(decloneAction,SIGNAL(triggered()),this,SLOT(decloneNode()));
-    decloneAction->setEnabled(_internalNode->getMasterNode() != NULL);
+    decloneAction->setEnabled(isCloned);
     _menu->addAction(decloneAction);
     
     QAction* togglePreviewAction = new QAction("Toggle preview image",_menu);
@@ -1476,33 +1488,9 @@ Edge* NodeGui::getInputArrow(int inputNb) const
     return NULL;
 }
 
-static void parseFont(const QString& label,QFont& f)
+Edge* NodeGui::getOutputArrow() const
 {
-    QString toFind = QString("<font size=\"");
-    int startFontTag = label.indexOf(toFind);
-    assert(startFontTag != -1);
-    startFontTag += toFind.size();
-    int j = startFontTag;
-    
-    QString sizeStr;
-    while (j < label.size() && label.at(j).isDigit()) {
-        sizeStr.push_back(label.at(j));
-        ++j;
-    }
-    
-    toFind = QString("face=\"");
-    startFontTag = label.indexOf(toFind,startFontTag);
-    assert(startFontTag != -1);
-    
-    j = startFontTag;
-    QString faceStr;
-    while (j < label.size() && label.at(j) != QChar('"')) {
-        faceStr.push_back(label.at(j));
-        ++j;
-    }
-    
-    f.setPointSize(sizeStr.toInt());
-    f.setFamily(faceStr);
+    return _outputEdge;
 }
 
 void NodeGui::setNameItemHtml(const QString& name,const QString& label)
@@ -1551,10 +1539,9 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
     _nameItem->adjustSize();
 
     
-    ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
-    ///of the font size.
+    
     QFont f;
-    parseFont(textLabel, f);
+    String_KnobGui::parseFont(textLabel, f);
     _nameItem->setFont(f);
     
     

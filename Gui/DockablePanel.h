@@ -73,7 +73,7 @@ public:
     QUndoStack* getUndoStack() const;
 
     bool isClosed() const;
-
+    bool isFloating() const;
     
     /*Creates a new button and inserts it in the header
      at position headerPosition. You can then take
@@ -142,7 +142,7 @@ public slots:
     
     void onColorDialogColorChanged(const QColor& color);
     
-    
+
     
 signals:
     

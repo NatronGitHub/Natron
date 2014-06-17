@@ -50,6 +50,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/RotoPanel.h"
+#include "Gui/NodeBackDrop.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -265,7 +266,15 @@ DockablePanel::DockablePanel(Gui* gui
         if (headerMode != READ_ONLY_NAME) {
             
             float r,g,b;
-            appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
+            Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
+            if (iseffect) {
+                appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
+            } else if(backdrop) {
+                appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
+            } else {
+                r = g = b = 0.6;
+            }
             _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
             _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
             _imp->_colorButton->setToolTip(Qt::convertFromPlainText("Set here the color of the node in the nodegraph. "
@@ -378,6 +387,16 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
 
 void DockablePanel::onLineEditNameEditingFinished() {
     
+    NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
+    if (bd) {
+        QString newName = _imp->_nameLineEdit->text();
+        if (_imp->_gui->getNodeGraph()->checkIfBackDropNameExists(newName,bd)) {
+            Natron::errorDialog("Backdrop name", "A backdrop node with the same name already exists in the project.");
+            _imp->_nameLineEdit->setText(bd->getName());
+            return;
+        }
+        
+    }
     
     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (effect) {
@@ -822,6 +841,9 @@ void DockablePanel::showHelp(){
 
 void DockablePanel::setClosed(bool c)
 {
+    if (_imp->_floating) {
+        floatPanel();
+    }
     setVisible(!c);
     _imp->_isClosed = c;
     emit closeChanged(c);
@@ -850,6 +872,7 @@ void DockablePanel::closePanel() {
     _imp->_isClosed = true;
     emit closeChanged(true);
     _imp->_gui->removeVisibleDockablePanel(this);
+    
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
         std::list<SequenceTime> nodeKeyframes;
@@ -962,6 +985,8 @@ QVBoxLayout* DockablePanel::getContainer() const {return _imp->_container;}
 QUndoStack* DockablePanel::getUndoStack() const { return _imp->_undoStack; }
 
 bool DockablePanel::isClosed() const { return _imp->_isClosed; }
+
+bool DockablePanel::isFloating() const { return _imp->_floating; }
 
 void DockablePanel::onColorDialogColorChanged(const QColor& color)
 {

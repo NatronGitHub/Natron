@@ -2232,6 +2232,8 @@ CurveEditor* Gui::getCurveEditor() const { return _imp->_curveEditor; }
 
 QScrollArea* Gui::getPropertiesScrollArea() const { return _imp->_propertiesScrollArea; }
 
+QVBoxLayout* Gui::getPropertiesLayout() const { return _imp->_layoutPropertiesBin; }
+
 TabWidget* Gui::getWorkshopPane() const { return _imp->_workshopPane; }
 
 const std::map<std::string,QWidget*>& Gui::getRegisteredTabs() const { return _imp->_registeredTabs; }
@@ -2506,6 +2508,13 @@ void Gui::clearAllVisiblePanels()
 {
     while (!_imp->openedPanels.empty()) {
         std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        (*it)->closePanel();
+        if (!(*it)->isFloating()) {
+            (*it)->setClosed(true);
+        }
     }
+}
+
+NodeBackDrop* Gui::createBackDrop(bool requestedByLoad)
+{
+    return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad);
 }

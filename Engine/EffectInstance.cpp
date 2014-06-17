@@ -196,7 +196,7 @@ struct EffectInstance::Implementation {
 };
 
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
-: KnobHolder(node ? node->getApp() : NULL)
+: NamedKnobHolder(node ? node->getApp() : NULL)
 , _node(node)
 , _imp(new Implementation)
 {

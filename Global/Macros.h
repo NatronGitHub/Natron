@@ -70,6 +70,10 @@
 #define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
 #define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
 #define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"
+
+#define NATRON_BACKDROP_NODE_NAME "BackDrop"
+
+
 #define NATRON_PREVIEW_WIDTH 64
 #define NATRON_PREVIEW_HEIGHT 48
 #define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2

@@ -2178,6 +2178,36 @@ void String_KnobGui::restoreTextInfosFromString()
     
 }
 
+
+void String_KnobGui::parseFont(const QString& label,QFont& f)
+{
+    QString toFind = QString("<font size=\"");
+    int startFontTag = label.indexOf(toFind);
+    assert(startFontTag != -1);
+    startFontTag += toFind.size();
+    int j = startFontTag;
+    
+    QString sizeStr;
+    while (j < label.size() && label.at(j).isDigit()) {
+        sizeStr.push_back(label.at(j));
+        ++j;
+    }
+    
+    toFind = QString("face=\"");
+    startFontTag = label.indexOf(toFind,startFontTag);
+    assert(startFontTag != -1);
+    
+    j = startFontTag;
+    QString faceStr;
+    while (j < label.size() && label.at(j) != QChar('"')) {
+        faceStr.push_back(label.at(j));
+        ++j;
+    }
+    
+    f.setPointSize(sizeStr.toInt());
+    f.setFamily(faceStr);
+}
+
 void String_KnobGui::updateFontColorIcon(const QColor& color)
 {
     QPixmap p(18,18);
@@ -2358,7 +2388,9 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     
     QString boldStr(kBoldStartTag);
     int foundBold = text.lastIndexOf(boldStr,i);
-    assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
+    
+    ///Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
+    //assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
     
     if (foundBold != -1) {
         text.remove(foundBold, boldStr.size());
@@ -2373,7 +2405,9 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
 
     QString italStr(kItalicStartTag);
     int foundItal = text.lastIndexOf(italStr,i);
-    assert((_italicActivated && foundItal != -1) || (!_italicActivated && foundItal == -1));
+    
+    //Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
+    // assert((_italicActivated && foundItal != -1) || (!_italicActivated && foundItal == -1));
     
     if (foundItal != -1) {
         text.remove(foundItal, italStr.size());

@@ -1238,6 +1238,20 @@ private:
 };
 
 
+////Common interface for EffectInstance and backdrops
+class NamedKnobHolder : public KnobHolder
+{
+public:
+    
+    NamedKnobHolder(AppInstance* instance) : KnobHolder(instance) {}
+    
+    virtual ~NamedKnobHolder(){}
+    
+    virtual std::string getName_mt_safe() const = 0;
+};
+
+
+
 template<typename K>
 boost::shared_ptr<K> KnobHolder::createKnob(const std::string &description, int dimension) const
 {

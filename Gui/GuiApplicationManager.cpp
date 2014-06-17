@@ -683,7 +683,14 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         plugins->push_back(plugin);
         addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
     }
-
+    
+    {
+        QString label(NATRON_BACKDROP_NODE_NAME);
+        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,NULL,1,0);
+        plugins->push_back(plugin);
+        QStringList backdropGrouping("Other");
+        addPluginToolButtons(backdropGrouping, label, label, "", "");
+    }
 }
 
 AppInstance* GuiApplicationManager::makeNewInstance(int appID) const {

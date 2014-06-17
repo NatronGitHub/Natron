@@ -23,9 +23,14 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/version.hpp>
 #include "Engine/Rect.h"
 #include "Gui/NodeGuiSerialization.h"
+#include "Gui/NodeBackDropSerialization.h"
 
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
 #define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING
+
+#define PROJECT_GUI_INTRODUCES_BACKDROPS 2
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_BACKDROPS
+
 class ProjectGui;
 
 struct ViewerData {
@@ -108,6 +113,8 @@ class ProjectGuiSerialization {
     std::map<std::string, ViewerData > _viewersData;
     
     std::list<std::string> _histograms;
+    
+    std::list<NodeBackDropSerialization> _backdrops;
 
     bool _arePreviewTurnedOffGlobally;
     
@@ -122,7 +129,9 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
         ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",_arePreviewTurnedOffGlobally);
         ar & boost::serialization::make_nvp("Histograms",_histograms);
-
+        if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS) {
+            ar & boost::serialization::make_nvp("Backdrops",_backdrops);
+        }
     }
     
 public:
@@ -145,10 +154,13 @@ public:
     
     const std::list<std::string>& getHistograms() const { return _histograms; }
     
+    const std::list<NodeBackDropSerialization>& getBackdrops() const { return _backdrops; }
+    
 private:
     
     void createParenting(std::map<std::string,PaneLayout>::iterator it);
 };
+BOOST_CLASS_VERSION(ProjectGuiSerialization, PROJECT_GUI_SERIALIZATION_VERSION)
 
 
 #endif // PROJECTGUISERIALIZATION_H

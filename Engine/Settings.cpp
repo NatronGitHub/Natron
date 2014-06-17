@@ -262,6 +262,19 @@ void Settings::initializeKnobs(){
     
     _nodegraphTab->addKnob(_defaultNodeColor);
     
+    _defaultSelectedNodeColor = Natron::createKnob<Color_Knob>(this, "Default selected node color",3);
+    _defaultSelectedNodeColor->setAnimationEnabled(false);
+    _defaultSelectedNodeColor->setHintToolTip("This is default color which the selected nodes have.");
+   
+    _nodegraphTab->addKnob(_defaultSelectedNodeColor);
+
+    
+    _defaultBackdropColor =  Natron::createKnob<Color_Knob>(this, "Default backdrop color",3);
+    _defaultBackdropColor->setAnimationEnabled(false);
+    _defaultBackdropColor->setHintToolTip("This is default color which backdrop nodes have when created.");
+    
+    _nodegraphTab->addKnob(_defaultBackdropColor);
+    
     /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
     
@@ -336,7 +349,12 @@ void Settings::setDefaultValues() {
     _defaultNodeColor->setDefaultValue(0.6,0);
     _defaultNodeColor->setDefaultValue(0.6,1);
     _defaultNodeColor->setDefaultValue(0.6,2);
-
+    _defaultSelectedNodeColor->setDefaultValue(0.7,0);
+    _defaultSelectedNodeColor->setDefaultValue(0.6,1);
+    _defaultSelectedNodeColor->setDefaultValue(0.3,2);
+    _defaultBackdropColor->setDefaultValue(0.5,0);
+    _defaultBackdropColor->setDefaultValue(0.5,1);
+    _defaultBackdropColor->setDefaultValue(0.2,2);
     
 #pragma message WARN("This is kinda a big hack to promote the OpenImageIO plug-in, we should use Tuttle's notation extension")
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
@@ -405,6 +423,13 @@ void Settings::saveSettings(){
     settings.setValue("DefaultNodeColor_r", _defaultNodeColor->getValue(0));
     settings.setValue("DefaultNodeColor_g", _defaultNodeColor->getValue(1));
     settings.setValue("DefaultNodeColor_b", _defaultNodeColor->getValue(2));
+    settings.setValue("DefaultSelectedNodeColor_r", _defaultSelectedNodeColor->getValue(0));
+    settings.setValue("DefaultSelectedNodeColor_g", _defaultSelectedNodeColor->getValue(1));
+    settings.setValue("DefaultSelectedNodeColor_b", _defaultSelectedNodeColor->getValue(2));
+    settings.setValue("DefaultBackdropColor_r", _defaultBackdropColor->getValue(0));
+    settings.setValue("DefaultBackdropColor_g", _defaultBackdropColor->getValue(1));
+    settings.setValue("DefaultBackdropColor_b", _defaultBackdropColor->getValue(2));
+
     settings.endGroup();
     
     settings.beginGroup("Readers");
@@ -514,6 +539,25 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("DefaultNodeColor_b")) {
         _defaultNodeColor->setValue(settings.value("DefaultNodeColor_b").toDouble(), 2);
+    }
+    if (settings.contains("DefaultSelectedNodeColor_r")) {
+        _defaultSelectedNodeColor->setValue(settings.value("DefaultSelectedNodeColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultSelectedNodeColor_g")) {
+        _defaultSelectedNodeColor->setValue(settings.value("DefaultSelectedNodeColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultSelectedNodeColor_b")) {
+        _defaultSelectedNodeColor->setValue(settings.value("DefaultSelectedNodeColor_b").toDouble(), 2);
+    }
+
+    if (settings.contains("DefaultBackdropColor_r")) {
+        _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultBackdropColor_g")) {
+        _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultBackdropColor_b")) {
+        _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_b").toDouble(), 2);
     }
     settings.endGroup();
     
@@ -853,4 +897,18 @@ void Settings::getDefaultNodeColor(float *r,float *g,float *b) const
     *r = _defaultNodeColor->getValue(0);
     *g = _defaultNodeColor->getValue(1);
     *b = _defaultNodeColor->getValue(2);
+}
+
+void Settings::getDefaultSelectedNodeColor(float *r,float *g,float *b) const
+{
+    *r = _defaultSelectedNodeColor->getValue(0);
+    *g = _defaultSelectedNodeColor->getValue(1);
+    *b = _defaultSelectedNodeColor->getValue(2);
+}
+
+void Settings::getDefaultBackDropColor(float *r,float *g,float *b) const
+{
+    *r = _defaultBackdropColor->getValue(0);
+    *g = _defaultBackdropColor->getValue(1);
+    *b = _defaultBackdropColor->getValue(2);
 }

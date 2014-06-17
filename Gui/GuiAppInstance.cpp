@@ -448,3 +448,9 @@ void GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
 {
     _imp->_gui->onMaxVisibleDockablePanelChanged(maxPanels);
 }
+
+void GuiAppInstance::createBackDrop()
+{
+    ///This function is not used when loading a project, rather we use the one directly in Gui (@see ProjectGui::load)
+    _imp->_gui->createBackDrop(false);
+}

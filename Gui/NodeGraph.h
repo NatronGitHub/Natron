@@ -53,6 +53,8 @@ class QDropEvent;
 class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
+class NodeBackDropSerialization;
+class NodeBackDrop;
 namespace Natron{
     class Node;
 }
@@ -60,7 +62,7 @@ namespace Natron{
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     
-    enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
+    enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING,BACKDROP_DRAGGING,BACKDROP_RESIZING};
     
     Q_OBJECT
     
@@ -124,29 +126,56 @@ public:
         return _previewsTurnedOff;
     }
     
-    void deleteNode(const boost::shared_ptr<NodeGui>& n);
     
     void centerOnNode(const boost::shared_ptr<NodeGui>& n);
-    
+    void deleteNode(const boost::shared_ptr<NodeGui>& n);
     void copyNode(const boost::shared_ptr<NodeGui>& n);
-    
     void cutNode(const boost::shared_ptr<NodeGui>& n);
-    
-    void duplicateNode(const boost::shared_ptr<NodeGui>& n);
-    
-    void cloneNode(const boost::shared_ptr<NodeGui>& n);
-    
+    boost::shared_ptr<NodeGui> duplicateNode(const boost::shared_ptr<NodeGui>& n);
+    boost::shared_ptr<NodeGui> cloneNode(const boost::shared_ptr<NodeGui>& n);
     void decloneNode(const boost::shared_ptr<NodeGui>& n);
-
+    
+    void deleteBackdrop(NodeBackDrop* n);
+    void copyBackdrop(NodeBackDrop* n);
+    void cutBackdrop(NodeBackDrop* n);
+    void duplicateBackdrop(NodeBackDrop* n);
+    void cloneBackdrop(NodeBackDrop* n);
+    void decloneBackdrop(NodeBackDrop* n);
+    
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
     
     void setUndoRedoStackLimit(int limit);
     
     void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
     
+    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad);
+    
+    ///Returns true if it already exists
+    bool checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const;
+    
+    std::list<NodeBackDrop*> getBackDrops() const;
+    std::list<NodeBackDrop*> getActiveBackDrops() const;
+    
+    /**
+     * @brief This function just inserts the given backdrop in the list
+     **/
+    void insertNewBackDrop(NodeBackDrop* bd);
+    
+    /**
+     * @brief This function just removes the given backdrop from the list, it does not delete it or anything.
+     **/
+    void removeBackDrop(NodeBackDrop* bd);
+    
+    void pushRemoveBackDropCommand(NodeBackDrop* bd);
+    
+    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
+    
+    
 public slots:
     
     void deleteSelectedNode();
+    
+    void deleteSelectedBackdrop();
     
     void connectCurrentViewerToSelection(int inputNB);
 
@@ -166,21 +195,18 @@ public slots:
 
     void onProjectNodesCleared();
     
+    ///All these actions also work for backdrops
     void copySelectedNode();
-    
     void cutSelectedNode();
-    
     void pasteNodeClipBoard();
-    
     void duplicateSelectedNode();
-    
     void cloneSelectedNode();
-    
     void decloneSelectedNode();
     
     void centerOnAllNodes();
     
     void toggleConnectionHints();
+    
 
 private:
     
@@ -193,7 +219,9 @@ private:
      **/
     void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
     
-    void pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization);
+    boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization);
+    
+    NodeBackDrop* pasteBackdrop(const NodeBackDropSerialization& serialization,bool offset = true);
   
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
@@ -230,7 +258,7 @@ private:
 
 private:
     
-    
+    void resetAllClipboards();
     
     // FIXME: PIMPL
     QRectF calcNodesBoundingRect();
@@ -258,7 +286,8 @@ private:
     
     bool _nodeCreationShortcutEnabled;
         
-    QGraphicsItem* _root;
+    QGraphicsItem* _root; ///< this is the parent of all items in the graph
+    QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
     
     QScrollArea* _propertyBin;
 
@@ -308,6 +337,12 @@ private:
     Edge* _hintInputEdge;
     Edge* _hintOutputEdge;
     
+    std::list<NodeBackDrop*> _backdrops;
+    boost::shared_ptr<NodeBackDropSerialization> _backdropClipboard;
+
+    NodeBackDrop* _selectedBackDrop;
+    std::list<boost::shared_ptr<NodeGui> > _nodesToMoveWithBackDrop;
+    bool _firstMove;
 };
 
 

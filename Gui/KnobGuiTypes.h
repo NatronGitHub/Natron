@@ -635,6 +635,10 @@ public slots:
     
     void updateFontColorIcon(const QColor& color);
 
+    ///this is a big hack: the html parser builtin QGraphicsTextItem should do this for us...but it doesn't seem to take care
+    ///of the font size.
+    static void parseFont(const QString& s,QFont& f);
+    
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;

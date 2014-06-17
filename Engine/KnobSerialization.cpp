@@ -31,9 +31,10 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int 
         std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
         if (m.second) {
             _master.masterDimension = m.first;
-            Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(m.second->getHolder());
+            NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>(m.second->getHolder());
+            
             assert(holder);
-            _master.masterNodeName = holder->getNode()->getName_mt_safe();
+            _master.masterNodeName = holder->getName_mt_safe();
             _master.masterKnobName = m.second->getName();
         } else {
             _master.masterDimension = -1;
