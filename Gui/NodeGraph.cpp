@@ -2714,6 +2714,7 @@ void DuplicateBackDropCommand::undo()
         (*it)->getNode()->deactivate();
     }
     _isUndone = true;
+    _graph->getGui()->getApp()->triggerAutoSave();
     setText(QObject::tr("Duplicate %1").arg(_bd->getName()));
 }
 
@@ -2726,6 +2727,7 @@ void DuplicateBackDropCommand::redo()
         _bd->activate();
     }
     _isUndone = false;
+    _graph->getGui()->getApp()->triggerAutoSave();
     setText(QObject::tr("Duplicate %1").arg(_bd->getName()));
 }
 

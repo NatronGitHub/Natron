@@ -2506,10 +2506,23 @@ void Gui::onMaxPanelsSpinBoxValueChanged(double val)
 
 void Gui::clearAllVisiblePanels()
 {
+    
     while (!_imp->openedPanels.empty()) {
         std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
         if (!(*it)->isFloating()) {
             (*it)->setClosed(true);
+        }
+        
+        bool foundNonFloating = false;
+        for (std::list<DockablePanel*>::iterator it2 = _imp->openedPanels.begin();it2!=_imp->openedPanels.end();++it2) {
+            if (!(*it2)->isFloating()) {
+                foundNonFloating = true;
+                break;
+            }
+        }
+        ///only floating windows left
+        if (!foundNonFloating) {
+            break;
         }
     }
 }
