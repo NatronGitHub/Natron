@@ -3118,19 +3118,29 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
 {
     QMutexLocker l(&_imp->rotoContextMutex);
     
+    bool first = true;
     for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it!=_imp->layers.end(); ++it) {
         RotoItems items = (*it)->getItems_mt_safe();
         for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
             Bezier* b = dynamic_cast<Bezier*>(it2->get());
             if (b && b->isActivated(time) && b->isCurveFinished()) {
+                
                 RectD splineRoD = b->getBoundingBox(time);
                 RectI splineRoDI;
                 splineRoDI.x1 = std::floor(splineRoD.x1);
                 splineRoDI.y1 = std::floor(splineRoD.y1);
                 splineRoDI.x2 = std::ceil(splineRoD.x2);
                 splineRoDI.y2 = std::ceil(splineRoD.y2);
-                rod->merge(splineRoDI);
                 
+                if (first) {
+                    *rod = splineRoDI;
+                } else {
+                    rod->merge(splineRoDI);
+                }
+                
+                if (!first) {
+                    first = false;
+                }
             }
         }
     }

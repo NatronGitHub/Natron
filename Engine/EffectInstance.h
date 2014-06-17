@@ -60,6 +60,7 @@ public:
         const RectI* preComputedRoD; //<  pre-computed region of definition for this effect to speed-up the call to renderRoi
         Natron::ImageComponents components; //< the requested image components
         Natron::ImageBitDepth bitdepth; //< the requested bit depth
+        int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
         
         RenderRoIArgs(SequenceTime time_,
                       RenderScale scale_,
@@ -71,7 +72,8 @@ public:
                       bool byPassCache_,
                       const RectI* preComputedRoD_,
                       Natron::ImageComponents components_,
-                      Natron::ImageBitDepth bitdepth_)
+                      Natron::ImageBitDepth bitdepth_,
+                      int channelForAlpha_ = 3)
         : time(time_)
         , scale(scale_)
         , mipMapLevel(mipMapLevel_)
@@ -83,6 +85,7 @@ public:
         , preComputedRoD(preComputedRoD_)
         , components(components_)
         , bitdepth(bitdepth_)
+        , channelForAlpha(channelForAlpha_)
         {
         }
     };
@@ -132,7 +135,8 @@ public:
      * @brief Forwarded to the node's name
      **/
     const std::string& getName() const WARN_UNUSED_RETURN;
-
+    std::string getName_mt_safe() const WARN_UNUSED_RETURN;
+    
     /**
      * @brief Forwarded to the node's render format
      **/
@@ -237,12 +241,7 @@ public:
      * @brief Returns whether masking is enabled or not
      **/
     bool isMaskEnabled(int inputNb) const;
-    
-    /**
-     * @brief Returns true if the mask should be used inverted
-     **/
-    bool isMaskInverted(int inputNb) const;
-    
+
     /**
      * @brief Routine called after the creation of an effect. This function must
      * fill for the given input what image components we can feed it with.
@@ -726,14 +725,15 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatus renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
-                           int view,const RectI& renderWindow, //< renderWindow in pixel coordinates
-                           const boost::shared_ptr<const ImageParams>& cachedImgParams,
-                           const boost::shared_ptr<Image>& image,
-                           const boost::shared_ptr<Image>& downscaledImage,
-                           bool isSequentialRender,
-                           bool isRenderMadeInResponseToUserInteraction,
-                           bool byPassCache,
-                           U64 nodeHash);
+                                      int view,const RectI& renderWindow, //< renderWindow in pixel coordinates
+                                      const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                                      const boost::shared_ptr<Image>& image,
+                                      const boost::shared_ptr<Image>& downscaledImage,
+                                      bool isSequentialRender,
+                                      bool isRenderMadeInResponseToUserInteraction,
+                                      bool byPassCache,
+                                      U64 nodeHash,
+                                      int channelForAlpha);
     
     /**
      * @brief Must be implemented to evaluate a value change

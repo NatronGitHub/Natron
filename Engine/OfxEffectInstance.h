@@ -101,7 +101,7 @@ public:
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
     ///Returns true if the rod will be set to the project format
-    bool ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
+    bool ifInfiniteApplyHeuristic(OfxTime time,const RenderScale& scale, int view,OfxRectD* rod) const;
 
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;

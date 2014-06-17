@@ -262,18 +262,19 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_cross->setFixedSize(15,15);
         QObject::connect(_imp->_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
         
-        
-        float r,g,b;
-        appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
-        _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
-        _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
-        _imp->_colorButton->setToolTip(Qt::convertFromPlainText("Set here the color of the node in the nodegraph. "
-                                                                "By default the color of the node is the one set in the "
-                                                                "preferences of " NATRON_APPLICATION_NAME
-                                                                ,Qt::WhiteSpaceNormal));
-        QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
-        _imp->_colorButton->setFixedSize(15,15);
-        
+        if (headerMode != READ_ONLY_NAME) {
+            
+            float r,g,b;
+            appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
+            _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
+            _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
+            _imp->_colorButton->setToolTip(Qt::convertFromPlainText("Set here the color of the node in the nodegraph. "
+                                                                    "By default the color of the node is the one set in the "
+                                                                    "preferences of " NATRON_APPLICATION_NAME
+                                                                    ,Qt::WhiteSpaceNormal));
+            QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
+            _imp->_colorButton->setFixedSize(15,15);
+        }
         QPixmap pixUndo ;
         appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
         QPixmap pixUndo_gray ;
@@ -324,7 +325,9 @@ DockablePanel::DockablePanel(Gui* gui
         
         _imp->_headerLayout->addStretch();
         
-        _imp->_headerLayout->addWidget(_imp->_colorButton);
+        if (headerMode != READ_ONLY_NAME) {
+            _imp->_headerLayout->addWidget(_imp->_colorButton);
+        }
         _imp->_headerLayout->addWidget(_imp->_undoButton);
         _imp->_headerLayout->addWidget(_imp->_redoButton);
         _imp->_headerLayout->addWidget(_imp->_restoreDefaultsButton);
@@ -962,9 +965,11 @@ bool DockablePanel::isClosed() const { return _imp->_isClosed; }
 
 void DockablePanel::onColorDialogColorChanged(const QColor& color)
 {
-    QPixmap p(15,15);
-    p.fill(color);
-    _imp->_colorButton->setIcon(QIcon(p));
+    if (_imp->_mode != READ_ONLY_NAME) {
+        QPixmap p(15,15);
+        p.fill(color);
+        _imp->_colorButton->setIcon(QIcon(p));
+    }
 }
 
 void DockablePanel::onColorButtonClicked()

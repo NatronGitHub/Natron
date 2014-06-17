@@ -84,6 +84,7 @@ struct EffectInstance::RenderArgs {
     bool _validArgs; //< are the args valid ?
     U64 _nodeHash;
     U64 _rotoAge;
+    int _channelForAlpha;
     
     RenderArgs()
     : _roi()
@@ -98,6 +99,7 @@ struct EffectInstance::RenderArgs {
     , _validArgs(false)
     , _nodeHash(0)
     , _rotoAge(0)
+    , _channelForAlpha(3)
     {}
 };
 
@@ -148,7 +150,8 @@ struct EffectInstance::Implementation {
                          bool userInteraction,
                          bool bypassCache,
                          U64 nodeHash,
-                         U64 rotoAge)
+                         U64 rotoAge,
+                         int channelForAlpha)
         : args()
         , _dst(dst)
         {
@@ -164,6 +167,7 @@ struct EffectInstance::Implementation {
             args._byPassCache = bypassCache;
             args._nodeHash = nodeHash;
             args._rotoAge = rotoAge;
+            args._channelForAlpha = channelForAlpha;
             args._validArgs = true;
             _dst->setLocalData(args);
         }
@@ -241,6 +245,10 @@ const std::string& EffectInstance::getName() const{
     return _node->getName();
 }
 
+std::string EffectInstance::getName_mt_safe() const
+{
+    return _node->getName_mt_safe();
+}
 
 void EffectInstance::getRenderFormat(Format *f) const
 {
@@ -387,6 +395,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     }
     
     
+    int channelForAlpha = !isMask ? 3 : getMaskChannel(inputNb);
+    
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
@@ -399,20 +409,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         return boost::shared_ptr<Natron::Image>();
     }
     
-    
     ///Launch in another thread as the current thread might already have been created by the multi-thread suite,
     ///hence it might have a thread-id.
     QThreadPool::globalInstance()->reserveThread();
     U64 inputNodeHash;
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
                 RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
-                              byPassCache, NULL,comp,depth),&inputNodeHash);
+                              byPassCache, NULL,comp,depth,channelForAlpha),&inputNodeHash);
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
 	if (!inputImg) {
 		return inputImg;
 	}
+        
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
 
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
@@ -573,7 +583,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
                                    getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
                                    getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                   3, false, true);
+                                   args.channelForAlpha,false, true);
             
             ///switch the pointer
             image = remappedImage;
@@ -636,7 +646,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                             args.isRenderUserInteraction,
                                                             byPassCache,
                                                             nodeHash,
-                                                            0);
+                                                            0,
+                                                            args.channelForAlpha);
                 Natron::ImageComponents inputPrefComps;
                 Natron::ImageBitDepth inputPrefDepth;
                 Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
@@ -761,7 +772,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         args.isRenderUserInteraction,
                                                         byPassCache,
                                                         nodeHash,
-                                                        0);
+                                                        0,
+                                                        args.channelForAlpha);
             Natron::ImageComponents inputPrefComps;
             Natron::ImageBitDepth inputPrefDepth;
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
@@ -809,7 +821,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(args.time, args.scale,args.mipMapLevel,
                                                                       args.view, args.roi, cachedImgParams, image,
                                                                       downscaledImage,args.isSequentialRender,
-                                                                      args.isRenderUserInteraction ,byPassCache,nodeHash);
+                                                                      args.isRenderUserInteraction ,byPassCache,nodeHash,
+                                                                      args.channelForAlpha);
     
     
     if (aborted()) {
@@ -836,7 +849,7 @@ void EffectInstance::renderRoI(SequenceTime time,const RenderScale& scale,unsign
                                bool isRenderMadeInResponseToUserInteraction,
                                bool byPassCache,
                                U64 nodeHash) {
-   EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash);
+   EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash,3);
     if (renderRetCode == eImageRenderFailed) {
         throw std::runtime_error("Rendering Failed");
     }
@@ -850,7 +863,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                                                                   bool isSequentialRender,
                                                                   bool isRenderMadeInResponseToUserInteraction,
                                                                   bool byPassCache,
-                                                                  U64 nodeHash) {
+                                                                  U64 nodeHash,
+                                                                  int channelForAlpha) {
     
     EffectInstance::RenderRoIStatus retCode;
     
@@ -1001,7 +1015,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                                                     isRenderMadeInResponseToUserInteraction,
                                                     byPassCache,
                                                     nodeHash,
-                                                    rotoAge);
+                                                    rotoAge,
+                                                    channelForAlpha );
         const RenderArgs& args = scopedArgs.getArgs();
     
        
@@ -1016,7 +1031,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         for (FramesNeededMap::const_iterator it2 = framesNeeeded.begin(); it2 != framesNeeeded.end(); ++it2) {
             
             ///We have to do this here because the enabledness of a mask is a feature added by Natron.
-            if (isInputMask(it2->first) && !isMaskEnabled(it2->first)) {
+            bool inputIsMask = isInputMask(it2->first);
+            if (inputIsMask && !isMaskEnabled(it2->first)) {
                 continue;
             }
             
@@ -1042,6 +1058,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                         Natron::ImageBitDepth inputPrefDepth;
                         inputEffect->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                         
+                        int channelForAlphaInput = inputIsMask ? getMaskChannel(it2->first) : 3;
+                        
                         boost::shared_ptr<Natron::Image> inputImg =
                         inputEffect->renderRoI(RenderRoIArgs(f, //< time
                                                              scale, //< scale
@@ -1053,7 +1071,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                                                              byPassCache, //< look-up the cache for existing images ?
                                                              NULL,// < did we precompute any RoD to speed-up the call ?
                                                              inputPrefComps, //< requested comps
-                                                             inputPrefDepth)); //< requested bitdepth
+                                                             inputPrefDepth,
+                                                             channelForAlphaInput)); //< requested bitdepth
                         
                         if (inputImg) {
                             inputImages.push_back(inputImg);
@@ -1235,7 +1254,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                     fullScaleMappedImage->convertToFormat(canonicalRectToRender, image.get(),
                                                           getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
                                                           getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
-                                                          3, false, true);
+                                                          channelForAlpha, false,true);
                 }
                 if (mipMapLevel != 0) {
                     image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
@@ -1245,7 +1264,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                     downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(),
                                                            getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
                                                            getApp()->getDefaultColorSpaceForBitDepth(downscaledImage->getBitDepth()),
-                                                           3, false, false);
+                                                           channelForAlpha,false, false);
                 }
             }
             
@@ -1325,7 +1344,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                 fullScaleMappedOutput->convertToFormat(roi, fullScaleOutput.get(),
                                                        getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedOutput->getBitDepth()),
                                                        getApp()->getDefaultColorSpaceForBitDepth(fullScaleOutput->getBitDepth()),
-                                                       3, false, true);
+                                                       args._channelForAlpha, false, true);
             }
             if (args._mipMapLevel != 0) {
                 fullScaleOutput->downscale_mipmap(roi,downscaledOutput.get(), args._mipMapLevel);
@@ -1335,7 +1354,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                 downscaledMappedOutput->convertToFormat(roi, downscaledOutput.get(),
                                                         getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedOutput->getBitDepth()),
                                                         getApp()->getDefaultColorSpaceForBitDepth(downscaledOutput->getBitDepth()),
-                                                        3, false, true);
+                                                        args._channelForAlpha, false, true);
             }
         }
     }
@@ -1787,11 +1806,6 @@ bool EffectInstance::isMaskEnabled(int inputNb) const
     return _node->isMaskEnabled(inputNb);
 }
 
-
-bool EffectInstance::isMaskInverted(int inputNb) const
-{
-    return _node->isMaskInverted(inputNb);
-}
 
 void EffectInstance::onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) {
     _node->onEffectKnobValueChanged(k, reason);

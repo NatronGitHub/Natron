@@ -193,12 +193,7 @@ public:
      * @brief Returns whether masking is enabled or not
      **/
     bool isMaskEnabled(int inputNb) const;
-    
-    /**
-     * @brief Returns true if the mask should be used inverted
-     **/
-    bool isMaskInverted(int inputNb) const;
-    
+ 
     /**
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.

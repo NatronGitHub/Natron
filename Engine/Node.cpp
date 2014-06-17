@@ -88,7 +88,6 @@ struct Node::Implementation {
         , masterNode()
         , enableMaskKnob()
         , maskChannelKnob()
-        , invertMaskKnob()
         , nodeSettingsPage()
         , nodeLabelKnob()
         , previewEnabledKnob()
@@ -156,7 +155,6 @@ struct Node::Implementation {
     ///For each mask, the input number and the knob
     std::map<int,boost::shared_ptr<Bool_Knob> > enableMaskKnob;
     std::map<int,boost::shared_ptr<Choice_Knob> > maskChannelKnob;
-    std::map<int,boost::shared_ptr<Bool_Knob> > invertMaskKnob;
     
     boost::shared_ptr<Page_Knob> nodeSettingsPage;
     boost::shared_ptr<String_Knob> nodeLabelKnob;
@@ -590,18 +588,10 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
             std::string channelMaskName("mask_channel_natron_" + maskName);
             maskChannelKnob->setName(channelMaskName);
             
-            boost::shared_ptr<Bool_Knob> invertMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Invert",1,false);
-            _imp->invertMaskKnob.insert(std::make_pair(i, invertMaskKnob));
-            invertMaskKnob->setDefaultValue(false, 0);
-            invertMaskKnob->setAnimationEnabled(false);
-            std::string inverMaskName("invert_mask_natron_" + maskName);
-            invertMaskKnob->setName(inverMaskName);
-            invertMaskKnob->setHintToolTip("Invert the use of the mask");
             
             ///and load it
             loadKnob(enableMaskKnob, serialization);
             loadKnob(maskChannelKnob, serialization);
-            loadKnob(invertMaskKnob, serialization);
         }
     }
     
@@ -1710,16 +1700,6 @@ bool Node::isMaskEnabled(int inputNb) const
     }
 }
 
-
-bool Node::isMaskInverted(int inputNb) const
-{
-    std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->invertMaskKnob.find(inputNb);
-    if (it != _imp->invertMaskKnob.end()) {
-        return it->second->getValue();
-    } else {
-        return false;
-    }
-}
 
 
 void Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)

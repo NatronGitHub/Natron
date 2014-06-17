@@ -444,31 +444,73 @@ static void ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
     box->set(xmin, ymin, xmax, ymax);
 }
 
-bool OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
+bool OfxEffectInstance::ifInfiniteApplyHeuristic(OfxTime time,const RenderScale& scale, int view,OfxRectD* rod) const{
     /*If the rod is infinite clip it to the project's default*/
 
     Format projectDefault;
     getRenderFormat(&projectDefault);
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert(!projectDefault.isNull());
+    
+    bool x1Infinite = rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity();
+    bool y1Infinite = rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity();
+    bool x2Infinite = rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity();
+    bool y2Infinite = rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity();
+    
+    ///Get the union of the inputs.
+    RectI inputsUnion;
+    for (int i = 0; i < maximumInputs(); ++i) {
+        Natron::EffectInstance* input = input_other_thread(i);
+        if (input) {
+            RectI inputRod;
+            bool isProjectFormat;
+            Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
+            if (st != StatFailed) {
+                if (i == 0) {
+                    inputsUnion = inputRod;
+                } else {
+                    inputsUnion.merge(inputRod);
+                }
+            }
+        }
+    }
+
+    ///If infinite : clip to inputsUnion if not null, otherwise to project default
+    
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     bool isProjectFormat = false;
-    if (rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity()) {
-        rod->x1 = projectDefault.left();
-        isProjectFormat = true;
+    if (x1Infinite) {
+        if (!inputsUnion.isNull()) {
+            rod->x1 = inputsUnion.x1;
+        } else {
+            rod->x1 = projectDefault.left();
+            isProjectFormat = true;
+        }
     }
-    if (rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity()) {
-        rod->y1 = projectDefault.bottom();
-        isProjectFormat = true;
+    if (y1Infinite) {
+        if (!inputsUnion.isNull()) {
+            rod->y1 = inputsUnion.y1;
+        } else {
+            rod->y1 = projectDefault.bottom();
+            isProjectFormat = true;
+        }
     }
-    if (rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity()) {
-        rod->x2 = projectDefault.right();
-        isProjectFormat = true;
+    if (x2Infinite) {
+        if (!inputsUnion.isNull()) {
+            rod->x2 = inputsUnion.x2;
+        } else {
+            rod->x2 = projectDefault.right();
+            isProjectFormat = true;
+        }
     }
-    if (rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity()) {
-        rod->y2 = projectDefault.top();
-        isProjectFormat = true;
+    if (y2Infinite) {
+        if (!inputsUnion.isNull()) {
+            rod->y2 = inputsUnion.y2;
+        } else {
+            rod->y2 = projectDefault.top();
+            isProjectFormat = true;
+        }
     }
     return isProjectFormat;
 }
@@ -600,7 +642,8 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
-    *isProjectFormat = ifInfiniteclipRectToProjectDefault(&ofxRod);
+    
+    *isProjectFormat = ifInfiniteApplyHeuristic(time,scale,view,&ofxRod);
     ofxRectDToEnclosedRectI(ofxRod,rod);
     return StatOK;
     
