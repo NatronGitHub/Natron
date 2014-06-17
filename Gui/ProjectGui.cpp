@@ -26,6 +26,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Node.h"
+#include "Engine/Settings.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
@@ -282,6 +283,10 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
+    ///default color for nodes
+    float defR,defG,defB;
+    appPTR->getCurrentSettings()->getDefaultNodeColor(&defR, &defG, &defB);
+    
     const std::list<NodeGuiSerialization>& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin();it!=nodesGuiSerialization.end();++it) {
         const std::string& name = it->getName();
@@ -303,10 +308,13 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         if (it->colorWasFound()) {
             float r,g,b;
             it->getColor(&r, &g, &b);
-            QColor color;
-            color.setRgbF(r, g, b);
-            nGui->setDefaultGradientColor(color);
-            nGui->setCurrentColor(color);
+            ///restore color only if different from default.
+            if (r != defR || g != defG || b != defB) {
+                QColor color;
+                color.setRgbF(r, g, b);
+                nGui->setDefaultGradientColor(color);
+                nGui->setCurrentColor(color);
+            }
         }
         
         if (nGui->getNode()->pluginID() == "Viewer") {
