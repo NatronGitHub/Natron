@@ -1614,26 +1614,30 @@ Color_KnobGui::onColorChanged()
 
     std::list<double> newValues;
     QColor color;
-    color.setRedF(Natron::clamp(_rBox->value()));
-    newValues.push_back(color.redF());
+    double r = _rBox->value();
+    color.setRedF(Natron::clamp(r));
+    newValues.push_back(r);
     if (_dimensionSwitchButton->isChecked()) {
         if (_dimension >= 3) {
             color.setGreenF(Natron::clamp(_gBox->value()));
-            newValues.push_back(color.greenF());
+            newValues.push_back(_gBox->value());
             color.setBlueF(Natron::clamp(_bBox->value()));
-            newValues.push_back(color.blueF());
+            newValues.push_back(_bBox->value());
         }
         if (_dimension >= 4) {
             color.setAlphaF(Natron::clamp(_aBox->value()));
-            newValues.push_back(color.alphaF());
+            newValues.push_back(_aBox->value());
         }
     } else {
         if (_dimension >= 3) {
-            newValues.push_back(color.redF());
-            newValues.push_back(color.redF());
+            color.setGreenF(r);
+            newValues.push_back(r);
+            color.setBlueF(r);
+            newValues.push_back(r);
         }
         if (_dimension >= 4) {
-            newValues.push_back(color.redF());
+            newValues.push_back(r);
+            color.setAlphaF(r);
         }
     }
 
