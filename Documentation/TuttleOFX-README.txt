@@ -32,7 +32,7 @@
 
 * external libraries (from https://sites.google.com/site/tuttleofx/development/build/libraries/macos )
 sudo port -v install \
-git-core \
+git \
 scons \
 boost +python27 \
 jpeg \
