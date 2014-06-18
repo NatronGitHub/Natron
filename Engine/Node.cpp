@@ -1913,7 +1913,7 @@ bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
     } else {
         QMutexLocker l(&_imp->inputsMutex);
         for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it!=_imp->inputsQueue.end(); ++it) {
-            if ((*it)->hasSequentialOnlyNodeUpstream(nodeName)) {
+            if ((*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName)) {
                 nodeName = (*it)->getName();
                 return true;
             }
