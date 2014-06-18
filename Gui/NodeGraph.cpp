@@ -988,7 +988,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                     if (!_hintInputEdge->isVisible()) {
                         if (!alreadyConnected) {
                             int prefInput = _nodeSelected->getNode()->getPreferredInputForConnection();
-                            _hintInputEdge->setInputNumber(prefInput);
+                            _hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
                             _hintInputEdge->setSourceAndDestination(edge->getSource(), _nodeSelected);
                             _hintInputEdge->setVisible(true);
                             
