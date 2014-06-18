@@ -2411,6 +2411,15 @@ void NodeGraph::centerOnAllNodes()
         ymin = std::min(ymin,pos.y());
         ymax = std::max(ymax,pos.y() + size.height());
     }
+    
+    for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it!=_backdrops.end(); ++it) {
+        QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+        xmin = std::min(xmin,bbox.x());
+        ymin = std::min(ymin,bbox.y());
+        xmax = std::max(xmax,bbox.x() + bbox.width());
+        ymax = std::max(ymax,bbox.y() + bbox.height());
+    }
+    
     QRect rect(xmin,ymin,(xmax - xmin),(ymax - ymin));
     fitInView(rect,Qt::KeepAspectRatio);
     _refreshOverlays = true;
