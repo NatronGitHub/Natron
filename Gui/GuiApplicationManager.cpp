@@ -429,6 +429,14 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"featherLinkDisabled.png");
                 *pix = QPixmap::fromImage(img).scaled(15, 15);
                 break;
+            case NATRON_PIXMAP_FEATHER_VISIBLE:
+                img.load(NATRON_IMAGES_PATH"featherEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
+            case NATRON_PIXMAP_FEATHER_UNVISIBLE:
+                img.load(NATRON_IMAGES_PATH"featherDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(15, 15);
+                break;
             case NATRON_PIXMAP_RIPPLE_EDIT_ENABLED:
                 img.load(NATRON_IMAGES_PATH"rippleEditEnabled.png");
                 *pix = QPixmap::fromImage(img).scaled(15, 15);

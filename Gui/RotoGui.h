@@ -187,6 +187,8 @@ public:
      **/
     void removeCurve(Bezier* curve);
     
+    bool isFeatherVisible() const;
+    
 signals:
     
     /**
@@ -224,7 +226,7 @@ public slots:
     
     void onSelectionChanged(int reason);
     
-
+    void onDisplayFeatherButtonClicked(bool toggled);
         
 private:
     

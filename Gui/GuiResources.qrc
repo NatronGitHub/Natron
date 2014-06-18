@@ -128,5 +128,7 @@
         <file>Resources/Images/italic_checked.png</file>
         <file>Resources/Images/italic_unchecked.png</file>
         <file>Resources/Images/bold_unchecked.png</file>
+        <file>Resources/Images/featherDisabled.png</file>
+        <file>Resources/Images/featherEnabled.png</file>
     </qresource>
 </RCC>

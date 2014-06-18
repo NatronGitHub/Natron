@@ -125,6 +125,8 @@ struct RotoGuiSharedData
                                                      //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged,featherBarBeingHovered;
     
+    bool displayFeather;
+    
     RotoGuiSharedData()
     : selectedBeziers()
     , selectedCps()
@@ -137,6 +139,7 @@ struct RotoGuiSharedData
     , tangentBeingDragged()
     , featherBarBeingDragged()
     , featherBarBeingHovered()
+    , displayFeather(true)
     {
         
     }
@@ -162,6 +165,7 @@ struct RotoGui::RotoGuiPrivate
     QHBoxLayout* selectionButtonsBarLayout;
     Button* autoKeyingEnabled;
     Button* featherLinkEnabled;
+    Button* displayFeatherEnabled;
     Button* stickySelectionEnabled;
     Button* rippleEditEnabled;
     Button* addKeyframeButton;
@@ -356,6 +360,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     QPixmap pixSelectAll,pixSelectPoints,pixSelectFeather,pixSelectCurves,pixAutoKeyingEnabled,pixAutoKeyingDisabled;
     QPixmap pixStickySelEnabled,pixStickySelDisabled,pixFeatherLinkEnabled,pixFeatherLinkDisabled,pixAddKey,pixRemoveKey;
     QPixmap pixRippleEnabled,pixRippleDisabled;
+    QPixmap pixFeatherEnabled,pixFeatherDisabled;
     
     appPTR->getIcon(Natron::NATRON_PIXMAP_BEZIER_32, &pixBezier);
     appPTR->getIcon(Natron::NATRON_PIXMAP_ELLIPSE,&pixEllipse);
@@ -380,6 +385,8 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME,&pixRemoveKey);
     appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_ENABLED,&pixRippleEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_DISABLED,&pixRippleDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_VISIBLE, &pixFeatherEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_UNVISIBLE, &pixFeatherDisabled);
     
     _imp->toolbar = new QToolBar(parent);
     _imp->toolbar->setOrientation(Qt::Vertical);
@@ -413,6 +420,17 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
                                          " movement as their counter-part does.");
     QObject::connect(_imp->featherLinkEnabled, SIGNAL(clicked(bool)), this, SLOT(onFeatherLinkButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
+    
+    QIcon enableFeatherIC;
+    enableFeatherIC.addPixmap(pixFeatherEnabled,QIcon::Normal,QIcon::On);
+    enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
+    _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
+    _imp->displayFeatherEnabled->setCheckable(true);
+    _imp->displayFeatherEnabled->setChecked(true);
+    _imp->displayFeatherEnabled->setDown(true);
+    _imp->displayFeatherEnabled->setToolTip("When checked, the feather curve applied to the shape(s) will be visible and editable.");
+    QObject::connect(_imp->displayFeatherEnabled, SIGNAL(clicked(bool)), this, SLOT(onDisplayFeatherButtonClicked(bool)));
+    _imp->selectionButtonsBarLayout->addWidget(_imp->displayFeatherEnabled);
     
     QIcon stickSelIc;
     stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
@@ -759,22 +777,28 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             
             ///draw the feather points
             std::list< Point > featherPoints;
+            std::vector<double> constants,multiples;
             RectD featherBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-            (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, &featherPoints,true,&featherBBox);
-            std::vector<double> constants(featherPoints.size()),multiples(featherPoints.size());
-            Bezier::precomputePointInPolygonTables(featherPoints, &constants, &multiples);
             
-            if (!featherPoints.empty()) {
-                glLineStipple(2, 0xAAAA);
-                glEnable(GL_LINE_STIPPLE);
-                glBegin(GL_LINE_STRIP);
-                for (std::list<Point >::const_iterator it2 = featherPoints.begin(); it2!=featherPoints.end(); ++it2) {
-                    glVertex2f(it2->x, it2->y);
-                }
-                glEnd();
-                glDisable(GL_LINE_STIPPLE);
+            if (isFeatherVisible()) {
+                ///Draw feather only if visible (button is toggled in the user interface)
+                (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, &featherPoints,true,&featherBBox);
+                constants.resize(featherPoints.size());
+                multiples.resize(featherPoints.size());
+                Bezier::precomputePointInPolygonTables(featherPoints, &constants, &multiples);
+                
+                if (!featherPoints.empty()) {
+                    glLineStipple(2, 0xAAAA);
+                    glEnable(GL_LINE_STIPPLE);
+                    glBegin(GL_LINE_STRIP);
+                    for (std::list<Point >::const_iterator it2 = featherPoints.begin(); it2!=featherPoints.end(); ++it2) {
+                        glVertex2f(it2->x, it2->y);
+                    }
+                    glEnd();
+                    glDisable(GL_LINE_STIPPLE);
             }
             
+            }
             ///draw the control points if the bezier is selected
             std::list< boost::shared_ptr<Bezier> >::const_iterator selected =
             std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),*it);
@@ -845,7 +869,10 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                     double xF,yF;
                     (*itF)->getPositionAtTime(time, &xF, &yF);
                     ///draw the feather point only if it is distinct from the associated point
-                    bool drawFeather = !(*it2)->equalsAtTime(time, **itF);
+                    bool drawFeather = isFeatherVisible();
+                    if (drawFeather) {
+                        drawFeather = !(*it2)->equalsAtTime(time, **itF);
+                    }
                     double distFeatherX = 20. * pixelScale.first;
                     double distFeatherY = 20. * pixelScale.second;
                     
@@ -896,7 +923,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                         
                         glColor3d(0.85, 0.67, 0.);
                         
-                    } else {
+                    } else if (isFeatherVisible()) {
                         ///if the feather point is identical to the control point
                         ///draw a small hint line that the user can drag to move the feather point
                         if (_imp->selectedTool == SELECT_ALL || _imp->selectedTool == SELECT_FEATHER_POINTS) {
@@ -1265,7 +1292,12 @@ void RotoGui::RotoGuiPrivate::updateSelectionFromSelectionRectangle()
         if (!(*it)->isLockedRecursive()) {
             SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
             if (selectedTool != SELECT_CURVES) {
-                rotoData->selectedCps.insert(rotoData->selectedCps.end(), points.begin(), points.end());
+                for (SelectedCPs::iterator ptIt = points.begin(); ptIt != points.end(); ++ptIt) {
+                    if (!publicInterface->isFeatherVisible() && ptIt->first->isFeatherPoint()) {
+                        continue;
+                    }
+                    rotoData->selectedCps.push_back(*ptIt);
+                }
             }
             if (!points.empty()) {
                 rotoData->selectedBeziers.push_back(*it);
@@ -1487,6 +1519,13 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 }
             }
             
+            ///check in case this is a feather tangent
+            if (_imp->rotoData->tangentBeingDragged && _imp->rotoData->tangentBeingDragged->isFeatherPoint() && !isFeatherVisible()) {
+                _imp->rotoData->tangentBeingDragged.reset();
+                _imp->state = NONE;
+                didSomething = false;
+            }
+            
             if (didSomething) {
                 return didSomething;
             }
@@ -1502,6 +1541,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
     bool isFeather;
     boost::shared_ptr<Bezier> nearbyBezier =
     _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+    if (isFeather) {
+        nearbyBezier.reset();
+    }
 
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
     int nearbyCpIndex = -1;
@@ -1513,7 +1555,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             nearbyBezier.reset();
         } else {
             Bezier::ControlPointSelectionPref pref = Bezier::WHATEVER_FIRST;
-            if (_imp->selectedTool == SELECT_FEATHER_POINTS) {
+            if (_imp->selectedTool == SELECT_FEATHER_POINTS && isFeatherVisible()) {
                 pref = Bezier::FEATHER_FIRST;
             }
             
@@ -1526,10 +1568,17 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         case SELECT_POINTS:
         case SELECT_FEATHER_POINTS:
         {
-            
+            if (_imp->selectedTool == SELECT_FEATHER_POINTS && !isFeatherVisible()) {
+                ///nothing to do
+                break;
+            }
             std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > featherBarSel;
-            if (_imp->selectedTool == SELECT_ALL || _imp->selectedTool == SELECT_FEATHER_POINTS) {
+            if ((_imp->selectedTool == SELECT_ALL || _imp->selectedTool == SELECT_FEATHER_POINTS)) {
                 featherBarSel = _imp->isNearbyFeatherBar(time, pixelScale, pos);
+                if (featherBarSel.first && !isFeatherVisible()) {
+                    featherBarSel.first.reset();
+                    featherBarSel.second.reset();
+                }
             }
             
             
@@ -1547,7 +1596,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     _imp->handleBezierSelection(nearbyBezier);
                     _imp->state = DRAGGING_FEATHER_BAR;
                 } else {
-                    ///If the bezier is already selected and we re-click on it, change the transform mode
                     SelectedBeziers::const_iterator found =
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                     if (found == _imp->rotoData->selectedBeziers.end()) {
@@ -1832,7 +1880,7 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                     int index = -1;
                     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nb =
                     (*it)->isNearbyControlPoint(pos.x(), pos.y(), cpTol,Bezier::WHATEVER_FIRST,&index);
-                    if (index != -1) {
+                    if (index != -1 && ((!nb.first->isFeatherPoint() && !isFeatherVisible()) || isFeatherVisible())) {
                         _imp->viewer->setCursor(QCursor(Qt::CrossCursor));
                         cursorSet = true;
                         break;
@@ -1857,6 +1905,9 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                 bool isFeather;
                 boost::shared_ptr<Bezier> nearbyBezier =
                 _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+                if (isFeather && !isFeatherVisible()) {
+                    nearbyBezier.reset();
+                }
                 if (nearbyBezier && !nearbyBezier->isLockedRecursive()) {
                     _imp->viewer->setCursor(QCursor(Qt::PointingHandCursor));
                     cursorSet = true;
@@ -1864,7 +1915,7 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
             }
         
             SelectedCP nearbyFeatherBar;
-            if (!cursorSet) {
+            if (!cursorSet && isFeatherVisible()) {
                 nearbyFeatherBar = _imp->isNearbyFeatherBar(time, pixelScale, pos);
                 if (nearbyFeatherBar.first && nearbyFeatherBar.second) {
                     _imp->rotoData->featherBarBeingHovered = nearbyFeatherBar;
@@ -2695,3 +2746,16 @@ RotoContext* RotoGui::getContext()
 {
     return _imp->context.get();
 }
+
+void RotoGui::onDisplayFeatherButtonClicked(bool toggled)
+{
+    _imp->displayFeatherEnabled->setDown(toggled);
+    _imp->rotoData->displayFeather = toggled;
+    _imp->viewer->redraw();
+}
+
+bool RotoGui::isFeatherVisible() const
+{
+    return _imp->rotoData->displayFeather;
+}
+
