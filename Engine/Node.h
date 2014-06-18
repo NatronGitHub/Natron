@@ -544,7 +544,11 @@ public slots:
     
     void onInputNameChanged(const QString& name);
     
+    void notifySettingsPanelClosed(bool closed ) { emit settingsPanelClosed(closed); }
+    
 signals:
+    
+    void settingsPanelClosed(bool);
     
     void knobsAgeChanged(U64 age);
     

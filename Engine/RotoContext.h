@@ -110,9 +110,11 @@ private:
     
     void removeKeyframe(int time);
 
-    void cuspPoint(int time,bool autoKeying,bool rippleEdit);
+    ///returns true if a keyframe was set
+    bool cuspPoint(int time,bool autoKeying,bool rippleEdit);
     
-    void smoothPoint(int time,bool autoKeying,bool rippleEdit);
+    ///returns true if a keyframe was set
+    bool smoothPoint(int time,bool autoKeying,bool rippleEdit);
     
     //////Const functions, fine if called by another class than the Bezier class, as long
     //////as it remains on the main-thread (the setter thread).
@@ -724,6 +726,10 @@ public:
         
     
 signals:
+    
+    void aboutToClone();
+    
+    void cloned();
     
     void keyframeSet(int time);
     

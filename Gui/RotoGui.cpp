@@ -977,6 +977,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
     if (_imp->rotoData->showCpsBbox && _imp->state != SELECTING) {
         _imp->drawSelectedCpsBBOX();
     }
+    glCheckError();
 }
 
 void RotoGui::RotoGuiPrivate::drawArrow(double centerX,double centerY,double rotate,bool hovered,const std::pair<double,double>& pixelScale)

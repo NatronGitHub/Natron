@@ -65,7 +65,7 @@ public:
     void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys) ;
     
     void removeKeyFrameIndicator(SequenceTime time);
-    
+     
     void removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys);
     
     void getKeyframes(std::list<SequenceTime>* keys) const;

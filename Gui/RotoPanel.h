@@ -78,6 +78,10 @@ public slots:
     
     void onSelectedBezierKeyframeRemoved(int time);
     
+    void onSelectedBezierAboutToClone();
+    
+    void onSelectedBezierCloned();
+    
     void onTimeChanged(SequenceTime time,int reason);
     
     ///A new item has been created internally
@@ -123,6 +127,7 @@ public slots:
     
     void selectAll();
     
+    void onSettingsPanelClosed(bool closed);
 private:
     
     void onSelectionChangedInternal();
