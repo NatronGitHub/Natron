@@ -1737,7 +1737,7 @@ void Bezier::transformPoint(const boost::shared_ptr<BezierCP>& point,int time,Tr
         
         if (autoKeying || isonKeyframe) {
             point->setPositionAtTime(time, cp.x, cp.y);
-            point->setLeftBezierPointAtTime(time, leftCp.x, rightCp.y);
+            point->setLeftBezierPointAtTime(time, leftCp.x, leftCp.y);
             point->setRightBezierPointAtTime(time, rightCp.x, rightCp.y);
             if (!isonKeyframe) {
                 keySet = true;
