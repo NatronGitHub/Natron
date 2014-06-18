@@ -305,6 +305,16 @@ public:
     
     
     /**
+     * @bried Returns the effect render order preferences: 
+     * EFFECT_NOT_SEQUENTIAL: The effect does not need to be run in a sequential order
+     * EFFECT_ONLY_SEQUENTIAL: The effect can only be run in a sequential order (i.e like the background render would do)
+     * EFFECT_PREFER_SEQUENTIAL: This indicates that the effect would work better by rendering sequential. This is merely
+     * a hint to Natron but for now we just consider it as EFFECT_NOT_SEQUENTIAL.
+     **/
+    virtual Natron::SequentialPreference getSequentialPreference() const { return Natron::EFFECT_NOT_SEQUENTIAL; }
+    
+    
+    /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * @param hashUsed, if not null, it will be set to the hash of this effect used to render.
      **/
@@ -324,6 +334,7 @@ public:
                    bool isRenderMadeInResponseToUserInteraction,
                    bool byPassCache,
                    U64 nodeHash);
+    
 
 
 protected:

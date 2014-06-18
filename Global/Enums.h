@@ -257,6 +257,12 @@ namespace Natron{
         IMAGE_FLOAT
     };
     
+    enum SequentialPreference {
+        EFFECT_NOT_SEQUENTIAL = 0,
+        EFFECT_ONLY_SEQUENTIAL,
+        EFFECT_PREFER_SEQUENTIAL
+    };
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

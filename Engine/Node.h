@@ -515,6 +515,17 @@ public:
      **/
     void replaceCustomDataInlabel(const QString& data);
     
+    /**
+     * @brief Returns whether this node or one of its inputs (recursively) is marked as
+     * Natron::EFFECT_ONLY_SEQUENTIAL
+     *
+     * @param nodeName If the return value is true, this will be set to the name of the node
+     * which is sequential.
+     *
+     * Warning: Can only be called from the main-thread.
+     **/
+    bool hasSequentialOnlyNodeUpstream(std::string& nodeName) const;
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;

@@ -1450,3 +1450,19 @@ void OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,Natron::Image
     *depth = OfxClipInstance::ofxDepthToNatronDepth(clip->getPixelDepth());
 }
 
+Natron::SequentialPreference OfxEffectInstance::getSequentialPreference() const
+{
+    int sequential = effect_->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+    switch (sequential) {
+        case 0:
+            return Natron::EFFECT_NOT_SEQUENTIAL;
+        case 1:
+            return Natron::EFFECT_ONLY_SEQUENTIAL;
+        case 2:
+            return Natron::EFFECT_PREFER_SEQUENTIAL;
+        default:
+            return Natron::EFFECT_NOT_SEQUENTIAL;
+            break;
+    }
+}
+

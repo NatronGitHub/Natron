@@ -1903,6 +1903,25 @@ std::string Node::getNodeExtraLabel() const
     return _imp->nodeLabelKnob->getValue();
 }
 
+bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL) {
+        nodeName = getName();
+        return true;
+    } else {
+        QMutexLocker l(&_imp->inputsMutex);
+        for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it!=_imp->inputsQueue.end(); ++it) {
+            if ((*it)->hasSequentialOnlyNodeUpstream(nodeName)) {
+                nodeName = (*it)->getName();
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)

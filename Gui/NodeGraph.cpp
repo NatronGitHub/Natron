@@ -750,8 +750,21 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                
                 if (!_arrowSelected->isOutputEdge()) {
                     ///can't connect to a viewer
-                    if(n->getNode()->pluginID() == "Viewer"){
+                    if (n->getNode()->pluginID() == "Viewer") {
                         break;
+                    }
+                    
+                    std::string sequentialNodeName;
+                    if (n->getNode()->hasSequentialOnlyNodeUpstream(sequentialNodeName)) {
+                        ///check if the output has a viewer connected in which case error
+                        std::list <ViewerInstance*> connectedViewers;
+                        _arrowSelected->getDest()->getNode()->hasViewersConnected(&connectedViewers);
+                        if (!connectedViewers.empty()) {
+                            Natron::errorDialog("Connection", "You cannot connect a tree with a Viewer to " + sequentialNodeName +
+                                                " which only works on sequential renders (i.e with a Writer node.).");
+                            break;
+                        }
+                        
                     }
                     _arrowSelected->stackBefore(n.get());
                     _undoStack->setActive();
@@ -948,6 +961,18 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                                 if ( _nodeSelected->getNode()->pluginID() == "Viewer") {
                                     edge = 0;
                                 }
+                                
+                                std::string sequentialNodeName;
+                                if (_nodeSelected->getNode()->hasSequentialOnlyNodeUpstream(sequentialNodeName)) {
+                                    std::list<ViewerInstance*> connectedViewers;
+                                    edge->getDest()->getNode()->hasViewersConnected(&connectedViewers);
+                                    if (!connectedViewers.empty()) {
+                                        Natron::errorDialog("Connection", "You cannot connect a tree with a Viewer to " + sequentialNodeName +
+                                                            " which only works on sequential renders (i.e with a Writer node.).");
+                                    }
+                                    return;
+                                }
+
                                 
                                 ///if the selected node doesn't have any input but the edge has an input don't continue
                                 if (edge && _nodeSelected->getInputsArrows().empty() && edge->getSource()) {
@@ -1189,6 +1214,14 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
         return;
     }
     
+    std::string sequentialNodeName;
+    if (_nodeSelected->getNode()->hasSequentialOnlyNodeUpstream(sequentialNodeName)) {
+        Natron::errorDialog("Connection", "You cannot connect a tree with a Viewer to " + sequentialNodeName +
+                            " which only works on sequential renders (i.e with a Writer node.).");
+        return;
+    }
+    
+
     
     ///if the node doesn't have the input 'inputNb' created yet, populate enough input
     ///so it can be created.
