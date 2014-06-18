@@ -315,6 +315,8 @@ struct RotoContextPrivate
         opacity->setHintToolTip("Controls the opacity of the selected shape(s).");
         opacity->setMinimum(0.);
         opacity->setMaximum(1.);
+        opacity->setDisplayMinimum(0.);
+        opacity->setDisplayMaximum(1.);
         opacity->setDefaultValue(1.);
         opacity->setAllDimensionsEnabled(false);
         opacity->setIsPersistant(false);
@@ -322,6 +324,8 @@ struct RotoContextPrivate
         feather->setHintToolTip("Controls the distance of feather (in pixels) to add around the selected shape(s)");
         feather->setMinimum(-100);
         feather->setMaximum(100);
+        feather->setDisplayMinimum(-100);
+        feather->setDisplayMaximum(100);
         feather->setDefaultValue(0);
         feather->setAllDimensionsEnabled(false);
         feather->setIsPersistant(false);
@@ -329,6 +333,8 @@ struct RotoContextPrivate
         featherFallOff->setHintToolTip("Controls the rate at which the feather is applied on the selected shape(s).");
         featherFallOff->setMinimum(0.2);
         featherFallOff->setMaximum(5.);
+        featherFallOff->setDisplayMinimum(0.2);
+        featherFallOff->setDisplayMaximum(5.);
         featherFallOff->setDefaultValue(1.);
         featherFallOff->setAllDimensionsEnabled(false);
         featherFallOff->setIsPersistant(false);
