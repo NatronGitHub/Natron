@@ -148,9 +148,16 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         if (getKnob()->getDimension() == 1 && !_knob->isSliderDisabled()) {
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
-
-            if ((dispmax > dispmin) && (dispmax - dispmin) < SLIDER_MAX_RANGE && dispmax < INT_MAX && dispmin > INT_MIN) {
-                _slider = new ScaleSliderQWidget(dispmin, dispmax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
+            double sliderMin = dispmin,sliderMax = dispmax;
+            if ((dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
+                ///use min max for slider if dispmin/dispmax was not set
+                if ((max - min) < SLIDER_MAX_RANGE) {
+                    sliderMin = min;
+                    sliderMax = max;
+                }
+            }
+            if ((sliderMax > sliderMin) && (sliderMax - sliderMin) < SLIDER_MAX_RANGE && sliderMax < INT_MAX && sliderMin > INT_MIN) {
+                _slider = new ScaleSliderQWidget(sliderMin, sliderMax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
                 if(hasToolTip()) {
                     _slider->setToolTip(toolTip());
                 }
@@ -507,8 +514,16 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         if (_knob->getDimension() == 1 && !_knob->isSliderDisabled()) {
             double dispmin = displayMins[i];
             double dispmax = displayMaxs[i];
-            if ((dispmax > dispmin) && (dispmax - dispmin) < SLIDER_MAX_RANGE && dispmax < DBL_MAX && dispmin > -DBL_MAX) {
-                _slider = new ScaleSliderQWidget(dispmin, dispmax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
+            double sliderMin = dispmin,sliderMax = dispmax;
+            if ((dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
+                ///use min max for slider if dispmin/dispmax was not set
+                if ((max - min) < SLIDER_MAX_RANGE) {
+                    sliderMin = min;
+                    sliderMax = max;
+                }
+            }
+            if ((sliderMax > sliderMin) && (sliderMax - sliderMin) < SLIDER_MAX_RANGE && sliderMax < DBL_MAX && sliderMin > -DBL_MAX) {
+                _slider = new ScaleSliderQWidget(sliderMin, sliderMax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
                 if(hasToolTip()) {
                     _slider->setToolTip(toolTip());
                 }
