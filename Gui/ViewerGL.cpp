@@ -799,8 +799,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     _imp->blankViewerInfos.setDisplayWindow(projectFormat);
     setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),0);
     setRegionOfDefinition(_imp->blankViewerInfos.getRoD(),1);
-    resetWipeControls();
     onProjectFormatChanged(projectFormat);
+    resetWipeControls();
     
     QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectI,int)), this, SLOT(setRegionOfDefinition(RectI,int)));
 
@@ -940,10 +940,10 @@ void ViewerGL::paintGL()
     _imp->viewerTab->getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
     bool drawTexture[2];
     drawTexture[0] = _imp->activeTextures[0];
-    drawTexture[1] = _imp->activeTextures[1] &&
-    activeInputs[0] != activeInputs[1]
-    && compOp != OPERATOR_NONE ;
-    
+    drawTexture[1] = _imp->activeTextures[1] && compOp != OPERATOR_NONE ;
+    if (activeInputs[0] == activeInputs[1] && compOp != OPERATOR_MINUS) {
+        drawTexture[1] = false;
+    }
     double wipeMix;
     {
         QMutexLocker l(&_imp->wipeControlsMutex);
