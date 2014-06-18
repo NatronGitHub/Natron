@@ -16,7 +16,7 @@ CLANG_DIAG_ON(uninitialized)
 
 class MenuWithToolTips : public QMenu {
 public:
-    MenuWithToolTips(QWidget* parent):QMenu(parent){}
+    MenuWithToolTips(QWidget* parent);
     
     bool event(QEvent * e);
 };

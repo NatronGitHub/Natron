@@ -111,7 +111,7 @@ struct KnobGui::KnobGuiPrivate
     , isOnNewLine(false)
     , customInteract(NULL)
     {
-        
+        copyRightClickMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     }
 
 };
@@ -224,6 +224,7 @@ void KnobGui::updateGuiInternal(int dimension)
 
 void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     _imp->animationMenu = new QMenu(layout->parentWidget());
+    _imp->animationMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton(this,QIcon(pix),"",layout->parentWidget());

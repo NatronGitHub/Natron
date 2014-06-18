@@ -17,6 +17,12 @@ CLANG_DIAG_OFF(unused-private-field)
 #include <QHelpEvent>
 CLANG_DIAG_ON(unused-private-field)
 
+MenuWithToolTips::MenuWithToolTips(QWidget* parent)
+: QMenu(parent)
+{
+    setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+}
+
 bool MenuWithToolTips::event (QEvent * e)
 {
     const QHelpEvent *helpEvent = static_cast <QHelpEvent *>(e);
