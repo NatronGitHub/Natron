@@ -148,6 +148,16 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._frameRequestsCount = frameCount;
     _lastRequestedRunArgs._frameRequestIndex = 0;
     _lastRequestedRunArgs._forcePreview = forcePreview;
+    std::string sequentialNode;
+    if (_tree.getOutput()->getNode()->hasSequentialOnlyNodeUpstream(sequentialNode)) {
+        ///The tree has a sequential node inside... due to the limitation of the beginSequenceRender/endSequenceRender
+        ///actions in OpenFX we cannot render simultaneously multiple views. We just render the main view.
+        ///A warning should be popped to the user prior to entering this code.
+        _lastRequestedRunArgs._forceSequential = true;
+    } else {
+        _lastRequestedRunArgs._forceSequential = false;
+    }
+
     
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         runSameThread();
@@ -214,6 +224,10 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         output->setFirstFrame(_firstFrame);
         output->setLastFrame(_lastFrame);
         output->setDoingFullSequenceRender(true);
+        
+        if (_currentRunArgs._forceSequential) {
+            _tree.beginSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
+        }
     }
 
     {
@@ -289,8 +303,12 @@ bool VideoEngine::stopEngine() {
     
     Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
     outputEffect->setDoingFullSequenceRender(false);
-    if(appPTR->isBackground()){
-       
+    
+    if (!_tree.isOutputAViewer() && _currentRunArgs._forceSequential) {
+        _tree.endSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
+    }
+    
+    if (appPTR->isBackground()) {
         outputEffect->notifyRenderFinished();
     }
 
@@ -550,7 +568,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Status stat;
         try {
-            stat =  renderFrame(currentFrame,singleThreaded,_currentRunArgs._frameRequestsCount == -1);
+            stat =  renderFrame(currentFrame,singleThreaded,_currentRunArgs._forceSequential);
         } catch (const std::exception &e) {
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
@@ -638,23 +656,36 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
         bool isProjectFormat;
         
         int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
-        for(int i = 0; i < viewsCount;++i){
+        int mainView = 0;
+        if (isSequentialRender) {
+            mainView = _tree.getOutput()->getApp()->getMainView();
+        }
+        
+        for (int i = 0; i < viewsCount;++i) {
+            
+            if (isSequentialRender && i != mainView) {
+                ///@see the warning in EffectInstance::evaluate
+                continue;
+            }
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
             stat = _tree.getOutput()->getRegionOfDefinition_public(time,scale,i, &rod,&isProjectFormat);
-            if(stat != StatFailed){
-                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time,
-                                                                                 scale,
-                                                                                 0,
-                                                                                 i ,
-                                                                                 rod,
-                                                                                 isSequentialRender,
-                                                                                 false,
-                                                                                 false,
-                                                                                 NULL,
-                                                                                 Natron::ImageComponentRGBA,
-                                                                                 _tree.getOutput()->getBitDepth()));
+            if (stat != StatFailed) {
+                ImageComponents components;
+                ImageBitDepth imageDepth;
+                _tree.getOutput()->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+                (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                                 scale, //< the scale at which to render
+                                                                                 0, //< the mipmap level (redundant with the scale)
+                                                                                 i , //< the view to render
+                                                                                 rod, //< the region of interest (in pixel coordinates)
+                                                                                 isSequentialRender, // is this sequential
+                                                                                 false,  // is this render due to user interaction ?
+                                                                                 false,//< bypass cache ?
+                                                                                 &rod, // < any precomputed rod ?
+                                                                                 components,
+                                                                                 imageDepth));
             } else {
                 break;
             }
@@ -797,6 +828,28 @@ void RenderTree::refreshRenderInputs()
         (*it)->updateRenderInputs();
     }
 }
+
+
+void RenderTree::beginSequentialRender(SequenceTime first,SequenceTime last,int view)
+{
+    RenderScale s;
+    s.x = s.y = 1.;
+    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->getLiveInstance()->beginSequenceRender_public(first, last, 1, false, s, true,false, view);
+    }
+}
+
+
+
+void RenderTree::endSequentialRender(SequenceTime first,SequenceTime last,int view)
+{
+    RenderScale s;
+    s.x = s.y = 1.;
+    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->getLiveInstance()->endSequenceRender_public(first, last, 1, false, s, true,false, view);
+    }
+}
+
 
 void RenderTree::clearPersistentMessages()
 {

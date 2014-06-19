@@ -56,7 +56,7 @@ public:
         RectI roi; //< the region of interest (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         bool isSequentialRender; //< is this render part of a sequential render (playback or render on disk) ?
         bool isRenderUserInteraction; // is this render due to user interaction ? (parameter tweek)
-        bool byPassCache; //< use the cache to look-up existing images ? (false when a refresh is forced)
+        bool byPassCache; //< turn-off the cache ability to look-up existing images ? (false when a refresh is forced)
         const RectI* preComputedRoD; //<  pre-computed region of definition for this effect to speed-up the call to renderRoi
         Natron::ImageComponents components; //< the requested image components
         Natron::ImageBitDepth bitdepth; //< the requested bit depth

@@ -129,6 +129,8 @@ public:
     
     Natron::ViewerColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
     
+    int getMainView() const;
+    
 public slots:
     
     void quit();

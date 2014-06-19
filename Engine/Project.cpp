@@ -519,7 +519,16 @@ void Project::initializeKnobs(){
     _imp->viewsCount->setDisplayMinimum(1);
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
+    _imp->viewsCount->turnOffNewLine();
     page->addKnob(_imp->viewsCount);
+    
+    _imp->mainView = Natron::createKnob<Int_Knob>(this, "Main view");
+    _imp->mainView->disableSlider();
+    _imp->mainView->setDefaultValue(0);
+    _imp->mainView->setMinimum(0);
+    _imp->mainView->setMaximum(0);
+    _imp->mainView->setAnimationEnabled(false);
+    page->addKnob(_imp->mainView);
     
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
     _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
@@ -704,12 +713,15 @@ void Project::setProjectDefaultFormat(const Format& f) {
 }
 
 
-
 int Project::getProjectViewsCount() const {
-    QMutexLocker l(&_imp->viewsCountMutex);
     return _imp->viewsCount->getValue();
 }
 
+int Project::getProjectMainView() const
+{
+    return _imp->mainView->getValue();
+}
+    
 std::vector<boost::shared_ptr<Natron::Node> > Project::getCurrentNodes() const {
     QMutexLocker l(&_imp->nodesLock);
     return _imp->currentNodes;
@@ -980,6 +992,13 @@ void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason
     if (knob == _imp->viewsCount.get()) {
         int viewsCount = _imp->viewsCount->getValue();
         getApp()->setupViewersForViews(viewsCount);
+        
+        int mainView = _imp->mainView->getValue();
+        if (mainView >= viewsCount) {
+            ///reset view to 0
+            _imp->mainView->setValue(0, 0);
+        }
+        _imp->mainView->setMaximum(viewsCount - 1);
     } else if(knob == _imp->formatKnob.get()) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
@@ -989,7 +1008,7 @@ void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason
         }
     } else if(knob == _imp->addFormatKnob.get()) {
         emit mustCreateFormat();
-    } else if(knob == _imp->previewMode.get()) {
+    } else if (knob == _imp->previewMode.get()) {
         emit autoPreviewChanged(_imp->previewMode->getValue());
     }
     

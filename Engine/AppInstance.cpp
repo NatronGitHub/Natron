@@ -410,3 +410,8 @@ Natron::ViewerColorSpace AppInstance::getDefaultColorSpaceForBitDepth(Natron::Im
 {
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
 }
+
+int AppInstance::getMainView() const
+{
+    return _imp->_currentProject->getProjectMainView();
+}

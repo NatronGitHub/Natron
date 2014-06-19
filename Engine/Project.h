@@ -137,6 +137,8 @@ public:
     
     int getProjectViewsCount() const;
     
+    int getProjectMainView() const;
+    
     void setOrAddProjectFormat(const Format& frmt,bool skipAdd = false);
     
     bool isAutoPreviewEnabled() const;

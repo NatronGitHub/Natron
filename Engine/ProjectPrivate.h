@@ -72,6 +72,8 @@ struct ProjectPrivate {
     boost::shared_ptr<Int_Knob> viewsCount;
     mutable QMutex viewsCountMutex;
     
+    boost::shared_ptr<Int_Knob> mainView;
+    
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
     mutable QMutex previewModeMutex;
     

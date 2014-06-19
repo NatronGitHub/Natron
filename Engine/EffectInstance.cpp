@@ -1107,12 +1107,14 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         
         ///We only need to call begin if we've not already called it.
         bool callBegin = false;
+        
+        ///neer call beginsequenceRender here if the render is sequential
+        if (!args._isSequentialRender)
         {
             QMutexLocker locker(&_imp->beginEndRenderMutex);
             if (_imp->beginEndRenderCount == 0) {
                 callBegin = true;
             }
-            ++_imp->beginEndRenderCount;
         }
         if (callBegin) {
             beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,
@@ -1157,11 +1159,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 ret.waitForFinished();
                 
                 bool callEndRender = false;
+                ///never call endsequence render here if the render is sequential
+                if (!args._isSequentialRender)
                 {
                     QMutexLocker locker(&_imp->beginEndRenderMutex);
-                    --_imp->beginEndRenderCount;
-                    assert(_imp->beginEndRenderCount >= 0);
-                    if (_imp->beginEndRenderCount == 0) {
+                    if (_imp->beginEndRenderCount == 1) {
                         callEndRender = true;
                     }
                 }
@@ -1269,11 +1271,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             }
             
             bool callEndRender = false;
+            ///never call endsequence render here if the render is sequential
+            if (!args._isSequentialRender)
             {
                 QMutexLocker locker(&_imp->beginEndRenderMutex);
-                --_imp->beginEndRenderCount;
-                assert(_imp->beginEndRenderCount >= 0);
-                if (_imp->beginEndRenderCount == 0) {
+                if (_imp->beginEndRenderCount == 1) {
                     callEndRender = true;
                 }
             }
@@ -1414,6 +1416,24 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
             if (button->isRenderButton()) {
                 QStringList list;
                 list << getName().c_str();
+                
+                std::string sequentialNode;
+                if (_node->hasSequentialOnlyNodeUpstream(sequentialNode)) {
+                    if (_node->getApp()->getProject()->getProjectViewsCount() > 1) {
+                        Natron::StandardButton answer = Natron::questionDialog("Render", sequentialNode + " can only "
+                                                                               "render in sequential mode. Due to limitations in the "
+                                                                               "OpenFX standard that means that " NATRON_APPLICATION_NAME
+                                                                               " will not be able "
+                                                                               "to render all the views of the project. "
+                                                                               "Only the main view of the project will be rendered, you can "
+                                                                               "change the main view in the project settings. Would you like "
+                                                                               "to continue ?");
+                        if (answer != Natron::Yes) {
+                            return;
+                        }
+                    }
+                }
+                
                 getApp()->startWritersRendering(list);
                 return;
             }
@@ -1750,6 +1770,10 @@ void EffectInstance::beginSequenceRender_public(SequenceTime first,SequenceTime 
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
+    {
+        QMutexLocker l(&_imp->beginEndRenderMutex);
+        ++_imp->beginEndRenderCount;
+    }
     beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     decrementRecursionLevel();
 }
@@ -1761,6 +1785,11 @@ void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime la
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
+    {
+        QMutexLocker locker(&_imp->beginEndRenderMutex);
+        --_imp->beginEndRenderCount;
+        assert(_imp->beginEndRenderCount >= 0);
+    }
     endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     decrementRecursionLevel();
 }
