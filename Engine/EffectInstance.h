@@ -624,26 +624,26 @@ protected:
     virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) {}
     
     
-    virtual void beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
+    virtual Natron::Status beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
                                      SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
                                      bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
-                                     int /*view*/) {}
+                                               int /*view*/) { return Natron::StatOK; }
     
-    virtual void endSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
+    virtual Natron::Status endSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
                                    SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
                                    bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
-                                   int /*view*/) {}
+                                             int /*view*/) { return Natron::StatOK;}
 public:
     
     virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
     
-    void beginSequenceRender_public(SequenceTime first,SequenceTime last,
+    Natron::Status beginSequenceRender_public(SequenceTime first,SequenceTime last,
                                      SequenceTime step,bool interactive,RenderScale scale,
                                      bool isSequentialRender,bool isRenderResponseToUserInteraction,
                                     int view);
     
-    void endSequenceRender_public(SequenceTime first,SequenceTime last,
+    Natron::Status endSequenceRender_public(SequenceTime first,SequenceTime last,
                                    SequenceTime step,bool interactive,RenderScale scale,
                                    bool isSequentialRender,bool isRenderResponseToUserInteraction,
                                   int view);

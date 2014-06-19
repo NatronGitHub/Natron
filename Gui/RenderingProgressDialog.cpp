@@ -94,7 +94,16 @@ void RenderingProgressDialog::onProcessFinished(int retCode) {
         
         bool showLog = false;
         if (retCode == 0) {
-            Natron::informationDialog("Render", "Render finished.");
+            if (_imp->_process) {
+                Natron::StandardButton reply = Natron::questionDialog("Render","The render ended successfully.\n"
+                                                                      "Would you like to see the log ?");
+                if (reply == Natron::Yes) {
+                    showLog = true;
+                }
+            } else {
+                Natron::informationDialog("Render", "The render ended successfully.");
+            }
+            
         } else if (retCode == 1) {
             if (_imp->_process) {
                 Natron::StandardButton reply = Natron::questionDialog("Render",
@@ -122,9 +131,10 @@ void RenderingProgressDialog::onProcessFinished(int retCode) {
             assert(_imp->_process);
             LogWindow log(_imp->_process->getProcessLog(),this);
             log.exec();
+            
         }
     }
-   
+    
 }
 
 void RenderingProgressDialog::onVideoEngineStopped(int retCode) {

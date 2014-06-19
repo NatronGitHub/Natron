@@ -1117,8 +1117,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             }
         }
         if (callBegin) {
-            beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,
-                                       isRenderMadeInResponseToUserInteraction,view);
+            if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,
+                                           isRenderMadeInResponseToUserInteraction,view) == StatFailed) {
+                renderStatus = StatFailed;
+                break;
+            }
         }
         
         /*depending on the thread-safety of the plug-in we render with a different
@@ -1168,8 +1171,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                     }
                 }
                 if (callEndRender) {
-                    endSequenceRender_public(time, time, time, false, scale,
-                                             isSequentialRender,isRenderMadeInResponseToUserInteraction,view);
+                    if (endSequenceRender_public(time, time, time, false, scale,
+                                                 isSequentialRender,isRenderMadeInResponseToUserInteraction,view) == StatFailed) {
+                        renderStatus = StatFailed;
+                        break;
+                    }
                 }
                 
                 for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
@@ -1280,8 +1286,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 }
             }
             if (callEndRender) {
-                endSequenceRender_public(time, time, time, false, scale,isSequentialRender,
-                                         isRenderMadeInResponseToUserInteraction,view);
+                if (endSequenceRender_public(time, time, time, false, scale,isSequentialRender,
+                                             isRenderMadeInResponseToUserInteraction,view) == StatFailed) {
+                    renderStatus = StatFailed;
+                    break;
+                }
             }
             
             if (!aborted()) {
@@ -1763,7 +1772,7 @@ void EffectInstance::getFrameRange_public(SequenceTime *first,SequenceTime *last
     decrementRecursionLevel();
 }
 
-void EffectInstance::beginSequenceRender_public(SequenceTime first,SequenceTime last,
+Natron::Status EffectInstance::beginSequenceRender_public(SequenceTime first,SequenceTime last,
                                 SequenceTime step,bool interactive,RenderScale scale,
                                 bool isSequentialRender,bool isRenderResponseToUserInteraction,
                                 int view)
@@ -1774,11 +1783,13 @@ void EffectInstance::beginSequenceRender_public(SequenceTime first,SequenceTime 
         QMutexLocker l(&_imp->beginEndRenderMutex);
         ++_imp->beginEndRenderCount;
     }
-    beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+    Natron::Status ret = beginSequenceRender(first, last, step, interactive, scale,
+                                             isSequentialRender, isRenderResponseToUserInteraction, view);
     decrementRecursionLevel();
+    return ret;
 }
 
-void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime last,
+Natron::Status EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime last,
                               SequenceTime step,bool interactive,RenderScale scale,
                               bool isSequentialRender,bool isRenderResponseToUserInteraction,
                               int view)
@@ -1790,8 +1801,9 @@ void EffectInstance::endSequenceRender_public(SequenceTime first,SequenceTime la
         --_imp->beginEndRenderCount;
         assert(_imp->beginEndRenderCount >= 0);
     }
-    endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+    Natron::Status ret = endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     decrementRecursionLevel();
+    return ret;
 }
 
 

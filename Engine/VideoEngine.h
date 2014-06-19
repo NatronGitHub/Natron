@@ -148,12 +148,12 @@ public:
     /**
      * @brief Calls begin sequence render on all effects in the tree
      **/
-    void beginSequentialRender(SequenceTime first,SequenceTime last,int view);
+    Natron::Status beginSequentialRender(SequenceTime first,SequenceTime last,int view);
     
     /**
      * @brief Calls end sequence render on all effects in the tree
      **/
-    void endSequentialRender(SequenceTime first,SequenceTime last,int view);
+    Natron::Status endSequentialRender(SequenceTime first,SequenceTime last,int view);
         
 private:
     /*called by resetAndSort(...) to fill the structure

@@ -979,21 +979,22 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
     _persistentMessage->show();
     _stateIndicator->show();
-    if(type == 1){
+    if (type == 1) {
         _persistentMessage->setPlainText("ERROR");
         QColor errColor(128,0,0,255);
         _persistentMessage->setDefaultTextColor(errColor);
         _stateIndicator->setBrush(errColor);
         _lastPersistentMessageType = 1;
-    }else if(type == 2){
+    } else if(type == 2) {
         _persistentMessage->setPlainText("WARNING");
         QColor warColor(180,180,0,255);
         _persistentMessage->setDefaultTextColor(warColor);
         _stateIndicator->setBrush(warColor);
         _lastPersistentMessageType = 2;
-    }else{
+    } else {
         return;
     }
+    setToolTip(message);
     std::list<ViewerInstance* > viewers;
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
@@ -1015,7 +1016,7 @@ void NodeGui::onPersistentMessageCleared() {
     }
     _persistentMessage->hide();
     _stateIndicator->hide();
-    
+    setToolTip("");
     std::list<ViewerInstance* > viewers;
     _internalNode->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){

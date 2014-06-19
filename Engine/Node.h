@@ -522,7 +522,6 @@ public:
      * @param nodeName If the return value is true, this will be set to the name of the node
      * which is sequential.
      *
-     * Warning: Can only be called from the main-thread.
      **/
     bool hasSequentialOnlyNodeUpstream(std::string& nodeName) const;
     

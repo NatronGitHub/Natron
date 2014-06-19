@@ -201,13 +201,13 @@ public:
     
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     
-    virtual void beginSequenceRender(SequenceTime first,SequenceTime last,
+    virtual Natron::Status beginSequenceRender(SequenceTime first,SequenceTime last,
                                      SequenceTime step,bool interactive,RenderScale scale,
-                                     bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
+                                     bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void endSequenceRender(SequenceTime first,SequenceTime last,
+    virtual Natron::Status endSequenceRender(SequenceTime first,SequenceTime last,
                                      SequenceTime step,bool interactive,RenderScale scale,
-                                   bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL;
+                                   bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
 

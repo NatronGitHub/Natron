@@ -842,27 +842,52 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
 }
 
 
-void OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
+Natron::Status OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
                                             SequenceTime step,bool interactive,RenderScale scale,
                                             bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     bool useScaleOne = !supportsRenderScale();
     
-    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
+    effectInstance()->setClipsMipMapLevel(mipmapLevel);
+    effectInstance()->setClipsView(view);
+
     
+    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    
+    effectInstance()->discardClipsView();
+    effectInstance()->discardClipsMipMapLevel();
+
+    
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+        return StatFailed;
+    }
+    return StatOK;
 }
 
-void OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
+Natron::Status OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
                                           SequenceTime step,bool interactive,RenderScale scale,
                                           bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     bool useScaleOne = !supportsRenderScale();
-    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     
+    unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
+    effectInstance()->setClipsMipMapLevel(mipmapLevel);
+    effectInstance()->setClipsView(view);
+
+    
+    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    
+    effectInstance()->discardClipsView();
+    effectInstance()->discardClipsMipMapLevel();
+
+    
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+        return StatFailed;
+    }
+    return StatOK;
 }
 
 Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,

@@ -198,9 +198,10 @@ bool VideoEngine::startEngine(bool singleThreaded) {
     
 
     ///build the tree before getFrameRange!
-    if(_currentRunArgs._refreshTree)
+    if(_currentRunArgs._refreshTree) {
         refreshTree();/*refresh the tree*/
-
+    }
+    
     if(!_tree.isOutputAViewer()){
         
         if (!singleThreaded && !appPTR->isBackground()) {
@@ -226,7 +227,9 @@ bool VideoEngine::startEngine(bool singleThreaded) {
         output->setDoingFullSequenceRender(true);
         
         if (_currentRunArgs._forceSequential) {
-            _tree.beginSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
+            if (_tree.beginSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView()) == StatFailed) {
+                return false;
+            }
         }
     }
 
@@ -305,7 +308,7 @@ bool VideoEngine::stopEngine() {
     outputEffect->setDoingFullSequenceRender(false);
     
     if (!_tree.isOutputAViewer() && _currentRunArgs._forceSequential) {
-        _tree.endSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
+        (void)_tree.endSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
     }
     
     if (appPTR->isBackground()) {
@@ -327,7 +330,8 @@ bool VideoEngine::stopEngine() {
     
 }
 
-void VideoEngine::run(){
+void VideoEngine::run()
+{
     
     for(;;){ // infinite loop
         {
@@ -830,24 +834,30 @@ void RenderTree::refreshRenderInputs()
 }
 
 
-void RenderTree::beginSequentialRender(SequenceTime first,SequenceTime last,int view)
+Natron::Status RenderTree::beginSequentialRender(SequenceTime first,SequenceTime last,int view)
 {
     RenderScale s;
     s.x = s.y = 1.;
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it)->getLiveInstance()->beginSequenceRender_public(first, last, 1, false, s, true,false, view);
+        if ((*it)->getLiveInstance()->beginSequenceRender_public(first, last, 1, false, s, true,false, view) == StatFailed) {
+            return StatFailed;
+        }
     }
+    return StatOK;
 }
 
 
 
-void RenderTree::endSequentialRender(SequenceTime first,SequenceTime last,int view)
+Natron::Status RenderTree::endSequentialRender(SequenceTime first,SequenceTime last,int view)
 {
     RenderScale s;
     s.x = s.y = 1.;
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it)->getLiveInstance()->endSequenceRender_public(first, last, 1, false, s, true,false, view);
+        if ((*it)->getLiveInstance()->endSequenceRender_public(first, last, 1, false, s, true,false, view) == StatFailed) {
+            return StatFailed;
+        }
     }
+    return StatOK;
 }
 
 
