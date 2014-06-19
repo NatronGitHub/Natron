@@ -416,9 +416,14 @@ protected:
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,
-                                                 RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) WARN_UNUSED_RETURN;
     
+    /**
+     * @brief If the rod is infinite, returns the union of all connected inputs. If there's no input this returns the
+     * project format.
+     * @returns true if the rod is set to the project format.
+     **/
+    bool ifInfiniteApplyHeuristic(SequenceTime time,const RenderScale& scale, int view,RectI* rod) const;
     
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest

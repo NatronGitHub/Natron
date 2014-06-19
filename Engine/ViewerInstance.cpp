@@ -280,22 +280,6 @@ ViewerInstance::maximumInputs() const
     return getNode()->maximumInputs();
 }
 
-Natron::Status
-ViewerInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod,bool* isProjectFormat)
-{
-    // always running in the VideoEngine thread
-    _imp->assertVideoEngine();
-
-    ///Return the RoD of the active input
-    EffectInstance* n = input_other_thread(activeInput());
-    if (n) {
-        return n->getRegionOfDefinition_public(time,scale,view,rod,isProjectFormat);
-    } else {
-        return StatFailed;
-    }
-}
-
-
 void
 ViewerInstance::getFrameRange(SequenceTime *first,
                               SequenceTime *last)

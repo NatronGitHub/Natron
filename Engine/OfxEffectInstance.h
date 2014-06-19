@@ -100,7 +100,6 @@ public:
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
-    ///Returns true if the rod will be set to the project format
     bool ifInfiniteApplyHeuristic(OfxTime time,const RenderScale& scale, int view,OfxRectD* rod) const;
 
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
@@ -138,8 +137,7 @@ public:
 
     virtual bool isInputRotoBrush(int inputNb) const WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,
-                                                 RectI* rod,bool* isProjectFormat) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,
                                                                const RectI& renderWindow,int view,U64 nodeHash) OVERRIDE WARN_UNUSED_RETURN;
