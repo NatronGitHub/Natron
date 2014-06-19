@@ -123,6 +123,9 @@ public:
     void getDefaultSelectedNodeColor(float *r,float *g,float *b) const;
     
     void getDefaultBackDropColor(float *r,float *g,float *b) const;
+    
+    int getDisconnectedArrowLength() const;
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -160,6 +163,7 @@ private:
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
+    boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
     boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;

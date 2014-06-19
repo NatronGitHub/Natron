@@ -256,6 +256,13 @@ void Settings::initializeKnobs(){
     _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
 
     
+    _disconnectedArrowLength = Natron::createKnob<Int_Knob>(this, "Disconnected arrow length");
+    _disconnectedArrowLength->setAnimationEnabled(false);
+    _disconnectedArrowLength->setHintToolTip("The size of a disconnected node input arrow in pixels.");
+    _disconnectedArrowLength->disableSlider();
+    
+    _nodegraphTab->addKnob(_disconnectedArrowLength);
+    
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setAnimationEnabled(false);
     _defaultNodeColor->setHintToolTip("This is default color which nodes have when created.");
@@ -355,6 +362,7 @@ void Settings::setDefaultValues() {
     _defaultBackdropColor->setDefaultValue(0.5,0);
     _defaultBackdropColor->setDefaultValue(0.5,1);
     _defaultBackdropColor->setDefaultValue(0.2,2);
+    _disconnectedArrowLength->setDefaultValue(30);
     
 #pragma message WARN("This is kinda a big hack to promote the OpenImageIO plug-in, we should use Tuttle's notation extension")
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
@@ -420,6 +428,7 @@ void Settings::saveSettings(){
     settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
     settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
     settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
+    settings.setValue("DisconnectedArrowLength", _disconnectedArrowLength->getValue());
     settings.setValue("DefaultNodeColor_r", _defaultNodeColor->getValue(0));
     settings.setValue("DefaultNodeColor_g", _defaultNodeColor->getValue(1));
     settings.setValue("DefaultNodeColor_b", _defaultNodeColor->getValue(2));
@@ -530,6 +539,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("MaximumUndoRedoNodeGraph")) {
         _maxUndoRedoNodeGraph->setValue(settings.value("MaximumUndoRedoNodeGraph").toInt(), 0);
+    }
+    if (settings.contains("DisconnectedArrowLength")) {
+        _disconnectedArrowLength->setValue(settings.value("DisconnectedArrowLength").toInt(), 0);
     }
     if (settings.contains("DefaultNodeColor_r")) {
         _defaultNodeColor->setValue(settings.value("DefaultNodeColor_r").toDouble(), 0);
@@ -911,4 +923,9 @@ void Settings::getDefaultBackDropColor(float *r,float *g,float *b) const
     *r = _defaultBackdropColor->getValue(0);
     *g = _defaultBackdropColor->getValue(1);
     *b = _defaultBackdropColor->getValue(2);
+}
+
+int Settings::getDisconnectedArrowLength() const
+{
+    return _disconnectedArrowLength->getValue();
 }

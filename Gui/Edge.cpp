@@ -16,6 +16,7 @@
 
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
+#include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
 #ifndef M_PI
@@ -25,7 +26,6 @@
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
-static const qreal UNATTACHED_ARROW_LENGTH=60.;
 const int graphicalContainerOffset=10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
 Edge::Edge(int inputNb_, double angle_,const boost::shared_ptr<NodeGui>& dest_, QGraphicsItem *parent)
@@ -135,6 +135,27 @@ void Edge::initLine()
         dst = QPointF(sourceBBOX.x(),sourceBBOX.y()) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
     
+    QLineF edges[4];
+    if (dest) {
+        QPointF dstBBoxTopLeft = destBBOX.topLeft();
+        edges[0] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // right
+                          dstBBoxTopLeft.y(),
+                          dstBBoxTopLeft.x()+dstNodeSize.width(),
+                          dstBBoxTopLeft.y()+dstNodeSize.height());
+        edges[1] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // bottom
+                          dstBBoxTopLeft.y()+dstNodeSize.height(),
+                          dstBBoxTopLeft.x(),
+                          dstBBoxTopLeft.y()+dstNodeSize.height());
+        edges[2] = QLineF(dstBBoxTopLeft.x(),  // left
+                          dstBBoxTopLeft.y()+dstNodeSize.height(),
+                          dstBBoxTopLeft.x(),
+                          dstBBoxTopLeft.y());
+        edges[3] = QLineF(dstBBoxTopLeft.x(), // top
+                          dstBBoxTopLeft.y(),
+                          dstBBoxTopLeft.x()+dstNodeSize.width(),
+                          dstBBoxTopLeft.y());
+    }
+    
     QPointF srcpt;
     if (source && dest) {
         /////// This is a connected edge, either input or output
@@ -156,11 +177,36 @@ void Edge::initLine()
                 label->hide();
             }
         }
+        setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+
     
     } else if (!source && dest) {
         ///// The edge is an input edge which is unconnected
-        srcpt = QPointF(dst.x() + (std::cos(angle) * UNATTACHED_ARROW_LENGTH * sc),
-                        dst.y() - (std::sin(angle) * UNATTACHED_ARROW_LENGTH * sc));
+        srcpt = QPointF(dst.x() + (std::cos(angle) * 100000 * sc),
+                        dst.y() - (std::sin(angle) * 100000 * sc));
+        setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+
+        ///ok now that we have the direction between dst and srcPt we can get the distance between the center of the node
+        ///and the intersection with the bbox. We add UNATTECHED_ARROW_LENGTH to that distance to position srcPt correctly.
+        QPointF intersection;
+        bool foundIntersection = false;
+        for (int i = 0; i < 4; ++i) {
+            QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
+            if(type == QLineF::BoundedIntersection){
+                setLine(QLineF(intersection,line().p2()));
+                foundIntersection = true;
+                break;
+            }
+        }
+        
+        assert(foundIntersection);
+        double distToCenter = std::sqrt((intersection.x() - dst.x()) * (intersection.x() - dst.x()) +
+                                        (intersection.y() - dst.y()) * (intersection.y() - dst.y()));
+        distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
+        
+        srcpt = QPointF(dst.x() + (std::cos(angle) * distToCenter * sc),
+                        dst.y() - (std::sin(angle) * distToCenter * sc));
+        setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
         
         if (label) {
             double cosinus = std::cos(angle);
@@ -184,32 +230,13 @@ void Edge::initLine()
     } else if (source && !dest) {
         ///// The edge is an output edge which is unconnected
         srcpt = QPointF(sourceBBOX.x(),sourceBBOX.y()) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height() / 2.);
-        
+        setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+
         ///output edges don't have labels
     }
     
-    setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
 
     if (dest) {
-        QPointF dstPost = QPointF(destBBOX.x(),destBBOX.y());
-        QLineF edges[] = {
-            QLineF(dstPost.x()+dstNodeSize.width(), // right
-                   dstPost.y(),
-                   dstPost.x()+dstNodeSize.width(),
-                   dstPost.y()+dstNodeSize.height()),
-            QLineF(dstPost.x()+dstNodeSize.width(), // bottom
-                   dstPost.y()+dstNodeSize.height(),
-                   dstPost.x(),
-                   dstPost.y()+dstNodeSize.height()),
-            QLineF(dstPost.x(),  // left
-                   dstPost.y()+dstNodeSize.height(),
-                   dstPost.x(),
-                   dstPost.y()),
-            QLineF(dstPost.x(), // top
-                   dstPost.y(),
-                   dstPost.x()+dstNodeSize.width(),
-                   dstPost.y())};
-        
         for (int i = 0; i < 4; ++i) {
             QPointF intersection;
             QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
