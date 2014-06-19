@@ -83,17 +83,37 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Button.h"
 #include "Gui/RotoGui.h"
 
-#define PLUGIN_GROUP_DEFAULT "Other"
+
 #define PLUGIN_GROUP_IMAGE "Image"
 #define PLUGIN_GROUP_COLOR "Color"
 #define PLUGIN_GROUP_FILTER "Filter"
 #define PLUGIN_GROUP_TRANSFORM "Transform"
-#define PLUGIN_GROUP_DEEP "Deep"
-#define PLUGIN_GROUP_MULTIVIEW "Views"
-#define PLUGIN_GROUP_OFX "OFX"
 #define PLUGIN_GROUP_TIME "Time"
 #define PLUGIN_GROUP_PAINT "Draw"
 #define PLUGIN_GROUP_KEYER "Keyer"
+#define PLUGIN_GROUP_CHANNEL "Channel"
+#define PLUGIN_GROUP_MERGE "Merge"
+#define PLUGIN_GROUP_MULTIVIEW "Views"
+#define PLUGIN_GROUP_DEEP "Deep"
+#define PLUGIN_GROUP_DEFAULT "Other"
+#define PLUGIN_GROUP_OFX "OFX"
+
+#define NAMED_PLUGIN_GROUP_NO 12
+
+static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
+    PLUGIN_GROUP_IMAGE,
+    PLUGIN_GROUP_COLOR,
+    PLUGIN_GROUP_CHANNEL,
+    PLUGIN_GROUP_MERGE,
+    PLUGIN_GROUP_FILTER,
+    PLUGIN_GROUP_TRANSFORM,
+    PLUGIN_GROUP_TIME,
+    PLUGIN_GROUP_PAINT,
+    PLUGIN_GROUP_KEYER,
+    PLUGIN_GROUP_MULTIVIEW,
+    PLUGIN_GROUP_DEEP,
+    PLUGIN_GROUP_DEFAULT
+};
 
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
 
@@ -368,6 +388,8 @@ struct GuiPrivate {
     void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
     void retranslateUi(QMainWindow *MainWindow);
+    
+    void addToolButton(ToolButton* tool);
 
 };
 
@@ -1462,21 +1484,56 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     return pluginsToolButton;
 }
 
-void Gui::addToolButttonsToToolBar(){
+void Gui::addToolButttonsToToolBar()
+{
     
-    for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
-        
-        //if the toolbutton is a root (no parent), add it in the toolbox
-        if(_imp->_toolButtons[i]->hasChildren() && !_imp->_toolButtons[i]->getPluginToolButton()->hasParent()){
-            QToolButton* button = new QToolButton(_imp->_toolBox);
-            button->setIcon(_imp->_toolButtons[i]->getIcon());
-            button->setMenu(_imp->_toolButtons[i]->getMenu());
-            button->setPopupMode(QToolButton::InstantPopup);
-            button->setToolTip(Qt::convertFromPlainText(_imp->_toolButtons[i]->getLabel(), Qt::WhiteSpaceNormal));
-            _imp->_toolBox->addWidget(button);
-            
+    ///First-off find the tool buttons that should be ordered
+    ///and put in another list the rest
+    std::list<ToolButton*> namedToolButtons;
+    std::list<ToolButton*> otherToolButtons;
+    
+    for (int n = 0; n < NAMED_PLUGIN_GROUP_NO; ++n) {
+        for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
+            if (_imp->_toolButtons[i]->hasChildren() && !_imp->_toolButtons[i]->getPluginToolButton()->hasParent()) {
+                
+                std::string toolButtonName = _imp->_toolButtons[i]->getLabel().toStdString();
+                
+                bool isNamedToolButton = false;
+                for (int j = 0; j < NAMED_PLUGIN_GROUP_NO; ++j) {
+                    if (toolButtonName == namedGroupsOrdered[j]) {
+                        isNamedToolButton = true;
+                        break;
+                    }
+                }
+                if (!isNamedToolButton) {
+                    otherToolButtons.push_back(_imp->_toolButtons[i]);
+                } else if (toolButtonName == namedGroupsOrdered[n]) {
+                    namedToolButtons.push_back(_imp->_toolButtons[i]);
+                    break;
+                }
+            }
         }
     }
+    
+    ///first create named tool buttons ordered, then the others
+    
+    for (std::list<ToolButton*>::iterator it = namedToolButtons.begin(); it!=namedToolButtons.end(); ++it) {
+        _imp->addToolButton(*it);
+    }
+    
+    for (std::list<ToolButton*>::iterator it = otherToolButtons.begin(); it!=otherToolButtons.end(); ++it) {
+        _imp->addToolButton(*it);
+    }
+}
+
+void GuiPrivate::addToolButton(ToolButton* tool)
+{
+    QToolButton* button = new QToolButton(_toolBox);
+    button->setIcon(tool->getIcon());
+    button->setMenu(tool->getMenu());
+    button->setPopupMode(QToolButton::InstantPopup);
+    button->setToolTip(Qt::convertFromPlainText(tool->getLabel(), Qt::WhiteSpaceNormal));
+    _toolBox->addWidget(button);
 }
 
 void GuiPrivate::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
