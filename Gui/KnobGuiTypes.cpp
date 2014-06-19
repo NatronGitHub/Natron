@@ -1645,14 +1645,14 @@ Color_KnobGui::onColorChanged()
         }
     } else {
         if (_dimension >= 3) {
-            color.setGreenF(r);
+            color.setGreenF(Natron::clamp(r));
             newValues.push_back(r);
-            color.setBlueF(r);
-            newValues.push_back(r);
+            color.setBlueF(Natron::clamp(r));
+            newValues.push_back(Natron::clamp(r));
         }
         if (_dimension >= 4) {
-            newValues.push_back(r);
-            color.setAlphaF(r);
+            newValues.push_back(Natron::clamp(r));
+            color.setAlphaF(Natron::clamp(r));
         }
     }
 
