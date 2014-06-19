@@ -326,21 +326,25 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
          myPen.setStyle(Qt::SolidLine);
      }
      
+     QColor color;
      if (_useHighlight) {
-         myPen.setColor(Qt::green);
+         color = Qt::green;
      } else if (_useRenderingColor) {
-         myPen.setColor(_renderingColor);
+         color = _renderingColor;
      } else {
-         myPen.setColor(_defaultColor);
+         color = _defaultColor;
      }
- 
+     myPen.setColor(color);
      painter->setPen(myPen);
-
      painter->drawLine(line());
 
      myPen.setStyle(Qt::SolidLine);
      painter->setPen(myPen);
-     painter->drawPolygon(arrowHead);
+     
+     QPainterPath headPath;
+     headPath.addPolygon(arrowHead);
+     headPath.closeSubpath();
+     painter->fillPath(headPath, color);
 
   }
 
