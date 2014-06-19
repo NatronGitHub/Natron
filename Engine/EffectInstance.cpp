@@ -618,7 +618,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
         
-        bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
+        bool identity = false;
+        
+        /// Don't call isIdentity when in sequential rendering otherwise we could break the sequence.
+        if (!args.isSequentialRender) {
+            identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
+        }
         
         if (identity) {
             
