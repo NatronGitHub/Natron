@@ -218,7 +218,7 @@ void NodeGui::initialize(NodeGraph* dag,
 	}
     
     if(_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()){
-        togglePreview_internal();
+        togglePreview_internal(false);
         
     }else{
         updateShape(NODE_WIDTH,NODE_HEIGHT);
@@ -279,9 +279,9 @@ void NodeGui::beginEditKnobs() {
     _internalNode->beginEditKnobs();
 }
 
-void NodeGui::togglePreview_internal()
+void NodeGui::togglePreview_internal(bool refreshPreview)
 {
-    if(_internalNode->isPreviewEnabled()){
+    if (_internalNode->isPreviewEnabled()) {
         if(!_previewPixmap){
             QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
             prev.fill(Qt::black);
@@ -293,7 +293,10 @@ void NodeGui::togglePreview_internal()
         updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
         _previewPixmap->stackBefore(_nameItem);
         _previewPixmap->show();
-    }else{
+        if (refreshPreview) {
+            _internalNode->computePreviewImage(_graph->getGui()->getApp()->getTimeLine()->currentFrame());
+        }
+    } else {
         if (_previewPixmap) {
             _previewPixmap->hide();
         }

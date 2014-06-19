@@ -771,12 +771,30 @@ private:
     int getInputNumber(Natron::EffectInstance* inputEffect) const;
     
 };
+    
+    
+/**
+* @brief This object locks an image for writing (and waits until it can lock it) and releases
+* the lock when it is destroyed.
+**/
+class OutputImageLocker {
+        
+    Natron::Node* n;
+    boost::shared_ptr<Natron::Image> img;
+public:
+        
+    OutputImageLocker(Natron::Node* node,const boost::shared_ptr<Natron::Image>& image);
+        
+    ~OutputImageLocker();
+    
+};
+    
 
 /**
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-    typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
+typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
 
 
 class OutputEffectInstance : public Natron::EffectInstance {

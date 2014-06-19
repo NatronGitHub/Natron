@@ -181,9 +181,9 @@ public:
 
     void setPlaybackCacheMaximumSize(double p);
 
-    void removeFromNodeCache(boost::shared_ptr<Natron::Image> image);
+    void removeFromNodeCache(const boost::shared_ptr<Natron::Image>& image);
 
-    void removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture);
+    void removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
 

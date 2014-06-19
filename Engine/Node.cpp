@@ -1275,12 +1275,12 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         img = _imp->liveInstance->renderRoI(EffectInstance::RenderRoIArgs(time,
                                                                           scale,
                                                                           mipMapLevel,
-                                                                          0,
+                                                                          0, //< preview only renders view 0 (left)
                                                                           scaledRod,
                                                                           false,
                                                                           true,
                                                                           false,
-                                                                          NULL,
+                                                                          &rod,
                                                                           Natron::ImageComponentRGB,
                                                                           getBitDepth())); //< preview is always rgb...
     } catch (const std::exception& e) {

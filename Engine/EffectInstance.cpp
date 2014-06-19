@@ -46,29 +46,19 @@ class File_Knob;
 class OutputFile_Knob;
 
 
-/**
- * @brief This object locks an image for writing (and waits until it can lock it) and releases
- * the lock when it is destroyed.
- **/
-class OutputImageLocker {
-    
-    Natron::Node* n;
-    boost::shared_ptr<Natron::Image> img;
-public:
-    
-    OutputImageLocker(Natron::Node* node,const boost::shared_ptr<Natron::Image>& image)
-    : n (node) , img(image)
-    {
-        assert(n && img);
-        n->addImageBeingRendered(img);
-    }
-    
-    ~OutputImageLocker()
-    {
-        n->removeImageBeingRendered(img);
-    }
-    
-};
+OutputImageLocker::OutputImageLocker(Natron::Node* node,const boost::shared_ptr<Natron::Image>& image)
+: n (node) , img(image)
+{
+    assert(n && img);
+    n->addImageBeingRendered(img);
+}
+
+OutputImageLocker::~OutputImageLocker()
+{
+    n->removeImageBeingRendered(img);
+}
+
+
 
 
 struct EffectInstance::RenderArgs {
@@ -558,8 +548,14 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
     
+    ////Lock the output image so that multiple threads do not access for writing at the same time.
+    ////When it goes out of scope the lock will be released automatically
+    boost::shared_ptr<OutputImageLocker> imageLock;
+    
     if (isCached) {
         assert(cachedImgParams);
+        
+        imageLock.reset(new OutputImageLocker(_node.get(),image));
         
         if (cachedImgParams->isRodProjectFormat()) {
             ////If the image was cached with a RoD dependent on the project format, but the project format changed,
@@ -570,6 +566,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 isCached = false;
                 appPTR->removeFromNodeCache(image);
                 cachedImgParams.reset();
+                imageLock.reset(); //< release the lock after cleaning it from the cache
                 image.reset();
             }
         }
@@ -593,6 +590,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             isCached = false;
             appPTR->removeFromNodeCache(image);
             cachedImgParams.reset();
+            imageLock.reset(); //< release the lock after cleaning it from the cache
             image.reset();
         }
         
@@ -725,6 +723,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             return newImage;
         }
         
+        imageLock.reset(new OutputImageLocker(_node.get(),newImage));
         
         if (cached && byPassCache) {
             ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
@@ -820,6 +819,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
     }
     
+    ////The lock must be taken here otherwise this could lead to corruption if multiple threads
+    ////are accessing the output image.
+    assert(imageLock);
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
@@ -917,12 +919,6 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     ///Note that here we use the downscaledImage pointer because in all cases this pixel rod is always good.
     ///See the 2 lines assert above
     renderWindow.intersect(downscaledImage->getPixelRoD(), &intersection);
-    
-    
-    ////Right before checking whats left to render, lock the image for writing
-    ////When it goes out of scope the lock will be released automatically
-    ////Note that we do not lock the remapped image as they are not shared by the cache.
-    OutputImageLocker imageLock(_node.get(),downscaledImage);
     
     /// If the list is empty then we already rendered it all
     std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);

@@ -356,7 +356,7 @@ private:
     
     void setNameItemHtml(const QString& name,const QString& label);
     
-    void togglePreview_internal();
+    void togglePreview_internal(bool refreshPreview = true);
     
     void setAboveItem(QGraphicsItem* item);
     

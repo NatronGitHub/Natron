@@ -459,7 +459,15 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     
     
     bool isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
+    
+    ////Lock the output image so that multiple threads do not access for writing at the same time.
+    ////When it goes out of scope the lock will be released automatically
+    boost::shared_ptr<OutputImageLocker> imageLock;
+    
     if (isInputImgCached) {
+        
+        imageLock.reset(new OutputImageLocker(getNode().get(),inputImage));
+        
         inputIdentityNumber = cachedImgParams->getInputNbIdentity();
         inputIdentityTime = cachedImgParams->getInputTimeIdentity();
         if (forceRender) {
@@ -490,6 +498,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             isInputImgCached = false;
             appPTR->removeFromNodeCache(inputImage);
             cachedImgParams.reset();
+            imageLock.reset();
             inputImage.reset();
         }
     }

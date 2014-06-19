@@ -809,14 +809,14 @@ Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,
     return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
 }
 
-void AppManager::removeFromNodeCache(boost::shared_ptr<Natron::Image> image){
+void AppManager::removeFromNodeCache(const boost::shared_ptr<Natron::Image>& image){
     _imp->_nodeCache->removeEntry(image);
     if(image) {
         emit imageRemovedFromNodeCache(image->getKey()._time);
     }
 }
 
-void AppManager::removeFromViewerCache(boost::shared_ptr<Natron::FrameEntry> texture){
+void AppManager::removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture){
     _imp->_viewerCache->removeEntry(texture);
     if(texture) {
         emit imageRemovedFromNodeCache(texture->getKey().getTime());
