@@ -1554,10 +1554,10 @@ private:
         }
         QToolButton::mousePressEvent(event);
     }
-    
+
     virtual void enterEvent(QEvent* event) {
         AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>(_gui->getToolButtonMenuOpened());
-        if (btn && btn != this) {
+        if (btn && btn != this && btn->menu()->isActiveWindow()) {
             btn->menu()->close();
             btn->_menuOpened = false;
             _gui->setToolButtonMenuOpened(this);
