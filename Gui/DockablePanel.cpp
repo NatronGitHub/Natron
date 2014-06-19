@@ -351,7 +351,11 @@ DockablePanel::DockablePanel(Gui* gui
         
     }
     
-    _imp->_tabWidget = new DockablePanelTabWidget(this);
+    if (useScrollAreasForTabs) {
+        _imp->_tabWidget = new QTabWidget(this);
+    } else {
+        _imp->_tabWidget = new DockablePanelTabWidget(this);
+    }
     _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     _imp->_tabWidget->setObjectName("QTabWidget");
     _imp->_mainLayout->addWidget(_imp->_tabWidget);
