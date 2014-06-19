@@ -41,6 +41,7 @@ class Splitter;
 class QUndoStack;
 class QScrollArea;
 class NodeBackDrop;
+class QToolButton;
 class QVBoxLayout;
 
 //Natron gui
@@ -311,6 +312,8 @@ public:
     
     std::list<ToolButton*> getToolButtonsOrdered() const;
     
+    void setToolButtonMenuOpened(QToolButton* button);
+    QToolButton* getToolButtonMenuOpened() const;
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -400,6 +403,7 @@ public slots:
     
     void onMaxPanelsSpinBoxValueChanged(double val);
 
+    
 private:
 
     void setupUi();

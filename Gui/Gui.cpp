@@ -288,6 +288,8 @@ struct GuiPrivate {
     
     QString _openGLVersion;
     QString _glewVersion;
+    
+    QToolButton* _toolButtonMenuOpened;
 
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
@@ -376,6 +378,7 @@ struct GuiPrivate {
     , openedPanels()
     , _openGLVersion()
     , _glewVersion()
+    , _toolButtonMenuOpened(NULL)
     {
         
     }
@@ -1526,9 +1529,60 @@ void Gui::addToolButttonsToToolBar()
 
 }
 
+class AutoRaiseToolButton : public QToolButton
+{
+    Gui* _gui;
+    bool _menuOpened;
+public:
+    
+    AutoRaiseToolButton(Gui* gui,QWidget* parent)
+    : QToolButton(parent)
+    , _gui(gui)
+    , _menuOpened(false)
+    {
+        setMouseTracking(true);
+    }
+    
+private:
+    
+    virtual void mousePressEvent(QMouseEvent* event) {
+        _menuOpened = !_menuOpened;
+        if (_menuOpened) {
+            _gui->setToolButtonMenuOpened(this);
+        } else {
+            _gui->setToolButtonMenuOpened(NULL);
+        }
+        QToolButton::mousePressEvent(event);
+    }
+    
+    virtual void enterEvent(QEvent* event) {
+        AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>(_gui->getToolButtonMenuOpened());
+        if (btn && btn != this) {
+            btn->menu()->close();
+            btn->_menuOpened = false;
+            _gui->setToolButtonMenuOpened(this);
+            _menuOpened = true;
+            showMenu();
+        }
+        QToolButton::enterEvent(event);
+    }
+    
+};
+
+void Gui::setToolButtonMenuOpened(QToolButton* button)
+{
+    _imp->_toolButtonMenuOpened = button;
+}
+
+QToolButton* Gui::getToolButtonMenuOpened() const
+{
+    return _imp->_toolButtonMenuOpened;
+}
+
+
 void GuiPrivate::addToolButton(ToolButton* tool)
 {
-    QToolButton* button = new QToolButton(_toolBox);
+    QToolButton* button = new AutoRaiseToolButton(_gui,_toolBox);
     button->setIcon(tool->getIcon());
     button->setMenu(tool->getMenu());
     button->setPopupMode(QToolButton::InstantPopup);
