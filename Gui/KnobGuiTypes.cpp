@@ -2035,9 +2035,38 @@ void String_KnobGui::onLineChanged()
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),_lineEdit->text().toStdString()));
 }
 
+QString String_KnobGui::stripWhitespaces(const QString& str)
+{
+    ///QString::trimmed() doesn't do the job because it doesn't leave the last character
+    ///The code is taken from QString::trimmed
+    const QChar* s = str.data();
+    if (!s->isSpace() && !s[str.size() - 1].isSpace()) {
+        return str;
+    }
+    
+    int start = 0;
+    int end = str.size() - 2; ///< end before the last character so we don't remove it
+    
+    while (start <= end && s[start].isSpace()) { // skip white space from start
+        ++start;
+    }
+    
+    if (start <= end) {                          // only white space
+        while (end && s[end].isSpace()) {           // skip white space from end
+            --end;
+        }
+    }
+    int l = end - start + 2;
+    if (l <= 0) {
+        return QString();
+    }
+    return QString(s + start, l);
+}
+
 void String_KnobGui::onTextChanged()
 {
     QString txt = _textEdit->toPlainText();
+    txt = stripWhitespaces(txt);
     if (_knob->usesRichText()) {
         txt = addHtmlTags(txt);
     }

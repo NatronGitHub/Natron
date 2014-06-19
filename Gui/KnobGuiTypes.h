@@ -669,6 +669,11 @@ private:
     
     QString addHtmlTags(QString text) const;
     
+    /**
+     * @brief Removes the prepending and appending '\n' and ' ' from str except for the last character.
+     **/
+    static QString stripWhitespaces(const QString& str);
+    
 private:
     LineEdit *_lineEdit; //< if single line
     QWidget* _container; //< only used when multiline is on

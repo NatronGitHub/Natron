@@ -378,7 +378,6 @@ DockablePanel::~DockablePanel(){
 DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
 : QTabWidget(parent)
 {
-    connect(this,SIGNAL(currentChanged(int)),this,SLOT(updateGeometry()));
 }
 
 QSize DockablePanelTabWidget::sizeHint() const
