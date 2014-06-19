@@ -308,6 +308,9 @@ public:
     void removeVisibleDockablePanel(DockablePanel* panel);
     
     NodeBackDrop* createBackDrop(bool requestedByLoad) ;
+    
+    std::list<ToolButton*> getToolButtonsOrdered() const;
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

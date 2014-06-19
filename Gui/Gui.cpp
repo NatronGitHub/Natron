@@ -1484,9 +1484,8 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     return pluginsToolButton;
 }
 
-void Gui::addToolButttonsToToolBar()
+std::list<ToolButton*> Gui::getToolButtonsOrdered() const
 {
-    
     ///First-off find the tool buttons that should be ordered
     ///and put in another list the rest
     std::list<ToolButton*> namedToolButtons;
@@ -1514,16 +1513,17 @@ void Gui::addToolButttonsToToolBar()
             }
         }
     }
-    
-    ///first create named tool buttons ordered, then the others
-    
-    for (std::list<ToolButton*>::iterator it = namedToolButtons.begin(); it!=namedToolButtons.end(); ++it) {
+    namedToolButtons.insert(namedToolButtons.end(), otherToolButtons.begin(),otherToolButtons.end());
+    return namedToolButtons;
+}
+
+void Gui::addToolButttonsToToolBar()
+{
+    std::list<ToolButton*> orederedToolButtons = getToolButtonsOrdered();
+    for (std::list<ToolButton*>::iterator it = orederedToolButtons.begin(); it!=orederedToolButtons.end(); ++it) {
         _imp->addToolButton(*it);
     }
-    
-    for (std::list<ToolButton*>::iterator it = otherToolButtons.begin(); it!=otherToolButtons.end(); ++it) {
-        _imp->addToolButton(*it);
-    }
+
 }
 
 void GuiPrivate::addToolButton(ToolButton* tool)
