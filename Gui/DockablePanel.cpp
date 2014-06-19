@@ -351,7 +351,7 @@ DockablePanel::DockablePanel(Gui* gui
         
     }
     
-    _imp->_tabWidget = new QTabWidget(this);
+    _imp->_tabWidget = new DockablePanelTabWidget(this);
     _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     _imp->_tabWidget->setObjectName("QTabWidget");
     _imp->_mainLayout->addWidget(_imp->_tabWidget);
@@ -373,6 +373,22 @@ DockablePanel::~DockablePanel(){
             delete it->second;
         }
     }
+}
+
+DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
+: QTabWidget(parent)
+{
+    connect(this,SIGNAL(currentChanged(int)),this,SLOT(updateGeometry()));
+}
+
+QSize DockablePanelTabWidget::sizeHint() const
+{
+    return currentWidget() ? currentWidget()->sizeHint() + QSize(0,20) : QSize(300,100);
+}
+
+QSize DockablePanelTabWidget::minimumSizeHint() const
+{
+    return currentWidget() ? currentWidget()->minimumSizeHint() + QSize(0,20): QSize(300,100);
 }
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {

@@ -23,7 +23,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-
+#include <QTabWidget>
 #include "Global/GlobalDefines.h"
 
 class KnobI;
@@ -36,6 +36,23 @@ class Button;
 class QUndoStack;
 class QUndoCommand;
 class RotoPanel;
+
+
+/**
+ * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.
+ * This class resizes the QTabWidget to the current tab size.
+ **/
+class DockablePanelTabWidget : public QTabWidget
+{
+    
+public:
+    
+    DockablePanelTabWidget(QWidget* parent = 0);
+    
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+};
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
