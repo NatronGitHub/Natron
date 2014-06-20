@@ -54,6 +54,11 @@ static QString getDefaultOcioConfigPath() {
 #endif
 }
 
+#if defined(WINDOWS)
+// defined in ofxhPluginCache.cpp
+const TCHAR *getStdOFXPluginPath(const std::string &hostId);
+#endif
+
 void Settings::initializeKnobs(){
     
     _generalTab = Natron::createKnob<Page_Knob>(this, "General");
@@ -126,7 +131,7 @@ void Settings::initializeKnobs(){
                                                   "- plugins found in OFX_PLUGIN_PATH\n"
                                                   "- plugins found in \""
 #if defined(WINDOWS)
-                                                  ) + getStdOFXPluginPath() +
+                                                  ) + getStdOFXPluginPath("") +
                                       std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
 #endif
 #if defined(__linux__)

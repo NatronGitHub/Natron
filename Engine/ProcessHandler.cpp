@@ -41,12 +41,9 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     _ipcServer = new QLocalServer();
     QObject::connect(_ipcServer,SIGNAL(newConnection()),this,SLOT(onNewConnectionPending()));
     QString serverName;
-    {
-#ifndef __NATRON_WIN32__
-        QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(_process->pid()));
-#else
-		QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(_process->pid()->dwProcessId));
-#endif
+  	int randomNumber = std::rand();
+	{
+		QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(randomNumber));
         tmpf.open();
         serverName = tmpf.fileName();
     }
