@@ -103,17 +103,21 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
     
     _teamText = new QTextBrowser(_tabWidget);
     _teamText->setOpenExternalLinks(false);
-    QFile team_file(":CONTRIBUTORS.txt");
-    team_file.open(QIODevice::ReadOnly | QIODevice::Text);
-    _teamText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(team_file.readAll()));
-    _tabWidget->addTab(_teamText, "Contributors");
-    
-    _licenseText = new QTextBrowser(_tabWidget);
-    _licenseText->setOpenExternalLinks(false);
-    QFile license(":LICENSE.txt");
-    license.open(QIODevice::ReadOnly | QIODevice::Text);
-    _licenseText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()));
-    _tabWidget->addTab(_licenseText, "License");
+    {
+        QFile team_file(":CONTRIBUTORS.txt");
+        team_file.open(QIODevice::ReadOnly | QIODevice::Text);
+        _teamText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(team_file.readAll()));
+        _tabWidget->addTab(_teamText, "Contributors");
+
+        _licenseText = new QTextBrowser(_tabWidget);
+        _licenseText->setOpenExternalLinks(false);
+    }
+    {
+        QFile license(":LICENSE.txt");
+        license.open(QIODevice::ReadOnly | QIODevice::Text);
+        _licenseText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()));
+        _tabWidget->addTab(_licenseText, "License");
+    }
     
 }
 

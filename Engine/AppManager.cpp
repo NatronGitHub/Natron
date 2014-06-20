@@ -967,7 +967,8 @@ void AppManagerPrivate::saveCaches() {
             return;
         }
         
-        if(!ofile.good()) {
+        if (!ofile.good()) {
+            ofile.close();
             qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
             return;
         }
@@ -978,10 +979,10 @@ void AppManagerPrivate::saveCaches() {
         try {
             boost::archive::binary_oarchive oArchive(ofile);
             oArchive << toc;
-            ofile.close();
         } catch(const std::exception& e) {
             qDebug() << "Failed to serialize the cache table of contents: " << e.what();
         }
+        ofile.close();
     }
 
     
@@ -1030,6 +1031,7 @@ void AppManagerPrivate::restoreCaches() {
             
             if (!ifile.good()) {
                 qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+                ifile.close();
                 return;
             }
             
@@ -1037,12 +1039,13 @@ void AppManagerPrivate::restoreCaches() {
             try {
                 boost::archive::binary_iarchive iArchive(ifile);
                 iArchive >> tableOfContents;
-                ifile.close();
             } catch(const std::exception & e) {
                 qDebug() << e.what();
+                ifile.close();
                 return;
             }
-            
+            ifile.close();
+
             QFile restoreFile(settingsFilePath.c_str());
             restoreFile.remove();
             
@@ -1063,6 +1066,7 @@ void AppManagerPrivate::restoreCaches() {
             
             if (!ifile.good()) {
                 qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+                ifile.close();
                 return;
             }
             
@@ -1070,12 +1074,13 @@ void AppManagerPrivate::restoreCaches() {
             try {
                 boost::archive::binary_iarchive iArchive(ifile);
                 iArchive >> tableOfContents;
-                ifile.close();
             } catch(const std::exception & e) {
                 qDebug() << e.what();
+                ifile.close();
                 return;
             }
-            
+            ifile.close();
+
             QFile restoreFile(settingsFilePath.c_str());
             restoreFile.remove();
             
