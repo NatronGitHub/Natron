@@ -136,7 +136,7 @@ void VideoEngine::render(int frameCount,
     
     /*If the Tree was never built and we don't want to update the Tree, force an update
      so there's no null pointers hanging around*/
-    if(!_tree.getOutput() && !refreshTree) refreshTree = true;
+    if((!_tree.getOutput() || !_tree.wasTreeEverBuilt()) && !refreshTree) refreshTree = true;
     
     
     /*setting the run args that are used by the run function*/
@@ -783,6 +783,7 @@ RenderTree::RenderTree(EffectInstance* output):
   ,_sorted()
   ,_isViewer(false)
   ,_isOutputOpenFXNode(false)
+  ,_wasEverBuilt(false)
   ,_firstFrame(0)
   ,_lastFrame(0)
 {
@@ -805,6 +806,7 @@ void RenderTree::refreshTree(){
     clearGraph();
     std::vector<boost::shared_ptr<Natron::Node> > markedNodes;
     fillGraph(_output->getNode(),markedNodes);
+    _wasEverBuilt = true;
 }
 
 

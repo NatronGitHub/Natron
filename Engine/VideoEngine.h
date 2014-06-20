@@ -154,7 +154,9 @@ public:
      * @brief Calls end sequence render on all effects in the tree
      **/
     Natron::Status endSequentialRender(SequenceTime first,SequenceTime last,int view);
-        
+    
+    bool wasTreeEverBuilt() const { return _wasEverBuilt; }
+    
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
@@ -166,6 +168,7 @@ private:
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
+    bool _wasEverBuilt;
     SequenceTime _firstFrame,_lastFrame;/*!< first frame and last frame of the union range of all inputs*/
 };
 
