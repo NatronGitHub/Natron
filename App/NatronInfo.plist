@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist SYSTEM "file://localhost/System/Library/DTDs/PropertyList.dtd">
+<plist version="0.9">
+<dict>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>CFBundleIconFile</key>
+	<string>@ICON@</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+ 	<key>CFBundleGetInfoString</key>
+	<string>@SHORT_VERSION@</string>
+	<key>CFBundleSignature</key>
+	<string>@TYPEINFO@</string>
+	<key>CFBundleExecutable</key>
+	<string>@EXECUTABLE@</string>
+	<key>CFBundleIdentifier</key>
+	<string>fr.inria.@EXECUTABLE@</string>
+	<key>CFBundleDocumentTypes</key>
+        <array>
+          <dict>
+	    <key>CFBundleTypeExtensions</key>
+	    <array>
+	      <string>ntp</string>
+	    </array>
+            <key>CFBundleTypeMIMETypes</key>
+            <array>
+              <string>application/vnd.natron.project</string>
+            </array>
+            <key>CFBundleTypeName</key>
+            <string>Natron Project File</string>
+	    <key>CFBundleTypeRole</key>          
+            <string>Editor</string>
+ 	    <key>LSIsAppleDefaultForType</key>
+	    <true/>
+          </dict>
+        </array>
+</dict>
+</plist>

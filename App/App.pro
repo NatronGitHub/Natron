@@ -4,6 +4,7 @@
 
 
 TARGET = Natron
+VERSION = 0.9.3
 TEMPLATE = app
 CONFIG += app
 CONFIG += moc
@@ -14,11 +15,12 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 macx {
   ### custom variables for the Info.plist file
   # use a custom Info.plist template
-  #QMAKE_INFO_PLIST = ...
+  QMAKE_INFO_PLIST = NatronInfo.plist
   # Set the application icon
   ICON = ../Gui/Resources/Images/natronIcon256_osx.icns
   # replace com.yourcompany with something more meaningful
   QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+  QMAKE_PKGINFO_TYPEINFO = Ntrn
 }
 
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
