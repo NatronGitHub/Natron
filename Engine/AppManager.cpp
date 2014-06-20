@@ -1202,6 +1202,51 @@ void AppManager::writeToOfxLog_mt_safe(const QString& str)
     _imp->_ofxLog.append(str + '\n');
 }
 
+
+#ifdef Q_OS_UNIX
+QString AppManager::qt_tildeExpansion(const QString &path, bool *expanded)
+{
+    if (expanded != 0)
+        *expanded = false;
+    if (!path.startsWith(QLatin1Char('~')))
+        return path;
+    QString ret = path;
+    QStringList tokens = ret.split(QDir::separator());
+    if (tokens.first() == QLatin1String("~")) {
+        ret.replace(0, 1, QDir::homePath());
+    } /*else {
+       QString userName = tokens.first();
+       userName.remove(0, 1);
+       
+       const QString homePath = QString::fro#if defined(Q_OS_VXWORKS)
+       const QString homePath = QDir::homePath();
+       #elif defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(Q_OS_OPENBSD)
+       passwd pw;
+       passwd *tmpPw;
+       char buf[200];
+       const int bufSize = sizeof(buf);
+       int err = 0;
+       #if defined(Q_OS_SOLARIS) && (_POSIX_C_SOURCE - 0 < 199506L)
+       tmpPw = getpwnam_r(userName.toLocal8Bit().constData(), &pw, buf, bufSize);
+       #else
+       err = getpwnam_r(userName.toLocal8Bit().constData(), &pw, buf, bufSize, &tmpPw);
+       #endif
+       if (err || !tmpPw)
+       return ret;mLocal8Bit(pw.pw_dir);
+       #else
+       passwd *pw = getpwnam(userName.toLocal8Bit().constData());
+       if (!pw)
+       return ret;
+       const QString homePath = QString::fromLocal8Bit(pw->pw_dir);
+       #endif
+       ret.replace(0, tokens.first().length(), homePath);
+       }*/
+    if (expanded != 0)
+        *expanded = true;
+    return ret;
+}
+#endif
+
 namespace Natron{
 
 void errorDialog(const std::string& title,const std::string& message){

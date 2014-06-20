@@ -34,6 +34,9 @@ int main(int argc, char *argv[])
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
+#ifdef Q_OS_UNIX
+    projectName = AppManager::qt_tildeExpansion(projectName);
+#endif
     AppManager manager;
     if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
         AppManager::printUsage();

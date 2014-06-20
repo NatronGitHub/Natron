@@ -331,6 +331,7 @@ public:
 #endif
     }
 
+    
     void setHistory(const QStringList &paths);
     QStringList history() const;
 

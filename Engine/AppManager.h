@@ -259,6 +259,11 @@ public slots:
     
     void onMaxPanelsOpenedChanged(int maxPanels);
     
+    
+#ifdef Q_OS_UNIX
+    static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
+#endif
+    
 signals:
 
     void imageRemovedFromNodeCache(SequenceTime time);
