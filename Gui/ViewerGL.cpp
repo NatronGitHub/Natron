@@ -1946,8 +1946,6 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-    RectI rod = getRoD(0);
-
     RectI userRoI;
     {
         QMutexLocker l(&_imp->userRoIMutex);
@@ -1958,8 +1956,6 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         _imp->ms = DRAGGING_IMAGE;
         return;
     }
-    
-    bool mouseInDispW = rod.contains(zoomPos.x(), zoomPos.y());
     
     bool overlaysCaught = false;
     
@@ -2002,7 +1998,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     
     if(event->button() == Qt::LeftButton &&
               event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-              displayingImage() && mouseInDispW) {
+              displayingImage()) {
         _imp->pickerState = PICKER_POINT;
         if (pickColor(event->x(),event->y())) {
             _imp->ms = PICKING_COLOR;
@@ -2010,7 +2006,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         }
     } else if (event->button() == Qt::LeftButton &&
                event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
-               displayingImage() && mouseInDispW) {
+               displayingImage()) {
         _imp->pickerState = PICKER_RECTANGLE;
         _imp->pickerRect.setTopLeft(zoomPos);
         _imp->pickerRect.setBottomRight(zoomPos);
