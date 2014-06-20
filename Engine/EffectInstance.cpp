@@ -683,12 +683,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         FramesNeededMap framesNeeded;
         bool isProjectFormat = false;
         
-        bool identity = false;
         
-        /// Don't call isIdentity when in sequential rendering otherwise we could break the sequence.
-        if (!args.isSequentialRender) {
-            identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
-        }
+        bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,args.isSequentialRender,&inputTimeIdentity,&inputNbIdentity);
+        
         
         if (identity) {
             
@@ -1771,11 +1768,11 @@ Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scal
 }
 
 bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
-                       int view,SequenceTime* inputTime,int* inputNb)
+                       int view,bool isSequential,SequenceTime* inputTime,int* inputNb)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    bool ret;
+    bool ret = false;
     if (_node->isNodeDisabled()) {
         ret = true;
         *inputTime = time;
@@ -1797,7 +1794,10 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
         }
         
     } else {
-        ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
+        /// Don't call isIdentity when in sequential rendering otherwise we could break the sequence.
+        if (!isSequential) {
+            ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
+        }
     }
     decrementRecursionLevel();
     return ret;
