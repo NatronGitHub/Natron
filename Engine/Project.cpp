@@ -112,7 +112,7 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     try {
         ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifile.open(filePath.toStdString().c_str(),std::ifstream::in);
-    } catch(const std::ifstream::failure& e) {
+    } catch (const std::ifstream::failure& e) {
         throw std::runtime_error(std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what());
     }
     try {
@@ -122,12 +122,14 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
         ProjectSerialization projectSerializationObj(getApp());
         iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
         load(projectSerializationObj);
-        if(!bgProject) {
+        if (!bgProject) {
             getApp()->loadProjectGui(iArchive);
         }
     } catch(const boost::archive::archive_exception& e) {
+        ifile.close();
         throw std::runtime_error(e.what());
     } catch(const std::exception& e) {
+        ifile.close();
         throw std::runtime_error(std::string("Failed to read the project file: ") + std::string(e.what()));
     }
     ifile.close();
@@ -289,10 +291,11 @@ QDateTime Project::saveProjectInternal(const QString& path,const QString& name,b
     }
     if (!ofile.good()) {
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
+        ofile.close();
         throw std::runtime_error("Failed to open file " + filePath.toStdString());
     }
     
-    {
+    try {
         boost::archive::xml_oarchive oArchive(ofile);
         bool bgProject = appPTR->isBackground();
         oArchive << boost::serialization::make_nvp("Background_project",bgProject);
@@ -302,6 +305,9 @@ QDateTime Project::saveProjectInternal(const QString& path,const QString& name,b
         if(!bgProject){
             getApp()->saveProjectGui(oArchive);
         }
+    } catch (...) {
+        ofile.close();
+        throw;
     }
     ofile.close();
 
