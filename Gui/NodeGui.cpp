@@ -1471,7 +1471,7 @@ void NodeGui::setScale_natron(double scale)
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
-
+    update();
 }
 
 void NodeGui::removeHighlightOnAllEdges()
