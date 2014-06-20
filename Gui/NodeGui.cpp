@@ -1398,7 +1398,11 @@ struct NodeGuiIndicatorPrivate
         textItem->setFont(font);
         textItem->setDefaultTextColor(textColor);
         textItem->setZValue(2);
+#if QT_VERSION < 0x050000
         textItem->scale(0.8, 0.8);
+#else
+        textItem->setScale(0.8);
+#endif
     }
 };
 
