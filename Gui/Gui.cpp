@@ -1557,6 +1557,11 @@ private:
         }
         QToolButton::mousePressEvent(event);
     }
+    
+    virtual void mouseReleaseEvent(QMouseEvent* event) {
+        _gui->setToolButtonMenuOpened(NULL);
+        QToolButton::mouseReleaseEvent(event);
+    }
 
     virtual void enterEvent(QEvent* event) {
         AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>(_gui->getToolButtonMenuOpened());
