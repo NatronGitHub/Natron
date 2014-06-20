@@ -760,7 +760,6 @@ void GuiApplicationManager::initializeQApp(int argc,char* argv[]) {
 	app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
     app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-    installEventFilter(this);
 
 }
 

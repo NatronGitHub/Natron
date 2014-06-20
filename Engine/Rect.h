@@ -286,7 +286,7 @@ public:
     }
     
 	/*the area : w*h*/
-    int area() const {
+    U64 area() const {
         return width() * height();
     }
     RectI& operator=(const RectI& other){

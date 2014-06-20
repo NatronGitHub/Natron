@@ -1297,9 +1297,9 @@ void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
         QString str = _selectionLineEdit->text();
         if(!isDirectory(str)){
             std::vector<std::string> files = selectedFiles();
-            if(!files.empty()){
+            //if(!files.empty()){
                 QDialog::accept();
-            }
+            //}
         }else{
             setDirectory(str);
         }

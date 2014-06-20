@@ -14,6 +14,8 @@
 
 #include <cstddef>
 
+#include "Global/GlobalDefines.h"
+
 namespace boost {
     namespace serialization {
         class access;
@@ -32,12 +34,12 @@ public:
     
     virtual ~NonKeyParams(){}
     
-    NonKeyParams(int cost,size_t elementsCount);
+    NonKeyParams(int cost,U64 elementsCount);
     
     NonKeyParams(const NonKeyParams& other);
     
     ///the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
-    size_t getElementsCount() const;
+    U64 getElementsCount() const;
     
     int getCost() const;
     

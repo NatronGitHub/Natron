@@ -119,7 +119,7 @@ public:
     
     ~Buffer(){deallocate();}
     
-    void allocate(size_t count, int cost, std::string path = std::string()) {
+    void allocate(U64 count, int cost, std::string path = std::string()) {
         
         /*allocate should be called only once.*/
         assert(_path.empty());
@@ -361,7 +361,7 @@ private:
      * We must ensure that this function is called ONLY by the constructor, that's why
      * it is private.
      **/
-    void allocate(size_t count, int cost, std::string path = std::string()) {
+    void allocate(U64 count, int cost, std::string path = std::string()) {
         std::string fileName;
         if(cost > 0){
             try {

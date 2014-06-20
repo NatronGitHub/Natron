@@ -20,7 +20,7 @@ NonKeyParams::NonKeyParams()
 {
 }
 
-NonKeyParams::NonKeyParams(int cost,size_t elementsCount)
+NonKeyParams::NonKeyParams(int cost,U64 elementsCount)
 : _cost(cost)
 , _elementsCount(elementsCount)
 {
@@ -33,7 +33,7 @@ NonKeyParams::NonKeyParams(const NonKeyParams& other)
 }
 
 ///the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
-size_t NonKeyParams::getElementsCount() const { return _elementsCount; }
+U64 NonKeyParams::getElementsCount() const { return _elementsCount; }
 
 int NonKeyParams::getCost() const { return _cost; }
 
