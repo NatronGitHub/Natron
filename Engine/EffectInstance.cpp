@@ -100,6 +100,9 @@ struct EffectInstance::Implementation {
     , renderArgs()
     , beginEndRenderMutex()
     , beginEndRenderCount(0)
+    , lastRenderArgsMutex()
+    , lastRenderArgs()
+    , lastImage()
     , duringInteractActionMutex()
     , duringInteractAction(false)
     {
@@ -111,6 +114,11 @@ struct EffectInstance::Implementation {
     ThreadStorage<RenderArgs> renderArgs;
     QMutex beginEndRenderMutex;
     int beginEndRenderCount;
+    
+    
+    QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastImageKey
+    RenderArgs lastRenderArgs; //< the last args given to render
+    boost::shared_ptr<Natron::Image> lastImage; //< the last image rendered
     
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
@@ -611,6 +619,22 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     
 
     Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel,args.view);
+    {
+        ///If the last rendered image was the same but with a different hash key (i.e a parameter changed or an input changed)
+        ///just remove the old image from the cache to recycle memory.
+        QMutexLocker l(&_imp->lastRenderArgsMutex);
+        if (_imp->lastImage &&
+            _imp->lastRenderArgs._time == args.time &&
+            _imp->lastRenderArgs._mipMapLevel == args.mipMapLevel &&
+            _imp->lastRenderArgs._view == args.view &&
+            _imp->lastRenderArgs._nodeHash != nodeHash) {
+            ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
+            OutputImageLocker imgLocker(_node.get(),_imp->lastImage);
+            ///once we got it remove it from the cache
+            appPTR->removeFromNodeCache(_imp->lastImage);
+            _imp->lastImage.reset();
+        }
+    }
     
     /// First-off look-up the cache and see if we can find the cached actions results and cached image.
     bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
@@ -903,6 +927,16 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     if (renderRetCode == eImageRenderFailed) {
         throw std::runtime_error("Rendering Failed");
     }
+    {
+        ///flag that this is the last image we rendered
+        QMutexLocker l(&_imp->lastRenderArgsMutex);
+        _imp->lastRenderArgs._time = args.time;
+        _imp->lastRenderArgs._view = args.view;
+        _imp->lastRenderArgs._mipMapLevel = args.mipMapLevel;
+        _imp->lastRenderArgs._nodeHash = nodeHash;
+        _imp->lastImage = downscaledImage;
+    }
+    
 #ifdef NATRON_LOG
     Natron::Log::endFunction(getName(),"renderRoI");
 #endif

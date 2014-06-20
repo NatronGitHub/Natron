@@ -62,6 +62,8 @@ public:
         Natron::ImageBitDepth bitdepth; //< the requested bit depth
         int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
         
+        RenderRoIArgs() {}
+        
         RenderRoIArgs(SequenceTime time_,
                       RenderScale scale_,
                       unsigned int mipMapLevel_,
