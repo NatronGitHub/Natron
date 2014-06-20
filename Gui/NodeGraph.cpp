@@ -967,10 +967,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                                     std::list<ViewerInstance*> connectedViewers;
                                     edge->getDest()->getNode()->hasViewersConnected(&connectedViewers);
                                     if (!connectedViewers.empty()) {
-                                        Natron::errorDialog("Connection", "You cannot connect a tree with a Viewer to " + sequentialNodeName +
-                                                            " which only works on sequential renders (i.e with a Writer node.).");
+                                        return;
                                     }
-                                    return;
                                 }
 
                                 

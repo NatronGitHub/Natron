@@ -80,7 +80,8 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 ProcessHandler::~ProcessHandler(){
     
     emit deleted();
-    
+    _ipcServer->close();
+    _bgProcessInputSocket->close();
     _process->close();
     delete _process;
     delete _ipcServer;
