@@ -1500,18 +1500,21 @@ std::list<ToolButton*> Gui::getToolButtonsOrdered() const
                 
                 std::string toolButtonName = _imp->_toolButtons[i]->getLabel().toStdString();
                 
-                bool isNamedToolButton = false;
-                for (int j = 0; j < NAMED_PLUGIN_GROUP_NO; ++j) {
-                    if (toolButtonName == namedGroupsOrdered[j]) {
-                        isNamedToolButton = true;
-                        break;
+                if (n == 0) {
+                    ///he first time register unnamed buttons
+                    bool isNamedToolButton = false;
+                    for (int j = 0; j < NAMED_PLUGIN_GROUP_NO; ++j) {
+                        if (toolButtonName == namedGroupsOrdered[j]) {
+                            isNamedToolButton = true;
+                            break;
+                        }
+                    }
+                    if (!isNamedToolButton) {
+                        otherToolButtons.push_back(_imp->_toolButtons[i]);
                     }
                 }
-                if (!isNamedToolButton) {
-                    otherToolButtons.push_back(_imp->_toolButtons[i]);
-                } else if (toolButtonName == namedGroupsOrdered[n]) {
+                if (toolButtonName == namedGroupsOrdered[n]) {
                     namedToolButtons.push_back(_imp->_toolButtons[i]);
-                    break;
                 }
             }
         }
