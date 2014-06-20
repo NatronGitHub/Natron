@@ -317,7 +317,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_secondSettingsRow->setLayout(_imp->_secondRowLayout);
     _imp->_secondRowLayout->setSpacing(0);
     _imp->_secondRowLayout->setContentsMargins(0, 0, 0, 0);
-    //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _imp->_mainLayout->addWidget(_imp->_secondSettingsRow);
     
     _imp->_gainBox = new SpinBox(_imp->_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
@@ -390,7 +389,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QString inputNames[2] = { "A:" , "B:" };
     for (int i = 0; i < 2 ; ++i) {
         _imp->_infosWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
-        //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
         _imp->_viewerSubContainerLayout->addWidget(_imp->_infosWidget[i]);
         _imp->viewer->setInfoViewer(_imp->_infosWidget[i],i);
         if (i == 1) {
@@ -411,7 +409,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_playerLayout->setSpacing(0);
     _imp->_playerLayout->setContentsMargins(0, 0, 0, 0);
     _imp->_playerButtonsContainer->setLayout(_imp->_playerLayout);
-    //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _imp->_mainLayout->addWidget(_imp->_playerButtonsContainer);
     
     _imp->_currentFrameBox=new SpinBox(_imp->_playerButtonsContainer,SpinBox::INT_SPINBOX);
@@ -755,6 +752,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     if (currentRoto && currentRoto->isSettingsPanelVisible()) {
         setRotoInterface(currentRoto);
     }
+    
+    setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 }
 
 void ViewerTab::onColorSpaceComboBoxChanged(int v)
