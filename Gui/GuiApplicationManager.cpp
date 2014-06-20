@@ -793,9 +793,13 @@ void GuiApplicationManager::handleOpenFileRequest()
     std::string fileUnPathed = _imp->_openFileRequest.toStdString();
     _imp->_openFileRequest.clear();
     std::string path = SequenceParsing::removePath(fileUnPathed);
-    
-    AppInstance* newApp = newAppInstance();
-    newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
+    AppInstance* mainApp = getAppInstance(0);
+    if (mainApp && mainApp->getProject()->isGraphWorthLess()) {
+        mainApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
+    } else {
+        AppInstance* newApp = newAppInstance();
+        newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
+    }
 }
 
 void GuiApplicationManager::onLoadCompleted()
