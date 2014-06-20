@@ -281,8 +281,12 @@ protected:
     
     virtual void registerGuiMetaTypes() const {}
     
-    virtual void initializeQApp(int argc,char* argv[]) const;
+    virtual void initializeQApp(int argc,char* argv[]);
+    
+    virtual void onLoadCompleted() {}
+
 private:
+    
     
 
     bool loadInternal(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName);

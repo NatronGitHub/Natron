@@ -279,7 +279,7 @@ void AppManager::quit(AppInstance* instance)
 }
 
 
-void AppManager::initializeQApp(int argc,char* argv[]) const {
+void AppManager::initializeQApp(int argc,char* argv[]) {
     new QCoreApplication(argc,argv);
 }
 
@@ -368,10 +368,13 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
         return false;
     } else {
         
+        onLoadCompleted();
+        
         ///In background project auto-run the rendering is finished at this point, just exit the instance
         if (_imp->_appType == APP_BACKGROUND_AUTO_RUN && mainInstance) {
             mainInstance->quit();
         }
+        
         return true;
     }
 }

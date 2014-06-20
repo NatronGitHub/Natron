@@ -520,7 +520,7 @@ void Gui::createGui(){
 
 bool Gui::eventFilter(QObject *target, QEvent *event) {
     assert(_imp->_appInstance);
-    if(dynamic_cast<QInputEvent*>(event)){
+    if (dynamic_cast<QInputEvent*>(event)) {
         /*Make top level instance this instance since it receives all
          user inputs.*/
         appPTR->setAsTopLevelInstance(_imp->_appInstance->getAppID());
@@ -1619,31 +1619,36 @@ void Gui::openProject() {
     std::vector<std::string> selectedFiles =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
     
     if (selectedFiles.size() > 0) {
-        //clearing current graph
-        std::string file = selectedFiles.at(0);
-        std::string fileUnPathed = file;
-        std::string path = SequenceParsing::removePath(fileUnPathed);
-        
-        ///if the current graph has no value, just load the project in the same window
-        if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
-            _imp->_appInstance->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
-        } else {
-            AppInstance* newApp = appPTR->newAppInstance();
-            newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
-        }
-        
-        QSettings settings;
-        QStringList recentFiles = settings.value("recentFileList").toStringList();
-        recentFiles.removeAll(file.c_str());
-        recentFiles.prepend(file.c_str());
-        while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
-            recentFiles.removeLast();
-        
-        settings.setValue("recentFileList", recentFiles);
-        appPTR->updateAllRecentFileMenus();
+        openProjectInternal(selectedFiles.at(0));
     }
     
 }
+
+void Gui::openProjectInternal(const std::string& absoluteFileName)
+{
+    std::string fileUnPathed = absoluteFileName;
+    std::string path = SequenceParsing::removePath(fileUnPathed);
+    
+    ///if the current graph has no value, just load the project in the same window
+    if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
+        _imp->_appInstance->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
+    } else {
+        AppInstance* newApp = appPTR->newAppInstance();
+        newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
+    }
+    
+    QSettings settings;
+    QStringList recentFiles = settings.value("recentFileList").toStringList();
+    recentFiles.removeAll(absoluteFileName.c_str());
+    recentFiles.prepend(absoluteFileName.c_str());
+    while (recentFiles.size() > NATRON_MAX_RECENT_FILES)
+        recentFiles.removeLast();
+    
+    settings.setValue("recentFileList", recentFiles);
+    appPTR->updateAllRecentFileMenus();
+
+}
+
 bool Gui::saveProject(){
     
     if(_imp->_appInstance->getProject()->hasProjectBeenSavedByUser()){

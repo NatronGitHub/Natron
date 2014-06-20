@@ -405,6 +405,8 @@ public slots:
 
     
 private:
+    
+    void openProjectInternal(const std::string& absoluteFileName);
 
     void setupUi();
     

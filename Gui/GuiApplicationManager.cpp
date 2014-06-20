@@ -20,6 +20,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QApplication>
 #include <QFontDatabase>
 #include <QIcon>
+#include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 
 //core
@@ -32,6 +33,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Plugin.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Project.h"
+#include <SequenceParsing.h>
 
 //gui
 #include "Gui/Gui.h"
@@ -65,12 +68,17 @@ struct GuiApplicationManagerPrivate {
     
     SplashScreen* _splashScreen;
     
+    ///We store here the file open request that was made on startup but that
+    ///we couldn't handle at that time
+    QString _openFileRequest;
+    
     GuiApplicationManagerPrivate()
     : _toolButtons()
     , _knobsClipBoard(new KnobsClipBoard)
     , _knobGuiFactory(new KnobGuiFactory())
     , _colorPickerCursor(NULL)
     , _splashScreen(NULL)
+    , _openFileRequest()
     {
     }
     
@@ -714,11 +722,13 @@ void GuiApplicationManager::registerGuiMetaTypes() const {
     qRegisterMetaType<CurveWidget*>();
 }
 
-void GuiApplicationManager::initializeQApp(int argc,char* argv[]) const {
+void GuiApplicationManager::initializeQApp(int argc,char* argv[]) {
     QApplication* app = new QApplication(argc, argv);
 	app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
     app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+    installEventFilter(this);
+
 }
 
 void GuiApplicationManager::setUndoRedoStackLimit(int limit)
@@ -737,3 +747,32 @@ void GuiApplicationManager::debugImage(const Natron::Image* image,const QString&
 {
     Gui::debugImage(image,filename);
 }
+
+bool GuiApplicationManager::eventFilter(QObject *target, QEvent *event) {
+    if (event->type() == QEvent::FileOpen) {
+        _imp->_openFileRequest = static_cast<QFileOpenEvent*>(event)->file();
+        if (isLoaded()) {
+            handleOpenFileRequest();
+        }
+        return true;
+    }
+    return QObject::eventFilter(target, event);
+}
+
+void GuiApplicationManager::handleOpenFileRequest()
+{
+    std::string fileUnPathed = _imp->_openFileRequest.toStdString();
+    _imp->_openFileRequest.clear();
+    std::string path = SequenceParsing::removePath(fileUnPathed);
+    
+    AppInstance* newApp = newAppInstance();
+    newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
+}
+
+void GuiApplicationManager::onLoadCompleted()
+{
+    if (!_imp->_openFileRequest.isEmpty()) {
+        handleOpenFileRequest();
+    }
+}
+

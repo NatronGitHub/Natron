@@ -80,6 +80,8 @@ public:
 
     virtual void debugImage(const Natron::Image* image,const QString& filename = QString()) const OVERRIDE FINAL;
     
+    virtual bool eventFilter(QObject *target, QEvent *event) OVERRIDE FINAL;
+    
 public slots:
     
     virtual void addPluginToolButtons(const QStringList& groups,
@@ -101,7 +103,11 @@ private:
     
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
 
-    virtual void initializeQApp(int argc,char* argv[]) const OVERRIDE FINAL;
+    virtual void initializeQApp(int argc,char* argv[])  OVERRIDE FINAL;
+    
+    void handleOpenFileRequest();
+    
+    virtual void onLoadCompleted() OVERRIDE FINAL;
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 
