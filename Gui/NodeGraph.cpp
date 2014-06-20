@@ -394,7 +394,7 @@ NodeGraph::~NodeGraph() {
 
 void NodeGraph::onProjectNodesCleared() {
     
-    deselect();
+    _nodeSelected.reset();
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
         (*it)->deleteReferences();
