@@ -1134,14 +1134,9 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
 
 bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
+    bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
-    }
-    
-    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos)) {
-            return true;
-        }
     }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
@@ -1160,7 +1155,15 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
             }
         }
     }
-    return false;
+    
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos)) {
+            didSomething  = true;
+        }
+    }
+
+    
+    return didSomething;
 }
 
 bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
@@ -1179,16 +1182,11 @@ bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const Q
 
 bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
+    bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
-    
-    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
-            return true;
-        }
-    }
-    
+   
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
         if ((*it)->isSettingsPanelVisible()) {
@@ -1204,20 +1202,24 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
             }
         }
     }
-    return false;
+    
+    
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
+            didSomething = true;
+        }
+    }
+    
+    return didSomething;
 }
 
 bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
     
+    bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
-    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penUp(scaleX, scaleY,viewportPos,pos)) {
-            return true;
-        }
-    }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
@@ -1234,20 +1236,23 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
             }
         }
     }
-    return false;
+    
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->penUp(scaleX, scaleY,viewportPos,pos)) {
+            didSomething  =  true;
+        }
+    }
+
+    return didSomething ;
 }
 
 bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
     
+    bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
-    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->keyDown(scaleX, scaleY,e)) {
-            return true;
-        }
-    }
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
@@ -1265,21 +1270,24 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
             }
         }
     }
-    return false;
+    
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->keyDown(scaleX, scaleY,e)) {
+            didSomething = true;
+        }
+    }
+
+    return didSomething;
 }
 
 bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
     
+    bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
-    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->keyUp(scaleX, scaleY,e)) {
-            return true;
-        }
-    }
-    
+   
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
         if ((*it)->isSettingsPanelVisible()) {
@@ -1297,7 +1305,14 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
             }
         }
     }
-    return false;
+    
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->keyUp(scaleX, scaleY,e)) {
+            didSomething = true;
+        }
+    }
+    
+    return didSomething;
 }
 
 bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e){
