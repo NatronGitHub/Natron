@@ -1123,7 +1123,7 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *conta
     QObject::connect(_knob.get(), SIGNAL(displayMinMaxChanged(double, double, int)), this, SLOT(onDisplayMinMaxChanged(double, double, int)));
     QObject::connect(this, SIGNAL(dimensionSwitchToggled(bool)), _knob.get(), SLOT(onDimensionSwitchToggled(bool)));
     QObject::connect( _knob.get(), SIGNAL(mustActivateAllDimensions()),this, SLOT(onMustShowAllDimension()));
-
+    QObject::connect( _knob.get(), SIGNAL(pickingEnabled(bool)),this, SLOT(setPickingEnabled(bool)));
     
 }
 
@@ -1748,6 +1748,12 @@ void ColorPickerLabel::leaveEvent(QEvent*){
     QToolTip::hideText();
 }
 
+void ColorPickerLabel::setPickingEnabled(bool enabled)
+{
+    _pickingEnabled = enabled;
+    setColor(_currentColor);
+}
+
 void ColorPickerLabel::setColor(const QColor& color){
     
     
@@ -1783,6 +1789,11 @@ void ColorPickerLabel::setColor(const QColor& color){
         setPixmap(pix);
     }
     
+}
+
+void Color_KnobGui::setPickingEnabled(bool enabled)
+{
+    _colorLabel->setPickingEnabled(enabled);
 }
 
 void Color_KnobGui::onPickingEnabled(bool enabled){

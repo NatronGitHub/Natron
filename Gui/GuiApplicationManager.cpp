@@ -722,8 +722,41 @@ void GuiApplicationManager::registerGuiMetaTypes() const {
     qRegisterMetaType<CurveWidget*>();
 }
 
+class Application : public QApplication
+{
+    GuiApplicationManager* _app;
+    
+public:
+    
+    Application(GuiApplicationManager* app,int argc,char* argv[])
+    : QApplication(argc,argv)
+    , _app(app)
+    {
+    }
+    
+protected:
+    
+    bool event(QEvent *);
+
+};
+
+bool Application::event(QEvent *event)
+{
+    switch (event->type()) {
+        case QEvent::FileOpen:
+        {
+            assert(_app);
+            QString file =  static_cast<QFileOpenEvent*>(event)->file();
+            _app->setFileToOpen(file);
+        }   return true;
+        default:
+            return QApplication::event(event);
+    }
+}
+
+
 void GuiApplicationManager::initializeQApp(int argc,char* argv[]) {
-    QApplication* app = new QApplication(argc, argv);
+    QApplication* app = new Application(this,argc, argv);
 	app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
     app->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
@@ -748,15 +781,12 @@ void GuiApplicationManager::debugImage(const Natron::Image* image,const QString&
     Gui::debugImage(image,filename);
 }
 
-bool GuiApplicationManager::eventFilter(QObject *target, QEvent *event) {
-    if (event->type() == QEvent::FileOpen) {
-        _imp->_openFileRequest = static_cast<QFileOpenEvent*>(event)->file();
-        if (isLoaded()) {
-            handleOpenFileRequest();
-        }
-        return true;
+void GuiApplicationManager::setFileToOpen(const QString& str)
+{
+    _imp->_openFileRequest = str;
+    if (isLoaded()) {
+        handleOpenFileRequest();
     }
-    return QObject::eventFilter(target, event);
 }
 
 void GuiApplicationManager::handleOpenFileRequest()

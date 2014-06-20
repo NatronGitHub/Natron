@@ -450,6 +450,8 @@ public:
     bool isPickingEnabled() const { return _pickingEnabled; }
 
     void setColor(const QColor& color);
+    
+    void setPickingEnabled(bool enabled);
 
 signals:
     
@@ -484,6 +486,8 @@ public:
     virtual ~Color_KnobGui() OVERRIDE;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    
+    
 public slots:
 
     void onColorChanged();
@@ -491,6 +495,9 @@ public slots:
     void onDisplayMinMaxChanged(double mini, double maxi, int index);
 
     void showColorDialog();
+    
+    void setPickingEnabled(bool enabled);
+
     
     void onPickingEnabled(bool enabled);
 

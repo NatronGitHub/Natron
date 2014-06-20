@@ -3185,12 +3185,18 @@ bool ViewerGL::pickColor(double x,double y)
     for (int i = 0; i< 2 ;++i ) {
         bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,i);
         if (picked) {
-            QColor pickerColor;
-            pickerColor.setRedF(clamp(r));
-            pickerColor.setGreenF(clamp(g));
-            pickerColor.setBlueF(clamp(b));
-            pickerColor.setAlphaF(clamp(a));
-            _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+            
+            if (i == 0) {
+                QColor pickerColor;
+                pickerColor.setRedF(clamp(r));
+                pickerColor.setGreenF(clamp(g));
+                pickerColor.setBlueF(clamp(b));
+                pickerColor.setAlphaF(clamp(a));
+                _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+            }
+            if (!_imp->infoViewer[i]->colorAndMouseVisible()) {
+                _imp->infoViewer[i]->showColorAndMouseInfo();
+            }
             _imp->infoViewer[i]->setColor(r,g,b,a);
             ret = true;
         } else {

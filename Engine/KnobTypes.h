@@ -414,11 +414,16 @@ public:
     
     void activateAllDimensions() { emit mustActivateAllDimensions(); }
     
+    void setPickingEnabled(bool enabled) { emit pickingEnabled(enabled); }
+    
 public slots:
     
     void onDimensionSwitchToggled(bool b);
     
 signals:
+    
+    void pickingEnabled(bool);
+    
     void minMaxChanged(double mini, double maxi, int index = 0);
 
     void displayMinMaxChanged(double mini,double maxi,int index = 0);
