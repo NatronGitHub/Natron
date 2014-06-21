@@ -660,7 +660,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     NodeBackDrop* oldSelection = _selectedBackDrop;
     _selectedBackDrop = 0;
-    if (_evtState == DEFAULT) {
+    if (_evtState == DEFAULT && event->button() == Qt::LeftButton) {
         ///check if nearby a backdrop
         for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it!=_backdrops.end(); ++it) {
             if ((*it)->isNearbyHeader(_lastScenePosClick)) {
