@@ -660,7 +660,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     NodeBackDrop* oldSelection = _selectedBackDrop;
     _selectedBackDrop = 0;
-    if (_evtState == DEFAULT && event->button() == Qt::LeftButton) {
+    if (_evtState == DEFAULT) {
         ///check if nearby a backdrop
         for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it!=_backdrops.end(); ++it) {
             if ((*it)->isNearbyHeader(_lastScenePosClick)) {
@@ -668,15 +668,18 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
                 if ((oldSelection != _selectedBackDrop && oldSelection != NULL) || !oldSelection) {
                     _selectedBackDrop->setSelected(true);
                 }
-                
-                _evtState = BACKDROP_DRAGGING;
+                if (event->button() == Qt::LeftButton) {
+                    _evtState = BACKDROP_DRAGGING;
+                }
                 break;
             } else if ((*it)->isNearbyResizeHandle(_lastScenePosClick)) {
                 _selectedBackDrop = *it;
                 if ((oldSelection != _selectedBackDrop && oldSelection != NULL) || !oldSelection) {
                     _selectedBackDrop->setSelected(true);
                 }
-                _evtState = BACKDROP_RESIZING;
+                if (event->button() == Qt::LeftButton) {
+                    _evtState = BACKDROP_RESIZING;
+                }
                 break;
             }
         }
