@@ -172,6 +172,7 @@ struct DockablePanelPrivate
     
     
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,
+                              QWidget* lastRowWidget,
                               bool onlyTopLevelKnobs);
     
     KnobGui* createKnobGui(const boost::shared_ptr<KnobI> &knob);
@@ -449,8 +450,8 @@ void DockablePanel::onLineEditNameEditingFinished() {
 }
 
 void DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> >& knobs,
+                                                QWidget* lastRowWidget,
                                          bool onlyTopLevelKnobs) {
-    QWidget* lastRowWidget = 0;
     for(U32 i = 0 ; i < knobs.size(); ++i) {
         
         ///we create only top level knobs, they will in-turn create their children if they have any
@@ -497,7 +498,7 @@ void DockablePanel::initializeKnobs() {
     /// without any damage
     const std::vector< boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
     
-    _imp->initializeKnobVector(knobs, false);
+    _imp->initializeKnobVector(knobs,NULL, false);
     
     ///add all knobs left  to the default page
         
@@ -554,6 +555,11 @@ KnobGui* DockablePanel::getKnobGui(const boost::shared_ptr<KnobI>& knob) const
 
 KnobGui* DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
 {
+    std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(knob);
+    if (found != _knobs.end()) {
+        return found->second;
+    }
+    
     KnobHelper* helper = dynamic_cast<KnobHelper*>(knob.get());
     QObject::connect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),_publicInterface,SLOT(onKnobDeletion()));
     
@@ -572,38 +578,47 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
                                             const std::vector< boost::shared_ptr< KnobI > >& knobsOnSameLine) {
     
     assert(knob);
-    KnobGui* ret = 0;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
-        if(it->first == knob){
-            return it->second;
-        }
-    }
-    
     boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knob);
     boost::shared_ptr<Page_Knob> isPage = boost::dynamic_pointer_cast<Page_Knob>(knob);
     
+    KnobGui* ret = 0;
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        if(it->first == knob && it->second) {
+            if (isPage) {
+                return it->second;
+            } else if (isGroup && ((!isGroup->isTab() && it->second->hasWidgetBeenCreated()) || isGroup->isTab())) {
+                return it->second;
+            } else if (it->second->hasWidgetBeenCreated()) {
+                return it->second;
+            } else {
+                break;
+            }
+        }
+    }
     
+
     if (isPage) {
         addPage(isPage->getDescription().c_str());
     } else {
         
+
+        
         ret = createKnobGui(knob);
+        
+        boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+        boost::shared_ptr<Group_Knob> parentIsGroup = boost::dynamic_pointer_cast<Group_Knob>(parentKnob);
+        Group_KnobGui* parentGui = 0;
+        /// if this knob is within a group, make sure the group is created so far
+        if (parentIsGroup) {
+            parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true,ret->getFieldContainer()));
+        }
+        
+
         
         ///if widgets for the KnobGui have already been created, don't the following
         ///For group only create the gui if it is not  a tab.
         if (!ret->hasWidgetBeenCreated() && (!isGroup || !isGroup->isTab())) {
-            
-            
-            boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
-            boost::shared_ptr<Group_Knob> parentIsGroup = boost::dynamic_pointer_cast<Group_Knob>(parentKnob);
-            
-            
-            /// if this knob is within a group, make sure the group is created so far
-            Group_KnobGui* parentGui = 0;
-            if (parentIsGroup) {
-                parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob,true,NULL));
-            }
-            
+    
             KnobI* parentKnobTmp = parentKnob.get();
             while (parentKnobTmp) {
                 boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
@@ -698,6 +713,7 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
                 QObject::connect(label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)));
             }
             
+            
             if (parentIsGroup && parentIsGroup->isTab()) {
                 ///The group is a tab, check if the tab widget is created
                 if (!page->second.tabWidget) {
@@ -743,6 +759,7 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
             
             /// if this knob is within a group, check that the group is visible, i.e. the toplevel group is unfolded
             if (parentIsGroup) {
+                
                 assert(parentGui);
                 ///FIXME: this offsetColumn is never really used. Shall we use this anyway? It seems
                 ///to work fine without it.
@@ -767,7 +784,7 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
                 if (showit) {
                     ret->show();
                 } else {
-                    //gui->hide(); // already hidden? please comment if it's not.
+                    //ret->hide(); // already hidden? please comment if it's not.
                 }
             }
         }
@@ -775,9 +792,9 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
     
     ///if the knob is a group, create all the children
     if (isGroup) {
-        initializeKnobVector(isGroup->getChildren(), false);
+        initializeKnobVector(isGroup->getChildren(),lastRowWidget, false);
     } else if (isPage) {
-        initializeKnobVector(isPage->getChildren(), false);
+        initializeKnobVector(isPage->getChildren(),lastRowWidget, false);
     }
     
     return ret;
