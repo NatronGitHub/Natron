@@ -1235,6 +1235,9 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     ///and push a connect command to the selected node.
     _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
     
+    ///Set the viewer as the selected node
+    selectNode(gui);
+    
 }
 
 void NodeGraph::enterEvent(QEvent *event)
