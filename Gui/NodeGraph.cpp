@@ -751,6 +751,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             if(n->isActive() && n->isNearby(ep) &&
                     (n->getNode()->getName() != nodeHoldingEdge->getNode()->getName())){
                
+                
                 if (!_arrowSelected->isOutputEdge()) {
                     ///can't connect to a viewer
                     if (n->getNode()->pluginID() == "Viewer") {
@@ -762,6 +763,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                         ///check if the output has a viewer connected in which case error
                         std::list <ViewerInstance*> connectedViewers;
                         _arrowSelected->getDest()->getNode()->hasViewersConnected(&connectedViewers);
+
                         if (!connectedViewers.empty()) {
                             Natron::errorDialog("Connection", "You cannot connect a tree with a Viewer to " + sequentialNodeName +
                                                 " which only works on sequential renders (i.e with a Writer node.).");
@@ -769,10 +771,24 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                         }
                         
                     }
+                   
                     _arrowSelected->stackBefore(n.get());
                     _undoStack->setActive();
                     _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
                 } else {
+                    
+                    std::string sequentialNodeName;
+                    if (_arrowSelected->getSource()->getNode()->hasSequentialOnlyNodeUpstream(sequentialNodeName)) {
+                        std::list <ViewerInstance*> connectedViewers;
+                        n->getNode()->hasViewersConnected(&connectedViewers);
+                        if (!connectedViewers.empty()) {
+                            Natron::errorDialog("Connection", "You cannot connect a tree with a Viewer to " + sequentialNodeName +
+                                                " which only works on sequential renders (i.e with a Writer node.).");
+                            break;
+                        }
+
+                    }
+                    
                     ///Find the input edge of the node we just released the mouse over,
                     ///and use that edge to connect to the source of the selected edge.
                     int preferredInput = n->getNode()->getPreferredInputForConnection();
