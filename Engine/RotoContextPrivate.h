@@ -268,6 +268,13 @@ struct RotoDrawableItemPrivate
     ~RotoDrawableItemPrivate() {}
 };
 
+struct LastMaskRenderArgs {
+    SequenceTime time;
+    unsigned int mipMapLevel;
+    int view;
+    U64 nodeHash;
+};
+
 struct RotoContextPrivate
 {
     
@@ -298,6 +305,11 @@ struct RotoContextPrivate
     
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
+    
+    
+    QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastRenderedImage
+    LastMaskRenderArgs lastRenderArgs;
+    boost::shared_ptr<Natron::Image> lastRenderedImage;
     
     RotoContextPrivate(Natron::Node* n )
     : rotoContextMutex()

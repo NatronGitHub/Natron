@@ -3941,6 +3941,24 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     hash.computeHash();
 
     Natron::ImageKey key = Natron::Image::makeKey(hash.value(), time, mipmapLevel, view);
+    
+    ///If the last rendered image was the same but with a different hash key (i.e a parameter changed or an input changed)
+    ///just remove the old image from the cache to recycle memory.
+    {
+        QMutexLocker l(&_imp->lastRenderArgsMutex);
+        if (hash.value() != _imp->lastRenderArgs.nodeHash &&
+            time  == _imp->lastRenderArgs.time &&
+            view == _imp->lastRenderArgs.view &&
+            mipmapLevel == _imp->lastRenderArgs.mipMapLevel) {
+            ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
+            Natron::OutputImageLocker imgLocker(_imp->node,_imp->lastRenderedImage);
+            ///once we got it remove it from the cache
+            appPTR->removeFromNodeCache(_imp->lastRenderedImage);
+            _imp->lastRenderedImage.reset();
+
+        }
+    }
+    
     boost::shared_ptr<const Natron::ImageParams> params;
     boost::shared_ptr<Natron::Image> image;
     
@@ -4030,6 +4048,16 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     } else {
          image->markForRendered(clippedRoI);
     }
+    
+    {
+        QMutexLocker l(&_imp->lastRenderArgsMutex);
+        _imp->lastRenderArgs.time = time;
+        _imp->lastRenderArgs.view = view;
+        _imp->lastRenderArgs.mipMapLevel = mipmapLevel;
+        _imp->lastRenderArgs.nodeHash = hash.value();
+        _imp->lastRenderedImage = image;
+    }
+    
     return image;
 }
 
