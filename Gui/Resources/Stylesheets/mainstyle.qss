@@ -4,6 +4,7 @@
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
+    color: black;
     background-color: %2;
 }
 
