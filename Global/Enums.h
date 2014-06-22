@@ -235,6 +235,12 @@ namespace Natron{
         ImageComponentRGBA
     };
     
+    enum ImagePremultiplication {
+        ImageOpaque = 0,
+        ImagePremultiplied,
+        ImageUnPremultiplied,
+    };
+    
     enum ViewerCompositingOperator
     {
         OPERATOR_NONE,

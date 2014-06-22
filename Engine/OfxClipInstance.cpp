@@ -52,11 +52,12 @@ const std::string& OfxClipInstance::getUnmappedBitDepth() const
 
 const std::string &OfxClipInstance::getUnmappedComponents() const
 {
-#pragma message WARN("This feels kinda wrong as the getClipPref will always try to remap from RGBA even for masks...")
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
     static const std::string alphaStr(kOfxImageComponentAlpha);
+    
+    ///Default to RGBA, let the plug-in clip prefs inform us of its preferences
     return rgbaStr;
 }
 
@@ -68,7 +69,13 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
 //  kOfxImageUnPreMultiplied - the image is unpremultiplied
 const std::string &OfxClipInstance::getPremult() const
 {
-    static const std::string v(kOfxImageUnPreMultiplied);
+    static const std::string v(kOfxImagePreMultiplied);
+    OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(getAssociatedNode());
+    if (effect) {
+        return effect->ofxGetOutputPremultiplication();
+    }
+    
+    ///Default to premultiplied, let the plug-in clip prefs inform us of its preferences
     return v;
 }
 

@@ -284,6 +284,11 @@ public:
     virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const;
     
     /**
+     * @brief Override to get the preffered premultiplication flag for the output image
+     **/
+    virtual Natron::ImagePremultiplication getOutputPremultiplication() const { return Natron::ImagePremultiplied; }
+    
+    /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
      **/
     virtual std::string inputLabel(int inputNb) const WARN_UNUSED_RETURN;

@@ -214,7 +214,13 @@ public:
     virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
 
     virtual Natron::SequentialPreference getSequentialPreference() const OVERRIDE FINAL;
+
+    virtual Natron::ImagePremultiplication getOutputPremultiplication() const OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
+
+    const std::string& ofxGetOutputPremultiplication() const;
+
+    static Natron::ImagePremultiplication ofxPremultToNatronPremult(const std::string& str) ;
 
     /**
      * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual

@@ -1420,3 +1420,33 @@ Natron::SequentialPreference OfxEffectInstance::getSequentialPreference() const
     }
 }
 
+Natron::ImagePremultiplication OfxEffectInstance::ofxPremultToNatronPremult(const std::string& str)
+{
+    if (str == kOfxImagePreMultiplied) {
+        return Natron::ImagePremultiplied;
+    } else if (str== kOfxImageUnPreMultiplied) {
+        return Natron::ImageUnPremultiplied;
+    } else {
+        return Natron::ImageOpaque;
+    }
+}
+
+Natron::ImagePremultiplication OfxEffectInstance::getOutputPremultiplication() const
+{
+    return ofxPremultToNatronPremult(ofxGetOutputPremultiplication());
+}
+
+const std::string& OfxEffectInstance::ofxGetOutputPremultiplication() const
+{
+    static const std::string v(kOfxImagePreMultiplied);
+    
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(clip);
+    const std::string& premult = effectInstance()->getOutputPreMultiplication();
+    ///if the output has something, use it, otherwise default to premultiplied
+    if (!premult.empty()) {
+        return premult;
+    } else {
+        return v;
+    }
+}
