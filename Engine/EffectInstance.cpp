@@ -644,7 +644,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     boost::shared_ptr<OutputImageLocker> imageLock;
     
     if (isCached) {
-        assert(cachedImgParams);
+        assert(cachedImgParams && image);
         
         imageLock.reset(new OutputImageLocker(_node.get(),image));
         
@@ -810,7 +810,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             Natron::errorDialog("Out of memory",ss.str());
             return newImage;
         }
-        
+        assert(newImage);
         imageLock.reset(new OutputImageLocker(_node.get(),newImage));
         
         if (cached && byPassCache) {

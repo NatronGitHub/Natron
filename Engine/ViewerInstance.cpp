@@ -449,7 +449,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     boost::shared_ptr<OutputImageLocker> imageLock;
     
     if (isInputImgCached) {
-        
+        assert(inputImage);
         imageLock.reset(new OutputImageLocker(getNode().get(),inputImage));
         
         inputIdentityNumber = cachedImgParams->getInputNbIdentity();

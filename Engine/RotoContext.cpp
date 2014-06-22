@@ -3946,7 +3946,8 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     ///just remove the old image from the cache to recycle memory.
     {
         QMutexLocker l(&_imp->lastRenderArgsMutex);
-        if (hash.value() != _imp->lastRenderArgs.nodeHash &&
+        if (_imp->lastRenderedImage &&
+            hash.value() != _imp->lastRenderArgs.nodeHash &&
             time  == _imp->lastRenderArgs.time &&
             view == _imp->lastRenderArgs.view &&
             mipmapLevel == _imp->lastRenderArgs.mipMapLevel) {
