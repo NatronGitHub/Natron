@@ -1633,6 +1633,8 @@ void Gui::openProjectInternal(const std::string& absoluteFileName)
     if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
         _imp->_appInstance->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
     } else {
+        ///remove autosaves otherwise the new instance might try to load an autosave
+        Project::removeAutoSaves();
         AppInstance* newApp = appPTR->newAppInstance();
         newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
     }
@@ -2172,6 +2174,8 @@ void Gui::openRecentFile() {
         if (_imp->_appInstance->getProject()->isGraphWorthLess()) {
             _imp->_appInstance->getProject()->loadProject(path,f.fileName());
         } else {
+            ///remove autosaves otherwise the new instance might try to load an autosave
+            Project::removeAutoSaves();
             AppInstance* newApp = appPTR->newAppInstance();
             newApp->getProject()->loadProject(path,f.fileName());
         }

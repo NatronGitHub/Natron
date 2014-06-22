@@ -120,13 +120,15 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     QDir dir = Natron::Project::autoSavesDir();
     dir.mkpath(".");
     
-    bool loadSpecifiedProject = true;
+    bool loadSpecifiedProject = projectName.isEmpty();
     
     /// If this is the first instance of the software, try to load an autosave
-    if(getAppID() == 0){
+    if(getAppID() == 0 && projectName.isEmpty()){
         if(getProject()->findAndTryLoadAutoSave()){
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             loadSpecifiedProject = false;
+        } else {
+            loadSpecifiedProject = true;
         }
     }
     

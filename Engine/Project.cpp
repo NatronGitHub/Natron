@@ -97,6 +97,9 @@ bool Project::loadProject(const QString& path,const QString& name){
     
     refreshViewersAndPreviews();
     
+    ///We successfully loaded the project, remove auto-saves of previous projects.
+    removeAutoSaves();
+    
     return true;
 }
 
@@ -1037,7 +1040,7 @@ bool Project::isGraphWorthLess() const {
     return worthLess;
 }
 
-void Project::removeAutoSaves() const {
+void Project::removeAutoSaves() {
     /*removing all autosave files*/
     QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();

@@ -213,6 +213,11 @@ public:
     
     Natron::ViewerColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
     
+    
+    /**
+     * @brief Remove all the autosave files from the disk.
+     **/
+    static void removeAutoSaves();
 public slots:
 
     void onTimeChanged(SequenceTime time,int reason);
@@ -244,11 +249,7 @@ private:
     void loadProjectInternal(const QString& path,const QString& name);
     
     QDateTime saveProjectInternal(const QString& path,const QString& name,bool autosave = false);
-    
-    /**
-     * @brief Remove all the autosave files from the disk.
-     **/
-    void removeAutoSaves() const;
+ 
     
     /**
      * @brief Resets the project state.

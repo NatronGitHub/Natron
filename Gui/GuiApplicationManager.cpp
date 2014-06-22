@@ -797,6 +797,8 @@ void GuiApplicationManager::handleOpenFileRequest()
     if (mainApp && mainApp->getProject()->isGraphWorthLess()) {
         mainApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
     } else {
+        ///remove autosaves otherwise the new instance might try to load an autosave
+        Project::removeAutoSaves();
         AppInstance* newApp = newAppInstance();
         newApp->getProject()->loadProject(path.c_str(), fileUnPathed.c_str());
     }
