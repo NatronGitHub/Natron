@@ -43,6 +43,11 @@ int main(int argc, char *argv[])
     setShutDownSignal(SIGTERM);   // shut down on killall
 
     if (isBackground) {
+        if (projectName.isEmpty()) {
+            ///Autobackground without a project file name is not correct
+            AppManager::printUsage();
+            return 1;
+        }
         AppManager manager;
         if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
             AppManager::printUsage();

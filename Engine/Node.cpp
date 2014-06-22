@@ -1906,7 +1906,7 @@ std::string Node::getNodeExtraLabel() const
 bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
 {
     
-    if (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL) {
+    if (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL && _imp->liveInstance->isWriter()) {
         nodeName = getName();
         return true;
     } else {
@@ -1914,14 +1914,14 @@ bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
         
         if (QThread::currentThread() == qApp->thread()) {
             for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it!=_imp->inputsQueue.end(); ++it) {
-                if ((*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName)) {
+                if ((*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter()) {
                     nodeName = (*it)->getName();
                     return true;
                 }
             }
         } else {
             for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputs.begin(); it!=_imp->inputs.end(); ++it) {
-                if ((*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName)) {
+                if ((*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter()) {
                     nodeName = (*it)->getName_mt_safe();
                     return true;
                 }

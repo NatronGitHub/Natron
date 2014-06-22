@@ -37,6 +37,12 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_UNIX
     projectName = AppManager::qt_tildeExpansion(projectName);
 #endif
+    
+    ///auto-background without a project name is not valid.
+    if (projectName.isEmpty()) {
+        AppManager::printUsage();
+        return 1;
+    }
     AppManager manager;
     if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
         AppManager::printUsage();
