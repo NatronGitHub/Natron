@@ -303,15 +303,16 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     EffectInstance* n2 = input_other_thread(activeInputs[1]);
     if (n2) {
         n2->getFrameRange_public(&inpFirst,&inpLast);
+        if (inpFirst < *first) {
+            *first = inpFirst;
+        }
+        
+        if (inpLast > *last) {
+            *last = inpLast;
+        }
     }
     
-    if (inpFirst < *first) {
-        *first = inpFirst;
-    }
-    
-    if (inpLast > *last) {
-        *last = inpLast;
-    }
+   
 }
 
 
