@@ -54,6 +54,20 @@ namespace Natron{
 
         int getBitDepth() const WARN_UNUSED_RETURN { return _bitDepth; };
 
+        U64 getTreeVersion() const WARN_UNUSED_RETURN { return _treeVersion; }
+
+        double getGain() const WARN_UNUSED_RETURN { return _gain; }
+
+        int getLut() const WARN_UNUSED_RETURN { return _lut; }
+
+        int getChannels() const WARN_UNUSED_RETURN  { return _channels; }
+
+        int getView() const WARN_UNUSED_RETURN { return _view; }
+
+        const RenderScale& getScale() const WARN_UNUSED_RETURN { return _scale; }
+
+        const std::string& getInputName() const WARN_UNUSED_RETURN { return _inputName; }
+
     private:
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version);

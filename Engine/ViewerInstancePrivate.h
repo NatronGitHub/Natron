@@ -18,6 +18,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
+#include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/TextureRect.h"
 
@@ -112,6 +113,9 @@ public:
     , threadIdVideoEngine(NULL)
     , activeInputsMutex()
     , activeInputs()
+    , lastRenderedTextureMutex()
+    , lastRenderedTextureKey()
+    , lastRenderedTexture()
     {
         connect(this,SIGNAL(doUpdateViewer(boost::shared_ptr<UpdateViewerParams>)),this,
                 SLOT(updateViewer(boost::shared_ptr<UpdateViewerParams>)));
@@ -198,6 +202,9 @@ public:
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
     
+    QMutex lastRenderedTextureMutex;
+    Natron::FrameKey lastRenderedTextureKey;
+    boost::shared_ptr<Natron::FrameEntry> lastRenderedTexture;
     
 };
 //} // namespace Natron

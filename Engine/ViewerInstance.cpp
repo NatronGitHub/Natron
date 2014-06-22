@@ -28,7 +28,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ImageInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
-#include "Engine/FrameEntry.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxEffectInstance.h"
@@ -653,6 +652,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         channels = _imp->viewerParamsChannels;
     }
 
+    std::string inputToRenderName = activeInputToRender->getNode()->getName_mt_safe();
     FrameKey key(time,
                  hash(),
                  gain,
@@ -662,7 +662,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                  view,
                  textureRect,
                  scale,
-                 activeInputToRender->getNode()->getName_mt_safe());
+                 inputToRenderName);
 
     /////////////////////////////////////
     // start UpdateViewerParams scope
@@ -679,6 +679,24 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams;
             isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
             assert(!isCached || cachedFrameParams);
+            
+            /// If the hash changed (i.e: the input tree or the inputs parameters changed) or the gain changed
+            ///but everything else is the same, we have almost no chance to get the same hash than the old key or the same gain
+            ///that's why we just wipe that old cache entry
+            {
+                QMutexLocker l(&_imp->lastRenderedTextureMutex);
+                if (_imp->lastRenderedTexture &&
+                    (_imp->lastRenderedTextureKey.getHash() != key.getHash() || _imp->lastRenderedTextureKey.getGain() != gain) &&
+                    _imp->lastRenderedTextureKey.getLut() == lut &&
+                    _imp->lastRenderedTextureKey.getTime() == time &&
+                    _imp->lastRenderedTextureKey.getView() == view &&
+                    _imp->lastRenderedTextureKey.getChannels() == channels &&
+                    _imp->lastRenderedTextureKey.getScale().x == scale.x &&
+                    _imp->lastRenderedTextureKey.getInputName() == inputToRenderName) {
+                    appPTR->removeFromViewerCache(_imp->lastRenderedTexture);
+                    _imp->lastRenderedTexture.reset();
+                }
+            }
         }
     } else {
         byPassCache = true;
@@ -749,6 +767,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             ///The viewer is actually done with it.
             /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
             ramBuffer = params->cachedFrame->data();
+            
+            {
+                QMutexLocker l(&_imp->lastRenderedTextureMutex);
+                _imp->lastRenderedTexture = params->cachedFrame;
+                _imp->lastRenderedTextureKey = key;
+            }
         }
         assert(ramBuffer);
 
