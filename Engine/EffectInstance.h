@@ -342,7 +342,10 @@ public:
                    bool byPassCache,
                    U64 nodeHash);
     
-
+    /**
+     * @breif Don't override this one, override onKnobValueChanged instead.
+     **/
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
 
 protected:
     /**
@@ -439,7 +442,8 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view,U64 nodeHash) WARN_UNUSED_RETURN;
+    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& outputRoD,
+                                       const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
     
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
@@ -461,7 +465,9 @@ public:
     Natron::Status getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
                                          RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
     
-    RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,const RectI& renderWindow,int view,U64 nodeHash) WARN_UNUSED_RETURN;
+    RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,
+                                      const RectI& outputRoD,
+                                      const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
     
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
     
@@ -633,7 +639,7 @@ protected:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) {}
+    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/) {}
     
     
     virtual Natron::Status beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
@@ -704,30 +710,43 @@ protected:
      * (i.e: (0,0) = bottomLeft and  width() and height() being
      * respectivly the width and height of the frame.)
      */
-    virtual void drawOverlay(double /*scaleX*/,double /*scaleY*/){}
+    virtual void drawOverlay(double /*scaleX*/,double /*scaleY*/,const RectI& /*outputRoD*/){}
     
     virtual bool onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,
-                                  const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
+                                  const QPointF& /*viewportPos*/, const QPointF& /*pos*/
+                                  ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,
-                                    const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
+                                    const QPointF& /*viewportPos*/, const QPointF& /*pos*/
+                                    ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,
-                                const QPointF& /*viewportPos*/, const QPointF& /*pos*/) WARN_UNUSED_RETURN { return false; }
+                                const QPointF& /*viewportPos*/, const QPointF& /*pos*/
+                                ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,
-                                  Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
+                                  Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/
+                                  ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,
-                                Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
+                                Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/
+                                ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,
-                                    Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN { return false; }
+                                    Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/
+                                    ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
+                                      ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/) WARN_UNUSED_RETURN { return false; }
-
+    virtual bool onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/
+                                    ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+    
+    /**
+     * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
+     * viewer and the rod of the output.
+     **/
+    void getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD) ;
     
     boost::shared_ptr<Node> _node; //< the node holding this effect
 

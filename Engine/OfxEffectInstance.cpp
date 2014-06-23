@@ -204,13 +204,11 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
     OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
     if(overlayEntryPoint){
         _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
-        effectInstance()->setClipsHash(hash());
         RenderScale s;
         effectInstance()->getRenderScaleRecursive(s.x, s.y);
         effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(s.x));
         effectInstance()->setClipsView(0);
         _overlayInteract->createInstanceAction();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
         effectInstance()->discardClipsView();
         getApp()->redrawAllViewers();
@@ -592,7 +590,8 @@ OfxRectD rectToOfxRect2D(const RectI b){
 
 
 EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,
-                                                              const RectI& renderWindow,int view,U64 nodeHash) {
+                                                              const RectI& outputRoD,
+                                                              const RectI& renderWindow,int view) {
     
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
@@ -604,7 +603,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     ///before calling getRoIaction set the relevant infos on the clips
     effectInstance()->setClipsMipMapLevel(mipMapLevel);
     effectInstance()->setClipsView(view);
-    effectInstance()->setClipsHash(nodeHash);
+    effectInstance()->setClipsOutputRoD(outputRoD);
     
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
@@ -617,7 +616,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     if (getRecursionLevel() <= 1) {
         effectInstance()->discardClipsMipMapLevel();
         effectInstance()->discardClipsView();  
-        effectInstance()->discardClipsHash();
+        effectInstance()->discardClipsOutputRoD();
     } else {
         qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
     }
@@ -901,7 +900,7 @@ void OfxEffectInstance::initializeOverlayInteract() {
 }
 
 
-void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/){
+void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/,const RectI& rod){
     if(!_initialized){
         return;
     }
@@ -914,11 +913,11 @@ void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/){
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
+        effectInstance()->setClipsOutputRoD(rod);
         _overlayInteract->drawAction(time, rs);
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
+        effectInstance()->discardClipsOutputRoD();
     }
 }
 
@@ -928,7 +927,7 @@ void OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport) 
     }
 }
 
-bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos){
+bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos,const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -949,13 +948,12 @@ bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,con
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
+        effectInstance()->discardClipsOutputRoD();
         
         if (stat == kOfxStatOK) {
             _penDown = true;
@@ -965,7 +963,7 @@ bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,con
     return false;
 }
 
-bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos){
+bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos,const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -984,14 +982,12 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1000,7 +996,7 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
 }
 
 
-bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos){
+bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos,const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -1020,14 +1016,12 @@ bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         if (stat == kOfxStatOK) {
             _penDown = false;
             return true;
@@ -1036,7 +1030,8 @@ bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/){
+bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/,
+                                         const RectI& rod){
     if(!_initialized){
         return false;;
     }
@@ -1051,13 +1046,12 @@ bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Nat
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->keyDownAction(time, rs, (int)key, keyStr.data());
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1065,7 +1059,8 @@ bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Nat
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /* modifiers*/){
+bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /* modifiers*/,
+                                       const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -1080,14 +1075,12 @@ bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natro
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->keyUpAction(time, rs, (int)key, keyStr.data());
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1096,7 +1089,8 @@ bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natro
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/){
+bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/
+,const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -1111,14 +1105,12 @@ bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,N
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, (int)key, keyStr.data());
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1126,7 +1118,7 @@ bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,N
     return false;
 }
 
-bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/){
+bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/,const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -1140,14 +1132,12 @@ bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->gainFocusAction(time, rs);
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1156,7 +1146,7 @@ bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
     return false;
 }
 
-bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/){
+bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,const RectI& rod){
     if(!_initialized){
         return false;
     }
@@ -1170,14 +1160,12 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/){
         effectInstance()->getViewRecursive(view);
         effectInstance()->setClipsView(view);
         effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsHash(hash());
-        
+        effectInstance()->setClipsOutputRoD(rod);
         OfxStatus stat = _overlayInteract->loseFocusAction(time, rs);
         
         effectInstance()->discardClipsView();
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
-        
+        effectInstance()->discardClipsOutputRoD();
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1187,7 +1175,7 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/){
 }
 
 
-void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason){
+void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod){
     if(!_initialized){
         return;
     }
@@ -1207,7 +1195,7 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason){
     if (getRecursionLevel() == 1) {
         effectInstance()->setClipsMipMapLevel(mipMapLevel);
         effectInstance()->setClipsView(view);
-        effectInstance()->setClipsHash(hash());
+        effectInstance()->setClipsOutputRoD(rod);
     }
     
     OfxTime time = effect_->getFrameRecursive();
@@ -1228,9 +1216,9 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason){
     }
 
     if (getRecursionLevel() == 1) {
-        effectInstance()->discardClipsHash();
         effectInstance()->discardClipsMipMapLevel();
         effectInstance()->discardClipsView();
+        effectInstance()->discardClipsOutputRoD();
     }
     
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {

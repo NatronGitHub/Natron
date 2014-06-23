@@ -134,7 +134,7 @@ void QtReader::initializeKnobs() {
     
 }
 
-void QtReader::knobChanged(KnobI* k, Natron::ValueChangedReason /*reason*/) {
+void QtReader::knobChanged(KnobI* k, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/) {
     if (k == _fileKnob.get()) {
         SequenceTime first,last;
         getSequenceTimeDomain(first,last);

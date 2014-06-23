@@ -240,14 +240,17 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (n) {
         bool isProjectFormat;
         
+        
+        ///First thing: we try to find in the cache an image with the following key
+        ///so that retrieving the RoD is cheap. If we can't do this then there are
+        ///several cases:
+        ///1) The clip is output, the caller should have set the rod in the clip thread storage
+        /// If not we will call getRoD on the output clip, but this will trigger a recursive action
+        ///2) The clip is input we call getRoD on the source clip.
         U64 nodeHash;
-        if (!_lastRenderArgs.localData().attachedNodeHashValid) {
-            bool foundRenderHash = n->getRenderHash(&nodeHash);
-            if (!foundRenderHash) {
-                nodeHash = n->hash();
-            }
-        } else {
-            nodeHash = _lastRenderArgs.localData().attachedNodeHash;
+        bool foundRenderHash = n->getRenderHash(&nodeHash);
+        if (!foundRenderHash) {
+            nodeHash = n->hash();
         }
         
         boost::shared_ptr<const ImageParams> cachedImgParams;
@@ -255,38 +258,43 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
         Natron::ImageKey key = Natron::Image::makeKey(nodeHash, time,mipmapLevel,view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
+        
         Format f;
         n->getRenderFormat(&f);
         
         ///If the RoD is cached accept it always if it doesn't depend on the project format.
         ///Otherwise cehck that it is really the current project format.
-        if (n == _nodeInstance && isCached && (!cachedImgParams->isRodProjectFormat()
+        if (isCached && (!cachedImgParams->isRodProjectFormat()
             || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)))) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
             ret.x2 = rod.right();
             ret.y1 = rod.bottom();
             ret.y2 = rod.top();
-
+            
         } else {
-            
-            ///Explanation: If the clip is the output clip (hence the current node), we can't call
-            ///getRegionOfDefinition because it will be a recursive call to an action within another action.
-            ///Worse it could be a recursive call to kOfxgetRegionOfDefinitionAction within a call to kOfxgetRegionOfDefinitionAction
-            ///The cache is guaranteed to have the RoD cached because the image is currently being computed by the plug-in.
-            ///If it's not the case then this is a bug of Natron.
-            assert(n != _nodeInstance);
-            
-            RenderScale scale;
-            scale.x = scale.y = 1.;
-            Natron::Status st = n->getRegionOfDefinition_public(time,scale,view,&rod,&isProjectFormat);
-            if (st == StatFailed) {
-                //assert(!"cannot compute ROD");
-                ret.x1 = kOfxFlagInfiniteMin;
-                ret.x2 = kOfxFlagInfiniteMax;
-                ret.y1 = kOfxFlagInfiniteMin;
-                ret.y2 = kOfxFlagInfiniteMax;
+            bool outputRoDStorageSet = _lastRenderArgs.localData().rodValid;
+            if (n != _nodeInstance || (!outputRoDStorageSet && n == _nodeInstance)) {
+                
+                if (n == _nodeInstance && !outputRoDStorageSet) {
+                    qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
+                }
+                RenderScale scale;
+                scale.x = scale.y = 1.;
+                Natron::Status st = n->getRegionOfDefinition_public(time,scale,view,&rod,&isProjectFormat);
+                if (st == StatFailed) {
+                    ret.x1 = kOfxFlagInfiniteMin;
+                    ret.x2 = kOfxFlagInfiniteMax;
+                    ret.y1 = kOfxFlagInfiniteMin;
+                    ret.y2 = kOfxFlagInfiniteMax;
+                } else {
+                    ret.x1 = rod.left();
+                    ret.x2 = rod.right();
+                    ret.y1 = rod.bottom();
+                    ret.y2 = rod.top();
+                }
             } else {
+                rod = _lastRenderArgs.localData().rod;
                 ret.x1 = rod.left();
                 ret.x2 = rod.right();
                 ret.y1 = rod.bottom();
@@ -294,9 +302,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             }
             
         }
-        
-    }
-    else {
+    } else {
         ret.x1 = 0.;
         ret.x2 = 1.;
         ret.y1 = 0.;
@@ -561,7 +567,6 @@ void OfxClipInstance::setView(int view) {
     } else {
         args.mipMapLevel = 0;
         args.image.reset();
-        args.attachedNodeHash = 0;
     }
     args.view = view;
     args.isViewValid =  true;
@@ -579,7 +584,6 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
     } else {
         args.view = 0;
         args.image.reset();
-        args.attachedNodeHash = 0;
     }
     args.mipMapLevel = mipMapLevel;
     args.isMipMapLevelValid = true;
@@ -612,7 +616,6 @@ void OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image>& i
     } else {
         args.mipMapLevel = 0;
         args.view = 0;
-        args.attachedNodeHash = 0;
     }
     args.image = image;
     args.isImageValid = true;
@@ -626,12 +629,12 @@ void OfxClipInstance::discardRenderedImage()
     _lastRenderArgs.localData().image.reset();
 }
 
-void OfxClipInstance::setAttachedNodeHash(U64 hash)
+void OfxClipInstance::setOutputRoD(const RectI& rod)
 {
     LastRenderArgs args;
     if (_lastRenderArgs.hasLocalData()) {
         args = _lastRenderArgs.localData();
-        if(_lastRenderArgs.localData().attachedNodeHashValid) {
+        if(_lastRenderArgs.localData().rodValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
     } else {
@@ -639,13 +642,13 @@ void OfxClipInstance::setAttachedNodeHash(U64 hash)
         args.view = 0;
         args.image.reset();
     }
-    args.attachedNodeHash = hash;
-    args.attachedNodeHashValid = true;
+    args.rod = rod;
+    args.rodValid = true;
     _lastRenderArgs.setLocalData(args);
 }
 
-void OfxClipInstance::discardAttachedNodeHash()
+void OfxClipInstance::discardOutputRoD()
 {
     assert(_lastRenderArgs.hasLocalData());
-    _lastRenderArgs.localData().attachedNodeHashValid = false;
+    _lastRenderArgs.localData().rodValid = false;
 }

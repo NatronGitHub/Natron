@@ -18,7 +18,7 @@
 #include "Global/GlobalDefines.h"
 
 class OfxEffectInstance;
-
+class RectI;
 namespace Natron {
 class Image;
 
@@ -194,9 +194,9 @@ public:
     
     void discardClipsImage();
     
-    void setClipsHash(U64 hash);
+    void setClipsOutputRoD(const RectI& rod);
     
-    void discardClipsHash();
+    void discardClipsOutputRoD();
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 

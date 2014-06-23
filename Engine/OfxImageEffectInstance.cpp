@@ -606,17 +606,17 @@ void OfxImageEffectInstance::discardClipsImage()
     }
 }
 
-void OfxImageEffectInstance::setClipsHash(U64 hash)
+void OfxImageEffectInstance::setClipsOutputRoD(const RectI& rod)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->setAttachedNodeHash(hash);
+        dynamic_cast<OfxClipInstance*>(it->second)->setOutputRoD(rod);
     }
 }
 
-void OfxImageEffectInstance::discardClipsHash()
+void OfxImageEffectInstance::discardClipsOutputRoD()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->discardAttachedNodeHash();
+        dynamic_cast<OfxClipInstance*>(it->second)->discardOutputRoD();
     }
 }
 

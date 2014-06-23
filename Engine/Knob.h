@@ -1149,7 +1149,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason);
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason);
 
 
     /**

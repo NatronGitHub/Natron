@@ -128,8 +128,57 @@ struct EffectInstance::Implementation {
         duringInteractAction = b;
     }
     
+    
+    class ScopedInstanceChangedArgs {
+        RenderArgs args;
+        ThreadStorage<RenderArgs>* _dst;
+    public:
+        
+        ScopedInstanceChangedArgs(ThreadStorage<RenderArgs>* dst,
+                                  SequenceTime time,
+                                  int view,
+                                  unsigned int mipMapLevel,
+                                  const RectI& rod,
+                                  const RoIMap& inputsRoI,
+                                  bool isSequential,
+                                  bool byPassCache,
+                                  U64 nodeHash,
+                                  U64 rotoAge)
+        : args()
+        , _dst(dst)
+        {
+            assert(_dst);
+            args._roi = rod;
+            args._regionOfInterestResults = inputsRoI;
+            args._time = time;
+            args._view = view;
+            args._mipMapLevel = mipMapLevel;
+            args._scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+            args._scale.y = args._scale.x;
+            args._isSequentialRender = isSequential;
+            args._isRenderResponseToUserInteraction = true;
+            args._byPassCache = byPassCache;
+            args._nodeHash = nodeHash;
+            args._rotoAge = rotoAge;
+            args._channelForAlpha = 3;
+            args._validArgs = true;
+            _dst->setLocalData(args);
+        }
+        
+        
+        ~ScopedInstanceChangedArgs()
+        {
+            assert(_dst->hasLocalData());
+            args._validArgs = false;
+            _dst->setLocalData(args);
+        }
+        
+
+        
+    };
+    
     /**
-     * @brief Small helper class that set the render args and 
+     * @brief Small helper class that set the render args and
      * invalidate them when it is destroyed.
      **/
     class ScopedRenderArgs {
@@ -367,7 +416,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         
         ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
         ///// should never happen.
-        inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow, 0, hash());
+        inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow,currentEffectRenderWindow, 0);
         
     } else {
         currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
@@ -533,8 +582,10 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
 }
 
 
-EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& renderWindow,
-                                                           int /*view*/,U64 /*nodeHash*/){
+EffectInstance::RoIMap EffectInstance::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,
+                                                           const RectI& /*outputRoD*/,
+                                                           const RectI& renderWindow,
+                                                           int /*view*/){
     RoIMap ret;
     for (int i = 0; i < maximumInputs(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
@@ -1085,7 +1136,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         ///the getRegionOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
         ///store it into the render args so the getImage() function can retrieve the results.
-        RoIMap inputsRoi = getRegionOfInterest_public(time, scale, canonicalRectToRender,view,nodeHash);
+        RoIMap inputsRoi = getRegionOfInterest_public(time, scale,image->getRoD(), canonicalRectToRender,view);
         
         ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
         assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
@@ -1656,11 +1707,16 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    drawOverlay(scaleX,scaleY);
+    drawOverlay(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
 }
@@ -1669,11 +1725,17 @@ bool EffectInstance::onOverlayPenDown_public(double scaleX,double scaleY,const Q
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
     
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
+    bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1684,11 +1746,16 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos);
+    bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     //Don't chek if render is needed on pen motion, wait for the pen up
@@ -1700,10 +1767,15 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
-    
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
+    bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1714,10 +1786,17 @@ bool EffectInstance::onOverlayKeyDown_public(double scaleX,double scaleY,Natron:
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
+    
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
+    bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1728,10 +1807,17 @@ bool EffectInstance::onOverlayKeyUp_public(double scaleX,double scaleY,Natron::K
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
+    
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyUp(scaleX,scaleY,key, modifiers);
+    bool ret = onOverlayKeyUp(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1743,10 +1829,17 @@ bool EffectInstance::onOverlayKeyRepeat_public(double scaleX,double scaleY,Natro
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
+    
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
+    bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1758,10 +1851,17 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
+    
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayFocusGained(scaleX,scaleY);
+    bool ret = onOverlayFocusGained(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1773,10 +1873,17 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    SequenceTime time ;
+    int view ;
+    unsigned int mipMapLevel;
+    RectI rod;
+    getClipThreadStorageData(time, view, mipMapLevel, rod);
+
+    
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayFocusLost(scaleX,scaleY);
+    bool ret = onOverlayFocusLost(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
     checkIfRenderNeeded();
@@ -1849,11 +1956,12 @@ Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,co
 }
 
 EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime time,RenderScale scale,
-                                                                  const RectI& renderWindow,int view,U64 nodeHash)
+                                                                  const RectI& outputRoD,
+                                                                  const RectI& renderWindow,int view)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, renderWindow, view,nodeHash);
+    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, outputRoD,renderWindow, view);
     decrementRecursionLevel();
     return ret;
 }
@@ -1951,11 +2059,8 @@ bool EffectInstance::isMaskEnabled(int inputNb) const
 }
 
 
-void EffectInstance::onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) {
-    _node->onEffectKnobValueChanged(k, reason);
-    if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
-        knobChanged(k, reason);
-    }
+void EffectInstance::onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) {
+    
 }
 
 int EffectInstance::getCurrentFrameRecursive() const
@@ -1964,6 +2069,87 @@ int EffectInstance::getCurrentFrameRecursive() const
         return _imp->renderArgs.localData()._time;
     }
     return getApp()->getTimeLine()->currentFrame();
+}
+
+void EffectInstance::getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD)
+{
+    time = getApp()->getTimeLine()->currentFrame();
+    view = 0;
+    mipMapLevel = 0;
+    std::list<ViewerInstance*> connectedViewers;
+    _node->hasViewersConnected(&connectedViewers);
+    if (!connectedViewers.empty()) {
+        view = (*connectedViewers.begin())->getCurrentView();
+        mipMapLevel = (*connectedViewers.begin())->getMipMapLevel();
+    }
+    RenderScale scale;
+    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
+    bool isProjectFormat;
+    
+    ///we don't care if it fails
+    (void)getRegionOfDefinition_public(time, scale, view, &outputRoD,&isProjectFormat);
+    
+
+}
+
+void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason)
+{
+    ///cannot run in another thread.
+    assert(QThread::currentThread() == qApp->thread());
+    
+    _node->onEffectKnobValueChanged(k, reason);
+    if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
+
+        ////We set the thread storage render args so that if the instance changed action
+        ////tries to call getImage it can render with good parameters.
+        
+        RectI rod;
+        if (getRecursionLevel() == 0) {
+            SequenceTime time ;
+            int view ;
+            unsigned int mipMapLevel;
+            getClipThreadStorageData(time, view, mipMapLevel, rod);
+            RenderScale scale;
+            scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+            scale.y = scale.x;
+            
+            U64 nodeHash = hash();
+            RoIMap inputRois = getRegionOfInterest_public(time, scale, rod, rod, view);
+            
+            boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+            U64 rotoAge = 0;
+            if (roto) {
+                rotoAge = roto->getAge();
+            }
+            
+            ///These args remain valid on the thread storage 'til it gets out of scope
+            Implementation::ScopedInstanceChangedArgs args(&_imp->renderArgs,
+                                                           time,
+                                                           view,
+                                                           mipMapLevel,
+                                                           rod,
+                                                           inputRois,
+                                                           false,
+                                                           false,
+                                                           nodeHash,
+                                                           rotoAge);
+            ///Recursive action, must not call assertActionIsNotRecursive()
+            incrementRecursionLevel();
+            knobChanged(k, reason,rod);
+            decrementRecursionLevel();
+        
+        } else {
+            ///Recursive action, must not call assertActionIsNotRecursive()
+            incrementRecursionLevel();
+            knobChanged(k, reason,rod);
+            decrementRecursionLevel();
+        }
+        
+        
+    }
+    
+   
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
