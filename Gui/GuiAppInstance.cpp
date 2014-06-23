@@ -120,36 +120,32 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     QDir dir = Natron::Project::autoSavesDir();
     dir.mkpath(".");
     
-    bool loadSpecifiedProject = !projectName.isEmpty();
     
     /// If this is the first instance of the software, try to load an autosave
     if(getAppID() == 0 && projectName.isEmpty()){
         if(getProject()->findAndTryLoadAutoSave()){
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
-            loadSpecifiedProject = false;
-        } else {
-            loadSpecifiedProject = true;
+            return;
         }
     }
     
-    if (loadSpecifiedProject) {
-        if (projectName.isEmpty()) {
-            ///if the user didn't specify a projects name in the launch args just create a viewer node.
-            createNode("Viewer");
-        } else {
-            ///Otherwise just load the project specified.
-            QFileInfo infos(projectName);
-            QString name = infos.fileName();
-            QString path = infos.path();
-            path += QDir::separator();
-            appPTR->setLoadingStatus("Loading project: " + path + name);
-            getProject()->loadProject(path,name);
-            ///remove any file open event that might have occured
-            appPTR->setFileToOpen("");
-        }
-        
+    if (projectName.isEmpty()) {
+        ///if the user didn't specify a projects name in the launch args just create a viewer node.
+        createNode("Viewer");
+    } else {
+        ///Otherwise just load the project specified.
+        QFileInfo infos(projectName);
+        QString name = infos.fileName();
+        QString path = infos.path();
+        path += QDir::separator();
+        appPTR->setLoadingStatus("Loading project: " + path + name);
+        getProject()->loadProject(path,name);
+        ///remove any file open event that might have occured
+        appPTR->setFileToOpen("");
     }
-
+    
+    
+    
 }
 
 void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool loadRequest,bool openImageFileDialog) {
