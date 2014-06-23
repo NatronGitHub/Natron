@@ -1222,7 +1222,7 @@ void renderPreview(const Natron::Image& srcImg,
 
                 int xi = std::floor(x+0.5); // round to nearest
                 if (xi < 0 || xi >=(srcRoD.x2-srcRoD.x1)) {
-                    dst_pixels[j] = toBGRA(0, 0, 0, 0);
+                    dst_pixels[j] = toBGRA(0, 0, 0, 255);
                 } else {
                     float rFilt = src_pixels[xi * elemCount + 0]/(float)maxValue;
                     float gFilt = src_pixels[xi * elemCount + 1]/(float)maxValue;
