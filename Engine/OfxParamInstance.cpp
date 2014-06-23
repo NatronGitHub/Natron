@@ -1991,16 +1991,28 @@ OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
 }
 OfxStatus OfxStringInstance::getV(va_list arg){
     const char **value = va_arg(arg, const char **);
-    
-    OfxStatus stat = get(_localString.localData());
+    OfxStatus stat;
+    if (_localString.hasLocalData()) {
+        stat = get(_localString.localData());
+    } else {
+        std::string localD;
+        stat = get(localD);
+        _localString.setLocalData(localD);
+    }
     *value = _localString.localData().c_str();
     return stat;
     
 }
 OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
     const char **value = va_arg(arg, const char **);
-    
-    OfxStatus stat = get(time,_localString.localData());
+    OfxStatus stat;
+    if (_localString.hasLocalData()) {
+        stat = get(time,_localString.localData());
+    } else {
+        std::string localD;
+        stat = get(time,localD);
+        _localString.setLocalData(localD);
+    }
     *value = _localString.localData().c_str();
     return stat;
 }
