@@ -144,6 +144,8 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
             path += QDir::separator();
             appPTR->setLoadingStatus("Loading project: " + path + name);
             getProject()->loadProject(path,name);
+            ///remove any file open event that might have occured
+            appPTR->setFileToOpen("");
         }
         
     }

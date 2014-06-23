@@ -747,6 +747,11 @@ bool Application::event(QEvent *event)
         {
             assert(_app);
             QString file =  static_cast<QFileOpenEvent*>(event)->file();
+#ifdef Q_OS_UNIX
+            if (!file.isEmpty()) {
+                file = AppManager::qt_tildeExpansion(file);
+            }
+#endif
             _app->setFileToOpen(file);
         }   return true;
         default:
@@ -783,7 +788,7 @@ void GuiApplicationManager::debugImage(const Natron::Image* image,const QString&
 void GuiApplicationManager::setFileToOpen(const QString& str)
 {
     _imp->_openFileRequest = str;
-    if (isLoaded()) {
+    if (isLoaded() && !_imp->_openFileRequest.isEmpty()) {
         handleOpenFileRequest();
     }
 }
