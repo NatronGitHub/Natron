@@ -93,7 +93,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     appPTR->setLoadingStatus("Creating user interface...");
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
-    
+
     /// clear the nodes mapping (node<-->nodegui) when the project's node are cleared.
     /// This should go away when we remove that mapping.
     QObject::connect(getProject().get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
@@ -120,7 +120,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     QDir dir = Natron::Project::autoSavesDir();
     dir.mkpath(".");
     
-    bool loadSpecifiedProject = projectName.isEmpty();
+    bool loadSpecifiedProject = !projectName.isEmpty();
     
     /// If this is the first instance of the software, try to load an autosave
     if(getAppID() == 0 && projectName.isEmpty()){
@@ -140,7 +140,8 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
             ///Otherwise just load the project specified.
             QFileInfo infos(projectName);
             QString name = infos.fileName();
-            QString path = infos.filePath();
+            QString path = infos.path();
+            path += QDir::separator();
             appPTR->setLoadingStatus("Loading project: " + path + name);
             getProject()->loadProject(path,name);
         }
