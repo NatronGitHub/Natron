@@ -1122,12 +1122,17 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     
     QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates(_dragStartPoint.x(),_dragStartPoint.y());
     QPointF translation = (newClick_opengl - oldClick_opengl);
-    translation.rx() *= _mouseDragOrientation.x();
-    translation.ry() *= _mouseDragOrientation.y();
+    
+    bool clampToIntegers = _selectedKeyFrames.begin()->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+    
+    if (clampToIntegers) {
+        ///If clamping to integers allow movement in only 1 direction X or Y
+        translation.rx() *= _mouseDragOrientation.x();
+        translation.ry() *= _mouseDragOrientation.y();
+    }
     
     //1st off, round to the nearest integer the keyframes total motion
     double totalMovement;
-    bool clampToIntegers = _selectedKeyFrames.begin()->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
     if(clampToIntegers){
         totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
     }else{
