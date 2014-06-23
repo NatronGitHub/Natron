@@ -20,6 +20,8 @@
 
 #include <boost/bind.hpp>
 
+#include <ofxNatron.h>
+
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
@@ -237,6 +239,8 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
 
     if (!nameSet) {
          getApp()->getProject()->initNodeCountersAndSetName(this);
+    } else {
+        updateEffectLabelKnob(serialization.getPluginLabel().c_str());
     }
     
     
@@ -534,8 +538,20 @@ void Node::setName(const QString& name)
         QMutexLocker l(&_imp->nameMutex);
         _imp->name = name.toStdString();
     }
-
+    updateEffectLabelKnob(name);
     emit nameChanged(name);
+}
+
+void Node::updateEffectLabelKnob(const QString& name)
+{
+    if (!_imp->liveInstance) {
+        return;
+    }
+    boost::shared_ptr<KnobI> knob = getKnobByName(kOfxParamStringEffectInstanceLabel);
+    String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
+    if (strKnob) {
+        strKnob->setValue(name.toStdString(), 0);
+    }
 }
 
 AppInstance* Node::getApp() const

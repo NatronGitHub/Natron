@@ -641,6 +641,8 @@ private:
     
     void loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization);
     
+    void updateEffectLabelKnob(const QString& name);
+    
     /**
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.
