@@ -396,13 +396,20 @@ QSize DockablePanelTabWidget::minimumSizeHint() const
 }
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
-    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    if (isEffect) {
+        std::list <SequenceTime> keys;
+        isEffect->getNode()->getAllKnobsKeyframes(&keys);
+        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
+    } 
+    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
         for (int i = 0; i < it->first->getDimension(); ++i) {
             if (it->first->typeName() != Button_Knob::typeNameStatic()) {
                 it->first->resetToDefaultValue(i);
             }
         }
     }
+   
 }
 
 void DockablePanel::onLineEditNameEditingFinished() {
