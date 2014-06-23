@@ -1212,7 +1212,7 @@ void renderPreview(const Natron::Image& srcImg,
         if (!src_pixels) {
             // out of bounds
             for (int j = 0; j < dstWidth; ++j) {
-                dst_pixels[j] = toBGRA(0, 0, 0, 0);
+                dst_pixels[j] = toBGRA(0, 0, 0, 255);
             }
         } else {
             for (int j = 0; j < dstWidth; ++j) {
