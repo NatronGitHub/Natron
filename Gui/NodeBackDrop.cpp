@@ -314,6 +314,7 @@ void NodeBackDrop::resize(int w,int h)
     
     _imp->name->setPos(thisItemPos.x() + w / 2 - textBbox.width() / 2,thisItemPos.y() + 0.25 * textBbox.height());
     _imp->label->setPos(thisItemPos.x(), thisItemPos.y() + textBbox.height() * 1.5 + 10);
+    _imp->label->setTextWidth(w);
     
     QPolygonF resizeHandle;
     QPointF bottomRight(thisItemPos.x() + w,thisItemPos.y() + h);
@@ -362,7 +363,7 @@ void NodeBackDropPrivate::refreshLabelText(const QString &text)
     QRectF nameBbox = name->boundingRect();
     QRectF bbox = _publicInterface->boundingRect();
     int w = std::max(std::max(bbox.width(), labelBbox.width()),nameBbox.width());
-    int h = std::max(labelBbox.height() + nameBbox.height() * 1.5, bbox.height());
+    int h = std::max(labelBbox.height() + nameBbox.height() * 1.5 + 10, bbox.height());
     _publicInterface->resize(w, h);
 
 }
