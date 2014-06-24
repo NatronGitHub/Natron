@@ -1170,15 +1170,18 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,c
         OfxTime time = effect_->getFrameRecursive();
         
         int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        if (getRecursionLevel() == 1) {
+            effectInstance()->getViewRecursive(view);
+            effectInstance()->setClipsView(view);
+            effectInstance()->setClipsMipMapLevel(0);
+            effectInstance()->setClipsOutputRoD(rod);
+        }
         OfxStatus stat = _overlayInteract->loseFocusAction(time, rs);
-        
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+        if (getRecursionLevel() == 1) {
+            effectInstance()->discardClipsView();
+            effectInstance()->discardClipsMipMapLevel();
+            effectInstance()->discardClipsOutputRoD();
+         }
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;

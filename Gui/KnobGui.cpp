@@ -622,7 +622,9 @@ void KnobGui::onHorizontalInterpActionTriggered(){
 void KnobGui::setKeyframe(double time,int dimension) {
     boost::shared_ptr<KnobI> knob = getKnob();
     assert(knob->getHolder()->getApp());
-    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    if (!knob->getIsSecret()) {
+        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    }
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -632,7 +634,9 @@ void KnobGui::onSetKeyActionTriggered(){
     assert(knob->getHolder()->getApp());
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    if (!knob->getIsSecret()) {
+        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    }
     for(int i = 0; i < knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
         assert(curve);
@@ -669,7 +673,9 @@ void KnobGui::removeKeyFrame(double time,int dimension){
     emit keyFrameRemoved();
     boost::shared_ptr<KnobI> knob = getKnob();
     assert(knob->getHolder()->getApp());
-    knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+    if (!knob->getIsSecret()) {
+        knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+    }
     updateGUI(dimension);
     checkAnimationLevel(dimension);
 }
@@ -843,7 +849,7 @@ void KnobGui::onInternalKeySet(SequenceTime time,int){
     boost::shared_ptr<KnobI> knob = getKnob();
     
     ///For file knobs do not add keys
-    if (!dynamic_cast<File_Knob*>(knob.get())) {
+    if (!dynamic_cast<File_Knob*>(knob.get()) && !knob->getIsSecret()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
     emit keyFrameSet();
@@ -851,7 +857,7 @@ void KnobGui::onInternalKeySet(SequenceTime time,int){
 
 void KnobGui::onInternalKeyRemoved(SequenceTime time,int){
     boost::shared_ptr<KnobI> knob = getKnob();
-    knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
     emit keyFrameRemoved();
 }
 

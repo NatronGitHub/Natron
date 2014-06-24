@@ -1867,6 +1867,9 @@ void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->getIsSecret()) {
+            continue;
+        }
         int dim = knobs[i]->getDimension();
         File_Knob* isFile = dynamic_cast<File_Knob*>(knobs[i].get());
         if (isFile) {
