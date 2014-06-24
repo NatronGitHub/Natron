@@ -384,7 +384,7 @@ private:
      **/
     bool startEngine(bool singleThreaded);
     
-    Natron::Status renderFrame(SequenceTime time,bool singleThreaded,bool isSequentialRender);
+    Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
 
 private:
     // FIXME: PIMPL

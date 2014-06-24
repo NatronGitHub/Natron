@@ -448,7 +448,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
-        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
+        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache,isSequentialRender);
     }
     
     
@@ -675,10 +675,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         ///just remove the old image from the cache to recycle memory.
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         if (_imp->lastImage &&
-            _imp->lastRenderArgs._time == args.time &&
+            ((_imp->lastRenderArgs._time == args.time && !args.isSequentialRender) ||
+             (_imp->lastRenderArgs._time != args.time && args.isSequentialRender))&&
             _imp->lastRenderArgs._mipMapLevel == args.mipMapLevel &&
             _imp->lastRenderArgs._view == args.view &&
-            _imp->lastRenderArgs._nodeHash != nodeHash) {
+            ((_imp->lastRenderArgs._nodeHash != nodeHash && !args.isSequentialRender) ||
+             (_imp->lastRenderArgs._nodeHash == nodeHash && args.isSequentialRender))) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             OutputImageLocker imgLocker(_node.get(),_imp->lastImage);
             ///once we got it remove it from the cache
@@ -1247,7 +1249,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         if (rotoCtx) {
             boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, nodeHash,rotoAge,
                                                                         cachedImgParams->getRoD() ,time,getBitDepth(),
-                                                                        view, mipMapLevel, byPassCache);
+                                                                        view, mipMapLevel, byPassCache,isSequentialRender);
             assert(mask);
             inputImages.push_back(mask);
         }

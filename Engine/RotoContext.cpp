@@ -3927,7 +3927,8 @@ void convertCairoImageToNatronImage(cairo_surface_t* cairoImg,Natron::Image* ima
 }
 
 boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
-                                            Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache)
+                                            Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache,
+                                                         bool isSequentialRender)
 {
     
 
@@ -3947,8 +3948,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     {
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         if (_imp->lastRenderedImage &&
-            hash.value() != _imp->lastRenderArgs.nodeHash &&
-            time  == _imp->lastRenderArgs.time &&
+            ((hash.value() != _imp->lastRenderArgs.nodeHash && !isSequentialRender) ||
+             (hash.value() == _imp->lastRenderArgs.nodeHash && isSequentialRender)) &&
+            ((time  == _imp->lastRenderArgs.time && !isSequentialRender) ||
+             (time != _imp->lastRenderArgs.time && isSequentialRender)) &&
             view == _imp->lastRenderArgs.view &&
             mipmapLevel == _imp->lastRenderArgs.mipMapLevel) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache

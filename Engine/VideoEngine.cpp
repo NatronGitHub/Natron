@@ -572,7 +572,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         // if the output is a writer, _tree.outputAsWriter() returns a valid pointer/
         Status stat;
         try {
-            stat =  renderFrame(currentFrame,singleThreaded,_currentRunArgs._forceSequential);
+            stat =  renderFrame(currentFrame,singleThreaded);
         } catch (const std::exception &e) {
             std::stringstream ss;
             ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
@@ -620,7 +620,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
     } // end for(;;)
 }
 
-Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bool isSequentialRender) {
+Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
     /*pre process frame*/
     
 //    Status stat = _tree.preProcessFrame();
@@ -630,6 +630,8 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded,bo
 //        // We don't want to popup a dialog everytime it occurs
 //        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
 //    }
+    bool isSequentialRender = _currentRunArgs._frameRequestsCount > 1 || _currentRunArgs._frameRequestsCount == -1 ||
+    _currentRunArgs._forceSequential;
     Status stat = StatOK;
     /*get the time at which we started rendering the frame*/
     gettimeofday(&_startRenderFrameTime, 0);
