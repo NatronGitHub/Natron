@@ -1716,8 +1716,10 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     
     ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
     ///and then this action would be recursive. this is safe to assume the previous action already set
-    ///the clip thread storage
-    if (!getApp()->isShowingDialog()) {
+    ///the clip thread storage.
+    ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
+    ///a result of this action.
+    if (getRecursionLevel() == 0) {
         getClipThreadStorageData(time, view, mipMapLevel, rod);
     }
     ///Recursive action, must not call assertActionIsNotRecursive()
@@ -1761,7 +1763,9 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
     ///and then this action would be recursive. this is safe to assume the previous action already set
     ///the clip thread storage
-    if (!getApp()->isShowingDialog()) {
+    ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
+    ///a result of this action.
+    if (getRecursionLevel() == 0) {
         getClipThreadStorageData(time, view, mipMapLevel, rod);
     }
 
@@ -1872,7 +1876,9 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
     ///and then this action would be recursive. this is safe to assume the previous action already set
     ///the clip thread storage
-    if (!getApp()->isShowingDialog()) {
+    ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
+    ///a result of this action.
+    if (getRecursionLevel() == 0) {
         getClipThreadStorageData(time, view, mipMapLevel, rod);
     }
 
@@ -1899,7 +1905,9 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
     ///and then this action would be recursive. this is safe to assume the previous action already set
     ///the clip thread storage
-    if (!getApp()->isShowingDialog()) {
+    ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
+    ///a result of this action.
+    if (getRecursionLevel() == 0) {
         getClipThreadStorageData(time, view, mipMapLevel, rod);
     }
 
