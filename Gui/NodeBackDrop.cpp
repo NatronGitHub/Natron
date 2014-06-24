@@ -365,6 +365,7 @@ void NodeBackDropPrivate::refreshLabelText(const QString &text)
     int w = std::max(std::max(bbox.width(), labelBbox.width()),nameBbox.width());
     int h = std::max(labelBbox.height() + nameBbox.height() * 1.5 + 10, bbox.height());
     _publicInterface->resize(w, h);
+    _publicInterface->update();
 
 }
 
