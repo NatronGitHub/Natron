@@ -342,7 +342,7 @@ std::string EffectInstance::inputLabel(int inputNb) const
 }
 
 boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,
-                                                          int view,Natron::ImageComponents comp,Natron::ImageBitDepth depth)
+                                                          int view,Natron::ImageComponents comp,Natron::ImageBitDepth depth,bool dontUpscale)
 {
     
     bool isMask = isInputMask(inputNb);
@@ -475,7 +475,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
 
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
-    if (inputImgMipMapLevel > 0 && !supportsRenderScale()) {
+    if (!dontUpscale && inputImgMipMapLevel > 0 && !supportsRenderScale()) {
         RectI upscaledRoD = inputImg->getPixelRoD().upscalePowerOfTwo(inputImgMipMapLevel);
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0,bitdepth));
@@ -776,7 +776,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             } else {
                 RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
                 RoIMap inputsRoI;
-                inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), args.roi));
+                inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), args.roi.upscalePowerOfTwo(args.mipMapLevel)));
                 Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                             args.roi,
                                                             inputsRoI,
@@ -796,7 +796,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 if (inputEffectIdentity) {
                     inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                     ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                    image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,inputPrefComps,inputPrefDepth);
+                    image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,inputPrefComps,inputPrefDepth,true);
                 } else {
                     return image;
                 }
@@ -903,7 +903,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             RectI canonicalRoI = args.roi.upscalePowerOfTwo(args.mipMapLevel);
             RoIMap inputsRoI;
-            inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), args.roi));
+            inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), args.roi.upscalePowerOfTwo(args.mipMapLevel)));
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         args.roi,
                                                         inputsRoI,
@@ -922,7 +922,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,inputPrefComps,inputPrefDepth);
+                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,inputPrefComps,inputPrefDepth,true);
             } else {
                 return boost::shared_ptr<Image>();
             }
