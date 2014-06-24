@@ -380,7 +380,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
         (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
     }
 
-    if (_signalSlotHandler) {
+    if (_signalSlotHandler && ret) {
         if (reason != Natron::USER_EDITED) {
             _signalSlotHandler->s_keyFrameSet(time,dimension);
         }
@@ -448,7 +448,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
         (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
     }
 
-    if (reason != Natron::USER_EDITED) {
+    if (reason != Natron::USER_EDITED && ret) {
         _signalSlotHandler->s_keyFrameSet(time,dimension);
     }
 

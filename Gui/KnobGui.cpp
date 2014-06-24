@@ -622,9 +622,9 @@ void KnobGui::onHorizontalInterpActionTriggered(){
 void KnobGui::setKeyframe(double time,int dimension) {
     boost::shared_ptr<KnobI> knob = getKnob();
     assert(knob->getHolder()->getApp());
-    if (!knob->getIsSecret()) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
-    }
+//    if (!knob->getIsSecret()) {
+//        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+//    }
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -636,6 +636,7 @@ void KnobGui::onSetKeyActionTriggered(){
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (!knob->getIsSecret()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+        
     }
     for(int i = 0; i < knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
@@ -845,13 +846,14 @@ void KnobGui::onInternalValueChanged(int dimension) {
     }
 }
 
-void KnobGui::onInternalKeySet(SequenceTime time,int){
+void KnobGui::onInternalKeySet(SequenceTime time,int ){
     boost::shared_ptr<KnobI> knob = getKnob();
     
     ///For file knobs do not add keys
     if (!dynamic_cast<File_Knob*>(knob.get()) && !knob->getIsSecret()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
+    
     emit keyFrameSet();
 }
 
@@ -1354,4 +1356,5 @@ void KnobGui::setKeyframeMarkerOnTimeline(int time)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    
 }
