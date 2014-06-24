@@ -910,14 +910,19 @@ void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/,const Re
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
         int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        if (getRecursionLevel() == 1) {
+            effectInstance()->getViewRecursive(view);
+            effectInstance()->setClipsView(view);
+            effectInstance()->setClipsMipMapLevel(0);
+            effectInstance()->setClipsOutputRoD(rod);
+        }
         _overlayInteract->drawAction(time, rs);
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+        if (getRecursionLevel() == 1) {
+            effectInstance()->discardClipsView();
+            effectInstance()->discardClipsMipMapLevel();
+            
+            effectInstance()->discardClipsOutputRoD();
+        }
     }
 }
 
@@ -979,15 +984,20 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
         penPosViewport.y = viewportPos.y();
         OfxTime time = effect_->getFrameRecursive();
         int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        if (getRecursionLevel() == 1) {
+            effectInstance()->getViewRecursive(view);
+            effectInstance()->setClipsView(view);
+            effectInstance()->setClipsMipMapLevel(0);
+            effectInstance()->setClipsOutputRoD(rod);
+        }
         OfxStatus stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+        if (getRecursionLevel() == 1) {
+            effectInstance()->discardClipsView();
+            effectInstance()->discardClipsMipMapLevel();
+            effectInstance()->discardClipsOutputRoD();
+        }
+        
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1129,15 +1139,18 @@ bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
         OfxTime time = effect_->getFrameRecursive();
         
         int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        if (getRecursionLevel() == 1) {
+            effectInstance()->getViewRecursive(view);
+            effectInstance()->setClipsView(view);
+            effectInstance()->setClipsMipMapLevel(0);
+            effectInstance()->setClipsOutputRoD(rod);
+        }
         OfxStatus stat = _overlayInteract->gainFocusAction(time, rs);
-        
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+        if (getRecursionLevel() == 1) {
+            effectInstance()->discardClipsView();
+            effectInstance()->discardClipsMipMapLevel();
+            effectInstance()->discardClipsOutputRoD();
+        }
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;

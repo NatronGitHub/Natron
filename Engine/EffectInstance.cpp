@@ -1711,8 +1711,13 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
-
+    
+    ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
+    ///and then this action would be recursive. this is safe to assume the previous action already set
+    ///the clip thread storage
+    if (!getApp()->isShowingDialog()) {
+        getClipThreadStorageData(time, view, mipMapLevel, rod);
+    }
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
@@ -1750,7 +1755,13 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    
+    ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
+    ///and then this action would be recursive. this is safe to assume the previous action already set
+    ///the clip thread storage
+    if (!getApp()->isShowingDialog()) {
+        getClipThreadStorageData(time, view, mipMapLevel, rod);
+    }
 
     assertActionIsNotRecursive();
     incrementRecursionLevel();
@@ -1855,7 +1866,13 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    
+    ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
+    ///and then this action would be recursive. this is safe to assume the previous action already set
+    ///the clip thread storage
+    if (!getApp()->isShowingDialog()) {
+        getClipThreadStorageData(time, view, mipMapLevel, rod);
+    }
 
     
     assertActionIsNotRecursive();
@@ -1877,7 +1894,12 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    ///Explanation: if the gui is showing a dialog, it was probably during an instanceChanged action
+    ///and then this action would be recursive. this is safe to assume the previous action already set
+    ///the clip thread storage
+    if (!getApp()->isShowingDialog()) {
+        getClipThreadStorageData(time, view, mipMapLevel, rod);
+    }
 
     
     assertActionIsNotRecursive();

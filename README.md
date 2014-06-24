@@ -70,6 +70,8 @@ with a very accurate and intuitive curve editor.
  from ssh on a computer without any display. Hence it is possible to use a render farm
   to render Natron's projects. 
   
+- Rotoscoping support
+  
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate
 the views at any time with the SplitViews node. Note that currently Natron does not allow to split the 
 nodes settings for each view, this will be implemented in the future.
@@ -96,12 +98,11 @@ Planned features
 
 ### Features planned for next major version
 
-- Mask edition via a rotoscoping node: We're half way through the development of this feature.
-- Chroma keyer: This feature is implemented and usable.
+- 2D Tracker
 
 ### Features planned for future versions
 
-- Node-graph enhancements: "global view" + magnetic grid + pre-comps
+- Node-graph enhancements: "global view" + pre-comps
 
 - Python scripting: Natron will be entirely scriptable, to operate with the node graph faster and
 also to allow Natron to be used as a command-line tool only.
