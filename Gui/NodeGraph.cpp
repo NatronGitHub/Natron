@@ -1796,7 +1796,7 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
     
 }
 void SmartInputDialog::keyPressEvent(QKeyEvent *e){
-    if(e->key() == Qt::Key_Return){
+    if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
         QString res=textEdit->lineEdit()->text();
         if(appPTR->getNodeNameList().contains(res)){
             graph->getGui()->getApp()->createNode(res);
