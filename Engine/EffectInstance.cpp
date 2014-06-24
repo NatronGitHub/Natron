@@ -671,16 +671,14 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
 
     Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel,args.view);
     {
-        ///If the last rendered image was the same but with a different hash key (i.e a parameter changed or an input changed)
+        ///If the last rendered image was the same but with a different hash key or time (i.e a parameter changed or an input changed)
+        ///or we're in playback mode
         ///just remove the old image from the cache to recycle memory.
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         if (_imp->lastImage &&
-            ((_imp->lastRenderArgs._time == args.time && !args.isSequentialRender) ||
-             (_imp->lastRenderArgs._time != args.time && args.isSequentialRender))&&
             _imp->lastRenderArgs._mipMapLevel == args.mipMapLevel &&
             _imp->lastRenderArgs._view == args.view &&
-            ((_imp->lastRenderArgs._nodeHash != nodeHash && !args.isSequentialRender) ||
-             (args.isSequentialRender))) {
+            (_imp->lastRenderArgs._nodeHash != nodeHash)) { 
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             OutputImageLocker imgLocker(_node.get(),_imp->lastImage);
             ///once we got it remove it from the cache

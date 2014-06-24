@@ -653,8 +653,9 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     }
 
     std::string inputToRenderName = activeInputToRender->getNode()->getName_mt_safe();
+    U64 nodeHash = hash();
     FrameKey key(time,
-                 hash(),
+                 nodeHash,
                  gain,
                  lut,
                  (int)bitDepth,
@@ -680,21 +681,15 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
             assert(!isCached || cachedFrameParams);
             
-            /// If the hash changed (i.e: the input tree or the inputs parameters changed) or the gain changed
-            ///but everything else is the same, we have almost no chance to get the same hash than the old key or the same gain
-            ///that's why we just wipe that old cache entry
+            ///The user changed a parameter or the tree, just clear the cache
+            ///it has no point keeping the cache because we will never find these entries again.
             {
                 QMutexLocker l(&_imp->lastRenderedTextureMutex);
-                if (_imp->lastRenderedTexture &&
-                    (_imp->lastRenderedTextureKey.getHash() != key.getHash() || _imp->lastRenderedTextureKey.getGain() != gain) &&
-                    _imp->lastRenderedTextureKey.getLut() == lut &&
-                    _imp->lastRenderedTextureKey.getTime() == time &&
-                    _imp->lastRenderedTextureKey.getView() == view &&
-                    _imp->lastRenderedTextureKey.getChannels() == channels &&
-                    _imp->lastRenderedTextureKey.getScale().x == scale.x &&
-                    _imp->lastRenderedTextureKey.getInputName() == inputToRenderName) {
-                    appPTR->removeFromViewerCache(_imp->lastRenderedTexture);
-                    _imp->lastRenderedTexture.reset();
+                if (_imp->lastRenderedTexture) {
+                    
+                    if (_imp->lastRenderHash != nodeHash) {
+                        appPTR->clearDiskCache();
+                    }
                 }
             }
         }
@@ -771,7 +766,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             {
                 QMutexLocker l(&_imp->lastRenderedTextureMutex);
                 _imp->lastRenderedTexture = params->cachedFrame;
-                _imp->lastRenderedTextureKey = key;
+                _imp->lastRenderHash = nodeHash;
             }
         }
         assert(ramBuffer);

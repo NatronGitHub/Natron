@@ -114,7 +114,7 @@ public:
     , activeInputsMutex()
     , activeInputs()
     , lastRenderedTextureMutex()
-    , lastRenderedTextureKey()
+    , lastRenderHash(0)
     , lastRenderedTexture()
     {
         connect(this,SIGNAL(doUpdateViewer(boost::shared_ptr<UpdateViewerParams>)),this,
@@ -203,7 +203,7 @@ public:
     int activeInputs[2]; //< indexes of the inputs used for the wipe
     
     QMutex lastRenderedTextureMutex;
-    Natron::FrameKey lastRenderedTextureKey;
+    U64 lastRenderHash;
     boost::shared_ptr<Natron::FrameEntry> lastRenderedTexture;
     
 };
