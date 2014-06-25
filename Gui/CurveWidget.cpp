@@ -1133,9 +1133,9 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     
     //1st off, round to the nearest integer the keyframes total motion
     double totalMovement;
-    if(clampToIntegers){
+    if (clampToIntegers) {
         totalMovement = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
-    }else{
+    } else {
         totalMovement = newClick_opengl.x() - dragStartPointOpenGL.x();
     }
     // clamp totalMovement to _keyDragMaxMovement
@@ -1144,15 +1144,14 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     } else {
         totalMovement = std::min(totalMovement,_keyDragMaxMovement.y());
     }
-    
     double dt;
-    if (_mouseDragOrientation.x() != 0) {
+    if (_mouseDragOrientation.x() != 0 || !clampToIntegers) {
         dt =  totalMovement - _keyDragLastMovement;
     } else {
         dt = 0;
     }
     double dv = translation.y();
-    
+
     if (dt != 0 || dv != 0) {
         //each selected doesn't necessary belong to a curve of the same knob, in which case they correspond to different
         // undo/redo stacks... To deal with it we create as many command as there are different knobs.
@@ -1197,7 +1196,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     
     
     //update last drag movement
-    if (_mouseDragOrientation.x() != 0) {
+    if (_mouseDragOrientation.x() != 0 || !clampToIntegers) {
         _keyDragLastMovement = totalMovement;
     }
 }
