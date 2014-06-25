@@ -543,7 +543,7 @@ void NodeGui::computePreviewImage(int time){
     size_t dataSize = 4*w*h;
     {
         unsigned int* buf = (unsigned int*)calloc(dataSize,1);
-        _internalNode->makePreviewImage(time, w, h, buf);
+        _internalNode->makePreviewImage(time, &w, &h, buf);
         {
             QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
             QPixmap prev_pixmap = QPixmap::fromImage(img);

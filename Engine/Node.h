@@ -377,8 +377,11 @@ public:
      * This function is called directly by the GUI to display the preview.
      * In order to notify the GUI that you want to refresh the preview, just
      * call refreshPreviewImage(time).
+     *
+     * The width and height might be modified by the function, so their value can
+     * be queried at the end of the function
      **/
-    void makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf);
+    void makePreviewImage(SequenceTime time,int *width,int *height,unsigned int* buf);
     
     /**
      * @brief Returns true if the node is currently rendering a preview image.

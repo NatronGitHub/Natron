@@ -1191,39 +1191,39 @@ template<typename PIX,int maxValue>
 void renderPreview(const Natron::Image& srcImg,
                        const RectI& srcRoD,
                        int elemCount,
-                       int dstWidth,
-                       int dstHeight,
+                       int *dstWidth,
+                       int *dstHeight,
                        bool convertToSrgb,
                        unsigned int* dstPixels)
 {
     ///recompute it after the rescaling
-    double yZoomFactor = dstHeight/(double)srcRoD.height();
-    double xZoomFactor = dstWidth/(double)srcRoD.width();
+    double yZoomFactor = *dstHeight/(double)srcRoD.height();
+    double xZoomFactor = *dstWidth/(double)srcRoD.width();
     double zoomFactor;
     if (xZoomFactor < yZoomFactor) {
         zoomFactor = xZoomFactor;
-        dstHeight = (double)srcRoD.height() * zoomFactor;
+        *dstHeight = (double)srcRoD.height() * zoomFactor;
     } else {
         zoomFactor = yZoomFactor;
     }
 
-    for (int i = 0; i < dstHeight; ++i) {
-        double y = (i - dstHeight/2.)/zoomFactor + (srcRoD.y1 + srcRoD.y2)/2.;
+    for (int i = 0; i < *dstHeight; ++i) {
+        double y = (i - *dstHeight/2.)/zoomFactor + (srcRoD.y1 + srcRoD.y2)/2.;
         int yi = std::floor(y+0.5);
 
-        U32 *dst_pixels = dstPixels + dstWidth * (dstHeight-1-i);
+        U32 *dst_pixels = dstPixels + *dstWidth * (*dstHeight-1-i);
         
         const PIX* src_pixels = (const PIX*)srcImg.pixelAt(srcRoD.x1, yi);
         if (!src_pixels) {
             // out of bounds
-            for (int j = 0; j < dstWidth; ++j) {
+            for (int j = 0; j < *dstWidth; ++j) {
                 dst_pixels[j] = toBGRA(0, 0, 0, 0);
             }
         } else {
-            for (int j = 0; j < dstWidth; ++j) {
+            for (int j = 0; j < *dstWidth; ++j) {
                 // bilinear interpolation is pointless when downscaling a lot, and this is a preview anyway.
                 // just use nearest neighbor
-                double x = (j- dstWidth/2.)/zoomFactor + (srcRoD.x1 + srcRoD.x2)/2.;
+                double x = (j- *dstWidth/2.)/zoomFactor + (srcRoD.x1 + srcRoD.x2)/2.;
 
                 int xi = std::floor(x+0.5); // round to nearest
                 if (xi < 0 || xi >=(srcRoD.x2-srcRoD.x1)) {
@@ -1246,7 +1246,7 @@ void renderPreview(const Natron::Image& srcImg,
 
 }
 
-void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf)
+void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned int* buf)
 {
 
     {
@@ -1271,8 +1271,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         _imp->computingPreviewCond.wakeOne();
         return;
     }
-    double yZoomFactor = (double)height/(double)rod.height();
-    double xZoomFactor = (double)width/(double)rod.width();
+    double yZoomFactor = (double)*height/(double)rod.height();
+    double xZoomFactor = (double)*width/(double)rod.width();
     
     double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(xZoomFactor) / std::log(2.)));
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(yZoomFactor) / std::log(2.)));
