@@ -27,6 +27,7 @@ using namespace Natron;
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent)
 : QWidget(parent)
+, _comp(ImageComponentNone)
 {
     this->viewer = v;
     setObjectName(QString::fromUtf8("infoViewer"));
@@ -137,12 +138,28 @@ void InfoViewerWidget::setColor(float r, float g, float b, float a)
     QString values;
     //values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
     // the following three colors have an equal luminance (=0.4), which makes the text easier to read.
-    values = QString("<font color='#d93232'>%1</font> <font color='#00a700'>%2</font> <font color='#5858ff'>%3</font> <font color=\"#DBE0E0\">%4</font>")
-        .arg(r,0,'f',5)
-        .arg(g,0,'f',5)
-        .arg(b,0,'f',5)
-        .arg(a,0,'f',5);
-
+    switch (_comp) {
+        case Natron::ImageComponentNone:
+            values = QString();
+            break;
+        case Natron::ImageComponentAlpha:
+            values = (QString("<font color=\"#DBE0E0\">%4</font>")
+                      .arg(a,0,'f',5));
+            break;
+        case Natron::ImageComponentRGB:
+            values = (QString("<font color='#d93232'>%1</font> <font color='#00a700'>%2</font> <font color='#5858ff'>%3</font>")
+                      .arg(r,0,'f',5)
+                      .arg(g,0,'f',5)
+                      .arg(b,0,'f',5));
+            break;
+        case Natron::ImageComponentRGBA:
+            values = (QString("<font color='#d93232'>%1</font> <font color='#00a700'>%2</font> <font color='#5858ff'>%3</font> <font color=\"#DBE0E0\">%4</font>")
+                      .arg(r,0,'f',5)
+                      .arg(g,0,'f',5)
+                      .arg(b,0,'f',5)
+                      .arg(a,0,'f',5));
+            break;
+    }
     rgbaValues->setText(values);
     rgbaValues->repaint();
     float h,s,v,l;
@@ -222,4 +239,5 @@ void InfoViewerWidget::setImageFormat(Natron::ImageComponents comp,Natron::Image
 {
     std::string format = Natron::Image::getFormatString(comp, depth);
     imageFormat->setText(format.c_str());
+    _comp = comp;
 }
