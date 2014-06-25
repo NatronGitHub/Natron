@@ -395,9 +395,10 @@ void Settings::initializeKnobs(){
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
     
     _readersTab = Natron::createKnob<Page_Knob>(this, "Readers");
+    _readersTab->setName("readersTab");
 
     _writersTab = Natron::createKnob<Page_Knob>(this, "Writers");
-    
+    _writersTab->setName("writersTab");
     
     setDefaultValues();
 }
