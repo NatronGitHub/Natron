@@ -821,6 +821,9 @@ void AppManager::removeFromNodeCache(const boost::shared_ptr<Natron::Image>& ima
 
 void AppManager::removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture){
     _imp->_viewerCache->removeEntry(texture);
+    if(texture) {
+        emit imageRemovedFromViewerCache(texture->getKey().getTime());
+    }
 }
 
 void AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)

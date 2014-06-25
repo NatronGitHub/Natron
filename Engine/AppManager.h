@@ -270,6 +270,9 @@ public slots:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
     
+signals:
+    
+    void imageRemovedFromViewerCache(SequenceTime time);
 
 protected:
 
