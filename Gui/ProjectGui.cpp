@@ -286,8 +286,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
     ///default color for nodes
     float defR,defG,defB;
-    appPTR->getCurrentSettings()->getDefaultNodeColor(&defR, &defG, &defB);
-    
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     const std::list<NodeGuiSerialization>& nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin();it!=nodesGuiSerialization.end();++it) {
         const std::string& name = it->getName();
@@ -306,11 +305,48 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 nGui->togglePreview();
             }
         }
+        Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
+        
         if (it->colorWasFound()) {
+            std::list<std::string> grouping;
+            iseffect->pluginGrouping(&grouping);
+            std::string majGroup = grouping.empty() ? "" : grouping.front();
+            
+            if (iseffect->isReader()) {
+                settings->getReaderColor(&defR, &defG, &defB);
+            } else if (iseffect->isWriter()) {
+                settings->getWriterColor(&defR, &defG, &defB);
+            } else if (iseffect->isGenerator()) {
+                settings->getGeneratorColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_COLOR) {
+                settings->getColorGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_FILTER) {
+                settings->getFilterGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+                settings->getChannelGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_KEYER) {
+                settings->getKeyerGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_MERGE) {
+                settings->getMergeGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_PAINT) {
+                settings->getDrawGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_TIME) {
+                settings->getTimeGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+                settings->getTransformGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+                settings->getViewsGroupColor(&defR, &defG, &defB);
+            } else if (majGroup == PLUGIN_GROUP_DEEP) {
+                settings->getDeepGroupColor(&defR, &defG, &defB);
+            } else {
+                settings->getDefaultNodeColor(&defR, &defG, &defB);
+            }
+
+            
             float r,g,b;
             it->getColor(&r, &g, &b);
             ///restore color only if different from default.
-            if (r != defR || g != defG || b != defB) {
+            if (std::abs(r - defR) > 0.05 || std::abs(g - defG) > 0.05 || std::abs(b - defB) > 0.05) {
                 QColor color;
                 color.setRgbF(r, g, b);
                 nGui->setDefaultGradientColor(color);
