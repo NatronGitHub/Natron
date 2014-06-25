@@ -563,6 +563,13 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
     if (behavior == 0) {
         x = (viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.;
         y = (viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.;
+        QPointF mapped;
+        mapped.setX(x);
+        mapped.setY(y);
+        mapped = node->mapFromScene(mapped);
+        mapped = node->mapToParent(mapped);
+        x = mapped.x();
+        y = mapped.y();
     }
     ///pop it above the selected node
     else if(behavior == 1) {
@@ -2506,8 +2513,10 @@ NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requeste
             bd->resize(nodeW * 2, nodeH * 4);
         } else {
             QRectF viewPos = visibleRect();
-            bd->setPos((viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.,
-                       (viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.);
+            QPointF mapped = bd->mapFromScene(QPointF((viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.,
+                                        (viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.));
+            mapped = bd->mapToParent(mapped);
+            bd->setPos(mapped);
             bd->resize(NATRON_BACKDROP_DEFAULT_WIDTH,NATRON_BACKDROP_DEFAULT_HEIGHT);
         }
     }

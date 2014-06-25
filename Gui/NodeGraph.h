@@ -94,7 +94,8 @@ public:
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
     
     void selectNode(const boost::shared_ptr<NodeGui>& n);
-        
+    
+    ///The visible portion of the graph, in scene coordinates.
     QRectF visibleRect();
     
     void deselect();
