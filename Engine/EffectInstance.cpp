@@ -1960,9 +1960,12 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
         
     } else {
         /// Don't call isIdentity when in sequential rendering otherwise we could break the sequence.
-        if (!isSequential) {
+        
+        ///Edit: commented out as we use isSequential when in viewer playback too. Also this won't work
+        ///For plug-ins that do not render anything (i.e) like a tracker. We should add a property for that maybe ?
+        //        if (!isSequential) {
             ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
-        }
+        //}
     }
     decrementRecursionLevel();
     return ret;

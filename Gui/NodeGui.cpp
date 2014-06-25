@@ -1507,6 +1507,7 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
 {
     QString textLabel;
     textLabel.append("<div align=\"center\">");
+    bool hasFontData = true;
     if (!label.isEmpty()) {
         QString labelCopy = label;
         
@@ -1524,14 +1525,13 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
         
         ///add the node name into the html encoded label
         int startFontTag = labelCopy.indexOf("<font size=");
-        assert(startFontTag != -1);
+        hasFontData = startFontTag != -1;
         
         QString toFind("\">");
         int endFontTag = labelCopy.indexOf(toFind,startFontTag);
-        assert(endFontTag != -1);
         
         int i = endFontTag += toFind.size();
-        labelCopy.insert(i, name + "<br>");
+        labelCopy.insert(i == -1 ? 0 : i, name + "<br>");
         
         textLabel.append(labelCopy);
     } else {
@@ -1551,7 +1551,9 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
     
     
     QFont f;
-    String_KnobGui::parseFont(textLabel, f);
+    if (hasFontData) {
+        String_KnobGui::parseFont(textLabel, f);
+    }
     _nameItem->setFont(f);
     
     

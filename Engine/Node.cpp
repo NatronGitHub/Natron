@@ -1848,11 +1848,10 @@ void Node::replaceCustomDataInlabel(const QString& data)
     ///Since the label is html encoded, find the text's start
     
     int foundFontTag = label.indexOf("<font");
-    assert(foundFontTag != -1);
+    bool htmlPresent =  (foundFontTag != -1);
     ///we're sure this end tag is the one of the font tag
     QString endFont("\">");
     int endFontTag = label.indexOf(endFont,foundFontTag);
-    assert(endFontTag != -1);
     
     QString customTagStart(NATRON_CUSTOM_HTML_TAG_START);
     QString customTagEnd(NATRON_CUSTOM_HTML_TAG_END);
@@ -1866,7 +1865,7 @@ void Node::replaceCustomDataInlabel(const QString& data)
         label.remove(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
     }
     
-    int i = endFontTag + endFont.size();
+    int i = htmlPresent ? endFontTag + endFont.size() : 0;
     label.insert(i, customTagStart);
     label.insert(i + customTagStart.size(), data);
     label.insert(i + customTagStart.size() + data.size(), customTagEnd);
