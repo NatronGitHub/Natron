@@ -230,6 +230,12 @@ public slots:
         
 private:
     
+    /**
+     *@brief Moves of the given pixel the selected control points.
+     *This takes into account the zoom factor.
+     **/
+    void moveSelectedCpsWithKeyArrows(int x,int y);
+    
     void onToolActionTriggeredInternal(QAction* action,bool emitSignal);
     
     

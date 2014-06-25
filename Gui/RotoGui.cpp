@@ -2103,6 +2103,19 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     return didSomething;
 }
 
+void RotoGui::moveSelectedCpsWithKeyArrows(int x,int y)
+{
+    std::pair<double,double> pixelScale;
+    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
+    int time = _imp->context->getTimelineCurrentTime();
+    pushUndoCommand(new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,(double)x * pixelScale.first,
+                                                     (double)y * pixelScale.second,time));
+    _imp->computeSelectedCpsBBOX();
+    _imp->context->evaluateChange();
+    _imp->node->getNode()->getApp()->triggerAutoSave();
+    _imp->viewerTab->onRotoEvaluatedForThisViewer();
+}
+
 void RotoGui::evaluate(bool redraw)
 {
     if (redraw) {
@@ -2218,6 +2231,18 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
         _imp->bezierEditionTool->handleSelection();
     } else if (e->key() == Qt::Key_D) {
         _imp->pointsEditionTool->handleSelection();
+    } else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(1,0);
+    } else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(-1,0);
+    } else if (e->key() == Qt::Key_Up && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(0,1);
+    } else if (e->key() == Qt::Key_Down && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(0,-1);
     }
     
     return didSomething;

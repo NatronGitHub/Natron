@@ -980,14 +980,16 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         startBackward(!_imp->play_Backward_Button->isDown());
     }
     else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                         && !event->modifiers().testFlag(Qt::ControlModifier)) {
+                                         && !event->modifiers().testFlag(Qt::ControlModifier)
+             && !event->modifiers().testFlag(Qt::AltModifier)) {
         previousFrame();
     }
     else if (event->key() == Qt::Key_K) {
         abortRendering();
     }
     else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                            && !event->modifiers().testFlag(Qt::ControlModifier)) {
+                                            && !event->modifiers().testFlag(Qt::ControlModifier)
+             && !event->modifiers().testFlag(Qt::AltModifier)) {
         nextFrame();
     }
     else if (event->key() == Qt::Key_L) {
