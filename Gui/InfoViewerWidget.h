@@ -75,7 +75,7 @@ private:
     QLabel* _fpsLabel;
     ViewerGL* viewer;
     
-    
+    Natron::ImageComponents _comp;
 };
 
 #endif /* defined(NATRON_GUI_INFOVIEWERWIDGET_H_) */
