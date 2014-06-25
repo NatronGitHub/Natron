@@ -59,7 +59,7 @@ public:
     virtual ~Node();
     
     void load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
-              const NodeSerialization& serialization,bool dontLoadName);
+              const NodeSerialization& serialization/*,bool dontLoadName*/);
     
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
