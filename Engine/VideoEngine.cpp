@@ -94,11 +94,12 @@ void VideoEngine::quitEngineThread(){
         isThreadStarted = _threadStarted;
     }
     if(isThreadStarted){
-        abortRendering(true);
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
         }
+        abortRendering(true);
+
         {
             QMutexLocker locker(&_startMutex);
             ++_startCount;
@@ -253,6 +254,11 @@ bool VideoEngine::startEngine(bool singleThreaded) {
 bool VideoEngine::stopEngine() {
     
     bool wasAborted = false;
+    bool mustQuit = false;
+    {
+        QMutexLocker locker(&_mustQuitMutex);
+        mustQuit = _mustQuit;
+    }
     /*reset the abort flag and wake up any thread waiting*/
     {
         // make sure startEngine is not running by locking _abortBeingProcessedMutex
@@ -268,22 +274,23 @@ bool VideoEngine::stopEngine() {
             /*Refresh preview for all nodes that have preview enabled & set the aborted flag to false.
              ONLY If we're not rendering the same frame (i.e: not panning & zooming) and the user is not scrubbing
              .*/
-            bool shouldRefreshPreview = (_tree.getOutput()->getApp()->shouldRefreshPreview() && !_currentRunArgs._sameFrame)
-            || _currentRunArgs._forcePreview;
-            for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-                bool previewEnabled = (*it)->isPreviewEnabled();
-                if (previewEnabled && !wasAborted) {
-                    if (_currentRunArgs._forcePreview) {
-                        (*it)->computePreviewImage(_timeline->currentFrame());
-                    } else {
-                        if (shouldRefreshPreview) {
-                            (*it)->refreshPreviewImage(_timeline->currentFrame());
+            if (!mustQuit) {
+                bool shouldRefreshPreview = (_tree.getOutput()->getApp()->shouldRefreshPreview() && !_currentRunArgs._sameFrame)
+                || _currentRunArgs._forcePreview;
+                for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+                    bool previewEnabled = (*it)->isPreviewEnabled();
+                    if (previewEnabled) {
+                        if (_currentRunArgs._forcePreview) {
+                            (*it)->computePreviewImage(_timeline->currentFrame());
+                        } else {
+                            if (shouldRefreshPreview) {
+                                (*it)->refreshPreviewImage(_timeline->currentFrame());
+                            }
                         }
                     }
+                    (*it)->setAborted(false);
                 }
-                (*it)->setAborted(false);
             }
-            
             
             _abortedRequestedCondition.wakeOne();
         }
