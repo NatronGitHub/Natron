@@ -559,17 +559,10 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
     }
     
     ///default
-    int x,y;
+    QPointF position;
     if (behavior == 0) {
-        x = (viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.;
-        y = (viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.;
-        QPointF mapped;
-        mapped.setX(x);
-        mapped.setY(y);
-        mapped = node->mapFromScene(mapped);
-        mapped = node->mapToParent(mapped);
-        x = mapped.x();
-        y = mapped.y();
+        position.setX((viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.);
+        position.setY((viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.);
     }
     ///pop it above the selected node
     else if(behavior == 1) {
@@ -578,10 +571,11 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
         QPointF selectedNodeMiddlePos = _nodeSelected->scenePos() + QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
         
 
-        x = selectedNodeMiddlePos.x() - createdNodeSize.width() / 2;
-        y = selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
+        position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
+        position.setY(selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES
+                      - createdNodeSize.height());
         
-        QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
+        QRectF createdNodeRect(position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height());
 
         ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
         const std::map<int,Edge*>& selectedNodeInputs = _nodeSelected->getInputsArrows();
@@ -599,10 +593,10 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
         QPointF selectedNodeMiddlePos = _nodeSelected->scenePos() + QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
         
         ///actually move the created node where the selected node is
-        x = selectedNodeMiddlePos.x() - createdNodeSize.width() / 2;
-        y = selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
-
-        QRectF createdNodeRect(x,y,createdNodeSize.width(),createdNodeSize.height());
+        position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
+        position.setY(selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+        
+        QRectF createdNodeRect(position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height());
         
         ///and move the selected node below recusively
         const std::list<boost::shared_ptr<Natron::Node> >& outputs = _nodeSelected->getNode()->getOutputs();
@@ -614,8 +608,9 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
             
         }
     }
-    
-    node->setPos(x, y);
+    position = node->mapFromScene(position);
+    position = node->mapToParent(position);
+    node->setPos(position.x(), position.y());
     
 }
 
