@@ -1199,8 +1199,13 @@ void renderPreview(const Natron::Image& srcImg,
     ///recompute it after the rescaling
     double yZoomFactor = dstHeight/(double)srcRoD.height();
     double xZoomFactor = dstWidth/(double)srcRoD.width();
-
-    double zoomFactor = std::min(xZoomFactor, yZoomFactor);
+    double zoomFactor;
+    if (xZoomFactor < yZoomFactor) {
+        zoomFactor = xZoomFactor;
+        dstHeight = (double)srcRoD.height() * zoomFactor;
+    } else {
+        zoomFactor = yZoomFactor;
+    }
 
     for (int i = 0; i < dstHeight; ++i) {
         double y = (i - dstHeight/2.)/zoomFactor + (srcRoD.y1 + srcRoD.y2)/2.;
@@ -1212,7 +1217,7 @@ void renderPreview(const Natron::Image& srcImg,
         if (!src_pixels) {
             // out of bounds
             for (int j = 0; j < dstWidth; ++j) {
-                dst_pixels[j] = toBGRA(0, 0, 0, 255);
+                dst_pixels[j] = toBGRA(0, 0, 0, 0);
             }
         } else {
             for (int j = 0; j < dstWidth; ++j) {
@@ -1222,7 +1227,7 @@ void renderPreview(const Natron::Image& srcImg,
 
                 int xi = std::floor(x+0.5); // round to nearest
                 if (xi < 0 || xi >=(srcRoD.x2-srcRoD.x1)) {
-                    dst_pixels[j] = toBGRA(0, 0, 0, 255);
+                    dst_pixels[j] = toBGRA(0, 0, 0, 0);
                 } else {
                     float rFilt = src_pixels[xi * elemCount + 0]/(float)maxValue;
                     float gFilt = src_pixels[xi * elemCount + 1]/(float)maxValue;

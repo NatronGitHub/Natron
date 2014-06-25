@@ -542,16 +542,14 @@ void NodeGui::computePreviewImage(int time){
     int h = NATRON_PREVIEW_HEIGHT;
     size_t dataSize = 4*w*h;
     {
-        boost::scoped_array<U32> buf(new U32[dataSize]);
-        for (int i = 0; i < w*h ; ++i) {
-            buf[i] = qRgba(0, 0, 0, 255);
-        }
-        _internalNode->makePreviewImage(time, w, h, buf.get());
+        unsigned int* buf = (unsigned int*)calloc(dataSize,1);
+        _internalNode->makePreviewImage(time, w, h, buf);
         {
-            QImage img(reinterpret_cast<const uchar*>(buf.get()), w, h, QImage::Format_ARGB32_Premultiplied);
+            QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
             QPixmap prev_pixmap = QPixmap::fromImage(img);
             _previewPixmap->setPixmap(prev_pixmap);
         }
+        free(buf);
     }
 }
 void NodeGui::initializeInputs()
