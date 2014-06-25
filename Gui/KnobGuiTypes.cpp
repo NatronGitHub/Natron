@@ -2277,20 +2277,21 @@ void String_KnobGui::onCurrentFontChanged(const QFont& font)
     //find the first font tag
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
-    assert(i != -1);
-    toFind = QString(kFontFaceTag);
-    i = text.indexOf(toFind,i);
-    assert(i != -1);
-    i += toFind.size();
-    ///erase the current font face (family)
-    QString currentFontFace;
-    int j = i;
-    while (j < text.size() && text.at(j) != QChar('"')) {
-        currentFontFace.push_back(text.at(j));
-        ++j;
+    if (i != -1) {
+        toFind = QString(kFontFaceTag);
+        i = text.indexOf(toFind,i);
+        assert(i != -1);
+        i += toFind.size();
+        ///erase the current font face (family)
+        QString currentFontFace;
+        int j = i;
+        while (j < text.size() && text.at(j) != QChar('"')) {
+            currentFontFace.push_back(text.at(j));
+            ++j;
+        }
+        text.remove(i, currentFontFace.size());
     }
-    text.remove(i, currentFontFace.size());
-    text.insert(i, font.family());
+    text.insert(i != - 1 ? i : 0, font.family());
     _fontFamily = font.family();
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
     

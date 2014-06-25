@@ -436,7 +436,8 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
     } 
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
         for (int i = 0; i < it->first->getDimension(); ++i) {
-            if (it->first->typeName() != Button_Knob::typeNameStatic()) {
+            Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->first.get());
+            if (!isBtn && it->first->getName() != "label_natron") {
                 it->first->resetToDefaultValue(i);
             }
         }
