@@ -74,6 +74,13 @@ void GuiAppInstance::aboutToQuit()
 
 GuiAppInstance::~GuiAppInstance() {
     
+    ///Disconnect so that if playback is on it doesn't attempt to call anything
+    QObject::disconnect(getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),getProject().get(),SLOT(onTimeChanged(SequenceTime,int)));
+    ///clear nodes prematurely so that any thread running is stopped
+    ///process events before closing gui
+    QCoreApplication::processEvents();
+    getProject()->clearNodes(false);
+    QCoreApplication::processEvents();
 //#ifndef __NATRON_WIN32__
     _imp->_gui->getNodeGraph()->discardGuiPointer();
     _imp->_gui->deleteLater();

@@ -344,7 +344,7 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
 
      QPen myPen = pen();
      
-     if(dest && dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
+     if(dest && dest->getNode()->getLiveInstance() && dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
          QVector<qreal> dashStyle;
          qreal space = 4;
          dashStyle << 3 << space;

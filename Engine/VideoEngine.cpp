@@ -272,7 +272,7 @@ bool VideoEngine::stopEngine() {
             || _currentRunArgs._forcePreview;
             for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
                 bool previewEnabled = (*it)->isPreviewEnabled();
-                if (previewEnabled) {
+                if (previewEnabled && !wasAborted) {
                     if (_currentRunArgs._forcePreview) {
                         (*it)->computePreviewImage(_timeline->currentFrame());
                     } else {
