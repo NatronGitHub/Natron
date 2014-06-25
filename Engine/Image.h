@@ -49,6 +49,7 @@ namespace Natron {
         
         void fillHash(Hash64* hash) const;
         
+        U64 getTreeVersion() const { return _nodeHashKey; }
         
         bool operator==(const ImageKey& other) const;
 

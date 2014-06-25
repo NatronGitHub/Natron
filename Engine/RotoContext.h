@@ -832,8 +832,7 @@ public:
      * The image will use the cache if byPassCache is set to true.
      **/
     boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
-                                                Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache,
-                                                bool isSequentialRender);
+                                                Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache );
     
     /**
      * @brief To be called when a change was made to trigger a new render.

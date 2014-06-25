@@ -184,6 +184,12 @@ public:
     void removeFromNodeCache(const boost::shared_ptr<Natron::Image>& image);
 
     void removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture);
+    
+    /**
+     * @brief Given the following tree version, removes all images from the node cache with a matching
+     * tree version. This is useful to wipe the cache for one particular node.
+     **/
+    void  removeAllImagesFromCacheWithMatchingKey(U64 treeVersion) ;
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
 
@@ -264,10 +270,6 @@ public slots:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
     
-signals:
-
-    void imageRemovedFromNodeCache(SequenceTime time);
-    void imageRemovedFromViewerCache(SequenceTime time);
 
 protected:
 
@@ -341,6 +343,8 @@ inline bool getTextureFromCacheOrCreate(const Natron::FrameKey& key,boost::share
                                     boost::shared_ptr<Natron::FrameEntry>* returnValue) {
     return appPTR->getTextureOrCreate(key,params,returnValue);
 }
+    
+
     
 } // namespace Natron
 

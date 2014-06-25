@@ -364,6 +364,7 @@ namespace Natron {
             clearInMemoryPortion();
             clearDiskPortion();
         }
+        
 
         /**
          * @brief Clears all entries on disk that are not actively being used somewhere else in the application.
@@ -434,6 +435,28 @@ namespace Natron {
             while (_memoryCacheSize >= _maximumInMemorySize) {
                 if (!tryEvictEntry()) {
                     break;
+                }
+            }
+        }
+        
+        /**
+         * @brief Get a copy of the cache at the moment it gets the lock for reading.
+         * Returning this function, the caller can assume the entries will not be removed
+         * from the cache because their use_count is > 1
+         **/
+        void getCopy(std::list<EntryTypePtr>* copy) const
+        {
+            QMutexLocker locker(&_lock);
+            for (CacheIterator it = _memoryCache.begin() ; it!=_memoryCache.end(); ++it) {
+                const std::list<CachedValue>& entries = getValueFromIterator(it);
+                for (typename std::list<CachedValue>::const_iterator it2 = entries.begin() ; it2!=entries.end(); ++it2) {
+                    copy->push_back(it2->_entry);
+                }
+            }
+            for (CacheIterator it = _diskCache.begin() ; it!=_diskCache.end(); ++it) {
+                const std::list<CachedValue>& entries = getValueFromIterator(it);
+                for (typename std::list<CachedValue>::const_iterator it2 = entries.begin() ; it2!=entries.end(); ++it2) {
+                    copy->push_back(it2->_entry);
                 }
             }
         }

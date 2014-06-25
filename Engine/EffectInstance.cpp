@@ -101,7 +101,7 @@ struct EffectInstance::Implementation {
     , beginEndRenderMutex()
     , beginEndRenderCount(0)
     , lastRenderArgsMutex()
-    , lastRenderArgs()
+    , lastRenderHash(0)
     , lastImage()
     , duringInteractActionMutex()
     , duringInteractAction(false)
@@ -117,7 +117,7 @@ struct EffectInstance::Implementation {
     
     
     QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastImageKey
-    RenderArgs lastRenderArgs; //< the last args given to render
+    U64  lastRenderHash; //< the last hash given to render
     boost::shared_ptr<Natron::Image> lastImage; //< the last image rendered
     
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
@@ -448,7 +448,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
-        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache,isSequentialRender);
+        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
     }
     
     
@@ -671,18 +671,14 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
 
     Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel,args.view);
     {
-        ///If the last rendered image was the same but with a different hash key or time (i.e a parameter changed or an input changed)
-        ///or we're in playback mode
+        ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
         QMutexLocker l(&_imp->lastRenderArgsMutex);
-        if (_imp->lastImage &&
-            _imp->lastRenderArgs._mipMapLevel == args.mipMapLevel &&
-            _imp->lastRenderArgs._view == args.view &&
-            (_imp->lastRenderArgs._nodeHash != nodeHash)) { 
+        if (_imp->lastImage &&_imp->lastRenderHash != nodeHash) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             OutputImageLocker imgLocker(_node.get(),_imp->lastImage);
             ///once we got it remove it from the cache
-            appPTR->removeFromNodeCache(_imp->lastImage);
+            appPTR->removeAllImagesFromCacheWithMatchingKey(_imp->lastRenderHash);
             _imp->lastImage.reset();
         }
     }
@@ -982,10 +978,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     {
         ///flag that this is the last image we rendered
         QMutexLocker l(&_imp->lastRenderArgsMutex);
-        _imp->lastRenderArgs._time = args.time;
-        _imp->lastRenderArgs._view = args.view;
-        _imp->lastRenderArgs._mipMapLevel = args.mipMapLevel;
-        _imp->lastRenderArgs._nodeHash = nodeHash;
+        _imp->lastRenderHash= nodeHash;
         _imp->lastImage = downscaledImage;
     }
     
@@ -1248,7 +1241,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         if (rotoCtx) {
             boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, nodeHash,rotoAge,
                                                                         cachedImgParams->getRoD() ,time,getBitDepth(),
-                                                                        view, mipMapLevel, byPassCache,isSequentialRender);
+                                                                        view, mipMapLevel, byPassCache);
             assert(mask);
             inputImages.push_back(mask);
         }

@@ -814,15 +814,20 @@ Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,
 
 void AppManager::removeFromNodeCache(const boost::shared_ptr<Natron::Image>& image){
     _imp->_nodeCache->removeEntry(image);
-    if(image) {
-        emit imageRemovedFromNodeCache(image->getKey()._time);
-    }
 }
 
 void AppManager::removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture){
     _imp->_viewerCache->removeEntry(texture);
-    if(texture) {
-        emit imageRemovedFromNodeCache(texture->getKey().getTime());
+}
+
+void AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
+{
+    std::list< boost::shared_ptr<Natron::Image> > cacheContent;
+    _imp->_nodeCache->getCopy(&cacheContent);
+    for (std::list< boost::shared_ptr<Natron::Image> >::iterator it = cacheContent.begin(); it!=cacheContent.end(); ++it) {
+        if ((*it)->getKey().getTreeVersion() == treeVersion) {
+            _imp->_nodeCache->removeEntry(*it);
+        }
     }
 }
 
