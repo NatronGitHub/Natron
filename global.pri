@@ -96,6 +96,37 @@ win32{
   RC_FILE += ../Natron.rc
 }
 
+win32-msvc* {
+
+CONFIG(64bit){
+	message("Compiling for architecture x86 64 bits")
+	Release:DESTDIR = x64/release
+	Release:OBJECTS_DIR = x64/release/.obj
+	Release:MOC_DIR = x64/release/.moc
+	Release:RCC_DIR = x64/release/.rcc
+	Release:UI_DIR = x64/release/.ui
+	
+	Debug:DESTDIR = x64/debug
+	Debug:OBJECTS_DIR = x64/debug/.obj
+	Debug:MOC_DIR = x64/debug/.moc
+	Debug:RCC_DIR = x64/debug/.rcc
+	Debug:UI_DIR = x64/debug/.ui
+} else {
+	message("Compiling for architecture x86 32 bits")
+	Release:DESTDIR = win32/release
+	Release:OBJECTS_DIR = win32/release/.obj
+	Release:MOC_DIR = win32/release/.moc
+	Release:RCC_DIR = win32/release/.rcc
+	Release:UI_DIR = win32/release/.ui
+	
+	Debug:DESTDIR = win32/debug
+	Debug:OBJECTS_DIR = win32/debug/.obj
+	Debug:MOC_DIR = win32/debug/.moc
+	Debug:RCC_DIR = win32/debug/.rcc
+	Debug:UI_DIR = win32/debug/.ui
+}
+}
+
 unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
