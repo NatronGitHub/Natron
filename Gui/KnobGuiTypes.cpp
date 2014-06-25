@@ -2136,15 +2136,15 @@ void String_KnobGui::restoreTextInfosFromString()
     if (text.isEmpty()) {
         
         EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getHolder());
-        ///For the merge operator, restore the operation string in the label
+        /// If the node has a sublabel, restore it in the label
         if (effect && _knob->getName() == "label_natron") {
             boost::shared_ptr<KnobI> knob = effect->getKnobByName(kOfxParamStringSublabelName);
             if (knob) {
                 String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
                 if (strKnob) {
-                    QString operation = strKnob->getValue().c_str();
+                    QString sublabel = strKnob->getValue().c_str();
                     text.append(NATRON_CUSTOM_HTML_TAG_START);
-                    text.append('(' + operation + ')');
+                    text.append('(' + sublabel + ')');
                     text.append(NATRON_CUSTOM_HTML_TAG_END);
                 }
             }

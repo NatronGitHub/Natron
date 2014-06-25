@@ -77,7 +77,7 @@ public:
                                                bool openImageFileDialog = true);
     
     ///Same as createNode but used when loading a project
-    boost::shared_ptr<Natron::Node> loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName);
+    boost::shared_ptr<Natron::Node> loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization);
 
     void getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> > *activeNodes) const;
 
@@ -170,8 +170,7 @@ private:
     
     
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
-                                     bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,
-                                     bool dontLoadName);
+                                     bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
     

@@ -1824,7 +1824,10 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
         
     }
 }
-bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
+
+bool
+SmartInputDialog::eventFilter(QObject *obj, QEvent *e)
+{
     Q_UNUSED(obj);
     
     if(e->type()==QEvent::Close){
@@ -1838,14 +1841,20 @@ bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
     }
     return false;
 }
-void NodeGraph::refreshAllEdges() {
+
+void
+NodeGraph::refreshAllEdges()
+{
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
         (*it)->refreshEdges();
     }
 }
+
 // grabbed from QDirModelPrivate::size() in qtbase/src/widgets/itemviews/qdirmodel.cpp
-static QString QDirModelPrivate_size(quint64 bytes)
+static
+QString
+QDirModelPrivate_size(quint64 bytes)
 {
     // According to the Si standard KB is 1000 bytes, KiB is 1024
     // but on windows sizes are calulated by dividing by 1024 so we do what they do.
@@ -1865,11 +1874,16 @@ static QString QDirModelPrivate_size(quint64 bytes)
 }
 
 
-void NodeGraph::updateCacheSizeText(){
+void
+NodeGraph::updateCacheSizeText()
+{
     _cacheSizeText->setPlainText(QString("Memory cache size: %1")
                                  .arg(QDirModelPrivate_size(appPTR->getCachesTotalMemorySize())));
 }
-QRectF NodeGraph::calcNodesBoundingRect(){
+
+QRectF
+NodeGraph::calcNodesBoundingRect()
+{
     QRectF ret;
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
@@ -1877,14 +1891,20 @@ QRectF NodeGraph::calcNodesBoundingRect(){
     }
     return ret;
 }
-void NodeGraph::toggleCacheInfos(){
+
+void
+NodeGraph::toggleCacheInfos()
+{
     if(_cacheSizeText->isVisible()){
         _cacheSizeText->hide();
     }else{
         _cacheSizeText->show();
     }
 }
-void NodeGraph::populateMenu(){
+
+void
+NodeGraph::populateMenu()
+{
     _menu->clear();
     
     
@@ -1970,22 +1990,30 @@ void NodeGraph::populateMenu(){
     
 }
 
-void NodeGraph::toggleAutoPreview() {
+void
+NodeGraph::toggleAutoPreview()
+{
     _gui->getApp()->getProject()->toggleAutoPreview();
 }
 
-void NodeGraph::forceRefreshAllPreviews() {
+void
+NodeGraph::forceRefreshAllPreviews()
+{
     _gui->forceRefreshAllPreviews();
 }
 
-void NodeGraph::showMenu(const QPoint& pos) {
+void
+NodeGraph::showMenu(const QPoint& pos)
+{
     populateMenu();
     _menu->exec(pos);
 }
 
 
 
-void NodeGraph::dropEvent(QDropEvent* event){
+void
+NodeGraph::dropEvent(QDropEvent* event)
+{
     if(!event->mimeData()->hasUrls())
         return;
     
@@ -2021,7 +2049,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
     
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
     
-    for(U32 i = 0 ; i < files.size();++i){
+    for (U32 i = 0 ; i < files.size();++i) {
         
         ///get all the decoders
         std::map<std::string,std::string> readersForFormat;
@@ -2065,17 +2093,27 @@ void NodeGraph::dropEvent(QDropEvent* event){
     
 }
 
-void NodeGraph::dragEnterEvent(QDragEnterEvent *ev){
+void
+NodeGraph::dragEnterEvent(QDragEnterEvent *ev)
+{
     ev->accept();
 }
-void NodeGraph::dragLeaveEvent(QDragLeaveEvent* e){
-    e->accept();
-}
-void NodeGraph::dragMoveEvent(QDragMoveEvent* e){
+
+void
+NodeGraph::dragLeaveEvent(QDragLeaveEvent* e)
+{
     e->accept();
 }
 
-void NodeGraph::turnOffPreviewForAllNodes(){
+void
+NodeGraph::dragMoveEvent(QDragMoveEvent* e)
+{
+    e->accept();
+}
+
+void
+NodeGraph::turnOffPreviewForAllNodes()
+{
     bool pTurnedOff;
     {
         QMutexLocker l(&_previewsTurnedOffMutex);
@@ -2083,31 +2121,34 @@ void NodeGraph::turnOffPreviewForAllNodes(){
         pTurnedOff = _previewsTurnedOff;
     }
     
-    if(pTurnedOff){
+    if (pTurnedOff) {
         QMutexLocker l(&_nodesMutex);
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
-            if((*it)->getNode()->isPreviewEnabled()){
+            if ((*it)->getNode()->isPreviewEnabled()) {
                 (*it)->togglePreview();
             }
         }
-    }else{
+    } else {
         QMutexLocker l(&_nodesMutex);
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
-            if(!(*it)->getNode()->isPreviewEnabled() && (*it)->getNode()->makePreviewByDefault()){
+            if (!(*it)->getNode()->isPreviewEnabled() && (*it)->getNode()->makePreviewByDefault()) {
                 (*it)->togglePreview();
             }
         }
     }
 }
 
-void NodeGraph::centerOnNode(const boost::shared_ptr<NodeGui>& n) {
+void
+NodeGraph::centerOnNode(const boost::shared_ptr<NodeGui>& n)
+{
     _refreshOverlays = true;
     centerOn(n.get());
 }
 
 
-void NodeGraph::copySelectedNode() {
-
+void
+NodeGraph::copySelectedNode()
+{
     if (_nodeSelected) {
         resetAllClipboards();
         copyNode(_nodeSelected);
@@ -2122,15 +2163,17 @@ void NodeGraph::copySelectedNode() {
     
 }
 
-void NodeGraph::resetAllClipboards()
+void
+NodeGraph::resetAllClipboards()
 {
     _nodeClipBoard._gui.reset();
     _nodeClipBoard._internal.reset();
     _backdropClipboard.reset();
 }
 
-void NodeGraph::cutSelectedNode() {
-    
+void
+NodeGraph::cutSelectedNode()
+{
     if (_nodeSelected) {
         cutNode(_nodeSelected);
     } else if (_selectedBackDrop) {
@@ -2141,8 +2184,9 @@ void NodeGraph::cutSelectedNode() {
     
 }
 
-void NodeGraph::pasteNodeClipBoard() {
-    
+void
+NodeGraph::pasteNodeClipBoard()
+{
     if (!_nodeClipBoard.isEmpty()) {
         pasteNode(*_nodeClipBoard._internal,*_nodeClipBoard._gui);
     } else if (_backdropClipboard) {
@@ -2167,10 +2211,13 @@ void NodeGraph::pasteNodeClipBoard() {
     }
 }
 
-boost::shared_ptr<NodeGui> NodeGraph::pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization) {
+boost::shared_ptr<NodeGui>
+NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
+                     const NodeGuiSerialization& guiSerialization)
+{
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
                                                internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization);
     assert(n);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     if (masterNodeName.empty()) {
@@ -2196,7 +2243,9 @@ boost::shared_ptr<NodeGui> NodeGraph::pasteNode(const NodeSerialization& interna
     return gui;
 }
 
-void NodeGraph::duplicateSelectedNode() {
+void
+NodeGraph::duplicateSelectedNode()
+{
     if (_nodeSelected) {
         duplicateNode(_nodeSelected);
     } else if (_selectedBackDrop) {
@@ -2207,7 +2256,9 @@ void NodeGraph::duplicateSelectedNode() {
     
 }
 
-void NodeGraph::cloneSelectedNode() {
+void
+NodeGraph::cloneSelectedNode()
+{
     if (_nodeSelected) {
         cloneNode(_nodeSelected);
     } else if (_selectedBackDrop) {
@@ -2218,7 +2269,9 @@ void NodeGraph::cloneSelectedNode() {
 
 }
 
-void NodeGraph::decloneSelectedNode() {
+void
+NodeGraph::decloneSelectedNode()
+{
     if (_nodeSelected) {
         decloneNode(_nodeSelected);
     } else if (_selectedBackDrop) {
@@ -2228,18 +2281,24 @@ void NodeGraph::decloneSelectedNode() {
     }
 }
 
-void NodeGraph::copyNode(const boost::shared_ptr<NodeGui>& n) {
+void
+NodeGraph::copyNode(const boost::shared_ptr<NodeGui>& n)
+{
     _nodeClipBoard._internal.reset(new NodeSerialization(n->getNode()));
     _nodeClipBoard._gui.reset(new NodeGuiSerialization);
     n->serialize(_nodeClipBoard._gui.get());
 }
 
-void NodeGraph::cutNode(const boost::shared_ptr<NodeGui>& n) {
+void
+NodeGraph::cutNode(const boost::shared_ptr<NodeGui>& n)
+{
     copyNode(n);
     deleteNode(n);
 }
 
-boost::shared_ptr<NodeGui> NodeGraph::duplicateNode(const boost::shared_ptr<NodeGui>& n) {
+boost::shared_ptr<NodeGui>
+NodeGraph::duplicateNode(const boost::shared_ptr<NodeGui>& n)
+{
     NodeSerialization internalSerialization(n->getNode());
     NodeGuiSerialization guiSerialization;
     n->serialize(&guiSerialization);
@@ -2247,7 +2306,9 @@ boost::shared_ptr<NodeGui> NodeGraph::duplicateNode(const boost::shared_ptr<Node
     return pasteNode(internalSerialization, guiSerialization);
 }
 
-boost::shared_ptr<NodeGui> NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node) {
+boost::shared_ptr<NodeGui>
+NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
+{
     if (node->getNode()->getLiveInstance()->isSlave()) {
         Natron::warningDialog("Clone", "You cannot clone a node whose already a clone.");
         return boost::shared_ptr<NodeGui>();
@@ -2264,7 +2325,7 @@ boost::shared_ptr<NodeGui> NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>
     
     boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
                                                internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization);
     assert(clone);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     
@@ -2285,31 +2346,36 @@ boost::shared_ptr<NodeGui> NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>
     return cloneGui;
 }
 
-void NodeGraph::decloneNode(const boost::shared_ptr<NodeGui>& n) {
+void
+NodeGraph::decloneNode(const boost::shared_ptr<NodeGui>& n) {
     assert(n->getNode()->getLiveInstance()->isSlave());
     n->getNode()->getLiveInstance()->unslaveAllKnobs();
     _gui->getApp()->getProject()->triggerAutoSave();
 }
 
-void NodeGraph::deleteBackdrop(NodeBackDrop* n)
+void
+NodeGraph::deleteBackdrop(NodeBackDrop* n)
 {
     _undoStack->setActive();
     _undoStack->push(new RemoveBackDropCommand(this,n,getNodesWithinBackDrop(n)));
 }
 
-void NodeGraph::copyBackdrop(NodeBackDrop* n)
+void
+NodeGraph::copyBackdrop(NodeBackDrop* n)
 {
     _backdropClipboard.reset(new NodeBackDropSerialization());
     _backdropClipboard->initialize(n);
 }
 
-void NodeGraph::cutBackdrop(NodeBackDrop* n)
+void
+NodeGraph::cutBackdrop(NodeBackDrop* n)
 {
     copyBackdrop(n);
     deleteBackdrop(n);
 }
 
-NodeBackDrop* NodeGraph::pasteBackdrop(const NodeBackDropSerialization& serialization,bool offset)
+NodeBackDrop*
+NodeGraph::pasteBackdrop(const NodeBackDropSerialization& serialization,bool offset)
 {
     NodeBackDrop* bd = new NodeBackDrop(this,_root);
     QString name(serialization.getName().c_str());
@@ -2342,7 +2408,8 @@ NodeBackDrop* NodeGraph::pasteBackdrop(const NodeBackDropSerialization& serializ
     return bd;
 }
 
-void NodeGraph::duplicateBackdrop(NodeBackDrop* n)
+void
+NodeGraph::duplicateBackdrop(NodeBackDrop* n)
 {
     NodeBackDropSerialization s;
     s.initialize(n);
@@ -2363,7 +2430,8 @@ void NodeGraph::duplicateBackdrop(NodeBackDrop* n)
     _undoStack->push(new DuplicateBackDropCommand(this,bd,duplicates));
 }
 
-void NodeGraph::cloneBackdrop(NodeBackDrop* n)
+void
+NodeGraph::cloneBackdrop(NodeBackDrop* n)
 {
     NodeBackDropSerialization s;
     s.initialize(n);
@@ -2387,13 +2455,15 @@ void NodeGraph::cloneBackdrop(NodeBackDrop* n)
     _undoStack->push(new DuplicateBackDropCommand(this,bd,clones));
 }
 
-void NodeGraph::decloneBackdrop(NodeBackDrop* n)
+void
+NodeGraph::decloneBackdrop(NodeBackDrop* n)
 {
     assert(n->isSlave());
     n->unslave();
 }
 
-boost::shared_ptr<NodeGui> NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) const
+boost::shared_ptr<NodeGui>
+NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) const
 {
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin();it!=_nodes.end();++it) {
         if ((*it).get() == n) {
@@ -2409,13 +2479,15 @@ boost::shared_ptr<NodeGui> NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) cons
     assert(false);
 }
 
-void NodeGraph::setUndoRedoStackLimit(int limit)
+void
+NodeGraph::setUndoRedoStackLimit(int limit)
 {
     _undoStack->clear();
     _undoStack->setUndoLimit(limit);
 }
 
-void NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
+void
+NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 {
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_nodesTrash.begin(),_nodesTrash.end(),n);
     if (it != _nodesTrash.end()) {
@@ -2446,7 +2518,8 @@ void NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
     
 }
 
-void NodeGraph::centerOnAllNodes()
+void
+NodeGraph::centerOnAllNodes()
 {
     assert(QThread::currentThread() == qApp->thread());
     QMutexLocker l(&_nodesMutex);
@@ -2478,7 +2551,8 @@ void NodeGraph::centerOnAllNodes()
     repaint();
 }
 
-void NodeGraph::toggleConnectionHints()
+void
+NodeGraph::toggleConnectionHints()
 {
     appPTR->getCurrentSettings()->setConnectionHintsEnabled(!appPTR->getCurrentSettings()->isConnectionHintEnabled());
 }
@@ -2520,13 +2594,15 @@ NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requeste
 }
 
 
-void NodeGraph::pushRemoveBackDropCommand(NodeBackDrop* bd)
+void
+NodeGraph::pushRemoveBackDropCommand(NodeBackDrop* bd)
 {
      _undoStack->setActive();
     _undoStack->push(new RemoveBackDropCommand(this,bd,getNodesWithinBackDrop(bd)));
 }
 
-bool NodeGraph::checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const
+bool
+NodeGraph::checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const
 {
     for (std::list<NodeBackDrop*>::const_iterator it = _backdrops.begin(); it!=_backdrops.end(); ++it) {
         if ((*it)->getName() == n && (*it) != bd) {
@@ -2536,12 +2612,14 @@ bool NodeGraph::checkIfBackDropNameExists(const QString& n,const NodeBackDrop* b
     return false;
 }
 
-std::list<NodeBackDrop*> NodeGraph::getBackDrops() const
+std::list<NodeBackDrop*>
+NodeGraph::getBackDrops() const
 {
     return _backdrops;
 }
 
-std::list<NodeBackDrop*> NodeGraph::getActiveBackDrops() const
+std::list<NodeBackDrop*>
+NodeGraph::getActiveBackDrops() const
 {
     std::list<NodeBackDrop*> ret;
     for (std::list<NodeBackDrop*>::const_iterator it = _backdrops.begin() ; it!=_backdrops.end();++it) {

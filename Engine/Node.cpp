@@ -203,19 +203,13 @@ void Node::createRotoContextConditionnally()
 }
 
 void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
-                const NodeSerialization& serialization,bool dontLoadName) {
-    
+                const NodeSerialization& serialization)
+{
     ///Called from the main thread. MT-safe
     assert(QThread::currentThread() == qApp->thread());
     
     ///cannot load twice
     assert(!_imp->liveInstance);
-    
-    bool nameSet = false;
-    if (!serialization.isNull() && !dontLoadName) {
-        setName(serialization.getPluginLabel().c_str());
-        nameSet = true;
-    }
     
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
@@ -237,24 +231,20 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     initializeInputs();
     initializeKnobs(serialization);
 
-    if (!nameSet) {
-         getApp()->getProject()->initNodeCountersAndSetName(this);
-    } else {
-        updateEffectLabelKnob(serialization.getPluginLabel().c_str());
-    }
-    
-    
+    getApp()->getProject()->initNodeCountersAndSetName(this);
+
     computeHash(); 
     assert(_imp->liveInstance);
 }
 
-U64 Node::getHashValue() const {
+U64 Node::getHashValue() const
+{
     QReadLocker l(&_imp->knobsAgeMutex);
     return _imp->hash.value();
 }
 
-void Node::computeHash() {
-    
+void Node::computeHash()
+{    
     ///Always called in the main thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -538,20 +528,7 @@ void Node::setName(const QString& name)
         QMutexLocker l(&_imp->nameMutex);
         _imp->name = name.toStdString();
     }
-    updateEffectLabelKnob(name);
     emit nameChanged(name);
-}
-
-void Node::updateEffectLabelKnob(const QString& name)
-{
-    if (!_imp->liveInstance) {
-        return;
-    }
-    boost::shared_ptr<KnobI> knob = getKnobByName(kOfxParamStringEffectInstanceLabel);
-    String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
-    if (strKnob) {
-        strKnob->setValue(name.toStdString(), 0);
-    }
 }
 
 AppInstance* Node::getApp() const
@@ -1830,7 +1807,7 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
     } else if (what == _imp->nodeLabelKnob.get()) {
         emit nodeExtraLabelChanged(_imp->nodeLabelKnob->getValue().c_str());
     } else if (what->getName() == kOfxParamStringSublabelName) {
-        //special hack for the merge node so we can retrieve the operation as a string and display it in the node's label
+        //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
         if (what) {
             QString operation = strKnob->getValue().c_str();
