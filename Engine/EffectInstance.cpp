@@ -673,13 +673,22 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
-        QMutexLocker l(&_imp->lastRenderArgsMutex);
-        if (_imp->lastImage &&_imp->lastRenderHash != nodeHash) {
+        boost::shared_ptr<Image> lastRenderedImage;
+        U64 lastRenderHash;
+        {
+            QMutexLocker l(&_imp->lastRenderArgsMutex);
+            lastRenderedImage = _imp->lastImage;
+            lastRenderHash = _imp->lastRenderHash;
+        }
+        if (lastRenderedImage && lastRenderHash != nodeHash) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
-            OutputImageLocker imgLocker(_node.get(),_imp->lastImage);
+            OutputImageLocker imgLocker(_node.get(),lastRenderedImage);
             ///once we got it remove it from the cache
-            appPTR->removeAllImagesFromCacheWithMatchingKey(_imp->lastRenderHash);
-            _imp->lastImage.reset();
+            appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+            {
+                QMutexLocker l(&_imp->lastRenderArgsMutex);
+                _imp->lastImage.reset();
+            }
         }
     }
     

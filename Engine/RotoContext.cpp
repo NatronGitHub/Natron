@@ -3944,17 +3944,27 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     
     ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
     ///just remove the old image from the cache to recycle memory.
+    boost::shared_ptr<Image> lastRenderedImage;
+    U64 lastRenderHash;
     {
         QMutexLocker l(&_imp->lastRenderArgsMutex);
-        if (_imp->lastRenderedImage && _imp->lastRenderHash != hash.value()) {
-            ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
-            Natron::OutputImageLocker imgLocker(_imp->node,_imp->lastRenderedImage);
-            ///once we got it remove it from the cache
-            appPTR->removeAllImagesFromCacheWithMatchingKey(_imp->lastRenderHash);
-            _imp->lastRenderedImage.reset();
-
-        }
+        lastRenderHash = _imp->lastRenderHash;
+        lastRenderedImage = _imp->lastRenderedImage;
+        
     }
+    
+    if (lastRenderedImage && lastRenderHash != hash.value()) {
+        ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
+        Natron::OutputImageLocker imgLocker(_imp->node,lastRenderedImage);
+        ///once we got it remove it from the cache
+        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+        {
+            QMutexLocker l(&_imp->lastRenderArgsMutex);
+            _imp->lastRenderedImage.reset();
+        }
+        
+    }
+    
     
     boost::shared_ptr<const Natron::ImageParams> params;
     boost::shared_ptr<Natron::Image> image;
