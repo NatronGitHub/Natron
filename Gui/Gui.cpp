@@ -278,6 +278,9 @@ struct GuiPrivate {
     QString _glewVersion;
     
     QToolButton* _toolButtonMenuOpened;
+    
+    QMutex aboutToCloseMutex;
+    bool _aboutToClose;
 
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
@@ -367,6 +370,8 @@ struct GuiPrivate {
     , _openGLVersion()
     , _glewVersion()
     , _toolButtonMenuOpened(NULL)
+    , aboutToCloseMutex()
+    , _aboutToClose(false)
     {
         
     }
@@ -431,6 +436,12 @@ bool Gui::exitGui()
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
 void Gui::quit()
 {
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        _imp->_aboutToClose = true;
+    }
+
     assert(_imp->_appInstance);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
         (*it)->notifyAppClosing();
@@ -1827,6 +1838,13 @@ void Gui::saveProjectGui(boost::archive::xml_oarchive& archive) {
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
@@ -1843,6 +1861,13 @@ void Gui::errorDialog(const std::string& title,const std::string& text){
 }
 
 void Gui::warningDialog(const std::string& title,const std::string& text){
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
@@ -1859,6 +1884,14 @@ void Gui::warningDialog(const std::string& title,const std::string& text){
 }
 
 void Gui::informationDialog(const std::string& title,const std::string& text){
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
@@ -1875,6 +1908,7 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
 }
 void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB)
 {
+    
     QString msg = Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -1905,6 +1939,14 @@ void Gui::onDoDialog(int type, const QString& title, const QString& content, Nat
 
 Natron::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
                                            Natron::StandardButton defaultButton) {
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return Natron::No;
+        }
+    }
+
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
