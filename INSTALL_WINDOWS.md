@@ -86,7 +86,7 @@ Of course you need to provide valid paths that are valid on your system.
 Here's an example of a config.pri file that supports both 32bit and 64bit builds:
 ---------------------------------------
 
-CONFIG(64bit) {
+64bit {
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
@@ -111,7 +111,7 @@ cairo {
 
 }
 
-CONFIG(32bit) {
+32bit {
 
 
 boost {
@@ -163,6 +163,9 @@ In the Additional Options, add the following:
      /ENTRY:"mainCRTStartup" 
 (add a white space after the previous command)
 
+In 64 bits mode (target x64), qmake doesn't set the target machine, it leaves the default value which is x86.
+You'll have to set it manually in the properties of the HostSupport/Gui/Engine projects, as following:
+Right click on the project, Configuration Properties,Librarian,General, Target Machine. Set it to Machinex64
 
 ### 32 bits vs 64 bits builds
 
@@ -181,4 +184,5 @@ In other words if I wanted to build both 32bits and 64bits version I would call:
 
 ###Build from the command line with MSBuild
 
+	MSBuild Project32.sln /p:Configuration=Release;Platform=win32 /t:Natron /m
 	MSBuild Project64.sln /p:Configuration=Release;Platform=x64 /t:Natron /m
