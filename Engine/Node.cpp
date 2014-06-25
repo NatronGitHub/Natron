@@ -1205,6 +1205,7 @@ void renderPreview(const Natron::Image& srcImg,
         *dstHeight = (double)srcRoD.height() * zoomFactor;
     } else {
         zoomFactor = yZoomFactor;
+		*dstWidth = (double)srcRoD.width() * zoomFactor;
     }
 
     for (int i = 0; i < *dstHeight; ++i) {
@@ -1217,7 +1218,11 @@ void renderPreview(const Natron::Image& srcImg,
         if (!src_pixels) {
             // out of bounds
             for (int j = 0; j < *dstWidth; ++j) {
-                dst_pixels[j] = toBGRA(0, 0, 0, 0);
+#ifndef __NATRON_WIN32__
+				dst_pixels[j] = toBGRA(0, 0, 0, 0);
+#else
+				dst_pixels[j] = toBGRA(0, 0, 0, 255);
+#endif
             }
         } else {
             for (int j = 0; j < *dstWidth; ++j) {
@@ -1227,7 +1232,12 @@ void renderPreview(const Natron::Image& srcImg,
 
                 int xi = std::floor(x+0.5); // round to nearest
                 if (xi < 0 || xi >=(srcRoD.x2-srcRoD.x1)) {
-                    dst_pixels[j] = toBGRA(0, 0, 0, 0);
+#ifndef __NATRON_WIN32__
+					dst_pixels[j] = toBGRA(0, 0, 0, 0);
+#else
+					 dst_pixels[j] = toBGRA(0, 0, 0, 255);
+#endif
+                   
                 } else {
                     float rFilt = src_pixels[xi * elemCount + 0]/(float)maxValue;
                     float gFilt = src_pixels[xi * elemCount + 1]/(float)maxValue;
