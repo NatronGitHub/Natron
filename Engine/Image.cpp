@@ -1414,7 +1414,7 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
                             }
                         } else {
                             assert(dstComp == Natron::ImageComponentRGBA);
-                            for (int k = 0; k < dstComp - 1; ++k) {
+                            for (int k = 0; k < dstNComp - 1; ++k) {
                                 dstPixels[k] = invert ? dstMaxValue : 0;
                             }
                             DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);

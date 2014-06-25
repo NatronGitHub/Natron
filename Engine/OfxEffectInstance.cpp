@@ -435,10 +435,10 @@ static void ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
 static void ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
 {
     // safely convert to OfxRectI, avoiding overflows
-    int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::ceil(ofxrect.x1));
-    int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::ceil(ofxrect.y1));
-    int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::floor(ofxrect.x2));
-    int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::floor(ofxrect.y2));
+    int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.x1));
+    int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.y1));
+    int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.x2));
+    int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.y2));
     box->set(xmin, ymin, xmax, ymax);
 }
 
@@ -472,23 +472,32 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
                             "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
     bool setBitDepthWarning = false;
     
-    ///for all inputs we run getClipPrefs too on their output clip
+    ///We remap all the input clips components to be the same as the output clip, except for the masks.
+    OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(outputClip);
+    std::string outputComponents = outputClip->getComponents();
+    
+    effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
+
     for (int i = 0; i < maximumInputs() ; ++i) {
         OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(input(i));
         OfxClipInstance* clip = getClipCorrespondingToInput(i);
-        ///pointer might be null if it is not an OpenFX plug-in.
+
         if (instance) {
-            instance->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-            instance->effectInstance()->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, scale);
-            instance->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-            instance->effectInstance()->runGetClipPrefsConditionally();
+           
             
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
-            const std::string& input_outputClipComps = inputOutputClip->getComponents();
-            if (clip->isSupportedComponent(input_outputClipComps)) {
-                clip->setComponents(input_outputClipComps);
+
+            if (clip->isSupportedComponent(outputComponents)) {
+                
+                ///we only take into account non mask clips for the most components
+                if (!clip->isMask()) {
+                    clip->setComponents(outputComponents);
+
+                }
             }
             
+            ///Try to remap the clip's bitdepth to be the same as the output depth of the input node
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
             Natron::ImageBitDepth input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
             Natron::ImageBitDepth outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
@@ -510,14 +519,13 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
                     setBitDepthWarning = true;
                 }
             }
+            effect_->clipInstanceChangedAction(outputClip->getName(), kOfxChangeUserEdited, time, scale);
 
 
-            ///validate with an instance changed action
-            effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
-            effect_->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, scale);
-            effect_->endInstanceChangedAction(kOfxChangeUserEdited);
         }
     }
+    effect_->endInstanceChangedAction(kOfxChangeUserEdited);
+
     getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
 }
 
@@ -1248,6 +1256,7 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         ///Recursive action, must not call assertActionIsNotRecursive()
         incrementRecursionLevel();
         effect_->runGetClipPrefsConditionally();
+        checkClipPrefs(time, renderScale);
         decrementRecursionLevel();
     }
     if(_overlayInteract){

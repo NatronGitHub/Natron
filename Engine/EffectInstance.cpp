@@ -719,11 +719,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             image->getBitDepth() != args.bitdepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
-            image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
-                                   getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
-                                   getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                   args.channelForAlpha,false, true);
-            
+            if (!byPassCache) {
+                image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
+                                       getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
+                                       getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
+                                       args.channelForAlpha,false, true);
+            }
             ///switch the pointer
             image = remappedImage;
         } else if (image->getComponents() != args.components) {
