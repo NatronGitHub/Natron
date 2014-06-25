@@ -548,6 +548,10 @@ void NodeGui::computePreviewImage(int time){
             QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
             QPixmap prev_pixmap = QPixmap::fromImage(img);
             _previewPixmap->setPixmap(prev_pixmap);
+            QPointF topLeft = mapFromParent(pos());
+            QRectF bbox = boundingRect();
+            _previewPixmap->setPos(topLeft.x() + bbox.width() / 2 - w / 2,
+                                   topLeft.y() + bbox.height() / 2 - h / 2 + 10);
         }
         free(buf);
     }
