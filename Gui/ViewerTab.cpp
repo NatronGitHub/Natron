@@ -1338,6 +1338,12 @@ bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e
             }
         }
     }
+    if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+        if (_imp->_currentRoto.second->keyRepeat(scaleX, scaleY,e)) {
+            return  true;
+        }
+    }
+
     return false;
 }
 

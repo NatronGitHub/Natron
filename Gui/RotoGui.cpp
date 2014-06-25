@@ -2234,17 +2234,44 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
     } else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::ShiftModifier)) {
         moveSelectedCpsWithKeyArrows(1,0);
+        didSomething = true;
     } else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::ShiftModifier)) {
         moveSelectedCpsWithKeyArrows(-1,0);
+        didSomething = true;
     } else if (e->key() == Qt::Key_Up && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::ShiftModifier)) {
         moveSelectedCpsWithKeyArrows(0,1);
+        didSomething = true;
     } else if (e->key() == Qt::Key_Down && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::ShiftModifier)) {
         moveSelectedCpsWithKeyArrows(0,-1);
+        didSomething = true;
     }
     
+    return didSomething;
+}
+
+bool RotoGui::keyRepeat(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
+{
+    bool didSomething = false;
+    if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+        && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(1,0);
+        didSomething = true;
+    } else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(-1,0);
+        didSomething = true;
+    } else if (e->key() == Qt::Key_Up && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(0,1);
+        didSomething = true;
+    } else if (e->key() == Qt::Key_Down && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        moveSelectedCpsWithKeyArrows(0,-1);
+        didSomething = true;
+    }
     return didSomething;
 }
 

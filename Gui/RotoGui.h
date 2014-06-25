@@ -141,6 +141,8 @@ public:
     
     bool keyUp(double scaleX,double scaleY,QKeyEvent* e);
     
+    bool keyRepeat(double scaleX,double scaleY,QKeyEvent* e);
+    
     bool isStickySelectionEnabled() const;
     
     /**
