@@ -391,7 +391,7 @@ protected:
 public:
     
     bool isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
-                           int view,bool isSequential,SequenceTime* inputTime,int* inputNb) WARN_UNUSED_RETURN;
+                           int view,SequenceTime* inputTime,int* inputNb) WARN_UNUSED_RETURN;
     
     enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2,FULLY_SAFE_FRAME = 3};
     /**

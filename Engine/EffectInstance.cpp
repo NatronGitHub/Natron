@@ -756,7 +756,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         bool isProjectFormat = false;
         
         
-        bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,args.isSequentialRender,&inputTimeIdentity,&inputNbIdentity);
+        bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
         
         
         if (identity) {
@@ -1933,7 +1933,7 @@ Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scal
 }
 
 bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
-                       int view,bool isSequential,SequenceTime* inputTime,int* inputNb)
+                       int view,SequenceTime* inputTime,int* inputNb)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
@@ -1959,13 +1959,10 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
         }
         
     } else {
-        /// Don't call isIdentity when in sequential rendering otherwise we could break the sequence.
-        
-        ///Edit: commented out as we use isSequential when in viewer playback too. Also this won't work
-        ///For plug-ins that do not render anything (i.e) like a tracker. We should add a property for that maybe ?
-        //        if (!isSequential) {
+        /// Don't call isIdentity if plugin is sequential only.
+        if (getSequentialPreference() != Natron::EFFECT_ONLY_SEQUENTIAL) {
             ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
-        //}
+        }
     }
     decrementRecursionLevel();
     return ret;
