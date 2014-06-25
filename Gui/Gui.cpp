@@ -84,19 +84,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/RotoGui.h"
 
 
-#define PLUGIN_GROUP_IMAGE "Image"
-#define PLUGIN_GROUP_COLOR "Color"
-#define PLUGIN_GROUP_FILTER "Filter"
-#define PLUGIN_GROUP_TRANSFORM "Transform"
-#define PLUGIN_GROUP_TIME "Time"
-#define PLUGIN_GROUP_PAINT "Draw"
-#define PLUGIN_GROUP_KEYER "Keyer"
-#define PLUGIN_GROUP_CHANNEL "Channel"
-#define PLUGIN_GROUP_MERGE "Merge"
-#define PLUGIN_GROUP_MULTIVIEW "Views"
-#define PLUGIN_GROUP_DEEP "Deep"
-#define PLUGIN_GROUP_DEFAULT "Other"
-#define PLUGIN_GROUP_OFX "OFX"
+
 
 #define NAMED_PLUGIN_GROUP_NO 12
 

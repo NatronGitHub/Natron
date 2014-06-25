@@ -347,6 +347,17 @@ std::string OfxEffectInstance::pluginLabel() const {
     return getPluginLabel( effect_->getDescriptor().getShortLabel(),effect_->getDescriptor().getLabel(),effect_->getDescriptor().getLongLabel());
 }
 
+
+void OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
+{
+    std::string groupStr = effectInstance()->getPluginGrouping();
+    std::string label = pluginLabel();
+    QStringList groups = ofxExtractAllPartsOfGrouping(label.c_str(), groupStr.c_str());
+    for (int i = 0; i < groups.size(); ++i) {
+        grouping->push_back(groups[i].toStdString());
+    }
+}
+
 std::string OfxEffectInstance::inputLabel(int inputNb) const {
     
     MappedInputV copy = inputClipsCopyWithoutOutput();

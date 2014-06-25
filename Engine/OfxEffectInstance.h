@@ -127,6 +127,8 @@ public:
 
     virtual std::string pluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+
     virtual std::string description() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual std::string inputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;

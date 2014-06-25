@@ -59,7 +59,9 @@ public:
     virtual std::string pluginID() const OVERRIDE;
     
     virtual std::string pluginLabel() const OVERRIDE;
-    
+
+    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+
     virtual std::string description() const OVERRIDE;
     
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,

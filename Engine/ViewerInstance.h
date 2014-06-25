@@ -212,6 +212,8 @@ private:
 
     virtual std::string pluginLabel() const OVERRIDE FINAL {return "Viewer";}
     
+    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    
     virtual std::string description() const OVERRIDE FINAL {return "The Viewer node can display the output of a node graph.";}
     
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;

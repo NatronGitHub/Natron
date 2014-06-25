@@ -265,12 +265,44 @@ DockablePanel::DockablePanel(Gui* gui
         QObject::connect(_imp->_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
         
         if (headerMode != READ_ONLY_NAME) {
-            
+            boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
             Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
             NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
             if (iseffect) {
-                appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
+                std::list<std::string> grouping;
+                iseffect->pluginGrouping(&grouping);
+                std::string majGroup = grouping.empty() ? "" : grouping.front();
+                
+                if (iseffect->isReader()) {
+                    settings->getReaderColor(&r, &g, &b);
+                } else if (iseffect->isWriter()) {
+                    settings->getWriterColor(&r, &g, &b);
+                } else if (iseffect->isGenerator()) {
+                    settings->getGeneratorColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_COLOR) {
+                    settings->getColorGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_FILTER) {
+                    settings->getFilterGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+                    settings->getChannelGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_KEYER) {
+                    settings->getKeyerGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_MERGE) {
+                    settings->getMergeGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_PAINT) {
+                    settings->getDrawGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_TIME) {
+                    settings->getTimeGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+                    settings->getTransformGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+                    settings->getViewsGroupColor(&r, &g, &b);
+                } else if (majGroup == PLUGIN_GROUP_DEEP) {
+                    settings->getDeepGroupColor(&r, &g, &b);
+                } else {
+                    settings->getDefaultNodeColor(&r, &g, &b);
+                }
             } else if(backdrop) {
                 appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
             } else {

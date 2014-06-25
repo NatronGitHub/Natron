@@ -182,6 +182,12 @@ ViewerInstance::~ViewerInstance()
     }
 }
 
+void
+ViewerInstance::pluginGrouping(std::list<std::string>* grouping) const
+{
+    grouping->push_back(PLUGIN_GROUP_IMAGE);
+}
+
 OpenGLViewerI*
 ViewerInstance::getUiContext() const
 {

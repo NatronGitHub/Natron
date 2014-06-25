@@ -47,6 +47,11 @@ std::string QtWriter::pluginLabel() const{
     return "WriteQt";
 }
 
+void QtWriter::pluginGrouping(std::list<std::string>* grouping) const
+{
+    grouping->push_back(PLUGIN_GROUP_IMAGE);
+}
+
 std::string QtWriter::description() const {
     return "The QtWriter node can render on disk the output of a node graph using the QImage (Qt) library.";
 }

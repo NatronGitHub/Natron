@@ -284,8 +284,74 @@ void Settings::initializeKnobs(){
     _defaultBackdropColor =  Natron::createKnob<Color_Knob>(this, "Default backdrop color",3);
     _defaultBackdropColor->setAnimationEnabled(false);
     _defaultBackdropColor->setHintToolTip("This is default color which backdrop nodes have when created.");
-    
     _nodegraphTab->addKnob(_defaultBackdropColor);
+    
+    ///////////////////DEFAULT GROUP COLORS
+    
+    _defaultReaderColor =  Natron::createKnob<Color_Knob>(this, "Readers",3);
+    _defaultReaderColor->setAnimationEnabled(false);
+    _defaultReaderColor->setHintToolTip("This is default color which reader nodes have when created.");
+    _nodegraphTab->addKnob(_defaultReaderColor);
+    
+    _defaultWriterColor =  Natron::createKnob<Color_Knob>(this, "Writers",3);
+    _defaultWriterColor->setAnimationEnabled(false);
+    _defaultWriterColor->setHintToolTip("This is default color which writer nodes have when created.");
+    _nodegraphTab->addKnob(_defaultWriterColor);
+    
+    _defaultGeneratorColor =  Natron::createKnob<Color_Knob>(this, "Generators",3);
+    _defaultGeneratorColor->setAnimationEnabled(false);
+    _defaultGeneratorColor->setHintToolTip("This is default color which generator nodes have when created.");
+    _nodegraphTab->addKnob(_defaultGeneratorColor);
+    
+    _defaultColorGroupColor =  Natron::createKnob<Color_Knob>(this, "Color group",3);
+    _defaultColorGroupColor->setAnimationEnabled(false);
+    _defaultColorGroupColor->setHintToolTip("This is default color which color processing nodes have when created.");
+    _nodegraphTab->addKnob(_defaultColorGroupColor);
+    
+    _defaultFilterGroupColor =  Natron::createKnob<Color_Knob>(this, "Filter group",3);
+    _defaultFilterGroupColor->setAnimationEnabled(false);
+    _defaultFilterGroupColor->setHintToolTip("This is default color which filter nodes have when created.");
+    _nodegraphTab->addKnob(_defaultFilterGroupColor);
+    
+    _defaultTransformGroupColor =  Natron::createKnob<Color_Knob>(this, "Transform group",3);
+    _defaultTransformGroupColor->setAnimationEnabled(false);
+    _defaultTransformGroupColor->setHintToolTip("This is default color which transform nodes have when created.");
+    _nodegraphTab->addKnob(_defaultTransformGroupColor);
+    
+    _defaultTimeGroupColor =  Natron::createKnob<Color_Knob>(this, "Time group",3);
+    _defaultTimeGroupColor->setAnimationEnabled(false);
+    _defaultTimeGroupColor->setHintToolTip("This is default color which time processing nodes have when created.");
+    _nodegraphTab->addKnob(_defaultTimeGroupColor);
+    
+    _defaultDrawGroupColor =  Natron::createKnob<Color_Knob>(this, "Draw group",3);
+    _defaultDrawGroupColor->setAnimationEnabled(false);
+    _defaultDrawGroupColor->setHintToolTip("This is default color which draw nodes have when created.");
+    _nodegraphTab->addKnob(_defaultBackdropColor);
+    
+    _defaultKeyerGroupColor =  Natron::createKnob<Color_Knob>(this, "Keyer group",3);
+    _defaultKeyerGroupColor->setAnimationEnabled(false);
+    _defaultKeyerGroupColor->setHintToolTip("This is default color which keying nodes have when created.");
+    _nodegraphTab->addKnob(_defaultKeyerGroupColor);
+    
+    _defaultChannelGroupColor =  Natron::createKnob<Color_Knob>(this, "Channel group",3);
+    _defaultChannelGroupColor->setAnimationEnabled(false);
+    _defaultChannelGroupColor->setHintToolTip("This is default color which channel processing nodes have when created.");
+    _nodegraphTab->addKnob(_defaultChannelGroupColor);
+    
+    _defaultMergeGroupColor =  Natron::createKnob<Color_Knob>(this, "Merge group",3);
+    _defaultMergeGroupColor->setAnimationEnabled(false);
+    _defaultMergeGroupColor->setHintToolTip("This is default color which merge  nodes have when created.");
+    _nodegraphTab->addKnob(_defaultMergeGroupColor);
+    
+    _defaultViewsGroupColor =  Natron::createKnob<Color_Knob>(this, "Views group",3);
+    _defaultViewsGroupColor->setAnimationEnabled(false);
+    _defaultViewsGroupColor->setHintToolTip("This is default color which multi-view nodes have when created.");
+    _nodegraphTab->addKnob(_defaultViewsGroupColor);
+    
+    _defaultDeepGroupColor =  Natron::createKnob<Color_Knob>(this, "Deep group",3);
+    _defaultDeepGroupColor->setAnimationEnabled(false);
+    _defaultDeepGroupColor->setHintToolTip("This is default color which deep compositing nodes have when created.");
+    _nodegraphTab->addKnob(_defaultDeepGroupColor);
     
     /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
@@ -369,6 +435,58 @@ void Settings::setDefaultValues() {
     _defaultBackdropColor->setDefaultValue(0.2,2);
     _disconnectedArrowLength->setDefaultValue(30);
     
+    _defaultGeneratorColor->setDefaultValue(0.3,0);
+    _defaultGeneratorColor->setDefaultValue(0.5,1);
+    _defaultGeneratorColor->setDefaultValue(0.2,2);
+    
+    _defaultReaderColor->setDefaultValue(0.6,0);
+    _defaultReaderColor->setDefaultValue(0.6,1);
+    _defaultReaderColor->setDefaultValue(0.6,2);
+    
+    _defaultWriterColor->setDefaultValue(0.75,0);
+    _defaultWriterColor->setDefaultValue(0.75,1);
+    _defaultWriterColor->setDefaultValue(0.,2);
+    
+    _defaultColorGroupColor->setDefaultValue(0.48,0);
+    _defaultColorGroupColor->setDefaultValue(0.66,1);
+    _defaultColorGroupColor->setDefaultValue(1.,2);
+    
+    _defaultFilterGroupColor->setDefaultValue(0.8,0);
+    _defaultFilterGroupColor->setDefaultValue(0.5,1);
+    _defaultFilterGroupColor->setDefaultValue(0.3,2);
+    
+    _defaultTransformGroupColor->setDefaultValue(0.7,0);
+    _defaultTransformGroupColor->setDefaultValue(0.3,1);
+    _defaultTransformGroupColor->setDefaultValue(0.1,2);
+    
+    _defaultTimeGroupColor->setDefaultValue(0.7,0);
+    _defaultTimeGroupColor->setDefaultValue(0.65,1);
+    _defaultTimeGroupColor->setDefaultValue(0.35,2);
+    
+    _defaultDrawGroupColor->setDefaultValue(0.75,0);
+    _defaultDrawGroupColor->setDefaultValue(0.75,1);
+    _defaultDrawGroupColor->setDefaultValue(0.75,2);
+    
+    _defaultKeyerGroupColor->setDefaultValue(0.,0);
+    _defaultKeyerGroupColor->setDefaultValue(1,1);
+    _defaultKeyerGroupColor->setDefaultValue(0.,2);
+    
+    _defaultChannelGroupColor->setDefaultValue(0.6,0);
+    _defaultChannelGroupColor->setDefaultValue(0.24,1);
+    _defaultChannelGroupColor->setDefaultValue(0.39,2);
+    
+    _defaultMergeGroupColor->setDefaultValue(0.3,0);
+    _defaultMergeGroupColor->setDefaultValue(0.37,1);
+    _defaultMergeGroupColor->setDefaultValue(0.776,2);
+    
+    _defaultViewsGroupColor->setDefaultValue(0.5,0);
+    _defaultViewsGroupColor->setDefaultValue(0.9,1);
+    _defaultViewsGroupColor->setDefaultValue(0.7,2);
+    
+    _defaultDeepGroupColor->setDefaultValue(0.,0);
+    _defaultDeepGroupColor->setDefaultValue(0.,1);
+    _defaultDeepGroupColor->setDefaultValue(0.38,2);
+    
 #pragma message WARN("This is kinda a big hack to promote the OpenImageIO plug-in, we should use Tuttle's notation extension")
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         const std::vector<std::string>& entries = _readersMapping[i]->getEntries();
@@ -443,6 +561,58 @@ void Settings::saveSettings(){
     settings.setValue("DefaultBackdropColor_r", _defaultBackdropColor->getValue(0));
     settings.setValue("DefaultBackdropColor_g", _defaultBackdropColor->getValue(1));
     settings.setValue("DefaultBackdropColor_b", _defaultBackdropColor->getValue(2));
+    
+    settings.setValue("DefaultGeneratorColor_r", _defaultGeneratorColor->getValue(0));
+    settings.setValue("DefaultGeneratorColor_g", _defaultGeneratorColor->getValue(1));
+    settings.setValue("DefaultGeneratorColor_b", _defaultGeneratorColor->getValue(2));
+    
+    settings.setValue("DefaultReaderColor_r", _defaultReaderColor->getValue(0));
+    settings.setValue("DefaultReaderColor_g", _defaultReaderColor->getValue(1));
+    settings.setValue("DefaultReaderColor_b", _defaultReaderColor->getValue(2));
+    
+    settings.setValue("DefaultWriterColor_r", _defaultWriterColor->getValue(0));
+    settings.setValue("DefaultWriterColor_g", _defaultWriterColor->getValue(1));
+    settings.setValue("DefaultWriterColor_b", _defaultWriterColor->getValue(2));
+    
+    settings.setValue("DefaultColorGroupColor_r", _defaultColorGroupColor->getValue(0));
+    settings.setValue("DefaultColorGroupColor_g", _defaultColorGroupColor->getValue(1));
+    settings.setValue("DefaultColorGroupColor_b", _defaultColorGroupColor->getValue(2));
+    
+    settings.setValue("DefaultFilterGroupColor_r", _defaultFilterGroupColor->getValue(0));
+    settings.setValue("DefaultFilterGroupColor_g", _defaultFilterGroupColor->getValue(1));
+    settings.setValue("DefaultFilterGroupColor_b", _defaultFilterGroupColor->getValue(2));
+    
+    settings.setValue("DefaultTransformGroupColor_r", _defaultTransformGroupColor->getValue(0));
+    settings.setValue("DefaultTransformGroupColor_g", _defaultTransformGroupColor->getValue(1));
+    settings.setValue("DefaultTransformGroupColor_b", _defaultTransformGroupColor->getValue(2));
+    
+    settings.setValue("DefaultTimeGroupColor_r", _defaultTimeGroupColor->getValue(0));
+    settings.setValue("DefaultTimeGroupColor_g", _defaultTimeGroupColor->getValue(1));
+    settings.setValue("DefaultTimeGroupColor_b", _defaultTimeGroupColor->getValue(2));
+    
+    settings.setValue("DefaultDrawGroupColor_r", _defaultDrawGroupColor->getValue(0));
+    settings.setValue("DefaultDrawGroupColor_g", _defaultDrawGroupColor->getValue(1));
+    settings.setValue("DefaultDrawGroupColor_b", _defaultDrawGroupColor->getValue(2));
+    
+    settings.setValue("DefaultKeyerGroupColor_r", _defaultKeyerGroupColor->getValue(0));
+    settings.setValue("DefaultKeyerGroupColor_g", _defaultKeyerGroupColor->getValue(1));
+    settings.setValue("DefaultKeyerGroupColor_b", _defaultKeyerGroupColor->getValue(2));
+    
+    settings.setValue("DefaultChannelGroupColor_r", _defaultChannelGroupColor->getValue(0));
+    settings.setValue("DefaultChannelGroupColor_g", _defaultChannelGroupColor->getValue(1));
+    settings.setValue("DefaultChannelGroupColor_b", _defaultChannelGroupColor->getValue(2));
+    
+    settings.setValue("DefaultMergeGroupColor_r", _defaultMergeGroupColor->getValue(0));
+    settings.setValue("DefaultMergeGroupColor_g", _defaultMergeGroupColor->getValue(1));
+    settings.setValue("DefaultMergeGroupColor_b", _defaultMergeGroupColor->getValue(2));
+    
+    settings.setValue("DefaultViewsGroupColor_r", _defaultViewsGroupColor->getValue(0));
+    settings.setValue("DefaultViewsGroupColor_g", _defaultViewsGroupColor->getValue(1));
+    settings.setValue("DefaultViewsGroupColor_b", _defaultViewsGroupColor->getValue(2));
+    
+    settings.setValue("DefaultDeepGroupColor_r", _defaultDeepGroupColor->getValue(0));
+    settings.setValue("DefaultDeepGroupColor_g", _defaultDeepGroupColor->getValue(1));
+    settings.setValue("DefaultDeepGroupColor_b", _defaultDeepGroupColor->getValue(2));
 
     settings.endGroup();
     
@@ -576,6 +746,138 @@ void Settings::restoreSettings(){
     if (settings.contains("DefaultBackdropColor_b")) {
         _defaultBackdropColor->setValue(settings.value("DefaultBackdropColor_b").toDouble(), 2);
     }
+    
+    //////Default group colors
+    if (settings.contains("DefaultGeneratorColor_r")) {
+        _defaultGeneratorColor->setValue(settings.value("DefaultGeneratorColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultGeneratorColor_g")) {
+        _defaultGeneratorColor->setValue(settings.value("DefaultGeneratorColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultGeneratorColor_b")) {
+        _defaultGeneratorColor->setValue(settings.value("DefaultGeneratorColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultReaderColor_r")) {
+        _defaultReaderColor->setValue(settings.value("DefaultReaderColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultReaderColor_g")) {
+        _defaultReaderColor->setValue(settings.value("DefaultReaderColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultReaderColor_b")) {
+        _defaultReaderColor->setValue(settings.value("DefaultReaderColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultWriterColor_r")) {
+        _defaultWriterColor->setValue(settings.value("DefaultWriterColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultWriterColor_g")) {
+        _defaultWriterColor->setValue(settings.value("DefaultWriterColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultWriterColor_b")) {
+        _defaultWriterColor->setValue(settings.value("DefaultWriterColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultColorGroupColor_r")) {
+        _defaultColorGroupColor->setValue(settings.value("DefaultColorGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultColorGroupColor_g")) {
+        _defaultColorGroupColor->setValue(settings.value("DefaultColorGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultColorGroupColor_b")) {
+        _defaultColorGroupColor->setValue(settings.value("DefaultColorGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultFilterGroupColor_r")) {
+        _defaultFilterGroupColor->setValue(settings.value("DefaultFilterGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultFilterGroupColor_g")) {
+        _defaultFilterGroupColor->setValue(settings.value("DefaultFilterGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultFilterGroupColor_b")) {
+        _defaultFilterGroupColor->setValue(settings.value("DefaultFilterGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultTransformGroupColor_r")) {
+        _defaultTransformGroupColor->setValue(settings.value("DefaultTransformGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultTransformGroupColor_g")) {
+        _defaultTransformGroupColor->setValue(settings.value("DefaultTransformGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultTransformGroupColor_b")) {
+        _defaultTransformGroupColor->setValue(settings.value("DefaultTransformGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultTimeGroupColor_r")) {
+        _defaultTimeGroupColor->setValue(settings.value("DefaultTimeGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultTimeGroupColor_g")) {
+        _defaultTimeGroupColor->setValue(settings.value("DefaultTimeGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultTimeGroupColor_b")) {
+        _defaultTimeGroupColor->setValue(settings.value("DefaultTimeGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultDrawGroupColor_r")) {
+        _defaultDrawGroupColor->setValue(settings.value("DefaultDrawGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultDrawGroupColor_g")) {
+        _defaultDrawGroupColor->setValue(settings.value("DefaultDrawGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultDrawGroupColor_b")) {
+        _defaultDrawGroupColor->setValue(settings.value("DefaultDrawGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultKeyerGroupColor_r")) {
+        _defaultKeyerGroupColor->setValue(settings.value("DefaultKeyerGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultKeyerGroupColor_g")) {
+        _defaultKeyerGroupColor->setValue(settings.value("DefaultKeyerGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultKeyerGroupColor_b")) {
+        _defaultKeyerGroupColor->setValue(settings.value("DefaultKeyerGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultChannelGroupColor_r")) {
+        _defaultChannelGroupColor->setValue(settings.value("DefaultChannelGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultChannelGroupColor_g")) {
+        _defaultChannelGroupColor->setValue(settings.value("DefaultChannelGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultChannelGroupColor_b")) {
+        _defaultChannelGroupColor->setValue(settings.value("DefaultChannelGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultMergeGroupColor_r")) {
+        _defaultMergeGroupColor->setValue(settings.value("DefaultMergeGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultMergeGroupColor_g")) {
+        _defaultMergeGroupColor->setValue(settings.value("DefaultMergeGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultMergeGroupColor_b")) {
+        _defaultMergeGroupColor->setValue(settings.value("DefaultMergeGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultViewsGroupColor_r")) {
+        _defaultViewsGroupColor->setValue(settings.value("DefaultViewsGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultViewsGroupColor_g")) {
+        _defaultViewsGroupColor->setValue(settings.value("DefaultViewsGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultViewsGroupColor_b")) {
+        _defaultViewsGroupColor->setValue(settings.value("DefaultViewsGroupColor_b").toDouble(), 2);
+    }
+    
+    if (settings.contains("DefaultDeepGroupColor_r")) {
+        _defaultDeepGroupColor->setValue(settings.value("DefaultDeepGroupColor_r").toDouble(), 0);
+    }
+    if (settings.contains("DefaultDeepGroupColor_g")) {
+        _defaultDeepGroupColor->setValue(settings.value("DefaultDeepGroupColor_g").toDouble(), 1);
+    }
+    if (settings.contains("DefaultDeepGroupColor_b")) {
+        _defaultDeepGroupColor->setValue(settings.value("DefaultDeepGroupColor_b").toDouble(), 2);
+    }
+    
     settings.endGroup();
     
     settings.beginGroup("Readers");
@@ -928,6 +1230,97 @@ void Settings::getDefaultBackDropColor(float *r,float *g,float *b) const
     *r = _defaultBackdropColor->getValue(0);
     *g = _defaultBackdropColor->getValue(1);
     *b = _defaultBackdropColor->getValue(2);
+}
+
+void Settings::getGeneratorColor(float *r,float *g,float *b) const
+{
+    *r = _defaultGeneratorColor->getValue(0);
+    *g = _defaultGeneratorColor->getValue(1);
+    *b = _defaultGeneratorColor->getValue(2);
+}
+
+void Settings::getReaderColor(float *r,float *g,float *b) const
+{
+    *r = _defaultReaderColor->getValue(0);
+    *g = _defaultReaderColor->getValue(1);
+    *b = _defaultReaderColor->getValue(2);
+}
+
+void Settings::getWriterColor(float *r,float *g,float *b) const
+{
+    *r = _defaultWriterColor->getValue(0);
+    *g = _defaultWriterColor->getValue(1);
+    *b = _defaultWriterColor->getValue(2);
+}
+
+void Settings::getColorGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultColorGroupColor->getValue(0);
+    *g = _defaultColorGroupColor->getValue(1);
+    *b = _defaultColorGroupColor->getValue(2);
+}
+
+void Settings::getFilterGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultFilterGroupColor->getValue(0);
+    *g = _defaultFilterGroupColor->getValue(1);
+    *b = _defaultFilterGroupColor->getValue(2);
+}
+
+void Settings::getTransformGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultTransformGroupColor->getValue(0);
+    *g = _defaultTransformGroupColor->getValue(1);
+    *b = _defaultTransformGroupColor->getValue(2);
+}
+
+void Settings::getTimeGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultTimeGroupColor->getValue(0);
+    *g = _defaultTimeGroupColor->getValue(1);
+    *b = _defaultTimeGroupColor->getValue(2);
+}
+
+void Settings::getDrawGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultDrawGroupColor->getValue(0);
+    *g = _defaultDrawGroupColor->getValue(1);
+    *b = _defaultDrawGroupColor->getValue(2);
+}
+
+void Settings::getKeyerGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultKeyerGroupColor->getValue(0);
+    *g = _defaultKeyerGroupColor->getValue(1);
+    *b = _defaultKeyerGroupColor->getValue(2);
+}
+
+void Settings::getChannelGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultChannelGroupColor->getValue(0);
+    *g = _defaultChannelGroupColor->getValue(1);
+    *b = _defaultChannelGroupColor->getValue(2);
+}
+
+void Settings::getMergeGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultMergeGroupColor->getValue(0);
+    *g = _defaultMergeGroupColor->getValue(1);
+    *b = _defaultMergeGroupColor->getValue(2);
+}
+
+void Settings::getViewsGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultViewsGroupColor->getValue(0);
+    *g = _defaultViewsGroupColor->getValue(1);
+    *b = _defaultViewsGroupColor->getValue(2);
+}
+
+void Settings::getDeepGroupColor(float *r,float *g,float *b) const
+{
+    *r = _defaultDeepGroupColor->getValue(0);
+    *g = _defaultDeepGroupColor->getValue(1);
+    *b = _defaultDeepGroupColor->getValue(2);
 }
 
 int Settings::getDisconnectedArrowLength() const

@@ -625,7 +625,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
     ////Use ReadQt and WriteQt only for debug versions of Natron.
     // these  are built-in nodes
     QStringList grouping;
-    grouping.push_back("Image"); // Readers, Writers, and Generators are in the "Image" group in Nuke
+    grouping.push_back(PLUGIN_GROUP_IMAGE); // Readers, Writers, and Generators are in the "Image" group in Nuke
     
 #ifdef NATRON_DEBUG
     {
@@ -704,7 +704,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         QString label(NATRON_BACKDROP_NODE_NAME);
         Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,NULL,1,0);
         plugins->push_back(plugin);
-        QStringList backdropGrouping("Other");
+        QStringList backdropGrouping(PLUGIN_GROUP_DEFAULT);
         addPluginToolButtons(backdropGrouping, label, label, "", "");
     }
 }

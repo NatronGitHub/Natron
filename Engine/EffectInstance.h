@@ -11,7 +11,7 @@
 
 #ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
 #define NATRON_ENGINE_EFFECTINSTANCE_H_
-
+#include <list>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
@@ -303,6 +303,13 @@ public:
      * user interface.
      **/
     virtual std::string pluginLabel() const WARN_UNUSED_RETURN = 0;
+    
+    /**
+     * @brief The grouping of the plug-in. For instance Views/Stereo/MyStuff
+     * Each string being one level of the grouping. The first one being the name
+     * of one group that will appear in the user interface.
+     **/
+    virtual void pluginGrouping(std::list<std::string>* grouping) const = 0;
     
     /**
      * @brief Must be implemented to give a desription of the effect that this node does. This is typically

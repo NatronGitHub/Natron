@@ -126,6 +126,19 @@ public:
     
     int getDisconnectedArrowLength() const;
     
+    void getGeneratorColor(float *r,float *g,float *b) const;
+    void getReaderColor(float *r,float *g,float *b) const;
+    void getWriterColor(float *r,float *g,float *b) const;
+    void getColorGroupColor(float *r,float *g,float *b) const;
+    void getFilterGroupColor(float *r,float *g,float *b) const;
+    void getTransformGroupColor(float *r,float *g,float *b) const;
+    void getTimeGroupColor(float *r,float *g,float *b) const;
+    void getDrawGroupColor(float *r,float *g,float *b) const;
+    void getKeyerGroupColor(float *r,float *g,float *b) const;
+    void getChannelGroupColor(float *r,float *g,float *b) const;
+    void getMergeGroupColor(float *r,float *g,float *b) const;
+    void getViewsGroupColor(float *r,float *g,float *b) const;
+    void getDeepGroupColor(float *r,float *g,float *b) const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -167,6 +180,20 @@ private:
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
     boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;
+    
+    boost::shared_ptr<Color_Knob> _defaultGeneratorColor;
+    boost::shared_ptr<Color_Knob> _defaultReaderColor;
+    boost::shared_ptr<Color_Knob> _defaultWriterColor;
+    boost::shared_ptr<Color_Knob> _defaultColorGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultFilterGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultTransformGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultTimeGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultDrawGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultKeyerGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultChannelGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultMergeGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultViewsGroupColor;
+    boost::shared_ptr<Color_Knob> _defaultDeepGroupColor;
 
     
     boost::shared_ptr<Page_Knob> _readersTab;

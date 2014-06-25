@@ -53,7 +53,9 @@ public:
     virtual std::string pluginID() const OVERRIDE;
     
     virtual std::string pluginLabel() const OVERRIDE;
-    
+
+    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+
     virtual std::string description() const OVERRIDE;
     
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;

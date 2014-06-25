@@ -61,6 +61,11 @@ std::string QtReader::pluginLabel() const {
     return "ReadQt";
 }
 
+void QtReader::pluginGrouping(std::list<std::string>* grouping) const
+{
+    grouping->push_back(PLUGIN_GROUP_IMAGE);
+}
+
 std::string QtReader::description() const {
     return "A QImage (Qt) based image reader.";
 }
