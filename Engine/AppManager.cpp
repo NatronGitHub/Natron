@@ -339,6 +339,9 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
 
     _imp->_settings->restoreSettings();
     
+    ///Set host properties after restoring settings since it depends on the host name.
+    _imp->ofxHost->setProperties();
+    
     /*loading all plugins*/
     loadAllPlugins();
     _imp->loadBuiltinFormats();

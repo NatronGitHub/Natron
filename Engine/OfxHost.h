@@ -40,6 +40,8 @@ public:
     OfxHost();
     
     virtual ~OfxHost();
+    
+    void setProperties();
 
     /// Create a new instance of an image effect plug-in.
     ///

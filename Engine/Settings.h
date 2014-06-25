@@ -37,6 +37,7 @@ class Bool_Knob;
 class Choice_Knob;
 class Path_Knob;
 class Color_Knob;
+class String_Knob;
 
 class Settings : public KnobHolder
 {
@@ -139,6 +140,8 @@ public:
     void getMergeGroupColor(float *r,float *g,float *b) const;
     void getViewsGroupColor(float *r,float *g,float *b) const;
     void getDeepGroupColor(float *r,float *g,float *b) const;
+    
+    std::string getHostName() const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -159,6 +162,7 @@ private:
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
+    boost::shared_ptr<String_Knob> _hostName;
     
     boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
     boost::shared_ptr<File_Knob> _customOcioConfigFile;

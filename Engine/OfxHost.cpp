@@ -62,6 +62,18 @@ using namespace Natron;
 Natron::OfxHost::OfxHost()
 :_imageEffectPluginCache(new OFX::Host::ImageEffect::PluginCache(*this))
 {
+
+}
+
+Natron::OfxHost::~OfxHost()
+{
+    //Clean up, to be polite.
+    OFX::Host::PluginCache::clearPluginCache();
+    delete _imageEffectPluginCache;
+}
+
+void Natron::OfxHost::setProperties()
+{
     /* Known OpenFX host names:
      uk.co.thefoundry.nuke
      com.eyeonline.Fusion
@@ -78,7 +90,7 @@ Natron::OfxHost::OfxHost()
      TuttleOfx
      fr.inria.Natron
      */
-    _properties.setStringProperty(kOfxPropName, NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME); //*/"uk.co.thefoundry.nuke"); //< use this to pass for nuke
+    _properties.setStringProperty(kOfxPropName,appPTR->getCurrentSettings()->getHostName());
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //OpenFX API v1.3
     _properties.setIntProperty(kOfxPropAPIVersion, 3 , 1);
@@ -102,7 +114,7 @@ Natron::OfxHost::OfxHost()
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthShort,1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthByte,2);
-
+    
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
@@ -122,14 +134,6 @@ Natron::OfxHost::OfxHost()
     ///Nuke transform suite
     _properties.setIntProperty(kFnOfxImageEffectCanTransform, 0);
     
-
-}
-
-Natron::OfxHost::~OfxHost()
-{
-    //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
-    delete _imageEffectPluginCache;
 }
 
 OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,

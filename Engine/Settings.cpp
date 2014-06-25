@@ -163,6 +163,32 @@ void Settings::initializeKnobs(){
     _generalTab->addKnob(_preferBundledPlugins);
     
 
+    _hostName = Natron::createKnob<String_Knob>(this, "Host name");
+    _hostName->setHintToolTip("This is the name of the application as it appears to the OpenFX plug-ins. "
+                              "Changing it to the name of another application can help loading some plug-ins which "
+                              "restrict their usage to some particular application. This is kind of a hack and you shoud leave "
+                              "it to its original value, unless you know a plug-in that should load but doesn't. "
+                              "Changing this will take effect on the next application launch and only if you cleared "
+                              "the OpenFX plug-ins cache from the Cache menu. "
+                              "Here is a list of known OpenFX hosts: \n"
+                              "uk.co.thefoundry.nuke \n"
+                              "com.eyeonline.Fusion \n"
+                              "com.sonycreativesoftware.vegas \n"
+                              "Autodesk Toxik \n"
+                              "Assimilator \n"
+                              "Dustbuster \n"
+                              "DaVinciResolve \n"
+                              "Mistika \n"
+                              "com.apple.shake \n"
+                              "Baselight \n"
+                              "IRIDAS Framecycler \n"
+                              "Ramen \n"
+                              "\n"
+                              "And finally the default host name being: \n"
+                               NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+    _hostName->setAnimationEnabled(false);
+    _generalTab->addKnob(_hostName);
+    
     boost::shared_ptr<Page_Knob> ocioTab = Natron::createKnob<Page_Knob>(this, "OpenColorIO");
     
     
@@ -326,7 +352,7 @@ void Settings::initializeKnobs(){
     _defaultDrawGroupColor =  Natron::createKnob<Color_Knob>(this, "Draw group",3);
     _defaultDrawGroupColor->setAnimationEnabled(false);
     _defaultDrawGroupColor->setHintToolTip("This is default color which draw nodes have when created.");
-    _nodegraphTab->addKnob(_defaultBackdropColor);
+    _nodegraphTab->addKnob(_defaultDrawGroupColor);
     
     _defaultKeyerGroupColor =  Natron::createKnob<Color_Knob>(this, "Keyer group",3);
     _defaultKeyerGroupColor->setAnimationEnabled(false);
@@ -407,6 +433,7 @@ void Settings::initializeKnobs(){
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
+    _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _checkForUpdates->setDefaultValue(false);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
@@ -527,6 +554,7 @@ void Settings::saveSettings(){
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.setValue("PreferBundledPlugins", _preferBundledPlugins->getValue());
     settings.setValue("LoadBundledPlugins", _loadBundledPlugins->getValue());
+    settings.setValue("HostName",_hostName->getValue().c_str());
     settings.endGroup();
     
     settings.beginGroup("OpenColorIO");
@@ -670,6 +698,9 @@ void Settings::restoreSettings(){
     }
     if (settings.contains("LoadBundledPlugins")) {
         _loadBundledPlugins->setValue(settings.value("LoadBundledPlugins").toBool(), 0);
+    }
+    if (settings.contains("HostName")) {
+        _hostName->setValue(settings.value("HostName").toString().toStdString(), 0);
     }
     settings.endGroup();
     
@@ -1327,4 +1358,9 @@ void Settings::getDeepGroupColor(float *r,float *g,float *b) const
 int Settings::getDisconnectedArrowLength() const
 {
     return _disconnectedArrowLength->getValue();
+}
+
+std::string Settings::getHostName() const
+{
+    return _hostName->getValue();
 }
