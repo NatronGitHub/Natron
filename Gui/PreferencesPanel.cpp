@@ -27,7 +27,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *par
     , _settings(settings)
 {
     
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     setWindowTitle("Preferences");
