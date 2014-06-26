@@ -320,66 +320,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, const OfxRectD *optionalBounds)
 {
-    OfxPointD scale;
-    scale.x = scale.y = 1.;
-    if (!_lastRenderArgs.hasLocalData()) {
-        qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-        "not controlled by Natron (proabably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-        "fix it.";
-    }
-    if (isOutput()) {
-        boost::shared_ptr<Natron::Image> outputImage;
-        if (!_lastRenderArgs.localData().isImageValid) {
-            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-            "not controlled by Natron (proabably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-            "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-            ///try to recover from the mistake of the plug-in.
-            int view;
-            unsigned int mipmapLevel;
-            std::list<ViewerInstance*> viewersConnected;
-            _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
-            if (viewersConnected.empty()) {
-                view = 0;
-                mipmapLevel = 0;
-            } else {
-                view = viewersConnected.front()->getCurrentView();
-                mipmapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
-            }
-            
-            outputImage = _nodeInstance->getNode()->getImageBeingRendered(time,mipmapLevel , view);
-        } else {
-            outputImage = _lastRenderArgs.localData().image;
-        }
-        if (!outputImage) {
-            return NULL;
-        }
-        return new OfxImage(outputImage,*this);
-    }
-    
-    unsigned int mipMapLevel;
-    int view;
-    if (!_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
-        qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-        "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-        "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-        std::list<ViewerInstance*> viewersConnected;
-        _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
-        if (viewersConnected.empty()) {
-            view = 0;
-            mipMapLevel = 0;
-        } else {
-            view = viewersConnected.front()->getCurrentView();
-            mipMapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
-        }
-
-    } else {
-        mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
-        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.y = scale.x;
-        view = _lastRenderArgs.localData().view;
-    }
-    
-    return getImageInternal(time, scale, view, optionalBounds);
+    return getStereoscopicImage(time, -1, optionalBounds);
 }
 
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,
@@ -541,23 +482,74 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds)
 {
     OfxPointD scale;
+    scale.x = scale.y = 1.;
+    if (!_lastRenderArgs.hasLocalData()) {
+        qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+        "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+        "fix it.";
+    }
     assert(_lastRenderArgs.hasLocalData());
     if (isOutput()) {
-        assert(_lastRenderArgs.localData().isImageValid);
-        boost::shared_ptr<Natron::Image> outputImage = _lastRenderArgs.localData().image;
+        boost::shared_ptr<Natron::Image> outputImage;
+        if (!_lastRenderArgs.localData().isImageValid) {
+            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+            "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+            ///try to recover from the mistake of the plug-in.
+            unsigned int mipmapLevel;
+            std::list<ViewerInstance*> viewersConnected;
+            _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
+            if (viewersConnected.empty()) {
+                if (view == -1) {
+                    view = 0;
+                }
+                mipmapLevel = 0;
+            } else {
+                if (view == -1) {
+                    view = viewersConnected.front()->getCurrentView();
+                }
+                mipmapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
+            }
+
+            outputImage = _nodeInstance->getNode()->getImageBeingRendered(time,mipmapLevel, view);
+        } else {
+            outputImage = _lastRenderArgs.localData().image;
+        }
         if (!outputImage) {
             return NULL;
         }
         return new OfxImage(outputImage,*this);
     }
     
-    assert(_lastRenderArgs.localData().isMipMapLevelValid);
-    unsigned int mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
-    assert(scale.x == scale.y && 0. < scale.x && scale.x <= 1.);
-    
-    return getImageInternal(time,scale,view,optionalBounds);
+    unsigned int mipMapLevel;
+    if (!_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
+        qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+        "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+        "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+        std::list<ViewerInstance*> viewersConnected;
+        _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
+        if (viewersConnected.empty()) {
+            if (view == -1) {
+                view = 0;
+            }
+            mipMapLevel = 0;
+        } else {
+            if (view == -1) {
+                view = viewersConnected.front()->getCurrentView();
+            }
+            mipMapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
+        }
+
+    } else {
+        mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
+        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.y = scale.x;
+        if (view == -1) {
+            view = _lastRenderArgs.localData().view;
+        }
+    }
+
+    return getImageInternal(time, scale, view, optionalBounds);
 }
 
 void OfxClipInstance::setView(int view) {
