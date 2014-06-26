@@ -768,7 +768,7 @@ void VideoEngine::refreshAndContinueRender(bool forcePreview){
 #pragma message WARN("We should abort here because this is called following a parameter change but doing so make some plugin error.")
         ///(typically S_Blur)
         
-        //abortRendering(false);
+        abortRendering(true);
         render(1,false,false,_currentRunArgs._forward,true,forcePreview);
     }
 }

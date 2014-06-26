@@ -193,9 +193,17 @@ OfxStatus Natron::OfxHost::vmessage(const char* msgtype,
     if (type == kOfxMessageLog) {
         appPTR->writeToOfxLog_mt_safe(message.c_str());
     } else if (type == kOfxMessageFatal || type == kOfxMessageError) {
-        Natron::errorDialog(NATRON_APPLICATION_NAME, message);
+        ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
+        ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
+        ///just write to the log instead.
+        //Natron::errorDialog(NATRON_APPLICATION_NAME, message);
+        appPTR->writeToOfxLog_mt_safe(message.c_str());
     } else if (type == kOfxMessageWarning) {
-        Natron::warningDialog(NATRON_APPLICATION_NAME, message);
+        ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
+        ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
+        ///just write to the log instead.
+        //        Natron::warningDialog(NATRON_APPLICATION_NAME, message);
+        appPTR->writeToOfxLog_mt_safe(message.c_str());
     } else if (type == kOfxMessageMessage) {
         Natron::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
