@@ -439,7 +439,11 @@ static void ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
     int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.y1));
     int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.x2));
     int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.y2));
-    box->set(xmin, ymin, xmax, ymax);
+    
+    ///only take into account valid boxes
+    if (xmax > xmin && ymax > ymin) {
+        box->set(xmin, ymin, xmax, ymax);
+    }
 }
 
 /// the largest RectI enclosed in the given RectD
@@ -450,7 +454,11 @@ static void ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
     int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.y1));
     int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.x2));
     int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.y2));
-    box->set(xmin, ymin, xmax, ymax);
+    
+    ///only take into account valid boxes
+    if (xmax > xmin && ymax > ymin) {
+        box->set(xmin, ymin, xmax, ymax);
+    }
 }
 
 

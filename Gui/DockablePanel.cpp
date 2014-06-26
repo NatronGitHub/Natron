@@ -433,7 +433,8 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
         std::list <SequenceTime> keys;
         isEffect->getNode()->getAllKnobsKeyframes(&keys);
         _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
-    } 
+    }
+    _imp->_holder->notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
         for (int i = 0; i < it->first->getDimension(); ++i) {
             Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->first.get());
@@ -442,6 +443,7 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
             }
         }
     }
+    _imp->_holder->notifyProjectEndKnobsValuesChanged();
    
 }
 
