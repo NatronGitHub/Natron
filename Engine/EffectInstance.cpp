@@ -375,12 +375,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         return boost::shared_ptr<Natron::Image>();
     }
     
-    RectI currentEffectRenderWindow;
+    RectI optionalBoundsI;
     if (optionalBounds) {
-        currentEffectRenderWindow.x1 = std::floor(optionalBounds->x1);
-        currentEffectRenderWindow.y1 = std::floor(optionalBounds->y1);
-        currentEffectRenderWindow.x2 = std::ceil(optionalBounds->x2);
-        currentEffectRenderWindow.y2 = std::ceil(optionalBounds->y2);
+        optionalBoundsI.x1 = std::floor(optionalBounds->x1);
+        optionalBoundsI.y1 = std::floor(optionalBounds->y1);
+        optionalBoundsI.x2 = std::ceil(optionalBounds->x2);
+        optionalBoundsI.y2 = std::ceil(optionalBounds->y2);
     }
     bool isSequentialRender,isRenderUserInteraction,byPassCache;
     unsigned int mipMapLevel;
@@ -420,42 +420,47 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         ///// should never happen.
         if (!optionalBounds) {
             ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
-            Natron::Status stat = getRegionOfDefinition(time, scale, view, &currentEffectRenderWindow);
-            (void)ifInfiniteApplyHeuristic(time, scale, view, &currentEffectRenderWindow);
+            Natron::Status stat = getRegionOfDefinition(time, scale, view, &optionalBoundsI);
+            (void)ifInfiniteApplyHeuristic(time, scale, view, &optionalBoundsI);
 
             if (stat == StatFailed) {
                 return boost::shared_ptr<Natron::Image>();
             }
+            
+            /// If the region parameter is not set to NULL, then it will be clipped to the clip's
+            /// Region of Definition for the given time. The returned image will be m at m least as big as this region.
+            /// If the region parameter is not set, then the region fetched will be at least the Region of Interest
+            /// the effect has previously specified, clipped the clip's Region of Definition.
+            /// (renderRoI will do the clipping for us).
+            
+
+            ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
+            ///// should never happen.
+            inputsRoI = getRegionOfInterest(time, scale, optionalBoundsI, optionalBoundsI, 0);
         }
 
-        ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
-        ///// should never happen.
-        inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow, currentEffectRenderWindow, 0);
         
     } else {
-        if (!optionalBounds) {
-            currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
-        }
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
         byPassCache = _imp->renderArgs.localData()._byPassCache;
         mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
         inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
     }
-#pragma message WARN("BUG?? the value of currentEffectRenderWindow is never used???")
-
-    ///just call renderRoI which will  do the cache look-up for us and render
-    ///the image if it's missing from the cache.
-
-#pragma message WARN("BUG?? render roi is set from the inputs ROI instead of currentEffectRenderWindow???")
-    RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
-    assert(found != inputsRoI.end());
-
-    ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
-    RectI roi = found->second;
-
     
-    ///Convert to pixel coordinates (FIXME: take the par into account)
+    RectI roi;
+    if (!optionalBounds) {
+        RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
+        assert(found != inputsRoI.end());
+        ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
+        roi = found->second;
+    } else {
+        roi = optionalBoundsI;
+    }
+    
+    
+    ///Both the result of getRegionOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
+    ///Convert to pixel coordinates (FIXME: take the par into account)/
     if (mipMapLevel != 0) {
         roi = roi.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
