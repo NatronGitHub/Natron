@@ -545,7 +545,7 @@ void NodeGui::computePreviewImage(int time){
 #ifndef __NATRON_WIN32__
         unsigned int* buf = (unsigned int*)calloc(dataSize,1);
 #else
-		unsigned int* buf = (unsigned int*)malloc(dataSize,1);
+		unsigned int* buf = (unsigned int*)malloc(dataSize);
 		for (int i = 0; i < w*h ;++i) {
 				buf[i] = qRgba(0,0,0,255);
 		}
