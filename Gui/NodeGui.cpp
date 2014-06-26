@@ -542,7 +542,14 @@ void NodeGui::computePreviewImage(int time){
     int h = NATRON_PREVIEW_HEIGHT;
     size_t dataSize = 4*w*h;
     {
+#ifndef __NATRON_WIN32__
         unsigned int* buf = (unsigned int*)calloc(dataSize,1);
+#else
+		unsigned int* buf = (unsigned int*)malloc(dataSize,1);
+		for (int i = 0; i < w*h ;++i) {
+				buf[i] = qRgba(0,0,0,255);
+		}
+#endif
         _internalNode->makePreviewImage(time, &w, &h, buf);
         {
             QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
