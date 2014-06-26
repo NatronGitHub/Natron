@@ -326,11 +326,19 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, const Ofx
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,
                                                                  const OfxPointD& renderScale,
                                                                  int view,
-                                                                 const OfxRectD */*optionalBounds*/)
+                                                                 const OfxRectD *optionalBounds)
 {
     assert(!isOutput());
     // input has been rendered just find it in the cache
-    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view,
+    RectD bounds;
+    if (optionalBounds) {
+        bounds.x1 = optionalBounds->x1;
+        bounds.y1 = optionalBounds->y1;
+        bounds.x2 = optionalBounds->x2;
+        bounds.y2 = optionalBounds->y2;
+    }
+    boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
+                                                                     optionalBounds ? &bounds : NULL,
                                                                      ofxComponentsToNatronComponents(getComponents()),
                                                                      ofxDepthToNatronDepth(getPixelDepth()),false);
     if (!image) {

@@ -341,8 +341,14 @@ std::string EffectInstance::inputLabel(int inputNb) const
     return out;
 }
 
-boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,
-                                                          int view,Natron::ImageComponents comp,Natron::ImageBitDepth depth,bool dontUpscale)
+boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
+                                                          SequenceTime time,
+                                                          RenderScale scale,
+                                                          int view,
+                                                          const RectD *optionalBounds,
+                                                          Natron::ImageComponents comp,
+                                                          Natron::ImageBitDepth depth,
+                                                          bool dontUpscale)
 {
     
     bool isMask = isInputMask(inputNb);
@@ -370,6 +376,12 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
     }
     
     RectI currentEffectRenderWindow;
+    if (optionalBounds) {
+        currentEffectRenderWindow.x1 = std::floor(optionalBounds->x1);
+        currentEffectRenderWindow.y1 = std::floor(optionalBounds->y1);
+        currentEffectRenderWindow.x2 = std::ceil(optionalBounds->x2);
+        currentEffectRenderWindow.y2 = std::ceil(optionalBounds->y2);
+    }
     bool isSequentialRender,isRenderUserInteraction,byPassCache;
     unsigned int mipMapLevel;
     RoIMap inputsRoI;
@@ -406,30 +418,36 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,SequenceTi
         
         ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
         ///// should never happen.
-        ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
-        Natron::Status stat = getRegionOfDefinition(time, scale, view, &currentEffectRenderWindow);
-        (void)ifInfiniteApplyHeuristic(time, scale, view, &currentEffectRenderWindow);
-        
-        if (stat == StatFailed) {
-            return boost::shared_ptr<Natron::Image>();
+        if (!optionalBounds) {
+            ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
+            Natron::Status stat = getRegionOfDefinition(time, scale, view, &currentEffectRenderWindow);
+            (void)ifInfiniteApplyHeuristic(time, scale, view, &currentEffectRenderWindow);
+
+            if (stat == StatFailed) {
+                return boost::shared_ptr<Natron::Image>();
+            }
         }
-        
+
         ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
         ///// should never happen.
-        inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow,currentEffectRenderWindow, 0);
+        inputsRoI = getRegionOfInterest(time, scale, currentEffectRenderWindow, currentEffectRenderWindow, 0);
         
     } else {
-        currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
+        if (!optionalBounds) {
+            currentEffectRenderWindow = _imp->renderArgs.localData()._roi;
+        }
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
         byPassCache = _imp->renderArgs.localData()._byPassCache;
         mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
         inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
     }
-    
+#pragma message WARN("BUG?? the value of currentEffectRenderWindow is never used???")
+
     ///just call renderRoI which will  do the cache look-up for us and render
     ///the image if it's missing from the cache.
 
+#pragma message WARN("BUG?? render roi is set from the inputs ROI instead of currentEffectRenderWindow???")
     RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
     assert(found != inputsRoI.end());
 
@@ -802,7 +820,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 if (inputEffectIdentity) {
                     inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                     ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                    image = getImage(inputNbIdentity,inputTimeIdentity,args.scale,args.view,inputPrefComps,inputPrefDepth,true);
+                    image = getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
                 } else {
                     return image;
                 }
@@ -928,7 +946,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view,inputPrefComps,inputPrefDepth,true);
+                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
             } else {
                 return boost::shared_ptr<Image>();
             }

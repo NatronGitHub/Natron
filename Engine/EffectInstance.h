@@ -423,8 +423,13 @@ public:
      * @param dontUpscale If the image is retrieved is downscaled but the plug-in doesn't support the user of
      * downscaled images by default we upscale the image. If dontUpscale is true then we don't do this upscaling.
      */
-    boost::shared_ptr<Image> getImage(int inputNb,SequenceTime time,RenderScale scale,
-                                      int view,Natron::ImageComponents comp,Natron::ImageBitDepth depth,
+    boost::shared_ptr<Image> getImage(int inputNb,
+                                      SequenceTime time,
+                                      RenderScale scale,
+                                      int view,
+                                      const RectD *optionalBounds,
+                                      Natron::ImageComponents comp,
+                                      Natron::ImageBitDepth depth,
                                       bool dontUpscale) WARN_UNUSED_RETURN;
     
 protected:
