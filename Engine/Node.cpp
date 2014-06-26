@@ -203,13 +203,20 @@ void Node::createRotoContextConditionnally()
 }
 
 void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
-                const NodeSerialization& serialization)
+                const NodeSerialization& serialization,bool dontLoadName)
 {
     ///Called from the main thread. MT-safe
     assert(QThread::currentThread() == qApp->thread());
     
     ///cannot load twice
     assert(!_imp->liveInstance);
+    
+    bool nameSet = false;
+    if (!serialization.isNull() && !dontLoadName) {
+        setName(serialization.getPluginLabel().c_str());
+        nameSet = true;
+    }
+    
     
     std::pair<bool,EffectBuilder> func = _imp->plugin->findFunction<EffectBuilder>("BuildEffect");
     if (func.first) {
@@ -231,7 +238,9 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     initializeInputs();
     initializeKnobs(serialization);
 
-    getApp()->getProject()->initNodeCountersAndSetName(this);
+    if (!nameSet) {
+        getApp()->getProject()->initNodeCountersAndSetName(this);
+    }
 
     computeHash(); 
     assert(_imp->liveInstance);

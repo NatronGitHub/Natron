@@ -178,7 +178,7 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
 }
 
 boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
-                                 bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization)
+                                 bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,bool dontLoadName)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -200,7 +200,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     
     try{
-        node->load(pluginID.toStdString(),node, serialization);
+        node->load(pluginID.toStdString(),node, serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -232,12 +232,12 @@ boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,int 
         return boost::shared_ptr<Natron::Node>();
     }
     return createNodeInternal(name, majorVersion, minorVersion, false,
-                              openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()));
+                              openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization)
+boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName)
 {
-    return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization);
+    return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization,dontLoadName);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

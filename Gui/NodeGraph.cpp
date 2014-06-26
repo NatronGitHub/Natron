@@ -2217,7 +2217,7 @@ NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
 {
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
                                                internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization);
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization,false);
     assert(n);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     if (masterNodeName.empty()) {
@@ -2325,7 +2325,7 @@ NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
     
     boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
                                                internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization);
+                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
     assert(clone);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     
