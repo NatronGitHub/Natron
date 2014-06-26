@@ -41,6 +41,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 
@@ -566,7 +567,9 @@ void TabWidget::splitHorizontally(){
     
     _userSplits.insert(std::make_pair(newTab,false));
     
-    _gui->getApp()->triggerAutoSave();
+    if (!_gui->getApp()->getProject()->isLoadingProject()) {
+        _gui->getApp()->triggerAutoSave();
+    }
 }
 
 void TabWidget::splitVertically(){
@@ -610,7 +613,9 @@ void TabWidget::splitVertically(){
     
     _userSplits.insert(std::make_pair(newTab,true));
     
-    _gui->getApp()->triggerAutoSave();
+    if (!_gui->getApp()->getProject()->isLoadingProject()) {
+            _gui->getApp()->triggerAutoSave();
+    }
 }
 
 
