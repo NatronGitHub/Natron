@@ -281,6 +281,10 @@ struct GuiPrivate {
     
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
+    
+    mutable QMutex abortedEnginesMutex;
+    std::list<VideoEngine*> abortedEngines;
+    QWaitCondition abortedEnginesCond;
 
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
@@ -372,6 +376,9 @@ struct GuiPrivate {
     , _toolButtonMenuOpened(NULL)
     , aboutToCloseMutex()
     , _aboutToClose(false)
+    , abortedEnginesMutex()
+    , abortedEngines()
+    , abortedEnginesCond()
     {
         
     }
@@ -1845,6 +1852,16 @@ void Gui::errorDialog(const std::string& title,const std::string& text){
             return;
         }
     }
+    
+    ///wait until there're no more aborting engines to show a dialog otherwise we could create a deadlock
+    if (QThread::currentThread() != qApp->thread())
+    {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        while (!_imp->abortedEngines.empty()) {
+            _imp->abortedEnginesCond.wait(&_imp->abortedEnginesMutex);
+        }
+    }
+
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
@@ -1868,6 +1885,14 @@ void Gui::warningDialog(const std::string& title,const std::string& text){
             return;
         }
     }
+    ///wait until there're no more aborting engines to show a dialog otherwise we could create a deadlock
+    if (QThread::currentThread() != qApp->thread())
+    {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        while (!_imp->abortedEngines.empty()) {
+            _imp->abortedEnginesCond.wait(&_imp->abortedEnginesMutex);
+        }
+    }
     Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
@@ -1889,6 +1914,14 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
             return;
+        }
+    }
+    ///wait until there're no more aborting engines to show a dialog otherwise we could create a deadlock
+    if (QThread::currentThread() != qApp->thread())
+    {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        while (!_imp->abortedEngines.empty()) {
+            _imp->abortedEnginesCond.wait(&_imp->abortedEnginesMutex);
         }
     }
 
@@ -1946,7 +1979,14 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
             return Natron::No;
         }
     }
-
+    ///wait until there're no more aborting engines to show a dialog otherwise we could create a deadlock
+    if (QThread::currentThread() != qApp->thread())
+    {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        while (!_imp->abortedEngines.empty()) {
+            _imp->abortedEnginesCond.wait(&_imp->abortedEnginesMutex);
+        }
+    }
     if(QThread::currentThread() != QCoreApplication::instance()->thread()){
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
@@ -2688,4 +2728,20 @@ void Gui::clearAllVisiblePanels()
 NodeBackDrop* Gui::createBackDrop(bool requestedByLoad)
 {
     return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad);
+}
+
+
+void Gui::registerVideoEngineBeingAborted(VideoEngine* engine)
+{
+    QMutexLocker l(&_imp->abortedEnginesMutex);
+    _imp->abortedEngines.push_back(engine);
+}
+
+void Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
+{
+    QMutexLocker l(&_imp->abortedEnginesMutex);
+    std::list<VideoEngine*>::iterator it = std::find(_imp->abortedEngines.begin(),_imp->abortedEngines.end(),engine);
+    assert(it != _imp->abortedEngines.end());
+    _imp->abortedEngines.erase(it);
+    _imp->abortedEnginesCond.wakeAll();
 }

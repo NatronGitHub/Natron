@@ -61,6 +61,7 @@ class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
+class VideoEngine;
 namespace Natron {
     class Node;
     class Image;
@@ -314,6 +315,10 @@ public:
     
     void setToolButtonMenuOpened(QToolButton* button);
     QToolButton* getToolButtonMenuOpened() const;
+    
+    void registerVideoEngineBeingAborted(VideoEngine* engine);
+    void unregisterVideoEngineBeingAborted(VideoEngine* engine);
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

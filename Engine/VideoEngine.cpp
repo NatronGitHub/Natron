@@ -727,6 +727,7 @@ void VideoEngine::abortRendering(bool blocking) {
             return;
         }
     }
+    _tree.getOutput()->getApp()->registerVideoEngineBeingAborted(this);
     {
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;
@@ -750,6 +751,7 @@ void VideoEngine::abortRendering(bool blocking) {
         }
         
     }
+    _tree.getOutput()->getApp()->unregisterVideoEngineBeingAborted(this);
 }
 
 

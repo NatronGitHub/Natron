@@ -462,3 +462,13 @@ void GuiAppInstance::createBackDrop()
     ///This function is not used when loading a project, rather we use the one directly in Gui (@see ProjectGui::load)
     _imp->_gui->createBackDrop(false);
 }
+
+void GuiAppInstance::registerVideoEngineBeingAborted(VideoEngine* engine)
+{
+    _imp->_gui->registerVideoEngineBeingAborted(engine);
+}
+
+void GuiAppInstance::unregisterVideoEngineBeingAborted(VideoEngine* engine)
+{
+    _imp->_gui->unregisterVideoEngineBeingAborted(engine);
+}

@@ -89,6 +89,10 @@ public:
     virtual bool progressUpdate(Natron::EffectInstance* effect,double t) OVERRIDE FINAL;
     
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
+    
+    virtual void registerVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
+    virtual void unregisterVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
+
 public slots:
     
     void onProjectNodesCleared();

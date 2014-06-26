@@ -31,6 +31,7 @@ class NodeSerialization;
 class TimeLine;
 struct AppInstancePrivate;
 class ProcessHandler;
+class VideoEngine;
 namespace Natron {
     class Node;
     class Project;
@@ -131,6 +132,14 @@ public:
     Natron::ViewerColorSpace getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const;
     
     int getMainView() const;
+    
+    /**
+     * @brief This is to overcome possible deadlocks when a plug-in is trying to show a dialog
+     * in the render thread (hence requesting the main-thread to show it) and the main thread
+     * is trying to abort that exact render thread.
+     **/
+    virtual void registerVideoEngineBeingAborted(VideoEngine* /*engine*/) {}
+    virtual void unregisterVideoEngineBeingAborted(VideoEngine* /*engine*/) {}
     
 public slots:
     
