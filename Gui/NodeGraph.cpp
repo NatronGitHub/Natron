@@ -1082,7 +1082,9 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 _nodesToMoveWithBackDrop = getNodesWithinBackDrop(_selectedBackDrop);
                 _firstMove = false;
             }
-            _undoStack->push(new MoveBackDropCommand(_selectedBackDrop,dx,dy,_nodesToMoveWithBackDrop));
+            bool controlHeld = event->modifiers().testFlag(Qt::ControlModifier);
+            _undoStack->push(new MoveBackDropCommand(_selectedBackDrop,dx,dy,
+                                                     controlHeld ? std::list<boost::shared_ptr<NodeGui> >() : _nodesToMoveWithBackDrop));
         } break;
         case BACKDROP_RESIZING: {
             assert(_selectedBackDrop);
