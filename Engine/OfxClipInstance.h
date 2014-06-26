@@ -124,7 +124,7 @@ public:
     /// on the effect instance. Outside a render call, the optionalBounds should
     /// be 'appropriate' for the.
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
-    virtual OFX::Host::ImageEffect::Image* getImage(OfxTime time, OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OFX::Host::ImageEffect::Image* getImage(OfxTime time, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /// override this to return the rod on the clip
     virtual OfxRectD getRegionOfDefinition(OfxTime time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -136,7 +136,8 @@ public:
     /// on the effect instance. Outside a render call, the optionalBounds should
     /// be 'appropriate' for the.
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
-    virtual  OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    /// If view is -1, guess it (e.g. from the last renderargs)
+    virtual  OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /// override this to set the view to be returned by getImage()
@@ -179,7 +180,7 @@ public:
 
 private:
     
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD& renderScale, int view, OfxRectD *optionalBounds);
+    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD& renderScale, int view, const OfxRectD *optionalBounds);
     
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;

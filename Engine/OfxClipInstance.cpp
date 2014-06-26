@@ -318,7 +318,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// on the effect instance. Outside a render call, the optionalBounds should
 /// be 'appropriate' for the.
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
+OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, const OfxRectD *optionalBounds)
 {
     OfxPointD scale;
     scale.x = scale.y = 1.;
@@ -382,16 +382,19 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     return getImageInternal(time, scale, view, optionalBounds);
 }
 
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,const OfxPointD& renderScale,
-                                                                 int view, OfxRectD */*optionalBounds*/){
+OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,
+                                                                 const OfxPointD& renderScale,
+                                                                 int view,
+                                                                 const OfxRectD */*optionalBounds*/)
+{
     assert(!isOutput());
     // input has been rendered just find it in the cache
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, renderScale,view,
                                                                      ofxComponentsToNatronComponents(getComponents()),
                                                                      ofxDepthToNatronDepth(getPixelDepth()),false);
-    if(!image){
+    if (!image) {
         return NULL;
-    }else{
+    } else {
         return new OfxImage(image,*this);
     }
 }
@@ -535,7 +538,7 @@ Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
     }
 }
 
-OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds)
+OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds)
 {
     OfxPointD scale;
     assert(_lastRenderArgs.hasLocalData());
