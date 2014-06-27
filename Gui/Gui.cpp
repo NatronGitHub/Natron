@@ -2612,7 +2612,7 @@ void Gui::startProgress(Natron::EffectInstance* effect,const std::string& messag
     }
     
     QProgressDialog* dialog = new QProgressDialog(message.c_str(),tr("Cancel"),0,100,this);
-    dialog->setWindowModality(Qt::NonModal);
+    dialog->setModal(true);
     dialog->setRange(0, 100);
     dialog->setMinimumWidth(250);
     dialog->setWindowTitle(effect->getNode()->getName_mt_safe().c_str());
