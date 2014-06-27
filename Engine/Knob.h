@@ -402,6 +402,14 @@ public:
     virtual void setOfxParamHandle(void* ofxParamHandle) = 0;
     virtual void* getOfxParamHandle() const = 0;
     
+    /**
+     * @brief For MultiInstance effects, flagging a knob as instance specific will make it appear in the table of the instances
+     * instead as the regular way of showing knobs.
+     * Not MT-safe, should be called right away after creation.
+     **/
+    virtual void setAsInstanceSpecific() = 0;
+    virtual bool isInstanceSpecific() const = 0;
+    
 protected:
     
     /**
@@ -621,6 +629,9 @@ public:
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     bool isDeclaredByPlugin() const;
+    
+    virtual void setAsInstanceSpecific() OVERRIDE FINAL;
+    virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /**
      * @brief Set a shared ptr to the signal slot handler, that will live as long as the knob lives.

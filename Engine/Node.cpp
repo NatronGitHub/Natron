@@ -170,6 +170,9 @@ struct Node::Implementation {
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     
     std::list <Natron::ImageBitDepth> supportedDepths;
+    
+    ///True when several effect instances are represented under the same node.
+    bool isMultiInstance;
 };
 
 /**
@@ -244,6 +247,16 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
 
     computeHash(); 
     assert(_imp->liveInstance);
+    
+    ///Special case for trackers: set as multi instance
+    if (pluginID.find("Tracker")) {
+        _imp->isMultiInstance = true;
+    }
+}
+
+bool Node::isMultiInstance() const
+{
+    return _imp->isMultiInstance;
 }
 
 U64 Node::getHashValue() const

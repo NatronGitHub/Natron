@@ -169,6 +169,8 @@ struct KnobHelper::KnobHelperPrivate {
     KnobGuiI* gui;
     void* ofxParamHandle;
     
+    bool isInstanceSpecific;
+    
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
@@ -203,6 +205,7 @@ struct KnobHelper::KnobHelperPrivate {
     , customInteract()
     , gui(0)
     , ofxParamHandle(0)
+    , isInstanceSpecific(false)
     {
     }
     
@@ -239,6 +242,16 @@ KnobGuiI* KnobHelper::getKnobGuiPointer() const
 bool KnobHelper::isDeclaredByPlugin() const
 {
     return _imp->declaredByPlugin;
+}
+
+void KnobHelper::setAsInstanceSpecific()
+{
+    _imp->isInstanceSpecific = true;
+}
+
+bool KnobHelper::isInstanceSpecific() const
+{
+    return _imp->isInstanceSpecific;
 }
 
 void KnobHelper::populate() {

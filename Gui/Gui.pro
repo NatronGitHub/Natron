@@ -63,6 +63,7 @@ SOURCES += \
     KnobUndoCommand.cpp \
     LineEdit.cpp \
     MenuWithToolTips.cpp \
+    MultiInstancePanel.cpp \
     NodeBackDrop.cpp \
     NodeBackDropSerialization.cpp \
     NodeGraph.cpp \
@@ -119,6 +120,7 @@ HEADERS += \
     KnobUndoCommand.h \
     LineEdit.h \
     MenuWithToolTips.h \
+    MultiInstancePanel.h \
     NodeBackDrop.h \
     NodeBackDropSerialization.h \
     NodeGraph.h \
@@ -147,7 +149,7 @@ HEADERS += \
     ToolButton.h \
     ViewerGL.h \
     ViewerTab.h \
-    ZoomContext.h
+    ZoomContext.h \
 
 
 RESOURCES += \

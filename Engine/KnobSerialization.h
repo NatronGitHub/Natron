@@ -278,9 +278,11 @@ class KnobSerialization
 
         assert(!_knob);
         
-        bool created = createKnob(_typeName, _dimension);
+        boost::shared_ptr<KnobI> created = createKnob(_typeName, _dimension);
         if (!created) {
             return;
+        } else {
+            _knob = created;
         }
         _knob->setName(name);
         
@@ -354,9 +356,10 @@ public:
     
     std::string getName() const { return _knob->getName(); }
     
+    static boost::shared_ptr<KnobI> createKnob(const std::string& typeName,int dimension);
+
 private:
     
-    bool createKnob(const std::string& typeName,int dimension);
     
 };
 

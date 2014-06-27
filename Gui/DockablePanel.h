@@ -36,7 +36,7 @@ class Button;
 class QUndoStack;
 class QUndoCommand;
 class RotoPanel;
-
+class MultiInstancePanel;
 
 /**
  * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.
@@ -215,7 +215,8 @@ class NodeSettingsPanel : public DockablePanel
 
 public:
 
-    explicit NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi,QVBoxLayout* container, QWidget *parent = 0);
+    explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
+                               Gui* gui,boost::shared_ptr<NodeGui> NodeUi,QVBoxLayout* container, QWidget *parent = 0);
     
     virtual ~NodeSettingsPanel();
     

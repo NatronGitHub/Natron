@@ -43,34 +43,34 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int 
     }
 }
 
-bool KnobSerialization::createKnob(const std::string& typeName,int dimension)
+boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string& typeName,int dimension)
 {
+    boost::shared_ptr<KnobI> ret;
     if (typeName == Int_Knob::typeNameStatic()) {
-        _knob.reset(new Int_Knob(NULL,"",dimension,false));
+        ret.reset(new Int_Knob(NULL,"",dimension,false));
     } else if (typeName == Bool_Knob::typeNameStatic()) {
-        _knob.reset(new Bool_Knob(NULL,"",dimension,false));
+        ret.reset(new Bool_Knob(NULL,"",dimension,false));
     } else if (typeName == Double_Knob::typeNameStatic()) {
-        _knob.reset(new Double_Knob(NULL,"",dimension,false));
+        ret.reset(new Double_Knob(NULL,"",dimension,false));
     } else if (typeName == Choice_Knob::typeNameStatic()) {
-        _knob.reset(new Choice_Knob(NULL,"",dimension,false));
+        ret.reset(new Choice_Knob(NULL,"",dimension,false));
     } else if (typeName == String_Knob::typeNameStatic()) {
-        _knob.reset(new String_Knob(NULL,"",dimension,false));
+        ret.reset(new String_Knob(NULL,"",dimension,false));
     } else if (typeName == Parametric_Knob::typeNameStatic()) {
-        _knob.reset(new Parametric_Knob(NULL,"",dimension,false));
+        ret.reset(new Parametric_Knob(NULL,"",dimension,false));
     } else if (typeName == Color_Knob::typeNameStatic()) {
-        _knob.reset(new Color_Knob(NULL,"",dimension,false));
+        ret.reset(new Color_Knob(NULL,"",dimension,false));
     } else if (typeName == Path_Knob::typeNameStatic()) {
-        _knob.reset(new Path_Knob(NULL,"",dimension,false));
+        ret.reset(new Path_Knob(NULL,"",dimension,false));
     } else if (typeName == File_Knob::typeNameStatic()) {
-        _knob.reset(new File_Knob(NULL,"",dimension,false));
+        ret.reset(new File_Knob(NULL,"",dimension,false));
     } else if (typeName == OutputFile_Knob::typeNameStatic()) {
-        _knob.reset(new OutputFile_Knob(NULL,"",dimension,false));
+        ret.reset(new OutputFile_Knob(NULL,"",dimension,false));
     }
-    if (_knob) {
-        _knob->populate();
-        return true;
+    if (ret) {
+        ret->populate();
     }
-    return false;
+    return ret;
 
 }
 

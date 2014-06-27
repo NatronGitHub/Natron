@@ -1109,7 +1109,8 @@ void DockablePanel::setCurrentColor(const QColor& c)
     onColorDialogColorChanged(c);
 }
 
-NodeSettingsPanel::NodeSettingsPanel(Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
+NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
+                                     Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
 :DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,

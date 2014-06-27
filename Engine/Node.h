@@ -93,6 +93,8 @@ public:
     
     bool hasEffect() const;
     
+    bool isMultiInstance() const;
+    
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
      **/

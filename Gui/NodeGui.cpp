@@ -30,6 +30,7 @@
 #include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
@@ -194,10 +195,15 @@ void NodeGui::initialize(NodeGraph* dag,
     _bitDepthWarning->setActive(false);
     
     /*building settings panel*/
-    if(_internalNode->pluginID() != "Viewer"){
-        _panelDisplayed=true;
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (!isViewer) {
+        _panelDisplayed = true;
         assert(dockContainer);
-        _settingsPanel = new NodeSettingsPanel(_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
+        boost::shared_ptr<MultiInstancePanel> multiPanel;
+        if (_internalNode->isMultiInstance()) {
+            multiPanel.reset(new MultiInstancePanel(_internalNode));
+        }
+        _settingsPanel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
         QObject::connect(_settingsPanel, SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
         QObject::connect(_settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(setDefaultGradientColor(QColor)));
@@ -211,16 +217,16 @@ void NodeGui::initialize(NodeGraph* dag,
             setVisibleSettingsPanel(false);
         }
         
-        if(_internalNode->isOpenFXNode()){
-            OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
+        if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
 	}
     
-    if(_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()){
+    if (_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()) {
         togglePreview_internal(false);
         
-    }else{
+    } else {
         updateShape(NODE_WIDTH,NODE_HEIGHT);
     }
     
