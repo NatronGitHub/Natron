@@ -421,6 +421,7 @@ void KnobGui::createAnimationMenu(QMenu* menu) {
         }
         
         QMenu* interpolationMenu = new QMenu(menu);
+        interpolationMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
         interpolationMenu->setTitle("Interpolation");
         menu->addAction(interpolationMenu->menuAction());
         if (!isEnabled) {

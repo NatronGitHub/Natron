@@ -254,13 +254,16 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     
     
     _imp->rightClickMenu = new QMenu(this);
+    _imp->rightClickMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     
     _imp->histogramSelectionMenu = new QMenu("Viewer target",_imp->rightClickMenu);
+    _imp->histogramSelectionMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->histogramSelectionMenu->menuAction());
     
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
     
     _imp->viewerCurrentInputMenu = new QMenu("Viewer input",_imp->rightClickMenu);
+    _imp->viewerCurrentInputMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->viewerCurrentInputMenu->menuAction());
     
     _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
@@ -284,6 +287,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
     
     _imp->modeMenu = new QMenu("Display mode",_imp->rightClickMenu);
+    _imp->modeMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->modeMenu->menuAction());
     
     _imp->fullImage = new QAction(_imp->rightClickMenu);
@@ -294,6 +298,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     _imp->rightClickMenu->addAction(_imp->fullImage);
     
     _imp->filterMenu = new QMenu("Smoothing",_imp->rightClickMenu);
+    _imp->filterMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->filterMenu->menuAction());
     
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
@@ -1314,8 +1319,9 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 
     RectI rect;
     boost::shared_ptr<Natron::Image> image = _imp->getHistogramImage(&rect);
-
-    _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
+    if (image) {
+        _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
+    }
     
 #endif
 

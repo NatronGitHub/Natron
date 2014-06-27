@@ -186,6 +186,7 @@ struct ViewerGL::Implementation {
         displayingImageGain[0] = displayingImageGain[1] = 1.;
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         assert(qApp && qApp->thread() == QThread::currentThread());
+        menu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     }
 
     /////////////////////////////////////////////////////////
