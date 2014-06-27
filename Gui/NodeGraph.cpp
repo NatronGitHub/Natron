@@ -1168,11 +1168,17 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     if (e->key() == Qt::Key_Space) {
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
-    } else if (e->key() == Qt::Key_R) {
+    } else if (e->key() == Qt::Key_R && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         _gui->createReader();
-    } else if (e->key() == Qt::Key_W) {
+    } else if (e->key() == Qt::Key_W && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         _gui->createWriter();
-    } else if (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) {
+    } else if ((e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         /*delete current node.*/
         if (_selectedBackDrop) {
             _undoStack->setActive();
@@ -1181,23 +1187,41 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         } else {
             deleteSelectedNode();
         }
-    } else if (e->key() == Qt::Key_P) {
+    } else if (e->key() == Qt::Key_P && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         forceRefreshAllPreviews();
-    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         copySelectedNode();
-    } else if (e->key() == Qt::Key_V && e->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (e->key() == Qt::Key_V && e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         pasteNodeClipBoard();
-    } else if (e->key() == Qt::Key_X && e->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (e->key() == Qt::Key_X && e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         cutSelectedNode();
-    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::AltModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
         duplicateSelectedNode();
-    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)) {
         cloneSelectedNode();
-    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier) && e->modifiers().testFlag(Qt::ShiftModifier)) {
+    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier)
+               && e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)) {
         decloneSelectedNode();
-    } else if (e->key() == Qt::Key_F) {
+    } else if (e->key() == Qt::Key_F && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         centerOnAllNodes();
-    } else if (e->key() == Qt::Key_H) {
+    } else if (e->key() == Qt::Key_H && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
         toggleConnectionHints();
     }
 
