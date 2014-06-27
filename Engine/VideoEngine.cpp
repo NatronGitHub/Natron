@@ -839,6 +839,9 @@ void RenderTree::fillGraph(const boost::shared_ptr<Natron::Node>& node,std::vect
 void RenderTree::refreshRenderInputs()
 {
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        if ((*it)->aborted()) {
+            return;
+        }
         (*it)->updateRenderInputs();
     }
 }
@@ -955,6 +958,13 @@ void VideoEngine::refreshTree(){
 }
 
 void VideoEngine::getFrameRange() {
+    {
+        QMutexLocker locker(&_abortedRequestedMutex);
+        if (_abortRequested > 0) {
+            return;
+        }
+        
+    }
     QMutexLocker l(&_getFrameRangeMutex);
     
     if(_tree.getOutput()){

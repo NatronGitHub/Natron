@@ -1173,10 +1173,15 @@ void ViewerGL::drawOverlay(unsigned int mipMapLevel)
     
     _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
     glCheckError();
+    
     if (_imp->pickerState == PICKER_RECTANGLE) {
-        drawPickerRectangle();
+        if (_imp->viewerTab->getGui()->hasPickers()) {
+            drawPickerRectangle();
+        }
     } else if (_imp->pickerState == PICKER_POINT) {
-        drawPickerPixel();
+        if (_imp->viewerTab->getGui()->hasPickers()) {
+            drawPickerPixel();
+        }
     }
     
     
@@ -1980,6 +1985,33 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         return;
     }
     
+    
+    if (event->button() == Qt::LeftButton &&
+        !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
+        displayingImage()) {
+        _imp->pickerState = PICKER_INACTIVE;
+        updateGL();
+    }
+    
+    bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
+    if (hasPickers && event->button() == Qt::LeftButton &&
+       event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
+       displayingImage()) {
+        _imp->pickerState = PICKER_POINT;
+        if (pickColor(event->x(),event->y())) {
+            _imp->ms = PICKING_COLOR;
+            updateGL();
+        }
+    } else if (hasPickers && event->button() == Qt::LeftButton &&
+          event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
+          displayingImage()) {
+        _imp->pickerState = PICKER_RECTANGLE;
+        _imp->pickerRect.setTopLeft(zoomPos);
+        _imp->pickerRect.setBottomRight(zoomPos);
+        _imp->ms = BUILDING_PICKER_RECTANGLE;
+        updateGL();
+    }
+    
     if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED && _imp->overlay) {
         unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
         overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos);
@@ -1989,30 +2021,8 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         }
     }
     
-    if (event->button() == Qt::LeftButton &&
-        !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-        displayingImage()) {
-        _imp->pickerState = PICKER_INACTIVE;
-        updateGL();
-    }
     
-    if(event->button() == Qt::LeftButton &&
-              event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-              displayingImage()) {
-        _imp->pickerState = PICKER_POINT;
-        if (pickColor(event->x(),event->y())) {
-            _imp->ms = PICKING_COLOR;
-            updateGL();
-        }
-    } else if (event->button() == Qt::LeftButton &&
-               event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
-               displayingImage()) {
-        _imp->pickerState = PICKER_RECTANGLE;
-        _imp->pickerRect.setTopLeft(zoomPos);
-        _imp->pickerRect.setBottomRight(zoomPos);
-        _imp->ms = BUILDING_PICKER_RECTANGLE;
-        updateGL(); 
-    } else if(event->button() == Qt::LeftButton &&
+    if (event->button() == Qt::LeftButton &&
               isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
     } else if(event->button() == Qt::LeftButton &&
