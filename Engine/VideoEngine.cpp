@@ -446,7 +446,13 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(output);
         
         /*update the tree inputs */
-        _tree.refreshRenderInputs();
+        {
+            ///Take the lock so that another thread cannot abort while this function is processed.
+            QMutexLocker locker(&_abortedRequestedMutex);
+            if (_abortRequested == 0) {
+                _tree.refreshRenderInputs();
+            }
+        }
         
         
         if(viewer){
@@ -839,9 +845,6 @@ void RenderTree::fillGraph(const boost::shared_ptr<Natron::Node>& node,std::vect
 void RenderTree::refreshRenderInputs()
 {
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        if ((*it)->aborted()) {
-            return;
-        }
         (*it)->updateRenderInputs();
     }
 }
