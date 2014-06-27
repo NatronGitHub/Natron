@@ -6,6 +6,8 @@ Version 1.0:
 Frédéric Devernay
 Alexandre Gauthier-Foichat
 
+Ole Andre Rodlie for the linux packages
+
 #Artists:
 
 Laurence Boissieux
