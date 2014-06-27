@@ -1094,25 +1094,29 @@ void Node::deactivate()
     
     boost::shared_ptr<Natron::Node> thisShared = getApp()->getProject()->getNodePointer(this);
     assert(thisShared);
-    
+    std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
     {
         QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
-            if(_imp->inputsQueue[i]) {
-                _imp->inputsQueue[i]->disconnectOutput(thisShared);
-            }
+        inputsQueueCopy = _imp->inputsQueue;
+    }
+    for (U32 i = 0; i < inputsQueueCopy.size() ; ++i) {
+        if(inputsQueueCopy[i]) {
+            inputsQueueCopy[i]->disconnectOutput(thisShared);
         }
     }
     
+    
     ///For each output node we remember that the output node  had its input number inputNb connected
     ///to this node
+    std::list<boost::shared_ptr<Node> > outputsQueueCopy;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->outputsQueue.begin(); it!=_imp->outputsQueue.end(); ++it) {
-            assert(*it);
-            int inputNb = (*it)->disconnectInput(thisShared);
-            _imp->deactivatedState.insert(make_pair(*it, inputNb));
-        }
+        outputsQueueCopy = _imp->outputsQueue;
+    }
+    for (std::list<boost::shared_ptr<Node> >::iterator it = outputsQueueCopy.begin(); it!=outputsQueueCopy.end(); ++it) {
+        assert(*it);
+        int inputNb = (*it)->disconnectInput(thisShared);
+        _imp->deactivatedState.insert(make_pair(*it, inputNb));
     }
     
     if (inputToConnectTo) {
