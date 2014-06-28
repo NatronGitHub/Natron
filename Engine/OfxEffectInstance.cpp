@@ -476,11 +476,11 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if (effect_->areAllNonOptionalClipsConnected()) {
-        checkClipPrefs(time,s);
+        checkClipPrefs(time,s,kOfxChangeUserEdited);
     }
 }
 
-void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
+void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, const std::string& reason)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -496,7 +496,7 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
     assert(outputClip);
     std::string outputComponents = outputClip->getComponents();
     
-    effect_->beginInstanceChangedAction(kOfxChangeUserEdited);
+    effect_->beginInstanceChangedAction(reason);
 
     for (int i = 0; i < maximumInputs() ; ++i) {
         OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(input(i));
@@ -538,12 +538,12 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale)
                     setBitDepthWarning = true;
                 }
             }
-            effect_->clipInstanceChangedAction(outputClip->getName(), kOfxChangeUserEdited, time, scale);
+            effect_->clipInstanceChangedAction(outputClip->getName(), reason, time, scale);
 
 
         }
     }
-    effect_->endInstanceChangedAction(kOfxChangeUserEdited);
+    effect_->endInstanceChangedAction(reason);
 
     getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
 }
@@ -1217,6 +1217,19 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,c
     return false;
 }
 
+static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reason)
+{
+    switch (reason) {
+        case Natron::USER_EDITED:
+            return kOfxChangeUserEdited;
+        case Natron::PLUGIN_EDITED:
+            return kOfxChangePluginEdited;
+        case Natron::TIME_CHANGED:
+            return kOfxChangeTime;
+        default:
+            return "";
+    }
+}
 
 void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod){
     if(!_initialized){
@@ -1243,19 +1256,9 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
     
     OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
-    switch (reason) {
-        case Natron::USER_EDITED:
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
-            break;
-        case Natron::TIME_CHANGED:
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeTime,time,renderScale);
-            break;
-        case Natron::PLUGIN_EDITED:
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangePluginEdited,time,renderScale);
-            break;
-        case Natron::PROJECT_LOADING:
-        default:
-            break;
+    std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
+    if (!ofxReason.empty()) {
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,time,renderScale);
     }
 
     if (getRecursionLevel() == 1) {
@@ -1275,7 +1278,7 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         ///Recursive action, must not call assertActionIsNotRecursive()
         incrementRecursionLevel();
         effect_->runGetClipPrefsConditionally();
-        checkClipPrefs(time, renderScale);
+        checkClipPrefs(time, renderScale,ofxReason);
         decrementRecursionLevel();
     }
     if(_overlayInteract){

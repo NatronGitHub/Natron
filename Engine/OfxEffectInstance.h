@@ -249,7 +249,7 @@ signals:
 
 private:
 
-    void checkClipPrefs(double time,const RenderScale& scale);
+    void checkClipPrefs(double time,const RenderScale& scale,const std::string&  reason);
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
