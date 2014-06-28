@@ -1278,7 +1278,6 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         ///Recursive action, must not call assertActionIsNotRecursive()
         incrementRecursionLevel();
         effect_->runGetClipPrefsConditionally();
-        checkClipPrefs(time, renderScale,ofxReason);
         decrementRecursionLevel();
     }
     if(_overlayInteract){

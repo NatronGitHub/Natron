@@ -842,7 +842,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 rod = *args.preComputedRoD;
             } else {
                 ///before allocating it we must fill the RoD of the image we want to render
-                if(getRegionOfDefinition_public(args.time,args.scale,args.view, &rod,&isProjectFormat) == StatFailed){
+                Status stat = getRegionOfDefinition_public(args.time,args.scale,args.view, &rod,&isProjectFormat);
+                if (stat == StatFailed) {
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
