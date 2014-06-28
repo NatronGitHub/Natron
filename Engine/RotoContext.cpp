@@ -2427,6 +2427,7 @@ int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    assert(cp);
     QMutexLocker l(&itemMutex);
     
     int i = 0;

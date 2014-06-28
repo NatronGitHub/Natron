@@ -293,6 +293,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const boost::shared
 , _roto(roto)
 , _curves()
 {
+    assert(curve && cp);
     CurveDesc desc;
     int indexToRemove = curve->getControlPointIndex(cp);
     desc.curveRemoved = false; //set in the redo()
@@ -320,11 +321,12 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const SelectedCpLis
             cp = it->first;
             fp = it->second;
         }
+        assert(cp && fp && cp->getCurve() && _roto && _roto->getContext());
         BezierPtr curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(cp->getCurve()->getName_mt_safe()));
-        
+        assert(curve);
+
         std::list< CurveDesc >::iterator foundCurve = _curves.end();
-        for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2!= _curves.end(); ++it2)
-        {
+        for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2!= _curves.end(); ++it2) {
             if (it2->curve == curve) {
                 foundCurve = it2;
                 break;
