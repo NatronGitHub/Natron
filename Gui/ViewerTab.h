@@ -152,6 +152,9 @@ public:
     
     bool isFrameRangeLocked() const;
     
+    bool isPlayingForward() const;
+    bool isPlayingBackward() const;
+    
 public slots:
     
     void startPause(bool);

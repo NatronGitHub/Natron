@@ -1231,6 +1231,30 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         if (_nodeSelected) {
             _nodeSelected->onSwitchInputActionTriggered();
         }
+    }  else if (e->key() == Qt::Key_J && !e->modifiers().testFlag(Qt::ShiftModifier)
+                && !e->modifiers().testFlag(Qt::ControlModifier)
+                && !e->modifiers().testFlag(Qt::AltModifier)) {
+        ViewerTab* lastSelectedViewer = _gui->getLastSelectedViewer();
+        if (lastSelectedViewer) {
+            lastSelectedViewer->startBackward(!lastSelectedViewer->isPlayingBackward());
+        }
+    }
+    else if (e->key() == Qt::Key_K && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        ViewerTab* lastSelectedViewer = _gui->getLastSelectedViewer();
+        if (lastSelectedViewer) {
+           lastSelectedViewer-> abortRendering();
+        }
+    }
+    else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        ViewerTab* lastSelectedViewer = _gui->getLastSelectedViewer();
+        if (lastSelectedViewer) {
+            lastSelectedViewer->startPause(!lastSelectedViewer->isPlayingForward());
+        }
+        
     }
 
     
