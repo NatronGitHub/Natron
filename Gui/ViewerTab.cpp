@@ -933,6 +933,15 @@ ViewerTab::~ViewerTab()
    
 }
 
+bool ViewerTab::isPlayingForward() const
+{
+    return _imp->play_Forward_Button->isDown();
+}
+
+bool ViewerTab::isPlayingBackward() const
+{
+    return _imp->play_Backward_Button->isDown();
+}
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 
@@ -976,26 +985,34 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         } else {
             _imp->_viewerChannels->setCurrentIndex(5);
         }
-    }else if (event->key() == Qt::Key_J) {
-        startBackward(!_imp->play_Backward_Button->isDown());
     }
     else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
                                          && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         previousFrame();
     }
-    else if (event->key() == Qt::Key_K) {
+    else if (event->key() == Qt::Key_J && !event->modifiers().testFlag(Qt::ShiftModifier)
+             && !event->modifiers().testFlag(Qt::ControlModifier)
+             && !event->modifiers().testFlag(Qt::AltModifier)) {
+        startBackward(!_imp->play_Backward_Button->isDown());
+    }
+    else if (event->key() == Qt::Key_K && !event->modifiers().testFlag(Qt::ShiftModifier)
+             && !event->modifiers().testFlag(Qt::ControlModifier)
+             && !event->modifiers().testFlag(Qt::AltModifier)) {
         abortRendering();
+    }
+    else if (event->key() == Qt::Key_L && !event->modifiers().testFlag(Qt::ShiftModifier)
+             && !event->modifiers().testFlag(Qt::ControlModifier)
+             && !event->modifiers().testFlag(Qt::AltModifier)) {
+        startPause(!_imp->play_Forward_Button->isDown());
+        
     }
     else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
                                             && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         nextFrame();
     }
-    else if (event->key() == Qt::Key_L) {
-        startPause(!_imp->play_Forward_Button->isDown());
-        
-    }else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
+    else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         //prev incr
         previousIncrement();
@@ -1930,8 +1947,12 @@ void ViewerTab::onInputChanged(int inputNb)
         ///The input has been disconnected
         if (found != _imp->_inputNamesMap.end()) {
             const std::string& curInputName = found->second.input->getName();
+            _imp->_firstInputImage->blockSignals(true);
+            _imp->_secondInputImage->blockSignals(true);
             _imp->_firstInputImage->removeItem(curInputName.c_str());
             _imp->_secondInputImage->removeItem(curInputName.c_str());
+            _imp->_firstInputImage->blockSignals(false);
+            _imp->_secondInputImage->blockSignals(false);
             _imp->_inputNamesMap.erase(found);
         }
     }

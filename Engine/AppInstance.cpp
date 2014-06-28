@@ -177,7 +177,7 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
     
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
+boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,bool createGui,int majorVersion,int minorVersion,
                                  bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,bool dontLoadName)
 {
     boost::shared_ptr<Node> node;
@@ -218,12 +218,12 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     _imp->_currentProject->addNodeToProject(node);
     
-    createNodeGui(node,requestedByLoad,openImageFileDialog);
+    createNodeGui(node,createGui,requestedByLoad,openImageFileDialog);
     return node;
 
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,int majorVersion,int minorVersion,bool openImageFileDialog)
+boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,bool createGui,int majorVersion,int minorVersion,bool openImageFileDialog)
 {    
     ///use the same entry point to create backdrops.
     ///Since they are purely GUI we don't actually return a node.
@@ -231,13 +231,13 @@ boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,int 
         createBackDrop();
         return boost::shared_ptr<Natron::Node>();
     }
-    return createNodeInternal(name, majorVersion, minorVersion, false,
+    return createNodeInternal(name,createGui, majorVersion, minorVersion, false,
                               openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName)
+boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,bool createGui,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName)
 {
-    return createNodeInternal(name, majorVersion, minorVersion, true, false, serialization,dontLoadName);
+    return createNodeInternal(name,createGui ,majorVersion, minorVersion, true, false, serialization,dontLoadName);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

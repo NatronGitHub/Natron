@@ -12,6 +12,7 @@
 #ifndef MULTIINSTANCEPANEL_H
 #define MULTIINSTANCEPANEL_H
 
+#include <QObject>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include "Engine/Knob.h"
@@ -22,13 +23,18 @@ namespace Natron
 }
 
 class QVBoxLayout;
+class QHBoxLayout;
+class QTableWidgetItem;
 
 /**
 * @brief This class represents a multi-instance settings panel.
 **/
 struct MultiInstancePanelPrivate;
-class MultiInstancePanel : public KnobHolder
+class MultiInstancePanel : public QObject, public KnobHolder
 {
+    
+    Q_OBJECT
+    
 public:
     
     MultiInstancePanel(const boost::shared_ptr<Natron::Node>& node);
@@ -37,9 +43,20 @@ public:
     
     void createMultiInstanceGui(QVBoxLayout* layout);
 
+public slots:
+
+    void onAddButtonClicked();
+    
+    void onRemoveButtonClicked();
+    
+    void onSelectAllButtonClicked();
+    
+    void onItemDataChanged(QTableWidgetItem* item);
+    
 protected:
     
     virtual void appendExtraGui(QVBoxLayout* /*layout*/) {}
+    virtual void appendButton(QHBoxLayout* /*buttonLayout*/) {}
     
 private:
     
@@ -52,5 +69,20 @@ private:
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
     
 };
+
+class TrackerPanel : public MultiInstancePanel
+{
+public:
+    
+    TrackerPanel(const boost::shared_ptr<Natron::Node>& node);
+    
+    virtual ~TrackerPanel();
+    
+private:
+    
+    virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
+    virtual void appendButton(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
+};
+
 
 #endif // MULTIINSTANCEPANEL_H

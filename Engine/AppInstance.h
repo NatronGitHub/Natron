@@ -71,15 +71,17 @@ public:
      * If openImageFileDialog is true then if the node has a file knob indicating an image file it will automatically
      * prompt the user with a file dialog.
      *
+     * @param createGui If false, the node GUI (in the nodegraph and in the properties panel) will not be created.
+     * The node animation curves will still be available in the curve editor though.
+     *
      * You can use this function to create backdrops also which are purely GUI stuff. In this case the pointer returned will
      * be NULL.
      **/
-    boost::shared_ptr<Natron::Node> createNode(const QString& name,int majorVersion = -1,int minorVersion = -1,
+    boost::shared_ptr<Natron::Node> createNode(const QString& name,bool createGui = true,int majorVersion = -1,int minorVersion = -1,
                                                bool openImageFileDialog = true);
     
     ///Same as createNode but used when loading a project
-    boost::shared_ptr<Natron::Node> loadNode(const QString& name,int majorVersion,int minorVersion,const NodeSerialization& serialization,
-                                             bool dontLoadName);
+    boost::shared_ptr<Natron::Node> loadNode(const QString& name,bool createGui,int majorVersion,int minorVersion,const NodeSerialization& serialization, bool dontLoadName);
 
     void getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> > *activeNodes) const;
 
@@ -167,7 +169,7 @@ signals:
     
 protected:
     
-    virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,bool /*loadRequest*/,bool /*openImageFileDialog*/) {}
+    virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,bool /*createGui*/,bool /*loadRequest*/,bool /*openImageFileDialog*/) {}
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
@@ -179,7 +181,7 @@ private:
     virtual void createBackDrop() {}
     
     
-    boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,int majorVersion,int minorVersion,
+    boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,bool createGui,int majorVersion,int minorVersion,
                                      bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,bool dontLoadName);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;

@@ -155,7 +155,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
 }
 
-void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool loadRequest,bool openImageFileDialog) {
+void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool createGui,bool loadRequest,bool openImageFileDialog) {
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
     assert(nodegui);
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));

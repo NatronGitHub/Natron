@@ -86,7 +86,7 @@ void BaseTest::TearDown()
 }
 
 boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString& pluginID,int majorVersion,int minorVersion) {
-    boost::shared_ptr<Node> ret =  _app->createNode(pluginID,majorVersion,minorVersion,false);
+    boost::shared_ptr<Node> ret =  _app->createNode(pluginID,true,majorVersion,minorVersion,false);
     EXPECT_NE(ret.get(),(Natron::Node*)NULL);
     return ret;
 }

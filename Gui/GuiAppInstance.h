@@ -103,7 +103,7 @@ private:
     
     virtual void createBackDrop() OVERRIDE FINAL;
     
-    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,bool loadRequest,bool openImageFileDialog) OVERRIDE FINAL;
+    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,bool createGui,bool loadRequest,bool openImageFileDialog) OVERRIDE FINAL;
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
     
