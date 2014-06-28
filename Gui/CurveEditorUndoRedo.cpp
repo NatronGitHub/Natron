@@ -123,9 +123,11 @@ void RemoveKeysCommand::redo(){
 }
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, double dt, double dv,
+MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, double dt, double dv,bool updateOnFirstRedo,
                                  QUndoCommand *parent )
 : QUndoCommand(parent)
+, _firstRedoCalled(false)
+, _updateOnFirstRedo(updateOnFirstRedo)
 , _merge(!keys.empty())
 , _dt(dt)
 , _dv(dv)
@@ -206,7 +208,30 @@ void MoveKeysCommand::undo()
 
 void MoveKeysCommand::redo()
 {
+    ///For each knob, the old value of "evaluateOnChange" that we remember to set it back after the move.
+    std::map<KnobGui*, bool> oldEvaluateOnChange;
+    if (!_firstRedoCalled && !_updateOnFirstRedo) {
+        ///set all the knobs to setEvaluateOnChange(false) so that the node doesn't get to render.
+        ///remember to set it back afterwards
+        for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
+            KnobGui* knob = it->curve->getKnob();
+            assert(knob);
+            oldEvaluateOnChange.insert(std::make_pair(knob, knob->getKnob()->getEvaluateOnChange()));
+        }
+        
+        ///now set to false the evaluateOnChange
+        for (std::map<KnobGui*, bool>::iterator it = oldEvaluateOnChange.begin(); it!=oldEvaluateOnChange.end(); ++it) {
+            it->first->getKnob()->setEvaluateOnChange(false);
+        }
+    }
     move(_dt,_dv,false);
+    if (!_firstRedoCalled && !_updateOnFirstRedo) {
+        for (std::map<KnobGui*, bool>::iterator it = oldEvaluateOnChange.begin(); it!=oldEvaluateOnChange.end(); ++it) {
+            it->first->getKnob()->setEvaluateOnChange(it->second);
+        }
+
+    }
+    _firstRedoCalled = true;
     setText(QObject::tr("Move multiple keys"));
     
 }

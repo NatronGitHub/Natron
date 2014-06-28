@@ -121,6 +121,14 @@ void Settings::initializeKnobs(){
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
     
+    _renderOnEditingFinished = Natron::createKnob<Bool_Knob>(this, "Render on editing finished only");
+    _renderOnEditingFinished->setHintToolTip("When checked, the render engine will run only when you finish editing "
+                                             "a curve or a parameter. For example, for curves editing, that is only when you release the button"
+                                             " of the mouse the render will be triggered."
+                                             "This also works for sliders and values of parameters.");
+    _renderOnEditingFinished->setAnimationEnabled(false);
+    _generalTab->addKnob(_renderOnEditingFinished);
+    
     _generalTab->addKnob(Natron::createKnob<Separator_Knob>(this, "OpenFX Plugins"));
     
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
@@ -444,6 +452,7 @@ void Settings::setDefaultValues() {
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _maxPanelsOpened->setDefaultValue(10,0);
+    _renderOnEditingFinished->setDefaultValue(false);
     _extraPluginPaths->setDefaultValue("",0);
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
@@ -551,6 +560,7 @@ void Settings::saveSettings(){
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
     settings.setValue("MaxPanelsOpened", _maxPanelsOpened->getValue());
+    settings.setValue("RenderOnEditingFinished",_renderOnEditingFinished->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.setValue("PreferBundledPlugins", _preferBundledPlugins->getValue());
     settings.setValue("LoadBundledPlugins", _loadBundledPlugins->getValue());
@@ -690,6 +700,10 @@ void Settings::restoreSettings(){
     if (settings.contains("MaxPanelsOpened")) {
         _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
     }
+    if (settings.contains("RenderOnEditingFinished")) {
+        _renderOnEditingFinished->setValue(settings.value("RenderOnEditingFinished").toBool(), 0);
+    }
+        
     if (settings.contains("ExtraPluginsPaths")) {
         _extraPluginPaths->setValue(settings.value("ExtraPluginsPaths").toString().toStdString(),0);
     }
@@ -1363,4 +1377,14 @@ int Settings::getDisconnectedArrowLength() const
 std::string Settings::getHostName() const
 {
     return _hostName->getValue();
+}
+
+bool Settings::getRenderOnEditingFinishedOnly() const
+{
+    return _renderOnEditingFinished->getValue();
+}
+
+void Settings::setRenderOnEditingFinishedOnly(bool render)
+{
+    _renderOnEditingFinished->setValue(render, 0);
 }

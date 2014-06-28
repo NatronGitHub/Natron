@@ -67,7 +67,7 @@ void ScaleSliderQWidget::mousePressEvent(QMouseEvent *event){
 }
 
 
-void ScaleSliderQWidget::mouseMoveEvent(QMouseEvent *event){
+void ScaleSliderQWidget::mouseMoveEvent(QMouseEvent *event) {
     
     if (!_readOnly) {
         QPoint newClick =  event->pos();
@@ -76,6 +76,12 @@ void ScaleSliderQWidget::mouseMoveEvent(QMouseEvent *event){
         seekInternal(newClick_opengl.x());
     }
     
+}
+
+void ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    emit editingFinished();
+    QWidget::mouseReleaseEvent(event);
 }
 
 

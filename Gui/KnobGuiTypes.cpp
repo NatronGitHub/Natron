@@ -36,6 +36,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Lut.h"
 #include "Engine/Project.h"
 #include "Engine/Image.h"
+#include "Engine/Settings.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/AnimatedCheckBox.h"
@@ -162,7 +163,7 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
-
+                QObject::connect(_slider, SIGNAL(editingFinished()), this, SLOT(onSliderEditingFinished()));
                 
                 boxContainerLayout->addWidget(_slider);
             }
@@ -225,6 +226,23 @@ void Int_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel lev
 
 void Int_KnobGui::onSliderValueChanged(double d)
 {
+    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    if (penUpOnly) {
+        return;
+    }
+    
+    assert(_knob->getDimension() == 1);
+    _spinBoxes[0].first->setValue(d);
+    pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValue(),(int)d));
+}
+
+void Int_KnobGui::onSliderEditingFinished()
+{
+    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    if (!penUpOnly) {
+        return;
+    }
+    double d = _slider->getPosition();
     assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
     pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValue(),(int)d));
@@ -528,7 +546,7 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
-
+                QObject::connect(_slider, SIGNAL(editingFinished()), this, SLOT(onSliderEditingFinished()));
                 boxContainerLayout->addWidget(_slider);
             }
         }
@@ -598,11 +616,29 @@ void Double_KnobGui::reflectAnimationLevel(int dimension,Natron::AnimationLevel 
 
 void Double_KnobGui::onSliderValueChanged(double d)
 {
+    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    if (penUpOnly) {
+        return;
+    }
     assert(_knob->getDimension() == 1);
     _spinBoxes[0].first->setValue(d);
     valueAccordingToType(true, 0, &d);
     pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValue(),d));
 }
+
+void Double_KnobGui::onSliderEditingFinished()
+{
+    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    if (!penUpOnly) {
+        return;
+    }
+    double d = _slider->getPosition();
+    assert(_knob->getDimension() == 1);
+    _spinBoxes[0].first->setValue(d);
+    valueAccordingToType(true, 0, &d);
+    pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValue(),d));
+}
+
 void Double_KnobGui::onSpinBoxValueChanged()
 {
     std::list<double> newValues;

@@ -141,6 +141,9 @@ public:
     void getViewsGroupColor(float *r,float *g,float *b) const;
     void getDeepGroupColor(float *r,float *g,float *b) const;
     
+    bool getRenderOnEditingFinishedOnly() const;
+    void setRenderOnEditingFinishedOnly(bool render);
+    
     std::string getHostName() const;
 private:
     
@@ -159,6 +162,7 @@ private:
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<Int_Knob> _maxPanelsOpened;
+    boost::shared_ptr<Bool_Knob> _renderOnEditingFinished;
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;

@@ -89,7 +89,7 @@ class MoveKeysCommand : public QUndoCommand
 {
 public:
 
-    MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,double dt,double dv,QUndoCommand *parent = 0);
+    MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,double dt,double dv,bool updateOnFirstRedo,QUndoCommand *parent = 0);
     virtual ~MoveKeysCommand() OVERRIDE {}
 
 private:
@@ -101,6 +101,8 @@ private:
     void move(double dt, double dv, bool isundo);
 
 private:
+    bool _firstRedoCalled;
+    bool _updateOnFirstRedo;
     bool _merge;
     double _dt;
     double _dv;

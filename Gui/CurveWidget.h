@@ -265,6 +265,7 @@ public slots:
     
     void onCurveChanged();
     
+    void onUpdateOnPenUpActionTriggered();
 private:
     
     virtual void initializeGL() OVERRIDE FINAL;

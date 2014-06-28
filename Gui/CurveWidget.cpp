@@ -30,6 +30,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/TimeLine.h"
 #include "Engine/Variant.h"
 #include "Engine/Curve.h"
+#include "Engine/Settings.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/LineEdit.h"
@@ -503,6 +504,7 @@ public:
     boost::shared_ptr<TimeLine> _timeline;
     bool _timelineEnabled;
     std::pair<CurveGui::SelectedDerivative,SelectedKey> _selectedDerivative;
+    bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     
 private:
     
@@ -541,6 +543,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,Curv
 , _timeline(timeline)
 , _timelineEnabled(false)
 , _selectedDerivative()
+, _evaluateOnPenUp(false)
 , _baseAxisColor(118,215,90,255)
 , _scaleColor(67,123,52,255)
 , _keyDragMaxMovement()
@@ -669,6 +672,12 @@ void CurveWidgetPrivate::createMenu()
     frameCurve->setShortcut(QKeySequence(Qt::Key_F));
     QObject::connect(frameCurve,SIGNAL(triggered()),_widget,SLOT(frameSelectedCurve()));
     viewMenu->addAction(frameCurve);
+    
+    QAction* updateOnPenUp = new QAction("Update on mouse release only",_widget);
+    updateOnPenUp->setCheckable(true);
+    updateOnPenUp->setChecked(appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly());
+    _rightClickMenu->addAction(updateOnPenUp);
+    QObject::connect(updateOnPenUp,SIGNAL(triggered()),_widget,SLOT(onUpdateOnPenUpActionTriggered()));
 }
 
 void CurveWidgetPrivate::drawSelectionRectangle()
@@ -1191,9 +1200,11 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         }
         
         if (dt != 0 || dv != 0) {
+            bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
             //now iterate over each different knobs and create as many undo/redo commands...
             for (std::map<KnobGui*,std::vector<KeyMove> >::iterator it = knobsMap.begin(); it!=knobsMap.end(); ++it) {
-                it->first->pushUndoCommand(new MoveKeysCommand(_widget,it->second,dt,dv));
+                it->first->pushUndoCommand(new MoveKeysCommand(_widget,it->second,dt,dv,!updateOnPenUpOnly));
+                _evaluateOnPenUp = true;
             }
         }
         
@@ -1248,6 +1259,17 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos)
     
     int keyframeIndexInCurve = key.curve->getInternalCurve()->keyFrameIndex(key.key.getTime());
     
+    ///If the knob is evaluating on change and _updateOnPenUpOnly is true, set it to false prior
+    ///to modifying the keyframe, and set it back to its original value afterwards.
+    boost::shared_ptr<KnobI> attachedKnob = key.curve->getKnob()->getKnob();
+    assert(attachedKnob);
+    bool isAttachedKnobEvaluatingOnChange = attachedKnob->getEvaluateOnChange();
+    
+    bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    if (updateOnPenUpOnly && isAttachedKnobEvaluatingOnChange) {
+        attachedKnob->setEvaluateOnChange(false);
+    }
+    
     // For other keyframes:
     // - if they KEYFRAME_BROKEN, move only one derivative
     // - else change to KEYFRAME_FREE and move both derivatives
@@ -1289,6 +1311,13 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos)
             key.key = key.curve->getInternalCurve()->setKeyFrameRightDerivative(derivative,keyframeIndexInCurve);
         }
     }
+    
+    ///set back its original value
+    if (updateOnPenUpOnly && isAttachedKnobEvaluatingOnChange) {
+        attachedKnob->setEvaluateOnChange(isAttachedKnobEvaluatingOnChange);
+        _evaluateOnPenUp = true;
+    }
+    
     refreshKeyTangents(&key);
     //erase the existing key in the set and replace it with the new one
     _selectedKeyFrames.erase(existingKey);
@@ -1453,11 +1482,12 @@ void CurveWidgetPrivate::refreshSelectionRectangle(double x,double y)
     
     //now iterate over each different knobs and create as many undo/redo commands...
     std::vector<KeyMove> empty;
+    bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     for (std::map<KnobGui*,std::vector<KeyMove> >::iterator it = knobsMap.begin(); it!=knobsMap.end(); ++it) {
         //check that the last command was a move command, otherwise don't do anything
         const QUndoCommand* lastCmd = it->first->getLastUndoCommand();
         if(lastCmd && lastCmd->id() == kCurveEditorMoveMultipleKeysCommandCompressionID){
-            it->first->pushUndoCommand(new MoveKeysCommand(_widget,empty,0,0));
+            it->first->pushUndoCommand(new MoveKeysCommand(_widget,empty,0,0,!updateOnPenUpOnly));
 
         }
     }
@@ -2032,8 +2062,9 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
             //we notify the undo stack of the editor that the selection changed and that it needs to stop merging
             //move commands.
             if(!_imp->_selectedKeyFrames.empty()){
+                bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
                 std::vector<KeyMove> empty;
-                previouslySelectedKey.curve->getKnob()->pushUndoCommand(new MoveKeysCommand(this,empty,0,0));
+                previouslySelectedKey.curve->getKnob()->pushUndoCommand(new MoveKeysCommand(this,empty,0,0,!updateOnPenUpOnly));
             }
         }
         
@@ -2098,6 +2129,34 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
+    if (_imp->_evaluateOnPenUp) {
+        _imp->_evaluateOnPenUp = false;
+        
+        if (_imp->_state == DRAGGING_KEYS) {
+            std::map<KnobHolder*,bool> toEvaluate;
+            for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it!=_imp->_selectedKeyFrames.end(); ++it) {
+                boost::shared_ptr<KnobI> knob = it->curve->getKnob()->getKnob();
+                assert(knob);
+                KnobHolder* holder = knob->getHolder();
+                assert(holder);
+                std::map<KnobHolder*,bool>::iterator found = toEvaluate.find(holder);
+                bool evaluateOnChange = knob->getEvaluateOnChange();
+                if (found != toEvaluate.end() && !found->second && evaluateOnChange) {
+                    found->second = true;
+                } else if (found == toEvaluate.end()) {
+                    toEvaluate.insert(std::make_pair(holder,evaluateOnChange));
+                }
+            }
+            for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it!=toEvaluate.end(); ++it) {
+                it->first->evaluate_public(NULL, it->second);
+            }
+        } else if (_imp->_state == DRAGGING_TANGENT) {
+            boost::shared_ptr<KnobI> toEvaluate = _imp->_selectedDerivative.second.curve->getKnob()->getKnob();
+            assert(toEvaluate);
+            toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true);
+        }
+    }
+    
     EventState prevState = _imp->_state;
     _imp->_state = NONE;
     _imp->_selectionRectangle.setBottomRight(QPointF(0,0));
@@ -2738,6 +2797,11 @@ void CurveWidget::setProjection(double zoomLeft, double zoomBottom, double zoomF
     _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
 }
 
+void CurveWidget::onUpdateOnPenUpActionTriggered()
+{
+    bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    appPTR->getCurrentSettings()->setRenderOnEditingFinishedOnly(!updateOnPenUpOnly);
+}
 
 void CurveWidget::exportCurveToAscii()
 {

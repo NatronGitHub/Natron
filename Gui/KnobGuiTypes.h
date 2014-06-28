@@ -98,6 +98,7 @@ public slots:
     void onSpinBoxValueChanged();
 
     void onSliderValueChanged(double);
+    void onSliderEditingFinished();
 
     void onMinMaxChanged(int mini, int maxi, int index = 0);
     
@@ -201,6 +202,7 @@ public:
 public slots:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
+    void onSliderEditingFinished();
 
     void onMinMaxChanged(double mini, double maxi, int index = 0);
     void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);

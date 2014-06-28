@@ -55,8 +55,10 @@ public:
     
     bool isReadOnly() const { return _readOnly; }
     
-signals:
+    double getPosition() const { return _value; }
     
+signals:
+    void editingFinished();
     void positionChanged(double);
     
 public slots:
@@ -82,6 +84,8 @@ private:
     virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
     
     virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
+    
+    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
     
     virtual QSize sizeHint() const OVERRIDE FINAL;
     
