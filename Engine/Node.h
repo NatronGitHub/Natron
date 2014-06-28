@@ -217,6 +217,11 @@ public:
     void updateRenderInputs();
     
     /**
+     * @brief Returns true if the node is currently executing the onInputChanged handler.
+     **/
+    bool duringInputChangedAction() const;
+    
+    /**
      *@brief Returns the inputs of the node as the Gui just set them.
      *The vector might be different from what getInputs_other_thread() could return.
      *This can only be called by the main thread.

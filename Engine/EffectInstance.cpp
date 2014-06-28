@@ -1587,6 +1587,13 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
     
     assert(_node);
     
+    ////If the node is currently modifying its input, to ask for a render
+    ////because at then end of the inputChanged handler, it will ask for a refresh
+    ////and a rebuild of the inputs tree.
+    if (_node->duringInputChangedAction()) {
+        return;
+    }
+    
     if (getApp()->getProject()->isLoadingProject()) {
         return;
     }
