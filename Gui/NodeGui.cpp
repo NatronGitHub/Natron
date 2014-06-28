@@ -237,8 +237,7 @@ void NodeGui::initialize(NodeGraph* dag,
     
     _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
     QColor defaultColor = getCurrentColor();
-    setDefaultGradientColor(defaultColor);
-    
+
     _clonedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
     _clonedGradient->setColorAt(0, QColor(200,70,100));
     _clonedGradient->setColorAt(1, QColor(120,120,120));
@@ -247,6 +246,7 @@ void NodeGui::initialize(NodeGraph* dag,
     _disabledGradient->setColorAt(0,QColor(0,0,0));
     _disabledGradient->setColorAt(1, QColor(20,20,20));
     
+    setDefaultGradientColor(defaultColor);
 
     _boundingBox->setBrush(*_defaultGradient);
 
@@ -271,6 +271,7 @@ void NodeGui::initialize(NodeGraph* dag,
 
 void NodeGui::setDefaultGradientColor(const QColor& color)
 {
+    assert(_clonedGradient && _defaultGradient && _disabledGradient && _selectedGradient);
     _defaultGradient->setColorAt(1,color);
     QColor colorBrightened;
     colorBrightened.setRedF(Natron::clamp(color.redF() * 1.5));
@@ -712,7 +713,9 @@ Edge* NodeGui::firstAvailableEdge(){
 
 void NodeGui::refreshCurrentBrush()
 {
-    if (!_internalNode->isNodeDisabled()) {
+    assert(_boundingBox);
+    assert(_clonedGradient && _defaultGradient && _disabledGradient && _selectedGradient);
+    if (_internalNode && !_internalNode->isNodeDisabled()) {
         if (_selected) {
             float selectedR,selectedG,selectedB;
             appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&selectedR, &selectedG, &selectedB);
@@ -726,7 +729,7 @@ void NodeGui::refreshCurrentBrush()
             _selectedGradient->setColorAt(0, brightenedSelColor);
             _boundingBox->setBrush(*_selectedGradient);
         } else {
-            if (_slaveMasterLink) {
+           if (_slaveMasterLink) {
                 _boundingBox->setBrush(*_clonedGradient);
             } else {
                 _boundingBox->setBrush(*_defaultGradient);
