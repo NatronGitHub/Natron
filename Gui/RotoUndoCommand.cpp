@@ -294,6 +294,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const boost::shared
 , _curves()
 {
     CurveDesc desc;
+    assert(curve && cp);
     int indexToRemove = curve->getControlPointIndex(cp);
     desc.curveRemoved = false; //set in the redo()
     desc.parentLayer =
@@ -330,6 +331,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const SelectedCpLis
                 break;
             }
         }
+        assert(curve);
+        assert(cp);
         int indexToRemove = curve->getControlPointIndex(cp);
         if (foundCurve == _curves.end()) {
             CurveDesc curveDesc;
