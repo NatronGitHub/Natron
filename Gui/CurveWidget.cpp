@@ -469,9 +469,10 @@ public:
     
     void setSelectedKeysInterpolation(Natron::KeyframeType type);
     
+    void createMenu();
+
 private:
     
-    void createMenu();
     
     void keyFramesWithinRect(const QRectF& rect,std::vector< std::pair<CurveGui*,KeyFrame > >* keys) const;
     
@@ -557,7 +558,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(boost::shared_ptr<TimeLine> timeline,Curv
 
     _nextCurveAddedColor.setHsv(200,255,255);
     _rightClickMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
-    createMenu();
+    
 }
 
 CurveWidgetPrivate::~CurveWidgetPrivate()
@@ -600,80 +601,80 @@ void CurveWidgetPrivate::createMenu()
     _rightClickMenu->addAction(viewMenu->menuAction());
     
     
-    QAction* exportCurveToAsciiAction = new QAction("Export curve to Ascii",_widget);
+    QAction* exportCurveToAsciiAction = new QAction("Export curve to Ascii",fileMenu);
     QObject::connect(exportCurveToAsciiAction,SIGNAL(triggered()),_widget,SLOT(exportCurveToAscii()));
     fileMenu->addAction(exportCurveToAsciiAction);
     
-    QAction* importCurveFromAsciiAction = new QAction("Import curve from Ascii",_widget);
+    QAction* importCurveFromAsciiAction = new QAction("Import curve from Ascii",fileMenu);
     QObject::connect(importCurveFromAsciiAction,SIGNAL(triggered()),_widget,SLOT(importCurveFromAscii()));
     fileMenu->addAction(importCurveFromAsciiAction);
     
-    QAction* deleteKeyFramesAction = new QAction("Delete selected keyframes",_widget);
+    QAction* deleteKeyFramesAction = new QAction("Delete selected keyframes",editMenu);
     deleteKeyFramesAction->setShortcut(QKeySequence(Qt::Key_Backspace));
     QObject::connect(deleteKeyFramesAction,SIGNAL(triggered()),_widget,SLOT(deleteSelectedKeyFrames()));
     editMenu->addAction(deleteKeyFramesAction);
     
-    QAction* copyKeyFramesAction = new QAction("Copy selected keyframes",_widget);
+    QAction* copyKeyFramesAction = new QAction("Copy selected keyframes",editMenu);
     copyKeyFramesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
     QObject::connect(copyKeyFramesAction,SIGNAL(triggered()),_widget,SLOT(copySelectedKeyFrames()));
     editMenu->addAction(copyKeyFramesAction);
     
-    QAction* pasteKeyFramesAction = new QAction("Paste to selected curve",_widget);
+    QAction* pasteKeyFramesAction = new QAction("Paste to selected curve",editMenu);
     pasteKeyFramesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_V));
     QObject::connect(pasteKeyFramesAction,SIGNAL(triggered()),_widget,SLOT(pasteKeyFramesFromClipBoardToSelectedCurve()));
     editMenu->addAction(pasteKeyFramesAction);
     
-    QAction* selectAllAction = new QAction("Select all keyframes",_widget);
+    QAction* selectAllAction = new QAction("Select all keyframes",editMenu);
     selectAllAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
     QObject::connect(selectAllAction,SIGNAL(triggered()),_widget,SLOT(selectAllKeyFrames()));
     editMenu->addAction(selectAllAction);
     
     
-    QAction* constantInterp = new QAction("Constant",_widget);
+    QAction* constantInterp = new QAction("Constant",interpMenu);
     constantInterp->setShortcut(QKeySequence(Qt::Key_K));
     QObject::connect(constantInterp,SIGNAL(triggered()),_widget,SLOT(constantInterpForSelectedKeyFrames()));
     interpMenu->addAction(constantInterp);
     
-    QAction* linearInterp = new QAction("Linear",_widget);
+    QAction* linearInterp = new QAction("Linear",interpMenu);
     linearInterp->setShortcut(QKeySequence(Qt::Key_L));
     QObject::connect(linearInterp,SIGNAL(triggered()),_widget,SLOT(linearInterpForSelectedKeyFrames()));
     interpMenu->addAction(linearInterp);
     
     
-    QAction* smoothInterp = new QAction("Smooth",_widget);
+    QAction* smoothInterp = new QAction("Smooth",interpMenu);
     smoothInterp->setShortcut(QKeySequence(Qt::Key_Z));
     QObject::connect(smoothInterp,SIGNAL(triggered()),_widget,SLOT(smoothForSelectedKeyFrames()));
     interpMenu->addAction(smoothInterp);
     
     
-    QAction* catmullRomInterp = new QAction("Catmull-Rom",_widget);
+    QAction* catmullRomInterp = new QAction("Catmull-Rom",interpMenu);
     catmullRomInterp->setShortcut(QKeySequence(Qt::Key_R));
     QObject::connect(catmullRomInterp,SIGNAL(triggered()),_widget,SLOT(catmullromInterpForSelectedKeyFrames()));
     interpMenu->addAction(catmullRomInterp);
     
     
-    QAction* cubicInterp = new QAction("Cubic",_widget);
+    QAction* cubicInterp = new QAction("Cubic",interpMenu);
     cubicInterp->setShortcut(QKeySequence(Qt::Key_C));
     QObject::connect(cubicInterp,SIGNAL(triggered()),_widget,SLOT(cubicInterpForSelectedKeyFrames()));
     interpMenu->addAction(cubicInterp);
     
-    QAction* horizontalInterp = new QAction("Horizontal",_widget);
+    QAction* horizontalInterp = new QAction("Horizontal",interpMenu);
     horizontalInterp->setShortcut(QKeySequence(Qt::Key_H));
     QObject::connect(horizontalInterp,SIGNAL(triggered()),_widget,SLOT(horizontalInterpForSelectedKeyFrames()));
     interpMenu->addAction(horizontalInterp);
     
     
-    QAction* breakDerivatives = new QAction("Break",_widget);
+    QAction* breakDerivatives = new QAction("Break",interpMenu);
     breakDerivatives->setShortcut(QKeySequence(Qt::Key_X));
     QObject::connect(breakDerivatives,SIGNAL(triggered()),_widget,SLOT(breakDerivativesForSelectedKeyFrames()));
     interpMenu->addAction(breakDerivatives);
     
-    QAction* frameCurve = new QAction("Frame selected curve",_widget);
+    QAction* frameCurve = new QAction("Frame selected curve",viewMenu);
     frameCurve->setShortcut(QKeySequence(Qt::Key_F));
     QObject::connect(frameCurve,SIGNAL(triggered()),_widget,SLOT(frameSelectedCurve()));
     viewMenu->addAction(frameCurve);
     
-    QAction* updateOnPenUp = new QAction("Update on mouse release only",_widget);
+    QAction* updateOnPenUp = new QAction("Update on mouse release only",_rightClickMenu);
     updateOnPenUp->setCheckable(true);
     updateOnPenUp->setChecked(appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly());
     _rightClickMenu->addAction(updateOnPenUp);
@@ -1985,6 +1986,8 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
     ////
     // right button: popup menu
     if (event->button() == Qt::RightButton) {
+        
+        _imp->createMenu();
         _imp->_rightClickMenu->exec(mapToGlobal(event->pos()));
         // no need to set _imp->_oldClick
         // no need to set _imp->_dragStartPoint
