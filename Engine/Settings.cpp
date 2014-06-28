@@ -125,7 +125,8 @@ void Settings::initializeKnobs(){
     _renderOnEditingFinished->setHintToolTip("When checked, the render engine will run only when you finish editing "
                                              "a curve or a parameter. For example, for curves editing, that is only when you release the button"
                                              " of the mouse the render will be triggered."
-                                             "This also works for sliders and values of parameters.");
+                                             "This also works for sliders and values of parameters."
+                                             " Note that this setting doesn't apply to roto splines editing.");
     _renderOnEditingFinished->setAnimationEnabled(false);
     _generalTab->addKnob(_renderOnEditingFinished);
     

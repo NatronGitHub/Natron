@@ -61,6 +61,7 @@ private:
     int _time; //< the time at which the change was made
     std::list<boost::shared_ptr<Bezier> > _selectedCurves;
     
+    std::list<int> _indexesToMove; //< indexes of the control points
     std::list< std::pair<boost::shared_ptr<BezierCP> ,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints,_pointsToDrag;
 };
 

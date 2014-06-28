@@ -13,6 +13,7 @@
 #include "RotoUndoCommand.h"
 #include <QTreeWidgetItem>
 
+#include <QDebug>
 #include "Global/GlobalDefines.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
@@ -52,6 +53,14 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
         CpPtr second(new BezierCP(*(it->second)));
         _originalPoints.push_back(std::make_pair(first, second));
     }
+    
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!= _pointsToDrag.end(); ++it) {
+        if (!it->first->isFeatherPoint()) {
+            _indexesToMove.push_back(it->first->getCurve()->getControlPointIndex(it->first));
+        } else {
+            _indexesToMove.push_back(it->second->getCurve()->getControlPointIndex(it->second));
+        }
+    }
 }
 
 MoveControlPointsUndoCommand::~MoveControlPointsUndoCommand()
@@ -76,25 +85,27 @@ void MoveControlPointsUndoCommand::undo()
 
 void MoveControlPointsUndoCommand::redo()
 {
-    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!=_pointsToDrag.end(); ++it) {
-        int index;
-        if (it->first->isFeatherPoint()) {
-            if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_FEATHER_POINTS ||
-                (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
-                (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
-                index = it->second->getCurve()->getControlPointIndex(it->second);
-                assert(index != -1);
-                it->first->getCurve()->moveFeatherByIndex(index,_time, _dx, _dy);
-            }
-        } else {
-            if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_POINTS ||
-                (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
-                (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
-                index = it->first->getCurve()->getControlPointIndex(it->first);
-                assert(index != -1);
-                it->first->getCurve()->movePointByIndex(index,_time, _dx, _dy);
+    SelectedCpList::iterator itPoints = _pointsToDrag.begin();
+    assert(_pointsToDrag.size() == _indexesToMove.size());
+    
+    try {
+        for (std::list<int>::iterator it = _indexesToMove.begin();it!=_indexesToMove.end();++it,++itPoints) {
+            if (itPoints->first->isFeatherPoint()) {
+                if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_FEATHER_POINTS ||
+                    (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
+                    (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
+                    itPoints->first->getCurve()->moveFeatherByIndex(*it,_time, _dx, _dy);
+                }
+            } else {
+                if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_POINTS ||
+                    (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
+                    (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
+                    itPoints->first->getCurve()->movePointByIndex(*it,_time, _dx, _dy);
+                }
             }
         }
+    } catch (const std::exception& e) {
+        qDebug() << "Exception while operating MoveControlPointsUndoCommand::redo(): " << e.what();
     }
     
     if (_firstRedoCalled) {
