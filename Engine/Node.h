@@ -307,7 +307,7 @@ public:
      otherwise returns -1.*/
     int disconnectOutput(boost::shared_ptr<Node> output);
     
-
+    void switchInput0And1();
     /*============================*/
     
     /**
@@ -691,7 +691,7 @@ public:
     virtual int disconnectInput(int inputNumber) OVERRIDE;
     
     virtual int disconnectInput(boost::shared_ptr<Node> input) OVERRIDE;
-    
+
     bool tryAddEmptyInput();
     
     void addEmptyInput();

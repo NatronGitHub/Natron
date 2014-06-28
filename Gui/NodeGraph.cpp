@@ -366,7 +366,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     
     _menu = new QMenu(this);
-    
+    _menu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
 }
 
 NodeGraph::~NodeGraph() {
@@ -1223,6 +1223,14 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
                && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
         toggleConnectionHints();
+    } else if (e->key() == Qt::Key_X && e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)) {
+        
+        ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
+        if (_nodeSelected) {
+            _nodeSelected->onSwitchInputActionTriggered();
+        }
     }
 
     
@@ -1935,6 +1943,7 @@ NodeGraph::populateMenu()
     
     
     QMenu* editMenu = new QMenu(tr("Edit"),_menu);
+    editMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _menu->addAction(editMenu->menuAction());
     
     QAction* copyAction = new QAction(tr("Copy"),editMenu);
@@ -2091,7 +2100,7 @@ NodeGraph::dropEvent(QDropEvent* event)
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(found->second.c_str(),-1,-1,false);
+            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(found->second.c_str(),true,-1,-1,false);
             const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
@@ -2242,6 +2251,7 @@ NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
                      const NodeGuiSerialization& guiSerialization)
 {
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+                                                                 true,
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),internalSerialization,false);
     assert(n);
@@ -2350,6 +2360,7 @@ NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
     node->serialize(&guiSerialization);
     
     boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+                                                                     true,
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),internalSerialization,true);
     assert(clone);

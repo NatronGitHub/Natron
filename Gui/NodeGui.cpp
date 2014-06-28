@@ -133,6 +133,7 @@ void NodeGui::initialize(NodeGraph* dag,
     assert(internalNode);
     _graph = dag;
     _menu = new QMenu(dag);
+    _menu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     
     QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode.get(), SLOT(setName(QString)));
     
@@ -1103,6 +1104,12 @@ void NodeGui::populateMenu(){
     QAction* deleteAction = new QAction("Delete",_menu);
     QObject::connect(deleteAction,SIGNAL(triggered()),_graph,SLOT(deleteSelectedNode()));
     _menu->addAction(deleteAction);
+    
+    if (_internalNode->maximumInputs() >= 2) {
+        QAction* switchInputs = new QAction("Switch inputs 1 & 2",_menu);
+        QObject::connect(switchInputs, SIGNAL(triggered()), this, SLOT(onSwitchInputActionTriggered()));
+        _menu->addAction(switchInputs);
+    }
 
 }
 const std::map<boost::shared_ptr<KnobI> ,KnobGui*>& NodeGui::getKnobs() const{
@@ -1597,6 +1604,19 @@ void NodeGui::setCurrentColor(const QColor& c)
 {
     if (_settingsPanel) {
         _settingsPanel->setCurrentColor(c);
+    }
+}
+
+void NodeGui::onSwitchInputActionTriggered()
+{
+    if (_internalNode->maximumInputs() >= 2) {
+        _internalNode->switchInput0And1();
+        std::list<ViewerInstance* > viewers;
+        _internalNode->hasViewersConnected(&viewers);
+        for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
+            (*it)->updateTreeAndRender();
+        }
+        _internalNode->getApp()->triggerAutoSave();
     }
 }
 

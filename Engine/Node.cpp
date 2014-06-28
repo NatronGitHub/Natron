@@ -298,7 +298,10 @@ void Node::computeHash()
             } else {
                 for (U32 i = 0; i < _imp->inputsQueue.size();++i) {
                     if (_imp->inputsQueue[i]) {
-                        _imp->hash.append(_imp->inputsQueue[i]->getHashValue());
+                        ///Add the index of the input to its hash.
+                        ///Explanation: if we didn't add this, just switching inputs would produce a similar
+                        ///hash.
+                        _imp->hash.append(_imp->inputsQueue[i]->getHashValue() + i);
                     }
                 }
             }
@@ -929,6 +932,27 @@ bool Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
     onInputChanged(inputNumber);
     computeHash();
     return true;
+}
+
+void Node::switchInput0And1()
+{
+    ////Only called by the main-thread
+    assert(QThread::currentThread() == qApp->thread());
+    if (maximumInputs() < 2) {
+        return;
+    }
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        assert(_imp->inputsQueue.size() >= 2);
+        boost::shared_ptr<Natron::Node> input0 = _imp->inputsQueue[0];
+        _imp->inputsQueue[0] = _imp->inputsQueue[1];
+        _imp->inputsQueue[1] = input0;
+    }
+    emit inputChanged(0);
+    emit inputChanged(1);
+    onInputChanged(0);
+    onInputChanged(1);
+    computeHash();
 }
 
 void Node::onInputNameChanged(const QString& name)

@@ -343,6 +343,7 @@ public slots:
     
     void onNodeExtraLabelChanged(const QString& label);
     
+    void onSwitchInputActionTriggered();
 
 signals:
     
