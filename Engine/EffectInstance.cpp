@@ -98,8 +98,7 @@ struct EffectInstance::Implementation {
     : renderAbortedMutex()
     , renderAborted(false)
     , renderArgs()
-    , beginEndRenderMutex()
-    , beginEndRenderCount(0)
+    , beginEndRenderCount()
     , lastRenderArgsMutex()
     , lastRenderHash(0)
     , lastImage()
@@ -112,8 +111,7 @@ struct EffectInstance::Implementation {
     bool renderAborted; //< was rendering aborted ?
     
     ThreadStorage<RenderArgs> renderArgs;
-    QMutex beginEndRenderMutex;
-    int beginEndRenderCount;
+    ThreadStorage<int> beginEndRenderCount;
     
     
     QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastImageKey
@@ -1287,8 +1285,10 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         ///neer call beginsequenceRender here if the render is sequential
         if (!args._isSequentialRender)
         {
-            QMutexLocker locker(&_imp->beginEndRenderMutex);
-            if (_imp->beginEndRenderCount == 0) {
+            if (!_imp->beginEndRenderCount.hasLocalData()) {
+                callBegin = true;
+                _imp->beginEndRenderCount.localData() = 0;
+            } else if (_imp->beginEndRenderCount.localData() == 0) {
                 callBegin = true;
             }
         }
@@ -1341,8 +1341,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 ///never call endsequence render here if the render is sequential
                 if (!args._isSequentialRender)
                 {
-                    QMutexLocker locker(&_imp->beginEndRenderMutex);
-                    if (_imp->beginEndRenderCount == 1) {
+                    assert(_imp->beginEndRenderCount.hasLocalData());
+                    if (_imp->beginEndRenderCount.localData() ==  1) {
                         callEndRender = true;
                     }
                 }
@@ -1456,8 +1456,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             ///never call endsequence render here if the render is sequential
             if (!args._isSequentialRender)
             {
-                QMutexLocker locker(&_imp->beginEndRenderMutex);
-                if (_imp->beginEndRenderCount == 1) {
+                assert(_imp->beginEndRenderCount.hasLocalData());
+                if (_imp->beginEndRenderCount.localData() ==  1) {
                     callEndRender = true;
                 }
             }
@@ -2047,8 +2047,8 @@ Natron::Status EffectInstance::beginSequenceRender_public(SequenceTime first,Seq
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     {
-        QMutexLocker l(&_imp->beginEndRenderMutex);
-        ++_imp->beginEndRenderCount;
+        assert(_imp->beginEndRenderCount.hasLocalData());
+        ++_imp->beginEndRenderCount.localData();
     }
     Natron::Status ret = beginSequenceRender(first, last, step, interactive, scale,
                                              isSequentialRender, isRenderResponseToUserInteraction, view);
@@ -2064,9 +2064,9 @@ Natron::Status EffectInstance::endSequenceRender_public(SequenceTime first,Seque
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     {
-        QMutexLocker locker(&_imp->beginEndRenderMutex);
-        --_imp->beginEndRenderCount;
-        assert(_imp->beginEndRenderCount >= 0);
+        assert(_imp->beginEndRenderCount.hasLocalData());
+        --_imp->beginEndRenderCount.localData();
+        assert(_imp->beginEndRenderCount.localData() >= 0);
     }
     Natron::Status ret = endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     decrementRecursionLevel();
