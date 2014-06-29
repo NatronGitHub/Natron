@@ -999,8 +999,16 @@ bool NodeGui::isSettingsPanelVisible() const{
 void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     //keep type in synch with this enum:
     //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
+    
+    
+    ///don't do anything if the last persistent message is the same
+    if (message == _lastPersistentMessage) {
+        return;
+    }
     _persistentMessage->show();
     _stateIndicator->show();
+   
+    _lastPersistentMessage = message;
     if (type == 1) {
         _persistentMessage->setPlainText("ERROR");
         QColor errColor(128,0,0,255);
@@ -1022,9 +1030,12 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
     for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         ViewerTab* tab = _graph->getGui()->getViewerTabForInstance(*it);
         ///the tab might not exist if the node is being deactivated following a tab close request by the user.
-
+  
         if (tab) {
-            tab->getViewer()->setPersistentMessage(type,message);
+            ///don't update the viewer message if it is the same
+            if (tab->getViewer()->getCurrentPersistentMessage() != message) {
+                tab->getViewer()->setPersistentMessage(type,message);
+            }
         }
     }
     QRectF rect = _boundingBox->rect();
@@ -1036,6 +1047,7 @@ void NodeGui::onPersistentMessageCleared() {
     if (!_persistentMessage->isVisible()) {
         return;
     }
+    _lastPersistentMessage.clear();
     _persistentMessage->hide();
     _stateIndicator->hide();
     setToolTip("");

@@ -188,6 +188,8 @@ public:
     
     void clearPersistentMessage();
     
+    const QString& getCurrentPersistentMessage() const;
+    
     public slots:
    
     

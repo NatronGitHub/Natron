@@ -2902,6 +2902,11 @@ void ViewerGL::setPersistentMessage(int type,const QString& message)
     updateGL();
 }
 
+const QString& ViewerGL::getCurrentPersistentMessage() const
+{
+    return _imp->persistentMessage;
+}
+
 void ViewerGL::clearPersistentMessage()
 {
     // always running in the main thread
@@ -2909,6 +2914,7 @@ void ViewerGL::clearPersistentMessage()
     if (!_imp->displayPersistentMessage) {
         return;
     }
+    _imp->persistentMessage.clear();
     _imp->displayPersistentMessage = false;
     updateGL();
 }

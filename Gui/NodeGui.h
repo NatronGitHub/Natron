@@ -390,6 +390,7 @@ private:
     QGraphicsPixmapItem* _previewPixmap;
     
     QGraphicsTextItem* _persistentMessage;
+    QString _lastPersistentMessage;
     int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
     
