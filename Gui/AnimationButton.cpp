@@ -31,7 +31,6 @@ void AnimationButton::mousePressEvent(QMouseEvent* event){
         _dragPos = event->pos();
         _dragging = true;
     }
-    emit animationMenuRequested();
     QPushButton::mousePressEvent(event);
 }
 
@@ -68,7 +67,7 @@ void AnimationButton::mouseMoveEvent(QMouseEvent* event){
         p.drawText(QPointF(0,dragImg.height() - fmetrics.height()*2 - 10), textFirstLine);
 
         drag->setPixmap(QPixmap::fromImage(dragImg));
-        
+        setDown(false);
         drag->exec();
     }else{
         QPushButton::mouseMoveEvent(event);
@@ -78,6 +77,7 @@ void AnimationButton::mouseMoveEvent(QMouseEvent* event){
 void AnimationButton::mouseReleaseEvent(QMouseEvent* event) {
     _dragging = false;
     QPushButton::mouseReleaseEvent(event);
+    emit animationMenuRequested();
 }
 
 void AnimationButton::dragEnterEvent(QDragEnterEvent* event){
