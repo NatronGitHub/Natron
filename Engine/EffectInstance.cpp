@@ -2139,6 +2139,13 @@ int EffectInstance::getCurrentFrameRecursive() const
     return getApp()->getTimeLine()->currentFrame();
 }
 
+void EffectInstance::updateCurrentFrameRecursive(int time)
+{
+    if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+        _imp->renderArgs.localData()._time = time;
+    }
+}
+
 void EffectInstance::getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD)
 {
     time = getApp()->getTimeLine()->currentFrame();
