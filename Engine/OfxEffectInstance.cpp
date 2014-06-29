@@ -599,6 +599,20 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     }
     
     ofxRectDToEnclosedRectI(ofxRod,rod);
+    
+    ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
+    ///1 pixel large image
+    if (rod->x2 == 1 && rod->y2 == 1 && rod->x1 == 0 && rod->y1 == 0) {
+        int maxInputs = maximumInputs();
+        for (int i = 0; i < maxInputs; ++i) {
+            OfxClipInstance* clip = getClipCorrespondingToInput(i);
+            if (clip && !clip->getConnected() && !clip->isOptional() && !clip->isMask()) {
+                ///this is a mandatory source clip and it is not connected, return statfailed
+                return StatFailed;
+            }
+        }
+    }
+    
     return StatOK;
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
