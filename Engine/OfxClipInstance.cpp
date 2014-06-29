@@ -264,8 +264,11 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         
         ///If the RoD is cached accept it always if it doesn't depend on the project format.
         ///Otherwise cehck that it is really the current project format.
+        ///Also don't use cached RoDs for identity effects as they contain garbage here (because identity effects allocates
+        ///images with 0 bytes of data (rod null))
         if (isCached && (!cachedImgParams->isRodProjectFormat()
-            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f)))) {
+            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f))) &&
+            cachedImgParams->getInputNbIdentity() == -1) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
             ret.x2 = rod.right();
