@@ -3051,7 +3051,7 @@ void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
     }
     else if (ret == linkTo && ret != NULL)
     {
-        linkPointTo(cp.first);
+        linkPointTo(cp);
     }
     else if (ret == unLinkFrom && ret != NULL) {
         cp.first->unslave();
@@ -3082,6 +3082,7 @@ public:
         connect(buttons, SIGNAL(accepted()), this, SLOT(accept()));
         connect(buttons, SIGNAL(rejected()), this, SLOT(reject()));
         mainLayout->addWidget(buttons);
+        setWindowTitle("Link to track");
     }
     
     int getSelectedKnob() const {
@@ -3092,7 +3093,7 @@ public:
 };
 
 
-void RotoGui::linkPointTo(const boost::shared_ptr<BezierCP>& cp)
+void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp)
 {
     std::vector< std::pair<std::string,Double_Knob* > > knobs;
     std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
@@ -3123,9 +3124,14 @@ void RotoGui::linkPointTo(const boost::shared_ptr<BezierCP>& cp)
         if (index >= 0 && index < (int)knobs.size()) {
             Double_Knob* knob = knobs[index].second;
             if (knob && knob->getDimension() == 2) {
-                cp->slaveTo(knob);
-                knob->addSlavedTrack(cp);
+                cp.first->slaveTo(knob);
+                knob->addSlavedTrack(cp.first);
+                if(!cp.second->isSlaved()) {
+                    cp.second->slaveTo(knob);
+                    knob->addSlavedTrack(cp.second);
+                }
             }
         }
     }
+    _imp->node->getNode()->getApp()->triggerAutoSave();
 }
