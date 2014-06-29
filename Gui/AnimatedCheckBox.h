@@ -45,6 +45,10 @@ public:
     bool getDirty() const { return dirty; }
     
     void setDirty(bool b);
+    
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL { return QSize(25,25); }
+    
+    virtual QSize sizeHint() const OVERRIDE FINAL { return QSize(25,25); }
 private:
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;

@@ -30,8 +30,9 @@ void ClickableLabel::mousePressEvent(QMouseEvent *e) {
 void ClickableLabel::changeEvent(QEvent* e) {
     if (e->type() == QEvent::EnabledChange) {
         if (!isEnabled()) {
-            QString str = text();
-            QString paintTxt = QString("<font color=\"#000000\">%1</font>").arg(str);
+            QString paintTxt = text();
+            paintTxt.prepend("<font color=\"#000000\">");
+            paintTxt.append("</font>");
             setText(paintTxt);
         } else {
             QString str = text();
@@ -43,12 +44,14 @@ void ClickableLabel::changeEvent(QEvent* e) {
 }
 
 void ClickableLabel::setText_overload(const QString& str) {
+    QString paintTxt = str;
+    
     if (!isEnabled()) {
-        QString paintTxt = QString("<font color=\"#000000\">%1</font>").arg(str);
-        setText(paintTxt);
-    } else {
-        setText(str);
+        paintTxt.prepend("<font color=\"#000000\">");
+        paintTxt.append("</font>");
     }
+    setText(paintTxt);
+    
 
 }
 

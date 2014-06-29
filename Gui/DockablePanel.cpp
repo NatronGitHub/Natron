@@ -734,6 +734,7 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
                 fieldContainer = new QWidget(page->second.tab);
                 fieldLayout = new QHBoxLayout(fieldContainer);
                 fieldLayout->setContentsMargins(3,0,0,0);
+                fieldLayout->setSpacing(0);
                 fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
             } else {
                 ///otherwise re-use the last row's widget and layout
