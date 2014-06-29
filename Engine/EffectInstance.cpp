@@ -779,7 +779,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         ///first-off check whether the effect is identity, in which case we don't want
         /// to cache anything or render anything for this effect.
-        SequenceTime inputTimeIdentity;
+        SequenceTime inputTimeIdentity = 0.;
         int inputNbIdentity;
         RectI rod;
         FramesNeededMap framesNeeded;
