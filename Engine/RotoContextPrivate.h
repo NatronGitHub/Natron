@@ -19,6 +19,7 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QThread>
+#include <QReadWriteLock>
 
 #include <cairo/cairo.h>
 
@@ -45,6 +46,9 @@ struct BezierCPPrivate
     Curve curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
     
+    mutable QReadWriteLock masterMutex;
+    Double_Knob* masterTrack; //< is this point linked to a track ?
+    
     BezierCPPrivate(Bezier* curve)
     : holder(curve)
     , curveX()
@@ -59,6 +63,8 @@ struct BezierCPPrivate
     , rightX(0)
     , leftY(0)
     , rightY(0)
+    , masterMutex()
+    , masterTrack(NULL)
     {
         
     }

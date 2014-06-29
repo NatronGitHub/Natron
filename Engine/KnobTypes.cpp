@@ -18,6 +18,9 @@
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
+#include "Engine/AppInstance.h"
+#include "Engine/RotoContext.h"
+#include "Engine/Node.h"
 
 using namespace Natron;
 using std::make_pair;
@@ -486,6 +489,106 @@ void Double_Knob::setDecimals(const std::vector<int> &decis)
     }
 }
 
+void Double_Knob::onNodeDeactivated()
+{
+    ///unslave all roto control points that would be slaved
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
+        (*it)->unslave();
+    }
+}
+
+void Double_Knob::onNodeActivated()
+{
+    ///reslave all tracks that where slaved
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
+        (*it)->slaveTo(this);
+    }
+}
+
+
+void Double_Knob::removeSlavedTrack(const boost::shared_ptr<BezierCP>& cp) {
+    std::list< boost::shared_ptr<BezierCP> >::iterator found = std::find(_slavedTracks.begin(),_slavedTracks.end(),cp);
+    if (found != _slavedTracks.end()) {
+        _slavedTracks.erase(found);
+    }
+}
+
+void Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
+{
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
+        SerializedTrack s;
+        s.bezierName = (*it)->getCurve()->getName_mt_safe();
+        s.isFeather = (*it)->isFeatherPoint();
+        s.cpIndex = !s.isFeather ? (*it)->getCurve()->getControlPointIndex(*it) : (*it)->getCurve()->getFeatherPointIndex(*it);
+        s.rotoNodeName = (*it)->getCurve()->getRotoNodeName();
+        tracks->push_back(s);
+    }
+}
+
+void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const std::vector<boost::shared_ptr<Node> >& activeNodes)
+{
+    std::string lastNodeName;
+    RotoContext* lastRoto = 0;
+    for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it!=tracks.end(); ++it) {
+        RotoContext* roto = 0;
+        ///speed-up by remembering the last one
+        if (it->rotoNodeName == lastNodeName) {
+            roto = lastRoto;
+        } else {
+            for (U32 i = 0; i < activeNodes.size(); ++i) {
+                if (activeNodes[i]->getName() == it->rotoNodeName) {
+                    lastNodeName = activeNodes[i]->getName();
+                    boost::shared_ptr<RotoContext> rotoCtx = activeNodes[i]->getRotoContext();
+                    assert(rotoCtx);
+                    lastRoto = rotoCtx.get();
+                    roto = rotoCtx.get();
+                    break;
+                }
+            }
+        }
+        if (roto) {
+            boost::shared_ptr<RotoItem> item = roto->getItemByName(it->bezierName);
+            if (!item) {
+                qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
+                break;
+            }
+            Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
+            assert(isBezier);
+            
+            boost::shared_ptr<BezierCP> point = it->isFeather ?
+            isBezier->getFeatherPointAtIndex(it->cpIndex)
+            : isBezier->getControlPointAtIndex(it->cpIndex);
+            
+            if (!point) {
+                qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
+                break;
+            }
+            point->slaveTo(this);
+            _slavedTracks.push_back(point);
+        }
+    }
+}
+
+Double_Knob::~Double_Knob()
+{
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
+        (*it)->unslave();
+    }
+}
+
+void Double_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+{
+    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other.get());
+    if (!isDouble) {
+        return;
+    }
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = isDouble->_slavedTracks.begin();
+         it!=isDouble->_slavedTracks.end(); ++it) {
+        (*it)->unslave();
+        (*it)->slaveTo(this);
+        _slavedTracks.push_back(*it);
+    }
+}
 /******************************BUTTON_KNOB**************************************/
 
 Button_Knob::Button_Knob(KnobHolder*  holder, const std::string &description, int dimension,bool declaredByPlugin):

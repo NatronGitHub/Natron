@@ -57,8 +57,30 @@ BezierCP::~BezierCP()
     
 }
 
-bool BezierCP::getPositionAtTime(int time,double* x,double* y) const
+bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterTracker ) const
 {
+    if (!skipMasterTracker) {
+        Double_Knob* masterTrack ;
+        {
+            QReadLocker l(&_imp->masterMutex);
+            masterTrack = _imp->masterTrack;
+        }
+        if (masterTrack) {
+            bool ok;
+            KeyFrame k;
+            if (masterTrack->getCurve(0)->getKeyFrameWithTime(time, &k)) {
+                *x = k.getValue();
+                ok = masterTrack->getCurve(1)->getKeyFrameWithTime(time, &k);
+                *y = k.getValue();
+                return true;
+            } else {
+                *x = masterTrack->getValueAtTime(time,0);
+                *y = masterTrack->getValueAtTime(time,1);
+                return false;
+            }
+            
+        }
+    }
     KeyFrame k;
     if (_imp->curveX.getKeyFrameWithTime(time, &k)) {
         bool ok;
@@ -123,13 +145,14 @@ void BezierCP::setRightBezierStaticPosition(double x,double y)
 bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
 {
     KeyFrame k;
+    bool ret;
     if (_imp->curveLeftBezierX.getKeyFrameWithTime(time, &k)) {
         bool ok;
         *x = k.getValue();
         ok = _imp->curveLeftBezierY.getKeyFrameWithTime(time, &k);
         assert(ok);
         *y = k.getValue();
-        return true;
+        ret =  true;
     } else {
         try {
             *x = _imp->curveLeftBezierX.getValueAt(time);
@@ -138,21 +161,39 @@ bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
             *x = _imp->leftX;
             *y = _imp->leftY;
         }
-        return false;
+        ret =  false;
     }
+    
+    {
+        QReadLocker l(&_imp->masterMutex);
+        if (_imp->masterTrack) {
+            double xCenter,yCenter;
+            ret = getPositionAtTime(time, &xCenter, &yCenter,true);
+            
+            ///make it an offset relative to the center
+            *x -= xCenter;
+            *y -= yCenter;
+            
+            ///apply the offset to the track center
+            *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
+            *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
+        }
+    }
+    return ret;
 }
 
 bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
 {
-    
+   
     KeyFrame k;
+    bool ret;
     if (_imp->curveRightBezierX.getKeyFrameWithTime(time, &k)) {
         bool ok;
         *x = k.getValue();
         ok = _imp->curveRightBezierY.getKeyFrameWithTime(time, &k);
         assert(ok);
         *y = k.getValue();
-        return true;
+        ret = true;
     } else {
         try {
             *x = _imp->curveRightBezierX.getValueAt(time);
@@ -161,8 +202,25 @@ bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
             *x = _imp->rightX;
             *y = _imp->rightY;
         }
-        return false;
+        ret =  false;
     }
+    
+    {
+        QReadLocker l(&_imp->masterMutex);
+        if (_imp->masterTrack) {
+            double xCenter,yCenter;
+            ret = getPositionAtTime(time, &xCenter, &yCenter,true);
+            
+            ///make it an offset relative to the center
+            *x -= xCenter;
+            *y -= yCenter;
+            
+            ///apply the offset to the track center
+            *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
+            *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
+        }
+    }
+    return ret;
 }
 
 void BezierCP::setLeftBezierPointAtTime(int time,double x,double y)
@@ -201,7 +259,7 @@ void BezierCP::removeKeyframe(int time)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    
+
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
     if (_imp->curveX.getKeyFramesCount() == 1) {
         _imp->x = _imp->curveX.getValueAt(time);
@@ -469,6 +527,8 @@ void BezierCP::clone(const BezierCP& other)
     _imp->leftY = other._imp->leftY;
     _imp->rightX = other._imp->rightX;
     _imp->rightY = other._imp->rightY;
+    
+    _imp->masterTrack = other._imp->masterTrack;
 }
 
 bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
@@ -489,7 +549,29 @@ bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
     return false;
 }
 
+void BezierCP::slaveTo(Double_Knob* track)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    assert(!_imp->masterTrack);
+    QWriteLocker l(&_imp->masterMutex);
+    _imp->masterTrack = track;
+    
+}
 
+void BezierCP::unslave()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    assert(_imp->masterTrack);
+    QWriteLocker l(&_imp->masterMutex);
+    _imp->masterTrack = NULL;
+}
+
+
+Double_Knob* BezierCP::isSlaved() const
+{
+    QReadLocker l(&_imp->masterMutex);
+    return _imp->masterTrack;
+}
 
 ////////////////////////////////////RotoItem////////////////////////////////////
 namespace {
@@ -740,6 +822,11 @@ void RotoItem::load(const RotoItemSerialization &obj)
         _imp->parentLayer = parent.get();
     }
     
+}
+
+std::string RotoItem::getRotoNodeName() const
+{
+    return getContext()->getRotoNodeName();
 }
 
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
@@ -1263,7 +1350,17 @@ void Bezier::clone(const Bezier& other)
 
 Bezier::~Bezier()
 {
-    
+    BezierCPs::iterator itFp = _imp->featherPoints.begin();
+    for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp,++itFp) {
+        Double_Knob* masterCp = (*itCp)->isSlaved();
+        Double_Knob* masterFp = (*itFp)->isSlaved();
+        if (masterCp) {
+            masterCp->removeSlavedTrack(*itCp);
+        }
+        if (masterFp) {
+            masterFp->removeSlavedTrack(*itFp);
+        }
+    }
 }
 
 
@@ -1563,6 +1660,10 @@ void Bezier::removeControlPointByIndex(int index)
     } catch (...) {
         ///attempt to remove an unexsiting point
         return;
+    }
+    Double_Knob* isSlaved = (*it)->isSlaved();
+    if (isSlaved) {
+        isSlaved->removeSlavedTrack(*it);
     }
     _imp->points.erase(it);
     
@@ -2426,7 +2527,6 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance,ControlPointSel
 int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
 {
     ///only called on the main-thread
-    assert(QThread::currentThread() == qApp->thread());
     assert(cp);
     QMutexLocker l(&itemMutex);
     
@@ -2443,7 +2543,6 @@ int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
 int Bezier::getFeatherPointIndex(const boost::shared_ptr<BezierCP>& fp) const
 {
     ///only called on the main-thread
-    assert(QThread::currentThread() == qApp->thread());
     QMutexLocker l(&itemMutex);
     
     int i = 0;
@@ -3875,6 +3974,11 @@ void RotoContext::onItemLockedChanged(RotoItem* item)
     
     emit itemLockedChanged();
     
+}
+
+std::string RotoContext::getRotoNodeName() const
+{
+    return _imp->node->getName_mt_safe();
 }
 
 void RotoContext::emitRefreshViewerOverlays()

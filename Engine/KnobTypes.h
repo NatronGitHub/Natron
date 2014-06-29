@@ -30,6 +30,11 @@ CLANG_DIAG_ON(deprecated)
 class Curve;
 class OverlaySupport;
 class StringAnimationManager;
+class BezierCP;
+namespace Natron
+{
+    class Node;
+}
 /******************************INT_KNOB**************************************/
 
 class Int_Knob: public QObject, public Knob<int>
@@ -158,6 +163,7 @@ public:
     
     Double_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin );
     
+    virtual ~Double_Knob();
     
     void disableSlider();
     
@@ -225,6 +231,27 @@ public:
         }
     }
     
+    void addSlavedTrack(const boost::shared_ptr<BezierCP>& cp) { _slavedTracks.push_back(cp); }
+    
+    void removeSlavedTrack(const boost::shared_ptr<BezierCP>& cp);
+    
+    
+    struct SerializedTrack
+    {
+        std::string rotoNodeName;
+        std::string bezierName;
+        int cpIndex;
+        bool isFeather;
+    };
+    void serializeTracks(std::list<SerializedTrack>* tracks);
+
+    void restoreTracks(const std::list <SerializedTrack>& tracks,const std::vector<boost::shared_ptr<Natron::Node> >& activeNodes);
+    
+public slots:
+    
+    void onNodeDeactivated();
+    void onNodeActivated();
+    
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
     
@@ -236,7 +263,8 @@ signals:
     
 private:
     
-    
+    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
@@ -247,7 +275,7 @@ private:
     std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     std::vector<int> _decimals;
     bool _disableSlider;
-    
+    std::list< boost::shared_ptr<BezierCP> > _slavedTracks;
     
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.

@@ -124,7 +124,7 @@ public:
 
     bool equalsAtTime(int time,const BezierCP& other) const;
     
-    bool getPositionAtTime(int time,double* x,double* y) const;
+    bool getPositionAtTime(int time,double* x,double* y,bool skipMasterTracker = false) const;
     
     bool getLeftBezierPointAtTime(int time,double* x,double* y) const;
     
@@ -149,6 +149,10 @@ public:
      * isFeatherPoint() on the returned control point.
      **/
     int isNearbyTangent(int time,double x,double y,double acceptance) const;
+    
+    void slaveTo(Double_Knob* track);
+    Double_Knob* isSlaved() const;
+    void unslave();
     
 private:
     
@@ -241,6 +245,10 @@ public:
      **/
     virtual void load(const RotoItemSerialization& obj);
     
+    /**
+     * @brief Returns the name of the node holding this item
+     **/
+    std::string getRotoNodeName() const;
     
 protected:
     
@@ -920,6 +928,11 @@ public:
     void emitRefreshViewerOverlays();
     
     void getBeziersKeyframeTimes(std::list<int> *times) const;
+    
+    /**
+     * @brief Returns the name of the node holding this item
+     **/
+    std::string getRotoNodeName() const;
 signals:
     
     /**

@@ -22,12 +22,17 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
+
 
 #include "Engine/Variant.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
+
+#define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS 2
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS
 
 struct MasterSerialization
 {
@@ -226,15 +231,16 @@ class KnobSerialization
     int _dimension;
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
     std::list< Curve > parametricCurves;
+    std::list<Double_Knob::SerializedTrack> slavedTracks; //< same as for master, can't be used right away when deserializing
 
     friend class boost::serialization::access;
     template<class Archive>
     void save(Archive & ar, const unsigned int /*version*/) const
     {
         
-        boost::shared_ptr<AnimatingString_KnobHelper> isString = boost::dynamic_pointer_cast<AnimatingString_KnobHelper>(_knob);
-        
-        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(_knob);
+        AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>(_knob.get());
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
+        Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_knob.get());
         std::string name = _knob->getName();
         ar & boost::serialization::make_nvp("Name",name);
         
@@ -261,11 +267,24 @@ class KnobSerialization
             isString->getAnimation().save(&extraDatas);
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
         }
+        else if (isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
+            std::list<Double_Knob::SerializedTrack> tracks;
+            isDouble->serializeTracks(&tracks);
+            int count = (int)tracks.size();
+            ar & boost::serialization::make_nvp("SlavePtsNo",count);
+            for (std::list<Double_Knob::SerializedTrack>::iterator it = tracks.begin(); it!=tracks.end(); ++it) {
+                ar & boost::serialization::make_nvp("SlavePtNodeName",it->rotoNodeName);
+                ar & boost::serialization::make_nvp("SlavePtBezier",it->bezierName);
+                ar & boost::serialization::make_nvp("SlavePtIndex",it->cpIndex);
+                ar & boost::serialization::make_nvp("SlavePtIsFeather",it->isFeather);
+            }
+            
+        }
 
     }
     
     template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
+    void load(Archive & ar, const unsigned int version)
     {
         
         std::string name;
@@ -291,10 +310,9 @@ class KnobSerialization
         ar & boost::serialization::make_nvp("Secret",secret);
         _knob->setSecret(secret);
         
-        boost::shared_ptr<AnimatingString_KnobHelper> isStringAnimated = boost::dynamic_pointer_cast<AnimatingString_KnobHelper>(_knob);
-        boost::shared_ptr<File_Knob> isFile = boost::dynamic_pointer_cast<File_Knob>(_knob);
-        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(_knob);
-        
+        AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<AnimatingString_KnobHelper*>(_knob.get());
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
+        Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_knob.get());
         for (int i = 0; i < _knob->getDimension(); ++i) {
             ValueSerialization vs(_knob,i,false);
             ar & boost::serialization::make_nvp("item",vs);
@@ -312,7 +330,23 @@ class KnobSerialization
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
             isStringAnimated->loadAnimation(extraDatas);
         }
-    
+        else if (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS &&
+                 isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
+            int count ;
+            ar & boost::serialization::make_nvp("SlavePtsNo",count);
+            for (int i = 0; i < count;++i) {
+                
+                Double_Knob::SerializedTrack t;
+                ar & boost::serialization::make_nvp("SlavePtNodeName",t.rotoNodeName);
+                ar & boost::serialization::make_nvp("SlavePtBezier",t.bezierName);
+                ar & boost::serialization::make_nvp("SlavePtIndex",t.cpIndex);
+                ar & boost::serialization::make_nvp("SlavePtIsFeather",t.isFeather);
+                slavedTracks.push_back(t);
+            }
+        }
+        
+        
+        
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -349,7 +383,7 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
+    void restoreKnobLinks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
     
     boost::shared_ptr<KnobI> getKnob() const { return _knob; }
 
@@ -358,10 +392,14 @@ public:
     
     static boost::shared_ptr<KnobI> createKnob(const std::string& typeName,int dimension);
 
+    void restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
+    
 private:
     
     
 };
+
+BOOST_CLASS_VERSION(KnobSerialization, KNOB_SERIALIZATION_VERSION)
 
 
 #endif // KNOBSERIALIZATION_H

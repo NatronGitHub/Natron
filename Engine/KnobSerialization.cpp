@@ -74,7 +74,7 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string& typeNa
 
 }
 
-void KnobSerialization::restoreKnobLinks(const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
+void KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
 {
     int i = 0;
     for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
@@ -88,7 +88,7 @@ void KnobSerialization::restoreKnobLinks(const std::vector<boost::shared_ptr<Nat
                 }
             }
             if (!masterNode) {
-                qDebug() << "Link slave/master for "<< _knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
+                qDebug() << "Link slave/master for "<< knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
                 ++i;
                 continue;
                 
@@ -99,13 +99,13 @@ void KnobSerialization::restoreKnobLinks(const std::vector<boost::shared_ptr<Nat
             bool found = false;
             for (U32 j = 0 ; j < otherKnobs.size();++j) {
                 if (otherKnobs[j]->getName() == it->masterKnobName && otherKnobs[j]->getIsPersistant()) {
-                    _knob->slaveTo(i, otherKnobs[j], it->masterDimension);
+                    knob->slaveTo(i, otherKnobs[j], it->masterDimension);
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                qDebug() << "Link slave/master for "<< _knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
+                qDebug() << "Link slave/master for "<< knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
             }
             
             
@@ -115,3 +115,14 @@ void KnobSerialization::restoreKnobLinks(const std::vector<boost::shared_ptr<Nat
     }
 }
 
+void KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
+{
+    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(knob.get());
+    if (!isDouble) {
+        return;
+    }
+    if (isDouble->getName() != "center" || isDouble->getDimension() != 2) {
+        return;
+    }
+    isDouble->restoreTracks(slavedTracks,allNodes);
+}

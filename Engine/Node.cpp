@@ -253,7 +253,7 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     assert(_imp->liveInstance);
     
     ///Special case for trackers: set as multi instance
-    if (pluginID.find("Tracker")) {
+    if (isTrackerNode()) {
         _imp->isMultiInstance = true;
     }
 }
@@ -366,7 +366,13 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::v
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
-        (*it)->restoreKnobLinks(allNodes);
+        boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
+        if (!knob) {
+            qDebug() << "Couldn't find a knob named " << (*it)->getName().c_str();
+            continue;
+        }
+        (*it)->restoreKnobLinks(knob,allNodes);
+        (*it)->restoreTracks(knob,allNodes);
     }
     
 }
@@ -2038,6 +2044,13 @@ bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
         return false;
     }
 }
+
+
+bool Node::isTrackerNode() const
+{
+    return pluginID().find("Tracker") != std::string::npos;
+}
+
 
 //////////////////////////////////
 

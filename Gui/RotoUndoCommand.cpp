@@ -796,15 +796,17 @@ bool MoveFeatherBarUndoCommand::mergeWith(const QUndoCommand *other)
 
 /////////////////////////
 
-RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
-                         const boost::shared_ptr<BezierCP>& fp)
+RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(RotoGui* roto,const std::list<RemoveFeatherData>& datas)
 : QUndoCommand()
 , _roto(roto)
 , _firstRedocalled(false)
-, _curve(curve)
-, _oldFp(new BezierCP(*fp))
-, _newFp(fp)
+, _datas(datas)
 {
+    for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = it->newPoints.begin(); it2 != it->newPoints.end(); ++it2) {
+            it->oldPoints.push_back(boost::shared_ptr<BezierCP>(new BezierCP(**it2)));
+        }
+    }
     
 }
 
@@ -815,32 +817,44 @@ RemoveFeatherUndoCommand::~RemoveFeatherUndoCommand()
 
 void RemoveFeatherUndoCommand::undo()
 {
-    _curve->clonePoint(*_newFp, *_oldFp);
+    for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
+             itNew != it->newPoints.end(); ++itNew,++itOld) {
+
+            it->curve->clonePoint(**itNew, **itOld);
+        }
+    }
     _roto->evaluate(true);
 
-    boost::shared_ptr<BezierCP> cp = _curve->getControlPointForFeatherPoint(_newFp);
-    _roto->setSelection(_curve, std::make_pair(cp, _newFp));
-    setText(QString("Remove feather of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QString("Remove feather of %1").arg(_roto->getNodeName()));
 }
 
 void RemoveFeatherUndoCommand::redo()
 {
-    _curve->clonePoint(*_oldFp, *_newFp);
-    try {
-        _curve->removeFeatherAtIndex(_curve->getFeatherPointIndex(_newFp));
-    } catch (...) {
-        ///the point doesn't exist anymore, just do nothing
-        return;
+    
+    for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
+             itNew != it->newPoints.end(); ++itNew,++itOld) {
+            
+            it->curve->clonePoint(**itOld, **itNew);
+            try {
+                it->curve->removeFeatherAtIndex(it->curve->getFeatherPointIndex(*itNew));
+            } catch (...) {
+                ///the point doesn't exist anymore, just do nothing
+                return;
+            }
+        }
     }
+
     
     _roto->evaluate(_firstRedocalled);
     
-    boost::shared_ptr<BezierCP> cp = _curve->getControlPointForFeatherPoint(_newFp);
-    _roto->setSelection(_curve, std::make_pair(cp, _newFp));
     
     _firstRedocalled = true;
     
-    setText(QString("Remove feather of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QString("Remove feather of %1").arg(_roto->getNodeName()));
 }
 
 ////////////////////////////
@@ -889,21 +903,23 @@ void OpenCloseUndoCommand::redo()
 
 ////////////////////////////
 
-SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
-                      const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& point,
-                      int time,bool cusp)
+SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,const std::list<SmoothCuspCurveData>& data,int time,bool cusp)
 : QUndoCommand()
 , _roto(roto)
 , _firstRedoCalled(false)
-, _curve(curve)
 , _time(time)
 , _count(1)
 , _cusp(cusp)
-, _oldPoint()
-, _newPoint(point)
+, curves(data)
 {
-    _oldPoint.first.reset(new BezierCP(*point.first));
-    _oldPoint.second.reset(new BezierCP(*point.second));
+    for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it!=curves.end(); ++it) {
+        for (SelectedPointList::const_iterator it2 = it->newPoints.begin(); it2!= it->newPoints.end(); ++it2) {
+            boost::shared_ptr<BezierCP> firstCpy(new BezierCP(*(*it2).first));
+            boost::shared_ptr<BezierCP> secondCpy(new BezierCP(*(*it2).second));
+            it->oldPoints.push_back(std::make_pair(firstCpy, secondCpy));
+        }
+
+    }
 }
 
 SmoothCuspUndoCommand::~SmoothCuspUndoCommand()
@@ -912,44 +928,55 @@ SmoothCuspUndoCommand::~SmoothCuspUndoCommand()
 }
 void SmoothCuspUndoCommand::undo()
 {
-    _curve->clonePoint(*_newPoint.first, *_oldPoint.first);
-    _curve->clonePoint(*_newPoint.second, *_oldPoint.second);
+    
+    for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it!=curves.end(); ++it) {
+        SelectedPointList::const_iterator itOld = it->oldPoints.begin();
+        for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
+             itNew!= it->newPoints.end(); ++itNew,++itOld) {
+            it->curve->clonePoint(*(*itNew).first, *(*itOld).first);
+            it->curve->clonePoint(*(*itNew).second, *(*itOld).second);
+            
+        }
+    }
     
     _roto->evaluate(true);
-    _roto->setSelection(_curve, _newPoint);
     if (_cusp) {
-        setText(QString("Cusp %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+        setText(QString("Cusp points of %1").arg(_roto->getNodeName()));
     } else {
-        setText(QString("Smooth %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+        setText(QString("Smooth points of %1").arg(_roto->getNodeName()));
     }
 }
 
 void SmoothCuspUndoCommand::redo()
 {
     
-    _curve->clonePoint(*_oldPoint.first, *_newPoint.first);
-    _curve->clonePoint(*_oldPoint.second, *_newPoint.second);
-    
-    for (int i = 0; i < _count; ++i) {
-        int index = _curve->getControlPointIndex(_newPoint.first->isFeatherPoint() ? _newPoint.second : _newPoint.first);
-        assert(index != -1);
-        
-        if (_cusp) {
-            _curve->cuspPointAtIndex(index, _time);
-        } else {
-            _curve->smoothPointAtIndex(index, _time);
+    for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it!=curves.end(); ++it) {
+        SelectedPointList::const_iterator itOld = it->oldPoints.begin();
+        for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
+             itNew!= it->newPoints.end(); ++itNew,++itOld) {
+            it->curve->clonePoint(*(*itOld).first, *(*itNew).first);
+            it->curve->clonePoint(*(*itOld).second, *(*itNew).second);
+            for (int i = 0; i < _count; ++i) {
+                int index = it->curve->getControlPointIndex((*itNew).first->isFeatherPoint() ? (*itNew).second : (*itNew).first);
+                assert(index != -1);
+                
+                if (_cusp) {
+                    it->curve->cuspPointAtIndex(index, _time);
+                } else {
+                    it->curve->smoothPointAtIndex(index, _time);
+                }
+            }
+
         }
     }
-    
-    
+
     _roto->evaluate(_firstRedoCalled);
-    _roto->setSelection(_curve, _newPoint);
     
     _firstRedoCalled = true;
     if (_cusp) {
-        setText(QString("Cusp %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+        setText(QString("Cusp points of %1").arg(_roto->getNodeName()));
     } else {
-        setText(QString("Smooth %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+        setText(QString("Smooth points of %1").arg(_roto->getNodeName()));
     }
     
 }
@@ -965,10 +992,25 @@ bool SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
     if (!sCmd) {
         return false;
     }
-    if (sCmd->_newPoint.first != _newPoint.first || sCmd->_newPoint.second != _newPoint.second ||
+    if (sCmd->curves.size() != curves.size() ||
         sCmd->_cusp != _cusp || sCmd->_time != _time) {
         return false;
     }
+    std::list<SmoothCuspCurveData>::const_iterator itOther = sCmd->curves.begin();
+    for (std::list<SmoothCuspCurveData>::const_iterator it = curves.begin(); it!=curves.end(); ++it,++itOther) {
+        if (it->curve != itOther->curve) {
+            return false;
+        }
+        SelectedPointList::const_iterator itNewOther = itOther->newPoints.begin();
+        for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
+             itNew!= it->newPoints.end(); ++itNew,++itNewOther) {
+            if (itNewOther->first != itNew->first || itNewOther->second != itNew->second) {
+                return false;
+            }
+        }
+    }
+    
+    
     ++_count;
     return true;
 }

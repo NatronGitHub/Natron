@@ -275,10 +275,14 @@ class RemoveFeatherUndoCommand: public QUndoCommand
 
 public:
     
+    struct RemoveFeatherData
+    {
+        boost::shared_ptr<Bezier> curve;
+        std::list<boost::shared_ptr<BezierCP> > oldPoints,newPoints;
+    };
     
     
-    RemoveFeatherUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
-                             const boost::shared_ptr<BezierCP>& fp);
+    RemoveFeatherUndoCommand(RotoGui* roto,const std::list<RemoveFeatherData>& datas);
     
     virtual ~RemoveFeatherUndoCommand();
     
@@ -289,8 +293,7 @@ public:
 private:
     RotoGui* _roto;
     bool _firstRedocalled;
-    boost::shared_ptr<Bezier> _curve;
-    boost::shared_ptr<BezierCP> _oldFp,_newFp;
+    std::list<RemoveFeatherData> _datas;
 };
 
 class OpenCloseUndoCommand: public QUndoCommand
@@ -325,11 +328,13 @@ class SmoothCuspUndoCommand: public QUndoCommand
     
 public:
     
+    typedef std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > SelectedPointList;
+    struct SmoothCuspCurveData {
+        boost::shared_ptr<Bezier> curve;
+        SelectedPointList newPoints,oldPoints;
+    };
     
-    
-    SmoothCuspUndoCommand(RotoGui* roto,const boost::shared_ptr<Bezier>& curve,
-                          const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& point,
-                          int time,bool cusp);
+    SmoothCuspUndoCommand(RotoGui* roto,const std::list<SmoothCuspCurveData>& data, int time,bool cusp);
     
     virtual ~SmoothCuspUndoCommand();
     
@@ -345,11 +350,10 @@ public:
 private:
     RotoGui* _roto;
     bool _firstRedoCalled;
-    boost::shared_ptr<Bezier> _curve;
     int _time;
     int _count;
     bool _cusp;
-    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > _oldPoint,_newPoint;
+    std::list<SmoothCuspCurveData> curves;
 };
 
 

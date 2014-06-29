@@ -192,6 +192,8 @@ public:
     
     bool isFeatherVisible() const;
     
+    void linkPointTo(const boost::shared_ptr<BezierCP>& cp);
+    
 signals:
     
     /**
@@ -230,12 +232,18 @@ public slots:
     void onSelectionChanged(int reason);
     
     void onDisplayFeatherButtonClicked(bool toggled);
+    
+    
+    void smoothSelectedCurve();
+    void cuspSelectedCurve();
+    void removeFeatherForSelectedCurve();
             
 private:
     
     void showMenuForCurve(const boost::shared_ptr<Bezier>& curve);
     
-    void showMenuForControlPoint(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp);
+    void showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
+                                 const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp);
 
     
     /**

@@ -20,10 +20,14 @@
 #include <QKeyEvent>
 #include <QHBoxLayout>
 #include <QMenu>
+#include <QDialogButtonBox>
 
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobTypes.h"
+
+#include <ofxNatron.h>
 
 #include "Gui/FromQtEnums.h"
 #include "Gui/NodeGui.h"
@@ -34,6 +38,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/RotoUndoCommand.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/ComboBox.h"
 
 #include "Global/GLIncludes.h"
 
@@ -1591,7 +1596,8 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     _imp->handleControlPointSelection(nearbyCP);
                     _imp->handleBezierSelection(nearbyBezier);
                     if (e->button() == Qt::RightButton) {
-                        showMenuForControlPoint(nearbyCP);
+                        _imp->state = NONE;
+                        showMenuForControlPoint(nearbyBezier,nearbyCP);
                     }
                 } else if (featherBarSel.first) {
                     _imp->clearCPSSelection();
@@ -1695,8 +1701,12 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         case REMOVE_FEATHER_POINTS:
             if (nearbyCP.first) {
                 assert(nearbyBezier);
-                pushUndoCommand(new RemoveFeatherUndoCommand(this,nearbyBezier,
-                                                             nearbyCP.first->isFeatherPoint() ? nearbyCP.first : nearbyCP.second));
+                std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
+                RemoveFeatherUndoCommand::RemoveFeatherData data;
+                data.curve = nearbyBezier;
+                data.newPoints.push_back(nearbyCP.first->isFeatherPoint() ? nearbyCP.first : nearbyCP.second);
+                datas.push_back(data);
+                pushUndoCommand(new RemoveFeatherUndoCommand(this,datas));
                 didSomething = true;
             }
             break;
@@ -1709,13 +1719,23 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
         case SMOOTH_POINTS:
 
             if (nearbyCP.first) {
-                pushUndoCommand(new SmoothCuspUndoCommand(this,nearbyBezier,nearbyCP,time,false));
+                std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
+                SmoothCuspUndoCommand::SmoothCuspCurveData data;
+                data.curve = nearbyBezier;
+                data.newPoints.push_back(nearbyCP);
+                datas.push_back(data);
+                pushUndoCommand(new SmoothCuspUndoCommand(this,datas,time,false));
                 didSomething = true;
             }
             break;
         case CUSP_POINTS:
             if (nearbyCP.first && _imp->context->isAutoKeyingEnabled()) {
-                pushUndoCommand(new SmoothCuspUndoCommand(this,nearbyBezier,nearbyCP,time,true));
+                std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
+                SmoothCuspUndoCommand::SmoothCuspCurveData data;
+                data.curve = nearbyBezier;
+                data.newPoints.push_back(nearbyCP);
+                datas.push_back(data);
+                pushUndoCommand(new SmoothCuspUndoCommand(this,datas,time,true));
                 didSomething = true;
             }
             break;
@@ -2257,6 +2277,15 @@ bool RotoGui::keyDown(double /*scaleX*/,double /*scaleY*/,QKeyEvent* e)
                && !e->modifiers().testFlag(Qt::ShiftModifier)) {
         moveSelectedCpsWithKeyArrows(0,-1);
         didSomething = true;
+    } else if (e->key() == Qt::Key_Z && !e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+        smoothSelectedCurve();
+    } else if (e->key() == Qt::Key_Z && !e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+              && e->modifiers().testFlag(Qt::ShiftModifier)) {
+        cuspSelectedCurve();
+    }  else if (e->key() == Qt::Key_E && !e->modifiers().testFlag(Qt::AltModifier) && !e->modifiers().testFlag(Qt::ControlModifier)
+              && e->modifiers().testFlag(Qt::ShiftModifier)) {
+        removeFeatherForSelectedCurve();
     }
     
     return didSomething;
@@ -2835,7 +2864,24 @@ void RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier>& curve)
     deleteCurve->setShortcut(QKeySequence(Qt::Key_Backspace));
     menu.addAction(deleteCurve);
     
+    QAction* openCloseCurve = new QAction("Open/Close curve",&menu);
+    menu.addAction(openCloseCurve);
+    
+    QAction* smoothAction = new QAction("Smooth points",&menu);
+    smoothAction->setShortcut(QKeySequence(Qt::Key_Z));
+    menu.addAction(smoothAction);
+    
+    QAction* cuspAction = new QAction("Cusp points",&menu);
+    cuspAction->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_Z));
+    menu.addAction(cuspAction);
+    
+    QAction* removeFeather = new QAction("Remove feather",&menu);
+    removeFeather->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_E));
+    menu.addAction(removeFeather);
+    
     QAction* ret = menu.exec(pos);
+    
+   
     
     if (ret == selectAllAction)
     {
@@ -2847,6 +2893,7 @@ void RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier>& curve)
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++ cpIT) {
             _imp->rotoData->selectedCps.push_back(std::make_pair(*cpIT, *fpIT));
         }
+        _imp->computeSelectedCpsBBOX();
         _imp->viewer->redraw();
     }
     else if (ret == deleteCurve)
@@ -2856,9 +2903,229 @@ void RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier>& curve)
         pushUndoCommand(new RemoveCurveUndoCommand(this,beziers));
         _imp->viewer->redraw();
     }
+    else if (ret == openCloseCurve)
+    {
+        pushUndoCommand(new OpenCloseUndoCommand(this,curve));
+        _imp->viewer->redraw();
+    }
+    else if (ret == smoothAction)
+    {
+        smoothSelectedCurve();
+    }
+    else if (ret == cuspAction)
+    {
+        cuspSelectedCurve();
+    }
+    else if (ret == removeFeather)
+    {
+        removeFeatherForSelectedCurve();
+    }
 }
 
-void RotoGui::showMenuForControlPoint(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp)
+
+void RotoGui::smoothSelectedCurve()
 {
+    int time = _imp->context->getTimelineCurrentTime();
+    std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
+    for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin();it!=_imp->rotoData->selectedBeziers.end();++it) {
+        SmoothCuspUndoCommand::SmoothCuspCurveData data;
+        data.curve = *it;
+        const std::list<boost::shared_ptr<BezierCP> >& cps = (*it)->getControlPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it,++itFp) {
+            data.newPoints.push_back(std::make_pair(*it, *itFp));
+        }
+        datas.push_back(data);
+    }
+    pushUndoCommand(new SmoothCuspUndoCommand(this,datas,time,false));
+    _imp->viewer->redraw();
+
+}
+
+void RotoGui::cuspSelectedCurve()
+{
+    int time = _imp->context->getTimelineCurrentTime();
+    std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
+    for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin();it!=_imp->rotoData->selectedBeziers.end();++it) {
+        SmoothCuspUndoCommand::SmoothCuspCurveData data;
+        data.curve = *it;
+        const std::list<boost::shared_ptr<BezierCP> >& cps = (*it)->getControlPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it,++itFp) {
+            data.newPoints.push_back(std::make_pair(*it, *itFp));
+        }
+        datas.push_back(data);
+    }
+    pushUndoCommand(new SmoothCuspUndoCommand(this,datas,time,true));
+    _imp->viewer->redraw();
+
+
+}
+
+void RotoGui::removeFeatherForSelectedCurve()
+{
+    std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
+    for (SelectedBeziers::const_iterator it = _imp->rotoData->selectedBeziers.begin();it!=_imp->rotoData->selectedBeziers.end();++it) {
+        RemoveFeatherUndoCommand::RemoveFeatherData data;
+        data.curve = *it;
+        data.newPoints = (*it)->getFeatherPoints();
+        datas.push_back(data);
+    }
+    pushUndoCommand(new RemoveFeatherUndoCommand(this,datas));
+    _imp->viewer->redraw();
+}
+
+void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
+                                      const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp)
+{
+    QPoint pos = QCursor::pos();
+    QMenu menu(_imp->viewer);
+    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+
+    QAction* deleteCp = new QAction("Delete",&menu);
+    deleteCp->setShortcut(QKeySequence(Qt::Key_Backspace));
+    menu.addAction(deleteCp);
+
+    QAction* smoothAction = new QAction("Smooth points",&menu);
+    smoothAction->setShortcut(QKeySequence(Qt::Key_Z));
+    menu.addAction(smoothAction);
     
+    QAction* cuspAction = new QAction("Cusp points",&menu);
+    cuspAction->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_Z));
+    menu.addAction(cuspAction);
+    
+    QAction* removeFeather = new QAction("Remove feather",&menu);
+    removeFeather->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_E));
+    menu.addAction(removeFeather);
+
+    menu.addSeparator();
+    
+    Double_Knob* isSlaved = cp.first->isSlaved();
+    QAction* linkTo = 0,*unLinkFrom = 0;
+    if (!isSlaved) {
+        linkTo = new QAction("Link to track...",&menu);
+        menu.addAction(linkTo);
+    } else {
+        unLinkFrom = new QAction("Unlink from track",&menu);
+        menu.addAction(unLinkFrom);
+    }
+    
+    QAction* ret = menu.exec(pos);
+    int time = _imp->context->getTimelineCurrentTime();
+    if (ret == deleteCp)
+    {
+        pushUndoCommand(new RemovePointUndoCommand(this,curve,!cp.first->isFeatherPoint() ? cp.first : cp.second));
+        _imp->viewer->redraw();
+    }
+    else if (ret == smoothAction)
+    {
+        std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
+        SmoothCuspUndoCommand::SmoothCuspCurveData data;
+        data.curve = curve;
+        data.newPoints.push_back(cp);
+        datas.push_back(data);
+        pushUndoCommand(new SmoothCuspUndoCommand(this,datas,time,false));
+        _imp->viewer->redraw();
+    }
+    else if (ret == cuspAction)
+    {
+        std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
+        SmoothCuspUndoCommand::SmoothCuspCurveData data;
+        data.curve = curve;
+        data.newPoints.push_back(cp);
+        datas.push_back(data);
+        pushUndoCommand(new SmoothCuspUndoCommand(this,datas,time,true));
+        _imp->viewer->redraw();
+    }
+    else if (ret == removeFeather)
+    {
+        std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
+        RemoveFeatherUndoCommand::RemoveFeatherData data;
+        data.curve = curve;
+        data.newPoints.push_back(cp.first->isFeatherPoint() ? cp.first : cp.second);
+        datas.push_back(data);
+        pushUndoCommand(new RemoveFeatherUndoCommand(this,datas));
+        _imp->viewer->redraw();
+    }
+    else if (ret == linkTo && ret != NULL)
+    {
+        linkPointTo(cp.first);
+    }
+    else if (ret == unLinkFrom && ret != NULL) {
+        cp.first->unslave();
+        isSlaved->removeSlavedTrack(cp.first);
+    }
+
+}
+
+class LinkToTrackDialog : public QDialog
+{
+    ComboBox* _choice;
+public:
+    
+    LinkToTrackDialog(const std::vector< std::pair<std::string,Double_Knob* > >& knobs, QWidget* parent)
+    : QDialog(parent)
+    {
+    
+        QVBoxLayout* mainLayout = new QVBoxLayout(this);
+        _choice = new ComboBox(this);
+    
+        for (std::vector< std::pair<std::string,Double_Knob* > >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            _choice->addItem(it->first.c_str());
+        }
+        
+        mainLayout->addWidget(_choice);
+        
+        QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
+        connect(buttons, SIGNAL(accepted()), this, SLOT(accept()));
+        connect(buttons, SIGNAL(rejected()), this, SLOT(reject()));
+        mainLayout->addWidget(buttons);
+    }
+    
+    int getSelectedKnob() const {
+        return _choice->activeIndex();
+    }
+    
+    virtual ~LinkToTrackDialog() {}
+};
+
+
+void RotoGui::linkPointTo(const boost::shared_ptr<BezierCP>& cp)
+{
+    std::vector< std::pair<std::string,Double_Knob* > > knobs;
+    std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
+    _imp->node->getNode()->getApp()->getActiveNodes(&activeNodes);
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        if (activeNodes[i]->isTrackerNode()) {
+            boost::shared_ptr<KnobI> k = activeNodes[i]->getKnobByName("center");
+            boost::shared_ptr<KnobI> name = activeNodes[i]->getKnobByName(kOfxParamStringSublabelName);
+            if (k && name) {
+                Double_Knob* dk = dynamic_cast<Double_Knob*>(k.get());
+                String_Knob* nameKnob = dynamic_cast<String_Knob*>(name.get());
+                if (dk && nameKnob) {
+                    std::string trackName = nameKnob->getValue();
+                    trackName += "/";
+                    trackName += dk->getDescription();
+                    knobs.push_back(std::make_pair(trackName, dk));
+                }
+            }
+        }
+    }
+    if (knobs.empty()) {
+        Natron::warningDialog("", "No tracker found in the project.");
+        return;
+    }
+    LinkToTrackDialog dialog(knobs,_imp->viewerTab);
+    if (dialog.exec()) {
+        int index = dialog.getSelectedKnob();
+        if (index >= 0 && index < (int)knobs.size()) {
+            Double_Knob* knob = knobs[index].second;
+            if (knob && knob->getDimension() == 2) {
+                cp->slaveTo(knob);
+                knob->addSlavedTrack(cp);
+            }
+        }
+    }
 }
