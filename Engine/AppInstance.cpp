@@ -402,6 +402,25 @@ void AppInstance::clearOpenFXPluginsCaches(){
     }
 }
 
+void AppInstance::clearAllLastRenderedImages()
+{
+    const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        activeNodes[i]->getLiveInstance()->clearLastRenderedImage();
+    }
+}
+
+void AppInstance::clearViewersLastRenderedTexture()
+{
+    const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(activeNodes[i]->getLiveInstance());
+        if (isViewer) {
+            isViewer->clearLastRenderedTexture();
+        }
+    }
+}
+
 void AppInstance::quit() {
     appPTR->quit(this);
 }

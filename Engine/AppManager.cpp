@@ -432,18 +432,26 @@ AppManager::AppType AppManager::getAppType() const {
 
 void AppManager::clearPlaybackCache(){
     _imp->_viewerCache->clearInMemoryPortion();
-
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+        it->second.app->clearViewersLastRenderedTexture();
+    }
 }
 
 
 void AppManager::clearDiskCache(){
     _imp->_viewerCache->clear();
-    
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+        it->second.app->clearViewersLastRenderedTexture();
+    }
 }
 
 
 void AppManager::clearNodeCache(){
     _imp->_nodeCache->clear();
+    
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+        it->second.app->clearAllLastRenderedImages();
+    }
     
 }
 
@@ -833,6 +841,17 @@ void AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
     for (std::list< boost::shared_ptr<Natron::Image> >::iterator it = cacheContent.begin(); it!=cacheContent.end(); ++it) {
         if ((*it)->getKey().getTreeVersion() == treeVersion) {
             _imp->_nodeCache->removeEntry(*it);
+        }
+    }
+}
+
+void AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
+{
+    std::list< boost::shared_ptr<Natron::FrameEntry> > cacheContent;
+    _imp->_viewerCache->getCopy(&cacheContent);
+    for (std::list< boost::shared_ptr<Natron::FrameEntry> >::iterator it = cacheContent.begin(); it!=cacheContent.end(); ++it) {
+        if ((*it)->getKey().getTreeVersion() == treeVersion) {
+            _imp->_viewerCache->removeEntry(*it);
         }
     }
 }

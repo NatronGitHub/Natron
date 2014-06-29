@@ -175,6 +175,9 @@ public slots:
     boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
 
     void executeDisconnectTextureRequestOnMainThread(int index);
+    
+    void clearLastRenderedTexture();
+
 signals:
     
     ///Emitted when the image bit depth and components changes
@@ -231,6 +234,7 @@ private:
     
     Natron::Status renderViewer_internal(SequenceTime time,bool singleThreaded,bool isSequentialRender,
                                          int textureIndex) WARN_UNUSED_RETURN;
+    
 
 private:
     struct ViewerInstancePrivate;

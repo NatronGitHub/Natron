@@ -542,6 +542,8 @@ public:
      **/
     virtual void purgeCaches(){};
     
+    void clearLastRenderedImage();
+    
     /**
      * @brief Can be overloaded to indicate whether a plug-in wants to cache
      * a frame rendered or not.

@@ -689,15 +689,24 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             
             ///The user changed a parameter or the tree, just clear the cache
             ///it has no point keeping the cache because we will never find these entries again.
+            U64 lastRenderHash;
+            boost::shared_ptr<Natron::FrameEntry> lastRenderedTex;
             {
+                
                 QMutexLocker l(&_imp->lastRenderedTextureMutex);
-                if (_imp->lastRenderedTexture) {
+                lastRenderHash = _imp->lastRenderHash;
+                lastRenderedTex = _imp->lastRenderedTexture;
                     
-                    if (_imp->lastRenderHash != nodeHash) {
-                        appPTR->clearDiskCache();
-                    }
+            }
+            if (lastRenderedTex && lastRenderHash != nodeHash) {
+                appPTR->removeAllTexturesFromCacheWithMatchingKey(lastRenderHash);
+                {
+                    QMutexLocker l(&_imp->lastRenderedTextureMutex);
+                    _imp->lastRenderedTexture.reset();
                 }
             }
+
+            
         }
     } else {
         byPassCache = true;
@@ -850,8 +859,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                             if (_imp->lastRenderedImage[textureIndex]) {
                                 unregisterPluginMemory(_imp->lastRenderedImage[textureIndex]->size());
                             }
-                            _imp->lastRenderedImage[textureIndex] = lastRenderedImage;
-                            registerMem = true;  
+                            if (!aborted()) {
+                                _imp->lastRenderedImage[textureIndex] = lastRenderedImage;
+                            } else {
+                                _imp->lastRenderedImage[textureIndex].reset();
+                            }
+                            registerMem = true;
                         }
                     }
                     if (registerMem && lastRenderedImage) {
@@ -1930,4 +1943,10 @@ void ViewerInstance::setInputB(int inputNb)
 bool ViewerInstance::isFrameRangeLocked() const
 {
     return _imp->uiContext->isFrameRangeLocked();
+}
+
+void ViewerInstance::clearLastRenderedTexture()
+{
+    QMutexLocker l(&_imp->lastRenderedTextureMutex);
+    _imp->lastRenderedTexture.reset();
 }

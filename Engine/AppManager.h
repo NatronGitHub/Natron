@@ -190,6 +190,7 @@ public:
      * tree version. This is useful to wipe the cache for one particular node.
      **/
     void  removeAllImagesFromCacheWithMatchingKey(U64 treeVersion) ;
+    void  removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion) ;
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
 

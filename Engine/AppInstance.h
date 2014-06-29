@@ -159,6 +159,10 @@ public slots:
     
     void clearOpenFXPluginsCaches();
     
+    void clearAllLastRenderedImages();
+    
+    void clearViewersLastRenderedTexture();
+    
     void newVersionCheckDownloaded();
     
     void newVersionCheckError();

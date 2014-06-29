@@ -599,6 +599,9 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
             isProjectFormat = true;
         }
     }
+    if (isProjectFormat && !isGenerator()) {
+        isProjectFormat = false;
+    }
     return isProjectFormat;
 }
 
@@ -739,38 +742,39 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
         }
         
-        ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
-        ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
-        if ((image->getComponents() != args.components && Image::hasEnoughDataToConvert(image->getComponents(),args.components)) ||
-            image->getBitDepth() != args.bitdepth) {
-            ///Convert the image to the requested components
-            boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
-            if (!byPassCache) {
-                image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
-                                       getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
-                                       getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                       args.channelForAlpha,false, true);
+        if (image) {
+            ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
+            ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
+            if ((image->getComponents() != args.components && Image::hasEnoughDataToConvert(image->getComponents(),args.components)) ||
+                image->getBitDepth() != args.bitdepth) {
+                ///Convert the image to the requested components
+                boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
+                if (!byPassCache) {
+                    image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
+                                           getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
+                                           getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
+                                           args.channelForAlpha,false, true);
+                }
+                ///switch the pointer
+                image = remappedImage;
+            } else if (image->getComponents() != args.components) {
+                assert(!Image::hasEnoughDataToConvert(image->getComponents(),args.components));
+                ///we cannot convert without loosing data of some channels, we better off render everything again
+                isCached = false;
+                appPTR->removeFromNodeCache(image);
+                cachedImgParams.reset();
+                imageLock.reset(); //< release the lock after cleaning it from the cache
+                image.reset();
             }
-            ///switch the pointer
-            image = remappedImage;
-        } else if (image->getComponents() != args.components) {
-            assert(!Image::hasEnoughDataToConvert(image->getComponents(),args.components));
-            ///we cannot convert without loosing data of some channels, we better off render everything again
-            isCached = false;
-            appPTR->removeFromNodeCache(image);
-            cachedImgParams.reset();
-            imageLock.reset(); //< release the lock after cleaning it from the cache
-            image.reset();
+            
+            if (isCached && byPassCache) {
+                ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
+                ///we're sure renderRoIInternal will compute the whole image again.
+                ///We must use the cache facility anyway because we rely on it for caching the results
+                ///of actions which is necessary to avoid recursive actions.
+                image->clearBitmap();
+            }
         }
-        
-        if (isCached && byPassCache) {
-            ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
-            ///we're sure renderRoIInternal will compute the whole image again.
-            ///We must use the cache facility anyway because we rely on it for caching the results
-            ///of actions which is necessary to avoid recursive actions.
-            image->clearBitmap();
-        }
-
     }
     
     boost::shared_ptr<Natron::Image> downscaledImage = image;
@@ -2214,6 +2218,14 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
     }
     
    
+}
+
+void EffectInstance::clearLastRenderedImage()
+{
+    {
+        QMutexLocker l(&_imp->lastRenderArgsMutex);
+        _imp->lastImage.reset();
+    }
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
