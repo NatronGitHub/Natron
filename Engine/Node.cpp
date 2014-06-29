@@ -1975,9 +1975,6 @@ void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             }
         }
     }
-    if (_imp->rotoContext) {
-        _imp->rotoContext->getBeziersKeyframeTimes(keyframes);
-    }
 }
 
 Natron::ImageBitDepth Natron::Node::getBitDepth() const

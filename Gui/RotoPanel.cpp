@@ -210,7 +210,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     QObject::connect(_imp->context,SIGNAL(itemRemoved(RotoItem*,int)),this,SLOT(onItemRemoved(RotoItem*,int)));
     QObject::connect(n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
                      SLOT(onTimeChanged(SequenceTime, int)));
-    QObject::connect(n->getNode().get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onSettingsPanelClosed(bool)));
+    QObject::connect(n, SIGNAL(settingsPanelClosed(bool)), this, SLOT(onSettingsPanelClosed(bool)));
     
     _imp->mainLayout = new QVBoxLayout(this);
     
