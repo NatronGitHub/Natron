@@ -345,7 +345,7 @@ void TabWidget::closePane() {
     getOtherTabWidget(container,this,other);
     assert(other);
     
-    bool vertical;
+    bool vertical = false;
     bool removeOk = false;
     
     {
