@@ -307,6 +307,9 @@ public:
      otherwise returns -1.*/
     int disconnectOutput(boost::shared_ptr<Node> output);
     
+    /**
+     * @brief Switches the 2 first inputs that are not a mask, if and only if they have compatible components/bitdepths
+     **/
     void switchInput0And1();
     /*============================*/
     

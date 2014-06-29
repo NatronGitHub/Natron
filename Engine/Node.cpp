@@ -938,20 +938,60 @@ void Node::switchInput0And1()
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    if (maximumInputs() < 2) {
+    int maxInputs = maximumInputs();
+    if (maxInputs < 2) {
         return;
     }
+    ///get the first input number to switch
+    int inputAIndex = -1;
+    for (int i = 0; i < maxInputs; ++i) {
+        if (!_imp->liveInstance->isInputMask(i)) {
+            inputAIndex = i;
+            break;
+        }
+    }
+    
+    ///There's only a mask ??
+    if (inputAIndex == -1) {
+        return;
+    }
+    
+    ///get the second input number to switch
+    int inputBIndex = -1;
+    int firstMaskInput = -1;
+    for (int j = 0 ; j < maxInputs; ++j) {
+        if (j == inputAIndex) {
+            continue;
+        }
+        if (!_imp->liveInstance->isInputMask(j)) {
+            inputBIndex = j;
+            break;
+        } else {
+            firstMaskInput = j;
+        }
+    }
+    if (inputBIndex == -1) {
+        ///if there's a mask use it as input B for the switch
+        if (firstMaskInput != -1) {
+            inputBIndex = firstMaskInput;
+            
+        } else {
+            ///there's only 1 input
+            return;
+        }
+    }
+    
     {
         QMutexLocker l(&_imp->inputsMutex);
-        assert(_imp->inputsQueue.size() >= 2);
-        boost::shared_ptr<Natron::Node> input0 = _imp->inputsQueue[0];
-        _imp->inputsQueue[0] = _imp->inputsQueue[1];
-        _imp->inputsQueue[1] = input0;
+        assert(inputAIndex < (int)_imp->inputsQueue.size() && inputBIndex < (int)_imp->inputsQueue.size());
+        boost::shared_ptr<Natron::Node> input0 = _imp->inputsQueue[inputAIndex];
+        _imp->inputsQueue[inputAIndex] = _imp->inputsQueue[inputBIndex];
+        _imp->inputsQueue[inputBIndex] = input0;
     }
-    emit inputChanged(0);
-    emit inputChanged(1);
-    onInputChanged(0);
-    onInputChanged(1);
+    emit inputChanged(inputAIndex);
+    emit inputChanged(inputBIndex);
+    onInputChanged(inputAIndex);
+    onInputChanged(inputBIndex);
     computeHash();
 }
 
