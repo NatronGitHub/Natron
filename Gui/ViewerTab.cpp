@@ -1150,7 +1150,7 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
     }
 }
 
-bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
+bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e){
     
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
@@ -1175,7 +1175,7 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e)) {
             didSomething  = true;
         }
     }

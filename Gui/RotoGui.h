@@ -24,6 +24,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+class QMouseEvent;
 class QToolBar;
 class QWidget;
 class QIcon;
@@ -129,7 +130,7 @@ public:
     
     void drawOverlays(double scaleX,double scaleY) const;
     
-    bool penDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool penDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e);
     
     bool penDoubleClicked(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     
@@ -229,8 +230,13 @@ public slots:
     void onSelectionChanged(int reason);
     
     void onDisplayFeatherButtonClicked(bool toggled);
-        
+            
 private:
+    
+    void showMenuForCurve(const boost::shared_ptr<Bezier>& curve);
+    
+    void showMenuForControlPoint(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp);
+
     
     /**
      *@brief Moves of the given pixel the selected control points.

@@ -135,9 +135,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             project->clearNodes();
             QString text("Failed to restore the graph! \n The node ");
             text.append(it->getPluginID().c_str());
-            text.append(" was found in the auto-save script but doesn't seem \n"
+            text.append(" was found in the script but doesn't seem \n"
                         "to exist in the currently loaded plug-ins.");
-            throw std::invalid_argument(text.toStdString());
+            qDebug() << text;
+            Natron::errorDialog("", text.toStdString());
         }
         if (n->isOutputNode()) {
             hasProjectAWriter = true;
@@ -181,8 +182,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 }
             }
             if (!masterNode) {
-                throw std::runtime_error("Cannot restore the link between " + it->getPluginLabel() + " and " +
-                                         masterNodeName);
+                qDebug() << "Cannot restore the link between " << it->getPluginLabel().c_str() << " and " << masterNodeName.c_str();
             }
             thisNode->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
         } else {
@@ -195,7 +195,6 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             if (!inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode)) {
                 std::string message = std::string("Failed to connect node ") + it->getPluginLabel() + " to " + inputs[j];
                 qDebug() << message.c_str();
-                throw std::runtime_error(message);
             }
         }
 

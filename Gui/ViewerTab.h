@@ -29,6 +29,7 @@ class ViewerInstance;
 class Gui;
 class RectI;
 class Format;
+class QMouseEvent;
 class RotoGui;
 class NodeGui;
 struct RotoGuiSharedData;
@@ -68,7 +69,7 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double scaleX,double scaleY) const;
     
-    bool notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e);
     
     bool notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
     

@@ -19,6 +19,7 @@
 #include <QLineF>
 #include <QKeyEvent>
 #include <QHBoxLayout>
+#include <QMenu>
 
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
@@ -1444,7 +1445,7 @@ void RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost:
 
 
 
-bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& pos)
+bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& pos,QMouseEvent* e)
 {
     std::pair<double, double> pixelScale;
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
@@ -1589,6 +1590,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 if (nearbyCP.first) {
                     _imp->handleControlPointSelection(nearbyCP);
                     _imp->handleBezierSelection(nearbyBezier);
+                    if (e->button() == Qt::RightButton) {
+                        showMenuForControlPoint(nearbyCP);
+                    }
                 } else if (featherBarSel.first) {
                     _imp->clearCPSSelection();
                     _imp->rotoData->featherBarBeingDragged = featherBarSel;
@@ -1600,6 +1604,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                     if (found == _imp->rotoData->selectedBeziers.end()) {
                         _imp->handleBezierSelection(nearbyBezier);
+                    }
+                    if (e->button() == Qt::RightButton) {
+                        showMenuForCurve(nearbyBezier);
                     }
                 }
             } else {
@@ -1638,6 +1645,9 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
                 if (found == _imp->rotoData->selectedBeziers.end()) {
                     _imp->handleBezierSelection(nearbyBezier);
+                }
+                if (e->button() == Qt::RightButton) {
+                    showMenuForCurve(nearbyBezier);
                 }
             } else {
                 
@@ -2811,3 +2821,44 @@ bool RotoGui::isFeatherVisible() const
     return _imp->rotoData->displayFeather;
 }
 
+void RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier>& curve)
+{
+    QPoint pos = QCursor::pos();
+    QMenu menu(_imp->viewer);
+    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    
+    QAction* selectAllAction = new QAction("Select All",&menu);
+    selectAllAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
+    menu.addAction(selectAllAction);
+    
+    QAction* deleteCurve = new QAction("Delete",&menu);
+    deleteCurve->setShortcut(QKeySequence(Qt::Key_Backspace));
+    menu.addAction(deleteCurve);
+    
+    QAction* ret = menu.exec(pos);
+    
+    if (ret == selectAllAction)
+    {
+        const std::list<boost::shared_ptr<BezierCP> >& cps = curve->getControlPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& fps = curve->getFeatherPoints();
+        assert(cps.size() == fps.size());
+        
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator cpIT = cps.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++ cpIT) {
+            _imp->rotoData->selectedCps.push_back(std::make_pair(*cpIT, *fpIT));
+        }
+        _imp->viewer->redraw();
+    }
+    else if (ret == deleteCurve)
+    {
+        std::list<boost::shared_ptr<Bezier> > beziers;
+        beziers.push_back(curve);
+        pushUndoCommand(new RemoveCurveUndoCommand(this,beziers));
+        _imp->viewer->redraw();
+    }
+}
+
+void RotoGui::showMenuForControlPoint(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp)
+{
+    
+}

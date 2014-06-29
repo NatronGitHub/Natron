@@ -813,8 +813,9 @@ void Project::onTimeChanged(SequenceTime time,int reason) {
         if(!_imp->currentNodes[i]->isActivated()){
             continue;
         }
-        if(_imp->currentNodes[i]->pluginID() == "Viewer"){
-            viewers.push_back(dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance()));
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
+        if(isViewer){
+            viewers.push_back(isViewer);
         }
         _imp->currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
 

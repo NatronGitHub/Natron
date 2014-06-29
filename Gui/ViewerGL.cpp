@@ -1935,10 +1935,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (event->button() == Qt::RightButton) {
-        _imp->menu->exec(mapToGlobal(event->pos()));
-        return;
-    } else if (event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::LeftButton) {
         _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
     }
 
@@ -2013,13 +2010,18 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         updateGL();
     }
     
-    if (event->button() == Qt::LeftButton && _imp->ms == UNDEFINED && _imp->overlay) {
+    if (_imp->ms == UNDEFINED && _imp->overlay) {
         unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos,event);
         if (overlaysCaught) {
             updateGL();
             return;
         }
+    }
+    
+    if (event->button() == Qt::RightButton) {
+        _imp->menu->exec(mapToGlobal(event->pos()));
+        return;
     }
     
     

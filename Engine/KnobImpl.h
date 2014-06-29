@@ -839,9 +839,9 @@ void Knob<std::string>::cloneValues(const boost::shared_ptr<KnobI>& other)
 template<typename T>
 void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
 {
-    assert(other && getDimension() == other->getDimension());
+    int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
-    for (int i = 0; i < getDimension();++i) {
+    for (int i = 0; i < dimMin;++i) {
         getCurve(i)->clone(*other->getCurve(i));
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(i);
