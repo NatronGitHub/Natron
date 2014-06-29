@@ -547,15 +547,14 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime tim
             }
             mipMapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
         }
-
     } else {
-        mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
-        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.y = scale.x;
         if (view == -1) {
             view = _lastRenderArgs.localData().view;
         }
+        mipMapLevel = _lastRenderArgs.localData().mipMapLevel;
     }
+    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
 
     return getImageInternal(time, scale, view, optionalBounds);
 }
