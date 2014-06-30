@@ -333,6 +333,9 @@ ViewerInstance::renderViewer(SequenceTime time,
 {
     Natron::Status ret[2];
     for (int i = 0; i < 2; ++i) {
+        if (i == 1 && _imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) {
+            break;
+        }
         ret[i] = renderViewer_internal(time, singleThreaded, isSequentialRender, i);
         if (ret[i] == StatFailed) {
             emit disconnectTextureRequest(i);
