@@ -175,7 +175,8 @@ public:
     void clearNodes(bool emitSignal = true);
     
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
-
+    Natron::OutputEffectInstance* getLastTimelineSeekCaller() const;
+    
     void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
 
     void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, KnobI *k, bool isSignificant);
@@ -220,8 +221,6 @@ public:
     static void removeAutoSaves();
 public slots:
 
-    void onTimeChanged(SequenceTime time,int reason);
-
     void onAutoSaveTimerTriggered();
 signals:
     
@@ -236,6 +235,7 @@ signals:
     void projectNameChanged(QString);
     
     void knobsInitialized();
+    
     
 private:
     

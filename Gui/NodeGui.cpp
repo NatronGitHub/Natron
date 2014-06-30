@@ -1692,3 +1692,19 @@ void TextItem::init()
     connect(document(), SIGNAL(contentsChange(int, int, int)),
             this, SLOT(updateGeometry(int, int, int)));
 }
+
+void NodeGui::refreshKnobsAfterTimeChange(SequenceTime time)
+{
+    if (_settingsPanel && !_settingsPanel->isClosed()) {
+        _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
+    }
+}
+
+void NodeGui::onSettingsPanelClosedChanged(bool closed)
+{
+    assert(_settingsPanel);
+    if (!closed) {
+        SequenceTime time = _internalNode->getApp()->getTimeLine()->currentFrame();
+        _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
+    }
+}

@@ -41,7 +41,6 @@ Project::Project(AppInstance* appInstance)
     : KnobHolder(appInstance)
     , _imp(new ProjectPrivate(this))
 {
-    QObject::connect(_imp->timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeChanged(SequenceTime,int)));
     QObject::connect(_imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()));
 }
 
@@ -796,47 +795,17 @@ void Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output) {
     _imp->lastTimelineSeekCaller = output;
 }
 
+Natron::OutputEffectInstance* Project::getLastTimelineSeekCaller() const
+{
+    QMutexLocker l(&_imp->projectLock);
+    return _imp->lastTimelineSeekCaller;
+}
+    
 bool Project::isSaveUpToDate() const{
     QMutexLocker l(&_imp->projectLock);
     return _imp->ageSinceLastSave == _imp->lastAutoSave;
 }
 
-///this function is only called in the main thread
-void Project::onTimeChanged(SequenceTime time,int reason) {
-    std::vector<ViewerInstance* > viewers;
-    
-    beginProjectWideValueChanges(Natron::TIME_CHANGED,this);
-    
-    refreshAfterTimeChange(time); //refresh project knobs
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        //refresh all knobs
-        if(!_imp->currentNodes[i]->isActivated()){
-            continue;
-        }
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
-        if(isViewer){
-            viewers.push_back(isViewer);
-        }
-        _imp->currentNodes[i]->getLiveInstance()->refreshAfterTimeChange(time);
-
-    }
-    
-    endProjectWideValueChanges(this);
-
-    
-    for(U32 i = 0; i < viewers.size();++i){
-        if(viewers[i] != _imp->lastTimelineSeekCaller || reason == USER_SEEK){
-            viewers[i]->getVideoEngine()->render(1, //< frame count
-                                                 false, //< seek timeline
-                                                 false, //<refresh tree
-                                                 true, //< forward
-                                                 false, // <same frame
-                                                 false); //< force preview
-        }
-    }
-    _imp->lastTimelineSeekCaller = 0;
-
-}
 
 void Project::save(ProjectSerialization* serializationObject) const
 {
@@ -967,8 +936,8 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///reset the evaluation count to 0
         _imp->evaluationsCount = 0;
         
-        ///if the outermost bracket reason was USER_EDITED, trigger an auto-save.
-        if(outerMostReason == Natron::USER_EDITED && _imp->lastKnobChanged->typeName() != Button_Knob::typeNameStatic()){
+        ///if the outermost bracket reason was USER_EDITED and the knob was not a button, trigger an auto-save.
+        if(outerMostReason == Natron::USER_EDITED && !dynamic_cast<Button_Knob*>(_imp->lastKnobChanged)){
             getApp()->triggerAutoSave();
         }
         

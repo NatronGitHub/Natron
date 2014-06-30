@@ -1138,6 +1138,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     _centerNodeButton->setFixedSize(15, 15);
     QObject::connect(_centerNodeButton,SIGNAL(clicked()),this,SLOT(centerNode()));
     insertHeaderWidget(0, _centerNodeButton);
+    QObject::connect(this,SIGNAL(closeChanged(bool)),NodeUi.get(),SLOT(onSettingsPanelClosedChanged(bool)));
 }
 
 NodeSettingsPanel::~NodeSettingsPanel(){

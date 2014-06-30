@@ -367,6 +367,9 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     
     _menu = new QMenu(this);
     _menu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+    
+    QObject::connect(_gui->getApp()->getTimeLine().get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeChanged(SequenceTime,int)));
+
 }
 
 NodeGraph::~NodeGraph() {
@@ -2961,3 +2964,30 @@ void NodeGraph::removeBackDrop(NodeBackDrop* bd)
     }
 }
 
+void NodeGraph::onTimeChanged(SequenceTime time,int reason)
+{
+    std::vector<ViewerInstance* > viewers;
+    
+    boost::shared_ptr<Natron::Project> project = _gui->getApp()->getProject();
+    
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin() ;it!=_nodes.end();++it) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
+        if (isViewer) {
+            viewers.push_back(isViewer);
+        }
+        (*it)->refreshKnobsAfterTimeChange(time);
+    }
+    Natron::OutputEffectInstance* lastTimelineSeekCaller = project->getLastTimelineSeekCaller();
+    for(U32 i = 0; i < viewers.size();++i){
+        if(viewers[i] != lastTimelineSeekCaller || reason == USER_SEEK) {
+            boost::shared_ptr<VideoEngine> engine = viewers[i]->getVideoEngine();
+            engine->render(1, //< frame count
+                           false, //< seek timeline
+                           false, //<refresh tree
+                           true, //< forward
+                           false, // <same frame
+                           false); //< force preview
+        }
+    }
+    project->setLastTimelineSeekCaller(NULL);
+}

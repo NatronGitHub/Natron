@@ -482,6 +482,11 @@ void KnobHelper::setAllDimensionsEnabled(bool b)
 void KnobHelper::setSecret(bool b)
 {
     _imp->IsSecret = b;
+    
+    ///the knob was revealed , refresh its gui to the current time
+    if (!b && _imp->holder && _imp->holder->getApp()) {
+        onTimeChanged(_imp->holder->getApp()->getTimeLine()->currentFrame());
+    }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_secretChanged();
     }

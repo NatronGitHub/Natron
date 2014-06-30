@@ -256,6 +256,8 @@ public:
     
     void setCurrentColor(const QColor& c);
     
+    void refreshKnobsAfterTimeChange(SequenceTime time);
+    
 public slots:
     
     void setDefaultGradientColor(const QColor& color);
@@ -344,6 +346,8 @@ public slots:
     void onNodeExtraLabelChanged(const QString& label);
     
     void onSwitchInputActionTriggered();
+    
+    void onSettingsPanelClosedChanged(bool closed);
 
 signals:
     

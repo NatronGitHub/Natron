@@ -34,6 +34,8 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Global/GlobalDefines.h"
+
 class QVBoxLayout;
 class QScrollArea;
 class QGraphicsProxyWidget;
@@ -207,6 +209,8 @@ public slots:
     void centerOnAllNodes();
     
     void toggleConnectionHints();
+    
+    void onTimeChanged(SequenceTime time,int reason);
     
 
 private:
