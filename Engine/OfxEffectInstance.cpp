@@ -663,7 +663,7 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     }
     
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        Natron::errorDialog(getNode()->getName_mt_safe(), "Failed to specify the region of interest from inputs.");
+        appPTR->writeToOfxLog_mt_safe(QString(getNode()->getName_mt_safe().c_str()) + "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
