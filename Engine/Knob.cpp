@@ -1105,14 +1105,14 @@ void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason r
     decrementRecursionLevel();
 }
 
-void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant)
+void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
     _imp->evaluateQueue.isSignificant |= isSignificant;
     _imp->evaluateQueue.requester = knob;
     if (getRecursionLevel() == 0) {
-        evaluate(knob, _imp->evaluateQueue.isSignificant);
+        evaluate(knob, _imp->evaluateQueue.isSignificant,reason);
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
     }
@@ -1123,7 +1123,7 @@ void KnobHolder::checkIfRenderNeeded()
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
     if (getRecursionLevel() == 0 && _imp->evaluateQueue.requester != NULL) {
-        evaluate(_imp->evaluateQueue.requester, _imp->evaluateQueue.isSignificant);
+        evaluate(_imp->evaluateQueue.requester, _imp->evaluateQueue.isSignificant,Natron::USER_EDITED);
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
     }

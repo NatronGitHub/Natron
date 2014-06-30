@@ -3928,7 +3928,7 @@ RotoLayer* RotoContext::findDeepestSelectedLayer() const
 void RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    _imp->node->getLiveInstance()->evaluate_public(NULL, true);
+    _imp->node->getLiveInstance()->evaluate_public(NULL, true,Natron::USER_EDITED);
 }
 
 U64 RotoContext::getAge()

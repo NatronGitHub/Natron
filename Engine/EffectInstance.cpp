@@ -1587,7 +1587,7 @@ void EffectInstance::createKnobDynamically(){
     _node->createKnobDynamically();
 }
 
-void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
+void EffectInstance::evaluate(KnobI* knob, bool isSignificant,Natron::ValueChangedReason reason)
 {
     
     assert(_node);
@@ -1647,7 +1647,7 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
-            (*it)->refreshAndContinueRender(forcePreview,true);
+            (*it)->refreshAndContinueRender(forcePreview,reason == Natron::USER_EDITED);
         } else {
             (*it)->redrawViewer();
         }

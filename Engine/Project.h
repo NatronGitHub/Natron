@@ -268,7 +268,7 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant) OVERRIDE FINAL;
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done

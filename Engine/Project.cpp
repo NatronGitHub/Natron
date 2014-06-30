@@ -575,7 +575,7 @@ void Project::initializeKnobs(){
 }
 
 
-void Project::evaluate(KnobI* /*knob*/,bool isSignificant){
+void Project::evaluate(KnobI* /*knob*/,bool isSignificant,Natron::ValueChangedReason /*reason*/) {
     if(isSignificant){
         getApp()->checkViewersConnection();
     }
@@ -977,7 +977,7 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///the significant param recorded in the stackEvaluateRequest function.
         if(outerMostReason != Natron::PROJECT_LOADING && outerMostReason != Natron::TIME_CHANGED){
             
-            caller->evaluate_public(_imp->lastKnobChanged,_imp->isSignificantChange);
+            caller->evaluate_public(_imp->lastKnobChanged,_imp->isSignificantChange,outerMostReason);
             
         }
     }

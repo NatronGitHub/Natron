@@ -1168,7 +1168,7 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate_public(KnobI* knob,bool isSignificant);
+    void evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason);
     
     /**
      * @brief To be called after each function that modifies actionsRecursionLevel that is not
@@ -1227,7 +1227,7 @@ protected:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant) = 0;
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) = 0;
     
     /**
      * @brief Called when the knobHolder is made slave or unslaved.

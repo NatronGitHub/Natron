@@ -876,7 +876,14 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             } catch (...) {
                 _node->notifyInputNIsFinishedRendering(activeInputIndex);
                 appPTR->removeFromViewerCache(params->cachedFrame);
-                throw;
+                
+                ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
+                ///Don't forward the exception in that case.
+                if (!activeInputToRender->aborted()) {
+                    throw;
+                } else {
+                    return StatOK;
+                }
             }
             
         }

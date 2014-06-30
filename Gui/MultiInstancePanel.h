@@ -60,7 +60,7 @@ protected:
     
 private:
     
-    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/) OVERRIDE FINAL {}
+    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL {}
     
     virtual void initializeKnobs() OVERRIDE FINAL;
     

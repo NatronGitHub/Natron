@@ -549,14 +549,6 @@ public:
      * a frame rendered or not.
      **/
     virtual CachePolicy getCachePolicy(SequenceTime /*time*/) const { return ALWAYS_CACHE; }
-    
-    /**
-     * @brief When called, if the node holding this effect  is connected to any
-     * viewer, it will render again the current frame. By default you don't have to
-     * call this yourself as this is called automatically on a knob value changed,
-     * but this is provided as a way to force things.
-     **/
-    void requestRender() { evaluate(NULL,true); }
 
     
     /**
@@ -808,7 +800,7 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate(KnobI* knob,bool isSignificant) OVERRIDE;
+    void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) OVERRIDE;
 
     
     virtual void onSlaveStateChanged(bool isSlave,KnobHolder* master) OVERRIDE FINAL;

@@ -2151,12 +2151,12 @@ void CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 }
             }
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it!=toEvaluate.end(); ++it) {
-                it->first->evaluate_public(NULL, it->second);
+                it->first->evaluate_public(NULL, it->second,Natron::USER_EDITED);
             }
         } else if (_imp->_state == DRAGGING_TANGENT) {
             boost::shared_ptr<KnobI> toEvaluate = _imp->_selectedDerivative.second.curve->getKnob()->getKnob();
             assert(toEvaluate);
-            toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true);
+            toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,Natron::USER_EDITED);
         }
     }
     
