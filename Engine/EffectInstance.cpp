@@ -1006,10 +1006,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     if (aborted()) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
         appPTR->removeFromNodeCache(image);
-    }
-    if (renderRetCode == eImageRenderFailed) {
+    } else if (renderRetCode == eImageRenderFailed) {
         throw std::runtime_error("Rendering Failed");
     }
+    
     {
         ///flag that this is the last image we rendered
         QMutexLocker l(&_imp->lastRenderArgsMutex);
@@ -1035,7 +1035,7 @@ void EffectInstance::renderRoI(SequenceTime time,const RenderScale& scale,unsign
                                bool byPassCache,
                                U64 nodeHash) {
    EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash,3);
-    if (renderRetCode == eImageRenderFailed) {
+    if (renderRetCode == eImageRenderFailed && !aborted()) {
         throw std::runtime_error("Rendering Failed");
     }
 }
