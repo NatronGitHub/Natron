@@ -803,7 +803,10 @@ template<typename T>
 void Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
-    setValue(_defaultValues[dimension], dimension,true);
+    (void)setValue(_defaultValues[dimension], dimension,Natron::PROJECT_LOADING,NULL);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_valueChanged(dimension);
+    }
 }
 
 
