@@ -2684,7 +2684,7 @@ NodeGraph::getActiveBackDrops() const
 {
     std::list<NodeBackDrop*> ret;
     for (std::list<NodeBackDrop*>::const_iterator it = _backdrops.begin() ; it!=_backdrops.end();++it) {
-        if ((*it)->isActive() && (*it)->isVisible()) {
+        if ((*it)->isVisible()) {
             ret.push_back(*it);
         }
     }
