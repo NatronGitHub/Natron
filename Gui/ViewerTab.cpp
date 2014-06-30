@@ -859,8 +859,16 @@ void ViewerTab::startPause(bool b){
                                                     false);/*force preview?*/
     }
 }
-void ViewerTab::abortRendering(){
-    _imp->_viewerNode->getVideoEngine()->abortRendering(false);
+void ViewerTab::abortRendering()
+{
+    ///Abort all viewers because they are all synchronised.
+    const std::list<boost::shared_ptr<NodeGui> >& activeNodes = _imp->_gui->getNodeGraph()->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
+        if (isViewer) {
+            isViewer->getVideoEngine()->abortRendering(false);
+        }
+    }
 }
 void ViewerTab::startBackward(bool b){
     abortRendering();

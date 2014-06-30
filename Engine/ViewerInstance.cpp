@@ -862,7 +862,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                             if (_imp->lastRenderedImage[textureIndex]) {
                                 unregisterPluginMemory(_imp->lastRenderedImage[textureIndex]->size());
                             }
-                            if (!aborted()) {
+                            if (!activeInputToRender->aborted()) {
                                 _imp->lastRenderedImage[textureIndex] = lastRenderedImage;
                             } else {
                                 _imp->lastRenderedImage[textureIndex].reset();
@@ -901,7 +901,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         
         
         
-        if (aborted()) {
+        if (activeInputToRender->aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
@@ -1007,7 +1007,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                           ramBuffer)).waitForFinished();
 
         }
-        if (aborted()) {
+        if (activeInputToRender->aborted()) {
             //if render was aborted, remove the frame from the cache as it contains only garbage
             appPTR->removeFromViewerCache(params->cachedFrame);
             return StatOK;
@@ -1024,7 +1024,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     /////////////////////////////////////////
     // call updateViewer()
 
-    if (!aborted()) {
+    if (!activeInputToRender->aborted()) {
         QMutexLocker locker(&_imp->updateViewerMutex);
         // wait until previous updateViewer (if any) finishes
         
@@ -1043,7 +1043,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         params->lut = lut;
         params->mipMapLevel = (unsigned int)mipMapLevel;
         params->textureIndex = textureIndex;
-        if (!aborted()) {
+        if (!activeInputToRender->aborted()) {
             if (singleThreaded) {
                 locker.unlock();
                 _imp->updateViewer(params);
