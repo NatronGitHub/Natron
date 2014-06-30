@@ -909,7 +909,7 @@ void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
 void ViewerTab::centerViewer(){
     _imp->viewer->fitImageToFormat();
     if(_imp->viewer->displayingImage()){
-        _imp->_viewerNode->refreshAndContinueRender(false);
+        _imp->_viewerNode->refreshAndContinueRender(false,false);
         
     }else{
         _imp->viewer->updateGL();
@@ -1126,7 +1126,7 @@ void ViewerTab::showView(int view){
     _imp->_currentViewIndex = view;
     abortRendering();
     bool isAutoPreview = _imp->app->getProject()->isAutoPreviewEnabled();
-    _imp->_viewerNode->refreshAndContinueRender(isAutoPreview);
+    _imp->_viewerNode->refreshAndContinueRender(isAutoPreview,true);
 }
 
 
@@ -1838,7 +1838,7 @@ void ViewerTab::onFirstInputNameChanged(const QString& text)
         }
     }
     _imp->_viewerNode->setInputA(inputIndex);
-    _imp->_viewerNode->refreshAndContinueRender(false);
+    _imp->_viewerNode->refreshAndContinueRender(false,true);
 }
 
 ///Called when the user change the combobox choice
@@ -1867,7 +1867,7 @@ void ViewerTab::onSecondInputNameChanged(const QString& text)
             }
         }
     }
-    _imp->_viewerNode->refreshAndContinueRender(false);
+    _imp->_viewerNode->refreshAndContinueRender(false,true);
 }
 
 ///This function is called only when the user changed inputs on the node graph

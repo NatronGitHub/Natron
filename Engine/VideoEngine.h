@@ -186,6 +186,7 @@ public slots:
     /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      * If blocking is true the function will not return before the ending has stopped.
+     * This function will abort any ongoing processing hence the frame currently computed will be garbage.
      **/
     void abortRendering(bool blocking);
     
@@ -314,10 +315,9 @@ public:
      *taking into account the new parameters changed. Otherwise it will just refresh the same frame than the last frame rendered
      *on the viewer. This function is to be called exclusivly by the Viewer. This function should be called whenever
      *a parameter changed but not the Tree itself.
-     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *serve to render the frames.
+     *@param abortPreviousRender[in] If true, any previous render will be aborted.
      **/
-    void refreshAndContinueRender(bool forcePreview);
+    void refreshAndContinueRender(bool forcePreview,bool abortPreviousRender);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
@@ -325,7 +325,6 @@ public:
      *Otherwise it will just refresh the same frame than the last frame rendered
      *on the viewer. This function should be called whenever
      *a change has been made (potentially) to the Tree.
-     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      **/
     void updateTreeAndContinueRender();
 

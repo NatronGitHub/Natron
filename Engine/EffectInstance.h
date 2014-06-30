@@ -885,7 +885,7 @@ public:
 
     void updateTreeAndRender();
 
-    void refreshAndContinueRender(bool forcePreview);
+    void refreshAndContinueRender(bool forcePreview,bool abortRender);
 
     bool ifInfiniteclipRectToProjectDefault(RectI* rod) const;
 

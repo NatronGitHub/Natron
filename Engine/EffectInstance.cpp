@@ -1647,7 +1647,7 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
-            (*it)->refreshAndContinueRender(forcePreview);
+            (*it)->refreshAndContinueRender(forcePreview,false);
         } else {
             (*it)->redrawViewer();
         }
@@ -2260,8 +2260,9 @@ OutputEffectInstance::~OutputEffectInstance(){
 void OutputEffectInstance::updateTreeAndRender(){
     _videoEngine->updateTreeAndContinueRender();
 }
-void OutputEffectInstance::refreshAndContinueRender(bool forcePreview){
-    _videoEngine->refreshAndContinueRender(forcePreview);
+void OutputEffectInstance::refreshAndContinueRender(bool forcePreview,bool abortRender)
+{
+    _videoEngine->refreshAndContinueRender(forcePreview,abortRender);
 }
 
 bool OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{

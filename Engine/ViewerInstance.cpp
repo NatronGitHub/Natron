@@ -875,6 +875,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 }
             } catch (...) {
                 _node->notifyInputNIsFinishedRendering(activeInputIndex);
+                appPTR->removeFromViewerCache(params->cachedFrame);
                 throw;
             }
             
@@ -1574,7 +1575,7 @@ ViewerInstance::onGainChanged(double exp)
     }
     if((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
-        refreshAndContinueRender(false);
+        refreshAndContinueRender(false,true);
     } else {
         _imp->uiContext->redraw();
     }
@@ -1594,7 +1595,7 @@ ViewerInstance::onMipMapLevelChanged(int level)
         _imp->viewerMipMapLevel = level;
     }
     if(input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
-        refreshAndContinueRender(false);
+        refreshAndContinueRender(false,true);
     }
 }
 
@@ -1609,7 +1610,7 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,bool refresh)
         _imp->viewerParamsAutoContrast = autoContrast;
     }
     if (refresh && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()){
-        refreshAndContinueRender(false);
+        refreshAndContinueRender(false,true);
     }
 }
 
@@ -1633,7 +1634,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
 
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
-        refreshAndContinueRender(false);
+        refreshAndContinueRender(false,true);
     } else {
         _imp->uiContext->redraw();
     }
@@ -1660,7 +1661,7 @@ ViewerInstance::setDisplayChannels(DisplayChannels channels)
         _imp->viewerParamsChannels = channels;
     }
     if (!getApp()->getProject()->isLoadingProject()) {
-        refreshAndContinueRender(false);
+        refreshAndContinueRender(false,true);
     }
 }
 

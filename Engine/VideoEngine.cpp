@@ -587,12 +587,13 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
         try {
             stat =  renderFrame(currentFrame,singleThreaded);
         } catch (const std::exception &e) {
-            std::stringstream ss;
-            ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
+            
             if (viewer) {
                 //viewer->setPersistentMessage(Natron::ERROR_MESSAGE, ss.str());
                 viewer->disconnectViewer();
             } else {
+                std::stringstream ss;
+                ss << "Error while rendering" << " frame " << currentFrame << ": " << e.what();
                 std::cout << ss.str() << std::endl;
             }
             return;
@@ -761,7 +762,8 @@ void VideoEngine::abortRendering(bool blocking) {
 }
 
 
-void VideoEngine::refreshAndContinueRender(bool forcePreview){
+void VideoEngine::refreshAndContinueRender(bool forcePreview,bool abortPreviousRender)
+{
     //the changes will occur upon the next frame rendered. If the playback is running indefinately
     //we're sure that there will be a refresh. If the playback is for a determined amount of frame
     //we've to make sure the playback is not rendering the last frame, in which case we wouldn't see
@@ -770,8 +772,10 @@ void VideoEngine::refreshAndContinueRender(bool forcePreview){
 
     bool isPlaybackRunning = isWorking() && (_currentRunArgs._frameRequestsCount == -1 ||
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
-    if(!isPlaybackRunning) {        
-        abortRendering(true);
+    if(!isPlaybackRunning) {
+        if (abortPreviousRender) {
+            abortRendering(true);
+        }
         render(1,false,false,_currentRunArgs._forward,true,forcePreview);
     }
 }
