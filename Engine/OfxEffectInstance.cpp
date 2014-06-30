@@ -1231,6 +1231,11 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,c
     return false;
 }
 
+bool OfxEffectInstance::hasOverlay() const
+{
+    return _overlayInteract != NULL;
+}
+
 static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reason)
 {
     switch (reason) {

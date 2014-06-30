@@ -1745,6 +1745,9 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1770,6 +1773,9 @@ bool EffectInstance::onOverlayPenDown_public(double scaleX,double scaleY,const Q
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1791,6 +1797,9 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1820,6 +1829,9 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1839,6 +1851,9 @@ bool EffectInstance::onOverlayKeyDown_public(double scaleX,double scaleY,Natron:
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1860,6 +1875,9 @@ bool EffectInstance::onOverlayKeyUp_public(double scaleX,double scaleY,Natron::K
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1882,6 +1900,9 @@ bool EffectInstance::onOverlayKeyRepeat_public(double scaleX,double scaleY,Natro
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1904,6 +1925,9 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;
@@ -1934,6 +1958,9 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
 {
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
+    if (!hasOverlay()) {
+        return false;
+    }
     SequenceTime time ;
     int view ;
     unsigned int mipMapLevel;

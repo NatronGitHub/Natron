@@ -734,6 +734,8 @@ protected:
      * (i.e: (0,0) = bottomLeft and  width() and height() being
      * respectivly the width and height of the frame.)
      */
+    virtual bool hasOverlay() const { return false; }
+    
     virtual void drawOverlay(double /*scaleX*/,double /*scaleY*/,const RectI& /*outputRoD*/){}
     
     virtual bool onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,

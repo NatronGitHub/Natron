@@ -428,6 +428,14 @@ QSize DockablePanelTabWidget::minimumSizeHint() const
 }
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
+    
+    Natron::StandardButton reply = Natron::questionDialog("Reset", "Are you sure you want to restore default settings for this operator ? "
+                                                          "This cannot be undone.",Natron::StandardButtons(Natron::Yes | Natron::No),
+                                                          Natron::Yes);
+    if (reply != Natron::Yes) {
+        return;
+    }
+    
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (isEffect) {
         std::list <SequenceTime> keys;

@@ -151,6 +151,8 @@ public:
 
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
 
+    virtual bool hasOverlay() const OVERRIDE FINAL; 
+
     virtual void drawOverlay(double scaleX,double scaleY,const RectI& rod) OVERRIDE FINAL;
 
     virtual bool onOverlayPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos
