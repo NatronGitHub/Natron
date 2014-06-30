@@ -1861,6 +1861,8 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
     
     bool didSomething = false;
 
+    HoveredState lastHoverState = _imp->hoverState;
+    
     int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
@@ -1955,7 +1957,10 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
                 _imp->rotoData->featherBarBeingHovered.first.reset();
                 _imp->rotoData->featherBarBeingHovered.second.reset();
             }
-            didSomething = true;
+            if (_imp->state != NONE || _imp->rotoData->featherBarBeingHovered.first || cursorSet || lastHoverState != HOVERING_NOTHING) {
+                didSomething = true;
+            }
+            
         }
         
         
@@ -2171,6 +2176,8 @@ bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewpor
     if (_imp->evaluateOnPenUp) {
         _imp->context->evaluateChange();
         _imp->node->getNode()->getApp()->triggerAutoSave();
+        
+        //sync other viewers linked to this roto
         _imp->viewerTab->onRotoEvaluatedForThisViewer();
         _imp->evaluateOnPenUp = false;
     }
