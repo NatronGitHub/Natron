@@ -1746,7 +1746,7 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     ///cannot be run in another thread
     assert(QThread::currentThread() == qApp->thread());
     if (!hasOverlay()) {
-        return false;
+        return;
     }
     SequenceTime time ;
     int view ;
