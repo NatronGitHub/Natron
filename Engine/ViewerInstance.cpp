@@ -361,7 +361,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
     
     if (aborted()) {
-        return StatFailed;
+        return StatOK;
     }
     
     double zoomFactor = _imp->uiContext->getZoomFactor();
