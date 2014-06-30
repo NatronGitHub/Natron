@@ -244,6 +244,8 @@ struct RotoGui::RotoGuiPrivate
     
     void clearBeziersSelection();
     
+    bool hasSelection() const;
+    
     void onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem>& item,bool* ret);
     
     bool removeBezierFromSelection(const Bezier* b);
@@ -1325,6 +1327,12 @@ void RotoGui::RotoGuiPrivate::clearSelection()
     clearCPSSelection();
     
 }
+
+bool RotoGui::RotoGuiPrivate::hasSelection() const
+{
+    return !rotoData->selectedBeziers.empty() || !rotoData->selectedCps.empty();
+}
+
 void RotoGui::RotoGuiPrivate::clearCPSSelection()
 {
     rotoData->selectedCps.clear();
@@ -1547,9 +1555,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
     bool isFeather;
     boost::shared_ptr<Bezier> nearbyBezier =
     _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
-    if (isFeather) {
-        nearbyBezier.reset();
-    }
 
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
     int nearbyCpIndex = -1;
@@ -1599,12 +1604,14 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                         _imp->state = NONE;
                         showMenuForControlPoint(nearbyBezier,nearbyCP);
                     }
+                    didSomething = true;
                 } else if (featherBarSel.first) {
                     _imp->clearCPSSelection();
                     _imp->rotoData->featherBarBeingDragged = featherBarSel;
                     _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
                     _imp->handleBezierSelection(nearbyBezier);
                     _imp->state = DRAGGING_FEATHER_BAR;
+                    didSomething = true;
                 } else {
                     SelectedBeziers::const_iterator found =
                     std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),nearbyBezier);
@@ -1614,6 +1621,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     if (e->button() == Qt::RightButton) {
                         showMenuForCurve(nearbyBezier);
                     }
+                    didSomething = true;
                 }
             } else {
                 
@@ -1624,23 +1632,25 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     _imp->rotoData->featherBarBeingDragged = featherBarSel;
                     _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
                     _imp->state = DRAGGING_FEATHER_BAR;
+                    didSomething = true;
                 } else if (nearbySelectedBeziersBbox) {
                     _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
                     ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
+                    didSomething = true;
                 } else {
-                    if (!_imp->modifiers.testFlag(Natron::ShiftModifier)) {
+                    if (!_imp->modifiers.testFlag(Natron::ShiftModifier) && e->button() == Qt::LeftButton) {
                         if (!isStickySelectionEnabled()) {
+                            bool hadSelection = _imp->hasSelection();
                             _imp->clearSelection();
+                            didSomething = hadSelection;
                         }
                         _imp->rotoData->selectionRectangle.setTopLeft(pos);
                         _imp->rotoData->selectionRectangle.setBottomRight(pos);
                         _imp->state = SELECTING;
-                        
                     }
                 }
             }
             
-            didSomething = true;
             
         }   break;
         case SELECT_CURVES:
