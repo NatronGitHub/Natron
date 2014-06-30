@@ -36,10 +36,6 @@ QToolBar {
 image: url(handle.png);
 }TODO*/
 
-QMenuBar {
-    color : %5;
-}
-
 QGroupBox {
     border: 1px solid black;
     border-radius : 4px;
