@@ -1021,7 +1021,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     /////////////////////////////////////////
     // call updateViewer()
 
-    {
+    if (!aborted()) {
         QMutexLocker locker(&_imp->updateViewerMutex);
         // wait until previous updateViewer (if any) finishes
         
