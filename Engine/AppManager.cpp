@@ -208,7 +208,7 @@ AppManager::AppManager()
     
 }
 
-bool AppManager::load(int argc, char *argv[],const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
+bool AppManager::load(int &argc, char *argv[],const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
     
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
@@ -279,7 +279,7 @@ void AppManager::quit(AppInstance* instance)
 }
 
 
-void AppManager::initializeQApp(int argc,char* argv[]) {
+void AppManager::initializeQApp(int &argc, char **argv) {
     new QCoreApplication(argc,argv);
 }
 

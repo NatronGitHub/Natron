@@ -68,7 +68,8 @@ void BaseTest::registerTestPlugins() {
 void BaseTest::SetUp()
 {
     AppManager* manager = new AppManager;
-    manager->load(0,NULL);
+    int argc = 0;
+    manager->load(argc,NULL);
     //////WARNING: This test disables multi-threading! if it fails it will never re-enable it
     ////// hence the next time you launch the application multi-threading will be DISABLED.
     manager->setNumberOfThreads(-1);

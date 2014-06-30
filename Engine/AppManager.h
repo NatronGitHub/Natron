@@ -96,7 +96,7 @@ public:
      * @param mainProcessServerName The name of the main process named pipe so the background application can communicate with the
      * main process.
      **/
-    bool load(int argc, char *argv[],const QString& projectFilename = QString(),
+    bool load(int &argc, char **argv, const QString& projectFilename = QString(),
               const QStringList& writers = QStringList(),
               const QString& mainProcessServerName = QString());
 
@@ -287,7 +287,7 @@ protected:
     
     virtual void registerGuiMetaTypes() const {}
     
-    virtual void initializeQApp(int argc,char* argv[]);
+    virtual void initializeQApp(int &argc,char** argv);
     
     virtual void onLoadCompleted() {}
 

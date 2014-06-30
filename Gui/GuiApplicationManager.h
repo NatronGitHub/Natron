@@ -103,7 +103,7 @@ private:
     
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
 
-    virtual void initializeQApp(int argc,char* argv[])  OVERRIDE FINAL;
+    virtual void initializeQApp(int &argc, char **argv)  OVERRIDE FINAL;
     
     void handleOpenFileRequest();
     

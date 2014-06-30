@@ -728,7 +728,7 @@ class Application : public QApplication
     
 public:
     
-    Application(GuiApplicationManager* app,int argc,char* argv[])
+    Application(GuiApplicationManager* app,int &argc,char** argv) ///< qapplication needs to be subclasses with reference otherwise lots of crashes will happen.
     : QApplication(argc,argv)
     , _app(app)
     {
@@ -760,7 +760,7 @@ bool Application::event(QEvent *event)
 }
 
 
-void GuiApplicationManager::initializeQApp(int argc,char* argv[]) {
+void GuiApplicationManager::initializeQApp(int &argc,char** argv) {
     QApplication* app = new Application(this,argc, argv);
 	app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);

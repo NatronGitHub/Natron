@@ -901,6 +901,11 @@ void ViewerGL::paintGL()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+
+    //if app is closing, just return
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     glCheckError();
    
     glMatrixMode (GL_PROJECTION);
