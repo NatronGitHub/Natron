@@ -2082,6 +2082,12 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    
+    ///The app is closing don't do anything
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
+    
     QPointF zoomPos;
     
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
@@ -2746,6 +2752,10 @@ void ViewerGL::focusInEvent(QFocusEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    ///The app is closing don't do anything
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
     if(_imp->viewerTab->notifyOverlaysFocusGained(scale,scale)){
         updateGL();
@@ -2757,6 +2767,7 @@ void ViewerGL::focusOutEvent(QFocusEvent *event)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    
 	if (!_imp->viewerTab->getGui()) {
 		return;
 	}

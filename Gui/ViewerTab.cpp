@@ -1956,6 +1956,7 @@ void ViewerTab::onInputChanged(int inputNb)
             _imp->_inputNamesMap.erase(found);
         }
     }
+    _imp->viewer->clearPersistentMessage();
 }
 
 void ViewerTab::onInputNameChanged(int inputNb,const QString& name)

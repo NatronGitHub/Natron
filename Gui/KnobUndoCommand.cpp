@@ -172,14 +172,18 @@ void PasteUndoCommand::redo()
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
     }
     i = 0;
+    bool hasKeyframeData = false;
     for (std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin(); it!=newCurves.end(); ++it) {
         internalKnob->getCurve(i)->clone(*(*it));
+        if ((*it)->getKeyFramesCount() > 0) {
+            hasKeyframeData = true;
+        }
         ++i;
     }
     if (!newCurves.empty()) {
         _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
-    if (_copyAnimation && !newCurves.empty()) {
+    if (_copyAnimation && hasKeyframeData && !newCurves.empty()) {
         ///parameters are meaningless here, we just want to update the curve editor.
         _knob->onInternalKeySet(0, 0);
     }

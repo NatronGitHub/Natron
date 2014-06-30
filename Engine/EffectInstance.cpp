@@ -2059,8 +2059,11 @@ Natron::Status EffectInstance::beginSequenceRender_public(SequenceTime first,Seq
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     {
-        assert(_imp->beginEndRenderCount.hasLocalData());
-        ++_imp->beginEndRenderCount.localData();
+        if (!_imp->beginEndRenderCount.hasLocalData()) {
+            _imp->beginEndRenderCount.localData() = 1;
+        } else {
+            ++_imp->beginEndRenderCount.localData();
+        }
     }
     Natron::Status ret = beginSequenceRender(first, last, step, interactive, scale,
                                              isSequentialRender, isRenderResponseToUserInteraction, view);
