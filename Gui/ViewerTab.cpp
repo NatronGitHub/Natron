@@ -909,7 +909,7 @@ void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
 void ViewerTab::centerViewer(){
     _imp->viewer->fitImageToFormat();
     if(_imp->viewer->displayingImage()){
-        _imp->_viewerNode->refreshAndContinueRender(false,false);
+        _imp->_viewerNode->refreshAndContinueRender(false,true);
         
     }else{
         _imp->viewer->updateGL();

@@ -1647,7 +1647,7 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant)
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
-            (*it)->refreshAndContinueRender(forcePreview,false);
+            (*it)->refreshAndContinueRender(forcePreview,true);
         } else {
             (*it)->redrawViewer();
         }
