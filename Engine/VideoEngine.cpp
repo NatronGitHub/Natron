@@ -774,7 +774,7 @@ void VideoEngine::refreshAndContinueRender(bool forcePreview,bool abortPreviousR
                                              (_currentRunArgs._frameRequestsCount > 1 && _currentRunArgs._frameRequestIndex < _currentRunArgs._frameRequestsCount - 1));
     if(!isPlaybackRunning) {
         if (abortPreviousRender) {
-            abortRendering(true);
+            abortRendering(false);
         }
         render(1,false,false,_currentRunArgs._forward,true,forcePreview);
     }
