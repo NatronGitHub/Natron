@@ -331,7 +331,7 @@ Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded,bool isSequentialRender)
 {
-    Natron::Status ret[2];
+    Natron::Status ret[2] = { StatOK,StatOK };
     for (int i = 0; i < 2; ++i) {
         if (i == 1 && _imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) {
             break;
