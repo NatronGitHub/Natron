@@ -208,6 +208,7 @@ bool TabWidget::destroyTab(QWidget* tab) {
 
 void TabWidget::createMenu(){
     QMenu *menu = new QMenu(_gui);
+    menu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
     QPixmap pixV,pixM,pixH,pixC;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
