@@ -2021,7 +2021,7 @@ bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
 {
     
     if (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL && _imp->liveInstance->isWriter()) {
-        nodeName = getName();
+        nodeName = getName_mt_safe();
         return true;
     } else {
         QMutexLocker l(&_imp->inputsMutex);
