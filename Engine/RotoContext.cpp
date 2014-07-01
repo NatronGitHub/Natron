@@ -57,13 +57,15 @@ BezierCP::~BezierCP()
     
 }
 
-bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterTracker ) const
+bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterOrRelative) const
 {
-    if (!skipMasterTracker) {
+    if (!skipMasterOrRelative) {
         Double_Knob* masterTrack ;
+        BezierCP* relative;
         {
             QReadLocker l(&_imp->masterMutex);
             masterTrack = _imp->masterTrack;
+            relative = _imp->relativePoint;
         }
         if (masterTrack) {
             bool ok;
@@ -79,6 +81,24 @@ bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterTra
                 return false;
             }
             
+        } else if (relative) {
+            assert(!masterTrack);
+            
+            ///get the position of the relative point and the position of this point absolute
+            ///then compute the distance between the 2 positions then apply it as an offset to the positino
+            ///of the relative with the master track
+            double xRelative,yRelative;
+            _imp->relativePoint->getPositionAtTime(time, &xRelative, &yRelative,true);
+            double thisX,thisY;
+            bool onKey = getPositionAtTime(time, &thisX, &thisY,true);
+            double xOffset = thisX - xRelative;
+            double yOffset = thisY - yRelative;
+            
+            //get the position of the relative with track applied
+            _imp->relativePoint->getPositionAtTime(time, &xRelative, &yRelative,false);
+            *x = xRelative + xOffset;
+            *y = yRelative + yOffset;
+            return onKey;
         }
     }
     KeyFrame k;
@@ -144,6 +164,14 @@ void BezierCP::setRightBezierStaticPosition(double x,double y)
 
 bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
 {
+    
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
     KeyFrame k;
     bool ret;
     if (_imp->curveLeftBezierX.getKeyFrameWithTime(time, &k)) {
@@ -164,27 +192,43 @@ bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
         ret =  false;
     }
     
-    {
-        QReadLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            double xCenter,yCenter;
-            ret = getPositionAtTime(time, &xCenter, &yCenter,true);
-            
-            ///make it an offset relative to the center
-            *x -= xCenter;
-            *y -= yCenter;
-            
-            ///apply the offset to the track center
-            *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
-            *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
-        }
+    
+    if (masterTrack) {
+        double xCenter,yCenter;
+        ret = getPositionAtTime(time, &xCenter, &yCenter,true);
+        
+        ///make it an offset relative to the center
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        ///apply the offset to the track center
+        *x = masterTrack->getValueAtTime(time,0) + *x;
+        *y = masterTrack->getValueAtTime(time,1) + *y;
+    } else if (relativePoint) {
+        assert(!masterTrack);
+        double xCenter,yCenter;
+        getPositionAtTime(time, &xCenter, &yCenter,true);
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        double xRelative,yRelative;
+        ret = getPositionAtTime(time, &xRelative, &yRelative);
+        *x += xRelative;
+        *y += yRelative;
     }
+    
     return ret;
 }
 
 bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
 {
-   
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
     KeyFrame k;
     bool ret;
     if (_imp->curveRightBezierX.getKeyFrameWithTime(time, &k)) {
@@ -205,21 +249,31 @@ bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
         ret =  false;
     }
     
-    {
-        QReadLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            double xCenter,yCenter;
-            ret = getPositionAtTime(time, &xCenter, &yCenter,true);
-            
-            ///make it an offset relative to the center
-            *x -= xCenter;
-            *y -= yCenter;
-            
-            ///apply the offset to the track center
-            *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
-            *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
-        }
+    
+    if (masterTrack) {
+        double xCenter,yCenter;
+        ret = getPositionAtTime(time, &xCenter, &yCenter,true);
+        
+        ///make it an offset relative to the center
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        ///apply the offset to the track center
+        *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
+        *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
+    } else if (relativePoint) {
+        assert(!masterTrack);
+        double xCenter,yCenter;
+        getPositionAtTime(time, &xCenter, &yCenter,true);
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        double xRelative,yRelative;
+        ret = getPositionAtTime(time, &xRelative, &yRelative);
+        *x += xRelative;
+        *y += yRelative;
     }
+    
     return ret;
 }
 
@@ -529,6 +583,7 @@ void BezierCP::clone(const BezierCP& other)
     _imp->rightY = other._imp->rightY;
     
     _imp->masterTrack = other._imp->masterTrack;
+    _imp->relativePoint = other._imp->relativePoint;
 }
 
 bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
@@ -554,6 +609,7 @@ void BezierCP::slaveTo(Double_Knob* track)
     assert(QThread::currentThread() == qApp->thread());
     assert(!_imp->masterTrack);
     QWriteLocker l(&_imp->masterMutex);
+    assert(!_imp->relativePoint);
     _imp->masterTrack = track;
     
 }
@@ -571,6 +627,27 @@ Double_Knob* BezierCP::isSlaved() const
 {
     QReadLocker l(&_imp->masterMutex);
     return _imp->masterTrack;
+}
+
+void BezierCP::setRelativeTo(BezierCP* other)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QWriteLocker l(&_imp->masterMutex);
+    assert(!_imp->masterTrack);
+    _imp->relativePoint = other;
+}
+
+BezierCP* BezierCP::hasRelative() const
+{
+    QReadLocker l(&_imp->masterMutex);
+    return _imp->relativePoint;
+}
+
+void BezierCP::removeRelative()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QWriteLocker l(&_imp->masterMutex);
+    _imp->relativePoint = NULL;
 }
 
 ////////////////////////////////////RotoItem////////////////////////////////////
@@ -2526,6 +2603,11 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance,ControlPointSel
 
 int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
 {
+    return getControlPointIndex(cp.get());
+}
+
+int Bezier::getControlPointIndex(const BezierCP* cp) const
+{
     ///only called on the main-thread
     assert(cp);
     QMutexLocker l(&itemMutex);
@@ -2533,7 +2615,7 @@ int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
     int i = 0;
     for (BezierCPs::const_iterator it = _imp->points.begin();it!=_imp->points.end();++it,++i)
     {
-        if (*it == cp) {
+        if (it->get() == cp) {
             return i;
         }
     }

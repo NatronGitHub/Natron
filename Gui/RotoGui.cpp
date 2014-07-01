@@ -3073,6 +3073,9 @@ void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
     else if (ret == unLinkFrom && ret != NULL) {
         cp.first->unslave();
         isSlaved->removeSlavedTrack(cp.first);
+        if (cp.second->hasRelative()) {
+            cp.second->removeRelative();
+        }
     }
 
 }
@@ -3141,11 +3144,16 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
         if (index >= 0 && index < (int)knobs.size()) {
             Double_Knob* knob = knobs[index].second;
             if (knob && knob->getDimension() == 2) {
+                if (cp.first->hasRelative()) {
+                    cp.first->removeRelative();
+                }
                 cp.first->slaveTo(knob);
                 knob->addSlavedTrack(cp.first);
-                if(!cp.second->isSlaved()) {
-                    cp.second->slaveTo(knob);
-                    knob->addSlavedTrack(cp.second);
+                
+                ///if the counter part point is a feather and it's not linked to a track, switch
+                ///it's coordinates to be relative to the track
+                if (cp.second->isFeatherPoint() && !cp.second->isSlaved()) {
+                    cp.second->setRelativeTo(cp.first.get());
                 }
             }
         }

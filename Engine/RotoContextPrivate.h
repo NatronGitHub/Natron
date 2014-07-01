@@ -46,8 +46,9 @@ struct BezierCPPrivate
     Curve curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
     
-    mutable QReadWriteLock masterMutex;
+    mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
     Double_Knob* masterTrack; //< is this point linked to a track ?
+    BezierCP* relativePoint; //< is this point relative (as an offset) to another point ?
     
     BezierCPPrivate(Bezier* curve)
     : holder(curve)
@@ -65,6 +66,7 @@ struct BezierCPPrivate
     , rightY(0)
     , masterMutex()
     , masterTrack(NULL)
+    , relativePoint(NULL)
     {
         
     }

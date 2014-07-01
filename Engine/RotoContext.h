@@ -124,7 +124,7 @@ public:
 
     bool equalsAtTime(int time,const BezierCP& other) const;
     
-    bool getPositionAtTime(int time,double* x,double* y,bool skipMasterTracker = false) const;
+    bool getPositionAtTime(int time,double* x,double* y,bool skipMasterOrRelative = false) const;
     
     bool getLeftBezierPointAtTime(int time,double* x,double* y) const;
     
@@ -150,9 +150,25 @@ public:
      **/
     int isNearbyTangent(int time,double x,double y,double acceptance) const;
     
+    /**
+     * The functions below are to slave/unslave a control point to a track
+     **/
     void slaveTo(Double_Knob* track);
     Double_Knob* isSlaved() const;
     void unslave();
+    
+    /**
+     * The functions below are used to set the coordinates mode of the point to be relative
+     * to the position of another point. In this mode the X,Y position are an offset.
+     *
+     * This is to addressthe issue where a feather point should still follow its control point
+     * counter part even when linked to a track.
+     * 
+     * A point cannot have a relative and a master track at the same time!
+     **/
+    void setRelativeTo(BezierCP* other);
+    BezierCP* hasRelative() const;
+    void removeRelative();
     
 private:
     
@@ -634,6 +650,7 @@ public:
      * If no such control point could be found, -1 is returned.
      **/
     int getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const;
+    int getControlPointIndex(const BezierCP* cp) const;
     
     /**
      * @brief Given the feather point in parameter, return its index in the curve's feather points list.

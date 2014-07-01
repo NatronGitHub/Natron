@@ -247,6 +247,14 @@ public:
 
     void restoreTracks(const std::list <SerializedTrack>& tracks,const std::vector<boost::shared_ptr<Natron::Node> >& activeNodes);
     
+    
+    ////For all tacks that have slaved roto points, we remember them in here, and once all track links
+    ////have been restore, we restore the relative feather for each control point slaved.
+    ////we cannot do this while restoring the link because the feather might be also linked to another
+    ///track, so we have to wait for a final pass to be able to determine whether the feather must be set
+    ///as relative or not.
+    void restoreFeatherRelatives();
+    
 public slots:
     
     void onNodeDeactivated();

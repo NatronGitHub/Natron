@@ -358,7 +358,8 @@ void Node::loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization
     }
 }
 
-void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes) {
+void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes,
+                             std::list<Double_Knob*>* trackKnobsRestored) {
     
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -372,7 +373,11 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::v
             continue;
         }
         (*it)->restoreKnobLinks(knob,allNodes);
-        (*it)->restoreTracks(knob,allNodes);
+        if ((*it)->restoreTracks(knob,allNodes)) {
+            Double_Knob* dblKnob = dynamic_cast<Double_Knob*>(knob.get());
+            assert(dblKnob);
+            trackKnobsRestored->push_back(dblKnob);
+        }
     }
     
 }

@@ -569,6 +569,21 @@ void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const 
     }
 }
 
+void Double_Knob::restoreFeatherRelatives()
+{
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
+        if ((*it)->isFeatherPoint()) {
+            continue;
+        }
+        int indexInCurve = (*it)->getCurve()->getControlPointIndex(it->get());
+        assert(indexInCurve != -1);
+        boost::shared_ptr<BezierCP> fp = (*it)->getCurve()->getFeatherPointAtIndex(indexInCurve);
+        if (!fp->isSlaved()) {
+            fp->setRelativeTo(it->get());
+        }
+    }
+}
+
 Double_Knob::~Double_Knob()
 {
     for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {

@@ -39,6 +39,7 @@ class RenderTree;
 class Format;
 class NodeSerialization;
 class KnobHolder;
+class Double_Knob;
 class RotoContext;
 namespace Natron{
 
@@ -79,7 +80,8 @@ public:
     
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
+    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes,
+                           std::list<Double_Knob*>* trackKnobsRestored);
     
     /*Quit all processing done by all render instances of this node */
     void quitAnyProcessing();
