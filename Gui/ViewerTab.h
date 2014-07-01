@@ -223,6 +223,7 @@ public slots:
     void onFrameRangeEditingFinished();
     
     void onLockFrameRangeButtonClicked(bool toggled);
+    void setFrameRangeLocked(bool toggled);
     
     void onTimelineBoundariesChanged(SequenceTime,SequenceTime,int);
 

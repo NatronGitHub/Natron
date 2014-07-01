@@ -2055,6 +2055,12 @@ void ViewerTab::onLockFrameRangeButtonClicked(bool toggled)
     }
 }
 
+void ViewerTab::setFrameRangeLocked(bool toggled)
+{
+    _imp->lockFrameRangeButton->setChecked(toggled);
+    onLockFrameRangeButtonClicked(toggled);
+}
+
 void ViewerTab::onTimelineBoundariesChanged(SequenceTime first,SequenceTime second,int /*reason*/)
 {
     QString text = QString("%1 - %2").arg(first).arg(second);

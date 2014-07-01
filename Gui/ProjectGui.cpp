@@ -375,6 +375,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->setMipMapLevel(found->second.mipMapLevel);
                 tab->setCompositingOperator((Natron::ViewerCompositingOperator)found->second.wipeCompositingOp);
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
+                tab->setFrameRangeLocked(found->second.frameRangeLocked);
             }
         }
         

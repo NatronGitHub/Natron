@@ -26,7 +26,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeBackDropSerialization.h"
 
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING
+#define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FRAME_RANGE
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_BACKDROPS
@@ -49,6 +50,7 @@ struct ViewerData {
     std::string channels;
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
+    bool frameRangeLocked;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -68,9 +70,17 @@ struct ViewerData {
         ar & boost::serialization::make_nvp("Channels",channels);
         ar & boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
         ar & boost::serialization::make_nvp("MipMapLevel",mipMapLevel);
-        if (version >= VIEWER_DATA_SERIALIZATION_VERSION) {
+        if (version >= VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING) {
             ar & boost::serialization::make_nvp("ZoomOrPanSinceFit",zoomOrPanSinceLastFit);
             ar & boost::serialization::make_nvp("CompositingOP",wipeCompositingOp);
+        } else {
+            zoomOrPanSinceLastFit = false;
+            wipeCompositingOp = 0;
+        }
+        if (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE) {
+            ar & boost::serialization::make_nvp("FrameRangeLocked",frameRangeLocked);
+        } else {
+            frameRangeLocked = false;
         }
     }
 };
