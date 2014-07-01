@@ -208,7 +208,6 @@ public slots:
     void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
-
 private:
 
     /**
@@ -509,6 +508,8 @@ public slots:
     
     void onMustShowAllDimension();
     
+    void onDialogCurrentColorChanged(const QColor& color);
+
 signals:
     
     void dimensionSwitchToggled(bool b);
@@ -560,6 +561,8 @@ private:
 
     int _dimension;
     boost::shared_ptr<Color_Knob> _knob;
+    std::vector<double> _lastColor;
+
 };
 
 class AnimatingTextEdit : public QTextEdit {

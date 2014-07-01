@@ -1152,6 +1152,7 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *conta
 , _dimensionSwitchButton(NULL)
 , _slider(NULL)
 , _dimension(knob->getDimension())
+, _lastColor(_dimension)
 {
     _knob = boost::dynamic_pointer_cast<Color_Knob>(knob);
     assert(_knob);
@@ -1606,13 +1607,22 @@ Color_KnobGui::showColorDialog()
         curG = _gBox->value();
         curB = _bBox->value();
     }
+    
+    for (int i = 0; i < _dimension; ++i) {
+        _lastColor[i] = _knob->getValue(i);
+    }
+    
     QColor curColor;
     curColor.setRedF(curR);
     curColor.setGreenF(curG);
     curColor.setBlueF(curB);
     dialog.setCurrentColor(curColor);
-    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(updateLabel(QColor)));
+    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onDialogCurrentColorChanged(QColor)));
     if (dialog.exec()) {
+        ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
+        for (int i = 0; i < _dimension; ++i) {
+            _knob->setValue(_lastColor[i],i);
+        }
         
         ///if only the first dimension is displayed, switch back to all dimensions
         if (!_dimensionSwitchButton->isChecked()) {
@@ -1654,10 +1664,26 @@ Color_KnobGui::showColorDialog()
         
         onColorChanged();
     } else {
+        for (int i = 0; i < _dimension; ++i) {
+            _knob->setValue(_lastColor[i],i);
+        }
         updateLabel(curColor);
     }
 }
 
+void
+Color_KnobGui::onDialogCurrentColorChanged(const QColor& color)
+{
+    updateLabel(color);
+    _knob->setValue(color.redF(), 0);
+    if (_dimension > 1) {
+        _knob->setValue(color.greenF(), 1);
+        _knob->setValue(color.blueF(), 2);
+        if (_dimension > 3) {
+            _knob->setValue(color.alphaF(), 3);
+        }
+    }
+}
 
 void
 Color_KnobGui::onColorChanged()
