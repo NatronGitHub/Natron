@@ -2286,7 +2286,11 @@ NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
     if (masterNodeName.empty()) {
         std::vector<boost::shared_ptr<Natron::Node> > allNodes;
         getGui()->getApp()->getActiveNodes(&allNodes);
-        n->restoreKnobsLinks(internalSerialization,allNodes);
+        std::list<Double_Knob*> tracks;
+        n->restoreKnobsLinks(internalSerialization,allNodes,&tracks);
+        for (std::list<Double_Knob*>::iterator it = tracks.begin(); it!=tracks.end(); ++it) {
+            (*it)->restoreFeatherRelatives();
+        }
     } else {
         boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
         
