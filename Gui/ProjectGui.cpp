@@ -254,17 +254,19 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
             ///find all the tabs and move them to this widget
             for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
                 std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
-                assert(foundTab != registeredTabs.end());
-                TabWidget::moveTab(foundTab->second, *it);
+                if (foundTab != registeredTabs.end()) {
+                    TabWidget::moveTab(foundTab->second, *it);
+                }
             }
             
             ///now call this recursively on the freshly new splits
             for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
                 //find in the guiLayout map the PaneLayout corresponding to the split
                 std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
-                assert(splitIt != guiLayout.end());
+                if (splitIt != guiLayout.end()) {
                 
-                restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+                    restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+                }
             }
             
             break;
@@ -291,7 +293,9 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin();it!=nodesGuiSerialization.end();++it) {
         const std::string& name = it->getName();
         boost::shared_ptr<NodeGui> nGui = _gui->getApp()->getNodeGui(name);
-        assert(nGui);
+        if (!nGui) {
+            continue;
+        }
         nGui->setPos(it->getX(),it->getY());
         _gui->deselectAllNodes();
         

@@ -169,7 +169,9 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 break;
             }
         }
-        assert(thisNode);
+        if (!thisNode) {
+            continue;
+        }
         
         ///restore slave/master link if any
         const std::string& masterNodeName = it->getMasterNodeName();
