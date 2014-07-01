@@ -2695,6 +2695,7 @@ void RotoGui::onAddKeyFrameClicked()
     for (SelectedBeziers::iterator it = _imp->rotoData->selectedBeziers.begin(); it!=_imp->rotoData->selectedBeziers.end(); ++it) {
         (*it)->setKeyframe(time);
     }
+    _imp->context->evaluateChange();
 }
 
 void RotoGui::onRemoveKeyFrameClicked()
@@ -2703,6 +2704,7 @@ void RotoGui::onRemoveKeyFrameClicked()
     for (SelectedBeziers::iterator it = _imp->rotoData->selectedBeziers.begin(); it!=_imp->rotoData->selectedBeziers.end(); ++it) {
         (*it)->removeKeyframe(time);
     }
+    _imp->context->evaluateChange();
 }
 
 void RotoGui::onCurrentFrameChanged(SequenceTime /*time*/,int)
@@ -3076,6 +3078,8 @@ void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
         if (cp.second->hasRelative()) {
             cp.second->removeRelative();
         }
+        _imp->context->evaluateChange();
+        _imp->node->getNode()->getApp()->triggerAutoSave();
     }
 
 }
@@ -3158,5 +3162,6 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
             }
         }
     }
+    _imp->context->evaluateChange();
     _imp->node->getNode()->getApp()->triggerAutoSave();
 }
