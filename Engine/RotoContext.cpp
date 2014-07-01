@@ -4211,6 +4211,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         return image;
     }
     cairo_t* cr = cairo_create(cairoImg);
+    cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
     
     ///We could also propose the user to render a mask to SVG
     _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
@@ -4255,9 +4256,10 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
 void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> >& splines,
                                          unsigned int mipmapLevel,int time)
 {
-    ///Maybe all beziers could have a specific blending mode ?
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     
+    ///Maybe all beziers could have a specific blending mode ?
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);//CAIRO_OPERATOR_SOURCE);
+
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         
         ///render the bezier only if finished (closed) and activated
@@ -4270,9 +4272,9 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             double opacity = (*it2)->getOpacity(time);
             bool inverted = (*it2)->getInverted(time);
             
-        
-            BezierCPs cps = (*it2)->getControlPoints_mt_safe();
-            BezierCPs fps = (*it2)->getFeatherPoints_mt_safe();
+            
+            BezierCPs cps = inverted ? (*it2)->getFeatherPoints_mt_safe() : (*it2)->getControlPoints_mt_safe();
+            BezierCPs fps = inverted ? (*it2)->getControlPoints_mt_safe() : (*it2)->getFeatherPoints_mt_safe();
             
             assert(cps.size() == fps.size());
             
@@ -4280,10 +4282,23 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 continue;
             }
             
+            cairo_new_path(cr);
             
             if (inverted) {
-                cairo_set_source_rgba(cr, 1.,1.,1., opacity);
-                cairo_paint(cr);
+              
+                                                            //cairo_set_source_rgba(cr, 1.,1.,1., opacity);
+                                                            //                cairo_paint(cr);
+                double xOffset,yOffset;
+                cairo_surface_get_device_offset(cairoImg, &xOffset, &yOffset);
+                int width = cairo_image_surface_get_width(cairoImg);
+                int height = cairo_image_surface_get_height(cairoImg);
+                
+                cairo_move_to(cr, xOffset, yOffset);
+                cairo_line_to(cr, xOffset + width, yOffset);
+                cairo_line_to(cr, xOffset + width, yOffset + height);
+                cairo_line_to(cr, xOffset, yOffset + height);
+                cairo_line_to(cr, xOffset, yOffset);
+                
             }
             
             
@@ -4304,8 +4319,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
             adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
             
-            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
-            cairo_new_path(cr);
+            cairo_set_source_rgba(cr, 1.,1.,1., opacity);
+
             cairo_move_to(cr, initCp.x,initCp.y);
             
             while (point != cps.end()) {
@@ -4357,6 +4372,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
                 (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
                 (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
+                
+                
                 assert(!featherPolygon.empty());
                 
                 multiples.resize(featherPolygon.size());
@@ -4466,12 +4483,12 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
                     ///Set the 4 corners color
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1.,opacity);
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1.,  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);
@@ -4572,14 +4589,14 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     ///Set the 4 corners color
                     
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1.,opacity);
                     
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
                     
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);
@@ -4617,11 +4634,11 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
 
             }
             
-            
+
             assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
             cairo_set_source(cr, mesh);
     
-                       ///paint with the feather with the pattern as a mask
+            ///paint with the feather with the pattern as a mask
             cairo_mask(cr, mesh);
             
             cairo_pattern_destroy(mesh);
