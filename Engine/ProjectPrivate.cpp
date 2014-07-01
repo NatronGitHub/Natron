@@ -139,6 +139,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                         "to exist in the currently loaded plug-ins.");
             qDebug() << text;
             Natron::errorDialog("", text.toStdString());
+            continue;
         }
         if (n->isOutputNode()) {
             hasProjectAWriter = true;
