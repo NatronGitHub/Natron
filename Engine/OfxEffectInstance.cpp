@@ -1250,8 +1250,15 @@ static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::Value
     }
 }
 
-void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod){
+void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod)
+{
     if(!_initialized){
+        return;
+    }
+    
+    ///If the param changed is a button and the node is disabled don't do anything which might
+    ///trigger an analysis
+    if (reason == USER_EDITED && dynamic_cast<Button_Knob*>(k) && _node->isNodeDisabled()) {
         return;
     }
       

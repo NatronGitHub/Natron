@@ -1123,7 +1123,8 @@ void DockablePanel::setCurrentColor(const QColor& c)
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
                                      Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
-: DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
+: DockablePanel(gui,
+                multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>(multiPanel.get()) : NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
                false,
@@ -1135,6 +1136,10 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
 , _nodeGUI(NodeUi)
 , _multiPanel(multiPanel)
 {
+    if (multiPanel) {
+        multiPanel->initializeKnobsPublic();
+    }
+    
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
     _centerNodeButton = new Button(QIcon(pixC),"",getHeaderWidget());
@@ -1171,7 +1176,7 @@ RotoPanel* NodeSettingsPanel::initializeRotoPanel()
 
 void NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
 {
-    if (_multiPanel) {
+    if (_multiPanel && !_multiPanel->isGuiCreated()) {
         _multiPanel->createMultiInstanceGui(layout);
     }
 }

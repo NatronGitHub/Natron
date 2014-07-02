@@ -362,6 +362,8 @@ signals:
     
 private:
     
+    //virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     
     virtual const std::string& typeName() const OVERRIDE FINAL;

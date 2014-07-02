@@ -78,9 +78,9 @@ void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, i
 
 /***************** KNOBI**********************/
 
-bool KnobI::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension)
+bool KnobI::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,bool ignoreMasterPersistence)
 {
-    return slaveTo(dimension, other, otherDimension, Natron::PLUGIN_EDITED);
+    return slaveTo(dimension, other, otherDimension, Natron::PLUGIN_EDITED,ignoreMasterPersistence);
 }
 
 void KnobI::onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension)
@@ -151,8 +151,9 @@ struct KnobHelper::KnobHelperPrivate {
     
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
-    mutable QReadWriteLock mastersMutex; //< protects _masters
+    mutable QReadWriteLock mastersMutex; //< protects _masters & ignoreMasterPersistence
     MastersMap masters; //from what knob is slaved each curve if any
+    bool ignoreMasterPersistence; //< when true masters will not be serialized
     
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevel> animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
@@ -195,6 +196,7 @@ struct KnobHelper::KnobHelperPrivate {
     , curves(dimension_)
     , mastersMutex()
     , masters(dimension_)
+    , ignoreMasterPersistence(false)
     , animationLevelMutex()
     , animationLevel(dimension_)
     , betweenBeginEndMutex(QMutex::Recursive)
@@ -679,7 +681,14 @@ void* KnobHelper::getOfxParamHandle() const
     return _imp->ofxParamHandle;
 }
 
-bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,Natron::ValueChangedReason reason) {
+bool KnobHelper::isMastersPersistenceIgnored() const
+{
+    QReadLocker l(&_imp->mastersMutex);
+    return _imp->ignoreMasterPersistence;
+}
+
+bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,Natron::ValueChangedReason reason
+                         ,bool ignoreMasterPersistence) {
     assert(dimension < (int)_imp->masters.size());
     assert(!other->isSlave(otherDimension));
     
@@ -688,6 +697,7 @@ bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int
         if (_imp->masters[dimension].second) {
             return false;
         }
+        _imp->ignoreMasterPersistence = ignoreMasterPersistence;
         _imp->masters[dimension].second = other;
         _imp->masters[dimension].first = otherDimension;
     }
@@ -719,6 +729,7 @@ void KnobHelper::resetMaster(int dimension)
 {
     _imp->masters[dimension].second.reset();
     _imp->masters[dimension].first = -1;
+    _imp->ignoreMasterPersistence = false;
 }
 
 bool KnobHelper::isSlave(int dimension) const

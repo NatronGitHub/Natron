@@ -39,6 +39,8 @@ class TableItem {
     int id;
     Qt::ItemFlags itemFlags;
     
+public:
+    
     TableItem() : values(), view(0) , id(-1) ,
     itemFlags(Qt::ItemIsEditable
               |Qt::ItemIsSelectable
@@ -127,6 +129,7 @@ class TableItem {
     
 };
 
+
 inline void TableItem::setText(const QString &atext)
 { setData(Qt::DisplayRole, atext); }
 
@@ -201,6 +204,8 @@ public:
     
 private:
     
+    virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
+    
     boost::scoped_ptr<TableViewPrivate> _imp;
 };
 
@@ -254,6 +259,9 @@ public:
     virtual bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles)  OVERRIDE FINAL;
     virtual QMap<int, QVariant> itemData(const QModelIndex &index) const OVERRIDE FINAL;
     
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL;
+    virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role) OVERRIDE FINAL;
+    
     inline long tableIndex(int row, int column) const;
     
     void itemChanged(TableItem *item);
@@ -263,6 +271,15 @@ public:
     void clear();
     
     bool isValid(const QModelIndex &index) const;
+  
+public slots:
+    
+    void onDataChanged(const QModelIndex& index);
+    
+signals:
+    
+    void s_itemChanged(TableItem*);
+    
 private:
     
     boost::scoped_ptr<TableModelPrivate> _imp;

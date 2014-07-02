@@ -828,6 +828,8 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
      *of elements in the sequence.
      */
 	int rowCount = _model->rowCount(parent);
+    
+    
     for(int c = 0 ; c < rowCount ; ++c) {
         QModelIndex item = _model->index(c,0,parent);
         /*We skip directories*/

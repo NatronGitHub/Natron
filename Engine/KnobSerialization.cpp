@@ -29,7 +29,7 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int 
 {
     if (save) {
         std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
-        if (m.second) {
+        if (m.second && !knob->isMastersPersistenceIgnored()) {
             _master.masterDimension = m.first;
             NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>(m.second->getHolder());
             

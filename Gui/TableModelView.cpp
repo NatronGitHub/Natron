@@ -8,7 +8,7 @@
 #include "TableModelView.h"
 #include <QHeaderView>
 #include <QPainter>
-
+#include <QMouseEvent>
 //////////////TableItem
 
 TableItem::TableItem(const TableItem& other)
@@ -31,6 +31,14 @@ TableItem::~TableItem()
 TableItem *TableItem::clone() const
 {
     return new TableItem(*this);
+}
+
+
+void TableItem::setFlags(Qt::ItemFlags flags)
+{
+    itemFlags = flags;
+    if (TableModel *model = (view ? qobject_cast<TableModel*>(view->model()) : 0))
+        model->itemChanged(this);
 }
 
 QVariant TableItem::data(int role) const
@@ -92,12 +100,18 @@ TableModel::TableModel(int rows,int columns,TableView* view)
 : QAbstractTableModel(view)
 , _imp(new TableModelPrivate(rows,columns))
 {
-    
+    QObject::connect(this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)));
 }
 
 TableModel::~TableModel()
 {
     
+}
+
+void TableModel::onDataChanged(const QModelIndex& index)
+{
+    if (TableItem *i = item(index))
+        emit s_itemChanged(i);
 }
 
 bool TableModel::insertRows(int row, int count, const QModelIndex &)
@@ -443,6 +457,41 @@ QMap<int, QVariant> TableModel::itemData(const QModelIndex &index) const
     return roles;
 }
 
+QVariant TableModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (section < 0)
+        return QVariant();
+    
+    TableItem *itm = 0;
+    if (orientation == Qt::Horizontal && section < _imp->horizontalHeaderItems.count())
+        itm = _imp->horizontalHeaderItems.at(section);
+    else
+        return QVariant(); // section is out of bounds
+    
+    if (itm)
+        return itm->data(role);
+    if (role == Qt::DisplayRole)
+        return section + 1;
+    return QVariant();
+}
+
+bool TableModel::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
+{
+    if (section < 0 ||
+        (orientation == Qt::Horizontal && _imp->horizontalHeaderItems.size() <= section))
+        return false;
+    
+    TableItem *itm = 0;
+    if (orientation == Qt::Horizontal)
+        itm = _imp->horizontalHeaderItems.at(section);
+    
+    if (itm) {
+        itm->setData(role, value);
+        return true;
+    }
+    return false;
+}
+
 long TableModel::tableIndex(int row, int column) const { return (row * _imp->horizontalHeaderItems.count()) + column; }
 
 void TableModel::clear()
@@ -523,6 +572,7 @@ TableItemDelegate::TableItemDelegate(TableView* view)
 
 void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
 {
+    QStyledItemDelegate::paint(painter,option,index);
     if (!index.isValid()) {
         QStyledItemDelegate::paint(painter,option,index);
     }
@@ -534,6 +584,7 @@ void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & o
     if (option.state & QStyle::State_Selected){
         painter->fillRect(option.rect, option.palette.highlight());
     }
+
     widget->render(painter);
 
 }
@@ -549,14 +600,18 @@ TableView::TableView(QWidget* parent)
     setRootIsDecorated(false);
     setItemsExpandable(false);
     setSortingEnabled(true);
-    header()->setSortIndicator(0, Qt::AscendingOrder);
+    
+    ///The table model here doesn't support sorting
+    setSortingEnabled(false);
+    
     header()->setStretchLastSection(false);
     setTextElideMode(Qt::ElideMiddle);
-    setEditTriggers(QAbstractItemView::EditKeyPressed);
+    setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked | QAbstractItemView::DoubleClicked);
     setContextMenuPolicy(Qt::CustomContextMenu);
     setDragDropMode(QAbstractItemView::NoDragDrop);
     setAttribute(Qt::WA_MacShowFocusRect,0);
     setAcceptDrops(true);
+    setSelectionMode(QAbstractItemView::ExtendedSelection);
     
 }
 
@@ -721,4 +776,14 @@ QRect TableView::visualItemRect(const TableItem *item) const
     QModelIndex index = _imp->model->index(const_cast<TableItem*>(item));
     assert(index.isValid());
     return visualRect(index);
+}
+
+void TableView::mousePressEvent(QMouseEvent* event)
+{
+    TableItem* item = itemAt(event->pos());
+    if (!item) {
+        selectionModel()->clear();
+    } else {
+        QTreeView::mousePressEvent(event);
+    }
 }

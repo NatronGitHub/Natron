@@ -686,6 +686,16 @@ const std::string &Choice_Knob::getActiveEntryText() const
     return _entries[activeIndex];
 }
 
+//void Choice_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+//{
+//    Choice_Knob* oChoice = dynamic_cast<Choice_Knob*>(other.get());
+//    if (oChoice) {
+//        _entries = oChoice->_entries;
+//        _entriesHelp = oChoice->_entriesHelp;
+//        emit populated();
+//    }
+//}
+
 /******************************SEPARATOR_KNOB**************************************/
 
 Separator_Knob::Separator_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin)

@@ -24,12 +24,13 @@ namespace Natron
 
 class QVBoxLayout;
 class QHBoxLayout;
-
+class QItemSelection;
+class TableItem;
 /**
 * @brief This class represents a multi-instance settings panel.
 **/
 struct MultiInstancePanelPrivate;
-class MultiInstancePanel : public QObject, public KnobHolder
+class MultiInstancePanel : public QObject, public NamedKnobHolder
 {
     
     Q_OBJECT
@@ -41,10 +42,14 @@ public:
     virtual ~MultiInstancePanel();
     
     void createMultiInstanceGui(QVBoxLayout* layout);
-
-    void addRow(Natron::Node* node);
     
-    const std::list<boost::shared_ptr<Natron::Node> >& getInstances() const;
+    bool isGuiCreated() const;
+
+    void addRow(const boost::shared_ptr<Natron::Node>& node);
+    
+    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& getInstances() const;
+    
+    virtual std::string getName_mt_safe() const OVERRIDE FINAL;
     
 public slots:
 
@@ -54,7 +59,9 @@ public slots:
     
     void onSelectAllButtonClicked();
     
+    void onSelectionChanged(const QItemSelection& oldSelection,const QItemSelection& newSelection);
     
+    void onItemDataChanged(TableItem* item);
 protected:
     
     virtual void appendExtraGui(QVBoxLayout* /*layout*/) {}

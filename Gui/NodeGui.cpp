@@ -899,13 +899,14 @@ void NodeGui::activate() {
     ///first activate all child instance if any
     if (_internalNode->isMultiInstance()) {
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-        const std::list<boost::shared_ptr<Natron::Node> >& childrenInstances = panel->getInstances();
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = childrenInstances.begin(); it!=childrenInstances.end(); ++it) {
-            if ((*it) == _internalNode) {
+        const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+             it!=childrenInstances.end(); ++it) {
+            if (it->first == _internalNode) {
                 continue;
             }
-            assert(!(*it)->isMultiInstance() && !(*it)->getParentMultiInstanceName().empty());
-            (*it)->activate();
+            assert(!it->first->isMultiInstance() && !it->first->getParentMultiInstanceName().empty());
+            it->first->activate();
         }
     }
     
@@ -988,13 +989,14 @@ void NodeGui::deactivate() {
     ///first deactivate all child instance if any
     if (_internalNode->isMultiInstance()) {
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-        const std::list<boost::shared_ptr<Natron::Node> >& childrenInstances = panel->getInstances();
-        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = childrenInstances.begin(); it!=childrenInstances.end(); ++it) {
-            if ((*it) == _internalNode) {
+        const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+             it!=childrenInstances.end(); ++it) {
+            if (it->first == _internalNode) {
                 continue;
             }
-            assert(!(*it)->isMultiInstance() && !(*it)->getParentMultiInstanceName().empty());
-            (*it)->deactivate();
+            assert(!it->first->isMultiInstance() && !it->first->getParentMultiInstanceName().empty());
+            it->first->deactivate();
         }
     }
     

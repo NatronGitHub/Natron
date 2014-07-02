@@ -53,6 +53,12 @@ public:
     virtual KnobGuiI* getKnobGuiPointer() const = 0;
     
     /**
+     * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
+     **/
+    virtual bool isDeclaredByPlugin() const = 0;
+
+    
+    /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
      * to create an instance of this knob.
      **/
@@ -417,7 +423,8 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) = 0;
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason,
+                         bool ignoreMasterPersistence) = 0;
     
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
@@ -429,8 +436,10 @@ public:
     
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::PLUGIN_EDITED.
+     * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
-    bool slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension);
+    bool slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,bool ignoreMasterPersistence = false);
+    virtual bool isMastersPersistenceIgnored() const = 0;
     
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::USER_EDITED.
@@ -628,7 +637,7 @@ public:
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
-    bool isDeclaredByPlugin() const;
+    virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
     
     virtual void setAsInstanceSpecific() OVERRIDE FINAL;
     virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -752,9 +761,11 @@ public:
     
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:
     
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason
+                         ,bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
 protected:
     
@@ -762,7 +773,7 @@ protected:
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
     void resetMaster(int dimension);
-    
+        
 public:
     
     virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
