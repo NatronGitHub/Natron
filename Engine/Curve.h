@@ -27,6 +27,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+#define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be

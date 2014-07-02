@@ -1543,7 +1543,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             double minimumTimeSpanBetween2Keys = 1.;
             std::pair<double,double> curveXRange = it->curve->getInternalCurve()->getXRange();
             if (!it->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers()) {
-                minimumTimeSpanBetween2Keys = 1e-4 * std::abs(curveXRange.second - curveXRange.first) * 10;//< be safe
+                minimumTimeSpanBetween2Keys = NATRON_CURVE_X_SPACING_EPSILON * std::abs(curveXRange.second - curveXRange.first) * 10;//< be safe
             }
             
             
@@ -1554,7 +1554,9 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                 } else {
                     KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
-                    curveMaxMovement.setX(prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime());
+                    double leftMaxMovement = std::min(-NATRON_CURVE_X_SPACING_EPSILON,
+                                                      prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime());
+                    curveMaxMovement.setX(leftMaxMovement);
                     assert(curveMaxMovement.x() <= 0);
                 }
             }
@@ -1566,8 +1568,9 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                 if (next == ks.end()) {
                     curveMaxMovement.setY(curveXRange.second - rightMost->getTime());
                 } else {
-                    
-                    curveMaxMovement.setY(next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime());
+                    double rightMaxMovement = std::max(NATRON_CURVE_X_SPACING_EPSILON,
+                                                       next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime());
+                    curveMaxMovement.setY(rightMaxMovement);
                     assert(curveMaxMovement.y() >= 0);
                     
                 }

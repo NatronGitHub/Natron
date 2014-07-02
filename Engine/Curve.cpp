@@ -316,7 +316,7 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
         return std::make_pair(newKey.first,addedKey);
     } else {
         bool addedKey = true;
-        double paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
+        double paramEps = NATRON_CURVE_X_SPACING_EPSILON * std::abs(_imp->xMax - _imp->xMin);
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
             if (std::abs(it->getTime() - cp.getTime()) < paramEps) {
                 _imp->keyFrames.erase(it);
@@ -1141,9 +1141,9 @@ int Curve::keyFrameIndex(double time) const
     int i = 0;
     double paramEps;
     if (_imp->xMax != INT_MAX && _imp->xMin != INT_MIN) {
-        paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
+        paramEps = NATRON_CURVE_X_SPACING_EPSILON * std::abs(_imp->xMax - _imp->xMin);
     } else {
-        paramEps = 1e-4;
+        paramEps = NATRON_CURVE_X_SPACING_EPSILON;
     }
     for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
          it!=_imp->keyFrames.end() && (it->getTime() < time+paramEps);
