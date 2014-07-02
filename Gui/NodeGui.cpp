@@ -107,6 +107,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _magnecEnabled(false)
 , _magnecStartingPos()
 , _nodeLabel()
+, _parentMultiInstance()
 {
     
 }
@@ -201,8 +202,8 @@ void NodeGui::initialize(NodeGraph* dag,
         _panelDisplayed = true;
         assert(dockContainer);
         boost::shared_ptr<MultiInstancePanel> multiPanel;
-        if (_internalNode->isMultiInstance()) {
-            multiPanel.reset(new MultiInstancePanel(_internalNode));
+        if (_internalNode->isTrackerNode()) {
+            multiPanel.reset(new TrackerPanel(_internalNode));
         }
         _settingsPanel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
@@ -844,11 +845,10 @@ Edge* NodeGui::hasEdgeNearbyRect(const QRectF& rect)
     return NULL;
 }
 
-void NodeGui::activate() {
+void NodeGui::showGui()
+{
     show();
     setActive(true);
-    _graph->restoreFromTrash(this);
-    _graph->getGui()->getCurveEditor()->addNode(_graph->getNodeGuiSharedPtr(this));
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->addItem(it->second);
         it->second->setParentItem(parentItem());
@@ -867,23 +867,21 @@ void NodeGui::activate() {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
-    if(_internalNode->pluginID() != "Viewer"){
-        if(isSettingsPanelVisible()){
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (viewer) {
+        _graph->getGui()->activateViewerTab(viewer);
+    } else {
+        if (isSettingsPanelVisible()) {
             setVisibleSettingsPanel(false);
         }
-    }else{
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-        _graph->getGui()->activateViewerTab(viewer);
-    }
-    
-    if (_internalNode->isRotoNode()) {
-        _graph->getGui()->setRotoInterface(this);
-    }
-    
-    
-    if(_internalNode->isOpenFXNode()){
+        if (_internalNode->isRotoNode()) {
+            _graph->getGui()->setRotoInterface(this);
+        }
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
-        ofxNode->effectInstance()->beginInstanceEditAction();
+        if (ofxNode) {
+            ofxNode->effectInstance()->beginInstanceEditAction();
+        }
+
     }
     
     if (_slaveMasterLink) {
@@ -893,17 +891,49 @@ void NodeGui::activate() {
             _slaveMasterLink->show();
         }
     }
+    
+}
 
-    getNode()->getApp()->triggerAutoSave();
-    getNode()->getApp()->checkViewersConnection();
+void NodeGui::activate() {
+    
+    ///first activate all child instance if any
+    if (_internalNode->isMultiInstance()) {
+        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        const std::list<boost::shared_ptr<Natron::Node> >& childrenInstances = panel->getInstances();
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = childrenInstances.begin(); it!=childrenInstances.end(); ++it) {
+            if ((*it) == _internalNode) {
+                continue;
+            }
+            assert(!(*it)->isMultiInstance() && !(*it)->getParentMultiInstanceName().empty());
+            (*it)->activate();
+        }
+    }
+    
+    bool isMultiInstanceChild = !_internalNode->getParentMultiInstanceName().empty();
+    
+    if (!isMultiInstanceChild) {
+        showGui();
+    } else {
+        ///don't show gui if it is a multi instance child, but still emit the begin edit action
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
+        if (ofxNode) {
+            ofxNode->effectInstance()->beginInstanceEditAction();
+        }
+    }
+    _graph->restoreFromTrash(this);
+    _graph->getGui()->getCurveEditor()->addNode(_graph->getNodeGuiSharedPtr(this));
+
+    if (!isMultiInstanceChild) {
+        getNode()->getApp()->triggerAutoSave();
+        getNode()->getApp()->checkViewersConnection();
+    }
 
 }
 
-void NodeGui::deactivate() {
+void NodeGui::hideGui()
+{
     hide();
     setActive(false);
-    _graph->moveToTrash(this);
-    _graph->getGui()->getCurveEditor()->removeNode(_graph->getNodeGuiSharedPtr(this));
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         _graph->scene()->removeItem(it->second);
         it->second->setActive(false);
@@ -913,21 +943,14 @@ void NodeGui::deactivate() {
         _graph->scene()->removeItem(_outputEdge);
         _outputEdge->setActive(false);
     }
-
+    
     if (_slaveMasterLink) {
         _slaveMasterLink->hide();
     }
     
-    if (_internalNode->pluginID() != "Viewer") {
-        if(isSettingsPanelVisible()){
-            setVisibleSettingsPanel(false);
-        }
-        
-    } else {
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-        assert(viewer);
-        
-        ViewerGL* viewerGui = dynamic_cast<ViewerGL*>(viewer->getUiContext());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (isViewer) {
+        ViewerGL* viewerGui = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
         assert(viewerGui);
         
         const std::list<ViewerTab*>& viewerTabs = _graph->getGui()->getViewersList();
@@ -946,30 +969,54 @@ void NodeGui::deactivate() {
                 _graph->getGui()->setLastSelectedViewer(NULL);
             }
         }
+        _graph->getGui()->deactivateViewerTab(isViewer);
+
+    } else {
+        if(isSettingsPanelVisible()){
+            setVisibleSettingsPanel(false);
+        }
         
+        if (_internalNode->isRotoNode()) {
+            _graph->getGui()->removeRotoInterface(this, false);
+        }
         
-        
-        
-        
-        _graph->getGui()->deactivateViewerTab(viewer);
-        
+      
+    }
+}
+
+void NodeGui::deactivate() {
+    ///first deactivate all child instance if any
+    if (_internalNode->isMultiInstance()) {
+        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        const std::list<boost::shared_ptr<Natron::Node> >& childrenInstances = panel->getInstances();
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = childrenInstances.begin(); it!=childrenInstances.end(); ++it) {
+            if ((*it) == _internalNode) {
+                continue;
+            }
+            assert(!(*it)->isMultiInstance() && !(*it)->getParentMultiInstanceName().empty());
+            (*it)->deactivate();
+        }
     }
     
-    if (_internalNode->isRotoNode()) {
-        _graph->getGui()->removeRotoInterface(this, false);
+    bool isMultiInstanceChild = !_internalNode->getParentMultiInstanceName().empty();
+    if (!isMultiInstanceChild) {
+        hideGui();
     }
-    
-    
-    if(_internalNode->isOpenFXNode()){
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
+    OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
+    if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
+    _graph->moveToTrash(this);
+    _graph->getGui()->getCurveEditor()->removeNode(_graph->getNodeGuiSharedPtr(this));
     
-    getNode()->getApp()->triggerAutoSave();
-    std::list<ViewerInstance* > viewers;
-    getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
+    
+    if (!isMultiInstanceChild) {
+        getNode()->getApp()->triggerAutoSave();
+        std::list<ViewerInstance* > viewers;
+        getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
             (*it)->updateTreeAndRender();
+        }
     }
 }
 
@@ -1707,4 +1754,27 @@ void NodeGui::onSettingsPanelClosedChanged(bool closed)
         SequenceTime time = _internalNode->getApp()->getTimeLine()->currentFrame();
         _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
     }
+}
+
+boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
+{
+    if (_settingsPanel) {
+        return _settingsPanel->getMultiInstancePanel();
+    } else {
+        return boost::shared_ptr<MultiInstancePanel>();
+    }
+}
+
+bool NodeGui::shouldDrawOverlay() const
+{
+    if (_parentMultiInstance) {
+        return _parentMultiInstance->isSettingsPanelVisible();
+    } else {
+        return isSettingsPanelVisible();
+    }
+}
+
+void NodeGui::setParentMultiInstance(const boost::shared_ptr<NodeGui>& node)
+{
+    _parentMultiInstance = node;
 }

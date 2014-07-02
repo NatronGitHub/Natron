@@ -41,6 +41,7 @@ class KnobI;
 class NodeGuiSerialization;
 class KnobGui;
 class QUndoStack;
+class MultiInstancePanel;
 class QMenu;
 namespace Natron {
 class ChannelSet;
@@ -258,6 +259,12 @@ public:
     
     void refreshKnobsAfterTimeChange(SequenceTime time);
     
+    boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
+    
+    bool shouldDrawOverlay() const;
+    
+    void setParentMultiInstance(const boost::shared_ptr<NodeGui>& parent);
+    
 public slots:
     
     void setDefaultGradientColor(const QColor& color);
@@ -302,6 +309,10 @@ public slots:
     void activate();
     
     void deactivate();
+    
+    void hideGui();
+    
+    void showGui();
     
     /*Use NULL for src to disconnect.*/
     bool connectEdge(int edgeNumber);
@@ -431,7 +442,8 @@ private:
     QPoint _magnecStartingPos;
     
     QString _nodeLabel;
-
+    
+    boost::shared_ptr<NodeGui> _parentMultiInstance;
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

@@ -99,6 +99,7 @@ struct Node::Implementation {
         , imagesBeingRendered()
         , supportedDepths()
         , isMultiInstance(false)
+        , multiInstanceParentName()
         , duringInputChangedAction(false)
     {
     }
@@ -175,6 +176,9 @@ struct Node::Implementation {
     
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
+    
+    ///set if it was spawned from a multiinstance node
+    std::string multiInstanceParentName;
     
     bool duringInputChangedAction; //< true if we're during onInputChanged(...). MT-safe since only modified by the main thread
 };
@@ -255,12 +259,36 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     ///Special case for trackers: set as multi instance
     if (isTrackerNode()) {
         _imp->isMultiInstance = true;
+        ///declare knob that are instance specific
+        boost::shared_ptr<KnobI> subLabelKnob = getKnobByName(kOfxParamStringSublabelName);
+        if (subLabelKnob) {
+            subLabelKnob->setAsInstanceSpecific();
+        }
+        
+        boost::shared_ptr<KnobI> centerKnob = getKnobByName("center");
+        if (centerKnob) {
+            centerKnob->setAsInstanceSpecific();
+        }
     }
 }
 
 bool Node::isMultiInstance() const
 {
     return _imp->isMultiInstance;
+}
+
+void Node::setParentMultiInstanceName(const std::string& parentName)
+{
+    _imp->multiInstanceParentName = parentName;
+    if (!parentName.empty()) {
+        _imp->isMultiInstance = false;
+    }
+}
+
+///Accessed by the serialization thread, but mt safe since never changed
+const std::string& Node::getParentMultiInstanceName() const
+{
+    return _imp->multiInstanceParentName;
 }
 
 U64 Node::getHashValue() const
@@ -816,6 +844,16 @@ void Node::updateRenderInputs()
     {
         QMutexLocker l(&_imp->outputsMutex);
         _imp->outputs = _imp->outputsQueue;
+    }
+}
+
+void Node::updateRenderInputsRecursive()
+{
+    updateRenderInputs();
+    for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it!=_imp->inputsQueue.end(); ++it) {
+        if ((*it)) {
+            (*it)->updateRenderInputs();
+        }
     }
 }
 

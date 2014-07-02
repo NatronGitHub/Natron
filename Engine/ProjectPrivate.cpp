@@ -128,7 +128,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
         ///this code may throw an exception which will be caught above
         boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(it->getPluginID().c_str()
-                                                                        ,true
+                                                                        ,it->isMultiInstanceChild()
                                                                         ,it->getPluginMajorVersion()
                                                                         ,it->getPluginMinorVersion(),*it,false);
         if (!n) {

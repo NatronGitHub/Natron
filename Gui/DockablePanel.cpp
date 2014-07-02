@@ -51,6 +51,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TabWidget.h"
 #include "Gui/RotoPanel.h"
 #include "Gui/NodeBackDrop.h"
+#include "Gui/MultiInstancePanel.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -590,6 +591,8 @@ void DockablePanel::initializeKnobs() {
         assert(layout);
         layout->addRow(roto);
     }
+    
+    initializeExtraGui(_imp->_mainLayout);
 }
 
 
@@ -1120,7 +1123,7 @@ void DockablePanel::setCurrentColor(const QColor& c)
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
                                      Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
-:DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
+: DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
                false,
@@ -1129,7 +1132,8 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                false,
                "Settings",
                parent)
-,_nodeGUI(NodeUi)
+, _nodeGUI(NodeUi)
+, _multiPanel(multiPanel)
 {
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
@@ -1162,5 +1166,12 @@ RotoPanel* NodeSettingsPanel::initializeRotoPanel()
         return new RotoPanel(_nodeGUI.get(),this);
     } else {
         return NULL;
+    }
+}
+
+void NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
+{
+    if (_multiPanel) {
+        _multiPanel->createMultiInstanceGui(layout);
     }
 }

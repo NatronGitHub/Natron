@@ -254,6 +254,9 @@ void Int_KnobGui::onSpinBoxValueChanged()
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         newValues.push_back(_spinBoxes[i].first->value());
     }
+    if (_slider) {
+        _slider->seekScalePosition(newValues.front());
+    }
     pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValueForEachDimension_mt_safe(),newValues,false));
 }
 
@@ -646,6 +649,9 @@ void Double_KnobGui::onSpinBoxValueChanged()
         double v = _spinBoxes[i].first->value();
         valueAccordingToType(true, 0, &v);
         newValues.push_back(v);
+    }
+    if (_slider) {
+        _slider->seekScalePosition(newValues.front());
     }
     pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValueForEachDimension_mt_safe(),newValues,false));
 }

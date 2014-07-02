@@ -29,7 +29,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_V_INTRODUCES_ROTO
+#define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE
 
 namespace Natron {
     class Node;
@@ -74,6 +75,8 @@ public:
     bool hasRotoContext() const { return _hasRotoContext; }
     
     const RotoContextSerialization& getRotoContext() const {  return _rotoContext; }
+    
+    const std::string& isMultiInstanceChild() const { return _multiInstanceParentName; }
 private:
 
     bool _isNull;
@@ -93,6 +96,7 @@ private:
     boost::shared_ptr<Natron::Node> _node;
     AppInstance* _app;
 
+    std::string _multiInstanceParentName;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -115,6 +119,7 @@ private:
         if (_hasRotoContext) {
             ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
         }
+        ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
         
     }
     
@@ -148,7 +153,9 @@ private:
                 ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
             }
         }
-        
+        if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
+            ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
+        } 
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 

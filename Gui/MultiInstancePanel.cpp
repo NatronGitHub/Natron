@@ -12,16 +12,18 @@
 #include "MultiInstancePanel.h"
 
 #include <QVBoxLayout>
-#include <QTableWidget>
-#include <QTableWidgetItem>
 #include <QPixmap>
 #include <QDebug>
+#include <QCoreApplication>
+#include <QThread>
+#include <QHeaderView>
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/SpinBox.h"
+#include "Gui/TableModelView.h"
 
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
@@ -35,7 +37,8 @@ struct MultiInstancePanelPrivate
     MultiInstancePanel* publicInterface;
     std::list < boost::shared_ptr<Node> > instances;
     
-    QTableWidget* table;
+    TableView* view;
+    TableModel* model;
     
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
@@ -47,7 +50,8 @@ struct MultiInstancePanelPrivate
     MultiInstancePanelPrivate(MultiInstancePanel* publicI,const boost::shared_ptr<Node>& node)
     : publicInterface(publicI)
     , instances()
-    , table(0)
+    , view(0)
+    , model(0)
     , buttonsContainer(0)
     , buttonsLayout(0)
     , addButton(0)
@@ -102,6 +106,7 @@ struct MultiInstancePanelPrivate
         ret->setHintToolTip(ref->getHintToolTip());
         ret->setEvaluateOnChange(ref->getEvaluateOnChange());
         ret->setIsPersistant(false);
+        ret->setAllDimensionsEnabled(false);
         
     }
     
@@ -139,7 +144,7 @@ MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<Node>& node)
 
 MultiInstancePanel::~MultiInstancePanel()
 {
-    
+    delete _imp->model;
 }
 
 void MultiInstancePanel::initializeKnobs()
@@ -156,26 +161,31 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     std::list<boost::shared_ptr<KnobI> > instanceSpecificKnobs;
     _imp->getInstanceSpecificKnobs(_imp->getMainInstance(), &instanceSpecificKnobs);
     
-    _imp->table = new QTableWidget(layout->parentWidget());
+    _imp->view = new TableView(layout->parentWidget());
+    TableItemDelegate* delegate = new TableItemDelegate(_imp->view);
+    _imp->view->setItemDelegate(delegate);
+    
+    _imp->model = new TableModel(0,0,_imp->view);
+    _imp->view->setTableModel(_imp->model);
     QStringList dimensionNames;
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = instanceSpecificKnobs.begin();it!=instanceSpecificKnobs.end();++it) {
         QString knobDesc((*it)->getDescription().c_str());
-        for (int i = 0; i < (*it)->getDimension(); ++it) {
+        for (int i = 0; i < (*it)->getDimension(); ++i) {
             dimensionNames.push_back(knobDesc + "_" + QString((*it)->getDimensionName(i).c_str()));
         }
     }
     dimensionNames.prepend("Enabled");
     
-    _imp->table->setColumnCount(dimensionNames.size());
-    _imp->table->setHorizontalHeaderLabels(dimensionNames);
-    _imp->table->setAttribute(Qt::WA_MacShowFocusRect,0);
-    QObject::connect(_imp->table,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(onItemDataChanged(QTableWidgetItem*)));
+    _imp->view->setColumnCount(dimensionNames.size());
+    _imp->view->setHorizontalHeaderLabels(dimensionNames);
+    _imp->view->setAttribute(Qt::WA_MacShowFocusRect,0);
+    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
     
-    layout->addWidget(_imp->table);
+    layout->addWidget(_imp->view);
     
     _imp->buttonsContainer = new QWidget(layout->parentWidget());
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
-    
+    _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
     _imp->buttonsLayout->addWidget(_imp->addButton);
     _imp->addButton->setFixedSize(18,18);
@@ -189,13 +199,16 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
     
-    _imp->selectAll = new Button(QIcon(),"",_imp->buttonsContainer);
+    _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
+    _imp->selectAll->setToolTip("Select all");
     _imp->buttonsLayout->addWidget(_imp->selectAll);
     _imp->selectAll->setFixedSize(18,18);
     QObject::connect(_imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()));
     
+    layout->addWidget(_imp->buttonsContainer);
     appendExtraGui(layout);
-    
+    appendButtons(_imp->buttonsLayout);
+    _imp->buttonsLayout->addStretch();
     ///finally insert the main instance in the table
     _imp->addTableRow(_imp->getMainInstance());
 }
@@ -205,9 +218,15 @@ void MultiInstancePanel::onAddButtonClicked()
     Node* mainInstance = _imp->getMainInstance();
     
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(mainInstance->pluginID().c_str(),
-                                                                                        false); //< don't create its gui
+                                                                                        mainInstance->getName()); //< don't create its gui
     _imp->instances.push_back(newInstance);
     _imp->addTableRow(newInstance.get());
+}
+
+const std::list<boost::shared_ptr<Natron::Node> >& MultiInstancePanel::getInstances() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->instances;
 }
 
 namespace {
@@ -224,19 +243,26 @@ namespace {
     }
 }
 
+void MultiInstancePanel::addRow(Natron::Node* node)
+{
+    _imp->addTableRow(node);
+}
+
 void MultiInstancePanelPrivate::addTableRow(Node* node)
 {
-    int newRowIndex = table->rowCount();
-    table->insertRow(newRowIndex);
-    
+    int newRowIndex = view->rowCount();
+    model->insertRow(newRowIndex);
+
     std::list<boost::shared_ptr<KnobI> > instanceSpecificKnobs;
     getInstanceSpecificKnobs(node, &instanceSpecificKnobs);
     
     ///first add the enabled column
     {
-        QWidget* enabledContainer = createCheckBoxForTable(true);
-        table->setCellWidget(newRowIndex, 0, enabledContainer);
+        QWidget* enabledBox = createCheckBoxForTable(true);
+        view->setCellWidget(newRowIndex, 0, enabledBox);
+        view->resizeColumnToContents(0);
     }
+    
     
     int columnIndex = 1;
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = instanceSpecificKnobs.begin();it!=instanceSpecificKnobs.end();++it) {
@@ -246,7 +272,7 @@ void MultiInstancePanelPrivate::addTableRow(Node* node)
         Color_Knob* isColor = dynamic_cast<Color_Knob*>(it->get());
         String_Knob* isString = dynamic_cast<String_Knob*>(it->get());
         
-        if (!isInt || !isBool || !isDouble || !isColor || !isString) {
+        if (!isInt && !isBool && !isDouble && !isColor && !isString) {
             continue;
         }
         
@@ -258,12 +284,12 @@ void MultiInstancePanelPrivate::addTableRow(Node* node)
             createSpinBox = true;
         }
         
-        for (int i = 0; i < (*it)->getDimension(); ++it) {
+        for (int i = 0; i < (*it)->getDimension(); ++i) {
             if (createCheckBox) {
                 assert(isBool);
                 bool checked = isBool->getValue();
                 QWidget* enabledContainer = createCheckBoxForTable(checked);
-                table->setCellWidget(newRowIndex, columnIndex, enabledContainer);
+                view->setCellWidget(newRowIndex, columnIndex, enabledContainer);
             } else if (createSpinBox) {
                 double mini = INT_MIN,maxi = INT_MAX;
                 SpinBox::SPINBOX_TYPE type = SpinBox::DOUBLE_SPINBOX;
@@ -278,14 +304,15 @@ void MultiInstancePanelPrivate::addTableRow(Node* node)
                 SpinBox* sb = new SpinBox(NULL,type);
                 sb->setMinimum(mini);
                 sb->setMaximum(maxi);
-                table->setCellWidget(newRowIndex, columnIndex, sb);
+                view->setCellWidget(newRowIndex, columnIndex, sb);
             } else {
                 assert(isString);
                 std::string value = isString->getValue();
                 LineEdit* le = new LineEdit(NULL);
                 le->setText(value.c_str());
-                table->setCellWidget(newRowIndex, columnIndex, le);
+                view->setCellWidget(newRowIndex, columnIndex, le);
             }
+            view->resizeColumnToContents(columnIndex);
             ++columnIndex;
         }
         
@@ -298,12 +325,6 @@ void MultiInstancePanel::onRemoveButtonClicked()
 }
 
 void MultiInstancePanel::onSelectAllButtonClicked()
-{
-    
-}
-
-///An item in the table changed, forward it to the good knob
-void MultiInstancePanel::onItemDataChanged(QTableWidgetItem* item)
 {
     
 }
@@ -327,7 +348,7 @@ void TrackerPanel::appendExtraGui(QVBoxLayout* layout)
     
 }
 
-void TrackerPanel::appendButton(QHBoxLayout* buttonLayout)
+void TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
 {
     
 }

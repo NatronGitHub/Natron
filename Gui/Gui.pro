@@ -84,6 +84,7 @@ SOURCES += \
     SpinBox.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
+    TableModelView.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
     Texture.cpp \
@@ -91,7 +92,7 @@ SOURCES += \
     ToolButton.cpp \
     TimeLineGui.cpp \
     ViewerGL.cpp \
-    ViewerTab.cpp
+    ViewerTab.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -141,6 +142,7 @@ HEADERS += \
     SpinBox.h \
     SplashScreen.h \
     Splitter.h \
+    TableModelView.h \
     TabWidget.h \
     TextRenderer.h \
     Texture.h \
@@ -149,7 +151,7 @@ HEADERS += \
     ToolButton.h \
     ViewerGL.h \
     ViewerTab.h \
-    ZoomContext.h \
+    ZoomContext.h
 
 
 RESOURCES += \

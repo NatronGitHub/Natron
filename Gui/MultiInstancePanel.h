@@ -12,7 +12,7 @@
 #ifndef MULTIINSTANCEPANEL_H
 #define MULTIINSTANCEPANEL_H
 
-#include <QObject>
+
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include "Engine/Knob.h"
@@ -24,7 +24,6 @@ namespace Natron
 
 class QVBoxLayout;
 class QHBoxLayout;
-class QTableWidgetItem;
 
 /**
 * @brief This class represents a multi-instance settings panel.
@@ -43,6 +42,10 @@ public:
     
     void createMultiInstanceGui(QVBoxLayout* layout);
 
+    void addRow(Natron::Node* node);
+    
+    const std::list<boost::shared_ptr<Natron::Node> >& getInstances() const;
+    
 public slots:
 
     void onAddButtonClicked();
@@ -51,12 +54,11 @@ public slots:
     
     void onSelectAllButtonClicked();
     
-    void onItemDataChanged(QTableWidgetItem* item);
     
 protected:
     
     virtual void appendExtraGui(QVBoxLayout* /*layout*/) {}
-    virtual void appendButton(QHBoxLayout* /*buttonLayout*/) {}
+    virtual void appendButtons(QHBoxLayout* /*buttonLayout*/) {}
     
 private:
     
@@ -81,7 +83,7 @@ public:
 private:
     
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
-    virtual void appendButton(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
+    virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
 };
 
 

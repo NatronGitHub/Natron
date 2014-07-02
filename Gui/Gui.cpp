@@ -1721,7 +1721,7 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            ret = _imp->_appInstance->createNode(found->second.c_str(),true,-1,-1,false);
+            ret = _imp->_appInstance->createNode(found->second.c_str(),"",-1,-1,false);
             
             if (!ret) {
                 return ret;
@@ -1767,7 +1767,7 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
-            ret = _imp->_appInstance->createNode(found->second.c_str(),true,-1,-1,false);
+            ret = _imp->_appInstance->createNode(found->second.c_str(),"",-1,-1,false);
             if (!ret) {
                 return ret;
             }

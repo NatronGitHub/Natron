@@ -18,6 +18,7 @@
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/MultiInstancePanel.h"
 
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -154,9 +155,26 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
 }
 
-void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool createGui,bool loadRequest,bool openImageFileDialog) {
+void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const std::string& multiInstanceParentName,
+                                   bool loadRequest,bool openImageFileDialog) {
+    
+    
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
     assert(nodegui);
+    if (!multiInstanceParentName.empty()) {
+        nodegui->hideGui();
+        
+        
+        boost::shared_ptr<NodeGui> parentNodeGui = getNodeGui(multiInstanceParentName);
+        nodegui->setParentMultiInstance(parentNodeGui);
+        ///If this is a load request, restore the multi instance table
+        if (loadRequest) {
+            boost::shared_ptr<MultiInstancePanel> panel = parentNodeGui->getMultiInstancePanel();
+            ///the main instance must have a panel!
+            assert(panel);
+            panel->addRow(node.get());
+        }
+    }
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));
     
     ///It needs to be here because we rely on the _nodeMapping member
@@ -170,9 +188,10 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool cre
         _imp->_gui->createNewRotoInterface(nodegui.get());
     }
     
-    
-    nodegui->initializeInputs();
-    nodegui->initializeKnobs();
+    if (multiInstanceParentName.empty()) {
+        nodegui->initializeInputs();
+        nodegui->initializeKnobs();
+    }
     
     if (!loadRequest) {
         nodegui->beginEditKnobs();
@@ -182,7 +201,7 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool cre
     _imp->_gui->addNodeGuiToCurveEditor(nodegui);
 
     
-    if (!loadRequest) {
+    if (!loadRequest && multiInstanceParentName.empty()) {
         if(_imp->_gui->getSelectedNode()){
             boost::shared_ptr<Node> selected = _imp->_gui->getSelectedNode()->getNode();
             getProject()->autoConnectNodes(selected, node);

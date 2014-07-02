@@ -97,6 +97,11 @@ public:
     
     bool isMultiInstance() const;
     
+    void setParentMultiInstanceName(const std::string& parentName);
+    
+    ///Accessed by the serialization thread, but mt safe since never changed
+    const std::string& getParentMultiInstanceName() const;
+    
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
      **/
@@ -223,6 +228,12 @@ public:
      * the inputs of the node in a thread-safe manner.
      **/
     void updateRenderInputs();
+    
+    
+    /**
+     * @brief Same as updateRenderInputs() but recursive on the inputs
+     **/
+    void updateRenderInputsRecursive();
     
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.

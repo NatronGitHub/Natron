@@ -120,6 +120,8 @@ public:
     
     ///MT-safe
     void setCurrentColor(const QColor& c);
+    
+    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const { return boost::shared_ptr<MultiInstancePanel>(); }
 public slots:
     
     /*Internal slot, not meant to be called externally.*/
@@ -189,6 +191,8 @@ protected:
     
     virtual RotoPanel* initializeRotoPanel() {return NULL;}
     
+    virtual void initializeExtraGui(QVBoxLayout* /*layout*/){}
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL {
@@ -212,7 +216,9 @@ class NodeSettingsPanel : public DockablePanel
     bool _selected;
     
     Button* _centerNodeButton;
-
+    
+    boost::shared_ptr<MultiInstancePanel> _multiPanel;
+    
 public:
 
     explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
@@ -226,9 +232,12 @@ public:
     
     boost::shared_ptr<NodeGui> getNode() const { return _nodeGUI; }
     
+    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const { return _multiPanel; }
 private:
     
     virtual RotoPanel* initializeRotoPanel();
+    
+    virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     
 public slots:
     

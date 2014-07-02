@@ -1740,7 +1740,14 @@ void ConnectCommand::undo() {
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
-    }    
+    }
+    ///if there are no viewers, at least update the render inputs
+    if (viewers.empty()) {
+        _edge->getDest()->getNode()->updateRenderInputs();
+        if (_edge->getSource()) {
+            _edge->getSource()->getNode()->updateRenderInputs();
+        }
+    }
 }
 void ConnectCommand::redo() {
     
@@ -1817,6 +1824,14 @@ void ConnectCommand::redo() {
     _edge->getDest()->getNode()->hasViewersConnected(&viewers);
     for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
         (*it)->updateTreeAndRender();
+    }
+    
+    ///if there are no viewers, at least update the render inputs
+    if (viewers.empty()) {
+        _edge->getDest()->getNode()->updateRenderInputs();
+        if (_edge->getSource()) {
+            _edge->getSource()->getNode()->updateRenderInputs();
+        }
     }
     
     ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(_edge->getDest()->getNode()->getLiveInstance());
@@ -2127,7 +2142,7 @@ NodeGraph::dropEvent(QDropEvent* event)
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(found->second.c_str(),true,-1,-1,false);
+            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(found->second.c_str(),"",-1,-1,false);
             const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
@@ -2278,7 +2293,7 @@ NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
                      const NodeGuiSerialization& guiSerialization)
 {
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
-                                                                 true,
+                                                                 "",
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),internalSerialization,false);
     assert(n);
@@ -2377,7 +2392,7 @@ boost::shared_ptr<NodeGui>
 NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
 {
     if (node->getNode()->getLiveInstance()->isSlave()) {
-        Natron::warningDialog("Clone", "You cannot clone a node whose already a clone.");
+        Natron::warningDialog("Clone", "You cannot clone a node which is already a clone.");
         return boost::shared_ptr<NodeGui>();
     }
     if (node->getNode()->pluginID() == "Viewer") {
@@ -2391,7 +2406,7 @@ NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
     node->serialize(&guiSerialization);
     
     boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
-                                                                     true,
+                                                                     "",
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),internalSerialization,true);
     assert(clone);

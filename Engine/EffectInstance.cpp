@@ -1647,10 +1647,21 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant,Natron::ValueChang
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
-            (*it)->refreshAndContinueRender(forcePreview,reason == Natron::USER_EDITED);
+            if (button) {
+                ///if the parameter is a button, force an update of the tree since it could be an analysis
+                (*it)->updateTreeAndRender();
+            } else {
+                (*it)->refreshAndContinueRender(forcePreview,reason == Natron::USER_EDITED);
+            }
+            
         } else {
             (*it)->redrawViewer();
         }
+    }
+    
+    ///if the parameter is a button, force an update of the tree since it could be an analysis
+    if (button && viewers.empty()) {
+        _node->updateRenderInputsRecursive();
     }
     
     getNode()->refreshPreviewsRecursively();

@@ -1149,7 +1149,7 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1167,7 +1167,7 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             
@@ -1215,7 +1215,7 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
    
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1249,7 +1249,7 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1282,7 +1282,7 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
@@ -1316,7 +1316,7 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
    
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             
@@ -1348,7 +1348,7 @@ bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e
     }
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             
@@ -1380,7 +1380,7 @@ bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
     bool ret = false;
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             
@@ -1403,7 +1403,7 @@ bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
     bool ret = false;
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
-        if ((*it)->isSettingsPanelVisible()) {
+        if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             
