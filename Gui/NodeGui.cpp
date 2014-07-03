@@ -203,7 +203,7 @@ void NodeGui::initialize(NodeGraph* dag,
         assert(dockContainer);
         boost::shared_ptr<MultiInstancePanel> multiPanel;
         if (_internalNode->isTrackerNode()) {
-            multiPanel.reset(new TrackerPanel(_internalNode));
+            multiPanel.reset(new TrackerPanel(thisAsShared));
         }
         _settingsPanel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
@@ -1769,6 +1769,9 @@ boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
 
 bool NodeGui::shouldDrawOverlay() const
 {
+    if (_internalNode->isNodeDisabled()) {
+        return false;
+    }
     if (_parentMultiInstance) {
         return _parentMultiInstance->isSettingsPanelVisible();
     } else {

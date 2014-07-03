@@ -386,7 +386,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
         }
         _signalSlotHandler->s_updateSlaves(dimension);
     }
-   
+    checkAnimationLevel(dimension);
     return ret;
 
 }
@@ -496,6 +496,7 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
         _signalSlotHandler->s_valueChanged(dimension);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
+            checkAnimationLevel(dimension);
         }
     }
     
@@ -705,6 +706,7 @@ void Knob<T>::onTimeChanged(SequenceTime time)
             T v = getValueAtTime(time,i);
             (void)setValue(v,i,Natron::TIME_CHANGED,NULL);
         }
+        checkAnimationLevel(i);
     }
 }
 

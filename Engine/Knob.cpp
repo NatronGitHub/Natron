@@ -319,6 +319,7 @@ void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedRe
         _signalSlotHandler->s_keyFrameRemoved(time,dimension);
     }
     _signalSlotHandler->s_updateSlaves(dimension);
+    checkAnimationLevel(dimension);
 }
 
 void KnobHelper::removeAnimation(int dimension,Natron::ValueChangedReason reason)
@@ -402,6 +403,7 @@ void KnobHelper::endValueChange()
                 }
                 for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
                     _signalSlotHandler->s_updateSlaves(_imp->dimensionChanged[i]);
+                    checkAnimationLevel(i);
                 }
 
             }
@@ -713,6 +715,7 @@ bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
+        checkAnimationLevel(dimension);
     }
     return true;
 
@@ -744,6 +747,31 @@ std::vector< std::pair<int,boost::shared_ptr<KnobI> > > KnobHelper::getMasters_m
     return _imp->masters;
 }
 
+void KnobHelper::checkAnimationLevel(int dimension)
+{
+    AnimationLevel level = Natron::NO_ANIMATION;
+    if (getHolder()->getApp()) {
+        
+        boost::shared_ptr<Curve> c = getCurve(dimension);
+        SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        if (c->getKeyFramesCount() > 0) {
+            KeyFrame kf;
+            bool found = c->getKeyFrameWithTime(time, &kf);;
+            if (found) {
+                level = Natron::ON_KEYFRAME;
+            } else {
+                level = Natron::INTERPOLATED_VALUE;
+            }
+        } else {
+            level = Natron::NO_ANIMATION;
+        }
+    }
+    if (level != getAnimationLevel(dimension)) {
+        setAnimationLevel(dimension,level);
+    }
+}
+
+
 void KnobHelper::setAnimationLevel(int dimension,Natron::AnimationLevel level)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -757,6 +785,12 @@ void KnobHelper::setAnimationLevel(int dimension,Natron::AnimationLevel level)
 
 Natron::AnimationLevel KnobHelper::getAnimationLevel(int dimension) const
 {
+    ///if the knob is slaved to another knob, returns the other knob value
+    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getAnimationLevel(master.first);
+    }
+    
     QMutexLocker l(&_imp->animationLevelMutex);
     if (dimension > (int)_imp->animationLevel.size()) {
         throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");

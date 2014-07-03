@@ -6,9 +6,11 @@
 
 
 #include "TableModelView.h"
+
+#include <set>
 #include <QHeaderView>
-#include <QPainter>
 #include <QMouseEvent>
+
 //////////////TableItem
 
 TableItem::TableItem(const TableItem& other)
@@ -166,6 +168,7 @@ bool TableModel::removeRows(int row, int count, const QModelIndex &)
         }
         delete oldItem;
     }
+    _imp->rowCount -= count;
     _imp->tableItems.remove(std::max(i, 0), n);
     endRemoveRows();
     return true;
@@ -559,36 +562,6 @@ struct TableViewPrivate
     }
 };
 
-////////////// TableView delegate
-
-
-TableItemDelegate::TableItemDelegate(TableView* view)
-: QStyledItemDelegate(view)
-, _view(view)
-{
-
-}
-
-
-void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
-{
-    QStyledItemDelegate::paint(painter,option,index);
-    if (!index.isValid()) {
-        QStyledItemDelegate::paint(painter,option,index);
-    }
-    QWidget* widget = _view->cellWidget(index.row(), index.column());
-    if (!widget) {
-        QStyledItemDelegate::paint(painter,option,index);
-    }
-    
-    if (option.state & QStyle::State_Selected){
-        painter->fillRect(option.rect, option.palette.highlight());
-    }
-
-    widget->render(painter);
-
-}
-
 
 /////////////// TableView
 
@@ -786,4 +759,14 @@ void TableView::mousePressEvent(QMouseEvent* event)
     } else {
         QTreeView::mousePressEvent(event);
     }
+}
+
+void TableView::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        emit deleteKeyPressed();
+        event->accept();
+    }
+    
+    QTreeView::keyPressEvent(event);
 }

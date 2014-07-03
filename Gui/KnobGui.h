@@ -141,7 +141,6 @@ public:
         if (refreshGui) {
             updateGUI(dimension);
         }
-        checkAnimationLevel(dimension);
         return (int)ret;
     }
     
@@ -230,6 +229,8 @@ public slots:
     void onSetValueUsingUndoStack(const Variant& v,int dim);
     
     void onSetDirty(bool d);
+    
+    void onAnimationLevelChanged(int level);
 signals:
     
     void knobUndoneChange();
@@ -298,8 +299,6 @@ private:
      */
     virtual void reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel /*level*/) {}
 
-    /*Calls reflectAnimationLevel with good parameters. Called right away after updateGUI() */
-    void checkAnimationLevel(int dimension);
     
     void createAnimationMenu(QMenu* menu);
     

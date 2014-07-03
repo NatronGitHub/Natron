@@ -1162,7 +1162,7 @@ int Node::inputIndex(Node* n) const {
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
-void Node::deactivate()
+void Node::deactivate(bool hideGui)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1246,7 +1246,9 @@ void Node::deactivate()
     ///kill any thread it could have started (e.g: VideoEngine or preview)
     quitAnyProcessing();
     
-    emit deactivated();
+    if (hideGui) {
+        emit deactivated();
+    }
     {
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = false;
@@ -1953,7 +1955,10 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
             emit previewKnobToggled();
         }
     } else if (what == _imp->disableNodeKnob.get()) {
-        emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
+        if (!_imp->isMultiInstance) {
+            emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
+        }
+        getApp()->redrawAllViewers();
     } else if (what == _imp->nodeLabelKnob.get()) {
         emit nodeExtraLabelChanged(_imp->nodeLabelKnob->getValue().c_str());
     } else if (what->getName() == kOfxParamStringSublabelName) {

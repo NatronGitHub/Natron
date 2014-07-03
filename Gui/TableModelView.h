@@ -12,7 +12,6 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <QTreeView>
-#include <QStyledItemDelegate>
 #include <QAbstractItemModel>
 #include "Global/Macros.h"
 
@@ -147,19 +146,6 @@ inline void TableItem::setFont(const QFont &afont)
 
 
 
-class TableItemDelegate : public QStyledItemDelegate {
-    
-    TableView* _view;
-public:
-    
-    explicit TableItemDelegate(TableView* view);
-    
-private:
-    
-    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
-    
- };
-
 struct TableViewPrivate;
 class TableView : public QTreeView
 {
@@ -202,9 +188,15 @@ public:
     inline TableItem *itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;
     
+signals:
+    
+    void deleteKeyPressed();
+    
 private:
     
     virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
+    
+    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
     
     boost::scoped_ptr<TableViewPrivate> _imp;
 };

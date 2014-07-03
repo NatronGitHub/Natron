@@ -816,6 +816,9 @@ protected:
      **/
     virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
 
+    void checkAnimationLevel(int dimension);
+
+    
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
     
 private:

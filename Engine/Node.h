@@ -360,13 +360,15 @@ public:
     
     AppInstance* getApp() const;
     
-    /*Make this node inactive. It will appear
+    /* @brief Make this node inactive. It will appear
      as if it was removed from the graph editor
      but the object still lives to allow
-     undo/redo operations.*/
-    void deactivate();
+     undo/redo operations.
+     @param hideGui When true, the node gui will be notified so it gets hidden
+     */
+    void deactivate(bool hideGui = true);
     
-    /*Make this node active. It will appear
+    /* @brief Make this node active. It will appear
      again on the node graph.
      WARNING: this function can only be called
      after a call to deactivate() has been made.

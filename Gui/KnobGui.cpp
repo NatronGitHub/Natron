@@ -136,6 +136,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SLOT(onInternalAnimationRemoved()));
     QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
     QObject::connect(handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)));
+    QObject::connect(handler,SIGNAL(animationLevelChanged(int)),this,SLOT(onAnimationLevelChanged(int)));
 }
 
 KnobGui::~KnobGui(){
@@ -202,7 +203,6 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
     
     for(int i = 0; i < knob->getDimension();++i) {
         updateGuiInternal(i);
-        checkAnimationLevel(i);
     }
     
     setEnabledSlot();
@@ -679,7 +679,6 @@ void KnobGui::removeKeyFrame(double time,int dimension){
         knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
     }
     updateGUI(dimension);
-    checkAnimationLevel(dimension);
 }
 
 QString KnobGui::toolTip() const
@@ -843,7 +842,6 @@ QWidget* KnobGui::getFieldContainer() const {
 void KnobGui::onInternalValueChanged(int dimension) {
     if(_imp->widgetCreated){
         updateGuiInternal(dimension);
-        checkAnimationLevel(dimension);
     }
 }
 
@@ -1094,7 +1092,7 @@ std::pair<int,boost::shared_ptr<KnobI> > LinkToKnobDialog::getSelectedKnobs() co
 }
 
 void KnobGui::onKnobSlavedChanged(int dimension,bool b) {
-    checkAnimationLevel(dimension);
+
     if (b) {
         emit keyFrameRemoved();
     } else {
@@ -1161,33 +1159,6 @@ void KnobGui::onUnlinkActionTriggered() {
     }
 }
 
-void KnobGui::checkAnimationLevel(int dimension)
-{
-    boost::shared_ptr<KnobI> knob = getKnob();
-    AnimationLevel level = Natron::NO_ANIMATION;
-    if (knob->getHolder()->getApp()) {
-        
-        boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
-        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->getKeyFramesCount() > 0) {
-            KeyFrame kf;
-            bool found = c->getKeyFrameWithTime(time, &kf);;
-            if (found) {
-                level = Natron::ON_KEYFRAME;
-            } else {
-                level = Natron::INTERPOLATED_VALUE;
-            }
-        } else {
-            level = Natron::NO_ANIMATION;
-        }
-    }
-    if (level != knob->getAnimationLevel(dimension)) {
-        knob->setAnimationLevel(dimension,level);
-        if (!_imp->customInteract) {
-            reflectAnimationLevel(dimension, level);
-        }
-    }
-}
 
 
 void KnobGui::onResetDefaultValuesActionTriggered() {
@@ -1358,4 +1329,14 @@ void KnobGui::setKeyframeMarkerOnTimeline(int time)
     boost::shared_ptr<KnobI> knob = getKnob();
     knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     
+}
+
+void KnobGui::onAnimationLevelChanged(int level)
+{
+    if (!_imp->customInteract) {
+        int dim = getKnob()->getDimension();
+        for (int i = 0; i < dim; ++i) {
+            reflectAnimationLevel(i, (Natron::AnimationLevel)level);
+        }
+    }
 }

@@ -436,7 +436,11 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
     if (reply != Natron::Yes) {
         return;
     }
-    
+    boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
+    if (multiPanel) {
+        multiPanel->resetAllInstances();
+        return;
+    }
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (isEffect) {
         std::list <SequenceTime> keys;
@@ -445,8 +449,8 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
     }
     _imp->_holder->notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
+        Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->first.get());
         for (int i = 0; i < it->first->getDimension(); ++i) {
-            Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->first.get());
             if (!isBtn && it->first->getName() != "label_natron") {
                 it->first->resetToDefaultValue(i);
             }

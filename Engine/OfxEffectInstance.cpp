@@ -1310,7 +1310,7 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         std::vector<std::string> params;
         _overlayInteract->getSlaveToParam(params);
         for (U32 i = 0; i < params.size(); ++i) {
-            if(params[i] == k->getDescription()){
+            if(params[i] == k->getName()){
                 stat = _overlayInteract->redraw();
                 assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }

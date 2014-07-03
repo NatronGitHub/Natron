@@ -461,7 +461,11 @@ boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,c
   
     boost::shared_ptr<NodeGui> node_ui(new NodeGui(_nodeRoot));
     node_ui->initialize(this, node_ui, dockContainer, node, requestedByLoad);
-    moveNodesForIdealPosition(node_ui);
+    
+    ///only move main instances
+    if (node->getParentMultiInstanceName().empty()) {
+        moveNodesForIdealPosition(node_ui);
+    }
     
     {
         QMutexLocker l(&_nodesMutex);
@@ -2392,11 +2396,15 @@ boost::shared_ptr<NodeGui>
 NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
 {
     if (node->getNode()->getLiveInstance()->isSlave()) {
-        Natron::warningDialog("Clone", "You cannot clone a node which is already a clone.");
+        Natron::errorDialog("Clone", "You cannot clone a node which is already a clone.");
         return boost::shared_ptr<NodeGui>();
     }
     if (node->getNode()->pluginID() == "Viewer") {
-        Natron::warningDialog("Clone", "Cloning a viewer is not a valid operation.");
+        Natron::errorDialog("Clone", "Cloning a viewer is not a valid operation.");
+        return boost::shared_ptr<NodeGui>();
+    }
+    if (node->getNode()->isMultiInstance()) {
+        Natron::errorDialog("Clone", "This node cannot be cloned.");
         return boost::shared_ptr<NodeGui>();
     }
     
