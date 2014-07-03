@@ -1004,10 +1004,8 @@ void TabWidget::keyPressEvent ( QKeyEvent * event ){
 void TabWidget::moveTab(QWidget* what,TabWidget *where){
     TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
     
-    if(!from){
-        return;
-    }
-    if(from == where){
+
+    if (from == where) {
         /*We check that even if it is the same TabWidget, it really exists.*/
         bool found = false;
         for (int i =0; i < from->count(); ++i) {
@@ -1022,7 +1020,9 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
         //it wasn't found somehow
     }
     
-    from->removeTab(what);
+    if (from) {
+        from->removeTab(what);
+    }
     assert(where);
     where->appendTab(what);
     what->setParent(where);
