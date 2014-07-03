@@ -306,7 +306,7 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     //
     // this must be done after initializing the QCoreApplication, see
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
-    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+    std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
     std::setlocale(LC_ALL,"C"); // set the locale for everything
 
     Natron::Log::instance();//< enable logging
