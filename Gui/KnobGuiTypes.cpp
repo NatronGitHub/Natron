@@ -2022,7 +2022,6 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             QFont font("Verdana",NATRON_FONT_SIZE_12);
             _fontCombo->setCurrentFont(font);
             _fontCombo->setToolTip("Font");
-            QObject::connect(_fontCombo,SIGNAL(currentFontChanged(QFont)),this,SLOT(onCurrentFontChanged(QFont)));
             _richTextOptionsLayout->addWidget(_fontCombo);
             
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -2073,6 +2072,9 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             _mainLayout->addWidget(_richTextOptions);
             
             restoreTextInfosFromString();
+            
+            ///Connect the slot after restoring
+            QObject::connect(_fontCombo,SIGNAL(currentFontChanged(QFont)),this,SLOT(onCurrentFontChanged(QFont)));
         }
         
         layout->addWidget(_container);
@@ -2506,11 +2508,7 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
 {
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
-    
-    if (i == -1) {
-        ///the plugin probably edited the text, don't bother parsing html
-        return text;
-    }
+    bool foundFontStart = i != -1;
     
     QString boldStr(kBoldStartTag);
     int foundBold = text.lastIndexOf(boldStr,i);
@@ -2548,16 +2546,18 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     
     QString endTag("\">");
     int foundEndTag = text.indexOf(endTag,i);
-    assert(foundEndTag != -1);
     foundEndTag += endTag.size();
-    
-    ///remove the whole font tag
-    text.remove(i,foundEndTag - i);
+    if (foundFontStart) {
+        ///remove the whole font tag
+        text.remove(i,foundEndTag - i);
+    }
     
     endTag = QString(kFontEndTag);
     foundEndTag = text.lastIndexOf(endTag);
-    assert(foundEndTag != -1);
-    text.remove(foundEndTag, endTag.size());
+    assert((foundEndTag != -1 && foundFontStart) || !foundFontStart);
+    if (foundEndTag != -1) {
+        text.remove(foundEndTag, endTag.size());
+    }
     
     ///we also remove any custom data added by natron so the user doesn't see it
     int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);

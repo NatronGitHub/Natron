@@ -213,7 +213,8 @@ void Node::createRotoContextConditionnally()
     }
 }
 
-void Node::load(const std::string& pluginID,const std::string& parentMultiInstanceName,const boost::shared_ptr<Natron::Node>& thisShared,
+void Node::load(const std::string& pluginID,const std::string& parentMultiInstanceName,int childIndex ,
+                const boost::shared_ptr<Natron::Node>& thisShared,
                 const NodeSerialization& serialization,bool dontLoadName)
 {
     ///Called from the main thread. MT-safe
@@ -257,17 +258,6 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
     initializeInputs();
     initializeKnobs(serialization);
 
-    if (!nameSet) {
-        if (!isMultiInstanceChild) {
-            getApp()->getProject()->initNodeCountersAndSetName(this);
-        } else {
-            
-        }
-    }
-
-    computeHash(); 
-    assert(_imp->liveInstance);
-    
     ///Special case for trackers: set as multi instance
     if (isTrackerNode()) {
         _imp->isMultiInstance = true;
@@ -282,6 +272,21 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
             centerKnob->setAsInstanceSpecific();
         }
     }
+    
+    if (!nameSet) {
+        if (!isMultiInstanceChild) {
+            getApp()->getProject()->initNodeCountersAndSetName(this);
+            if (_imp->isMultiInstance) {
+                updateEffectLabelKnob(getName().c_str());
+            }
+        } else {
+            updateEffectLabelKnob(QString(_imp->multiInstanceParentName.c_str()) + '_' + QString::number(childIndex));
+        }
+    }
+
+    computeHash(); 
+    assert(_imp->liveInstance);
+    
 }
 
 bool Node::isMultiInstance() const
@@ -2111,6 +2116,17 @@ bool Node::isTrackerNode() const
     return pluginID().find("Tracker") != std::string::npos;
 }
 
+void Node::updateEffectLabelKnob(const QString& name)
+{
+    if (!_imp->liveInstance) {
+        return;
+    }
+    boost::shared_ptr<KnobI> knob = getKnobByName(kOfxParamStringSublabelName);
+    String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
+    if (strKnob) {
+        strKnob->setValue(name.toStdString(), 0);
+    }
+}
 
 //////////////////////////////////
 

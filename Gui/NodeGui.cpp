@@ -256,8 +256,10 @@ void NodeGui::initialize(NodeGraph* dag,
     gettimeofday(&_lastRenderStartedSlotCallTime, 0);
     gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
     
-    _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
-    _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+    if (!_internalNode->isMultiInstance()) {
+        _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
+        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+    }
  
     onInternalNameChanged(_internalNode->getName().c_str());
     
@@ -995,7 +997,6 @@ void NodeGui::deactivate() {
             if (it->first == _internalNode) {
                 continue;
             }
-            assert(!it->first->isMultiInstance() && !it->first->getParentMultiInstanceName().empty());
             it->first->deactivate();
         }
     }
@@ -1020,6 +1021,7 @@ void NodeGui::deactivate() {
             (*it)->updateTreeAndRender();
         }
     }
+    _graph->getGui()->getApp()->redrawAllViewers();
 }
 
 void NodeGui::initializeKnobs(){
@@ -1652,7 +1654,9 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
 
 void NodeGui::onNodeExtraLabelChanged(const QString& label)
 {
-    _nodeLabel = replaceLineBreaksWithHtmlParagraph(label); ///< maybe we should do this in the knob itself when the user writes ?
+    if (!_internalNode->isMultiInstance()) {
+        _nodeLabel = replaceLineBreaksWithHtmlParagraph(label); ///< maybe we should do this in the knob itself when the user writes ?
+    }
     setNameItemHtml(_internalNode->getName().c_str(),_nodeLabel);
 }
 

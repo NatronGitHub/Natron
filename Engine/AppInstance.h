@@ -41,38 +41,43 @@ namespace Natron {
 
 struct CreateNodeArgs
 {
-//    const QString& pluginID,const std::string& multiInstanceParentName = std::string(),
-//    int majorVersion = -1,int minorVersion = -1,
-//    bool openImageFileDialog = true
-//    const NodeSerialization& serialization
-//    , bool dontLoadName
+
     QString pluginID;
     int majorV,minorV;
     bool openImageFileDialog;
-    const NodeSerialization* serialization;
-    bool dontLoadName;
     std::string multiInstanceParentName;
+    int childIndex;
     
     ///Constructor used to create a new node
     CreateNodeArgs(const QString& pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
                    const std::string& multiInstanceParentName = std::string(), //< no parent by default
                    int majorVersion = -1, //< use greatest version found
                    int minorVersion = -1, //< use greatest version found
-                   bool openImageFileDialog = true //< open a file dialog if the node is a reader/writer
+                   bool openImageFileDialog = true, //< open a file dialog if the node is a reader/writer
+                   int childIndex = -1
                    )
     : pluginID(pluginID)
     , majorV(majorVersion)
     , minorV(minorVersion)
     , openImageFileDialog(openImageFileDialog)
-    , serialization(NULL)
-    , dontLoadName(false)
     , multiInstanceParentName(multiInstanceParentName)
+    , childIndex(childIndex)
     {
         
     }
-    
+
+};
+
+struct LoadNodeArgs
+{
+    QString pluginID;
+    int majorV,minorV;
+    bool dontLoadName;
+    std::string multiInstanceParentName;
+    const NodeSerialization* serialization;
+
     ///Constructor used to load a node from the project serialization
-    CreateNodeArgs(const QString& pluginID,
+    LoadNodeArgs(const QString& pluginID,
                    const std::string& multiInstanceParentName,
                    int majorVersion,
                    int minorVersion,
@@ -81,13 +86,13 @@ struct CreateNodeArgs
     : pluginID(pluginID)
     , majorV(majorVersion)
     , minorV(minorVersion)
-    , openImageFileDialog(false)
-    , serialization(serialization)
     , dontLoadName(dontLoadName)
     , multiInstanceParentName(multiInstanceParentName)
+    , serialization(serialization)
     {
         
     }
+
 };
 
 class AppInstance : public QObject , public boost::noncopyable
@@ -130,7 +135,7 @@ public:
     boost::shared_ptr<Natron::Node> createNode(const CreateNodeArgs& args);
     
     ///Same as createNode but used when loading a project
-    boost::shared_ptr<Natron::Node> loadNode(const CreateNodeArgs& args);
+    boost::shared_ptr<Natron::Node> loadNode(const LoadNodeArgs& args);
 
     void getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> > *activeNodes) const;
 
@@ -240,7 +245,8 @@ private:
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString& pluginID,const std::string& multiInstanceParentName,
                                                        int majorVersion,int minorVersion,
                                                        bool requestedByLoad,bool openImageFileDialog,
-                                                       const NodeSerialization& serialization,bool dontLoadName);
+                                                       const NodeSerialization& serialization,bool dontLoadName,
+                                                       int childIndex);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
     

@@ -2296,7 +2296,7 @@ boost::shared_ptr<NodeGui>
 NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
                      const NodeGuiSerialization& guiSerialization)
 {
-    boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(CreateNodeArgs(internalSerialization.getPluginID().c_str(),
+    boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                  "",
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),&internalSerialization,false));
@@ -2413,7 +2413,7 @@ NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
     NodeGuiSerialization guiSerialization;
     node->serialize(&guiSerialization);
     
-    boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(CreateNodeArgs(internalSerialization.getPluginID().c_str(),
+    boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                      "",
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),&internalSerialization,true));

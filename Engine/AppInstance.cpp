@@ -180,7 +180,8 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
 boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,const std::string& multiInstanceParentName,
                                                                 int majorVersion,int minorVersion,
                                                                 bool requestedByLoad,bool openImageFileDialog,
-                                                                const NodeSerialization& serialization,bool dontLoadName)
+                                                                const NodeSerialization& serialization,bool dontLoadName,
+                                                                int childIndex )
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -202,7 +203,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     
     try{
-        node->load(pluginID.toStdString(),multiInstanceParentName,node, serialization,dontLoadName);
+        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -233,13 +234,13 @@ boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& ar
         return boost::shared_ptr<Natron::Node>();
     }
     return createNodeInternal(args.pluginID,args.multiInstanceParentName, args.majorV, args.minorV, false,
-                              args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
+                              args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false,args.childIndex);
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::loadNode(const CreateNodeArgs& args)
+boost::shared_ptr<Natron::Node> AppInstance::loadNode(const LoadNodeArgs& args)
 {
     return createNodeInternal(args.pluginID,args.multiInstanceParentName ,args.majorV, args.minorV,
-                              true, false, *args.serialization,args.dontLoadName);
+                              true, false, *args.serialization,args.dontLoadName,-1);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

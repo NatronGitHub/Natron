@@ -453,8 +453,11 @@ void MultiInstancePanel::onAddButtonClicked()
 {
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     
-    boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(CreateNodeArgs(mainInstance->pluginID().c_str(),
-                                                                                        mainInstance->getName())); //< don't create its gui
+    CreateNodeArgs args(mainInstance->pluginID().c_str(),
+                   mainInstance->getName(),
+                   -1,-1,true,
+                   (int)_imp->instances.size());
+    boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
     _imp->addTableRow(newInstance);
     _imp->pushUndoCommand(new AddNodeCommand(this,newInstance));
 }
