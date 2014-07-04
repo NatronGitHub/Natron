@@ -750,7 +750,7 @@ std::vector< std::pair<int,boost::shared_ptr<KnobI> > > KnobHelper::getMasters_m
 void KnobHelper::checkAnimationLevel(int dimension)
 {
     AnimationLevel level = Natron::NO_ANIMATION;
-    if (getHolder()->getApp()) {
+    if (getHolder() && getHolder()->getApp()) {
         
         boost::shared_ptr<Curve> c = getCurve(dimension);
         SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
