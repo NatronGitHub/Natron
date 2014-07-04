@@ -317,7 +317,8 @@ struct ViewerGL::Implementation {
     
     WipePolygonType getWipePolygon(const RectI& texRectClipped,QPolygonF& polygonPoints,bool rightPlane) const;
     
-    static void getBaseTextureCoordinates(const TextureRect& texRect,GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right);
+    static void getBaseTextureCoordinates(const RectI& texRect,int closestPo2,int texW,int texH,
+                                          GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right);
     
     static void getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const RectI& texRect,
                                              GLfloat bottom,GLfloat top,GLfloat left,GLfloat right,
@@ -432,6 +433,19 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,Viewer
         QMutexLocker l(&_imp->userRoIMutex);
         userRoiEnabled = _imp->userRoIEnabled;
     }
+    
+    
+    ////The texture real size (r.w,r.h) might be slightly bigger than the actual
+    ////pixel coordinates bounds r.x1,r.x2 r.y1 r.y2 because we clipped these bounds against the pixelRoD
+    ////in the ViewerInstance::renderViewer function. That means we need to draw actually only the part of
+    ////the texture that contains the bounds.
+    ////Notice that r.w and r.h are scaled to the closest Po2 of the current scaling factor, so we need to scale it up
+    ////So it is in the same coordinates as the bounds.
+    GLfloat texBottom =  0;
+    GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
+    GLfloat texLeft = 0;
+    GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
+
     if (userRoiEnabled) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
@@ -443,15 +457,6 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,Viewer
         texRectClipped.intersect(rod, &texRectClipped);
     }
     
-    ////The texture real size (r.w,r.h) might be slightly bigger than the actual
-    ////pixel coordinates bounds r.x1,r.x2 r.y1 r.y2 because we clipped these bounds against the pixelRoD
-    ////in the ViewerInstance::renderViewer function. That means we need to draw actually only the part of
-    ////the texture that contains the bounds.
-    ////Notice that r.w and r.h are scaled to the closest Po2 of the current scaling factor, so we need to scale it up
-    ////So it is in the same coordinates as the bounds.
-    GLfloat texBottom,texLeft,texRight,texTop;
-    _imp->getBaseTextureCoordinates(r, texBottom, texTop, texLeft, texRight);
-
     
     assert((texRect.y2  - texRect.y1) > 0 &&(texRect.x2  - texRect.x1) > 0 &&
            (texRectClipped.y1 - texRect.y1) <= (texRect.y2 - texRect.y1) &&
@@ -568,12 +573,13 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,Viewer
  
 }
 
-void ViewerGL::Implementation::getBaseTextureCoordinates(const TextureRect& r,GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right)
+void ViewerGL::Implementation::getBaseTextureCoordinates(const RectI& r,int closestPo2,int texW,int texH,
+                                                         GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right)
 {
     bottom =  0;
-    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h);
+    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(texH * closestPo2);
     left = 0;
-    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w);
+    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(texW * closestPo2);
 }
 
 void ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const RectI& texRect,
@@ -1659,6 +1665,7 @@ double ViewerGL::getZoomFactor() const
     return _imp->zoomCtx.factor();
 }
 
+///imageRoD is in PIXEL COORDINATES
 RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
 {
     // MT-SAFE
@@ -1672,8 +1679,9 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         ret.x2 = std::ceil(bottomRight.x());
         ret.y1 = std::floor(bottomRight.y());
     }
+    ///for clipping with the viewport, use the mipmap lvl applied by the proxy only
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-    
+
     if (mipMapLevel != 0) {
         // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
         ret = ret.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
@@ -1684,22 +1692,28 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         ret.clear();
     }
     
+    ///to clip against the user roi however clip it against the mipmaplevel of the zoomFactor+proxy
     
+    RectI userRoI ;
+    bool userRoiEnabled;
     {
         QMutexLocker l(&_imp->userRoIMutex);
-        if (_imp->userRoIEnabled) {
-            RectI userRoI = _imp->userRoI;
-            if (mipMapLevel != 0) {
-                ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
-                userRoI = userRoI.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
-            }
-            
-            ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
-            if (!ret.intersect(userRoI, &ret)) {
-                ret.clear();
-            }
+        userRoiEnabled = _imp->userRoIEnabled;
+        userRoI = _imp->userRoI;
+    }
+    if (userRoiEnabled) {
+        mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
+        if (mipMapLevel != 0) {
+            ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
+            userRoI = userRoI.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+        }
+        
+        ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
+        if (!ret.intersect(userRoI, &ret)) {
+            ret.clear();
         }
     }
+    
     return ret;
 }
 

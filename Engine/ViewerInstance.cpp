@@ -636,7 +636,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     // RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing(std::log(closestPowerOf2) / M_LN2);
     
     
-    ///Texture rect contains coordinates in the image to be rendered without the scaling of the viewer applied
+    ///Texture rect contains the pixel coordinates in the image to be rendered
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
                             texRectClipped.y2,texRectClipped.width(),texRectClipped.height(),closestPowerOf2);
     
@@ -1885,7 +1885,11 @@ int
 ViewerInstance::getMipMapLevelCombinedToZoomFactor() const
 {
     int mmLvl = getMipMapLevel();
-    mmLvl += Image::getLevelFromScale(_imp->uiContext->getZoomFactor());
+    double factor = _imp->uiContext->getZoomFactor();
+    if (factor > 1) {
+        factor = 1;
+    }
+    mmLvl += (-std::ceil(std::log(factor)/M_LN2));
     return mmLvl;
 }
 
