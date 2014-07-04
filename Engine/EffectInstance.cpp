@@ -1080,7 +1080,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project
     ///hence ask for a new render... which can be expensive!
     ///Any solution how to work around this ?
-    if (mipMapLevel == 0 && isReader()) {
+    if (isReader()) {
         Format frmt;
         frmt.set(cachedImgParams->getRoD());
         ///FIXME: what about the pixel aspect ratio ?

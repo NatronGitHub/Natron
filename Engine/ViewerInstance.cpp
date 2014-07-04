@@ -41,6 +41,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Image.h"
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 using namespace Natron;
 using std::make_pair;
 using boost::shared_ptr;
@@ -367,7 +371,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         return StatOK;
     }
     
-    double zoomFactor = _imp->uiContext->getZoomFactor();
 
     Format dispW;
     getRenderFormat(&dispW);
@@ -435,6 +438,19 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         scale.y = scale.x;
         mipMapLevel = _imp->viewerMipMapLevel;
     }
+     
+    double zoomFactor = _imp->uiContext->getZoomFactor();
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / M_LN2));
+    mipMapLevel = std::max((double)mipMapLevel,std::log(closestPowerOf2) / M_LN2);
+    if (mipMapLevel != 0) {
+        // scale the zoomFactor by the inverse of the current render scale
+        // so that the viewer doesn't get shifted/scaled
+        zoomFactor /= scale.x;
+    }
+    
+    scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
+    closestPowerOf2 = 1 << mipMapLevel;
     
     ImageComponents components;
     ImageBitDepth imageDepth;
@@ -575,10 +591,6 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     }
     
     /*computing the RoI*/
-    
-    // scale the zoomFactor by the inverse of the current render scale
-    zoomFactor /= scale.x;
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2.)));
 
     ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
@@ -599,24 +611,20 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     ////factor taken into account.
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
-    texRect.x1 = std::floor(((double)roi.x1 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.y1 = std::floor(((double)roi.y1 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.x2 = std::ceil(((double)roi.x2 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
+    texRect.x1 = std::floor(((double)roi.x1) / tileSize) * tileSize;
+    texRect.y1 = std::floor(((double)roi.y1) / tileSize) * tileSize;
+    texRect.x2 = std::ceil(((double)roi.x2) / tileSize) * tileSize;
+    texRect.y2 = std::ceil(((double)roi.y2) / tileSize) * tileSize;
     
     if (texRect.width() == 0 || texRect.height() == 0) {
         return StatOK;
     }
     
     ///TexRectClipped is the same as texRect but without the zoom factor taken into account (in pixel coords)
-    RectI texRectClipped = texRect;
-    texRectClipped.x1 *= closestPowerOf2;
-    texRectClipped.x2 *= closestPowerOf2;
-    texRectClipped.y1 *= closestPowerOf2;
-    texRectClipped.y2 *= closestPowerOf2;
+    RectI texRectClipped ;
     
     ///Make sure the bounds of the area to render in the texture lies in the pixelRoD
-    texRectClipped.intersect(pixelRoD, &texRectClipped);
+    texRect.intersect(pixelRoD, &texRectClipped);
     ///Clip again against the project window
     if (isClippingToProjectWindow) {
         ///it has already been computed in the previous clip above
@@ -625,19 +633,14 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     }
     
     ///The width and height of the texture must at least contain the roi
-    RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing(std::log(closestPowerOf2) / std::log(2.));
+    // RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing(std::log(closestPowerOf2) / M_LN2);
     
     
     ///Texture rect contains coordinates in the image to be rendered without the scaling of the viewer applied
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
-                            texRectClipped.y2,texRectClippedDownscaled.width(),texRectClippedDownscaled.height(),closestPowerOf2);
-    
-    //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
-    //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
+                            texRectClipped.y2,texRectClipped.width(),texRectClipped.height(),closestPowerOf2);
     
 
-    
-    
     size_t bytesCount = textureRect.w * textureRect.h * 4;
     
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
@@ -928,7 +931,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             const RenderViewerArgs args(lastRenderedImage,
                                         textureRect,
                                         channels,
-                                        closestPowerOf2,
+                                        1,
                                         bitDepth,
                                         gain,
                                         offset,
@@ -993,7 +996,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             const RenderViewerArgs args(lastRenderedImage,
                                         textureRect,
                                         channels,
-                                        closestPowerOf2,
+                                        1,
                                         bitDepth,
                                         gain,
                                         offset,
@@ -1877,7 +1880,14 @@ ViewerInstance::getMipMapLevel() const
     return _imp->viewerMipMapLevel;
 
 }
-  
+
+int
+ViewerInstance::getMipMapLevelCombinedToZoomFactor() const
+{
+    int mmLvl = getMipMapLevel();
+    mmLvl += Image::getLevelFromScale(_imp->uiContext->getZoomFactor());
+    return mmLvl;
+}
 
 ViewerInstance::DisplayChannels
 ViewerInstance::getChannels() const

@@ -110,6 +110,9 @@ public:
     double getGain() const WARN_UNUSED_RETURN ;
     
     int getMipMapLevel() const WARN_UNUSED_RETURN;
+    
+    ///same as getMipMapLevel but with the zoomFactor taken into account
+    int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 

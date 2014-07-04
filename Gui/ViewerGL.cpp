@@ -571,9 +571,9 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,Viewer
 void ViewerGL::Implementation::getBaseTextureCoordinates(const TextureRect& r,GLfloat& bottom,GLfloat& top,GLfloat& left,GLfloat& right)
 {
     bottom =  0;
-    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h * r.closestPo2);
+    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h);
     left = 0;
-    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w * r.closestPo2);
+    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w);
 }
 
 void ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const RectI& texRect,
