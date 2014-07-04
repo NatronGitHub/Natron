@@ -1369,85 +1369,104 @@ void ViewerGL::drawWipeControl()
     oppositeAxisBottom.setX(wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
     oppositeAxisBottom.setY(wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateLenght / 2.));
     
-    glLineWidth(1.5);
-    glEnable(GL_LINE_SMOOTH);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
-    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glBegin(GL_LINES);
-    if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
-        glColor4f(0., 1., 0., 1.);
-    } else {
-        glColor4f(0.8, 0.8, 0.8, 1.);
-    }
-    glVertex2d(rotateAxisLeft.x(), rotateAxisLeft.y());
-    glVertex2d(rotateAxisRight.x(), rotateAxisRight.y());
-    glColor4f(0.8, 0.8, 0.8, 1.);
-    glVertex2d(oppositeAxisBottom.x(), oppositeAxisBottom.y());
-    glVertex2d(oppositeAxisTop.x(), oppositeAxisTop.y());
-    glVertex2d(wipeCenter.x(),wipeCenter.y());
-    glVertex2d(mixPos.x(), mixPos.y());
-    glEnd();
-    glLineWidth(1.);
-
-    ///if hovering the rotate handle or dragging it show a small bended arrow
-    if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
+    
+    
+    // Draw everything twice
+    // l = 0: shadow
+    // l = 1: drawing
+    double baseColor[3];
+    for (int l = 0; l < 2; ++l) {
+        if (l == 0) {
+            // Draw a shadow for the cross hair
+            // shift by (1,1) pixel
+            glPushMatrix();
+            glTranslated(1. / zoomFactor, - 1./zoomFactor, 0);
+            baseColor[0] = baseColor[1] = baseColor[2] = 0.;
+        } else {
+            baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
+        }
         
-        glColor4f(0., 1., 0., 1.);
-        double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
-        ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
-        OfxPointD arrowRadius;
-        arrowRadius.x = 5. / zoomFactor;
-        arrowRadius.y = 10. / zoomFactor;
-        
-        glPushMatrix ();
-        glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
-        glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
-        //  center the oval at x_center, y_center
-        glTranslatef (arrowCenterX, 0., 0);
-        //  draw the oval using line segments
-        glBegin (GL_LINE_STRIP);
-        glVertex2f (0, arrowRadius.y);
-        glVertex2f (arrowRadius.x, 0.);
-        glVertex2f (0, -arrowRadius.y);
-        glEnd ();
-        
-        
+        glLineWidth(1.5);
+        glEnable(GL_LINE_SMOOTH);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glBegin(GL_LINES);
-        ///draw the top head
-        glVertex2f(0., arrowRadius.y);
-        glVertex2f(0., arrowRadius.y -  arrowRadius.x );
-        
-        glVertex2f(0., arrowRadius.y);
-        glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
-        
-        ///draw the bottom head
-        glVertex2f(0., -arrowRadius.y);
-        glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
-        
-        glVertex2f(0., -arrowRadius.y);
-        glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
-        
+        if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
+            glColor4f(0., 1., 0., 1.);
+        }
+        glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
+        glVertex2d(rotateAxisLeft.x(), rotateAxisLeft.y());
+        glVertex2d(rotateAxisRight.x(), rotateAxisRight.y());
+        glVertex2d(oppositeAxisBottom.x(), oppositeAxisBottom.y());
+        glVertex2d(oppositeAxisTop.x(), oppositeAxisTop.y());
+        glVertex2d(wipeCenter.x(),wipeCenter.y());
+        glVertex2d(mixPos.x(), mixPos.y());
         glEnd();
+        glLineWidth(1.);
         
-        glPopMatrix ();
+        ///if hovering the rotate handle or dragging it show a small bended arrow
+        if (_imp->hs == HOVERING_WIPE_ROTATE_HANDLE || _imp->ms == ROTATING_WIPE_HANDLE) {
+            
+            glColor4f(0., 1., 0., 1.);
+            double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH / (2. * zoomFactor);
+            ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
+            OfxPointD arrowRadius;
+            arrowRadius.x = 5. / zoomFactor;
+            arrowRadius.y = 10. / zoomFactor;
+            
+            glPushMatrix ();
+            glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
+            glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
+            //  center the oval at x_center, y_center
+            glTranslatef (arrowCenterX, 0., 0);
+            //  draw the oval using line segments
+            glBegin (GL_LINE_STRIP);
+            glVertex2f (0, arrowRadius.y);
+            glVertex2f (arrowRadius.x, 0.);
+            glVertex2f (0, -arrowRadius.y);
+            glEnd ();
+            
+            
+            glBegin(GL_LINES);
+            ///draw the top head
+            glVertex2f(0., arrowRadius.y);
+            glVertex2f(0., arrowRadius.y -  arrowRadius.x );
+            
+            glVertex2f(0., arrowRadius.y);
+            glVertex2f(4. / zoomFactor, arrowRadius.y - 3. / zoomFactor); // 5^2 = 3^2+4^2
+            
+            ///draw the bottom head
+            glVertex2f(0., -arrowRadius.y);
+            glVertex2f(0., -arrowRadius.y + 5. / zoomFactor);
+            
+            glVertex2f(0., -arrowRadius.y);
+            glVertex2f(4. / zoomFactor, -arrowRadius.y + 3. / zoomFactor); // 5^2 = 3^2+4^2
+            
+            glEnd();
+            
+            glPopMatrix ();
+            glColor4f(baseColor[0],baseColor[1],baseColor[2],1.);
+        }
+        
+        glPointSize(5.);
+        glEnable(GL_POINT_SMOOTH);
+        glBegin(GL_POINTS);
+        glVertex2d(wipeCenter.x(), wipeCenter.y());
+        if ((_imp->hs == HOVERING_WIPE_MIX && _imp->ms != ROTATING_WIPE_HANDLE) || _imp->ms == DRAGGING_WIPE_MIX_HANDLE) {
+            glColor4f(0., 1., 0., 1.);
+        }
+        glVertex2d(mixPos.x(), mixPos.y());
+        glEnd();
+        glPointSize(1.);
+        
+         _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+        if (l == 0) {
+            glPopMatrix();
+        }
     }
     
-    glPointSize(5.);
-    glEnable(GL_POINT_SMOOTH);
-    glBegin(GL_POINTS);
-    glVertex2d(wipeCenter.x(), wipeCenter.y());
-    if ((_imp->hs == HOVERING_WIPE_MIX && _imp->ms != ROTATING_WIPE_HANDLE) || _imp->ms == DRAGGING_WIPE_MIX_HANDLE) {
-        glColor4f(0., 1., 0., 1.);
-    } else {
-        glColor4f(0.8, 0.8, 0.8, 1.);
-    }
-    glVertex2d(mixPos.x(), mixPos.y());
-    glEnd();
-    glPointSize(1.);
-    
-    
-    _imp->drawArcOfCircle(wipeCenter, mixLength, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+   
     glDisable(GL_POINT_SMOOTH);
     glDisable(GL_LINE_SMOOTH);
     glDisable(GL_BLEND);
@@ -1459,9 +1478,7 @@ void ViewerGL::Implementation::drawArcOfCircle(const QPointF& center,double radi
     double x,y;
     if (hs == HOVERING_WIPE_MIX || ms == DRAGGING_WIPE_MIX_HANDLE) {
         glColor3f(0, 1, 0);
-    } else {
-        glColor3f(0.8, 0.8, 0.8);
-    }
+    } 
     glBegin(GL_POINTS);
     while (alpha <= endAngle) {
         x = center.x()  + radius * std::cos(alpha);
