@@ -434,7 +434,7 @@ void TabWidget::floatPane(QPoint* position){
 
 void TabWidget::addNewViewer(){
     _gui->setNewViewerAnchor(this);
-    _gui->getApp()->createNode("Viewer");
+    _gui->getApp()->createNode(CreateNodeArgs("Viewer"));
 }
 
 void TabWidget::moveNodeGraphHere(){

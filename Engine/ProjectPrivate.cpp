@@ -127,10 +127,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
 
         ///this code may throw an exception which will be caught above
-        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(it->getPluginID().c_str()
+        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(CreateNodeArgs(it->getPluginID().c_str()
                                                                         ,it->isMultiInstanceChild()
                                                                         ,it->getPluginMajorVersion()
-                                                                        ,it->getPluginMinorVersion(),*it,false);
+                                                                        ,it->getPluginMinorVersion(),&(*it),false));
         if (!n) {
             project->clearNodes();
             QString text("Failed to restore the graph! \n The node ");

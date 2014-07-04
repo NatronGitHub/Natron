@@ -138,7 +138,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
     if (projectName.isEmpty()) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
-        createNode("Viewer");
+        createNode(CreateNodeArgs("Viewer"));
     } else {
         ///Otherwise just load the project specified.
         QFileInfo infos(projectName);

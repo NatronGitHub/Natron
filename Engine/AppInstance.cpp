@@ -202,7 +202,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     
     try{
-        node->load(pluginID.toStdString(),node, serialization,dontLoadName);
+        node->load(pluginID.toStdString(),multiInstanceParentName,node, serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -219,32 +219,27 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     
     _imp->_currentProject->addNodeToProject(node);
-    if (!multiInstanceParentName.empty()) {
-        node->setParentMultiInstanceName(multiInstanceParentName);
-    }
     createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog);
     return node;
 
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,const std::string& multiInstanceParentName,
-                                                        int majorVersion,int minorVersion,bool openImageFileDialog)
+boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& args)
 {    
     ///use the same entry point to create backdrops.
     ///Since they are purely GUI we don't actually return a node.
-    if (name == NATRON_BACKDROP_NODE_NAME) {
+    if (args.pluginID == QString(NATRON_BACKDROP_NODE_NAME)) {
         createBackDrop();
         return boost::shared_ptr<Natron::Node>();
     }
-    return createNodeInternal(name,multiInstanceParentName, majorVersion, minorVersion, false,
-                              openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
+    return createNodeInternal(args.pluginID,args.multiInstanceParentName, args.majorV, args.minorV, false,
+                              args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,const std::string& multiInstanceParentName,
-                                                      int majorVersion,int minorVersion,
-                                                      const NodeSerialization& serialization,bool dontLoadName)
+boost::shared_ptr<Natron::Node> AppInstance::loadNode(const CreateNodeArgs& args)
 {
-    return createNodeInternal(name,multiInstanceParentName ,majorVersion, minorVersion, true, false, serialization,dontLoadName);
+    return createNodeInternal(args.pluginID,args.multiInstanceParentName ,args.majorV, args.minorV,
+                              true, false, *args.serialization,args.dontLoadName);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

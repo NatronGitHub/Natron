@@ -262,8 +262,10 @@ void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & o
         return;
     }
     
+    QStyleOptionViewItem opt = option;
+    initStyleOption(&opt, index);
     
-    QWidget* widget = _view->cellWidget(index.row(), index.column());
+    const QWidget* widget = _view->cellWidget(index.row(), index.column());
     if ( !widget ) {
         QStyledItemDelegate::paint(painter,option,index);
         return;
@@ -274,10 +276,10 @@ void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & o
     } else if (level == INTERPOLATED_VALUE) {
         bgColor.setRgb(86,117,156);
     }
+
     
     
-    
-    widget->render(painter);
+    //   widget->render(painter);
     
 }
 
@@ -395,7 +397,7 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
     QObject::connect(_imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()));
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip("Reset selected tracks");
+    _imp->resetTracksButton->setToolTip("Reset selected items");
     
     layout->addWidget(_imp->buttonsContainer);
     appendExtraGui(layout);
@@ -451,8 +453,8 @@ void MultiInstancePanel::onAddButtonClicked()
 {
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     
-    boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(mainInstance->pluginID().c_str(),
-                                                                                        mainInstance->getName()); //< don't create its gui
+    boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(CreateNodeArgs(mainInstance->pluginID().c_str(),
+                                                                                        mainInstance->getName())); //< don't create its gui
     _imp->addTableRow(newInstance);
     _imp->pushUndoCommand(new AddNodeCommand(this,newInstance));
 }

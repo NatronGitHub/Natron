@@ -1269,7 +1269,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     
     if (!_gui->getLastSelectedViewer()) {
-        _gui->getApp()->createNode("Viewer");
+        _gui->getApp()->createNode(CreateNodeArgs("Viewer"));
     }
     
     ///get a pointer to the last user selected viewer
@@ -2146,7 +2146,7 @@ NodeGraph::dropEvent(QDropEvent* event)
         if (found == readersForFormat.end()) {
             errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
         } else {
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(found->second.c_str(),"",-1,-1,false);
+            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(CreateNodeArgs(found->second.c_str(),"",-1,-1,false));
             const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
@@ -2296,10 +2296,10 @@ boost::shared_ptr<NodeGui>
 NodeGraph::pasteNode(const NodeSerialization& internalSerialization,
                      const NodeGuiSerialization& guiSerialization)
 {
-    boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+    boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode(CreateNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                  "",
                                                internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization,false);
+                                               internalSerialization.getPluginMinorVersion(),&internalSerialization,false));
     assert(n);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     if (masterNodeName.empty()) {
@@ -2413,10 +2413,10 @@ NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
     NodeGuiSerialization guiSerialization;
     node->serialize(&guiSerialization);
     
-    boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(internalSerialization.getPluginID().c_str(),
+    boost::shared_ptr<Natron::Node> clone = _gui->getApp()->loadNode(CreateNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                      "",
                                                internalSerialization.getPluginMajorVersion(),
-                                               internalSerialization.getPluginMinorVersion(),internalSerialization,true);
+                                               internalSerialization.getPluginMinorVersion(),&internalSerialization,true));
     assert(clone);
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     

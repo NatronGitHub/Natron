@@ -39,6 +39,56 @@ namespace Natron {
     class OutputEffectInstance;
 }
 
+struct CreateNodeArgs
+{
+//    const QString& pluginID,const std::string& multiInstanceParentName = std::string(),
+//    int majorVersion = -1,int minorVersion = -1,
+//    bool openImageFileDialog = true
+//    const NodeSerialization& serialization
+//    , bool dontLoadName
+    QString pluginID;
+    int majorV,minorV;
+    bool openImageFileDialog;
+    const NodeSerialization* serialization;
+    bool dontLoadName;
+    std::string multiInstanceParentName;
+    
+    ///Constructor used to create a new node
+    CreateNodeArgs(const QString& pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
+                   const std::string& multiInstanceParentName = std::string(), //< no parent by default
+                   int majorVersion = -1, //< use greatest version found
+                   int minorVersion = -1, //< use greatest version found
+                   bool openImageFileDialog = true //< open a file dialog if the node is a reader/writer
+                   )
+    : pluginID(pluginID)
+    , majorV(majorVersion)
+    , minorV(minorVersion)
+    , openImageFileDialog(openImageFileDialog)
+    , serialization(NULL)
+    , dontLoadName(false)
+    , multiInstanceParentName(multiInstanceParentName)
+    {
+        
+    }
+    
+    ///Constructor used to load a node from the project serialization
+    CreateNodeArgs(const QString& pluginID,
+                   const std::string& multiInstanceParentName,
+                   int majorVersion,
+                   int minorVersion,
+                   const NodeSerialization* serialization,
+                   bool dontLoadName)
+    : pluginID(pluginID)
+    , majorV(majorVersion)
+    , minorV(minorVersion)
+    , openImageFileDialog(false)
+    , serialization(serialization)
+    , dontLoadName(dontLoadName)
+    , multiInstanceParentName(multiInstanceParentName)
+    {
+        
+    }
+};
 
 class AppInstance : public QObject , public boost::noncopyable
 {
@@ -77,13 +127,10 @@ public:
      * You can use this function to create backdrops also which are purely GUI stuff. In this case the pointer returned will
      * be NULL.
      **/
-    boost::shared_ptr<Natron::Node> createNode(const QString& name,const std::string& multiInstanceParentName = std::string(),
-                                               int majorVersion = -1,int minorVersion = -1,
-                                               bool openImageFileDialog = true);
+    boost::shared_ptr<Natron::Node> createNode(const CreateNodeArgs& args);
     
     ///Same as createNode but used when loading a project
-    boost::shared_ptr<Natron::Node> loadNode(const QString& name,const std::string& multiInstanceParentName,
-                                             int majorVersion,int minorVersion,const NodeSerialization& serialization, bool dontLoadName);
+    boost::shared_ptr<Natron::Node> loadNode(const CreateNodeArgs& args);
 
     void getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> > *activeNodes) const;
 

@@ -213,7 +213,7 @@ void Node::createRotoContextConditionnally()
     }
 }
 
-void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
+void Node::load(const std::string& pluginID,const std::string& parentMultiInstanceName,const boost::shared_ptr<Natron::Node>& thisShared,
                 const NodeSerialization& serialization,bool dontLoadName)
 {
     ///Called from the main thread. MT-safe
@@ -221,6 +221,14 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     
     ///cannot load twice
     assert(!_imp->liveInstance);
+    
+    
+    bool isMultiInstanceChild = false;
+    _imp->multiInstanceParentName = parentMultiInstanceName;
+    if (!parentMultiInstanceName.empty()) {
+        isMultiInstanceChild = true;
+        _imp->isMultiInstance = false;
+    }
     
     bool nameSet = false;
     if (!serialization.isNull() && !dontLoadName) {
@@ -250,7 +258,11 @@ void Node::load(const std::string& pluginID,const boost::shared_ptr<Natron::Node
     initializeKnobs(serialization);
 
     if (!nameSet) {
-        getApp()->getProject()->initNodeCountersAndSetName(this);
+        if (!isMultiInstanceChild) {
+            getApp()->getProject()->initNodeCountersAndSetName(this);
+        } else {
+            
+        }
     }
 
     computeHash(); 

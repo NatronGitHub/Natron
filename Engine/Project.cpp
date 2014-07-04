@@ -70,7 +70,7 @@ bool Project::loadProject(const QString& path,const QString& name){
         }
         Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
         if(!appPTR->isBackground()) {
-            getApp()->createNode("Viewer");
+            getApp()->createNode(CreateNodeArgs("Viewer"));
         }
         return false;
     } catch (...) {
@@ -80,7 +80,7 @@ bool Project::loadProject(const QString& path,const QString& name){
         }
         Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
         if(!appPTR->isBackground()) {
-            getApp()->createNode("Viewer");
+            getApp()->createNode(CreateNodeArgs("Viewer"));
         }
         return false;
     }
@@ -450,10 +450,10 @@ bool Project::findAndTryLoadAutoSave() {
                     loadProjectInternal(savesDir.path()+QDir::separator(), entry);
                 } catch (const std::exception& e) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
-                    getApp()->createNode("Viewer");
+                    getApp()->createNode(CreateNodeArgs("Viewer"));
                 } catch (...) {
                     Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
-                    getApp()->createNode("Viewer");
+                    getApp()->createNode(CreateNodeArgs("Viewer"));
                 }
                 
                 ///Process all events before flagging that we're no longer loading the project
