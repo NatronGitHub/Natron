@@ -96,6 +96,7 @@ private:
     QColor _renderingColor;
     bool _useRenderingColor;
     bool _useHighlight;
+    bool _paintWithDash;
 };
 
 #endif // NATRON_GUI_EDGE_H_

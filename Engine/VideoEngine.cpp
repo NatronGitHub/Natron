@@ -635,15 +635,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
 }
 
 Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
-    /*pre process frame*/
-    
-//    Status stat = _tree.preProcessFrame();
-//    if (stat == StatFailed) {
-//        return stat;
-//        //don't throw an exception here, this is regular behaviour when a mandatory input is not connected.
-//        // We don't want to popup a dialog everytime it occurs
-//        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
-//    }
+
     bool isSequentialRender = _currentRunArgs._frameRequestsCount > 1 || _currentRunArgs._frameRequestsCount == -1 ||
     _currentRunArgs._forceSequential;
     Status stat = StatOK;
@@ -718,15 +710,6 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
     return stat;
 
 }
-
-void VideoEngine::onProgressUpdate(int /*i*/){
-    // cout << "progress: index = " << i ;
-    //    if(i < (int)_currentFrameInfos._rows.size()){
-    //        //  cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
-    //        checkAndDisplayProgress(_currentFrameInfos._rows[i],i);
-    //    }
-}
-
 
 void VideoEngine::abortRendering(bool blocking) {
     {
@@ -903,38 +886,6 @@ void RenderTree::debug() const{
     for(RenderTree::TreeIterator it = begin(); it != end() ;++it) {
         cout << (*it)->getName() << endl;
     }
-}
-
-Natron::Status RenderTree::preProcessFrame(){
-    /*Validating the Tree in topological order*/
-    for (TreeIterator it = begin(); it != end(); ++it) {
-        for (int i = 0; i < (*it)->maximumInputs(); ++i) {
-            if (!(*it)->input_other_thread(i) && !(*it)->getLiveInstance()->isInputOptional(i)) {
-                return StatFailed;
-            }
-        }
-    }
-    return Natron::StatOK;
-}
-
-
-bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
-    //    timeval now;
-    //    gettimeofday(&now, 0);
-    //    double t =  now.tv_sec  - _startRenderFrameTime.tv_sec +
-    //    (now.tv_usec - _startRenderFrameTime.tv_usec) * 1e-6f;
-    //    if(t >= 0.5){
-    //        if(_tree.isOutputAViewer()){
-    //            _tree.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_currentFrameInfos._textureRect, y,zoomedY);
-    //        }else{
-    //            emit progressChanged(floor(((double)y/(double)_currentFrameInfos._rows.size())*100));
-    //            std::cout << kProgressChangedString << floor(((double)y/(double)_currentFrameInfos._rows.size())*100) << std::endl;
-    //        }
-    //        return true;
-    //    }else{
-    //        return false;
-    //    }
-    return false;
 }
 
 void VideoEngine::toggleLoopMode(bool b){

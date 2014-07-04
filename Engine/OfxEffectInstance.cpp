@@ -742,7 +742,11 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             for (int i = 0; i < nthClip ; ++i) {
                 OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
                 assert(clip);
-                if (!clip->isOutput() && !clip->isOptional() && (clip->getName() != "Brush" || !getNode()->isRotoNode())) {
+                
+                ///Uncommented te clip->isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
+                ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
+                ///not taking optional inputs into accounts messes it up.
+                if (!clip->isOutput() && /*!clip->isOptional() &&*/ (clip->getName() != "Brush" || !getNode()->isRotoNode())) {
                     double f,l;
                     clip->getFrameRange(f, l);
                     if (!firstValidClip) {

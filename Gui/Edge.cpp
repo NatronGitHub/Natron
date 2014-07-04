@@ -41,6 +41,7 @@ Edge::Edge(int inputNb_, double angle_,const boost::shared_ptr<NodeGui>& dest_, 
 , _renderingColor(243,149,0)
 , _useRenderingColor(false)
 , _useHighlight(false)
+, _paintWithDash(false)
 {
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     if (inputNb != -1 && dest) {
@@ -51,6 +52,10 @@ Edge::Edge(int inputNb_, double angle_,const boost::shared_ptr<NodeGui>& dest_, 
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(4);
+    if (dest && dest->getNode()->getLiveInstance() && dest->getNode()->getLiveInstance()->isInputOptional(inputNb))
+    {
+        _paintWithDash = true;
+    }
 }
 
 Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
@@ -66,6 +71,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
 , _renderingColor(243,149,0)
 , _useRenderingColor(false)
 , _useHighlight(false)
+, _paintWithDash(false)
 {
     assert(src);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
@@ -73,6 +79,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui>& src,QGraphicsItem *parent)
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(4);
+   
 }
 
 Edge::~Edge()
@@ -96,6 +103,10 @@ void Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui>& src,const b
         label->setDefaultTextColor(QColor(200,200,200));
     } else {
         label->setPlainText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
+    }
+    if (dest && dest->getNode()->getLiveInstance() && dest->getNode()->getLiveInstance()->isInputOptional(inputNb))
+    {
+        _paintWithDash = true;
     }
     initLine();
 }
@@ -344,7 +355,7 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
 
      QPen myPen = pen();
      
-     if(dest && dest->getNode()->getLiveInstance() && dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
+     if (_paintWithDash) {
          QVector<qreal> dashStyle;
          qreal space = 4;
          dashStyle << 3 << space;

@@ -129,12 +129,7 @@ public:
      *@brief Returns true if the output node is an OpenFX node.
      */
     bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
-    
-    /**
-     *@brief Checks whether the render tree can produce a valid result.
-     */
-    Natron::Status preProcessFrame();
-    
+
     SequenceTime firstFrame() const {return _firstFrame;}
     
     SequenceTime lastFrame() const {return _lastFrame;}
@@ -213,11 +208,6 @@ public slots:
      **************************************PRIVATE SLOTS*********************************************************
      *************************************DO NO CALL THEM********************************************************
      ***********************************************************************************************************/
-    /*
-     *@brief Slot called internally by the render() function when it reports progress for the current frame.
-     *Do not call this yourself.
-     */
-    void onProgressUpdate(int i);
     
     
     /*
@@ -362,13 +352,7 @@ private:
      *of the graph.
      **/
     void computeTreeVersionAndLockKnobs();
-    
-    
-    /**
-     *@brief displays progress if the time to compute the current frame exeeded
-     * 0.5 sec.
-     **/
-    bool checkAndDisplayProgress(int y,int zoomedY);
+ 
 
     /**
      *@brief Resets the video engine state and ensures that all worker threads are stopped. It is called
