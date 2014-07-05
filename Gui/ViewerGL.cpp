@@ -2479,7 +2479,7 @@ void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
              imgPos.x() < dispW.right() &&
              imgPos.y() >= dispW.bottom() &&
              imgPos.y() < dispW.top()) || !clipping) {
-            unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+            unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
             if (mipMapLevel != 0) {
                 imgPos /= (1 << mipMapLevel);
             }
@@ -3236,7 +3236,7 @@ bool ViewerGL::pickColor(double x,double y)
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
     if (mipMapLevel != 0) {
         imgPos /= (1 << mipMapLevel);
         
@@ -3328,7 +3328,7 @@ void ViewerGL::updateRectangleColorPicker()
     float rSum = 0.,gSum = 0,bSum = 0,aSum = 0;
     float r,g,b,a;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
     
     int samples = 0;
     

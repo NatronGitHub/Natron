@@ -1451,7 +1451,8 @@ void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* d
     const OFX::Host::Property::Set& prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
     int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
     for (int i = 0; i < dim ; ++i) {
-        depths->push_back(ofxBitDepthToNatron(prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths,i)));
+        const std::string& depth = prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths,i);
+        depths->push_back(ofxBitDepthToNatron(depth));
     }
 }
 

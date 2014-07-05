@@ -1891,7 +1891,7 @@ ViewerInstance::getMipMapLevelCombinedToZoomFactor() const
     if (factor > 1) {
         factor = 1;
     }
-    mmLvl += (-std::ceil(std::log(factor)/M_LN2));
+    mmLvl = std::max((double)mmLvl,-std::ceil(std::log(factor)/M_LN2));
     return mmLvl;
 }
 
