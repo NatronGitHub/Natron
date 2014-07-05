@@ -217,7 +217,9 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
         errorDialog(title, message);
         return boost::shared_ptr<Natron::Node>();
     }
-    
+    if (!requestedByLoad && !multiInstanceParentName.empty()) {
+        node->fetchParentMultiInstancePointer();
+    }
     
     _imp->_currentProject->addNodeToProject(node);
     createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog);

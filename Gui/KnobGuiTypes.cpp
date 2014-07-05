@@ -725,7 +725,14 @@ Button_KnobGui::Button_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *con
 
 void Button_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    _button = new Button(QString(QString(getKnob()->getDescription().c_str())), layout->parentWidget());
+    QString label(_knob->getDescription().c_str());
+    const std::string& iconFilePath = _knob->getIconFilePath();
+    QPixmap pix;
+    if (pix.load(iconFilePath.c_str())) {
+        _button = new Button(QIcon(pix),"",layout->parentWidget());
+    } else {
+        _button = new Button(label,layout->parentWidget());
+    }
     QObject::connect(_button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if(hasToolTip()) {
         _button->setToolTip(toolTip());

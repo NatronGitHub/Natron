@@ -147,6 +147,13 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
 
+    ///for all nodes that are part of a multi-instance, fetch the main instance node pointer
+    for (U32 i = 0; i < currentNodes.size(); ++i) {
+        std::string parentName = currentNodes[i]->getParentMultiInstanceName();
+        if (!parentName.empty()) {
+            currentNodes[i]->fetchParentMultiInstancePointer();
+        }
+    }
 
     if(!hasProjectAWriter && appPTR->isBackground()){
         project->clearNodes();

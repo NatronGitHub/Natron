@@ -313,6 +313,9 @@ public:
     
     bool isRenderButton() const { return _renderButton; }
     
+    void setIconFilePath(const std::string& filePath) { _iconFilePath = filePath; }
+    const std::string& getIconFilePath() const { return _iconFilePath; }
+    
 private:
     
     
@@ -323,6 +326,7 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _renderButton;
+    std::string _iconFilePath;
 };
 
 /******************************CHOICE_KNOB**************************************/

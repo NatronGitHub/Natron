@@ -26,6 +26,7 @@ class QVBoxLayout;
 class QHBoxLayout;
 class QItemSelection;
 class TableItem;
+class Button_Knob;
 /**
 * @brief This class represents a multi-instance settings panel.
 **/
@@ -63,6 +64,8 @@ public:
     
     boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
     
+    virtual void setIconForButton(Button_Knob* /*knob*/) {}
+
 public slots:
 
     void onAddButtonClicked();
@@ -83,18 +86,20 @@ public slots:
     
     void resetSelectedInstances();
     
+    
 protected:
     
     virtual void appendExtraGui(QVBoxLayout* /*layout*/) {}
     virtual void appendButtons(QHBoxLayout* /*buttonLayout*/) {}
-    
 private:
+    
+    virtual void onButtonTriggered(Button_Knob* button);
     
     void resetInstances(const std::list<Natron::Node*>& instances);
     
     void removeInstancesInternal();
     
-    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL {}
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason);
     
     virtual void initializeKnobs() OVERRIDE FINAL;
     
@@ -123,7 +128,12 @@ private:
     
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
+    virtual void setIconForButton(Button_Knob* knob) OVERRIDE FINAL;
     
+    virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
+    
+    void handleTrackNextAndPrevious(Button_Knob* button,const std::list<Natron::Node*>& selectedInstances);
+
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
 

@@ -99,6 +99,7 @@ struct Node::Implementation {
         , imagesBeingRendered()
         , supportedDepths()
         , isMultiInstance(false)
+        , multiInstanceParent(NULL)
         , multiInstanceParentName()
         , duringInputChangedAction(false)
     {
@@ -176,11 +177,13 @@ struct Node::Implementation {
     
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
+    Natron::Node* multiInstanceParent;
     
-    ///set if it was spawned from a multiinstance node
+    ///the name of the parent at the time this node was created
     std::string multiInstanceParentName;
     
     bool duringInputChangedAction; //< true if we're during onInputChanged(...). MT-safe since only modified by the main thread
+
 };
 
 /**
@@ -225,8 +228,8 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
     
     
     bool isMultiInstanceChild = false;
-    _imp->multiInstanceParentName = parentMultiInstanceName;
     if (!parentMultiInstanceName.empty()) {
+        _imp->multiInstanceParentName = parentMultiInstanceName;
         isMultiInstanceChild = true;
         _imp->isMultiInstance = false;
     }
@@ -274,13 +277,11 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
     }
     
     if (!nameSet) {
-        if (!isMultiInstanceChild) {
-            getApp()->getProject()->initNodeCountersAndSetName(this);
-            if (_imp->isMultiInstance) {
-                updateEffectLabelKnob(getName().c_str());
-            }
+        getApp()->getProject()->initNodeCountersAndSetName(this);
+        if (!isMultiInstanceChild && _imp->isMultiInstance) {
+            updateEffectLabelKnob(getName().c_str());
         } else {
-            updateEffectLabelKnob(QString(_imp->multiInstanceParentName.c_str()) + '_' + QString::number(childIndex));
+            updateEffectLabelKnob(QString(parentMultiInstanceName.c_str()) + '_' + QString::number(childIndex));
         }
     }
 
@@ -289,23 +290,33 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
     
 }
 
+void Node::fetchParentMultiInstancePointer()
+{
+    std::vector<boost::shared_ptr<Node> > nodes = getApp()->getProject()->getCurrentNodes();
+    for (U32 i = 0; i < nodes.size() ; ++i) {
+        if (nodes[i]->getName() == _imp->multiInstanceParentName) {
+            
+            ///no need to store the boost pointer because the main instance lives the same time
+            ///as the child
+            _imp->multiInstanceParent = nodes[i].get();
+            break;
+        }
+    }
+}
+
 bool Node::isMultiInstance() const
 {
     return _imp->isMultiInstance;
 }
 
-void Node::setParentMultiInstanceName(const std::string& parentName)
-{
-    _imp->multiInstanceParentName = parentName;
-    if (!parentName.empty()) {
-        _imp->isMultiInstance = false;
-    }
-}
-
 ///Accessed by the serialization thread, but mt safe since never changed
-const std::string& Node::getParentMultiInstanceName() const
+std::string Node::getParentMultiInstanceName() const
 {
-    return _imp->multiInstanceParentName;
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->getName_mt_safe();
+    } else {
+        return "";
+    }
 }
 
 U64 Node::getHashValue() const
@@ -475,10 +486,6 @@ void Node::quitAnyProcessing() {
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
     }
-//    {
-//        QMutexLocker locker(&_imp->imageBeingRenderedMutex);
-//        _imp->imagesBeingRenderedNotEmpty.wakeAll();
-//    }
     bool computingPreview;
     {
         QMutexLocker locker(&_imp->computingPreviewMutex);
@@ -835,6 +842,9 @@ boost::shared_ptr<Node> Node::input(int index) const
     ////Only called by the main-thread
     ////@see input_other_thread for the MT version
     assert(QThread::currentThread() == qApp->thread());
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->input(index);
+    }
     QMutexLocker l(&_imp->inputsMutex);
     if (index >= (int)_imp->inputsQueue.size() || index < 0) {
         return boost::shared_ptr<Node>();
@@ -845,6 +855,9 @@ boost::shared_ptr<Node> Node::input(int index) const
 
 boost::shared_ptr<Node> Node::input_other_thread(int index) const
 {
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->input_other_thread(index);
+    }
     QMutexLocker l(&_imp->inputsMutex);
     if (index >= (int)_imp->inputs.size() || index < 0) {
         return boost::shared_ptr<Node>();
@@ -877,6 +890,9 @@ void Node::updateRenderInputsRecursive()
 const std::vector<boost::shared_ptr<Natron::Node> >& Node::getInputs_other_thread() const
 {
     QMutexLocker l(&_imp->inputsMutex);
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->getInputs_other_thread();
+    }
     return _imp->inputs;
 }
 
@@ -884,6 +900,9 @@ const std::vector<boost::shared_ptr<Natron::Node> >& Node::getInputs_mt_safe() c
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->getInputs_mt_safe();
+    }
     return _imp->inputsQueue;
 }
 
@@ -904,6 +923,9 @@ bool Node::isInputConnected(int inputNb) const
 
 bool Node::hasInputConnected() const
 {
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->hasInputConnected();
+    }
     QMutexLocker l(&_imp->inputsMutex);
     if (QThread::currentThread() == qApp->thread()) {
         for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
@@ -924,6 +946,9 @@ bool Node::hasInputConnected() const
 bool Node::hasOutputConnected() const
 {
     ////Only called by the main-thread
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->hasInputConnected();
+    }
     if (QThread::currentThread() == qApp->thread()) {
         return _imp->outputsQueue.size() > 0;
     } else {
@@ -1165,6 +1190,9 @@ int Node::inputIndex(Node* n) const {
     
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    if (_imp->multiInstanceParent) {
+        return _imp->multiInstanceParent->inputIndex(n);
+    }
     {
         
         QMutexLocker l(&_imp->inputsMutex);

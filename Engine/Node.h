@@ -65,6 +65,10 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
     
+    ///to be called once all nodes have been loaded from the project or right away after the load() function.
+    ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
+    void fetchParentMultiInstancePointer();
+    
     
     ///If the node can have a roto context, create it
     void createRotoContextConditionnally();
@@ -96,11 +100,9 @@ public:
     bool hasEffect() const;
     
     bool isMultiInstance() const;
-    
-    void setParentMultiInstanceName(const std::string& parentName);
-    
+        
     ///Accessed by the serialization thread, but mt safe since never changed
-    const std::string& getParentMultiInstanceName() const;
+    std::string getParentMultiInstanceName() const;
     
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.

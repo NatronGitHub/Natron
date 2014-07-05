@@ -1310,7 +1310,7 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         effect_->runGetClipPrefsConditionally();
         decrementRecursionLevel();
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         std::vector<std::string> params;
         _overlayInteract->getSlaveToParam(params);
         for (U32 i = 0; i < params.size(); ++i) {

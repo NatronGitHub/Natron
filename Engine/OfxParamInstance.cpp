@@ -158,7 +158,8 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
     _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
-    
+    const std::string& iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
+    _knob->setIconFilePath(iconFilePath);
 }
 
 
