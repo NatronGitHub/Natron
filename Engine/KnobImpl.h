@@ -274,7 +274,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
 
     ///if the knob is slaved to another knob,return, because we don't want the
     ///gui to be unsynchronized with what lies internally.
-    if (!isSlave(dimension)) {
+    // if (!isSlave(dimension)) {
 
         {
             QWriteLocker l(&_valueMutex);
@@ -304,7 +304,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
             }
 
         }
-    }
+    // }
     if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason);
     }

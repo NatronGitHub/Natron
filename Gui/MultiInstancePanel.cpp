@@ -66,6 +66,9 @@ struct MultiInstancePanelPrivate
     ///this is to avoid infinite recursion with the dataChanged signal from the TableItem
     bool executingKnobValueChanged;
     
+    ///same as above but when we're dealing with unslave/slaving parameters
+    int knobValueRecursion;
+    
     MultiInstancePanelPrivate(MultiInstancePanel* publicI,const boost::shared_ptr<NodeGui>& node)
     : publicInterface(publicI)
     , guiCreated(false)
@@ -79,6 +82,7 @@ struct MultiInstancePanelPrivate
     , removeButton(0)
     , selectAll(0)
     , executingKnobValueChanged(false)
+    , knobValueRecursion(0)
     {
     }
     
@@ -479,9 +483,35 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
     instances.push_back(std::make_pair(node,false));
     int newRowIndex = view->rowCount();
     model->insertRow(newRowIndex);
-
+    
     std::list<boost::shared_ptr<KnobI> > instanceSpecificKnobs;
-    getInstanceSpecificKnobs(node.get(), &instanceSpecificKnobs);
+    {
+        const std::vector<boost::shared_ptr<KnobI> >& instanceKnobs = node->getKnobs();
+        for (U32 i = 0; i < instanceKnobs.size(); ++i) {
+
+            
+            boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
+            dynamic_cast<KnobHelper*>(instanceKnobs[i].get())->getSignalSlotHandler();
+            if (slotsHandler) {
+                QObject::connect(slotsHandler.get(), SIGNAL(valueChanged(int)), publicInterface,SLOT(onInstanceKnobValueChanged(int)));
+            }
+
+            if (instanceKnobs[i]->isInstanceSpecific()) {
+                Int_Knob* isInt = dynamic_cast<Int_Knob*>(instanceKnobs[i].get());
+                Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(instanceKnobs[i].get());
+                Double_Knob* isDouble = dynamic_cast<Double_Knob*>(instanceKnobs[i].get());
+                Color_Knob* isColor = dynamic_cast<Color_Knob*>(instanceKnobs[i].get());
+                String_Knob* isString = dynamic_cast<String_Knob*>(instanceKnobs[i].get());
+                if (!isInt && !isBool && !isDouble && !isColor && !isString) {
+                    qDebug() << "Multi-instance panel doesn't support the following type of knob: " << instanceKnobs[i]->typeName().c_str();
+                    continue;
+                }
+                
+                instanceSpecificKnobs.push_back(instanceKnobs[i]);
+            }
+        }
+    }
+    
     
     ///first add the enabled column
     {
@@ -534,10 +564,6 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
             view->resizeColumnToContents(columnIndex);
             ++columnIndex;
             
-        }
-        boost::shared_ptr<KnobSignalSlotHandler> slotsHandler = dynamic_cast<KnobHelper*>(it->get())->getSignalSlotHandler();
-        if (slotsHandler) {
-            QObject::connect(slotsHandler.get(), SIGNAL(valueChanged(int)), publicInterface,SLOT(onInstanceKnobValueChanged(int)));
         }
         
     }
@@ -680,7 +706,9 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
         for (U32 i = 0; i < knobs.size(); ++i) {
             if (knobs[i]->isDeclaredByPlugin() && !knobs[i]->isInstanceSpecific() && !knobs[i]->getIsSecret()) {
                 for (int j = 0; j < knobs[i]->getDimension();++j) {
-                    knobs[i]->unSlave(j, copyOnUnSlave);
+                    if (knobs[i]->isSlave(j)) {
+                        knobs[i]->unSlave(j, copyOnUnSlave);
+                    }
                 }
             }
         }
@@ -715,11 +743,15 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
                 
                 boost::shared_ptr<KnobI> otherKnob = getKnobByName(knobs[i]->getName());
                 assert(otherKnob);
-                otherKnob->clone(knobs[i]);
-                for (int j = 0; j < knobs[i]->getDimension();++j) {
-                    knobs[i]->slaveTo(j, otherKnob, j,true);
+                
+                ///Slave only when 1 node is attached to the knobs
+                if (!setDirty) {
+                    otherKnob->clone(knobs[i]);
+                    for (int j = 0; j < knobs[i]->getDimension();++j) {
+                        knobs[i]->slaveTo(j, otherKnob, j,true);
+                    }
+                    otherKnob->setAllDimensionsEnabled(true);
                 }
-                otherKnob->setAllDimensionsEnabled(true);
                 otherKnob->setDirty(setDirty);
                 
             }
@@ -898,6 +930,28 @@ void MultiInstancePanel::onInstanceKnobValueChanged(int dim)
                         return;
                     }
                     colIndex += knobs[i]->getDimension();
+                } else if (knobs[i] == knob && !_imp->knobValueRecursion) {
+                    ///If the knob is slaved to a knob used only for GUI, unslave it before updating value and reslave back
+                    std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dim);
+                    if (master.second) {
+                        ++_imp->knobValueRecursion;
+                        knob->unSlave(dim, false);
+                        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+                        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+                        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+                        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+                        if (isInt) {
+                            dynamic_cast<Knob<int>*>(master.second.get())->setValue(isInt->getValue(dim), master.first);
+                        } else if (isBool) {
+                            dynamic_cast<Knob<bool>*>(master.second.get())->setValue(isBool->getValue(dim), master.first);
+                        } else if (isDouble) {
+                            dynamic_cast<Knob<double>*>(master.second.get())->setValue(isDouble->getValue(dim), master.first);
+                        } else if (isString) {
+                            dynamic_cast<Knob<std::string>*>(master.second.get())->setValue(isString->getValue(dim), master.first);
+                        }
+                        knob->slaveTo(dim, master.second, master.first);
+                        --_imp->knobValueRecursion;
+                    }
                 }
             }
             return;
