@@ -747,7 +747,7 @@ Button_KnobGui::~Button_KnobGui()
 
 void Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>(getKnob().get())->onValueChanged(0,true, NULL);
+    dynamic_cast<Button_Knob*>(getKnob().get())->onValueChanged(0,true, NULL,true);
 }
 void Button_KnobGui::_hide()
 {

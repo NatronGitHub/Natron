@@ -872,8 +872,10 @@ private:
      * @brief Set the value of the knob in the given dimension with the given reason. 
      * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
      * then a new keyframe will be set at the current time.
+     * @param triggerKnobChanged When true the knob will call onKnobValueChanged on the KnobHolder.
      **/
-    ValueChangedReturnCode setValue(const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    ValueChangedReturnCode setValue(const T& v,int dimension,Natron::ValueChangedReason reason,
+                                    KeyFrame* newKey,bool triggerKnobChanged) WARN_UNUSED_RETURN;
     /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
      * @param newKey[out] The keyframe that was added if the return value is true.
@@ -889,8 +891,9 @@ public:
      * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
+     * @param triggerOnKnobChanged When true (default) : onKnobValueChanged will be called on the KnobHolder.
      **/
-    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
+    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false,bool triggerOnKnobChanged = true);
     
     /**
      * @brief Calls setValue with a reason of Natron::USER_EDITED.
@@ -898,7 +901,7 @@ public:
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCode
      **/
-    ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey);
+    ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey,bool triggerKnobChanged);
     
     /**
      * @brief This is called by the plugin when a set value call would happen during  an interact action.

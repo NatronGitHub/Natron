@@ -87,16 +87,19 @@ void PasteUndoCommand::undo()
     internalKnob->beginValueChange(Natron::PLUGIN_EDITED);
     
     int i = 0;
-    for (std::list<Variant>::iterator it = oldValues.begin(); it!=oldValues.end();++it) {
+    std::list<Variant>::iterator next = oldValues.begin();
+    ++next;
+    for (std::list<Variant>::iterator it = oldValues.begin(); it!=oldValues.end();++it,++next) {
         if ((i == _targetDimension && !_copyAnimation) || _copyAnimation) {
+            bool triggerOnKnobChanged = next == oldValues.end();
             if (isInt) {
-                isInt->setValue(it->toInt(), i);
+                isInt->setValue(it->toInt(), i,false,triggerOnKnobChanged);
             } else if (isBool) {
-                isBool->setValue(it->toBool(), i);
+                isBool->setValue(it->toBool(), i,false,triggerOnKnobChanged);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(), i);
+                isDouble->setValue(it->toDouble(), i,false,triggerOnKnobChanged);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(), i);
+                isString->setValue(it->toString().toStdString(), i,false,triggerOnKnobChanged);
             }
         }
         ++i;
@@ -154,16 +157,22 @@ void PasteUndoCommand::redo()
     internalKnob->beginValueChange(Natron::PLUGIN_EDITED);
     
     int i = 0;
-    for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it) {
+    std::list<Variant>::iterator next = newValues.begin();
+    ++next;
+    for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it,++next) {
         if ((i == _dimensionToFetch && !_copyAnimation) || _copyAnimation) {
+            bool triggerOnKnobChanged = next == newValues.end();
             if (isInt) {
-                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,
+                                triggerOnKnobChanged);
             } else if (isBool) {
-                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,
+                                 triggerOnKnobChanged);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,
+                                   triggerOnKnobChanged);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,triggerOnKnobChanged);
             }
         }
         ++i;
@@ -323,20 +332,24 @@ void MultipleKnobEditsUndoCommand::redo()
         for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
             int i = 0;
             boost::shared_ptr<KnobI> knob = it->first->getKnob();
-            for (std::list<Variant>::iterator it2 = it->second.newValues.begin(); it2!=it->second.newValues.end(); ++it2,++i) {
+            
+            std::list<Variant>::iterator next = it->second.newValues.begin();
+            ++next;
+            for (std::list<Variant>::iterator it2 = it->second.newValues.begin(); it2!=it->second.newValues.end(); ++it2,++i,++next) {
                 KeyFrame k;
                 Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
                 Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
                 Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                 Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+                bool triggerOnKnobChanged = next == it->second.newValues.end();
                 if (isInt) {
-                    it->first->setValue<int>(i, it2->toInt(), &k,true);
+                    it->first->setValue<int>(i, it2->toInt(), &k,true,triggerOnKnobChanged);
                 } else if (isBool) {
-                    it->first->setValue<bool>(i, it2->toBool(), &k,true);
+                    it->first->setValue<bool>(i, it2->toBool(), &k,true,triggerOnKnobChanged);
                 } else if (isDouble) {
-                    it->first->setValue<double>(i, it2->toDouble(), &k,true);
+                    it->first->setValue<double>(i, it2->toDouble(), &k,true,triggerOnKnobChanged);
                 } else if (isString) {
-                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true);
+                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true,triggerOnKnobChanged);
                 } else {
                     assert(false);
                 }

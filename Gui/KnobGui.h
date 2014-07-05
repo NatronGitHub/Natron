@@ -129,10 +129,10 @@ public:
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
     template<typename T>
-    int setValue(int dimension,const T& v,KeyFrame* newKey,bool refreshGui)
+    int setValue(int dimension,const T& v,KeyFrame* newKey,bool refreshGui,bool triggerKnobChanged)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>(getKnob().get());
-        KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey);
+        KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey,triggerKnobChanged);
         if(ret > 0){
             assert(newKey);
             setKeyframeMarkerOnTimeline(newKey->getTime());

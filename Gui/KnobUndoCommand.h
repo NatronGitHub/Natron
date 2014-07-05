@@ -84,11 +84,13 @@ private:
         bool modifiedKeyFrame = false;
         
         int i = 0;
-        for (typename std::list<T>::iterator it = _oldValue.begin(); it!=_oldValue.end();++it) {
+        typename std::list<T>::iterator next = _oldValue.begin();
+        ++next;
+        for (typename std::list<T>::iterator it = _oldValue.begin(); it!=_oldValue.end();++it,++next) {
             
             int dimension = _dimension == -1 ? i : _dimension;
-            
-            _knob->setValue(dimension,*it,NULL,true);
+            bool triggerOnKnobChanged = next == _oldValue.end();
+            _knob->setValue(dimension,*it,NULL,true,triggerOnKnobChanged);
             if (_knob->getKnob()->getHolder()->getApp()) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                     _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
@@ -123,10 +125,12 @@ private:
         bool modifiedKeyFrames = false;
         
         int i = 0;
-        for (typename std::list<T>::iterator it = _newValue.begin(); it!=_newValue.end();++it) {
+        typename std::list<T>::iterator next = _newValue.begin();
+        ++next;
+        for (typename std::list<T>::iterator it = _newValue.begin(); it!=_newValue.end();++it,++next) {
             
             int dimension = _dimension == -1 ? i : _dimension;
-            
+            bool triggerOnKnobChanged = next == _newValue.end();
             boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
             bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
@@ -138,7 +142,7 @@ private:
             } else {
                 refreshGui = _refreshGuiFirstTime;
             }
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui);
+            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,triggerOnKnobChanged);
             if(_valueChangedReturnCode[i] != KnobHelper::NO_KEYFRAME_ADDED){
                 modifiedKeyFrames = true;
             }

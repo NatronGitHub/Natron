@@ -224,7 +224,14 @@ namespace Natron{
         NATRON_PIXMAP_APP_ICON
     };
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2,PROJECT_LOADING =3};
+    ///This enum is used when dealing with parameters which have their value edited
+    enum ValueChangedReason {
+        
+        USER_EDITED = 0, //< a user change triggered the call
+        PLUGIN_EDITED = 1, //< a plugin change triggered the call
+        TIME_CHANGED = 2, //< a time-line seek changed the call
+        PROJECT_LOADING = 3 //< the project loader triggered the call
+    };
     
     enum AnimationLevel {
         NO_ANIMATION = 0,

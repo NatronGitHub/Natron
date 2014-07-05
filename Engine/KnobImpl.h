@@ -221,7 +221,8 @@ void Knob<std::string>::valueToVariant(const std::string& v,Variant* vari)
 }
 
 template <typename T>
-KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
+KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Natron::ValueChangedReason reason,
+                                                     KeyFrame* newKey,bool triggerKnobChanged)
 {
     if (0 > dimension || dimension > (int)_values.size()) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
@@ -305,7 +306,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
 
         }
     // }
-    if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
+    if (ret == NO_KEYFRAME_ADDED && triggerKnobChanged) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason);
     }
     {
@@ -377,7 +378,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
+        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL,true);
     }
 
     if (_signalSlotHandler && ret) {
@@ -445,7 +446,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
+        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL,true);
     }
 
     if (reason != Natron::USER_EDITED && ret) {
@@ -534,20 +535,20 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
 }
 
 template<typename T>
-void Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying)
+void Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying,bool triggerOnKnobChanged)
 {
     if (turnOffAutoKeying) {
-        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,NULL);
+        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,NULL,triggerOnKnobChanged);
     } else {
         KeyFrame k;
-        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
+        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,&k,triggerOnKnobChanged);
     }
 }
 
 template<typename T>
-KnobHelper::ValueChangedReturnCode Knob<T>::onValueChanged(int dimension,const T& v,KeyFrame* newKey)
+KnobHelper::ValueChangedReturnCode Knob<T>::onValueChanged(int dimension,const T& v,KeyFrame* newKey,bool triggerKnobChanged)
 {
-    return setValue(v, dimension,Natron::USER_EDITED,newKey);
+    return setValue(v, dimension,Natron::USER_EDITED,newKey,triggerKnobChanged);
 }
 
 template<typename T>
@@ -704,7 +705,7 @@ void Knob<T>::onTimeChanged(SequenceTime time)
         boost::shared_ptr<Curve> c = getCurve(i);
         if (c->getKeyFramesCount() > 0 && !getIsSecret()) {
             T v = getValueAtTime(time,i);
-            (void)setValue(v,i,Natron::TIME_CHANGED,NULL);
+            (void)setValue(v,i,Natron::TIME_CHANGED,NULL,true);
         }
         checkAnimationLevel(i);
     }
@@ -731,7 +732,7 @@ void Knob<T>::evaluateAnimationChange()
     for (int i = 0; i < getDimension();++i) {
         if (isAnimated(i)) {
             T v = getValueAtTime(time,i);
-            (void)setValue(v,i,Natron::PLUGIN_EDITED,NULL);
+            (void)setValue(v,i,Natron::PLUGIN_EDITED,NULL,true);
             hasEvaluatedOnce = true;
         }
     }
@@ -805,7 +806,7 @@ template<typename T>
 void Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
-    (void)setValue(_defaultValues[dimension], dimension,Natron::PROJECT_LOADING,NULL);
+    (void)setValue(_defaultValues[dimension], dimension,Natron::PROJECT_LOADING,NULL,false);
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension);
     }
