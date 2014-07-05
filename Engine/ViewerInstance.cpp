@@ -639,9 +639,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     ///Texture rect contains the pixel coordinates in the image to be rendered
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
                             texRectClipped.y2,texRectClipped.width(),texRectClipped.height(),closestPowerOf2);
-    
 
     size_t bytesCount = textureRect.w * textureRect.h * 4;
+    if (bytesCount == 0) {
+        return StatOK;
+    }
     
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
     

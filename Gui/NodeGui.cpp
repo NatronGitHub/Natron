@@ -907,7 +907,6 @@ void NodeGui::activate() {
             if (it->first == _internalNode) {
                 continue;
             }
-            assert(!it->first->isMultiInstance() && !it->first->getParentMultiInstanceName().empty());
             it->first->activate();
         }
     }
@@ -1779,7 +1778,7 @@ bool NodeGui::shouldDrawOverlay() const
     if (_parentMultiInstance) {
         return _parentMultiInstance->isSettingsPanelVisible();
     } else {
-        return isSettingsPanelVisible();
+        return _internalNode->isActivated() && isSettingsPanelVisible();
     }
 }
 

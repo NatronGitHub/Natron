@@ -1696,8 +1696,8 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         ret.x2 = std::ceil(bottomRight.x());
         ret.y1 = std::floor(bottomRight.y());
     }
-    ///for clipping with the viewport, use the mipmap lvl applied by the proxy only
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+
+    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
 
     if (mipMapLevel != 0) {
         // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
@@ -1719,7 +1719,6 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         userRoI = _imp->userRoI;
     }
     if (userRoiEnabled) {
-        mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
         if (mipMapLevel != 0) {
             ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
             userRoI = userRoI.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
