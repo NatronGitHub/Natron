@@ -280,7 +280,7 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
         getApp()->getProject()->initNodeCountersAndSetName(this);
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
             updateEffectLabelKnob(getName().c_str());
-        } else {
+        } else if (isMultiInstanceChild) {
             updateEffectLabelKnob(QString(parentMultiInstanceName.c_str()) + '_' + QString::number(childIndex));
         }
     }
