@@ -1683,7 +1683,7 @@ double ViewerGL::getZoomFactor() const
 }
 
 ///imageRoD is in PIXEL COORDINATES
-RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
+RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD,unsigned int mipMapLevel)
 {
     // MT-SAFE
     RectI ret;
@@ -1696,8 +1696,6 @@ RectI ViewerGL::getImageRectangleDisplayed(const RectI& imageRoD)
         ret.x2 = std::ceil(bottomRight.x());
         ret.y1 = std::floor(bottomRight.y());
     }
-
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
 
     if (mipMapLevel != 0) {
         // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders

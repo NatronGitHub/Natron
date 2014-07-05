@@ -50,7 +50,7 @@ public:
      * @brief Given the region of definition of an image, must return the portion of that image which is
      * actually displayed on the viewport. (It cannot be bigger than the rod)
     **/
-    virtual RectI getImageRectangleDisplayed(const RectI& rod) = 0;
+    virtual RectI getImageRectangleDisplayed(const RectI& rod,unsigned int mipMapLevel) = 0;
 
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)

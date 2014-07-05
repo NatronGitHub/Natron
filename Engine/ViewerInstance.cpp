@@ -594,7 +594,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
     ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
-    RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD);
+    RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD,mipMapLevel);
     
     
     ///Clip the roi  the project window (in pixel coordinates)

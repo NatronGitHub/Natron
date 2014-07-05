@@ -435,7 +435,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         if (ret) {
             if (!useImageRoD) {
                 if (lastSelectedViewer) {
-                    *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD());
+                    *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD(),ret->getMipMapLevel());
                 }
             } else {
                 *imagePortion = ret->getPixelRoD();
@@ -450,7 +450,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
                 ret = (*it)->getInternalNode()->getLastRenderedImage(textureIndex);
                 if (ret) {
                     if (!useImageRoD) {
-                        *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD());
+                        *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD(),ret->getMipMapLevel());
                     } else {
                         *imagePortion = ret->getPixelRoD();
                     }
