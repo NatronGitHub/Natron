@@ -67,6 +67,12 @@
 #define NATRON_ROOT "/"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH"natronIcon256_linux.png"
+
+///Natron will load all icons that are associated to a group toolbutton with the following icon set number, i.e:
+///if it is 2, then it will load color_grouping_2.png , filter_grouping_2.png , etc... this way you can compile
+///with different icons set easily.
+#define NATRON_ICON_SET_NUMBER "3"
+
 #define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
 #define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
 #define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"
@@ -84,6 +90,8 @@
 #define PLUGIN_GROUP_MERGE "Merge"
 #define PLUGIN_GROUP_MULTIVIEW "Views"
 #define PLUGIN_GROUP_DEEP "Deep"
+#define PLUGIN_GROUP_TOOLSETS "ToolSets"
+#define PLUGIN_GROUP_3D "3D"
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_OFX "OFX"
 

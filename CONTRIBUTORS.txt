@@ -10,5 +10,6 @@ Ole Andre Rodlie for the linux packages
 
 #Artists:
 
-Laurence Boissieux
-Bianca Ilaria Coniglione
+Laurence Boissieux (icons + splashscreen)
+Bianca Ilaria Coniglione (icons + logo)
+Jean-Christophe Levet (icons)

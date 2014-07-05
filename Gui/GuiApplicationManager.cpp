@@ -260,48 +260,68 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"color_picker.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+                
+                
             case NATRON_PIXMAP_IO_GROUPING:
-                img.load(NATRON_IMAGES_PATH"io_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/image_grouping_" NATRON_ICON_SET_NUMBER ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_3D_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/3D_grouping_" NATRON_ICON_SET_NUMBER ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_CHANNEL_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/channel_grouping_" NATRON_ICON_SET_NUMBER ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/merge_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_COLOR_GROUPING:
-                img.load(NATRON_IMAGES_PATH"color_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/color_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_TRANSFORM_GROUPING:
-                img.load(NATRON_IMAGES_PATH"transform_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/transform_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_DEEP_GROUPING:
-                img.load(NATRON_IMAGES_PATH"deep_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/deep_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_FILTER_GROUPING:
-                img.load(NATRON_IMAGES_PATH"filter_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/filter_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_MULTIVIEW_GROUPING:
-                img.load(NATRON_IMAGES_PATH"multiview_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/multiview_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_MISC_GROUPING:
-                img.load(NATRON_IMAGES_PATH"misc_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_TOOLSETS_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/toolsets_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_KEYER_GROUPING:
-                img.load(NATRON_IMAGES_PATH"Keyer_low.png");
-                *pix = QPixmap::fromImage(img);
-                break;
-            case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
-                img.load(NATRON_IMAGES_PATH"openeffects.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/keyer_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_TIME_GROUPING:
-                img.load(NATRON_IMAGES_PATH"time_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/time_grouping_" NATRON_ICON_SET_NUMBER ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_PAINT_GROUPING:
-                img.load(NATRON_IMAGES_PATH"paint_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/paint_grouping_" NATRON_ICON_SET_NUMBER ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+                
+               
+            case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
+                img.load(NATRON_IMAGES_PATH"openeffects.png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_COMBOBOX:

@@ -86,7 +86,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 
 
-#define NAMED_PLUGIN_GROUP_NO 12
+#define NAMED_PLUGIN_GROUP_NO 14
 
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
@@ -100,13 +100,51 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_KEYER,
     PLUGIN_GROUP_MULTIVIEW,
     PLUGIN_GROUP_DEEP,
+    PLUGIN_GROUP_3D,
+    PLUGIN_GROUP_TOOLSETS,
     PLUGIN_GROUP_DEFAULT
 };
 
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
 
 using namespace Natron;
 
+namespace {
+static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
+    if (grouping == PLUGIN_GROUP_COLOR) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_FILTER) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_IMAGE) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_DEEP) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TIME) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_PAINT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_KEYER) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TOOLSETS) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TOOLSETS_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_3D) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_3D_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_CHANNEL) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_CHANNEL_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_MERGE) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GROUPING, pixmap);
+    } else {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    }
+}
+}
 
 struct GuiPrivate {
     
@@ -1372,31 +1410,6 @@ ToolButton* Gui::findExistingToolButton(const QString& label) const{
     return NULL;
 }
 
-static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
-    if (grouping == PLUGIN_GROUP_COLOR) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_FILTER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_IMAGE) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_DEEP) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_TIME) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_PAINT) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_KEYER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
-    } else {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
-    }
-}
 
 ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     for(U32 i = 0; i < _imp->_toolButtons.size();++i){
