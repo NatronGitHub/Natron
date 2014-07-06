@@ -469,7 +469,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
-        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
+        Natron::ImageComponents outputComps;
+        Natron::ImageBitDepth outputDepth;
+        getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
+        return roto->renderMask(roi,outputComps, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
     }
     
     
@@ -1274,7 +1277,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         ///if the node has a roto context, pre-render the roto mask too
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
-            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, nodeHash,rotoAge,
+
+            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender,image->getComponents(), nodeHash,rotoAge,
                                                                         cachedImgParams->getRoD() ,time,getBitDepth(),
                                                                         view, mipMapLevel, byPassCache);
             assert(mask);

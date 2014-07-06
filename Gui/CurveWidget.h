@@ -309,6 +309,8 @@ private:
     bool isSupportingOpenGLVAO() const ;
 
 private:
+    
+    bool isTabVisible() const;
 
     boost::scoped_ptr<CurveWidgetPrivate> _imp;
         

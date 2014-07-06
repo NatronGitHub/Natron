@@ -43,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/KnobGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ZoomContext.h"
+#include "Gui/TabWidget.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2734,6 +2735,26 @@ void CurveWidget::onTimeLineFrameChanged(SequenceTime,int /*reason*/)
     }
     _imp->refreshTimelinePositions();
     update();
+    
+}
+
+bool CurveWidget::isTabVisible() const
+{
+    if(parentWidget()){
+        QWidget* parent  = parentWidget()->parentWidget();
+        if(parent){
+            if(parent->objectName() == kCurveEditorObjectName){
+                TabWidget* tab = dynamic_cast<TabWidget*>(parentWidget()->parentWidget()->parentWidget());
+                if (tab) {
+                    if (tab->isFloating()) {
+                        return true;
+                    }
+                    return tab->currentWidget() == parent;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 void CurveWidget::onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int){

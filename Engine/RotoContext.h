@@ -856,8 +856,9 @@ public:
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
      **/
-    boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
-                                                Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache );
+    boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,Natron::ImageComponents components,
+                                                U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
+                                                Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache);
     
     /**
      * @brief To be called when a change was made to trigger a new render.

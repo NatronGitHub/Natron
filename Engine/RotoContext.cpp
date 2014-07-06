@@ -4103,17 +4103,15 @@ void convertCairoImageToNatronImage(cairo_surface_t* cairoImg,Natron::Image* ima
         assert(dstPix);
         
         for (int x = 0; x < pixelRod.width(); ++x) {
-            if (comps == 1) {
-                dstPix[x] = PIX((float)srcPix[x] / 255.f) * maxValue;
-            } else {
-                assert(comps == 4);
-                dstPix[x * 4 + 3] = PIX((float)srcPix[x] / 255.f) * maxValue;
+            for (int k = 0; k < comps; ++k) {
+                dstPix[x * comps + k] = PIX((float)srcPix[x * comps + k] / 255.f) * maxValue;
             }
         }
     }
 }
 
-boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
+boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,Natron::ImageComponents components,
+                                                         U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                             Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache)
 {
     
@@ -4158,7 +4156,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     
     bool cached = Natron::getImageFromCache(key, &params, &image);
    
-    if (cached && image->getBitDepth() != depth) {
+    if (cached && (image->getBitDepth() != depth || image->getComponents() != components)) {
         cached = false;
         image.reset();
         params.reset();
@@ -4175,10 +4173,9 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         }
         
     } else {
-        Natron::ImageComponents maskComps = Natron::ImageComponentAlpha;
         
         params = Natron::Image::makeParams(0, nodeRoD,mipmapLevel,false,
-                                           maskComps,
+                                           components,
                                            depth,
                                            -1, time,
                                            std::map<int, std::vector<RangeD> >());
@@ -4202,9 +4199,24 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
  
+    cairo_format_t cairoImgFormat;
+    switch (components) {
+        case Natron::ImageComponentAlpha:
+            cairoImgFormat = CAIRO_FORMAT_A8;
+            break;
+        case Natron::ImageComponentRGB:
+            cairoImgFormat = CAIRO_FORMAT_RGB24;
+            break;
+        case Natron::ImageComponentRGBA:
+            cairoImgFormat = CAIRO_FORMAT_ARGB32;
+            break;
+        default:
+            cairoImgFormat = CAIRO_FORMAT_A8;
+            break;
+    }
     
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());
+    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, pixelRod.width(), pixelRod.height());
     cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
         appPTR->removeFromNodeCache(image);
