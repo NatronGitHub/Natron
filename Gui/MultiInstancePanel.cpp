@@ -470,15 +470,21 @@ public:
 
 void MultiInstancePanel::onAddButtonClicked()
 {
+    (void)addInstanceInternal();
+}
+
+boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal()
+{
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     
     CreateNodeArgs args(mainInstance->pluginID().c_str(),
-                   mainInstance->getName(),
-                   -1,-1,true,
-                   (int)_imp->instances.size());
+                        mainInstance->getName(),
+                        -1,-1,true,
+                        (int)_imp->instances.size());
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
     _imp->addTableRow(newInstance);
     _imp->pushUndoCommand(new AddNodeCommand(this,newInstance));
+    return newInstance;
 }
 
 const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool> >& MultiInstancePanel::getInstances() const
@@ -1127,9 +1133,80 @@ void TrackerPanel::onAverageTracksButtonClicked()
         Natron::warningDialog("Average", "No tracks selected");
         return;
     }
-    for (std::list<Natron::Node*>::iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
-        //average
+    
+    boost::shared_ptr<Node> newInstance = addInstanceInternal();
+    ///give an appropriate name to the new instance
+    int avgIndex = 0;
+    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& allInstances = getInstances();
+    for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = allInstances.begin();
+         it!=allInstances.end(); ++it) {
+        if (QString(it->first->getName().c_str()).contains("average",Qt::CaseInsensitive)) {
+            ++avgIndex;
+        }
     }
+    QString newName = QString("Average%1").arg(avgIndex + 1);
+    newInstance->setName(newName);
+    newInstance->updateEffectLabelKnob(newName);
+    
+    
+    boost::shared_ptr<KnobI> newInstanceKnob = newInstance->getKnobByName("center");
+    assert(newInstanceKnob);
+    Double_Knob* newInstanceCenter = dynamic_cast<Double_Knob*>(newInstanceKnob.get());
+    assert(newInstanceCenter);
+    
+    std::list<Double_Knob*> centers;
+    RangeD keyframesRange;
+    keyframesRange.min = INT_MAX;
+    keyframesRange.max = INT_MIN;
+    
+    for (std::list<Natron::Node*>::iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = (*it)->getKnobByName("center");
+        assert(knob);
+        Double_Knob* dblKnob = dynamic_cast<Double_Knob*>(knob.get());
+        assert(dblKnob);
+        centers.push_back(dblKnob);
+        double mini,maxi;
+        bool hasKey = dblKnob->getFirstKeyFrameTime(0, &mini);
+        if (!hasKey) {
+            continue;
+        }
+        if (mini < keyframesRange.min) {
+            keyframesRange.min = mini;
+        }
+        hasKey = dblKnob->getLastKeyFrameTime(0, &maxi);
+        
+        ///both dimensions must have keyframes
+        assert(hasKey);
+        if (maxi > keyframesRange.max) {
+            keyframesRange.max = maxi;
+        }
+    }
+    if (keyframesRange.min == INT_MIN) {
+        keyframesRange.min = 0;
+    }
+    if (keyframesRange.max == INT_MAX) {
+        keyframesRange.max = 0;
+    }
+    
+    newInstanceCenter->beginValueChange(Natron::PLUGIN_EDITED);
+    for (double t = keyframesRange.min; t <= keyframesRange.max; ++t) {
+        std::pair<double,double> average;
+        average.first = 0;
+        average.second = 0;
+        for (std::list<Double_Knob*>::iterator it = centers.begin(); it!=centers.end(); ++it) {
+            double x = (*it)->getValueAtTime(t,0);
+            double y = (*it)->getValueAtTime(t,1);
+            average.first += x;
+            average.second += y;
+        }
+        average.first /= (double)centers.size();
+        average.second /= (double)centers.size();
+        newInstanceCenter->setValueAtTime(t, average.first, 0);
+        newInstanceCenter->setValueAtTime(t, average.second, 1);
+    }
+    newInstanceCenter->endValueChange();
+    
+    
 }
 
 void TrackerPanel::onButtonTriggered(Button_Knob* button)

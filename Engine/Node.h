@@ -561,6 +561,13 @@ public:
      **/
     bool hasSequentialOnlyNodeUpstream(std::string& nodeName) const;
     
+    
+    /**
+     * @brief Updates the sub label knob: e.g for the Merge node it corresponds to the
+     * operation name currently used and visible on the node
+     **/
+    void updateEffectLabelKnob(const QString& name);
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -677,7 +684,6 @@ private:
     
     void loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization);
     
-    void updateEffectLabelKnob(const QString& name);
     
     /**
      * @brief If the node is an input of this node, set ok to true, otherwise

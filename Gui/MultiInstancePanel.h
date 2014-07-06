@@ -94,6 +94,9 @@ protected:
     
     virtual void appendExtraGui(QVBoxLayout* /*layout*/) {}
     virtual void appendButtons(QHBoxLayout* /*buttonLayout*/) {}
+    
+    boost::shared_ptr<Natron::Node> addInstanceInternal();
+
 private:
     
     virtual void onButtonTriggered(Button_Knob* button);
