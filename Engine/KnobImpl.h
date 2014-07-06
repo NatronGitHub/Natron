@@ -231,7 +231,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     KnobHelper::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
     
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && reason == Natron::PLUGIN_EDITED) {
+    if (holder && reason == Natron::PLUGIN_EDITED && getKnobGuiPointer()) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:
@@ -333,7 +333,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && reason == Natron::PLUGIN_EDITED) {
+    if (holder && reason == Natron::PLUGIN_EDITED && getKnobGuiPointer()) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:
@@ -406,7 +406,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && reason == Natron::PLUGIN_EDITED) {
+    if (holder && reason == Natron::PLUGIN_EDITED && getKnobGuiPointer()) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:

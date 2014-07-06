@@ -413,7 +413,24 @@ bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
     
-    if (knobCommand->createNew) {
+    ///if all knobs are the same between the old and new command, ignore the createNew flag and merge them anyway
+    bool ignoreCreateNew = false;
+    if (knobs.size() == knobCommand->knobs.size()) {
+        ParamsMap::const_iterator thisIt = knobs.begin();
+        ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
+        bool oneDifferent = false;
+        for (; thisIt != knobs.end(); ++thisIt,++otherIt) {
+            if (thisIt->first != otherIt->first) {
+                oneDifferent = true;
+                break;
+            }
+        }
+        if (!oneDifferent) {
+            ignoreCreateNew = true;
+        }
+    }
+    
+    if (!ignoreCreateNew && knobCommand->createNew) {
         return false;
     }
     
