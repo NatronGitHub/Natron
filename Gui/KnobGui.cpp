@@ -382,109 +382,109 @@ void KnobGui::createAnimationMenu(QMenu* menu) {
             isEnabled = false;
         }
     }
-    
-    if(!isSlave) {
-        if (!isOnKeyFrame) {
-            QAction* setKeyAction = new QAction(tr("Set Key"),menu);
-            QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
-            menu->addAction(setKeyAction);
-            if (!isEnabled) {
-                setKeyAction->setEnabled(false);
+    if (knob->isAnimationEnabled()) {
+        if(!isSlave) {
+            if (!isOnKeyFrame) {
+                QAction* setKeyAction = new QAction(tr("Set Key"),menu);
+                QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
+                menu->addAction(setKeyAction);
+                if (!isEnabled) {
+                    setKeyAction->setEnabled(false);
+                }
+            } else {
+                QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
+                QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
+                menu->addAction(removeKeyAction);
+                if (!isEnabled) {
+                    removeKeyAction->setEnabled(false);
+                }
             }
-        } else {
-            QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
-            QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
-            menu->addAction(removeKeyAction);
+            
+            QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
+            QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
+            menu->addAction(removeAnyAnimationAction);
+            if (!hasAnimation || !isEnabled) {
+                removeAnyAnimationAction->setEnabled(false);
+            }
+            
+            
+            
+            
+        }
+        
+        
+        if(!isSlave) {
+            
+            QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
+            QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
+            menu->addAction(showInCurveEditorAction);
+            if (!hasAnimation || !isEnabled) {
+                showInCurveEditorAction->setEnabled(false);
+            }
+            
+            QMenu* interpolationMenu = new QMenu(menu);
+            interpolationMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+            interpolationMenu->setTitle("Interpolation");
+            menu->addAction(interpolationMenu->menuAction());
             if (!isEnabled) {
-                removeKeyAction->setEnabled(false);
+                interpolationMenu->menuAction()->setEnabled(false);
+            }
+            
+            QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
+            QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
+            interpolationMenu->addAction(constantInterpAction);
+            
+            QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
+            QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
+            interpolationMenu->addAction(linearInterpAction);
+            
+            QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
+            QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
+            interpolationMenu->addAction(smoothInterpAction);
+            
+            QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
+            QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
+            interpolationMenu->addAction(catmullRomInterpAction);
+            
+            QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
+            QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
+            interpolationMenu->addAction(cubicInterpAction);
+            
+            QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
+            QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
+            interpolationMenu->addAction(horizInterpAction);
+            
+        }
+        
+        QAction* copyAnimationAction = new QAction(tr("Copy animation"),menu);
+        QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
+        menu->addAction(copyAnimationAction);
+        if (!hasAnimation) {
+            copyAnimationAction->setEnabled(false);
+        }
+        
+        if(!isSlave) {
+            
+            bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
+            
+            std::list<Variant> values;
+            std::list<boost::shared_ptr<Curve> > curves;
+            std::list<boost::shared_ptr<Curve> > parametricCurves;
+            std::map<int,std::string> stringAnimation;
+            
+            bool copyAnimation;
+            int dimension;
+            
+            appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
+            
+            QAction* pasteAction = new QAction(tr("Paste animation"),menu);
+            QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
+            menu->addAction(pasteAction);
+            if (!copyAnimation || isClipBoardEmpty || !isEnabled) {
+                pasteAction->setEnabled(false);
             }
         }
-        
-        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
-        QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
-        menu->addAction(removeAnyAnimationAction);
-        if (!hasAnimation || !isEnabled) {
-            removeAnyAnimationAction->setEnabled(false);
-        }
-        
-        
-        
-        
     }
-    
-    
-    if(!isSlave) {
-        
-        QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
-        QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
-        menu->addAction(showInCurveEditorAction);
-        if (!hasAnimation || !isEnabled) {
-            showInCurveEditorAction->setEnabled(false);
-        }
-        
-        QMenu* interpolationMenu = new QMenu(menu);
-        interpolationMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-        interpolationMenu->setTitle("Interpolation");
-        menu->addAction(interpolationMenu->menuAction());
-        if (!isEnabled) {
-            interpolationMenu->menuAction()->setEnabled(false);
-        }
-        
-        QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
-        QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
-        interpolationMenu->addAction(constantInterpAction);
-        
-        QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
-        QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
-        interpolationMenu->addAction(linearInterpAction);
-        
-        QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
-        QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
-        interpolationMenu->addAction(smoothInterpAction);
-        
-        QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
-        QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
-        interpolationMenu->addAction(catmullRomInterpAction);
-        
-        QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
-        QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
-        interpolationMenu->addAction(cubicInterpAction);
-        
-        QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
-        QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
-        interpolationMenu->addAction(horizInterpAction);
-        
-    }
-
-    QAction* copyAnimationAction = new QAction(tr("Copy animation"),menu);
-    QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
-    menu->addAction(copyAnimationAction);
-    if (!hasAnimation) {
-        copyAnimationAction->setEnabled(false);
-    }
-    
-    if(!isSlave) {
-        
-        bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
-        
-        std::list<Variant> values;
-        std::list<boost::shared_ptr<Curve> > curves;
-        std::list<boost::shared_ptr<Curve> > parametricCurves;
-        std::map<int,std::string> stringAnimation;
-        
-        bool copyAnimation;
-        int dimension;
-        
-        appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
-        
-        QAction* pasteAction = new QAction(tr("Paste animation"),menu);
-        QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
-        menu->addAction(pasteAction);
-        if (!copyAnimation || isClipBoardEmpty || !isEnabled) {
-            pasteAction->setEnabled(false);
-        }
-    }
-    
     
 }
 
@@ -643,7 +643,9 @@ void KnobGui::onSetKeyActionTriggered(){
     }
     for(int i = 0; i < knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-        assert(curve);
+        if (!curve) {
+            return;
+        }
         std::vector<KeyFrame> kVec;
         KeyFrame kf;
         kf.setTime(time);

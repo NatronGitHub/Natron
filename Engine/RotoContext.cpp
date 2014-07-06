@@ -4283,12 +4283,9 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             }
             
             cairo_new_path(cr);
-            
+            //cairo_set_source_rgba(cr, 1.,1.,1.,opacity);
             ///If inverted, draw an inverted rectangle on all the image first
             if (inverted) {
-              
-                                                            //cairo_set_source_rgba(cr, 1.,1.,1., opacity);
-                                                            //                cairo_paint(cr);
                 double xOffset,yOffset;
                 cairo_surface_get_device_offset(cairoImg, &xOffset, &yOffset);
                 int width = cairo_image_surface_get_width(cairoImg);
@@ -4302,23 +4299,20 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
             }
             
-            ////1st pass, fill the internal bezier
-            renderInternalShape(time,mipmapLevel,cr,opacity,cps);
-            
-            ////2nd pass, define the feather edge pattern
+            ////Define the feather edge pattern
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
             if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
                 cairo_pattern_destroy(mesh);
                 continue;
             }
             
-            ///Adjust the feather distance so it takes the mipmap level into account
-            if (mipmapLevel != 0) {
-                featherDist /= (1 << mipmapLevel);
-            }
-            
             if (featherDist != 0) {
                 
+                ///Adjust the feather distance so it takes the mipmap level into account
+                if (mipmapLevel != 0) {
+                    featherDist /= (1 << mipmapLevel);
+                }
+
                 ///here is the polygon of the feather bezier
                 ///This is used only if the feather distance is different of 0 and the feather points equal
                 ///the control points in order to still be able to apply the feather distance.
@@ -4329,8 +4323,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
                 (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
                 (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
-                
-                
+
+            
                 assert(!featherPolygon.empty());
                 
                 multiples.resize(featherPolygon.size());
@@ -4357,6 +4351,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 double dy = ((next->x - prev->x) / norm);
                 p1.x = cur->x + dx;
                 p1.y = cur->y + dy;
+                
                 
                 bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
@@ -4440,12 +4435,12 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
                     ///Set the 4 corners color
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1.,opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1.,inverted ? 1. - opacity : opacity);
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1.,  0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1.,inverted ? 1. : 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1.,inverted ? 1. : 0.);
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1.,inverted ? 1. - opacity : opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);
@@ -4456,19 +4451,25 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     
                     p1 = p2;
                 }
-                
-                cairo_new_path(cr);
-                std::list<Point>::iterator featherContourIT = featherContour.begin();
-                
-                cairo_move_to(cr, featherContourIT->x, featherContourIT->y);
-                ++featherContourIT;
-                while (featherContourIT != featherContour.end()) {
-                    cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
+                for (int i = 0; i< 2 ;++i) {
+                    std::list<Point>::iterator featherContourIT = featherContour.begin();
+                    cairo_move_to(cr, featherContourIT->x, featherContourIT->y);
                     ++featherContourIT;
+                    while (featherContourIT != featherContour.end()) {
+                        cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
+                        ++featherContourIT;
+                    }
+                    if (i == 0) {
+                        cairo_fill(cr);
+                    }
                 }
+                applyAndDestroyMask(cr, mesh);
                 
-           
+                
             } else {
+                ////1st pass, fill the internal bezier
+                ////When inverted it will be drawn using the invert of the opacity because we're in EVEN/ODD polygon fill mode
+                renderInternalShape(time,mipmapLevel,cr,cps);
                 ///This is a vector of feather points that we compute during
                 ///the first pass to avoid recompute them when we do the actual
                 ///path rendering.
@@ -4596,20 +4597,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_curve_to(cr,right.x,right.y,nextLeft.x,nextLeft.y,next.x,next.y);
                     
                 }
-                
-
+                applyAndDestroyMask(cr,mesh);
             }
-            
-
-            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-            cairo_set_source(cr, mesh);
-    
-            ///paint with the feather with the pattern as a mask
-            cairo_mask(cr, mesh);
-            
-            cairo_pattern_destroy(mesh);
-
-            
         }
         
     }
@@ -4620,7 +4609,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
     cairo_surface_flush(cairoImg);
 }
 
-void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,double opacity,const BezierCPs& cps)
+void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,const BezierCPs& cps)
 {
     
     BezierCPs::const_iterator point = cps.begin();
@@ -4631,7 +4620,6 @@ void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,c
     (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
     adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
     
-    cairo_set_source_rgba(cr, 1.,1.,1., opacity);
     cairo_move_to(cr, initCp.x,initCp.y);
     
     while (point != cps.end()) {
@@ -4653,4 +4641,17 @@ void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,c
         ++nextPoint;
     }
     cairo_fill(cr);
+}
+
+void RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh)
+{
+    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+    cairo_set_source(cr, mesh);
+    
+    ///paint with the feather with the pattern as a mask
+    cairo_mask(cr, mesh);
+    
+    cairo_pattern_destroy(mesh);
+    
+
 }

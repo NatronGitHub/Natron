@@ -384,9 +384,9 @@ struct RotoContextPrivate
     void renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> >& splines,
                         unsigned int mipmapLevel,int time);
     
-    void renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,double opacity,const BezierCPs& cps);
+    void renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,const BezierCPs& cps);
     
-    
+    void applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh);
 };
 
 

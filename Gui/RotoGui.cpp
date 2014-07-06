@@ -462,7 +462,7 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
     _imp->rippleEditEnabled->setChecked(_imp->context->isRippleEditEnabled());
     _imp->rippleEditEnabled->setDown(_imp->context->isRippleEditEnabled());
     _imp->rippleEditEnabled->setToolTip("Ripple-edit: When activated, moving a control point"
-                                        " will move it as the same position for all the keyframes "
+                                        " will move it by the same amount for all the keyframes "
                                         "it has.");
     QObject::connect(_imp->rippleEditEnabled, SIGNAL(clicked(bool)), this, SLOT(onRippleEditButtonClicked(bool)));
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
