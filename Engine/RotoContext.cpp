@@ -4284,6 +4284,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             
             cairo_new_path(cr);
             
+            ///If inverted, draw an inverted rectangle on all the image first
             if (inverted) {
               
                                                             //cairo_set_source_rgba(cr, 1.,1.,1., opacity);
@@ -4301,53 +4302,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
             }
             
-            
-            BezierCPs::iterator point = cps.begin();
-            BezierCPs::iterator fpoint = fps.begin();
-
-            BezierCPs::iterator nextPoint = point;
-            ++nextPoint;
-            BezierCPs::iterator nextFPoint = fpoint;
-            ++nextFPoint;
-
-            
-            
-            
             ////1st pass, fill the internal bezier
-            Point initCp;
-            
-            (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
-            adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
-            
-            cairo_set_source_rgba(cr, 1.,1.,1., opacity);
-
-            cairo_move_to(cr, initCp.x,initCp.y);
-            
-            while (point != cps.end()) {
-                if (nextPoint == cps.end()) {
-                    nextPoint = cps.begin();
-                }
-                
-                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
-                (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
-                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-                (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
-                
-                adjustToPointToScale(mipmapLevel,rightX,rightY);
-                adjustToPointToScale(mipmapLevel,nextX,nextY);
-                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
-                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
-                
-                ++point;
-                ++nextPoint;
-            }
-            
-            cairo_fill(cr);
-            
-            ///reset iterators
-            point = cps.begin();
-            nextPoint = point;
-            ++nextPoint;
+            renderInternalShape(time,mipmapLevel,cr,opacity,cps);
             
             ////2nd pass, define the feather edge pattern
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
@@ -4356,6 +4312,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 continue;
             }
             
+            ///Adjust the feather distance so it takes the mipmap level into account
             if (mipmapLevel != 0) {
                 featherDist /= (1 << mipmapLevel);
             }
@@ -4519,6 +4476,15 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 std::vector<Point> preComputedFeatherPoints(cps.size() * 3);
                 std::vector<Point>::iterator preFillIt = preComputedFeatherPoints.begin();
                 
+                BezierCPs::iterator point = cps.begin();
+                BezierCPs::iterator nextPoint = point;
+                ++nextPoint;
+                
+                BezierCPs::iterator fpoint = fps.begin();
+                BezierCPs::iterator nextFPoint = fpoint;
+                ++nextFPoint;
+
+                
                 while (point != cps.end()) {
                     
                     if (nextPoint == cps.end()) {
@@ -4652,4 +4618,39 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
     cairo_surface_flush(cairoImg);
+}
+
+void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,double opacity,const BezierCPs& cps)
+{
+    
+    BezierCPs::const_iterator point = cps.begin();
+    BezierCPs::const_iterator nextPoint = point;
+    ++nextPoint;
+    
+    Point initCp;
+    (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
+    adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
+    
+    cairo_set_source_rgba(cr, 1.,1.,1., opacity);
+    cairo_move_to(cr, initCp.x,initCp.y);
+    
+    while (point != cps.end()) {
+        if (nextPoint == cps.end()) {
+            nextPoint = cps.begin();
+        }
+        
+        double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
+        (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
+        (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
+        (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
+        
+        adjustToPointToScale(mipmapLevel,rightX,rightY);
+        adjustToPointToScale(mipmapLevel,nextX,nextY);
+        adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
+        cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+        
+        ++point;
+        ++nextPoint;
+    }
+    cairo_fill(cr);
 }
