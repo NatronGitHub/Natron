@@ -27,6 +27,7 @@ class QHBoxLayout;
 class QItemSelection;
 class TableItem;
 class Button_Knob;
+class Gui;
 /**
 * @brief This class represents a multi-instance settings panel.
 **/
@@ -63,6 +64,8 @@ public:
     void resetAllInstances();
     
     boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
+    
+    Gui* getGui() const;
     
     virtual void setIconForButton(Button_Knob* /*knob*/) {}
 

@@ -29,6 +29,8 @@
 #include "Gui/TableModelView.h"
 #include "Gui/NodeGui.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/Gui.h"
 
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
@@ -301,6 +303,10 @@ void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & o
 boost::shared_ptr<Natron::Node> MultiInstancePanel::getMainInstance() const
 {
     return _imp->getMainInstance();
+}
+
+Gui* MultiInstancePanel::getGui() const{
+    return _imp->mainInstance->getDagGui()->getGui();
 }
 
 std::string MultiInstancePanel::getName_mt_safe() const
@@ -1142,25 +1148,42 @@ void TrackerPanel::onButtonTriggered(Button_Knob* button)
         assert(prevBtn);
         
         int end = timeline->leftBound();
-        int cur = timeline->currentFrame();
+        int start = timeline->currentFrame();
+        int cur = start;
+        Gui* gui = getGui();
+        gui->startProgress(selectedInstances.front()->getLiveInstance(), "Tracking...");
         while (cur > end) {
             handleTrackNextAndPrevious(prevBtn, selectedInstances);
             QCoreApplication::processEvents();
+            if (getGui() && !getGui()->progressUpdate(selectedInstances.front()->getLiveInstance(),
+                                                      ((double)(start - cur) / (double)(start - end)))) {
+                return;
+            }
             --cur;
         }
+        gui->endProgress(selectedInstances.front()->getLiveInstance());
     } else if (name == "trackForward") {
         boost::shared_ptr<TimeLine> timeline = button->getHolder()->getApp()->getTimeLine();
         Button_Knob* nextBtn = dynamic_cast<Button_Knob*>(getKnobByName("trackNext").get());
         assert(nextBtn);
         
+        
         int end = timeline->rightBound();
-        int cur = timeline->currentFrame();
+        int start = timeline->currentFrame();
+        int cur = start;
+        
+        Gui* gui = getGui();
+        gui->startProgress(selectedInstances.front()->getLiveInstance(), "Tracking...");
         while (cur < end) {
             handleTrackNextAndPrevious(nextBtn, selectedInstances);
             QCoreApplication::processEvents();
+            if (getGui() && !getGui()->progressUpdate(selectedInstances.front()->getLiveInstance(),
+                                                      ((double)(cur - start) / (double)(end - start)))) {
+                return;
+            }
             ++cur;
         }
-
+        gui->endProgress(selectedInstances.front()->getLiveInstance());
     } else {
         handleTrackNextAndPrevious(button,selectedInstances);
     }

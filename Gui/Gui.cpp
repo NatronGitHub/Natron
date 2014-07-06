@@ -2620,6 +2620,10 @@ void Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 
 void Gui::startProgress(Natron::EffectInstance* effect,const std::string& message)
 {
+    
+    if (!effect) {
+        return;
+    }
     if (QThread::currentThread() != qApp->thread()) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
         return;
