@@ -4451,7 +4451,16 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     
                     p1 = p2;
                 }
-                for (int i = 0; i< 2 ;++i) {
+                
+                int loopCount;
+                if (!inverted) {
+                    cairo_set_source_rgba(cr, 1.,1.,1.,opacity);
+                    renderInternalShape(time,mipmapLevel,cr,cps);
+                    loopCount = 1;
+                } else {
+                    loopCount = 2;
+                }
+                for (int i = 0; i < loopCount ;++i) {
                     std::list<Point>::iterator featherContourIT = featherContour.begin();
                     cairo_move_to(cr, featherContourIT->x, featherContourIT->y);
                     ++featherContourIT;
@@ -4459,7 +4468,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                         cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
                         ++featherContourIT;
                     }
-                    if (i == 0) {
+                    if (i == 0 && inverted) {
                         cairo_fill(cr);
                     }
                 }
@@ -4469,6 +4478,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             } else {
                 ////1st pass, fill the internal bezier
                 ////When inverted it will be drawn using the invert of the opacity because we're in EVEN/ODD polygon fill mode
+                cairo_set_source_rgba(cr, 1.,1.,1.,opacity);
                 renderInternalShape(time,mipmapLevel,cr,cps);
                 ///This is a vector of feather points that we compute during
                 ///the first pass to avoid recompute them when we do the actual
