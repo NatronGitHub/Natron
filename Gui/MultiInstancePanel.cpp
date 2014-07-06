@@ -1039,6 +1039,9 @@ void MultiInstancePanel::resetInstances(const std::list<Natron::Node*>& instance
 //        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
         
         
+        //invalidate the cache by incrementing the age
+        (*it)->incrementKnobsAge();
+        
         notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
         const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size();++i) {

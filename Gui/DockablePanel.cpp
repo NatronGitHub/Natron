@@ -443,6 +443,10 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
     }
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (isEffect) {
+        
+        ///Invalidate the cache by incrementing the age
+        isEffect->getNode()->incrementKnobsAge();
+        
         std::list <SequenceTime> keys;
         isEffect->getNode()->getAllKnobsKeyframes(&keys);
         _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);

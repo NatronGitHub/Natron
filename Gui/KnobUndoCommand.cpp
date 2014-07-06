@@ -7,6 +7,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Node.h"
 #include "Gui/GuiApplicationManager.h"
 
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,int targetDimension,
@@ -289,16 +290,26 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
 
 void MultipleKnobEditsUndoCommand::undo()
 {
-    ///clone the copy for all knobs
+    
+    
+    ///keep track of all different knobs and call instance changed action only once for all of them
+    std::set <KnobI*> knobsUnique;
     for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        ///clone the copy for all knobs
         boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
         boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
         
         ///clone the original knob back to its old state
-        it->first->getKnob()->clone(it->second.copy);
+        originalKnob->clone(it->second.copy);
         
         ///clone the copy to the new values
         it->second.copy->clone(copyWithNewValues);
+        
+        knobsUnique.insert(originalKnob.get());
+    }
+    
+    for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+        (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED);
     }
     
     assert(!knobs.empty());
@@ -307,6 +318,9 @@ void MultipleKnobEditsUndoCommand::undo()
     if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
+            
+            effect->evaluate_public(NULL, true, Natron::USER_EDITED);
+            
             holderName = effect->getName().c_str();
         }
     }
