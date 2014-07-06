@@ -834,8 +834,6 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
                     if (drawable) {
                         boost::shared_ptr<Bool_Knob> invertedKnob = drawable->getInvertedKnob();
-                        inverted = !invertedKnob->getValueAtTime(time);
-#pragma message WARN("inverted is never used afterwards, is it normal?")
                         bool isOnKeyframe = invertedKnob->getKeyFrameIndex(0, time) != -1;
                         inverted = !drawable->getInverted(time);
                         invertedSet = true;

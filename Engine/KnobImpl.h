@@ -470,26 +470,6 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
     assert(isSlave(dimension));
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
 
-    if (copyState) {
-        ///clone the master
-        {
-            Knob<int>* isInt = dynamic_cast<Knob<int>* >(master.second.get());
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master.second.get());
-            Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master.second.get());
-            assert(isInt || isBool || isDouble); //< other data types aren't supported
-            QWriteLocker l1(&_valueMutex);
-            if (isInt) {
-                _values[dimension] =  isInt->getValue(master.first);
-            } else if (isBool) {
-                _values[dimension] =  isBool->getValue(master.first);
-            } else if (isDouble) {
-                _values[dimension] =  isDouble->getValue(master.first);
-            }
-        }
-        getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
-        
-        cloneExtraData(master.second);
-    }
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
     
     if (helper->getSignalSlotHandler() && _signalSlotHandler) {
@@ -498,9 +478,13 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
     }
     
     resetMaster(dimension);
-    
+    if (copyState) {
+        ///clone the master
+        clone(master.second);
+    }
+
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension);
+        //_signalSlotHandler->s_valueChanged(dimension);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
             checkAnimationLevel(dimension);

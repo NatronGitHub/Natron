@@ -974,13 +974,13 @@ void MultiInstancePanel::onInstanceKnobValueChanged(int dim)
                         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                         if (isInt) {
-                            dynamic_cast<Knob<int>*>(master.second.get())->setValue(isInt->getValue(dim), master.first);
+                            dynamic_cast<Knob<int>*>(master.second.get())->clone(knob);
                         } else if (isBool) {
-                            dynamic_cast<Knob<bool>*>(master.second.get())->setValue(isBool->getValue(dim), master.first);
+                            dynamic_cast<Knob<bool>*>(master.second.get())->clone(knob);
                         } else if (isDouble) {
-                            dynamic_cast<Knob<double>*>(master.second.get())->setValue(isDouble->getValue(dim), master.first);
+                            dynamic_cast<Knob<double>*>(master.second.get())->clone(knob);
                         } else if (isString) {
-                            dynamic_cast<Knob<std::string>*>(master.second.get())->setValue(isString->getValue(dim), master.first);
+                            dynamic_cast<Knob<std::string>*>(master.second.get())->clone(knob);
                         }
                         knob->slaveTo(dim, master.second, master.first,true);
                         --_imp->knobValueRecursion;
