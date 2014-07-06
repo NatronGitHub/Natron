@@ -413,7 +413,7 @@ bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
     
-    if (!createNew) {
+    if (knobCommand->createNew) {
         return false;
     }
     
