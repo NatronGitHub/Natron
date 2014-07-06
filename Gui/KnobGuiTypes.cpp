@@ -535,6 +535,8 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         if (_knob->getDimension() == 1 && !_knob->isSliderDisabled()) {
             double dispmin = displayMins[i];
             double dispmax = displayMaxs[i];
+            valueAccordingToType(false, i, &dispmin);
+            valueAccordingToType(false, i, &dispmax);
             double sliderMin = dispmin,sliderMax = dispmax;
             if ((dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
                 ///use min max for slider if dispmin/dispmax was not set
