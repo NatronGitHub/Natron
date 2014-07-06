@@ -232,7 +232,7 @@ public slots:
     
     void onAnimationLevelChanged(int level);
     
-    void onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged);
     
 signals:
     

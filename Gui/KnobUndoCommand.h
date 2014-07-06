@@ -218,6 +218,7 @@ class MultipleKnobEditsUndoCommand : public QUndoCommand
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
+    bool triggerOnKnobChanged;
 public:
     
     /**
@@ -225,7 +226,8 @@ public:
      * @param createNew If true this command will not merge with a previous same command
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
-    MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,const std::list<Variant>& values,int time);
+    MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,bool triggerOnKnobChanged,
+                                 const std::list<Variant>& values,int time);
     
     virtual ~MultipleKnobEditsUndoCommand();
   

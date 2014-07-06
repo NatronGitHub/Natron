@@ -137,8 +137,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
     QObject::connect(handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)));
     QObject::connect(handler,SIGNAL(animationLevelChanged(int)),this,SLOT(onAnimationLevelChanged(int)));
-    QObject::connect(handler,SIGNAL(appendParamEditChange(Variant,int,int,bool,bool)),this,
-                     SLOT(onAppendParamEditChanged(Variant,int,int,bool,bool)));
+    QObject::connect(handler,SIGNAL(appendParamEditChange(Variant,int,int,bool,bool,bool)),this,
+                     SLOT(onAppendParamEditChanged(Variant,int,int,bool,bool,bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -1343,7 +1343,7 @@ void KnobGui::onAnimationLevelChanged(int level)
     }
 }
 
-void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame)
+void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     int dimension = knob->getDimension();
@@ -1371,5 +1371,5 @@ void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool cr
         }
     }
     
-    pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,values,time));
+    pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,triggerOnKnobChanged,values,time));
 }

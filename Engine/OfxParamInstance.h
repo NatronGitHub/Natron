@@ -439,6 +439,7 @@ public slots:
     void onKnobAnimationLevelChanged(int lvl);
 
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Int_Knob> _knob;
 };
 
@@ -481,6 +482,7 @@ public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Double_Knob> _knob;
 };
 
@@ -517,6 +519,7 @@ public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Int_Knob> _knob;
 };
 

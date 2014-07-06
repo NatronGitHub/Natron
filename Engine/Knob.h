@@ -522,8 +522,8 @@ public:
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
     void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
-    void s_appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame) {
-        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
+    void s_appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged) {
+        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame,triggerOnKnobChanged);
     }
     void s_setDirty(bool b) { emit dirty(b); }
     
@@ -603,7 +603,7 @@ signals:
     
     ///Same as setValueWithUndoStack except that the value change will be compressed
     ///in a multiple edit undo/redo action
-    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged);
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -881,7 +881,8 @@ private:
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    bool setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey,
+                        bool triggerOnKnobChanged) WARN_UNUSED_RETURN;
     
     virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
     
@@ -911,7 +912,7 @@ public:
     /**
      * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
      **/
-    void setValueAtTime(int time,const T& v,int dimension);
+    void setValueAtTime(int time,const T& v,int dimension,bool triggerOnKnobChanged = true);
     
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.

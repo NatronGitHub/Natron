@@ -232,15 +232,6 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
     if (holder && reason == Natron::PLUGIN_EDITED) {
-        if (holder->isDoingInteractAction()) {
-            if (!get_SetValueRecursionLevel()) {
-                Variant vari;
-                valueToVariant(v, &vari);
-                _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
-                return ret;
-                
-            }
-        }
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:
@@ -252,7 +243,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false,triggerKnobChanged);
                     return ret;
                 }
             }     break;
@@ -261,10 +252,23 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false,triggerKnobChanged);
                     return ret;
                 }
             }   break;
+        }
+        
+        ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
+        ///the caller should have tested this prior to calling this function and correctly called editBegin() editEnd()
+        ///to bracket the setValue()  calls within the same undo/redo command.
+        if (holder->isDoingInteractAction()) {
+            if (!get_SetValueRecursionLevel()) {
+                Variant vari;
+                valueToVariant(v, &vari);
+                _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
+                return ret;
+                
+            }
         }
     }
     
@@ -297,7 +301,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
             } else {
                 time = getHolder()->getApp()->getTimeLine()->currentFrame();
             }
-            bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
+            bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey,triggerKnobChanged);
             if (addedKeyFrame) {
                 ret = KEYFRAME_ADDED;
             } else {
@@ -321,7 +325,8 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
 }
 
 template<typename T>
-bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
+bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey,
+                             bool triggerOnKnobChanged)
 {
     if (dimension > getDimension() || dimension < 0) {
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -340,7 +345,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true,triggerOnKnobChanged);
                     return true;
                 }
             }     break;
@@ -349,7 +354,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true,triggerOnKnobChanged);
                     return true;
                 }
             }   break;
@@ -393,7 +398,8 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
 }
 
 template<>
-bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
+bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey,
+                                       bool triggerOnKnobChanged)
 {
     if (dimension > getDimension() || dimension < 0) {
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -412,7 +418,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true,triggerOnKnobChanged);
                     return true;
                 }
             }     break;
@@ -421,7 +427,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true,triggerOnKnobChanged);
                     return true;
                 }
             }   break;
@@ -552,10 +558,10 @@ KnobHelper::ValueChangedReturnCode Knob<T>::onValueChanged(int dimension,const T
 }
 
 template<typename T>
-void Knob<T>::setValueAtTime(int time,const T& v,int dimension)
+void Knob<T>::setValueAtTime(int time,const T& v,int dimension,bool triggerOnKnobChanged)
 {
     KeyFrame k;
-    (void)setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED,&k);
+    (void)setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED,&k,triggerOnKnobChanged);
 }
 
 template<typename T>
@@ -694,7 +700,7 @@ template<typename T>
 void Knob<T>::onKeyFrameSet(SequenceTime time,int dimension)
 {
     KeyFrame k;
-    (void)setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED,&k);
+    (void)setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED,&k,true);
 }
 
 template<typename T>

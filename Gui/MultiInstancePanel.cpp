@@ -38,6 +38,8 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/TimeLine.h"
+
+#include <ofxNatron.h>
 using namespace Natron;
 
 namespace {
@@ -777,9 +779,9 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
                             knobs[i]->slaveTo(j, otherKnob, j,true);
                         }
                     }
-                    otherKnob->setAllDimensionsEnabled(true);
                     
                 }
+                otherKnob->setAllDimensionsEnabled(true);
                 otherKnob->setDirty(setDirty);
                 
             }
@@ -1036,12 +1038,13 @@ void MultiInstancePanel::resetInstances(const std::list<Natron::Node*>& instance
 //        isEffect->getNode()->getAllKnobsKeyframes(&keys);
 //        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
         
+        
         notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
         const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size();++i) {
             Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knobs[i].get());
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-                if (!isBtn && knobs[i]->getName() != "label_natron") {
+                if (!isBtn && knobs[i]->getName() != "label_natron" && knobs[i]->getName() != kOfxParamStringSublabelName) {
                     knobs[i]->resetToDefaultValue(j);
                 }
             }

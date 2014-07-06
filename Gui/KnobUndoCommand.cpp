@@ -225,11 +225,13 @@ void PasteUndoCommand::redo()
 
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,
+                                                           bool triggerOnKnobChanged,
                                                            const std::list<Variant>& values,int time)
 : QUndoCommand()
 , knobs()
 , createNew(createNew)
 , firstRedoCalled(false)
+, triggerOnKnobChanged(triggerOnKnobChanged)
 {
     assert(knob);
     boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
@@ -341,15 +343,15 @@ void MultipleKnobEditsUndoCommand::redo()
                 Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
                 Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                 Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
-                bool triggerOnKnobChanged = next == it->second.newValues.end();
+                bool doKnobChanged = next == it->second.newValues.end() && triggerOnKnobChanged;
                 if (isInt) {
-                    it->first->setValue<int>(i, it2->toInt(), &k,true,triggerOnKnobChanged);
+                    it->first->setValue<int>(i, it2->toInt(), &k,true,doKnobChanged);
                 } else if (isBool) {
-                    it->first->setValue<bool>(i, it2->toBool(), &k,true,triggerOnKnobChanged);
+                    it->first->setValue<bool>(i, it2->toBool(), &k,true,doKnobChanged);
                 } else if (isDouble) {
-                    it->first->setValue<double>(i, it2->toDouble(), &k,true,triggerOnKnobChanged);
+                    it->first->setValue<double>(i, it2->toDouble(), &k,true,doKnobChanged);
                 } else if (isString) {
-                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true,triggerOnKnobChanged);
+                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true,doKnobChanged);
                 } else {
                     assert(false);
                 }
