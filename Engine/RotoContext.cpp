@@ -963,6 +963,8 @@ void RotoDrawableItem::save(RotoItemSerialization *obj) const
         serializeRotoKnob(_imp->opacity, &s->_opacity);
         serializeRotoKnob(_imp->featherFallOff, &s->_featherFallOff);
         serializeRotoKnob(_imp->inverted, &s->_inverted);
+        serializeRotoKnob(_imp->color, &s->_color);
+        serializeRotoKnob(_imp->compOperator, &s->_compOp);
         memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
         
         
@@ -981,6 +983,10 @@ void RotoDrawableItem::load(const RotoItemSerialization &obj)
         _imp->feather->clone(s._feather.getKnob());
         _imp->featherFallOff->clone(s._featherFallOff.getKnob());
         _imp->inverted->clone(s._inverted.getKnob());
+        if (s._hasColorAndCompOp) {
+            _imp->color->clone(s._color.getKnob());
+            _imp->compOperator->clone(s._compOp.getKnob());
+        }
         QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
     }
@@ -1024,6 +1030,17 @@ bool RotoDrawableItem::getInverted(int time) const
     return _imp->inverted->getValueAtTime(time);
 }
 
+void RotoDrawableItem::getColor(int time,double* color) const
+{
+    color[0] = _imp->color->getValueAtTime(time,0);
+    color[1] = _imp->color->getValueAtTime(time,1);
+    color[2] = _imp->color->getValueAtTime(time,2);
+}
+
+int RotoDrawableItem::getCompositingOperator(int time) const
+{
+    return _imp->compOperator->getValueAtTime(time);
+}
 
 void RotoDrawableItem::getOverlayColor(double* color) const
 {
@@ -1049,7 +1066,8 @@ boost::shared_ptr<Int_Knob> RotoDrawableItem::getFeatherKnob() const { return _i
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getOpacityKnob() const { return _imp->opacity; }
 boost::shared_ptr<Bool_Knob> RotoDrawableItem::getInvertedKnob() const { return _imp->inverted; }
-
+boost::shared_ptr<Choice_Knob> RotoDrawableItem::getOperatorKnob() const { return _imp->compOperator; }
+boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const { return _imp->color; }
 ////////////////////////////////////Layer////////////////////////////////////
 
 RotoLayer::RotoLayer(RotoContext* context,const std::string& n,RotoLayer* parent)
@@ -3134,6 +3152,15 @@ boost::shared_ptr<Bool_Knob> RotoContext::getInvertedKnob() const
     return _imp->inverted;
 }
 
+boost::shared_ptr<Color_Knob> RotoContext::getColorKnob() const
+{
+    return _imp->colorKnob;
+}
+
+boost::shared_ptr<Choice_Knob> RotoContext::getOperatorKnob() const
+{
+    return _imp->compOperator;
+}
 
 void RotoContext::setAutoKeyingEnabled(bool enabled)
 {
@@ -3601,12 +3628,16 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
+        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
+        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
         _imp->activated->clone(activated);
         _imp->feather->clone(feather);
         _imp->featherFallOff->clone(featherFallOff);
         _imp->opacity->clone(opacity);
         _imp->inverted->clone(inverted);
+        _imp->colorKnob->clone(colorknob);
+        _imp->compOperator->clone(compOp);
         
         ///link this bezier knobs to the context
         activated->slaveTo(0, _imp->activated, 0);
@@ -3614,6 +3645,10 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
         opacity->slaveTo(0, _imp->opacity, 0);
         inverted->slaveTo(0, _imp->inverted, 0);
+        for (int i = 0; i < colorknob->getDimension();++i) {
+            colorknob->slaveTo(i, _imp->colorKnob, i);
+        }
+        compOp->slaveTo(0, _imp->compOperator, 0);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -3629,6 +3664,8 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->featherFallOff->setAllDimensionsEnabled(true);
         _imp->feather->setAllDimensionsEnabled(true);
         _imp->inverted->setAllDimensionsEnabled(true);
+        _imp->colorKnob->setAllDimensionsEnabled(true);
+        _imp->compOperator->setAllDimensionsEnabled(true);
     }
     
     ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
@@ -3639,6 +3676,8 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->feather->setDirty(true);
         _imp->featherFallOff->setDirty(true);
         _imp->inverted->setDirty(true);
+        _imp->colorKnob->setDirty(true);
+        _imp->compOperator->setDirty(true);
     }
     
     
@@ -3683,12 +3722,18 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
+        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
+        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
         activated->unSlave(0,notDirty);
         feather->unSlave(0,notDirty);
         featherFallOff->unSlave(0,notDirty);
         opacity->unSlave(0,notDirty);
         inverted->unSlave(0,notDirty);
+        for (int i = 0;i < colorknob->getDimension();++i) {
+            colorknob->unSlave(i, notDirty);
+        }
+        compOp->unSlave(0, notDirty);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -3703,6 +3748,8 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->feather->setDirty(false);
         _imp->featherFallOff->setDirty(false);
         _imp->inverted->setDirty(false);
+        _imp->compOperator->setDirty(false);
+        _imp->colorKnob->setDirty(false);
     }
     
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
@@ -3712,6 +3759,8 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->featherFallOff->setAllDimensionsEnabled(false);
         _imp->feather->setAllDimensionsEnabled(false);
         _imp->inverted->setAllDimensionsEnabled(false);
+        _imp->compOperator->setAllDimensionsEnabled(false);
+        _imp->colorKnob->setAllDimensionsEnabled(false);
     }
     
     
@@ -4103,8 +4152,17 @@ void convertCairoImageToNatronImage(cairo_surface_t* cairoImg,Natron::Image* ima
         assert(dstPix);
         
         for (int x = 0; x < pixelRod.width(); ++x) {
-            for (int k = 0; k < comps; ++k) {
-                dstPix[x * comps + k] = PIX((float)srcPix[x * comps + k] / 255.f) * maxValue;
+            if (comps == 1) {
+                dstPix[x] = PIX((float)srcPix[x] / 255.f) * maxValue;;
+            } else {
+                int offset = 0;
+                if (comps == 4) {
+                    offset = 1; //< cairo's format is ARGB (that is BGRA when interpreted as bytes)
+                    dstPix[x * 4 + 3] = PIX((float)srcPix[x * 4 + 3] / 255.f) * maxValue;
+                }
+                dstPix[x * comps + 0] = PIX((float)srcPix[x * comps + 2] / 255.f) * maxValue;
+                dstPix[x * comps + 1] = PIX((float)srcPix[x * comps + 1] / 255.f) * maxValue;
+                dstPix[x * comps + 2] = PIX((float)srcPix[x * comps + 0] / 255.f) * maxValue;
             }
         }
     }
@@ -4269,8 +4327,6 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                                          unsigned int mipmapLevel,int time)
 {
     
-    ///Maybe all beziers could have a specific blending mode ?
-    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);//CAIRO_OPERATOR_SOURCE);
 
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         
@@ -4283,7 +4339,11 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             double featherDist = (double)(*it2)->getFeatherDistance(time);
             double opacity = (*it2)->getOpacity(time);
             bool inverted = (*it2)->getInverted(time);
+            int operatorIndex = (*it2)->getCompositingOperator(time);
+            double shapeColor[3];
+            (*it2)->getColor(time, shapeColor);
             
+            cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
             
             BezierCPs cps = inverted ? (*it2)->getFeatherPoints_mt_safe() : (*it2)->getControlPoints_mt_safe();
             BezierCPs fps = inverted ? (*it2)->getControlPoints_mt_safe() : (*it2)->getFeatherPoints_mt_safe();
@@ -4295,7 +4355,6 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             }
             
             cairo_new_path(cr);
-            //cairo_set_source_rgba(cr, 1.,1.,1.,opacity);
             ///If inverted, draw an inverted rectangle on all the image first
             if (inverted) {
                 double xOffset,yOffset;
@@ -4447,12 +4506,16 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
                     ///Set the 4 corners color
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1.,inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. - opacity : opacity);
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1.,inverted ? 1. : 0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1.,inverted ? 1. : 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. : 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. : 0.);
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1.,inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. - opacity : opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);
@@ -4466,7 +4529,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
                 int loopCount;
                 if (!inverted) {
-                    cairo_set_source_rgba(cr, 1.,1.,1.,opacity);
+                    cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
                     renderInternalShape(time,mipmapLevel,cr,cps);
                     loopCount = 1;
                 } else {
@@ -4490,7 +4553,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             } else {
                 ////1st pass, fill the internal bezier
                 ////When inverted it will be drawn using the invert of the opacity because we're in EVEN/ODD polygon fill mode
-                cairo_set_source_rgba(cr, 1.,1.,1.,opacity);
+                cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
                 renderInternalShape(time,mipmapLevel,cr,cps);
                 ///This is a vector of feather points that we compute during
                 ///the first pass to avoid recompute them when we do the actual
@@ -4578,14 +4641,14 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     ///Set the 4 corners color
                     
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1.,opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
                     
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., 0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1],shapeColor[2], 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1],shapeColor[2], 0.);
                     
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1],shapeColor[2], opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);

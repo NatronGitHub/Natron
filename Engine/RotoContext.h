@@ -48,6 +48,7 @@ class Bool_Knob;
 class Double_Knob;
 class Int_Knob;
 class Choice_Knob;
+class Color_Knob;
 
 class Bezier;
 class RotoItemSerialization;
@@ -282,6 +283,7 @@ private:
 
 Q_DECLARE_METATYPE(RotoItem*);
 
+
 /**
  * @brief Base class for all drawable items
  **/
@@ -345,11 +347,17 @@ public:
     
     bool getInverted(int time) const;
     
+    void getColor(int time,double* color) const;
+    
+    int getCompositingOperator(int time) const;
+    
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
     boost::shared_ptr<Int_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
+    boost::shared_ptr<Color_Knob> getColorKnob() const;
     
 signals:
     
@@ -935,6 +943,9 @@ public:
     
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
     
+    boost::shared_ptr<Color_Knob> getColorKnob() const;
+    
+    boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     
     void setLastItemLocked(const boost::shared_ptr<RotoItem>& item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;

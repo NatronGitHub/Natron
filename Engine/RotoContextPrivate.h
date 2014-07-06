@@ -211,6 +211,104 @@ struct RotoLayerPrivate
     }
 };
 
+///Keep this in synch with the cairo_operator_t enum !
+///We are not going to create a similar enum just to represent the same thing
+inline void getCompositingOperators(std::vector<std::string>* operators,std::vector<std::string>* toolTips)
+{
+    operators->push_back("clear");
+    toolTips->push_back("clear destination layer");
+    
+    operators->push_back("source");
+    toolTips->push_back("replace destination layer");
+    
+    operators->push_back("over");
+    toolTips->push_back("draw source layer on top of destination layer ");
+    
+    operators->push_back("in");
+    toolTips->push_back("draw source where there was destination content");
+    
+    operators->push_back("out");
+    toolTips->push_back("draw source where there was no destination content");
+    
+    operators->push_back("atop");
+    toolTips->push_back("draw source on top of destination content and only there");
+    
+    operators->push_back("dest");
+    toolTips->push_back("ignore the source");
+    
+    operators->push_back("dest-over");
+    toolTips->push_back("draw destination on top of source");
+    
+    operators->push_back("dest-in");
+    toolTips->push_back("leave destination only where there was source content");
+    
+    operators->push_back("dest-out");
+    toolTips->push_back("leave destination only where there was no source content");
+
+    operators->push_back("dest-atop");
+    toolTips->push_back("leave destination on top of source content and only there ");
+    
+    operators->push_back("xor");
+    toolTips->push_back("source and destination are shown where there is only one of them");
+    
+    operators->push_back("add");
+    toolTips->push_back("source and destination layers are accumulated");
+    
+    operators->push_back("saturate");
+    toolTips->push_back("like over, but assuming source and dest are disjoint geometries ");
+    
+    operators->push_back("multiply");
+    toolTips->push_back("source and destination layers are multiplied. This causes the result to be at least as dark as the darker inputs.");
+    
+    operators->push_back("screen");
+    toolTips->push_back("source and destination are complemented and multiplied. This causes the result to be at least as "
+                        "light as the lighter inputs.");
+    
+    operators->push_back("overlay");
+    toolTips->push_back("multiplies or screens, depending on the lightness of the destination color. ");
+    
+    operators->push_back("darken");
+    toolTips->push_back("replaces the destination with the source if it is darker, otherwise keeps the source");
+    
+    operators->push_back("lighten");
+    toolTips->push_back("replaces the destination with the source if it is lighter, otherwise keeps the source.");
+    
+    operators->push_back("color-dodge");
+    toolTips->push_back("brightens the destination color to reflect the source color. ");
+    
+    operators->push_back("color-burn");
+    toolTips->push_back("darkens the destination color to reflect the source color.");
+    
+    operators->push_back("hard-light");
+    toolTips->push_back("Multiplies or screens, dependent on source color.");
+    
+    operators->push_back("soft-light");
+    toolTips->push_back("Darkens or lightens, dependent on source color.");
+    
+    operators->push_back("difference");
+    toolTips->push_back("Takes the difference of the source and destination color. ");
+    
+    operators->push_back("exclusion");
+    toolTips->push_back("Produces an effect similar to difference, but with lower contrast. ");
+    
+    operators->push_back("HSL-hue");
+    toolTips->push_back("Creates a color with the hue of the source and the saturation and luminosity of the target.");
+    
+    operators->push_back("HSL-saturation");
+    toolTips->push_back("Creates a color with the saturation of the source and the hue and luminosity of the target."
+                        " Painting with this mode onto a gray area produces no change.");
+    
+    operators->push_back("HSL-color");
+    toolTips->push_back("Creates a color with the hue and saturation of the source and the luminosity of the target."
+                        " This preserves the gray levels of the target and is useful for coloring monochrome"
+                        " images or tinting color images");
+    
+    operators->push_back("HSL-luminosity");
+    toolTips->push_back("Creates a color with the luminosity of the source and the hue and saturation of the target."
+                        " This produces an inverse effect to HSL-color.");
+    
+}
+
 struct RotoDrawableItemPrivate
 {
     double overlayColor[4]; //< the color the shape overlay should be drawn with, defaults to smooth red
@@ -222,13 +320,16 @@ struct RotoDrawableItemPrivate
                                                    //alpha value is half the original value when at half distance from the feather distance
     boost::shared_ptr<Bool_Knob> activated; //< should the curve be visible/rendered ? (animable)
     boost::shared_ptr<Bool_Knob> inverted; //< invert the rendering
-    
+    boost::shared_ptr<Color_Knob> color;
+    boost::shared_ptr<Choice_Knob> compOperator;
     RotoDrawableItemPrivate()
     : opacity(new Double_Knob(NULL,"Opacity",1,false))
     , feather(new Int_Knob(NULL,"Feather",1,false))
     , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1,false))
     , activated(new Bool_Knob(NULL,"Activated",1,false))
     , inverted(new Bool_Knob(NULL,"Inverted",1,false))
+    , color(new Color_Knob(NULL,"Color",3,false))
+    , compOperator(new Choice_Knob(NULL,"Operator",1,false))
     {
         opacity->populate();
         opacity->setDefaultValue(1.);
@@ -264,7 +365,26 @@ struct RotoDrawableItemPrivate
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(inverted));
             inverted->setSignalSlotHandler(handler);
         }
-       
+        
+        color->populate();
+        color->setDefaultValue(1,0);
+        color->setDefaultValue(1,1);
+        color->setDefaultValue(1,2);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(color));
+            color->setSignalSlotHandler(handler);
+        }
+      
+        compOperator->populate();
+        std::vector<std::string> operators;
+        std::vector<std::string> tooltips;
+        getCompositingOperators(&operators, &tooltips);
+        compOperator->populateChoices(operators,tooltips);
+        compOperator->setDefaultValue((int)CAIRO_OPERATOR_OVER);
+        {
+            boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(compOperator));
+            compOperator->setSignalSlotHandler(handler);
+        }
         
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;
@@ -295,6 +415,8 @@ struct RotoContextPrivate
     boost::shared_ptr<Double_Knob> featherFallOff;
     boost::shared_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
     boost::shared_ptr<Bool_Knob> inverted;
+    boost::shared_ptr<Color_Knob> colorKnob;
+    boost::shared_ptr<Choice_Knob> compOperator;
     
     ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
     ////to give a unique default name to each shape
@@ -365,7 +487,25 @@ struct RotoContextPrivate
         inverted->setDefaultValue(false);
         inverted->setAllDimensionsEnabled(false);
         inverted->setIsPersistant(false);
-
+        
+        colorKnob = Natron::createKnob<Color_Knob>(effect, "Color",3,false);
+        colorKnob->setHintToolTip("The color of the shape. This parameter is used when the output components are set to RGBA.");
+        colorKnob->setDefaultValue(1,0);
+        colorKnob->setDefaultValue(1,1);
+        colorKnob->setDefaultValue(1,2);
+        colorKnob->setAllDimensionsEnabled(false);
+        colorKnob->setIsPersistant(false);
+        
+        compOperator = Natron::createKnob<Choice_Knob>(effect, "Operator",1,false);
+        compOperator->setHintToolTip("The compositing operator controls how this shape is merged with the shapes that have already been "
+                                     "rendered.");
+        compOperator->setAllDimensionsEnabled(false);
+        compOperator->setIsPersistant(false);
+        std::vector<std::string> operators;
+        std::vector<std::string> tooltips;
+        getCompositingOperators(&operators, &tooltips);
+        compOperator->populateChoices(operators,tooltips);
+        compOperator->setDefaultValue((int)CAIRO_OPERATOR_OVER);
     }
     
     /**

@@ -18,7 +18,12 @@
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
+
 #include "Engine/KnobSerialization.h"
+
+#define ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING 2
+#define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING
 
 template<class Archive>
 void BezierCP::serialize(Archive & ar, const unsigned int version)
@@ -99,6 +104,7 @@ public:
     
     RotoDrawableItemSerialization()
     : RotoItemSerialization()
+    , _hasColorAndCompOp(false)
     {
         
     }
@@ -122,6 +128,8 @@ private:
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
         ar & boost::serialization::make_nvp("Inverted",_inverted);
+        ar & boost::serialization::make_nvp("Color",_color);
+        ar & boost::serialization::make_nvp("CompOP",_compOp);
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -144,6 +152,13 @@ private:
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
         ar & boost::serialization::make_nvp("Inverted",_inverted);
+        if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
+            _hasColorAndCompOp = true;
+            ar & boost::serialization::make_nvp("Color",_color);
+            ar & boost::serialization::make_nvp("CompOP",_compOp);
+        } else {
+            _hasColorAndCompOp = false;
+        }
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -157,9 +172,15 @@ private:
     KnobSerialization _feather;
     KnobSerialization _featherFallOff;
     KnobSerialization _inverted;
+    
+    bool _hasColorAndCompOp;
+    KnobSerialization _color;
+    KnobSerialization _compOp;
     double _overlayColor[4];
     
 };
+
+BOOST_CLASS_VERSION(RotoDrawableItemSerialization,ROTO_DRAWABLE_ITEM_VERSION)
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoDrawableItemSerialization);
 
