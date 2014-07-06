@@ -1851,6 +1851,7 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
 
     assertActionIsNotRecursive();
     incrementRecursionLevel();
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();

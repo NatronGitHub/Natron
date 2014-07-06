@@ -929,6 +929,9 @@ void MultiInstancePanel::onInstanceKnobValueChanged(int dim)
                     if (knobs[i] == knob) {
                         colIndex += dim;
                         TableItem* item = _imp->model->item(rowIndex, colIndex);
+                        if (!item) {
+                            continue;
+                        }
                         QVariant data;
                         Int_Knob* isInt = dynamic_cast<Int_Knob*>(knobs[i].get());
                         Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knobs[i].get());
