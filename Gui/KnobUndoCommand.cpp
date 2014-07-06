@@ -332,15 +332,22 @@ void MultipleKnobEditsUndoCommand::redo()
 {
     if (firstRedoCalled) {
         ///just clone
+        std::set <KnobI*> knobsUnique;
         for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
             boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
             boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
             
             ///clone the original knob back to its old state
-            it->first->getKnob()->clone(it->second.copy);
+            originalKnob->clone(it->second.copy);
             
             ///clone the copy to the old values
             it->second.copy->clone(copyWithOldValues);
+            
+            knobsUnique.insert(originalKnob.get());
+            
+            for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED);
+            }
         }
 
     } else {
@@ -374,7 +381,6 @@ void MultipleKnobEditsUndoCommand::redo()
                 }
             }
         }
-        firstRedoCalled = true;
     }
     
     assert(!knobs.empty());
@@ -383,9 +389,14 @@ void MultipleKnobEditsUndoCommand::redo()
     if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
+            if (firstRedoCalled) {
+                effect->evaluate_public(NULL, true, Natron::USER_EDITED);
+            }
             holderName = effect->getName().c_str();
         }
     }
+    firstRedoCalled = true;
+
     setText(QObject::tr("Multiple edits for %1").arg(holderName));
 
 }
