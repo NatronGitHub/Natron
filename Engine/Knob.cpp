@@ -774,7 +774,6 @@ void KnobHelper::checkAnimationLevel(int dimension)
 
 void KnobHelper::setAnimationLevel(int dimension,Natron::AnimationLevel level)
 {
-    assert(QThread::currentThread() == qApp->thread());
     {
         QMutexLocker l(&_imp->animationLevelMutex);
         assert(dimension < (int)_imp->animationLevel.size());
