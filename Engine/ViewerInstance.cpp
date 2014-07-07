@@ -417,12 +417,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / M_LN2));
     mipMapLevel = std::max((double)mipMapLevel,std::log(closestPowerOf2) / M_LN2);
-    if (mipMapLevel != 0) {
-        // scale the zoomFactor by the inverse of the current render scale
-        // so that the viewer doesn't get shifted/scaled
-        zoomFactor /= scale.x;
-#pragma message WARN("value stored in zoomFactor is never read, is it normal?")
-    }
+  
     
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
