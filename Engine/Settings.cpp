@@ -40,17 +40,21 @@ Settings::Settings(AppInstance* appInstance)
     
 }
 
-static QString getDefaultOcioConfigPath() {
+static QStringList getDefaultOcioConfigPaths() {
     QString binaryPath = appPTR->getApplicationBinaryPath();
     if (!binaryPath.isEmpty()) {
         binaryPath += QDir::separator();
     }
 #ifdef __NATRON_LINUX__
-    return binaryPath + "/usr/share/OpenColorIO-Configs";
+    QStringList ret;
+    ret.push_back(QString("/usr/share/OpenColorIO-Configs"));
+    ret.push_back(QString(binaryPath + "../share/OpenColorIO-Configs"));x
+    ret.push_back(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
+    return ret;
 #elif defined(__NATRON_WIN32__)
-    return binaryPath + "../Resources/OpenColorIO-Configs";
+    return QStringList(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
 #elif defined(__NATRON_OSX__)
-    return binaryPath + "../Resources/OpenColorIO-Configs";
+    return QStringList(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
 #endif
 }
 
