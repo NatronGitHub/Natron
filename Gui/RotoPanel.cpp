@@ -1058,9 +1058,9 @@ void RotoPanel::onItemColorDialogEdited(const QColor& color)
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
                 
-                _imp->context->getColorKnob()->setValueAtTime(time, colorArray[0], 0);
-                _imp->context->getColorKnob()->setValueAtTime(time, colorArray[1], 1);
-                _imp->context->getColorKnob()->setValueAtTime(time, colorArray[2], 2);
+                _imp->context->getColorKnob()->setValue(time, colorArray[0], 0);
+                _imp->context->getColorKnob()->setValue(time, colorArray[1], 1);
+                _imp->context->getColorKnob()->setValue(time, colorArray[2], 2);
                 
             } else if (_imp->dialogEdition == EDITING_OVERLAY_COLOR) {
                 double colorArray[4];
