@@ -165,6 +165,7 @@ struct ViewerTabPrivate {
     , _renderScaleActive(false)
     , _currentViewIndex(0)
     , frameRangeLocked(true)
+    , _timeLineGui(NULL)
     , _compOperator(OPERATOR_NONE)
     , _gui(gui)
     , _viewerNode(node)
@@ -717,12 +718,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)));
     QObject::connect(timeline.get(),SIGNAL(boundariesChanged(SequenceTime,SequenceTime,int)),this,
                      SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime,int)));
-    
-    QObject::connect(_imp->_viewerNode,SIGNAL(addedCachedFrame(SequenceTime)),_imp->_timeLineGui,
-                     SLOT(onCachedFrameAdded(SequenceTime)));
-    QObject::connect(_imp->_viewerNode,SIGNAL(removedLRUCachedFrame()),_imp->_timeLineGui,SLOT(onLRUCachedFrameRemoved()));
-    QObject::connect(appPTR,SIGNAL(imageRemovedFromViewerCache(SequenceTime)),_imp->_timeLineGui,SLOT(onCachedFrameRemoved(SequenceTime)));
-    QObject::connect(_imp->_viewerNode,SIGNAL(clearedViewerCache()),_imp->_timeLineGui,SLOT(onCachedFramesCleared()));
+
     QObject::connect(_imp->_refreshButton, SIGNAL(clicked()), this, SLOT(refresh()));
     
     QObject::connect(_imp->_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
@@ -745,6 +741,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->_renderScaleCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(onRenderScaleComboIndexChanged(int)));
     QObject::connect(_imp->_activateRenderScale,SIGNAL(toggled(bool)),this,SLOT(onRenderScaleButtonClicked(bool)));
     
+    connectToViewerCache();
     
     for (std::list<NodeGui*>::const_iterator it = existingRotoNodes.begin(); it!=existingRotoNodes.end(); ++it) {
         createRotoInterface(*it);
@@ -2072,4 +2069,21 @@ bool ViewerTab::isFrameRangeLocked() const
 {
     QMutexLocker l(&_imp->frameRangeLockedMutex);
     return _imp->frameRangeLocked;
+}
+
+void ViewerTab::connectToViewerCache()
+{
+    _imp->_timeLineGui->connectSlotsToViewerCache();
+}
+
+void ViewerTab::disconnectFromViewerCache()
+{
+    _imp->_timeLineGui->disconnectSlotsFromViewerCache();
+}
+
+void ViewerTab::clearTimelineCacheLine()
+{
+    if (_imp->_timeLineGui) {
+        _imp->_timeLineGui->clearCachedFrames();
+    }
 }

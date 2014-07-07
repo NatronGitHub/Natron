@@ -92,6 +92,10 @@ public:
     
     virtual void registerVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
     virtual void unregisterVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
+    
+    virtual void connectViewersToViewerCache() OVERRIDE FINAL;
+    
+    virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
 
 public slots:
     

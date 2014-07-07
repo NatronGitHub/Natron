@@ -79,20 +79,6 @@ public:
      **/
     void forceFullComputationOnNextFrame();
 
-    /**
-     * @brief Activates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache()
-     * by connecting them to the ViewerCache emitted signals. They in turn are used by the GUI to refresh the "cached line" on
-     * the timeline.
-     **/
-    void connectSlotsToViewerCache();
-
-    /**
-     * @brief Deactivates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache().
-     * This is used when the user has several main windows. Since the ViewerCache is global to the application, we don't want
-     * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
-     **/
-    void disconnectSlotsToViewerCache();
-
     void disconnectViewer();
 
     /**
@@ -160,7 +146,6 @@ public:
 
 public slots:
 
-    void onViewerCacheFrameAdded();
     
     void onMipMapLevelChanged(int level);
 
@@ -189,12 +174,6 @@ signals:
     void rodChanged(RectI,int);
     
     void viewerDisconnected();
-
-    void addedCachedFrame(SequenceTime);
-
-    void removedLRUCachedFrame();
-
-    void clearedViewerCache();
     
     void activeInputsChanged();
     

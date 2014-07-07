@@ -323,11 +323,10 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
-    setLoadingStatus(QString("Restoring the image cache..."));
     _imp->_nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
     _imp->_viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
 
-
+    setLoadingStatus(QString("Restoring the image cache..."));
     _imp->restoreCaches();
     
     setLoadingStatus(QString("Restoring user settings..."));

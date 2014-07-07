@@ -56,26 +56,37 @@ namespace Natron {
 
         ~CacheSignalEmitter(){}
 
-        void emitSignalClearedInMemoryPortion() {emit clearedInMemoryPortion();}
+        void emitSignalClearedInMemoryPortion() { emit clearedInMemoryPortion(); }
+        
+        void emitClearedDiskPortion() { emit clearedDiskPortion(); }
 
-        void emitAddedEntry() {emit addedEntry();}
+        void emitAddedEntry(SequenceTime time) {emit addedEntry(time);}
 
-        void emitRemovedLRUEntry() {emit removedLRUEntry();}
+        void emitRemovedEntry(SequenceTime time,int storage) {emit removedEntry(time,storage);}
+        
+        void emitEntryStorageChanged(SequenceTime time,int oldStorage,int newStorage) {
+            emit entryStorageChanged(time,oldStorage,newStorage);
+        }
     signals:
 
         void clearedInMemoryPortion();
+        
+        void clearedDiskPortion();
 
-        void addedEntry();
+        void addedEntry(SequenceTime);
 
-        void removedLRUEntry();
+        void removedEntry(SequenceTime,int);
 
+        void entryStorageChanged(SequenceTime,int,int);
     };
-
+    
+ 
+    
     /*
-         * ValueType must be derived of CacheEntryHelper
-         */
+     * ValueType must be derived of CacheEntryHelper
+     */
     template<typename EntryType>
-    class Cache {
+    class Cache : public CacheAPI {
 
         
     public:
@@ -171,15 +182,15 @@ namespace Natron {
      
 
 
-        U64 _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
+        qint64 _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
 
-        U64 _maximumCacheSize; // maximum size allowed for the cache
+        qint64 _maximumCacheSize; // maximum size allowed for the cache
 
         /*mutable because we need to change modify it in the sealEntryInternal function which
              is called by an external object that have a const ref to the cache.
              */
-        mutable U64 _memoryCacheSize; // current size of the cache in bytes
-        mutable U64 _diskCacheSize;
+        mutable qint64 _memoryCacheSize; // current size of the cache in bytes
+        mutable qint64 _diskCacheSize;
 
         mutable QMutex _lock;
 
@@ -250,13 +261,14 @@ namespace Natron {
                 std::list<CachedValue>& ret = getValueFromIterator(memoryCached);
                 for (typename std::list<CachedValue>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
                     if (it->_entry->getKey() == key) {
-                        if(_signalEmitter) {
-                            ///emit the signal add entry so it can sync any external structure.
-                            _signalEmitter->emitAddedEntry();
-                        }
-
                         *returnValue = it->_entry;
                         *params = it->_params;
+                        
+                        ///emit te added signal otherwise when first reading something that's already cached
+                        ///the timeline wouldn't update
+                        if(_signalEmitter) {
+                            _signalEmitter->emitAddedEntry(key.getTime());
+                        }
                         return true;
                     }
                 }
@@ -281,9 +293,6 @@ namespace Natron {
                          we re-open the mapping to the RAM put the entry
                          back into the memoryCache.*/
 
-                            // remove it from the disk cache
-                            _diskCacheSize -= it->_entry->size();
-
                             if(ret.empty()){
                                 _diskCache.erase(diskCached);
                             }
@@ -302,7 +311,6 @@ namespace Natron {
                             
                             //put it back into the RAM
                             _memoryCache.insert(it->_entry->getHashKey(),*it);
-                            _memoryCacheSize += it->_entry->size();
 
                             //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
                             while (_memoryCacheSize > _maximumInMemorySize) {
@@ -311,12 +319,14 @@ namespace Natron {
                                 }
                             }
 
-                            if(_signalEmitter)
-                                _signalEmitter->emitAddedEntry();
                             *returnValue = it->_entry;
                             *params = it->_params;
                             ret.erase(it);
-
+                            ///emit te added signal otherwise when first reading something that's already cached
+                            ///the timeline wouldn't update
+                            if(_signalEmitter) {
+                                _signalEmitter->emitAddedEntry(key.getTime());
+                            }
                             return true;
 
                         }
@@ -378,6 +388,10 @@ namespace Natron {
          **/
         void clearDiskPortion() {
             
+            if (_signalEmitter) {
+                ///block signals otherwise the we would be spammed of notifications
+                _signalEmitter->blockSignals(true);
+            }
             QMutexLocker locker(&_lock);
             
             /// An entry which has a use_count greater than 1 is not removable:
@@ -388,17 +402,26 @@ namespace Natron {
             //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
             //we'll let the user of these entries purge the extra entries left in the cache later on
             while (evictedFromDisk.second._entry) {
-                _diskCacheSize -= evictedFromDisk.second._entry->size();
+                evictedFromDisk.second._entry->deallocate();
                 evictedFromDisk.second._entry->removeAnyBackingFile();
                 evictedFromDisk = _diskCache.evict();
+            }
+            
+            if (_signalEmitter) {
+                _signalEmitter->blockSignals(false);
+                _signalEmitter->emitClearedDiskPortion();
             }
         }
 
         void clearInMemoryPortion() {
+            
+            if (_signalEmitter) {
+                ///block signals otherwise the we would be spammed of notifications
+                _signalEmitter->blockSignals(true);
+            }
             QMutexLocker locker(&_lock);
             std::pair<hash_type,CachedValue> evictedFromMemory = _memoryCache.evict();
             while (evictedFromMemory.second._entry) {
-                _memoryCacheSize -= evictedFromMemory.second._entry->size();
                 
                 ///move back the entry on disk if it can be store on disk
                 if (evictedFromMemory.second._entry->isStoredOnDisk()) {
@@ -415,11 +438,9 @@ namespace Natron {
                         if (!evictedFromDisk.second._entry) {
                             break;
                         }
-                        _diskCacheSize -= evictedFromDisk.second._entry->size();
                     }
                     
                     /*update the disk cache size*/
-                    _diskCacheSize += evictedFromMemory.second._entry->size();
                     CacheIterator existingDiskCacheEntry = _diskCache(evictedFromMemory.second._entry->getHashKey());
                     /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
                     if(existingDiskCacheEntry == _diskCache.end()){
@@ -432,6 +453,7 @@ namespace Natron {
             }
             
             if (_signalEmitter) {
+                _signalEmitter->blockSignals(false);
                 _signalEmitter->emitSignalClearedInMemoryPortion();
             }
         }
@@ -465,6 +487,88 @@ namespace Natron {
                     copy->push_back(it2->_entry);
                 }
             }
+        }
+        
+        /**
+         * @brief To be called by a CacheEntry whenever it's size changes.
+         * This way the cache can keep track of the real memory footprint.
+         **/
+        virtual void notifyEntrySizeChanged(size_t oldSize,size_t newSize) const OVERRIDE FINAL {
+            ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
+            ///lock should already be taken.
+            assert(!_lock.tryLock());
+            
+            ///This function can only be called for RAM buffers or while a memory mapped file is mapped into the RAM, so
+            ///we just have to modify the RAM size.
+            _memoryCacheSize = _memoryCacheSize - oldSize + newSize;
+        }
+        
+        /**
+         * @brief To be called by a CacheEntry on allocation.
+         **/
+        virtual void notifyEntryAllocated(int time,size_t size) const OVERRIDE FINAL {
+            ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
+            ///lock should already be taken.
+            assert(!_lock.tryLock());
+            _memoryCacheSize += size;
+            if (_signalEmitter) {
+                _signalEmitter->emitAddedEntry(time);
+            }
+        }
+        
+        /**
+         * @brief To be called by a CacheEntry on destruction.
+         **/
+        virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const OVERRIDE FINAL {
+            ///The entry could be destoryed at any time when the boost shared ptr use count reaches 0.
+            ///This might not be while the cache is still under control of the thread safety
+            ///make sure we lock this part by trying to lock
+            bool gotLock = _lock.tryLock();
+            if (storage == Natron::RAM) {
+                _memoryCacheSize -= size;
+                if (_memoryCacheSize < 0) _memoryCacheSize = 0;
+            } else if (storage == Natron::DISK) {
+                _diskCacheSize -= size;
+                if (_diskCacheSize < 0) _diskCacheSize = 0;
+            }
+            if (gotLock) {
+                _lock.unlock();
+            }
+            if (_signalEmitter) {
+                _signalEmitter->emitRemovedEntry(time,(int)storage);
+            }
+            
+        }
+        
+        /**
+         * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
+         * it is reallocated in the RAM.
+         **/
+        virtual void notifyEntryStorageChanged(Natron::StorageMode oldStorage,Natron::StorageMode newStorage,int time,
+                                               size_t size) const OVERRIDE FINAL
+        {
+            ///The entry could be destoryed at any time when the boost shared ptr use count reaches 0.
+            ///This might not be while the cache is still under control of the thread safety
+            ///make sure we lock this part by trying to lock
+            bool gotLock = _lock.tryLock();
+            assert(oldStorage != newStorage);
+            
+            if (oldStorage == Natron::RAM) {
+                _memoryCacheSize -= size;
+                _diskCacheSize += size;
+            } else {
+                _memoryCacheSize += size;
+                _diskCacheSize -= size;
+            }
+            if (_memoryCacheSize < 0) _memoryCacheSize = 0;
+            if (_diskCacheSize < 0) _diskCacheSize = 0;
+            if (gotLock) {
+                _lock.unlock();
+            }
+            if (_signalEmitter) {
+                _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
+            }
+            
         }
 
         // const data member: no need to take the lock
@@ -528,8 +632,9 @@ namespace Natron {
                 std::list<CachedValue>& ret = getValueFromIterator(existingEntry);
                 for (typename std::list<CachedValue>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                     if(it->_entry->getKey() == entry->getKey()){
+                        it->_entry->deallocate();
+                        it->_entry->removeAnyBackingFile();
                         ret.erase(it);
-                        _memoryCacheSize -= entry->size();
                         break;
                     }
                 }
@@ -542,8 +647,9 @@ namespace Natron {
                     std::list<CachedValue>& ret = getValueFromIterator(existingEntry);
                     for (typename std::list<CachedValue>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                         if (it->_entry->getKey() == entry->getKey()) {
+                            it->_entry->deallocate();
+                            it->_entry->removeAnyBackingFile();
                             ret.erase(it);
-                            _diskCacheSize -= entry->size();
                             break;
                         }
                     }
@@ -598,7 +704,8 @@ namespace Natron {
                 }
                 EntryType* value = NULL;
                 try {
-                    value = new EntryType(it->key,it->params,true,QString(getCachePath()+QDir::separator()).toStdString());
+                    value = new EntryType(it->key,it->params,this);
+                    value->allocateMemory(true,QString(getCachePath()+QDir::separator()).toStdString());
                 } catch (const std::bad_alloc& e) {
                     qDebug() << e.what();
                     continue;
@@ -615,16 +722,17 @@ namespace Natron {
    
 
 
-        /** @brief Allocates a new entry by the cache. The storage is then handled by
-     * the cache solely.
-     **/
+        /** @brief Allocates a new entry by the cache. On failure a NULL pointer is returned.
+         * The storage is then handled by the cache solely.
+         **/
         EntryTypePtr newEntry(const typename EntryType::key_type& key,const NonKeyParamsPtr& params) const {
             assert(!_lock.tryLock()); // must be locked
             EntryTypePtr entryptr;
             try {
-                entryptr.reset(new EntryType(key,params, false , QString(getCachePath()+QDir::separator()).toStdString()));
+                entryptr.reset(new EntryType(key,params,this));
+                entryptr->allocateMemory(false , QString(getCachePath()+QDir::separator()).toStdString());
             } catch(const std::bad_alloc& e) {
-                return entryptr;
+                return EntryTypePtr();
             }
             CachedValue cachedValue;
             cachedValue._entry = entryptr;
@@ -635,8 +743,8 @@ namespace Natron {
         }
 
         /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
-     * function. This is called directly by newEntry() if the allocation was successful
-     **/
+         * function. This is called directly by newEntry() if the allocation was successful
+         **/
         void sealEntry(const CachedValue& entry) const {
             assert(!_lock.tryLock()); // must be locked
             /*If the cache size exceeds the maximum size allowed, try to make some space*/
@@ -644,9 +752,6 @@ namespace Natron {
                 if (!tryEvictEntry()) {
                     break;
                 }
-            }
-            if(_signalEmitter) {
-                _signalEmitter->emitAddedEntry();
             }
             typename EntryType::hash_type hash = entry._entry->getHashKey();
             /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
@@ -657,7 +762,6 @@ namespace Natron {
                 /*append to the existing list*/
                 getValueFromIterator(existingEntry).push_back(entry);
             }
-            _memoryCacheSize += entry._entry->size();
         }
 
         bool tryEvictEntry() const {
@@ -668,12 +772,6 @@ namespace Natron {
             if (!evicted.second._entry) {
                 return false;
             }
-            _memoryCacheSize -= evicted.second._entry->size();
-
-            if (_signalEmitter) {
-                _signalEmitter->emitRemovedLRUEntry();
-            }
-
             /*if it is stored on disk, remove it from memory*/
 
             if (evicted.second._entry->isStoredOnDisk()) {
@@ -691,11 +789,11 @@ namespace Natron {
                     if (!evictedFromDisk.second._entry) {
                         break;
                     }
-                    _diskCacheSize -= evictedFromDisk.second._entry->size();
+                    
+                    ///Erase the file from the disk if we reach the limit.
+                    evictedFromDisk.second._entry->removeAnyBackingFile();
                 }
 
-                /*update the disk cache size*/
-                _diskCacheSize += evicted.second._entry->size();
                 CacheIterator existingDiskCacheEntry = _diskCache(evicted.first);
                 /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
                 if(existingDiskCacheEntry == _diskCache.end()){

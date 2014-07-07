@@ -70,6 +70,7 @@ public:
     
     void getKeyframes(std::list<SequenceTime>* keys) const;
 
+  
 public slots:
     void onFrameChanged(SequenceTime frame);
 

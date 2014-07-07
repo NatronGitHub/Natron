@@ -7,8 +7,10 @@
 //
 
 #include "TimeLine.h"
-#include "Engine/Project.h"
+
 #include <cassert>
+#include "Engine/Project.h"
+
 
 TimeLine::TimeLine(Natron::Project* project):
 _firstFrame(0)
@@ -111,6 +113,8 @@ void TimeLine::getKeyframes(std::list<SequenceTime>* keys) const
 {
     *keys = _keyframes;
 }
+
+
 
 void TimeLine::goToPreviousKeyframe()
 {

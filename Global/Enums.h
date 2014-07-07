@@ -280,6 +280,11 @@ namespace Natron{
         EFFECT_PREFER_SEQUENTIAL
     };
     
+    enum StorageMode {
+        RAM = 0,
+        DISK
+    };
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

@@ -2763,3 +2763,19 @@ void Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
     assert(it != _imp->abortedEngines.end());
     _imp->abortedEngines.erase(it);
 }
+
+void Gui::connectViewersToViewerCache()
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        (*it)->connectToViewerCache();
+    }
+}
+
+void Gui::disconnectViewersFromViewerCache()
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        (*it)->disconnectFromViewerCache();
+    }
+}

@@ -146,9 +146,9 @@ public:
     /*true if the user is NOT scrubbing the timeline*/
     virtual bool shouldRefreshPreview() const { return false; }
     
-    void connectViewersToViewerCache();
+    virtual void connectViewersToViewerCache() {}
 
-    void disconnectViewersFromViewerCache();
+    virtual void disconnectViewersFromViewerCache() {}
 
     virtual void errorDialog(const std::string& title,const std::string& message) const;
 

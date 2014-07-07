@@ -52,6 +52,8 @@ namespace Natron {
         U64 getTreeVersion() const { return _nodeHashKey; }
         
         bool operator==(const ImageKey& other) const;
+        
+        SequenceTime getTime() const { return _time; }
 
     };
     
@@ -125,7 +127,7 @@ namespace Natron {
         
     public:
    
-        Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,bool restore,const std::string& path);
+        Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,const Natron::CacheAPI* cache);
         
         
         /*This constructor can be used to allocate a local Image. The deallocation should
@@ -134,7 +136,9 @@ namespace Natron {
         Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel,Natron::ImageBitDepth bitdepth);
         
         virtual ~Image(){}
-        
+#ifdef NATRON_DEBUG
+        virtual void onMemoryAllocated() OVERRIDE FINAL;
+#endif
         static ImageKey makeKey(U64 nodeHashKey,
                                 SequenceTime time,
                                 unsigned int mipMapLevel,
@@ -162,9 +166,7 @@ namespace Natron {
         virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
         
         unsigned int getMipMapLevel() const {return this->_key._mipMapLevel;}
-        
-        SequenceTime getTime() const {return this->_key._time;}
-        
+                
         unsigned int getComponentsCount() const;
         
         ImageComponents getComponents() const {return this->_components;}

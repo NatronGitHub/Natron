@@ -156,6 +156,11 @@ public:
     bool isPlayingForward() const;
     bool isPlayingBackward() const;
     
+    void connectToViewerCache();
+    
+    void disconnectFromViewerCache();
+    
+    void clearTimelineCacheLine();
 public slots:
     
     void startPause(bool);

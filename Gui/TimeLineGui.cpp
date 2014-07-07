@@ -17,10 +17,11 @@ CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
-
-#include "Global/Macros.h"
+#include <QCoreApplication>
+#include <QThread>
 #include "Global/GlobalDefines.h"
 
+#include "Engine/Cache.h"
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 
@@ -59,6 +60,25 @@ struct ZoomContext {
     double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
 };
 
+struct CachedFrame {
+    SequenceTime time;
+    StorageMode mode;
+    
+    CachedFrame(SequenceTime t,StorageMode m)
+    : time(t)
+    , mode(m)
+    {
+        
+    }
+};
+    
+struct CachedFrame_compare_time {
+    bool operator() (const CachedFrame& lhs, const CachedFrame& rhs) const {
+        return lhs.time < rhs.time;
+    }
+};
+    
+typedef std::set<CachedFrame,CachedFrame_compare_time> CachedFrames;
 }
 
 struct TimelineGuiPrivate{
@@ -68,7 +88,6 @@ struct TimelineGuiPrivate{
     bool _alphaCursor; // should cursor be drawn semi-transparant
     QPoint _lastMouseEventWidgetCoord;
     Natron::TIMELINE_STATE _state; //state machine for mouse events
-    std::list<SequenceTime> _cached; // the frames that should appear as "cached"
 
     ZoomContext _zoomCtx;
     Natron::TextRenderer _textRenderer;
@@ -76,6 +95,7 @@ struct TimelineGuiPrivate{
     QColor _cursorColor;
     QColor _boundsColor;
     QColor _cachedLineColor;
+    QColor _diskCachedLineColor;
     QColor _keyframesColor;
     QColor _clearColor;
     QColor _backgroundColor;
@@ -84,6 +104,7 @@ struct TimelineGuiPrivate{
     QFont _font;
     bool _firstPaint;
     
+    CachedFrames cachedFrames;
 
     TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline,Gui* gui):
         _timeline(timeline)
@@ -91,12 +112,12 @@ struct TimelineGuiPrivate{
       , _alphaCursor(false)
       , _lastMouseEventWidgetCoord()
       , _state(IDLE)
-      , _cached()
       , _zoomCtx()
       , _textRenderer()
       , _cursorColor(243,149,0)
       , _boundsColor(207,69,6)
       , _cachedLineColor(143,201,103)
+      , _diskCachedLineColor(69,96,63)
       , _keyframesColor(21,97,248)
       , _clearColor(0,0,0,255)
       , _backgroundColor(50,50,50)
@@ -104,6 +125,7 @@ struct TimelineGuiPrivate{
       , _scaleColor(100,100,100)
       , _font(NATRON_FONT_ALT, NATRON_FONT_SIZE_10)
       , _firstPaint(true)
+      , cachedFrames()
     {}
 
 
@@ -404,16 +426,23 @@ void TimeLineGui::paintGL()
     glDisable(GL_POLYGON_SMOOTH);
 
     //draw cached frames
-    glColor4f(_imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),_imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF());
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
     glCheckError();
     glLineWidth(2);
     glCheckError();
     glBegin(GL_LINES);
-    for(std::list<SequenceTime>::const_iterator i = _imp->_cached.begin();i!= _imp->_cached.end();++i) {
-        glVertex2f(*i - 0.5,lineYpos);
-        glVertex2f(*i + 0.5,lineYpos);
+    for(CachedFrames::const_iterator i = _imp->cachedFrames.begin();i!= _imp->cachedFrames.end();++i) {
+        if (i->mode == RAM) {
+            glColor4f(_imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),
+                      _imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF());
+        } else if (i->mode == DISK) {
+            glColor4f(_imp->_diskCachedLineColor.redF(),_imp->_diskCachedLineColor.greenF(),
+                      _imp->_diskCachedLineColor.blueF(),_imp->_diskCachedLineColor.alphaF());
+
+        }
+        glVertex2f(i->time - 0.5,lineYpos);
+        glVertex2f(i->time + 0.5,lineYpos);
     }
     glEnd();
     
@@ -592,33 +621,6 @@ void TimeLineGui::wheelEvent(QWheelEvent *event){
 
 }
 
-
-void TimeLineGui::onCachedFrameAdded(SequenceTime time){
-    std::list<SequenceTime>::iterator it = std::find(_imp->_cached.begin(),_imp->_cached.end(),time);
-    if(it == _imp->_cached.end()){
-        _imp->_cached.push_back(time);
-        update();
-    }
-}
-
-void TimeLineGui::onCachedFrameRemoved(SequenceTime time){
-    std::list<SequenceTime>::iterator it = std::find(_imp->_cached.begin(),_imp->_cached.end(),time);
-    if(it != _imp->_cached.end()){
-        _imp->_cached.erase(it);
-        update();
-    }
-}
-void TimeLineGui::onLRUCachedFrameRemoved(){
-    if(!_imp->_cached.empty()){
-        _imp->_cached.pop_front();
-    }
-}
-
-void TimeLineGui::onCachedFramesCleared(){
-    _imp->_cached.clear();
-    update();
-}
-
 void TimeLineGui::onFrameRangeChanged(SequenceTime first , SequenceTime last ){
     if(first == last)
         return;
@@ -682,4 +684,88 @@ QPointF TimeLineGui::toWidgetCoordinates(double x, double y) const {
 void TimeLineGui::onKeyframesIndicatorsChanged()
 {
     repaint();
+}
+
+void TimeLineGui::connectSlotsToViewerCache()
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    
+    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    QObject::connect(emitter, SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)));
+    QObject::connect(emitter, SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)));
+    QObject::connect(emitter, SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
+                     SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)));
+    QObject::connect(emitter, SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()));
+    QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()));
+}
+
+void TimeLineGui::disconnectSlotsFromViewerCache()
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    
+    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    QObject::disconnect(emitter, SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)));
+    QObject::disconnect(emitter, SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)));
+    QObject::disconnect(emitter, SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
+                        SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)));
+    QObject::disconnect(emitter, SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()));
+    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()));}
+
+void TimeLineGui::onCachedFrameAdded(SequenceTime time)
+{
+    _imp->cachedFrames.insert(CachedFrame(time,RAM));
+}
+
+void TimeLineGui::onCachedFrameRemoved(SequenceTime time,int /*storage*/)
+{
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+        if (it->time == time) {
+            _imp->cachedFrames.erase(it);
+            break;
+        }
+    }
+    update();
+}
+
+void TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,int /*oldStorage*/,int newStorage)
+{
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+        if (it->time == time) {
+            _imp->cachedFrames.erase(it);
+            _imp->cachedFrames.insert(CachedFrame(time,(StorageMode)newStorage));
+            break;
+        }
+    }
+}
+
+void TimeLineGui::onMemoryCacheCleared()
+{
+    CachedFrames copy;
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+        if (it->mode == DISK) {
+            copy.insert(*it);
+        }
+    }
+    _imp->cachedFrames = copy;
+    update();
+}
+
+void TimeLineGui::onDiskCacheCleared()
+{
+    CachedFrames copy;
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+        if (it->mode == RAM) {
+            copy.insert(*it);
+        }
+    }
+    _imp->cachedFrames = copy;
+    update();
+}
+
+void TimeLineGui::clearCachedFrames()
+{
+    _imp->cachedFrames.clear();
+    update();
 }

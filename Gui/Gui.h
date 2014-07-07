@@ -319,6 +319,10 @@ public:
     void registerVideoEngineBeingAborted(VideoEngine* engine);
     void unregisterVideoEngineBeingAborted(VideoEngine* engine);
     
+    void connectViewersToViewerCache();
+    
+    void disconnectViewersFromViewerCache();
+    
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

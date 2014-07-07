@@ -59,6 +59,7 @@ AppInstance::AppInstance(int appID)
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
     
+    
     ///initialize the knobs of the project before loading anything else.
     _imp->_currentProject->initializeKnobsPublic();
 }
@@ -266,27 +267,6 @@ boost::shared_ptr<Natron::Project> AppInstance::getProject() const {
 
 boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  { return _imp->_currentProject->getTimeLine(); }
 
-
-
-void AppInstance::connectViewersToViewerCache(){
-    std::vector<boost::shared_ptr<Natron::Node> > currentNodes = _imp->_currentProject->getCurrentNodes();
-    for (U32 i = 0; i < currentNodes.size(); ++i) {
-        assert(currentNodes[i]);
-        if(currentNodes[i]->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->connectSlotsToViewerCache();
-        }
-    }
-}
-
-void AppInstance::disconnectViewersFromViewerCache(){
-    std::vector<boost::shared_ptr<Natron::Node> > currentNodes = _imp->_currentProject->getCurrentNodes();
-    for (U32 i = 0; i < currentNodes.size(); ++i) {
-        assert(currentNodes[i]);
-        if(currentNodes[i]->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->disconnectSlotsToViewerCache();
-        }
-    }
-}
 
 void AppInstance::errorDialog(const std::string& title,const std::string& message) const {
     std::cout << "ERROR: " << title + ": " << message << std::endl;

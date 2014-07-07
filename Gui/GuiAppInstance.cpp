@@ -490,3 +490,13 @@ void GuiAppInstance::unregisterVideoEngineBeingAborted(VideoEngine* engine)
 {
     _imp->_gui->unregisterVideoEngineBeingAborted(engine);
 }
+
+void GuiAppInstance::connectViewersToViewerCache()
+{
+    _imp->_gui->connectViewersToViewerCache();
+}
+
+void GuiAppInstance::disconnectViewersFromViewerCache()
+{
+    _imp->_gui->disconnectViewersFromViewerCache();
+}

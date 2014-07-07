@@ -2538,6 +2538,10 @@ void ViewerGL::wheelEvent(QWheelEvent *event)
     if (displayingImage()) {
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
     }
+    
+    ///Clear green cached line so the user doesn't expect to see things in the cache
+    ///since we're changing the zoom factor
+    _imp->viewerTab->clearTimelineCacheLine();
     updateGL();
     
     
@@ -2562,7 +2566,9 @@ void ViewerGL::zoomSlot(int v)
         double centerY = (_imp->zoomCtx.top() + _imp->zoomCtx.bottom())/2.;
         _imp->zoomCtx.zoom(centerX, centerY, scale);
     }
-
+    ///Clear green cached line so the user doesn't expect to see things in the cache
+    ///since we're changing the zoom factor
+    _imp->viewerTab->clearTimelineCacheLine();
     if(displayingImage()){
         // appPTR->clearPlaybackCache();
         _imp->viewerTab->getInternalNode()->refreshAndContinueRender(false,false);
@@ -2601,20 +2607,11 @@ void ViewerGL::fitImageToFormat()
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
-#if 1
         // set the PAR first
         _imp->zoomCtx.setZoom(0., 0., 1., zoomPAR);
         // leave 4% of margin around
         _imp->zoomCtx.fit(-0.02*w, 1.02*w, -0.02*h, 1.02*h);
         zoomFactor = _imp->zoomCtx.factor();
-#else
-        // leave 5% of margin around
-        zoomFactor = 0.95 * std::min(_imp->zoomCtx.screenWidth()/w, _imp->zoomCtx.screenHeight()/h);
-        zoomFactor = std::max(0.01, std::min(zoomFactor, 1024.));
-        double zoomLeft = w/2.f - (_imp->zoomCtx.screenWidth()/(2.*zoomFactor));
-        double zoomBottom = h/2.f - (_imp->zoomCtx.screenHeight()/(2.*zoomFactor)) * zoomPAR;
-        _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
-#endif
         _imp->zoomOrPannedSinceLastFit = false;
     }
     _imp->oldClick = QPoint(); // reset mouse posn
@@ -2626,7 +2623,9 @@ void ViewerGL::fitImageToFormat()
         }
         emit zoomChanged(zoomFactorInt);
     }
-
+    ///Clear green cached line so the user doesn't expect to see things in the cache
+    ///since we're changing the zoom factor
+    _imp->viewerTab->clearTimelineCacheLine();
 }
 
 

@@ -139,7 +139,6 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    connectSlotsToViewerCache();
     if(node) {
         connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
@@ -214,30 +213,6 @@ ViewerInstance::forceFullComputationOnNextFrame()
 
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
     _imp->forceRender = true;
-}
-
-void
-ViewerInstance::connectSlotsToViewerCache()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
-    QObject::connect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
-    QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
-}
-
-void
-ViewerInstance::disconnectSlotsToViewerCache()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
-    QObject::disconnect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
-    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 
 void
@@ -1652,16 +1627,6 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
         refreshAndContinueRender(false,true);
     } else {
         _imp->uiContext->redraw();
-    }
-}
-
-void
-ViewerInstance::onViewerCacheFrameAdded()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    if (getApp()->getTimeLine()) {
-        emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
     }
 }
 

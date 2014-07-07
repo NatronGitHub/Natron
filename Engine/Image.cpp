@@ -320,8 +320,8 @@ char* Natron::Bitmap::getBitmapAt(int x,int y)
     }
 }
 
-Image::Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,bool restore,const std::string& path):
-CacheEntryHelper<unsigned char,ImageKey>(key,params,restore,path)
+Image::Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,const Natron::CacheAPI* cache):
+CacheEntryHelper<unsigned char,ImageKey>(key,params,cache)
 {
     const ImageParams* p = dynamic_cast<const ImageParams*>(params.get());
     _components = p->getComponents();
@@ -330,10 +330,6 @@ CacheEntryHelper<unsigned char,ImageKey>(key,params,restore,path)
     _rod = p->getRoD();
     _pixelRod = p->getPixelRoD();
     
-#ifdef NATRON_DEBUG
-    ///fill with red, to recognize unrendered pixels
-    fill(_pixelRod,1.,0.,0.,1.);
-#endif
 }
 
 /*This constructor can be used to allocate a local Image. The deallocation should
@@ -349,8 +345,7 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
                                                 components,
                                                 -1,
                                                 0,
-                                                std::map<int,std::vector<RangeD> >())),
-                                            false,"")
+                                                std::map<int,std::vector<RangeD> >())),NULL)
 {
     // NOTE: before removing the following assert, please explain why an empty image may happen
     assert(!regionOfDefinition.isNull());
@@ -361,7 +356,16 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
     _bitmap.initialize(p->getPixelRoD());
     _rod = regionOfDefinition;
     _pixelRod = p->getPixelRoD();
+    allocateMemory(false, "");
 }
+
+#ifdef NATRON_DEBUG
+void Image::onMemoryAllocated()
+{
+    ///fill with red, to recognize unrendered pixels
+    fill(_pixelRod,1.,0.,0.,1.);
+}
+#endif
 
 ImageKey Image::makeKey(U64 nodeHashKey,
                         SequenceTime time,
