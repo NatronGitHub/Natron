@@ -500,7 +500,15 @@ namespace Natron {
             
             ///This function can only be called for RAM buffers or while a memory mapped file is mapped into the RAM, so
             ///we just have to modify the RAM size.
-            _memoryCacheSize = _memoryCacheSize - oldSize + newSize;
+            
+            ///Avoid overflows, _memoryCacheSize may not always fallback to 0
+            qint64 diff = (qint64)newSize - (qint64)oldSize;
+            if (diff < 0) {
+                 _memoryCacheSize = diff > (qint64)_memoryCacheSize ? 0 : _memoryCacheSize + diff;
+            } else {
+                _memoryCacheSize += diff;
+            }
+            
         }
         
         /**
@@ -525,11 +533,9 @@ namespace Natron {
             ///make sure we lock this part by trying to lock
             bool gotLock = _lock.tryLock();
             if (storage == Natron::RAM) {
-                _memoryCacheSize -= size;
-                if (_memoryCacheSize < 0) _memoryCacheSize = 0;
+                _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize -size;
             } else if (storage == Natron::DISK) {
-                _diskCacheSize -= size;
-                if (_diskCacheSize < 0) _diskCacheSize = 0;
+                _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize -size;
             }
             if (gotLock) {
                 _lock.unlock();
@@ -554,14 +560,12 @@ namespace Natron {
             assert(oldStorage != newStorage);
             
             if (oldStorage == Natron::RAM) {
-                _memoryCacheSize -= size;
+                _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize -size;
                 _diskCacheSize += size;
             } else {
                 _memoryCacheSize += size;
-                _diskCacheSize -= size;
+                _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize -size;
             }
-            if (_memoryCacheSize < 0) _memoryCacheSize = 0;
-            if (_diskCacheSize < 0) _diskCacheSize = 0;
             if (gotLock) {
                 _lock.unlock();
             }

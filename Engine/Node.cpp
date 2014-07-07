@@ -1374,6 +1374,7 @@ void renderPreview(const Natron::Image& srcImg,
         zoomFactor = yZoomFactor;
 		*dstWidth = (double)srcRoD.width() * zoomFactor;
     }
+    assert(elemCount >= 3);
 
     for (int i = 0; i < *dstHeight; ++i) {
         double y = (i - *dstHeight/2.)/zoomFactor + (srcRoD.y1 + srcRoD.y2)/2.;
