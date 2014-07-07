@@ -273,6 +273,10 @@ void TableItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & o
     int dim;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     assert(knob);
+    if (!knob) {
+        return;
+    }
+    assert(0 <= dim);
     Natron::AnimationLevel level = knob->getAnimationLevel(dim);
     if (level == NO_ANIMATION) {
         QStyledItemDelegate::paint(painter,option,index);
@@ -844,6 +848,7 @@ boost::shared_ptr<KnobI> MultiInstancePanel::getKnobForItem(TableItem* item,int*
             }
         }
     }
+    *dimension = -1;
     return boost::shared_ptr<KnobI>();
 }
 

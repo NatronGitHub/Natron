@@ -3,13 +3,22 @@ Version 1.0:
 
 #Developers:
 
-Frédéric Devernay
-Alexandre Gauthier-Foichat
-
-Ole Andre Rodlie for the linux packages
+Frédéric Devernay <devernay@github>
+Alexandre Gauthier-Foichat <MrKepzie@github>
 
 #Artists:
 
 Laurence Boissieux (icons + splashscreen)
 Bianca Ilaria Coniglione (icons + logo)
 Jean-Christophe Levet (icons)
+
+#Packaging:
+
+Alexandre Gauthier-Foichat <devernay@github> (Windows & OSX)
+Ole Andre Rodlie <olar@github> (Linux)
+
+#Testing:
+
+Omar Brown <blackearth2014@github>
+Ole Andre Rodlie <olar@github>
+Fraiçois "CoyHot" Grassard <Francois-Grassard@github>

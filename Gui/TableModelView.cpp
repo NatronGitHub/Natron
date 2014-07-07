@@ -246,8 +246,9 @@ TableItem *TableModel::takeItem(int row, int column)
 
 QModelIndex TableModel::index(const TableItem *item) const
 {
-    if (!item)
+    if (!item) {
         return QModelIndex();
+    }
     int i = -1;
     const int id = item->id;
     if (id >= 0 && id < _imp->tableItems.count() && _imp->tableItems.at(id) == item) {
@@ -258,9 +259,14 @@ QModelIndex TableModel::index(const TableItem *item) const
             return QModelIndex();
         }
     }
-    int row = i / columnCount();
-    int col = i % columnCount();
-    return QAbstractTableModel::index(row, col);
+    int ncols = columnCount();
+    if (ncols == 0) {
+        return QModelIndex();
+    } else {
+        int row = i / ncols;
+        int col = i % ncols;
+        return QAbstractTableModel::index(row, col);
+    }
 }
 
 TableItem *TableModel::item(int row, int column) const
