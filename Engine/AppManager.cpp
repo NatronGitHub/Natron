@@ -327,10 +327,6 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     _imp->_nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
     _imp->_viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
 
-    qDebug() << "NodeCache RAM size: " << printAsRAM(_imp->_nodeCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_imp->_viewerCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCache);
-
 
     _imp->restoreCaches();
     
@@ -1116,7 +1112,7 @@ void AppManagerPrivate::restoreCaches() {
 bool AppManagerPrivate::checkForCacheDiskStructure(const QString& cachePath) {
     QString settingsFilePath(cachePath+QDir::separator()+"restoreFile." NATRON_CACHE_FILE_EXT);
     if (!QFile::exists(settingsFilePath)) {
-        qDebug() << "Cache folder doesn't exist.";
+        qDebug() << "Disk cache empty.";
         cleanUpCacheDiskStructure(cachePath);
         return false;
     }
