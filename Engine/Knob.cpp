@@ -322,9 +322,10 @@ void KnobHelper::deleteValueAtTime(int time,int dimension,Natron::ValueChangedRe
     checkAnimationLevel(dimension);
 }
 
-void KnobHelper::removeAnimation(int dimension,Natron::ValueChangedReason reason)
+void KnobHelper::removeAnimation(int dimension, Natron::ValueChangedReason reason)
 {
-    if (dimension > (int)_imp->curves.size()) {
+    assert(0 <= dimension);
+    if (dimension < 0 || (int)_imp->curves.size() <= dimension) {
         throw std::invalid_argument("Knob::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -347,7 +348,7 @@ void KnobHelper::removeAnimation(int dimension,Natron::ValueChangedReason reason
 
 boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension) const
 {
-    assert(dimension < (int)_imp->curves.size());
+    assert(0 <= dimension && dimension < (int)_imp->curves.size());
     
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (master.second) {
@@ -566,7 +567,7 @@ bool KnobHelper::getIsSecret() const
 
 bool KnobHelper::isEnabled(int dimension) const
 {
-    assert(dimension < getDimension());
+    assert(0 <= dimension && dimension < getDimension());
     return _imp->enabled[dimension];
 }
 
@@ -689,9 +690,12 @@ bool KnobHelper::isMastersPersistenceIgnored() const
     return _imp->ignoreMasterPersistence;
 }
 
-bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,Natron::ValueChangedReason reason
-                         ,bool ignoreMasterPersistence) {
-    assert(dimension < (int)_imp->masters.size());
+bool KnobHelper::slaveTo(int dimension,
+                         const boost::shared_ptr<KnobI>& other,
+                         int otherDimension,
+                         Natron::ValueChangedReason reason,
+                         bool ignoreMasterPersistence) {
+    assert(0 <= dimension && dimension < (int)_imp->masters.size());
     assert(!other->isSlave(otherDimension));
     
     {
@@ -724,12 +728,14 @@ bool KnobHelper::slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int
 
 std::pair<int,boost::shared_ptr<KnobI> > KnobHelper::getMaster(int dimension) const
 {
+    assert(dimension >= 0);
     QReadLocker l(&_imp->mastersMutex);
     return _imp->masters[dimension];
 }
 
 void KnobHelper::resetMaster(int dimension)
 {
+    assert(dimension >= 0);
     _imp->masters[dimension].second.reset();
     _imp->masters[dimension].first = -1;
     _imp->ignoreMasterPersistence = false;
@@ -737,6 +743,7 @@ void KnobHelper::resetMaster(int dimension)
 
 bool KnobHelper::isSlave(int dimension) const
 {
+    assert(dimension >= 0);
     QReadLocker l(&_imp->mastersMutex);
     return bool(_imp->masters[dimension].second);
 }
@@ -799,7 +806,7 @@ Natron::AnimationLevel KnobHelper::getAnimationLevel(int dimension) const
 }
 
 
-bool KnobHelper::getKeyFrameTime(int index,int dimension,double* time) const
+bool KnobHelper::getKeyFrameTime(int index, int dimension, double* time) const
 {
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
@@ -807,7 +814,7 @@ bool KnobHelper::getKeyFrameTime(int index,int dimension,double* time) const
         return master.second->getKeyFrameTime(index,master.first,time);
     }
     
-    assert(dimension < getDimension());
+    assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return false;
     }
@@ -830,7 +837,7 @@ bool KnobHelper::getLastKeyFrameTime(int dimension,double* time) const
         return master.second->getLastKeyFrameTime(master.first,time);
     }
     
-    assert(dimension < getDimension());
+    assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return false;
     }
@@ -860,7 +867,7 @@ bool KnobHelper::getNearestKeyFrameTime(int dimension,double time,double* neares
         return master.second->getNearestKeyFrameTime(master.first,time,nearestTime);
     }
     
-    assert(dimension < getDimension());
+    assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return false;
     }
@@ -883,7 +890,7 @@ int KnobHelper::getKeyFrameIndex(int dimension, double time) const
         return master.second->getKeyFrameIndex(master.first,time);
     }
     
-    assert(dimension < getDimension());
+    assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return -1;
     }
