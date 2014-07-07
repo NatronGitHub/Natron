@@ -434,20 +434,19 @@ void AppManager::clearPlaybackCache(){
 
 
 void AppManager::clearDiskCache(){
-    _imp->_viewerCache->clear();
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         it->second.app->clearViewersLastRenderedTexture();
     }
+    _imp->_viewerCache->clear();
+   
 }
 
 
 void AppManager::clearNodeCache(){
-    _imp->_nodeCache->clear();
-    
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         it->second.app->clearAllLastRenderedImages();
     }
-    
+    _imp->_nodeCache->clear();
 }
 
 void AppManager::clearPluginsLoadedCache() {
