@@ -914,6 +914,9 @@ RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,
 {
     QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this, SIGNAL(inversionChanged()));
     QObject::connect(this, SIGNAL(overlayColorChanged()), context, SIGNAL(refreshViewerOverlays()));
+    QObject::connect(_imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this, SIGNAL(shapeColorChanged()));
+    QObject::connect(_imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this,
+                     SIGNAL(compositingOperatorChanged()));
 }
 
 RotoDrawableItem::~RotoDrawableItem()

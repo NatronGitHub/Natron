@@ -1380,39 +1380,54 @@ void Color_KnobGui::onSliderValueChanged(double v)
     onColorChanged();
 }
 
+void Color_KnobGui::expandAllDimensions()
+{
+    ///show all the dimensions
+    _dimensionSwitchButton->setChecked(true);
+    _dimensionSwitchButton->setDown(true);
+    _slider->hide();
+    if (_dimension > 1) {
+        _rLabel->show();
+        _gLabel->show();
+        _gBox->show();
+        _bLabel->show();
+        _bBox->show();
+        if (_dimension > 3) {
+            _aLabel->show();
+            _aBox->show();
+        }
+    }
+    emit dimensionSwitchToggled(true);
+
+}
+
+void Color_KnobGui::foldAllDimensions()
+{
+    ///hide all the dimensions except red
+    _dimensionSwitchButton->setChecked(false);
+    _dimensionSwitchButton->setDown(false);
+    _slider->show();
+    if (_dimension > 1) {
+        _rLabel->hide();
+        _gLabel->hide();
+        _gBox->hide();
+        _bLabel->hide();
+        _bBox->hide();
+        if (_dimension > 3) {
+            _aLabel->hide();
+            _aBox->hide();
+        }
+    }
+    emit dimensionSwitchToggled(false);
+
+}
+
 void Color_KnobGui::onDimensionSwitchClicked()
 {
     if (_dimensionSwitchButton->isChecked()) {
-        ///show all the dimensions
-        _dimensionSwitchButton->setDown(true);
-        _slider->hide();
-        if (_dimension > 1) {
-            _rLabel->show();
-            _gLabel->show();
-            _gBox->show();
-            _bLabel->show();
-            _bBox->show();
-            if (_dimension > 3) {
-                _aLabel->show();
-                _aBox->show();
-            }
-        }
-        
+        expandAllDimensions();
     } else {
-        ///hide all the dimensions except red
-        _dimensionSwitchButton->setDown(false);
-        _slider->show();
-        if (_dimension > 1) {
-            _rLabel->hide();
-            _gLabel->hide();
-            _gBox->hide();
-            _bLabel->hide();
-            _bBox->hide();
-            if (_dimension > 3) {
-                _aLabel->hide();
-                _aBox->hide();
-            }
-        }
+        foldAllDimensions();
         if (_dimension > 1) {
             boost::shared_ptr<Color_Knob> k = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
             double value(_rBox->value());
@@ -1427,7 +1442,6 @@ void Color_KnobGui::onDimensionSwitchClicked()
 
     }
     
-    emit dimensionSwitchToggled(_dimensionSwitchButton->isChecked());
 }
 
 void
@@ -1529,7 +1543,6 @@ Color_KnobGui::updateGUI(int dimension)
             throw std::logic_error("wrong dimension");
     }
     
-    
     uchar r = Color::floatToInt<256>(Natron::Color::to_func_srgb(_rBox->value()));
     uchar g = r;
     uchar b = r;
@@ -1543,6 +1556,18 @@ Color_KnobGui::updateGUI(int dimension)
     }
     QColor color(r, g, b, a);
     updateLabel(color);
+    
+    bool colorsEqual;
+    if (_dimension == 3) {
+        colorsEqual = (r == g && r == b);
+    } else {
+        colorsEqual = (r == g && r == b && r == a);
+    }
+    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
+        expandAllDimensions();
+    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
+        foldAllDimensions();
+    }
 }
 
 void

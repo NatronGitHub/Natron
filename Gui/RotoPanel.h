@@ -93,6 +93,14 @@ public slots:
     ///An item had its inverted state changed
     void onRotoItemInversionChanged();
     
+    ///An item had its shape color changed
+    void onRotoItemShapeColorChanged();
+    
+    ///An item had its compositing operator changed
+    void onRotoItemCompOperatorChanged();
+    
+    void onCurrentItemCompOperatorChanged(int index);
+    
     ///The user changed the current item in the tree
     void onCurrentItemChanged(QTreeWidgetItem* current,QTreeWidgetItem* previous);
     
@@ -128,6 +136,8 @@ public slots:
     void selectAll();
     
     void onSettingsPanelClosed(bool closed);
+    
+    void onItemColorDialogEdited(const QColor& color);
 private:
     
     void onSelectionChangedInternal();

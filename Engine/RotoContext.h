@@ -365,6 +365,10 @@ signals:
     
     void overlayColorChanged();
     
+    void shapeColorChanged();
+    
+    void compositingOperatorChanged();
+    
 private:
     
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;

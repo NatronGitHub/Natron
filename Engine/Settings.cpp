@@ -400,7 +400,7 @@ void Settings::initializeKnobs(){
     /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
     
-    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
+    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching (% system total RAM)");
     _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
@@ -417,7 +417,7 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->setHintToolTip(ramHint);
     _cachingTab->addKnob(_maxRAMPercent);
     
-    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
+    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage (% maximum RAM for caching");
     _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
@@ -427,7 +427,7 @@ void Settings::initializeKnobs(){
                                         " this is made possible for convenience.");
     _cachingTab->addKnob(_maxPlayBackPercent);
     
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
+    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GB)");
     _maxDiskCacheGB->setAnimationEnabled(false);
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setMaximum(100);

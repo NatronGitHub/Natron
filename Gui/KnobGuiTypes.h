@@ -515,6 +515,9 @@ signals:
     void dimensionSwitchToggled(bool b);
     
 private:
+    
+    void expandAllDimensions();
+    void foldAllDimensions();
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 

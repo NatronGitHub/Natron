@@ -22,6 +22,8 @@
 #include <QApplication>
 #include <QDataStream>
 #include <QMimeData>
+#include <QImage>
+#include <QPainter>
 #include <QByteArray>
 
 #include "Gui/Button.h"
@@ -32,14 +34,43 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/RotoUndoCommand.h"
+#include "Gui/ComboBox.h"
 
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Image.h"
+#include "Engine/RotoContextPrivate.h" // for getCompositingOperators
+
+#define COL_NAME 0
+#define COL_ACTIVATED 1
+#define COL_LOCKED 2
+#define COL_OVERLAY 3
+#define COL_COLOR 4
+#define COL_OPERATOR 5
+#define COL_INVERTED 6
+
+#define MAX_COLS 7
 
 using namespace Natron;
+
+
+static QPixmap getColorButtonDefaultPixmap()
+{
+    QImage img(15,15,QImage::Format_ARGB32);
+    QColor gray(Qt::gray);
+    img.fill(gray.rgba());
+    QPainter p(&img);
+    QPen pen;
+    pen.setColor(Qt::black);
+    pen.setWidth(2);
+    p.setPen(pen);
+    p.drawLine(0, 0, 14, 14);
+    return QPixmap::fromImage(img);
+}
+
 
 
 class TreeWidget: public QTreeWidget
@@ -102,6 +133,13 @@ typedef std::list< boost::shared_ptr<RotoItem> > SelectedItems;
 
 typedef std::map<RotoItem*, std::set<int> > ItemKeys;
 
+enum ColorDialogEdition
+{
+    EDITING_NOTHING = 0,
+    EDITING_OVERLAY_COLOR,
+    EDITING_SHAPE_COLOR
+};
+
 struct RotoPanelPrivate
 {
     
@@ -147,6 +185,8 @@ struct RotoPanelPrivate
     
     ItemKeys keyframes; //< track of all keyframes for items
     
+    ColorDialogEdition dialogEdition;
+    
     RotoPanelPrivate(RotoPanel* publicInter,NodeGui*  n)
     : publicInterface(publicInter)
     , node(n)
@@ -154,6 +194,7 @@ struct RotoPanelPrivate
     , editedItem(NULL)
     , lastRightClickedItem(NULL)
     , clipBoard()
+    , dialogEdition(EDITING_NOTHING)
     {
         assert(n && context);
         
@@ -291,12 +332,13 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     QObject::connect(_imp->tree, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)), this,
                      SLOT(onCurrentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)));
     QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()));
-    ///4 columns: Name - Visible - Locked - Overlay color - Inverted
-    _imp->tree->setColumnCount(5);
+    
+
+    _imp->tree->setColumnCount(MAX_COLS);
     _imp->treeHeader = new QTreeWidgetItem;
     _imp->treeHeader->setText(0, "Name");
     
-    QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel;
+    QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
     appPTR->getIcon(NATRON_PIXMAP_BEZIER, &pixBezier);
     appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixVisible);
@@ -306,6 +348,9 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     appPTR->getIcon(NATRON_PIXMAP_INVERTED, &pixInverted);
     appPTR->getIcon(NATRON_PIXMAP_UNINVERTED, &pixUninverted);
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &pixWheel);
+    appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, &pixmerge);
+    pixmerge = pixmerge.scaled(15, 15);
+    pixDefault = getColorButtonDefaultPixmap();
     
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);
@@ -317,16 +362,18 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->iconUnlocked.addPixmap(pixUnlocked);
     _imp->iconWheel.addPixmap(pixWheel);
     
-    _imp->treeHeader->setIcon(1, _imp->iconVisible);
-    _imp->treeHeader->setIcon(2, _imp->iconLocked);
-    _imp->treeHeader->setIcon(3, _imp->iconWheel);
-    _imp->treeHeader->setIcon(4, _imp->iconUninverted);
+    _imp->treeHeader->setIcon(COL_ACTIVATED, _imp->iconVisible);
+    _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
+    _imp->treeHeader->setIcon(COL_OVERLAY, QIcon(pixDefault));
+    _imp->treeHeader->setIcon(COL_COLOR, _imp->iconWheel);
+    _imp->treeHeader->setIcon(COL_INVERTED, _imp->iconUninverted);
+    _imp->treeHeader->setIcon(COL_OPERATOR, QIcon(pixmerge));
     _imp->tree->setHeaderItem(_imp->treeHeader);
     
-    _imp->tree->setColumnWidth(1, 25);
-    _imp->tree->setColumnWidth(2, 25);
-    _imp->tree->setColumnWidth(3, 25);
-    _imp->tree->setColumnWidth(4, 25);
+    for (int i = 1; i < MAX_COLS; ++i) {
+        _imp->tree->setColumnWidth(i, 25);
+    }
+
 
 #if QT_VERSION < 0x050000
     _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
@@ -527,25 +574,42 @@ void RotoPanel::onSelectedBezierCloned()
     }
 }
 
+static void makeSolidIcon(double *color,QIcon& icon)
+{
+    QPixmap p(15,15);
+    QColor c;
+    c.setRgbF(clamp<double>(color[0]), clamp<double>(color[1]), clamp<double>(color[2]));
+    p.fill(c);
+    icon.addPixmap(p);
+}
+
 void RotoPanel::updateItemGui(QTreeWidgetItem* item)
 {
     int time = _imp->context->getTimelineCurrentTime();
     TreeItems::iterator it = _imp->findItem(item);
     assert(it!=_imp->items.end());
-    it->treeItem->setIcon(1,it->rotoItem->isGloballyActivated() ? _imp->iconVisible : _imp->iconUnvisible);
-    it->treeItem->setIcon(2,it->rotoItem->isLockedRecursive() ? _imp->iconLocked : _imp->iconUnlocked);
+    it->treeItem->setIcon(COL_ACTIVATED,it->rotoItem->isGloballyActivated() ? _imp->iconVisible : _imp->iconUnvisible);
+    it->treeItem->setIcon(COL_LOCKED,it->rotoItem->isLockedRecursive() ? _imp->iconLocked : _imp->iconUnlocked);
     
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
     if (drawable) {
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
-        QPixmap p(15,15);
-        QColor c;
-        c.setRgbF(overlayColor[0], overlayColor[1], overlayColor[2]);
-        c.setAlphaF(overlayColor[3]);
-        p.fill(c);
-        it->treeItem->setIcon(3, QIcon(p));
-        it->treeItem->setIcon(4,drawable->getInverted(time) ? _imp->iconInverted : _imp->iconUninverted);
+        QIcon overlayIcon;
+        makeSolidIcon(overlayColor, overlayIcon);
+        it->treeItem->setIcon(COL_OVERLAY, overlayIcon);
+        
+        double shapeColor[3];
+        drawable->getColor(time, shapeColor);
+        QIcon shapeColorIcon;
+        makeSolidIcon(shapeColor, shapeColorIcon);
+        it->treeItem->setIcon(COL_COLOR, shapeColorIcon);
+        it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? _imp->iconInverted : _imp->iconUninverted);
+        QWidget* w = _imp->tree->itemWidget(it->treeItem,COL_OPERATOR);
+        assert(w);
+        ComboBox* cb = dynamic_cast<ComboBox*>(w);
+        assert(cb);
+        cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
     }
    
 
@@ -598,7 +662,15 @@ void RotoPanelPrivate::updateSplinesInfosGUI(int time)
     for (TreeItems::iterator it = items.begin(); it != items.end(); ++it) {
         RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
         if (drawable) {
-            it->treeItem->setIcon(4,drawable->getInverted(time) ? iconInverted : iconUninverted);
+            QIcon shapeColorIC;
+            double shapeColor[3];
+            drawable->getColor(time, shapeColor);
+            makeSolidIcon(shapeColor, shapeColorIC);
+            it->treeItem->setIcon(COL_COLOR, shapeColorIC);
+            it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? iconInverted : iconUninverted);
+            ComboBox* cb = dynamic_cast<ComboBox*>(tree->itemWidget(it->treeItem, COL_OPERATOR));
+            assert(cb);
+            cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
         }
     }
 }
@@ -631,9 +703,9 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
     }
     items.push_back(TreeItem(treeItem,item));
 
-    treeItem->setText(0, item->getName_mt_safe().c_str());
-    treeItem->setIcon(1, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setIcon(2, item->getLocked() ? iconLocked : iconUnlocked);
+    treeItem->setText(COL_NAME, item->getName_mt_safe().c_str());
+    treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
+    treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
     
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
     RotoLayer* layer = dynamic_cast<RotoLayer*>(item.get());
@@ -641,17 +713,28 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
     if (drawable) {
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
-        QPixmap p(15,15);
-        QColor c;
-        c.setRgbF(overlayColor[0], overlayColor[1], overlayColor[2]);
-        c.setAlphaF(overlayColor[3]);
-        p.fill(c);
-        treeItem->setIcon(0, iconBezier);
-        treeItem->setIcon(3,QIcon(p));
-        treeItem->setIcon(4, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        
+        QIcon overlayIcon;
+        makeSolidIcon(overlayColor, overlayIcon);
+        treeItem->setIcon(COL_NAME, iconBezier);
+        treeItem->setIcon(COL_OVERLAY,overlayIcon);
+        double shapeColor[3];
+        drawable->getColor(time, shapeColor);
+        QIcon shapeIcon;
+        makeSolidIcon(shapeColor, shapeIcon);
+        treeItem->setIcon(COL_COLOR, shapeIcon);
+        treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
+        ComboBox* cb = new ComboBox;
+        QObject::connect(cb,SIGNAL(currentIndexChanged(int)),publicInterface,SLOT(onCurrentItemCompOperatorChanged(int)));
+        std::vector<std::string> compositingOperators,tooltips;
+        getCompositingOperators(&compositingOperators, &tooltips);
+        for (U32 i = 0; i < compositingOperators.size(); ++i) {
+            cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+        }
+        cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
+        tree->setItemWidget(treeItem, COL_OPERATOR, cb);
         QObject::connect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
-        
+        QObject::connect(drawable,SIGNAL(shapeColorChanged()),publicInterface,SLOT(onRotoItemShapeColorChanged()));
+        QObject::connect(drawable,SIGNAL(compositingOperatorChanged()),publicInterface,SLOT(onRotoItemCompOperatorChanged()));
     } else {
         treeItem->setIcon(0, iconLayer);
         ///insert children
@@ -741,7 +824,22 @@ void RotoPanelPrivate::buildTreeFromContext()
     
 }
 
-
+void RotoPanel::onCurrentItemCompOperatorChanged(int index)
+{
+    
+    QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+    for (int i = 0; i < selected.size(); ++i) {
+        TreeItems::iterator found = _imp->findItem(selected[i]);
+        assert(found != _imp->items.end());
+        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
+        assert(drawable);
+        boost::shared_ptr<Choice_Knob> op = drawable->getOperatorKnob();
+        op->setValue(index, 0);
+    }
+    if (!selected.empty()) {
+        _imp->context->getOperatorKnob()->setValue(index, 0);
+    }
+}
 
 void RotoPanel::onRotoItemInversionChanged()
 {
@@ -750,10 +848,41 @@ void RotoPanel::onRotoItemInversionChanged()
         int time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if (it != _imp->items.end()) {
-            it->treeItem->setIcon(4, item->getInverted(time)  ? _imp->iconInverted : _imp->iconUninverted);
+            it->treeItem->setIcon(COL_INVERTED, item->getInverted(time)  ? _imp->iconInverted : _imp->iconUninverted);
         }
     }
 }
+void RotoPanel::onRotoItemShapeColorChanged()
+{
+    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
+    if (item) {
+        int time = _imp->context->getTimelineCurrentTime();
+        TreeItems::iterator it = _imp->findItem(item);
+        if (it != _imp->items.end()) {
+            QIcon icon;
+            double shapeColor[3];
+            item->getColor(time, shapeColor);
+            makeSolidIcon(shapeColor, icon);
+            it->treeItem->setIcon(COL_COLOR,icon);
+        }
+    }
+}
+
+void RotoPanel::onRotoItemCompOperatorChanged()
+{
+    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
+    if (item) {
+        int time = _imp->context->getTimelineCurrentTime();
+        TreeItems::iterator it = _imp->findItem(item);
+        if (it != _imp->items.end()) {
+            ComboBox* cb = dynamic_cast<ComboBox*>(_imp->tree->itemWidget(it->treeItem, COL_OPERATOR));
+            assert(cb);
+            int compIndex = item->getCompositingOperator(time);
+            cb->setCurrentIndex_no_emit(compIndex);
+        }
+    }
+}
+
 
 void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
 {
@@ -761,8 +890,8 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
     if (it != _imp->items.end()) {
         int time = _imp->context->getTimelineCurrentTime();
         switch (column) {
-                ///visible
-            case 1:
+                
+            case COL_ACTIVATED:
             {
                 bool activated = !it->rotoItem->isGloballyActivated();
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
@@ -774,8 +903,8 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 }
                 _imp->context->emitRefreshViewerOverlays();
             }   break;
-                ///locked
-            case 2:
+               
+            case COL_LOCKED:
             {
                 bool locked = !it->rotoItem->getLocked();
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
@@ -788,12 +917,14 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 }
                 
             }   break;
-                ///overlay color
-            case 3:
+                
+            case COL_OVERLAY:
             {
                 RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
                 if (drawable) {
                     QColorDialog dialog;
+                    _imp->dialogEdition = EDITING_OVERLAY_COLOR;
+                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
                     double oc[4];
                     drawable->getOverlayColor(oc);
                     QColor color;
@@ -806,24 +937,68 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                         oc[1] = color.greenF();
                         oc[2] = color.blueF();
                         oc[3] = color.alphaF();
-                        QPixmap pix(15,15);
-                        pix.fill(color);
-
-                        QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                        for (int i = 0; i < selected.size(); ++i) {
-                            TreeItems::iterator found = _imp->findItem(selected[i]);
-                            assert(found != _imp->items.end());
-                            drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                            if (drawable) {
-                                drawable->setOverlayColor(oc);
-                                found->treeItem->setIcon(3, QIcon(pix));
-                            }
+                    }
+                    _imp->dialogEdition = EDITING_NOTHING;
+                    QPixmap pix(15,15);
+                    pix.fill(color);
+                    QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+                    for (int i = 0; i < selected.size(); ++i) {
+                        TreeItems::iterator found = _imp->findItem(selected[i]);
+                        assert(found != _imp->items.end());
+                        drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
+                        if (drawable) {
+                            drawable->setOverlayColor(oc);
+                            found->treeItem->setIcon(COL_OVERLAY, QIcon(pix));
                         }
                     }
                 }
             }   break;
-                ///inverted
-            case 4:
+                
+            case COL_COLOR:
+            {
+                RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+                QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+                bool colorChosen = false;
+                double shapeColor[3];
+                if (drawable) {
+                    QColorDialog dialog;
+                    _imp->dialogEdition = EDITING_SHAPE_COLOR;
+                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
+                    drawable->getColor(time,shapeColor);
+                    QColor color;
+                    color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
+                    dialog.setCurrentColor(color);
+                    if (dialog.exec()) {
+                        color = dialog.selectedColor();
+                        shapeColor[0] = color.redF();
+                        shapeColor[1] = color.greenF();
+                        shapeColor[2] = color.blueF();
+                    }
+                    _imp->dialogEdition = EDITING_NOTHING;
+                    QIcon icon;
+                    makeSolidIcon(shapeColor, icon);
+                    colorChosen = true;
+                    for (int i = 0; i < selected.size(); ++i) {
+                        TreeItems::iterator found = _imp->findItem(selected[i]);
+                        assert(found != _imp->items.end());
+                        drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
+                        if (drawable) {
+                            boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
+                            colorKnob->setValue(shapeColor[0], 0);
+                            colorKnob->setValue(shapeColor[1], 1);
+                            colorKnob->setValue(shapeColor[2], 2);
+                            found->treeItem->setIcon(COL_COLOR, icon);
+                        }
+                    }
+                }
+                if (colorChosen && !selected.empty()) {
+                    _imp->context->getColorKnob()->setValue(shapeColor[0], 0);
+                    _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
+                    _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
+                }
+            }   break;
+               
+            case COL_INVERTED:
             {
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
                 bool inverted = false;
@@ -842,11 +1017,11 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                         } else {
                             invertedKnob->setValue(inverted, 0);
                         }
-                        found->treeItem->setIcon(4, inverted ? _imp->iconInverted : _imp->iconUninverted);
+                        found->treeItem->setIcon(COL_INVERTED, inverted ? _imp->iconInverted : _imp->iconUninverted);
                     }
                 }
                 if (!selected.empty() && invertedSet) {
-                    _imp->context->getInvertedKnob()->setValueAtTime(time, inverted, 0);
+                    _imp->context->getInvertedKnob()->setValue(inverted, 0);
                 
                 }
                 
@@ -859,9 +1034,54 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
     }
 }
 
+void RotoPanel::onItemColorDialogEdited(const QColor& color)
+{
+    int time = _imp->context->getTimelineCurrentTime();
+    QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+    for (int i = 0; i < selected.size(); ++i) {
+        TreeItems::iterator found = _imp->findItem(selected[i]);
+        assert(found != _imp->items.end());
+        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
+        if (drawable) {
+            
+            if (_imp->dialogEdition == EDITING_SHAPE_COLOR) {
+                boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
+                colorKnob->setValue(color.redF(), 0);
+                colorKnob->setValue(color.greenF(), 1);
+                colorKnob->setValue(color.blueF(), 2);
+                QIcon icon;
+                double colorArray[3];
+                colorArray[0] = color.redF();
+                colorArray[1] = color.greenF();
+                colorArray[2] = color.blueF();
+                makeSolidIcon(colorArray, icon);
+                found->treeItem->setIcon(COL_COLOR, icon);
+                
+                _imp->context->getColorKnob()->setValueAtTime(time, colorArray[0], 0);
+                _imp->context->getColorKnob()->setValueAtTime(time, colorArray[1], 1);
+                _imp->context->getColorKnob()->setValueAtTime(time, colorArray[2], 2);
+                
+            } else if (_imp->dialogEdition == EDITING_OVERLAY_COLOR) {
+                double colorArray[4];
+                colorArray[0] = color.redF();
+                colorArray[1] = color.greenF();
+                colorArray[2] = color.blueF();
+                colorArray[3] = color.alphaF();
+                drawable->setOverlayColor(colorArray);
+                QIcon icon;
+                makeSolidIcon(colorArray, icon);
+                found->treeItem->setIcon(COL_OVERLAY,icon);
+
+            }
+        }
+            
+    }
+
+}
+
 void RotoPanelPrivate::setChildrenActivatedRecursively(bool activated,QTreeWidgetItem* item)
 {
-    item->setIcon(1, activated ? iconVisible : iconUnvisible);
+    item->setIcon(COL_ACTIVATED, activated ? iconVisible : iconUnvisible);
     for (int i = 0; i < item->childCount(); ++i) {
         setChildrenActivatedRecursively(activated,item->child(i));
     }
@@ -869,7 +1089,7 @@ void RotoPanelPrivate::setChildrenActivatedRecursively(bool activated,QTreeWidge
 
 void RotoPanelPrivate::setChildrenLockedRecursively(bool locked,QTreeWidgetItem* item)
 {
-    item->setIcon(2, locked ? iconLocked : iconUnlocked);
+    item->setIcon(COL_LOCKED, locked ? iconLocked : iconUnlocked);
     for (int i = 0; i < item->childCount(); ++i) {
         setChildrenLockedRecursively(locked,item->child(i));
     }
@@ -887,7 +1107,7 @@ void RotoPanel::onItemChanged(QTreeWidgetItem* item,int column)
         boost::shared_ptr<RotoItem> existingItem = _imp->context->getItemByName(newName);
         if (existingItem && existingItem != it->rotoItem) {
             Natron::warningDialog("", "An item with the name "+ newName + " already exists. Please pick something else.");
-            item->setText(0, _imp->editedItemName.c_str());
+            item->setText(COL_NAME, _imp->editedItemName.c_str());
         } else {
             it->rotoItem->setName(newName);
         }
@@ -896,7 +1116,7 @@ void RotoPanel::onItemChanged(QTreeWidgetItem* item,int column)
 
 void RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,int column)
 {
-    if (column != 0) {
+    if (column != COL_NAME) {
         return;
     }
     TreeItems::iterator it = _imp->findItem(item);
@@ -925,7 +1145,7 @@ void RotoPanel::onTreeOutOfFocusEvent()
 void RotoPanel::onFocusChanged(QWidget* old,QWidget*)
 {
     if (_imp->editedItem) {
-        QWidget* w = _imp->tree->itemWidget(_imp->editedItem, 0);
+        QWidget* w = _imp->tree->itemWidget(_imp->editedItem, COL_NAME);
         if (w == old) {
             _imp->tree->closePersistentEditor(_imp->editedItem);
             _imp->editedItem = NULL;
