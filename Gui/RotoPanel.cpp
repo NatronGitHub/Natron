@@ -669,8 +669,9 @@ void RotoPanelPrivate::updateSplinesInfosGUI(int time)
             it->treeItem->setIcon(COL_COLOR, shapeColorIC);
             it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? iconInverted : iconUninverted);
             ComboBox* cb = dynamic_cast<ComboBox*>(tree->itemWidget(it->treeItem, COL_OPERATOR));
-            assert(cb);
-            cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
+            if (cb) {
+                cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
+            }
         }
     }
 }
