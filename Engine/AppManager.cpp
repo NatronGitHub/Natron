@@ -578,9 +578,6 @@ void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
     U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
     _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
     
-    qDebug() << "NodeCache RAM size: " << printAsRAM(_imp->_nodeCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_imp->_viewerCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
 }
 
 void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
@@ -589,9 +586,6 @@ void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
     _imp->_viewerCache->setMaximumCacheSize(size);
     _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)size);
     
-    qDebug() << "NodeCache RAM size: " << printAsRAM(_imp->_nodeCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_imp->_viewerCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache disk size: " << printAsRAM(size);
 }
 
 void AppManager::setPlaybackCacheMaximumSize(double p)
@@ -603,9 +597,6 @@ void AppManager::setPlaybackCacheMaximumSize(double p)
     U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
     _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
     
-    qDebug() << "NodeCache RAM size: " << printAsRAM(_imp->_nodeCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache RAM size (playback-cache): " << printAsRAM(_imp->_viewerCache->getMaximumMemorySize());
-    qDebug() << "ViewerCache disk size: " << printAsRAM(maxDiskCacheSize);
 }
 
 void AppManager::loadAllPlugins()
