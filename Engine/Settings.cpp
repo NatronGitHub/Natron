@@ -48,7 +48,7 @@ static QStringList getDefaultOcioConfigPaths() {
 #ifdef __NATRON_LINUX__
     QStringList ret;
     ret.push_back(QString("/usr/share/OpenColorIO-Configs"));
-    ret.push_back(QString(binaryPath + "../share/OpenColorIO-Configs"));x
+    ret.push_back(QString(binaryPath + "../share/OpenColorIO-Configs"));
     ret.push_back(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
     return ret;
 #elif defined(__NATRON_WIN32__)
