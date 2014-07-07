@@ -421,6 +421,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         // scale the zoomFactor by the inverse of the current render scale
         // so that the viewer doesn't get shifted/scaled
         zoomFactor /= scale.x;
+#pragma message WARN("value stored in zoomFactor is never read, is it normal?")
     }
     
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
