@@ -229,7 +229,7 @@ namespace Natron {
         {
         }
 
-        ~Cache() {
+        virtual ~Cache() {
             QMutexLocker locker(&_lock);
             _memoryCache.clear();
             _diskCache.clear();
