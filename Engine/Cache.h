@@ -17,6 +17,7 @@
 #include <fstream>
 #include <functional>
 #include <list>
+#include <cstddef>
 
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
@@ -182,15 +183,15 @@ namespace Natron {
      
 
 
-        qint64 _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
+        std::size_t _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
 
-        qint64 _maximumCacheSize; // maximum size allowed for the cache
+        std::size_t _maximumCacheSize; // maximum size allowed for the cache
 
         /*mutable because we need to change modify it in the sealEntryInternal function which
              is called by an external object that have a const ref to the cache.
              */
-        mutable qint64 _memoryCacheSize; // current size of the cache in bytes
-        mutable qint64 _diskCacheSize;
+        mutable std::size_t _memoryCacheSize; // current size of the cache in bytes
+        mutable std::size_t _diskCacheSize;
 
         mutable QMutex _lock;
 
@@ -493,7 +494,7 @@ namespace Natron {
          * @brief To be called by a CacheEntry whenever it's size changes.
          * This way the cache can keep track of the real memory footprint.
          **/
-        virtual void notifyEntrySizeChanged(size_t oldSize,size_t newSize) const OVERRIDE FINAL {
+        virtual void notifyEntrySizeChanged(std::size_t oldSize, std::size_t newSize) const OVERRIDE FINAL {
             ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
             ///lock should already be taken.
             assert(!_lock.tryLock());
@@ -506,7 +507,7 @@ namespace Natron {
         /**
          * @brief To be called by a CacheEntry on allocation.
          **/
-        virtual void notifyEntryAllocated(int time,size_t size) const OVERRIDE FINAL {
+        virtual void notifyEntryAllocated(int time, std::size_t size) const OVERRIDE FINAL {
             ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
             ///lock should already be taken.
             assert(!_lock.tryLock());
@@ -519,7 +520,7 @@ namespace Natron {
         /**
          * @brief To be called by a CacheEntry on destruction.
          **/
-        virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const OVERRIDE FINAL {
+        virtual void notifyEntryDestroyed(int time, std::size_t size,Natron::StorageMode storage) const OVERRIDE FINAL {
             ///The entry could be destoryed at any time when the boost shared ptr use count reaches 0.
             ///This might not be while the cache is still under control of the thread safety
             ///make sure we lock this part by trying to lock
@@ -545,7 +546,7 @@ namespace Natron {
          * it is reallocated in the RAM.
          **/
         virtual void notifyEntryStorageChanged(Natron::StorageMode oldStorage,Natron::StorageMode newStorage,int time,
-                                               size_t size) const OVERRIDE FINAL
+                                               std::size_t size) const OVERRIDE FINAL
         {
             ///The entry could be destoryed at any time when the boost shared ptr use count reaches 0.
             ///This might not be while the cache is still under control of the thread safety
@@ -601,13 +602,13 @@ namespace Natron {
 
         void setMaximumInMemorySize(double percentage) { _maximumInMemorySize = _maximumCacheSize * percentage; }
 
-        U64 getMaximumSize() const  { QMutexLocker locker(&_lock); return _maximumCacheSize;}
+        std::size_t getMaximumSize() const  { QMutexLocker locker(&_lock); return _maximumCacheSize;}
 
-        U64 getMaximumMemorySize() const { QMutexLocker locker(&_lock); return _maximumInMemorySize;}
+        std::size_t getMaximumMemorySize() const { QMutexLocker locker(&_lock); return _maximumInMemorySize;}
 
-        U64 getMemoryCacheSize() const  { QMutexLocker locker(&_lock); return _memoryCacheSize;}
+        std::size_t getMemoryCacheSize() const  { QMutexLocker locker(&_lock); return _memoryCacheSize;}
 
-        U64 getDiskCacheSize() const { QMutexLocker locker(&_lock); return _diskCacheSize;}
+        std::size_t getDiskCacheSize() const { QMutexLocker locker(&_lock); return _diskCacheSize;}
 
         CacheSignalEmitter* activateSignalEmitter() const {
             QMutexLocker locker(&_lock);
