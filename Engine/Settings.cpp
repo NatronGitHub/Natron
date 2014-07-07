@@ -208,17 +208,22 @@ void Settings::initializeKnobs(){
     _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
     _ocioConfigKnob->setAnimationEnabled(false);
     
-    QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
-    QDir ocioConfigsDir(defaultOcioConfigsPath);
     std::vector<std::string> configs;
     int defaultIndex = 0;
-    if (ocioConfigsDir.exists()) {
-        QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-        for (int i = 0; i < entries.size(); ++i) {
-            if (entries[i].contains("nuke-default")) {
-                defaultIndex = i;
+    
+    QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
+    for (int i = 0; i < defaultOcioConfigsPaths.size(); ++i) {
+        QDir ocioConfigsDir(defaultOcioConfigsPaths[i]);
+        if (ocioConfigsDir.exists()) {
+            QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+            for (int j = 0; j < entries.size(); ++j) {
+                if (entries[j].contains("nuke-default")) {
+                    defaultIndex = j;
+                }
+                configs.push_back(entries[j].toStdString());
             }
-            configs.push_back(entries[i].toStdString());
+            
+            break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
@@ -976,28 +981,34 @@ bool Settings::tryLoadOpenColorIOConfig()
         ///try to load from the combobox
         QString activeEntryText(_ocioConfigKnob->getActiveEntryText().c_str());
         QString configFileName = QString(activeEntryText + ".ocio");
-        QString defaultConfigsPath = getDefaultOcioConfigPath();
-        QDir defaultConfigsDir(defaultConfigsPath);
-        if (!defaultConfigsDir.exists()) {
-            qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+        QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
+        for (int i = 0; i < defaultConfigsPaths.size();++i) {
+            QDir defaultConfigsDir(defaultConfigsPaths[i]);
+            if (!defaultConfigsDir.exists()) {
+                qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+                continue;
+            }
+            ///try to open the .ocio config file first in the defaultConfigsDir
+            ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
+            if (!defaultConfigsDir.exists(configFileName)) {
+                QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
+                if (!subDir.exists()) {
+                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                    return false;
+                }
+                if (!subDir.exists("config.ocio")) {
+                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                    return false;
+                }
+                configFile = subDir.absoluteFilePath("config.ocio");
+            } else {
+                configFile = defaultConfigsDir.absoluteFilePath(configFileName);
+            }
+        }
+        if (configFile.isEmpty()) {
             return false;
         }
-        ///try to open the .ocio config file first in the defaultConfigsDir
-        ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
-        if (!defaultConfigsDir.exists(configFileName)) {
-            QDir subDir(defaultConfigsPath + QDir::separator() + activeEntryText);
-            if (!subDir.exists()) {
-                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
-                return false;
-            }
-            if (!subDir.exists("config.ocio")) {
-                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
-                return false;
-            }
-            configFile = subDir.absoluteFilePath("config.ocio");
-        } else {
-            configFile = defaultConfigsDir.absoluteFilePath(configFileName);
-        }
+        
     }
     qDebug() << "setting OCIO=" << configFile;
     qputenv("OCIO", configFile.toUtf8());
