@@ -415,7 +415,15 @@ void Settings::initializeKnobs(){
     }
     
     _maxRAMPercent->setHintToolTip(ramHint);
+    _maxRAMPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxRAMPercent);
+    
+    _maxRAMLabel = Natron::createKnob<String_Knob>(this, "which represents");
+    _maxRAMLabel->setName("maxRamLabel");
+    _maxRAMLabel->setIsPersistant(false);
+    _maxRAMLabel->setAsLabel();
+    _maxRAMLabel->setAnimationEnabled(false);
+    _cachingTab->addKnob(_maxRAMLabel);
     
     _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage (% maximum RAM for caching");
     _maxPlayBackPercent->setAnimationEnabled(false);
@@ -425,7 +433,16 @@ void Settings::initializeKnobs(){
                                         " dedicated for the playback cache. Normally you shouldn't change this value"
                                         " as it is tuned automatically by the Maximum system's RAM for caching, but"
                                         " this is made possible for convenience.");
+    _maxPlayBackPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxPlayBackPercent);
+    
+    _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, "which represents");
+    _maxPlaybackLabel->setName("maxPlaybackLabel");
+    _maxPlaybackLabel->setIsPersistant(false);
+    _maxPlaybackLabel->setAsLabel();
+    _maxPlaybackLabel->setAnimationEnabled(false);
+    _cachingTab->addKnob(_maxPlaybackLabel);
+
     
     _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GB)");
     _maxDiskCacheGB->setAnimationEnabled(false);
@@ -433,6 +450,9 @@ void Settings::initializeKnobs(){
     _maxDiskCacheGB->setMaximum(100);
     _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
     _cachingTab->addKnob(_maxDiskCacheGB);
+    
+ 
+
     
     
     ///readers & writers settings are created in a postponed manner because we don't know
@@ -447,6 +467,16 @@ void Settings::initializeKnobs(){
     setDefaultValues();
 }
 
+
+void Settings::setCachingLabels()
+{
+    int maxPlaybackPercent = _maxPlayBackPercent->getValue();
+    int maxTotalRam = _maxRAMPercent->getValue();
+    
+    U64 maxRAM = (U64)(((double)maxTotalRam / 100.) * getSystemTotalRAM());
+    _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString(), 0);
+    _maxPlaybackLabel->setValue(printAsRAM((U64)(maxRAM * ((double)maxPlaybackPercent / 100.))).toStdString(), 0);
+}
 
 void Settings::setDefaultValues() {
     
@@ -471,6 +501,7 @@ void Settings::setDefaultValues() {
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
     _maxDiskCacheGB->setDefaultValue(10,0);
+    setCachingLabels();
     _defaultNodeColor->setDefaultValue(0.6,0);
     _defaultNodeColor->setDefaultValue(0.6,1);
     _defaultNodeColor->setDefaultValue(0.6,2);
@@ -1046,8 +1077,10 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
         appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheSize());
     } else if(k == _maxRAMPercent.get()) {
         appPTR->setApplicationsCachesMaximumMemoryPercent(getRamMaximumPercent());
+        setCachingLabels();
     } else if(k == _maxPlayBackPercent.get()) {
         appPTR->setPlaybackCacheMaximumSize(getRamPlaybackMaximumPercent());
+        setCachingLabels();
     } else if(k == _numberOfThreads.get()) {
         int nbThreads = getNumberOfThreads();
         if (nbThreads == -1) {
@@ -1209,6 +1242,7 @@ void Settings::restoreDefault() {
             knobs[i]->resetToDefaultValue(j);
         }
     }
+    setCachingLabels();
     endKnobsValuesChanged(Natron::PLUGIN_EDITED);
 }
 

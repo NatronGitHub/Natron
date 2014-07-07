@@ -149,6 +149,7 @@ private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
 
+    void setCachingLabels();
     void setDefaultValues();
         
     bool tryLoadOpenColorIOConfig();
@@ -173,7 +174,11 @@ private:
     
     boost::shared_ptr<Page_Knob> _cachingTab;
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
+    boost::shared_ptr<String_Knob> _maxPlaybackLabel;
+    
     boost::shared_ptr<Int_Knob> _maxRAMPercent;
+    boost::shared_ptr<String_Knob> _maxRAMLabel;
+    
     boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
     
     boost::shared_ptr<Page_Knob> _viewersTab;
