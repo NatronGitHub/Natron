@@ -423,28 +423,27 @@ namespace Natron {
             QMutexLocker locker(&_lock);
             std::pair<hash_type,CachedValue> evictedFromMemory = _memoryCache.evict();
             while (evictedFromMemory.second.entry) {
-                
                 ///move back the entry on disk if it can be store on disk
                 if (evictedFromMemory.second.entry->isStoredOnDisk()) {
-                    
                     evictedFromMemory.second.entry->deallocate();
                     /*insert it back into the disk portion */
                     
                     /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
                     while (_diskCacheSize + evictedFromMemory.second.entry->size() >= _maximumCacheSize) {
-                        
                         std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
                         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                         //we'll let the user of these entries purge the extra entries left in the cache later on
                         if (!evictedFromDisk.second.entry) {
                             break;
                         }
+                        ///Erase the file from the disk if we reach the limit.
+                        evictedFromDisk.second.entry->removeAnyBackingFile();
                     }
                     
                     /*update the disk cache size*/
                     CacheIterator existingDiskCacheEntry = _diskCache(evictedFromMemory.second.entry->getHashKey());
                     /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
-                    if(existingDiskCacheEntry == _diskCache.end()){
+                    if (existingDiskCacheEntry == _diskCache.end()) {
                         _diskCache.insert(evictedFromMemory.second.entry->getHashKey(),evictedFromMemory.second);
                     }
                     
@@ -459,7 +458,7 @@ namespace Natron {
             }
         }
 
-        void clearExceedingEntries(){
+        void clearExceedingEntries() {
             QMutexLocker locker(&_lock);
             while (_memoryCacheSize >= _maximumInMemorySize) {
                 if (!tryEvictEntry()) {
@@ -783,7 +782,6 @@ namespace Natron {
 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
                 while ((_diskCacheSize + _memoryCacheSize + evicted.second.entry->size()) >= _maximumCacheSize) {
-
                     std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
                     //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                     //we'll let the user of these entries purge the extra entries left in the cache later on
