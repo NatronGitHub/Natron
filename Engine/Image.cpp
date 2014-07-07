@@ -276,10 +276,12 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     }
 
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
+#ifdef NATRON_DEBUG
     qDebug() << "render " << ret.size() << " rectangles";
     for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
         qDebug() << "rect: " << "x1= "<<  it->x1 << " , x2= "<< it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
     }
+#endif
     return ret;
 }
 

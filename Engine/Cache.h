@@ -299,11 +299,17 @@ namespace Natron {
                                 ret.erase(it);
                                 return false;
                             }
-
+                            
                             //put it back into the RAM
                             _memoryCache.insert(it->_entry->getHashKey(),*it);
                             _memoryCacheSize += it->_entry->size();
 
+                            //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
+                            while (_memoryCacheSize > _maximumInMemorySize) {
+                                if (!tryEvictEntry()) {
+                                    break;
+                                }
+                            }
 
                             if(_signalEmitter)
                                 _signalEmitter->emitAddedEntry();
@@ -677,7 +683,7 @@ namespace Natron {
                 /*insert it back into the disk portion */
 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while (_diskCacheSize + evicted.second._entry->size() >= _maximumCacheSize) {
+                while ((_diskCacheSize + _memoryCacheSize + evicted.second._entry->size()) >= _maximumCacheSize) {
 
                     std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
                     //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
