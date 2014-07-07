@@ -73,6 +73,7 @@ bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterOrR
             if (masterTrack->getCurve(0)->getKeyFrameWithTime(time, &k)) {
                 *x = k.getValue();
                 ok = masterTrack->getCurve(1)->getKeyFrameWithTime(time, &k);
+#pragma message WARN("value stored in ok is never read, is it normal?")
                 *y = k.getValue();
                 return true;
             } else {
