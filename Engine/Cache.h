@@ -430,7 +430,7 @@ namespace Natron {
                     /*insert it back into the disk portion */
                     
                     /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                    while (_diskCacheSize + evictedFromMemory.second._entry->size() >= _maximumCacheSize) {
+                    while ((_diskCacheSize + (qint64)evictedFromMemory.second._entry->size()) >= _maximumCacheSize) {
                         
                         std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
                         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
@@ -438,6 +438,9 @@ namespace Natron {
                         if (!evictedFromDisk.second._entry) {
                             break;
                         }
+                        ///Erase the file from the disk if we reach the limit.
+                        evictedFromDisk.second._entry->removeAnyBackingFile();
+
                     }
                     
                     /*update the disk cache size*/
@@ -748,7 +751,7 @@ namespace Natron {
         void sealEntry(const CachedValue& entry) const {
             assert(!_lock.tryLock()); // must be locked
             /*If the cache size exceeds the maximum size allowed, try to make some space*/
-            while (_memoryCacheSize+entry._entry->size() >= _maximumInMemorySize) {
+            while ((_memoryCacheSize+(qint64)entry._entry->size()) >= _maximumInMemorySize) {
                 if (!tryEvictEntry()) {
                     break;
                 }
@@ -781,7 +784,7 @@ namespace Natron {
                 /*insert it back into the disk portion */
 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while ((_diskCacheSize + _memoryCacheSize + evicted.second._entry->size()) >= _maximumCacheSize) {
+                while ((_diskCacheSize + _memoryCacheSize + (qint64)evicted.second._entry->size()) >= _maximumCacheSize) {
 
                     std::pair<hash_type,CachedValue> evictedFromDisk = _diskCache.evict();
                     //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
