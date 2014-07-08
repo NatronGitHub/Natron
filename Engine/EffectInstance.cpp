@@ -99,6 +99,7 @@ struct EffectInstance::Implementation {
     , renderAborted(false)
     , renderArgs()
     , beginEndRenderCount()
+    , inputImages()
     , lastRenderArgsMutex()
     , lastRenderHash(0)
     , lastImage()
@@ -113,6 +114,9 @@ struct EffectInstance::Implementation {
     ThreadStorage<RenderArgs> renderArgs;
     ThreadStorage<int> beginEndRenderCount;
     
+    ///Whenever a render thread is running, it stores here a temp copy used in getImage
+    ///to make sure these images aren't cleared from the cache.
+    ThreadStorage< std::list< boost::shared_ptr<Natron::Image> > > inputImages;
     
     QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastImageKey
     U64  lastRenderHash; //< the last hash given to render
@@ -238,6 +242,21 @@ struct EffectInstance::Implementation {
         const RenderArgs& getArgs() const { return args; }
     };
     
+    void addInputImageTempPointer(const boost::shared_ptr<Natron::Image>& img) {
+        if (inputImages.hasLocalData()) {
+            inputImages.localData().push_back(img);
+        } else {
+            std::list< boost::shared_ptr<Natron::Image> > newList;
+            newList.push_back(img);
+            inputImages.localData() = newList;
+        }
+    }
+    
+    void clearInputImagePointers() {
+        if (inputImages.hasLocalData()) {
+            inputImages.localData().clear();
+        }
+    }
 };
 
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
@@ -472,7 +491,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         Natron::ImageComponents outputComps;
         Natron::ImageBitDepth outputDepth;
         getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
-        return roto->renderMask(roi,outputComps, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
+        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(roi,outputComps, nodeHash,rotoAge,
+                                                                 RectI(), time,depth, view, mipMapLevel, byPassCache);
+        _imp->addInputImageTempPointer(mask);
+        return mask;
     }
     
     
@@ -506,6 +528,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         inputImg->upscale_mipmap(inputImg->getPixelRoD(), upscaledImg.get(), inputImgMipMapLevel);
         return upscaledImg;
     } else {
+        _imp->addInputImageTempPointer(inputImg);
         return inputImg;
     }
 }
@@ -831,6 +854,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                     inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                     ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                     image = getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                    ///Clear input images pointer because getImage has stored the image .
+                    _imp->clearInputImagePointers();
                 } else {
                     return image;
                 }
@@ -957,7 +982,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                boost::shared_ptr<Image> ret =  getImage(inputNbIdentity, inputTimeIdentity,
+                                                         args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                ///Clear input images pointer because getImage has stored ret .
+                _imp->clearInputImagePointers();
             } else {
                 return boost::shared_ptr<Image>();
             }
@@ -2014,7 +2042,15 @@ Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scal
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
+    
+    ///Clear any previous input image which may be left
+    _imp->clearInputImagePointers();
+    
     Natron::Status ret = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+    
+    ///Clear any previous input image which may be left
+    _imp->clearInputImagePointers();
+
     decrementRecursionLevel();
     return ret;
 }
