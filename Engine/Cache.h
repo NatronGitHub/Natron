@@ -636,8 +636,10 @@ namespace Natron {
                 std::list<CachedValue>& ret = getValueFromIterator(existingEntry);
                 for (typename std::list<CachedValue>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                     if(it->entry->getKey() == entry->getKey()){
-                        it->entry->deallocate();
-                        it->entry->removeAnyBackingFile();
+                        if (it->entry->isStoredOnDisk()) {
+                            it->entry->deallocate();
+                            it->entry->removeAnyBackingFile();
+                        }
                         ret.erase(it);
                         break;
                     }
@@ -651,8 +653,10 @@ namespace Natron {
                     std::list<CachedValue>& ret = getValueFromIterator(existingEntry);
                     for (typename std::list<CachedValue>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                         if (it->entry->getKey() == entry->getKey()) {
-                            it->entry->deallocate();
-                            it->entry->removeAnyBackingFile();
+                            if (it->entry->isStoredOnDisk()) {
+                                it->entry->deallocate();
+                                it->entry->removeAnyBackingFile();
+                            }
                             ret.erase(it);
                             break;
                         }
