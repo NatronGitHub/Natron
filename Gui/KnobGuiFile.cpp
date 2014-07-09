@@ -53,7 +53,7 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
 
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    _lineEdit->setPlaceholderText("File path...");
+    _lineEdit->setPlaceholderText(tr("File path..."));
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     
     ///set the copy/link actions in the right click menu
@@ -261,7 +261,7 @@ void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()));
-    _lineEdit->setPlaceholderText(QString("File path..."));
+    _lineEdit->setPlaceholderText(tr("File path..."));
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
     }
@@ -403,7 +403,7 @@ void Path_KnobGui::createWidget(QHBoxLayout* layout)
     enableRightClickMenu(_lineEdit, 0);
     
     _openFileButton = new Button(layout->parentWidget());
-    _openFileButton->setToolTip("Click to select a path to append to/replace this variable.");
+    _openFileButton->setToolTip(tr("Click to select a path to append to/replace this variable."));
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));

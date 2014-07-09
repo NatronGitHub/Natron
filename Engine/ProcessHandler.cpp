@@ -176,7 +176,7 @@ void ProcessHandler::onProcessCanceled(){
 
 void ProcessHandler::onProcessError(QProcess::ProcessError err){
     if(err == QProcess::FailedToStart){
-        Natron::errorDialog(_writer->getName(),"The render process failed to start");
+        Natron::errorDialog(_writer->getName(),QObject::tr("The render process failed to start").toStdString());
     }else if(err == QProcess::Crashed){
         //@TODO: find out a way to get the backtrace
     }

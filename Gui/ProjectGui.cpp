@@ -81,10 +81,10 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
                                container,
                                DockablePanel::READ_ONLY_NAME,
                                false,
-                               "Project Settings",
-                               "The settings of the current project.",
+                               tr("Project Settings"),
+                               tr("The settings of the current project."),
                                false,
-                               "Settings",
+                               tr("Settings"),
                                parent);
     
     
@@ -116,7 +116,7 @@ _project(project)
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(5, 5, 0, 0);
     setLayout(_mainLayout);
-    setWindowTitle("New Format");
+    setWindowTitle(tr("New Format"));
     
     _fromViewerLine = new QWidget(this);
     _fromViewerLineLayout = new QHBoxLayout(_fromViewerLine);
@@ -132,11 +132,11 @@ _project(project)
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
     
-    _copyFromViewerButton = new Button("Copy from",_fromViewerLine);
+    _copyFromViewerButton = new Button(tr("Copy from"),_fromViewerLine);
     _copyFromViewerButton->setToolTip(Qt::convertFromPlainText(
-                                      "Fill the new format with the currently"
+                                      tr("Fill the new format with the currently"
                                       " displayed region of definition of the viewer"
-                                      " indicated on the left.", Qt::WhiteSpaceNormal));
+                                      " indicated on the left."), Qt::WhiteSpaceNormal));
     QObject::connect(_copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()));
     _mainLayout->addWidget(_fromViewerLine);
     
@@ -163,7 +163,7 @@ _project(project)
     _parametersLineLayout->addWidget(_heightSpinBox);
     
     
-    _pixelAspectLabel = new QLabel("pixel aspect:",_parametersLine);
+    _pixelAspectLabel = new QLabel(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this,SpinBox::DOUBLE_SPINBOX);
     _pixelAspectSpinBox->setMinimum(0.);
@@ -177,7 +177,7 @@ _project(project)
     _mainLayout->addWidget(_formatNameLine);
     
     
-    _nameLabel = new QLabel("Name:",_formatNameLine);
+    _nameLabel = new QLabel(tr("Name:"),_formatNameLine);
     _formatNameLayout->addWidget(_nameLabel);
     _nameLineEdit = new LineEdit(_formatNameLine);
     _formatNameLayout->addWidget(_nameLineEdit);
@@ -188,11 +188,11 @@ _project(project)
     _mainLayout->addWidget(_buttonsLine);
     
     
-    _cancelButton = new Button("Cancel",_buttonsLine);
+    _cancelButton = new Button(tr("Cancel"),_buttonsLine);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _buttonsLineLayout->addWidget(_cancelButton);
     
-    _okButton = new Button("Ok",_buttonsLine);
+    _okButton = new Button(tr("Ok"),_buttonsLine);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _buttonsLineLayout->addWidget(_okButton);
     

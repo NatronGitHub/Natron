@@ -557,7 +557,7 @@ OFX::Host::Memory::Instance* OfxImageEffectInstance::newMemoryInstance(size_t nB
     OfxMemory* ret = new OfxMemory(_node);
     bool allocated = ret->alloc(nBytes);
     if (!ret->getPtr() || !allocated) {
-        Natron::errorDialog("Out of memory", node()->getNode()->getName_mt_safe() + " failed to allocate memory (" + printAsRAM(nBytes).toStdString() + ").");
+        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), node()->getNode()->getName_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
     return ret;
 }

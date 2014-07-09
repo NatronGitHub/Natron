@@ -4246,7 +4246,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,Natron
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM(params->getElementsCount() * sizeof(Natron::Image::data_t)).toStdString();
-            Natron::errorDialog("Out of memory",ss.str());
+            Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
             return image;
         }
 

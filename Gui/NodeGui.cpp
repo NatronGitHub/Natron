@@ -1157,18 +1157,18 @@ void NodeGui::populateMenu(){
     decloneAction->setEnabled(isCloned);
     _menu->addAction(decloneAction);
     
-    QAction* togglePreviewAction = new QAction("Toggle preview image",_menu);
+    QAction* togglePreviewAction = new QAction(tr("Toggle preview image"),_menu);
     togglePreviewAction->setCheckable(true);
     togglePreviewAction->setChecked(_internalNode->isPreviewEnabled());
     QObject::connect(togglePreviewAction,SIGNAL(triggered()),this,SLOT(togglePreview()));
     _menu->addAction(togglePreviewAction);
     
-    QAction* deleteAction = new QAction("Delete",_menu);
+    QAction* deleteAction = new QAction(tr("Delete"),_menu);
     QObject::connect(deleteAction,SIGNAL(triggered()),_graph,SLOT(deleteSelectedNode()));
     _menu->addAction(deleteAction);
     
     if (_internalNode->maximumInputs() >= 2) {
-        QAction* switchInputs = new QAction("Switch inputs 1 & 2",_menu);
+        QAction* switchInputs = new QAction(tr("Switch inputs 1 & 2"),_menu);
         QObject::connect(switchInputs, SIGNAL(triggered()), this, SLOT(onSwitchInputActionTriggered()));
         _menu->addAction(switchInputs);
     }

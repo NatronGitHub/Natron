@@ -918,7 +918,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM(cachedImgParams->getElementsCount() * sizeof(Image::data_t)).toStdString();
-            Natron::errorDialog("Out of memory",ss.str());
+            Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
             return newImage;
         }
         assert(newImage);
@@ -1649,14 +1649,14 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant,Natron::ValueChang
                 std::string sequentialNode;
                 if (_node->hasSequentialOnlyNodeUpstream(sequentialNode)) {
                     if (_node->getApp()->getProject()->getProjectViewsCount() > 1) {
-                        Natron::StandardButton answer = Natron::questionDialog("Render", sequentialNode + " can only "
+                        Natron::StandardButton answer = Natron::questionDialog(QObject::tr("Render").toStdString(), sequentialNode + QObject::tr(" can only "
                                                                                "render in sequential mode. Due to limitations in the "
-                                                                               "OpenFX standard that means that " NATRON_APPLICATION_NAME
+                                                                               "OpenFX standard that means that %1"
                                                                                " will not be able "
                                                                                "to render all the views of the project. "
                                                                                "Only the main view of the project will be rendered, you can "
                                                                                "change the main view in the project settings. Would you like "
-                                                                               "to continue ?");
+                                                                               "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString());
                         if (answer != Natron::Yes) {
                             return;
                         }

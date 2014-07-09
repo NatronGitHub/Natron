@@ -741,7 +741,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 std::stringstream ss;
                 ss << "Failed to allocate a texture of ";
                 ss << printAsRAM(cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t)).toStdString();
-                Natron::errorDialog("Out of memory",ss.str());
+                Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
                 return StatFailed;
             }
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
