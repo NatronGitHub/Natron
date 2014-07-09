@@ -1004,7 +1004,7 @@ bool Settings::tryLoadOpenColorIOConfig()
             return false;
         }
         if (!QFile::exists(file.c_str())) {
-            Natron::errorDialog("OpenColorIO", file + ": No such file.");
+            Natron::errorDialog("OpenColorIO", file + QObject::tr(": No such file.").toStdString());
             return false;
         }
         configFile = file.c_str();
@@ -1024,11 +1024,11 @@ bool Settings::tryLoadOpenColorIOConfig()
             if (!defaultConfigsDir.exists(configFileName)) {
                 QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
                 if (!subDir.exists()) {
-                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString());
                     return false;
                 }
                 if (!subDir.exists("config.ocio")) {
-                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
+                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString());
                     return false;
                 }
                 configFile = subDir.absoluteFilePath("config.ocio");
@@ -1063,8 +1063,8 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
                     assert(n);
                     if(isFirstViewer){
                         if(!n->supportsGLSL() && _texturesMode->getValue() != 0){
-                            Natron::errorDialog("Viewer", "You need OpenGL GLSL in order to use 32 bit fp texutres.\n"
-                                                "Reverting to 8bits textures.");
+                            Natron::errorDialog(QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                                                "Reverting to 8bits textures.").toStdString());
                             _texturesMode->setValue(0,0);
                             return;
                         }

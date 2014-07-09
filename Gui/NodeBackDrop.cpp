@@ -105,8 +105,8 @@ void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,QVBoxLayo
     
     _imp->menu = new QMenu(_imp->graph);
     
-    QString tooltip("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
-                    "move all the nodes inside the backdrop.");
+    QString tooltip(tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
+                    "move all the nodes inside the backdrop."));
     _imp->settingsPanel = new DockablePanel(_imp->graph->getGui(), //< pointer to the gui
                                             this, //< pointer to the knob holder (this)
                                             dockContainer, //< pointer to the layout that will contain this settings panel
@@ -115,7 +115,7 @@ void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,QVBoxLayo
                                             name, //< initial name
                                             Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal), //< help tooltip
                                             false, //< no default page
-                                            "BackDrop", //< default page name
+                                            tr("BackDrop"), //< default page name
                                             dockContainer->parentWidget());
     
     
@@ -175,11 +175,11 @@ NodeBackDrop::~NodeBackDrop()
 
 void NodeBackDrop::initializeKnobs()
 {
-    _imp->knobLabel = Natron::createKnob<String_Knob>(this, "Label");
+    _imp->knobLabel = Natron::createKnob<String_Knob>(this, tr("Label").toStdString());
     _imp->knobLabel->setAnimationEnabled(false);
     _imp->knobLabel->setAsMultiLine();
     _imp->knobLabel->setUsesRichText(true);
-    _imp->knobLabel->setHintToolTip("Text to display on the backdrop.");
+    _imp->knobLabel->setHintToolTip(tr("Text to display on the backdrop.").toStdString());
 }
 
 void NodeBackDropPrivate::setNameInternal(const QString& n)
@@ -393,35 +393,35 @@ void NodeBackDropPrivate::populateMenu()
 {
     menu->clear();
     
-    QAction* copyAction = new QAction("Copy",menu);
+    QAction* copyAction = new QAction(QObject::tr("Copy"),menu);
     copyAction->setShortcut(QKeySequence::Copy);
     QObject::connect(copyAction,SIGNAL(triggered()),_publicInterface,SLOT(copy()));
     menu->addAction(copyAction);
     
-    QAction* cutAction = new QAction("Cut",menu);
+    QAction* cutAction = new QAction(QObject::tr("Cut"),menu);
     cutAction->setShortcut(QKeySequence::Cut);
     QObject::connect(cutAction,SIGNAL(triggered()),_publicInterface,SLOT(cut()));
     menu->addAction(cutAction);
     
-    QAction* duplicateAction = new QAction("Duplicate",menu);
+    QAction* duplicateAction = new QAction(QObject::tr("Duplicate"),menu);
     duplicateAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_C));
     QObject::connect(duplicateAction,SIGNAL(triggered()),_publicInterface,SLOT(duplicate()));
     menu->addAction(duplicateAction);
     
-    QAction* cloneAction = new QAction("Clone",menu);
+    QAction* cloneAction = new QAction(QObject::tr("Clone"),menu);
     cloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_K));
     QObject::connect(cloneAction,SIGNAL(triggered()),_publicInterface,SLOT(clone()));
     cloneAction->setEnabled(!_publicInterface->isSlave());
     menu->addAction(cloneAction);
     
-    QAction* decloneAction = new QAction("Declone",menu);
+    QAction* decloneAction = new QAction(QObject::tr("Declone"),menu);
     decloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::ShiftModifier + Qt::Key_K));
     QObject::connect(decloneAction,SIGNAL(triggered()),_publicInterface,SLOT(declone()));
     decloneAction->setEnabled(_publicInterface->isSlave());
     menu->addAction(decloneAction);
     
     
-    QAction* deleteAction = new QAction("Delete",menu);
+    QAction* deleteAction = new QAction(QObject::tr("Delete"),menu);
     QObject::connect(deleteAction,SIGNAL(triggered()),_publicInterface,SLOT(remove()));
     menu->addAction(deleteAction);
 

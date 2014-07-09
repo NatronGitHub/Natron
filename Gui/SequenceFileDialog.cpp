@@ -180,9 +180,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
     if(mode == OPEN_DIALOG)
-        _lookInLabel = new QLabel("Look in:",_buttonsWidget);
+        _lookInLabel = new QLabel(tr("Look in:"),_buttonsWidget);
     else
-        _lookInLabel = new QLabel("Save in:",_buttonsWidget);
+        _lookInLabel = new QLabel(tr("Save in:"),_buttonsWidget);
     _buttonsLayout->addWidget(_lookInLabel);
     
     _lookInCombobox = new FileDialogComboBox(_buttonsWidget);
@@ -214,7 +214,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     QObject::connect(_createDirButton, SIGNAL(clicked()), this, SLOT(createDir()));
     
     
-    _previewButton = new Button("preview",_buttonsWidget);
+    _previewButton = new Button(tr("preview"),_buttonsWidget);
     _previewButton->setVisible(false);/// @todo Implement preview mode for the file dialog
     _buttonsLayout->addWidget(_previewButton);
     
@@ -267,8 +267,8 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _selectionWidget->setLayout(_selectionLayout);
     
     _sequenceButton = new ComboBox(_buttonsWidget);
-    _sequenceButton->addItem("Sequence:");
-    _sequenceButton->addItem("File:");
+    _sequenceButton->addItem(tr("Sequence:"));
+    _sequenceButton->addItem(tr("File:"));
     if(isSequenceDialog){
         _sequenceButton->setCurrentIndex(0);
     }else{
@@ -284,9 +284,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _selectionLayout->addWidget(_selectionLineEdit);
     
     if(mode == SequenceFileDialog::OPEN_DIALOG || mode == SequenceFileDialog::DIR_DIALOG) {
-        _openButton = new Button("Open",_selectionWidget);
+        _openButton = new Button(tr("Open"),_selectionWidget);
     } else {
-        _openButton = new Button("Save",_selectionWidget);
+        _openButton = new Button(tr("Save"),_selectionWidget);
     }
     _selectionLayout->addWidget(_openButton);
     
@@ -304,10 +304,10 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _filterLineWidget->setLayout(_filterLineLayout);
     
     if(_dialogMode == OPEN_DIALOG){
-        _filterLabel = new QLabel("Filter:",_filterLineWidget);
+        _filterLabel = new QLabel(tr("Filter:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }else if(_dialogMode == SAVE_DIALOG){
-        _filterLabel = new QLabel("File type:",_filterLineWidget);
+        _filterLabel = new QLabel(tr("File type:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
     
@@ -350,7 +350,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
 
     
     _filterLineLayout->addWidget(_filterWidget);
-    _cancelButton = new Button("Cancel",_filterLineWidget);
+    _cancelButton = new Button(tr("Cancel"),_filterLineWidget);
     _filterLineLayout->addWidget(_cancelButton);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(cancelSlot()));
     
@@ -384,16 +384,16 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     
     if(_dialogMode == OPEN_DIALOG){
         if(isSequenceDialog)
-            setWindowTitle("Open Sequence");
+            setWindowTitle(tr("Open Sequence"));
         else
-            setWindowTitle("Open File");
+            setWindowTitle(tr("Open File"));
     }else if(_dialogMode == SAVE_DIALOG){
         if(isSequenceDialog)
-            setWindowTitle("Save Sequence");
+            setWindowTitle(tr("Save Sequence"));
         else
-            setWindowTitle("Save File");
+            setWindowTitle(tr("Save File"));
     } else {
-        setWindowTitle("Select directory");
+        setWindowTitle(tr("Select directory"));
     }
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -496,7 +496,7 @@ void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext) {
         return;
     
     if (isDirectory(str)) {
-        QString text = _selectionLineEdit->text() + "Untitled";
+        QString text = _selectionLineEdit->text() + tr("Untitled");
         if(sequenceModeEnabled()){
             text.append('#');
         }
@@ -558,11 +558,11 @@ void SequenceFileDialog::createMenuActions(){
     
     _showHiddenAction = new QAction(this);
     _showHiddenAction->setCheckable(true);
-    _showHiddenAction->setText("Show hidden fildes");
+    _showHiddenAction->setText(tr("Show hidden fildes"));
     QObject::connect(_showHiddenAction, SIGNAL(triggered()), this, SLOT(showHidden()));
     
     _newFolderAction = new QAction(this);
-    _newFolderAction->setText("New folder");
+    _newFolderAction->setText(tr("New folder"));
     QObject::connect(_newFolderAction, SIGNAL(triggered()), this, SLOT(createDir()));
 }
 
@@ -1118,8 +1118,8 @@ void SequenceFileDialog::createDir(){
     _favoriteView->clearSelection();
     QString newFolderString;
     QInputDialog dialog(this);
-    dialog.setLabelText("Folder name:");
-    dialog.setWindowTitle("New folder");
+    dialog.setLabelText(tr("Folder name:"));
+    dialog.setWindowTitle(tr("New folder"));
     if(dialog.exec()){
         newFolderString = dialog.textValue();
         if(!newFolderString.isEmpty()){
@@ -1146,7 +1146,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(5, 5, 0, 0);
     setLayout(_mainLayout);
-    setWindowTitle("New favorite");
+    setWindowTitle(tr("New favorite"));
 
     _descriptionLabel = new QLabel("",this);
     _mainLayout->addWidget(_descriptionLabel);
@@ -1155,7 +1155,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
     _secondLineLayout = new QHBoxLayout(_secondLine);
 
     _pathLineEdit = new LineEdit(_secondLine);
-    _pathLineEdit->setPlaceholderText("path...");
+    _pathLineEdit->setPlaceholderText(tr("path..."));
     _secondLineLayout->addWidget(_pathLineEdit);
 
     
@@ -1174,11 +1174,11 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
     _thirdLineLayout = new QHBoxLayout(_thirdLine);
     _thirdLine->setLayout(_thirdLineLayout);
 
-    _cancelButton = new Button("Cancel",_thirdLine);
+    _cancelButton = new Button(tr("Cancel"),_thirdLine);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _thirdLineLayout->addWidget(_cancelButton);
 
-    _okButton = new Button("Ok",_thirdLine);
+    _okButton = new Button(tr("Ok"),_thirdLine);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _thirdLineLayout->addWidget(_okButton);
 
@@ -1191,7 +1191,7 @@ void AddFavoriteDialog::setLabelText(const QString& text){
 }
 
 void AddFavoriteDialog::openDir(){
-    QString str = QFileDialog::getExistingDirectory(this,"Select a directory",_fd->currentDirectory().path());
+    QString str = QFileDialog::getExistingDirectory(this,tr("Select a directory"),_fd->currentDirectory().path());
     _pathLineEdit->setText(str);
 }
 
@@ -1200,7 +1200,7 @@ QString AddFavoriteDialog::textValue() const{
 }
 void SequenceFileDialog::addFavorite(){
     AddFavoriteDialog dialog(this,this);
-    dialog.setLabelText("Folder path:");
+    dialog.setLabelText(tr("Folder path:"));
     QString newFavName,newFavPath;
     if(dialog.exec()){
         newFavName = dialog.textValue();
@@ -1267,13 +1267,13 @@ void SequenceFileDialog::openSelectedFiles(){
                         
                         text = "The file ";
                         text.append(views.begin()->second.c_str());
-                        text.append(" already exists.\n Would you like to replace it ?");
+                        text.append(tr(" already exists.\n Would you like to replace it ?"));
                     } else {
-                        text = "The sequence ";
+                        text = tr("The sequence ");
                         text.append(str);
-                        text.append(" already exists.\n Would you like to replace it ?");
+                        text.append(tr(" already exists.\n Would you like to replace it ?"));
                     }
-                    QMessageBox::StandardButton ret = QMessageBox::question(this, "Existing file", text,
+                    QMessageBox::StandardButton ret = QMessageBox::question(this, tr("Existing file"), text,
                                                                             QMessageBox::Yes | QMessageBox::No);
                     if(ret != QMessageBox::Yes){
                         return;
@@ -1864,8 +1864,8 @@ void FavoriteView::rename(){
     }
     QString newName;
     QInputDialog dialog(this);
-    dialog.setLabelText("Favorite name:");
-    dialog.setWindowTitle("Rename favorite");
+    dialog.setLabelText(tr("Favorite name:"));
+    dialog.setWindowTitle(tr("Rename favorite"));
     if(dialog.exec()){
         newName = dialog.textValue();
     }
@@ -1889,8 +1889,8 @@ void FavoriteView::editUrl(){
     }
     QString newName;
     QInputDialog dialog(this);
-    dialog.setLabelText("Folder path:");
-    dialog.setWindowTitle("Change folder path");
+    dialog.setLabelText(tr("Folder path:"));
+    dialog.setWindowTitle(tr("Change folder path"));
     if(dialog.exec()){
         newName = dialog.textValue();
     }
@@ -1917,13 +1917,13 @@ void FavoriteView::showMenu(const QPoint &position)
 {
     QList<QAction *> actions;
     if (indexAt(position).isValid()) {
-        QAction *removeAction = new QAction("Remove", this);
+        QAction *removeAction = new QAction(tr("Remove"), this);
         if (indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty())
             removeAction->setEnabled(false);
         connect(removeAction, SIGNAL(triggered()), this, SLOT(removeEntry()));
         actions.append(removeAction);
 
-        QAction *editAction = new QAction("Edit path", this);
+        QAction *editAction = new QAction(tr("Edit path"), this);
         if (indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty())
             editAction->setEnabled(false);
         connect(editAction, SIGNAL(triggered()), this, SLOT(editUrl()));
@@ -2037,7 +2037,7 @@ void FileDialogComboBox::showPopup(){
         model()->insertRow(model()->rowCount());
         idx = model()->index(model()->rowCount()-1, 0);
         // ### TODO maybe add a horizontal line before this
-        model()->setData(idx,"Recent Places");
+        model()->setData(idx,QObject::tr("Recent Places"));
         QStandardItemModel *m = qobject_cast<QStandardItemModel*>(model());
         if (m) {
             Qt::ItemFlags flags = m->flags(idx);

@@ -311,9 +311,9 @@ DockablePanel::DockablePanel(Gui* gui
             }
             _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
             _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
-            _imp->_colorButton->setToolTip(Qt::convertFromPlainText("Set here the color of the node in the nodegraph. "
+            _imp->_colorButton->setToolTip(Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                     "By default the color of the node is the one set in the "
-                                                                    "preferences of " NATRON_APPLICATION_NAME
+                                                                    "preferences of %1").arg(NATRON_APPLICATION_NAME)
                                                                     ,Qt::WhiteSpaceNormal));
             QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
             _imp->_colorButton->setFixedSize(15,15);
@@ -326,7 +326,7 @@ DockablePanel::DockablePanel(Gui* gui
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
-        _imp->_undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
+        _imp->_undoButton->setToolTip(Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal));
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFixedSize(20, 20);
         
@@ -338,7 +338,7 @@ DockablePanel::DockablePanel(Gui* gui
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
-        _imp->_redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
+        _imp->_redoButton->setToolTip(Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal));
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFixedSize(20, 20);
         
@@ -347,8 +347,8 @@ DockablePanel::DockablePanel(Gui* gui
         QIcon icRestore;
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
-        _imp->_restoreDefaultsButton->setToolTip(Qt::convertFromPlainText("Restore default values for this operator."
-                                                                    " This cannot be undone!",Qt::WhiteSpaceNormal));
+        _imp->_restoreDefaultsButton->setToolTip(Qt::convertFromPlainText(tr("Restore default values for this operator."
+                                                                    " This cannot be undone!"),Qt::WhiteSpaceNormal));
         _imp->_restoreDefaultsButton->setFixedSize(20, 20);
         QObject::connect(_imp->_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
     
@@ -430,8 +430,8 @@ QSize DockablePanelTabWidget::minimumSizeHint() const
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
     
-    Natron::StandardButton reply = Natron::questionDialog("Reset", "Are you sure you want to restore default settings for this operator ? "
-                                                          "This cannot be undone.",Natron::StandardButtons(Natron::Yes | Natron::No),
+    Natron::StandardButton reply = Natron::questionDialog(tr("Reset").toStdString(), tr("Are you sure you want to restore default settings for this operator ? "
+                                                          "This cannot be undone.").toStdString(),Natron::StandardButtons(Natron::Yes | Natron::No),
                                                           Natron::Yes);
     if (reply != Natron::Yes) {
         return;
@@ -470,7 +470,7 @@ void DockablePanel::onLineEditNameEditingFinished() {
     if (bd) {
         QString newName = _imp->_nameLineEdit->text();
         if (_imp->_gui->getNodeGraph()->checkIfBackDropNameExists(newName,bd)) {
-            Natron::errorDialog("Backdrop name", "A backdrop node with the same name already exists in the project.");
+            Natron::errorDialog(tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString());
             _imp->_nameLineEdit->setText(bd->getName());
             return;
         }
@@ -483,7 +483,7 @@ void DockablePanel::onLineEditNameEditingFinished() {
         std::string newName = _imp->_nameLineEdit->text().toStdString();
         if (newName.empty()) {
             _imp->_nameLineEdit->blockSignals(true);
-            Natron::errorDialog("Node name", "A node must have a unique name.");
+            Natron::errorDialog(tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString());
             _imp->_nameLineEdit->setText(effect->getName().c_str());
             _imp->_nameLineEdit->blockSignals(false);
             return;
@@ -498,7 +498,7 @@ void DockablePanel::onLineEditNameEditingFinished() {
         for (U32 i = 0;  i < allNodes.size(); ++i) {
             if (allNodes[i]->getName() == newName) {
                 _imp->_nameLineEdit->blockSignals(true);
-                Natron::errorDialog("Node name", "A node with the same name already exists in the project.");
+                Natron::errorDialog(tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString());
                 _imp->_nameLineEdit->setText(effect->getName().c_str());
                 _imp->_nameLineEdit->blockSignals(false);
                 return;
@@ -1151,7 +1151,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
     _centerNodeButton = new Button(QIcon(pixC),"",getHeaderWidget());
-    _centerNodeButton->setToolTip("Centers the node graph on this node.");
+    _centerNodeButton->setToolTip(tr("Centers the node graph on this node."));
     _centerNodeButton->setFixedSize(15, 15);
     QObject::connect(_centerNodeButton,SIGNAL(clicked()),this,SLOT(centerNode()));
     insertHeaderWidget(0, _centerNodeButton);

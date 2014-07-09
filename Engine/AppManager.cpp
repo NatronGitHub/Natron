@@ -115,21 +115,21 @@ struct AppManagerPrivate {
 
 void AppManager::printBackGroundWelcomeMessage(){
     std::cout << "================================================================================" << std::endl;
-    std::cout << NATRON_APPLICATION_NAME << "    " << " version: " << NATRON_VERSION_STRING << std::endl;
-    std::cout << ">>>Running in background mode (off-screen rendering only).<<<" << std::endl;
-    std::cout << "Please note that the background mode is in early stage and accepts only project files "
-                 "that would produce a valid output from the graphical version of " NATRON_APPLICATION_NAME << std::endl;
-    std::cout << "If the background mode doesn't output any result, please adjust your project via the application interface "
-                 "and then re-try using the background mode." << std::endl;
+    std::cout << NATRON_APPLICATION_NAME << "    " << QObject::tr(" version: ").toStdString() << NATRON_VERSION_STRING << std::endl;
+    std::cout << QObject::tr(">>>Running in background mode (off-screen rendering only).<<<").toStdString() << std::endl;
+    std::cout << QObject::tr("Please note that the background mode is in early stage and accepts only project files "
+                 "that would produce a valid output from the graphical version of ").toStdString() << NATRON_APPLICATION_NAME << std::endl;
+    std::cout << QObject::tr("If the background mode doesn't output any result, please adjust your project via the application interface "
+                 "and then re-try using the background mode.").toStdString() << std::endl;
 }
 
 void AppManager::printUsage() {
-    std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
-    std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
-    std::cout << "[--background] or [-b] enables background mode rendering. No graphical interface will be shown." << std::endl;
-    std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
+    std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
+    std::cout << "./" NATRON_APPLICATION_NAME << QObject::tr("    <project file path>").toStdString() << std::endl;
+    std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown.").toStdString() << std::endl;
+    std::cout << QObject::tr("[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
                  " name following the --writer argument. If no such node exists in the project file, the process will abort."
-                 "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
+                 "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file.").toStdString() << std::endl;
 
 }
 
@@ -326,10 +326,10 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     _imp->_nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
     _imp->_viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
 
-    setLoadingStatus(QString("Restoring the image cache..."));
+    setLoadingStatus(tr("Restoring the image cache..."));
     _imp->restoreCaches();
     
-    setLoadingStatus(QString("Restoring user settings..."));
+    setLoadingStatus(tr("Restoring user settings..."));
 
 
     _imp->_settings->restoreSettings();
@@ -382,12 +382,12 @@ AppInstance* AppManager::newAppInstance(const QString& projectName,const QString
     try {
         instance->load(projectName,writers);
     } catch (const std::exception& e) {
-        Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project") + ": " + e.what());
+        Natron::errorDialog(NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString() + ": " + e.what());
         removeInstance(_imp->_availableID);
         delete instance;
         return NULL;
     } catch (...) {
-        Natron::errorDialog(NATRON_APPLICATION_NAME, std::string("Cannot create project"));
+        Natron::errorDialog(NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString());
         removeInstance(_imp->_availableID);
         delete instance;
         return NULL;

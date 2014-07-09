@@ -205,8 +205,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     //_firstRowLayout->addWidget(_viewerLayers);
     
     _imp->_viewerChannels = new ComboBox(_imp->_firstSettingsRow);
-    _imp->_viewerChannels->setToolTip("<p><b>Channels: \n</b></p>"
-                                "The channels to display on the viewer.");
+    _imp->_viewerChannels->setToolTip("<p><b>" + tr("Channels") + ": \n</b></p>"
+                                +tr("The channels to display on the viewer."));
     _imp->_firstRowLayout->addWidget(_imp->_viewerChannels);
     
     _imp->_viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
@@ -219,8 +219,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     QObject::connect(_imp->_viewerChannels, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewerChannelsChanged(int)));
     
     _imp->_zoomCombobox = new ComboBox(_imp->_firstSettingsRow);
-    _imp->_zoomCombobox->setToolTip("<p><b>Zoom: \n</b></p>"
-                              "The zoom applied to the image on the viewer.");
+    _imp->_zoomCombobox->setToolTip("<p><b>" + tr("Zoom") + ": \n</b></p>"
+                              +tr("The zoom applied to the image on the viewer."));
     _imp->_zoomCombobox->addItem("10%");
     _imp->_zoomCombobox->addItem("25%");
     _imp->_zoomCombobox->addItem("50%");
@@ -256,25 +256,25 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_firstRowLayout->addWidget(_imp->_enableViewerRoI);
     
     _imp->_refreshButton = new Button(_imp->_firstSettingsRow);
-    _imp->_refreshButton->setToolTip("Forces a new render of the current frame."
-                                     "<p><b>Keyboard shortcut: U</b></p>");
+    _imp->_refreshButton->setToolTip(tr("Forces a new render of the current frame.")+
+                                     "<p><b>" + tr("Keyboard shortcut") + ": U</b></p>");
     _imp->_firstRowLayout->addWidget(_imp->_refreshButton);
     
     _imp->_activateRenderScale = new Button(_imp->_firstSettingsRow);
     QKeySequence rsKs(Qt::CTRL + Qt::Key_P);
-    _imp->_activateRenderScale->setToolTip("<p><b>Proxy mode</b></p>"
+    _imp->_activateRenderScale->setToolTip("<p><b>" + tr("Proxy mode") + "</b></p>" + tr(
                                            "Activates the downscaling by the amount indicated by the value on the right. \n"
                                            "The rendered images are degraded and as a result of this the whole rendering pipeline \n"
-                                           "is much faster."
-                                           "<p><b>Keyboard shortcut: "+ rsKs.toString(QKeySequence::NativeText) +"</b></p>");
+                                           "is much faster.")+
+                                           "<p><b>" + tr("Keyboard shortcut") + ": " + rsKs.toString(QKeySequence::NativeText) +"</b></p>");
     _imp->_activateRenderScale->setCheckable(true);
     _imp->_activateRenderScale->setChecked(false);
     _imp->_activateRenderScale->setDown(false);
     _imp->_firstRowLayout->addWidget(_imp->_activateRenderScale);
     
     _imp->_renderScaleCombo = new ComboBox(_imp->_firstSettingsRow);
-    _imp->_renderScaleCombo->setToolTip("When proxy mode is activated, it scales down the rendered image by this factor \n"
-                                        "to accelerate the rendering.");
+    _imp->_renderScaleCombo->setToolTip(tr("When proxy mode is activated, it scales down the rendered image by this factor \n"
+                                        "to accelerate the rendering."));
     _imp->_renderScaleCombo->addItem("2",QIcon(),QKeySequence(Qt::ALT + Qt::Key_1));
     _imp->_renderScaleCombo->addItem("4",QIcon(),QKeySequence(Qt::ALT + Qt::Key_2));
     _imp->_renderScaleCombo->addItem("8",QIcon(),QKeySequence(Qt::ALT + Qt::Key_3));
@@ -321,8 +321,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_mainLayout->addWidget(_imp->_secondSettingsRow);
     
     _imp->_gainBox = new SpinBox(_imp->_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
-    _imp->_gainBox->setToolTip("<p><b>Gain: \n</b></p>"
-                         "Multiplies the image by \nthis amount before display.");
+    _imp->_gainBox->setToolTip("<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
+                         "Multiplies the image by \nthis amount before display."));
     _imp->_gainBox->setIncrement(0.1);
     _imp->_gainBox->setValue(1.0);
     _imp->_gainBox->setMinimum(0.0);
@@ -330,14 +330,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     
     _imp->_gainSlider=new ScaleSliderQWidget(0, 64,1.0,Natron::LINEAR_SCALE,_imp->_secondSettingsRow);
-    _imp->_gainSlider->setToolTip("<p><b>Gain: \n</b></p>"
-                            "Multiplies the image by \nthis amount before display.");
+    _imp->_gainSlider->setToolTip("<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
+                            "Multiplies the image by \nthis amount before display."));
     _imp->_secondRowLayout->addWidget(_imp->_gainSlider);
     
-    QString autoContrastToolTip("<p><b>Auto-contrast: \n</b></p>"
+    QString autoContrastToolTip("<p><b>" + tr("Auto-contrast") + ": \n</b></p>" + tr(
                                 "Automatically adjusts the gain and the offset applied \n"
-                                "to the colors of the visible image portion on the viewer.");
-    _imp->_autoConstrastLabel = new ClickableLabel("Auto-contrast:",_imp->_secondSettingsRow);
+                                "to the colors of the visible image portion on the viewer."));
+    _imp->_autoConstrastLabel = new ClickableLabel(tr("Auto-contrast:"),_imp->_secondSettingsRow);
     _imp->_autoConstrastLabel->setToolTip(autoContrastToolTip);
     _imp->_secondRowLayout->addWidget(_imp->_autoConstrastLabel);
     
@@ -347,11 +347,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_secondRowLayout->addWidget(_imp->_autoContrast);
     
     _imp->_viewerColorSpace=new ComboBox(_imp->_secondSettingsRow);
-    _imp->_viewerColorSpace->setToolTip("<p><b>Viewer color process: \n</b></p>"
+    _imp->_viewerColorSpace->setToolTip("<p><b>" + tr("Viewer color process") + ": \n</b></p>" + tr(
                                   "The operation applied to the image before it is displayed\n"
                                   "on screen. All the color pipeline \n"
                                   "is linear,thus the process converts from linear\n"
-                                  "to your monitor's colorspace.");
+                                  "to your monitor's colorspace."));
     _imp->_secondRowLayout->addWidget(_imp->_viewerColorSpace);
     
     _imp->_viewerColorSpace->addItem("Linear(None)");
@@ -360,8 +360,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_viewerColorSpace->setCurrentIndex(1);
     
     _imp->_viewsComboBox = new ComboBox(_imp->_secondSettingsRow);
-    _imp->_viewsComboBox->setToolTip("<p><b>Active view: \n</b></p>"
-                               "Tells the viewer what view should be displayed.");
+    _imp->_viewsComboBox->setToolTip("<p><b>" + tr("Active view") + ": \n</b></p>" + tr(
+                               "Tells the viewer what view should be displayed."));
     _imp->_secondRowLayout->addWidget(_imp->_viewsComboBox);
     _imp->_viewsComboBox->hide();
     int viewsCount = _imp->app->getProject()->getProjectViewsCount(); //getProjectViewsCount
@@ -414,7 +414,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->_currentFrameBox=new SpinBox(_imp->_playerButtonsContainer,SpinBox::INT_SPINBOX);
     _imp->_currentFrameBox->setValue(0);
-    _imp->_currentFrameBox->setToolTip("<p><b>Current frame number</b></p>");
+    _imp->_currentFrameBox->setToolTip("<p><b>" + tr("Current frame number") + "</b></p>");
     _imp->_playerLayout->addWidget(_imp->_currentFrameBox);
     
     _imp->_playerLayout->addStretch();
@@ -422,7 +422,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->firstFrame_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
     QString tooltip = "First frame";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(firstFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->firstFrame_Button->setToolTip(tooltip);
@@ -431,8 +431,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->previousKeyFrame_Button=new Button(_imp->_playerButtonsContainer);
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
-    tooltip = "Previous keyframe";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Previous keyframe");
+    tooltip.append(tr("<p><b>Keyboard shortcut: "));
     tooltip.append(previousKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->previousKeyFrame_Button->setToolTip(tooltip);
@@ -440,8 +440,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->play_Backward_Button=new Button(_imp->_playerButtonsContainer);
     QKeySequence playbackFrameKey(Qt::Key_J);
-    tooltip = "Play backward";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Play backward");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(playbackFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->play_Backward_Button->setToolTip(tooltip);
@@ -451,8 +451,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->previousFrame_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence previousFrameKey(Qt::Key_Left);
-    tooltip = "Previous frame";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Previous frame");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(previousFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->previousFrame_Button->setToolTip(tooltip);
@@ -461,8 +461,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->stop_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence stopKey(Qt::Key_K);
-    tooltip = "Stop";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Stop");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(stopKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->stop_Button->setToolTip(tooltip);
@@ -471,8 +471,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->nextFrame_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence nextFrameKey(Qt::Key_Right);
-    tooltip = "Next frame";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Next frame");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(nextFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->nextFrame_Button->setToolTip(tooltip);
@@ -481,8 +481,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->play_Forward_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence playKey(Qt::Key_L);
-    tooltip = "Play forward";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Play forward");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(playKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->play_Forward_Button->setToolTip(tooltip);
@@ -492,8 +492,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->nextKeyFrame_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
-    tooltip = "Next keyframe";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Next keyframe");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->nextKeyFrame_Button->setToolTip(tooltip);
@@ -501,8 +501,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->lastFrame_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
-    tooltip = "Last frame";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Last frame");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(lastFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->lastFrame_Button->setToolTip(tooltip);
@@ -518,8 +518,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->previousIncrement_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
-    tooltip = "Previous increment";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Previous increment");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(previousIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->previousIncrement_Button->setToolTip(tooltip);
@@ -528,16 +528,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     
     _imp->incrementSpinBox=new SpinBox(_imp->_playerButtonsContainer);
     _imp->incrementSpinBox->setValue(10);
-    _imp->incrementSpinBox->setToolTip("<p><b>Frame increment: \n</b></p>"
+    _imp->incrementSpinBox->setToolTip("<p><b>" + tr("Frame increment") + ": \n</b></p>" + tr(
                                  "The previous/next increment buttons step"
-                                 " with this increment.");
+                                 " with this increment."));
     _imp->_playerLayout->addWidget(_imp->incrementSpinBox);
     
     
     _imp->nextIncrement_Button = new Button(_imp->_playerButtonsContainer);
     QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
-    tooltip = "Next increment";
-    tooltip.append("<p><b>Keyboard shortcut: ");
+    tooltip = tr("Next increment");
+    tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
     tooltip.append(nextIncrFrameKey.toString(QKeySequence::NativeText));
     tooltip.append("</b></p>");
     _imp->nextIncrement_Button->setToolTip(tooltip);
@@ -547,7 +547,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->loopMode_Button->setCheckable(true);
     _imp->loopMode_Button->setChecked(true);
     _imp->loopMode_Button->setDown(true);
-    _imp->loopMode_Button->setToolTip("Behaviour to adopt when the playback\n hit the end of the range: loop or stop.");
+    _imp->loopMode_Button->setToolTip(tr("Behaviour to adopt when the playback\n hit the end of the range: loop or stop."));
     _imp->_playerLayout->addWidget(_imp->loopMode_Button);
     
     
@@ -556,9 +556,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->frameRangeEdit = new LineEdit(_imp->_playerButtonsContainer);
     QObject::connect(_imp->frameRangeEdit,SIGNAL(editingFinished()),this,SLOT(onFrameRangeEditingFinished()));
     _imp->frameRangeEdit->setReadOnly(true);
-    _imp->frameRangeEdit->setToolTip(Qt::convertFromPlainText("Define here the timeline bounds in which the cursor will playback. Alternatively"
+    _imp->frameRangeEdit->setToolTip(Qt::convertFromPlainText(tr("Define here the timeline bounds in which the cursor will playback. Alternatively"
                                                               " you can drag the red markers on the timeline. To activate editing, unlock the"
-                                                              " button on the right.",
+                                                              " button on the right."),
                                                               Qt::WhiteSpaceNormal));
     boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
     _imp->frameRangeEdit->setMaximumWidth(70);
@@ -576,25 +576,25 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->lockFrameRangeButton->setCheckable(true);
     _imp->lockFrameRangeButton->setChecked(true);
     _imp->lockFrameRangeButton->setDown(true);
-    _imp->lockFrameRangeButton->setToolTip(Qt::convertFromPlainText("When locked, the timeline bounds will be automatically set by "
-                                                                    NATRON_APPLICATION_NAME " so it defines the real frame range as "
+    _imp->lockFrameRangeButton->setToolTip(Qt::convertFromPlainText(tr("When locked, the timeline bounds will be automatically set by "
+                                                                    "%1 so it defines the real frame range as "
                                                                     "informed by the Readers. When unchecked, the bounds will no longer "
                                                                     "be automatically set, and you're free to set them in the edit line "
-                                                                    "on the left or by dragging the timeline markers."
+                                                                    "on the left or by dragging the timeline markers.").arg(NATRON_APPLICATION_NAME)
                                                                     ,Qt::WhiteSpaceNormal));
     QObject::connect(_imp->lockFrameRangeButton,SIGNAL(clicked(bool)),this,SLOT(onLockFrameRangeButtonClicked(bool)));
     _imp->_playerLayout->addWidget(_imp->lockFrameRangeButton);
     
     _imp->_playerLayout->addStretch();
     
-    _imp->fpsName = new QLabel("fps",_imp->_playerButtonsContainer);
+    _imp->fpsName = new QLabel(tr("fps"),_imp->_playerButtonsContainer);
     _imp->_playerLayout->addWidget(_imp->fpsName);
     _imp->fpsBox = new SpinBox(_imp->_playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
     _imp->fpsBox->decimals(1);
     _imp->fpsBox->setValue(24.0);
     _imp->fpsBox->setIncrement(0.1);
-    _imp->fpsBox->setToolTip("<p><b>fps: \n</b></p>"
-                       "Enter here the desired playback rate.");
+    _imp->fpsBox->setToolTip("<p><b>" + tr("fps") + ": \n</b></p>" + tr(
+                       "Enter here the desired playback rate."));
     _imp->_playerLayout->addWidget(_imp->fpsBox);
     
     
@@ -659,19 +659,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
     _imp->_activateRenderScale->setIcon(icViewerRs);
     
     
-    _imp->_centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
-                                    "<p><b>Keyboard shortcut: F</b></p>");
+    _imp->_centerViewerButton->setToolTip(tr("Scales the image so it doesn't exceed the size of the viewer and centers it.")+
+                                    "<p><b>" + tr("Keyboard shortcut") + ": F</b></p>");
     
-    _imp->_clipToProjectFormatButton->setToolTip("<p>Clips the portion of the image displayed "
+    _imp->_clipToProjectFormatButton->setToolTip("<p>" + tr("Clips the portion of the image displayed "
                                            "on the viewer to the project format. "
                                            "When off, everything in the union of all nodes "
-                                           "region of definition will be displayed.</p>"
-                                           "<p><b>Keyboard shortcut: C</b></p>");
-    
+                                           "region of definition will be displayed.") + "</p>"
+                                           "<p><b>" + tr("Keyboard shortcut") + ": C</b></p>");
+
     QKeySequence enableViewerKey(Qt::SHIFT + Qt::Key_W);
-    _imp->_enableViewerRoI->setToolTip("<p>When active, enables the region of interest that will limit"
-                                 " the portion of the viewer that is kept updated.</p>"
-                                 "<p><b>Keyboard shortcut:"+ enableViewerKey.toString() + "</b></p>");
+    _imp->_enableViewerRoI->setToolTip("<p>" + tr("When active, enables the region of interest that will limit"
+                                 " the portion of the viewer that is kept updated.") + "</p>"
+                                 "<p><b>" + tr("Keyboard shortcut:") + enableViewerKey.toString() + "</b></p>");
     /*=================================================*/
     
     /*frame seeker*/
@@ -779,16 +779,16 @@ void ViewerTab::updateViewsMenu(int count){
     _imp->_viewsComboBox->clear();
     if(count == 1){
         _imp->_viewsComboBox->hide();
-        _imp->_viewsComboBox->addItem("Main");
+        _imp->_viewsComboBox->addItem(tr("Main"));
         
     }else if(count == 2){
         _imp->_viewsComboBox->show();
-        _imp->_viewsComboBox->addItem("Left",QIcon(),QKeySequence(Qt::CTRL + Qt::Key_1));
-        _imp->_viewsComboBox->addItem("Right",QIcon(),QKeySequence(Qt::CTRL + Qt::Key_2));
+        _imp->_viewsComboBox->addItem(tr("Left"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_1));
+        _imp->_viewsComboBox->addItem(tr("Right"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_2));
     }else{
         _imp->_viewsComboBox->show();
         for(int i = 0 ; i < count;++i){
-            _imp->_viewsComboBox->addItem(QString("View ")+QString::number(i+1),QIcon(),Gui::keySequenceForView(i));
+            _imp->_viewsComboBox->addItem(QString(tr("View "))+QString::number(i+1),QIcon(),Gui::keySequenceForView(i));
         }
     }
     if(currentIndex < _imp->_viewsComboBox->count() && currentIndex != -1){

@@ -1856,12 +1856,12 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
     , textLabel(NULL)
     , textEdit(NULL)
 {
-    setWindowTitle(QString("Node creation tool"));
+    setWindowTitle(tr("Node creation tool"));
     setWindowFlags(Qt::Popup);
     setObjectName(QString("SmartDialog"));
     setStyleSheet(QString("SmartInputDialog#SmartDialog{border-style:outset;border-width: 2px; border-color: black; background-color:silver;}"));
     layout=new QVBoxLayout(this);
-    textLabel=new QLabel(QString("Input a node name:"),this);
+    textLabel=new QLabel(tr("Input a node name:"),this);
     textEdit=new QComboBox(this);
     textEdit->setEditable(true);
     
@@ -1957,7 +1957,7 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    _cacheSizeText->setPlainText(QString("Memory cache size: %1")
+    _cacheSizeText->setPlainText(tr("Memory cache size: %1")
                                  .arg(QDirModelPrivate_size(appPTR->getCachesTotalMemorySize())));
 }
 
@@ -2154,7 +2154,7 @@ NodeGraph::dropEvent(QDropEvent* event)
                     assert(fk);
                     
                     if(!fk->isAnimationEnabled() && sequence->count() > 1){
-                        errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
+                        errorDialog(tr("Reader").toStdString(), tr("This plug-in doesn't support image sequences, please select only 1 file.").toStdString());
                         break;
                     } else {
                         fk->setFiles(sequence->getFilesList());
@@ -2237,7 +2237,7 @@ NodeGraph::copySelectedNode()
         resetAllClipboards();
         copyBackdrop(_selectedBackDrop);
     } else {
-        Natron::warningDialog("Copy", "You must select a node to copy first.");
+        Natron::warningDialog(tr("Copy").toStdString(), tr("You must select a node to copy first.").toStdString());
 
     }
     
@@ -2260,7 +2260,7 @@ NodeGraph::cutSelectedNode()
     } else if (_selectedBackDrop) {
         cutBackdrop(_selectedBackDrop);
     } else {
-        Natron::warningDialog("Cut", "You must select a node to cut first.");
+        Natron::warningDialog(tr("Cut").toStdString(), tr("You must select a node to cut first.").toStdString());
     }
     
 }
@@ -2337,7 +2337,7 @@ NodeGraph::duplicateSelectedNode()
     } else if (_selectedBackDrop) {
         duplicateBackdrop(_selectedBackDrop);
     } else {
-        Natron::warningDialog("Duplicate", "You must select a node to duplicate first.");
+        Natron::warningDialog(tr("Duplicate").toStdString(), tr("You must select a node to duplicate first.").toStdString());
     }
     
 }
@@ -2350,7 +2350,7 @@ NodeGraph::cloneSelectedNode()
     } else if (_selectedBackDrop) {
         cloneBackdrop(_selectedBackDrop);
     } else {
-        Natron::warningDialog("Clone", "You must select a node to clone first.");
+        Natron::warningDialog(tr("Clone").toStdString(), tr("You must select a node to clone first.").toStdString());
     }
 
 }
@@ -2363,7 +2363,7 @@ NodeGraph::decloneSelectedNode()
     } else if (_selectedBackDrop) {
         decloneBackdrop(_selectedBackDrop);
     } else {
-        Natron::warningDialog("Declone", "You must select a node to declone first.");
+        Natron::warningDialog(tr("Declone").toStdString(), tr("You must select a node to declone first.").toStdString());
     }
 }
 
@@ -2396,15 +2396,15 @@ boost::shared_ptr<NodeGui>
 NodeGraph::cloneNode(const boost::shared_ptr<NodeGui>& node)
 {
     if (node->getNode()->getLiveInstance()->isSlave()) {
-        Natron::errorDialog("Clone", "You cannot clone a node which is already a clone.");
+        Natron::errorDialog(tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString());
         return boost::shared_ptr<NodeGui>();
     }
     if (node->getNode()->pluginID() == "Viewer") {
-        Natron::errorDialog("Clone", "Cloning a viewer is not a valid operation.");
+        Natron::errorDialog(tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString());
         return boost::shared_ptr<NodeGui>();
     }
     if (node->getNode()->isMultiInstance()) {
-        Natron::errorDialog("Clone", "This node cannot be cloned.");
+        Natron::errorDialog(tr("Clone").toStdString(), tr("This node cannot be cloned.").toStdString());
         return boost::shared_ptr<NodeGui>();
     }
     

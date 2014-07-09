@@ -231,7 +231,7 @@ void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton(this,QIcon(pix),"",layout->parentWidget());
     _imp->animationButton->setFixedSize(20, 20);
-    _imp->animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
+    _imp->animationButton->setToolTip(Qt::convertFromPlainText(tr("Animation menu"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->animationButton,SIGNAL(animationMenuRequested()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_imp->animationButton);
     
@@ -962,7 +962,7 @@ void KnobGui::pasteClipBoard(int targetDimension)
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
 
     if (copyAnimation && !curves.empty() && ((int)curves.size() != knob->getDimension())) {
-        Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
+        Natron::errorDialog(tr("Paste animation").toStdString(), tr("You cannot copy/paste animation from/to parameters with different dimensions.").toStdString());
     }
     
     int i = 0;
@@ -970,26 +970,26 @@ void KnobGui::pasteClipBoard(int targetDimension)
         if (i == dimension) {
             if (isInt) {
                 if (!it->canConvert(QVariant::Int)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             } else if (isBool) {
                 if (!it->canConvert(QVariant::Bool)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             } else if (isDouble) {
                 if (!it->canConvert(QVariant::Double)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             } else if (isString) {
                 if (!it->canConvert(QVariant::String)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type String").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             }
@@ -1039,7 +1039,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     
     _mainLayout->addWidget(_buttonsWidget);
     
-    _selectKnobLabel = new QLabel("Target:",_firstLine);
+    _selectKnobLabel = new QLabel(tr("Target:"),_firstLine);
     _firstLineLayout->addWidget(_selectKnobLabel);
     
     _selectionCombo = new ComboBox(_firstLine);
@@ -1077,10 +1077,10 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     }
     _selectionCombo->setFocus();
     
-    _cancelButton = new Button("Cancel",_buttonsWidget);
+    _cancelButton = new Button(tr("Cancel"),_buttonsWidget);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _buttonsLayout->addWidget(_cancelButton);
-    _okButton = new Button("Ok",_buttonsWidget);
+    _okButton = new Button(tr("Ok"),_buttonsWidget);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _buttonsLayout->QLayout::addWidget(_okButton);
 }
@@ -1114,7 +1114,7 @@ void KnobGui::linkTo(int dimension) {
         if(otherKnob.second){
             
             if (!thisKnob->isTypeCompatible(otherKnob.second)) {
-                errorDialog("Knob Link", "Types incompatibles!");
+                errorDialog(tr("Knob Link").toStdString(), tr("Types incompatibles!").toStdString());
                 return;
             }
             
@@ -1122,11 +1122,11 @@ void KnobGui::linkTo(int dimension) {
             
             std::pair<int,boost::shared_ptr<KnobI> > existingLink = thisKnob->getMaster(otherKnob.first);
             if(existingLink.second){
-                std::string err("Cannot link ");
+                std::string err(tr("Cannot link ").toStdString());
                 err.append(thisKnob->getDescription());
-                err.append(" \n because the knob is already linked to ");
+                err.append(" \n " + tr("because the knob is already linked to ").toStdString());
                 err.append(existingLink.second->getDescription());
-                errorDialog("Knob Link", err);
+                errorDialog(tr("Knob Link").toStdString(), err);
                 return;
             }
             
