@@ -1026,7 +1026,9 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     assert(where);
     where->appendTab(what);
     what->setParent(where);
-    where->getGui()->getApp()->triggerAutoSave();
+    if (!where->getGui()->getApp()->getProject()->isLoadingProject()) {
+        where->getGui()->getApp()->triggerAutoSave();
+    }
 }
 
 DragPixmap::DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse)

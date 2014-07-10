@@ -623,7 +623,7 @@ ViewerGL::Implementation::WipePolygonType ViewerGL::Implementation::getWipePolyg
     firstPoint.setX(center.x() - xmax);
     firstPoint.setY(center.y() - ymax);
     secondPoint.setX(center.x() + xmax);
-    secondPoint.setY(center.y() + ymax);
+    secondPoint.setY(center.y() + ymax); 
     
     QLineF inter(firstPoint,secondPoint);
     QLineF::IntersectType intersectionTypes[4];
