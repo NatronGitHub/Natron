@@ -12,3 +12,4 @@ Ole Andre Rodlie for the linux packages
 
 Laurence Boissieux
 Bianca Ilaria Coniglione
+Jean-Christophe Levet
