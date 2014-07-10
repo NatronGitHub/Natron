@@ -1035,6 +1035,9 @@ void MultiInstancePanel::resetAllInstances()
 
 void MultiInstancePanel::resetInstances(const std::list<Natron::Node*>& instances)
 {
+    if (instances.empty()) {
+        return;
+    }
     for (std::list<Natron::Node*>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
         
 //        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>((*it)->getLiveInstance());
@@ -1059,6 +1062,7 @@ void MultiInstancePanel::resetInstances(const std::list<Natron::Node*>& instance
         }
         notifyProjectEndKnobsValuesChanged();
     }
+    instances.front()->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
     
     ///To update interacts, kinda hack but can't figure out where else put this
     getMainInstance()->getApp()->redrawAllViewers();

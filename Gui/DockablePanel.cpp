@@ -461,6 +461,9 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
         }
     }
     _imp->_holder->notifyProjectEndKnobsValuesChanged();
+    if (isEffect) {
+        isEffect->evaluate_public(NULL, true, Natron::USER_EDITED);
+    }
    
 }
 
