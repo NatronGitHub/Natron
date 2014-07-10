@@ -2463,7 +2463,7 @@ void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     
-    RectI rod = getRoD(0);
+    RectI rod = getRoD(textureIndex);
     Format dispW = getDisplayWindow();
     if (imgPos.x() >= rod.left() &&
         imgPos.x() < rod.right() &&
