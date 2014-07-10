@@ -97,7 +97,7 @@ bool GuiAppInstance::isClosing() const
 }
 
 void GuiAppInstance::load(const QString& projectName,const QStringList& /*writers*/) {
-    appPTR->setLoadingStatus("Creating user interface...");
+    appPTR->setLoadingStatus(tr("Creating user interface..."));
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 
@@ -118,7 +118,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
     
     if (getAppID() == 0 && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled()) {
-        appPTR->setLoadingStatus("Checking if updates are available...");
+        appPTR->setLoadingStatus(tr("Checking if updates are available..."));
         ///Before loading autosave check for a new version
         checkForNewVersion();
     }
@@ -145,7 +145,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
         QString name = infos.fileName();
         QString path = infos.path();
         path += QDir::separator();
-        appPTR->setLoadingStatus("Loading project: " + path + name);
+        appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
         getProject()->loadProject(path,name);
         ///remove any file open event that might have occured
         appPTR->setFileToOpen("");
@@ -371,7 +371,7 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
         lastFrame = getTimeLine()->lastFrame();
     }
     if(firstFrame > lastFrame) {
-        Natron::errorDialog(writer->getNode()->getName_mt_safe() ,"First frame in the sequence is greater than the last frame");
+        Natron::errorDialog(writer->getNode()->getName_mt_safe() ,tr("First frame in the sequence is greater than the last frame").toStdString());
         return;
     }
     ///get the output file knob to get the same of the sequence
@@ -398,9 +398,9 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
                 _imp->_activeBgProcesses.push_back(process);
             }
         } catch (const std::exception& e) {
-            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
+            Natron::errorDialog(writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what());
         } catch (...) {
-            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
+            Natron::errorDialog(writer->getName(), tr("Error while starting rendering").toStdString());
         }
     } else {
         writer->renderFullSequence(NULL);

@@ -576,82 +576,82 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     Q_UNUSED(MainWindow);
     _gui->setWindowTitle(QCoreApplication::applicationName());
     assert(actionNew_project);
-    actionNew_project->setText(_gui->tr("&New Project"));
+    actionNew_project->setText(QObject::tr("&New Project"));
     assert(actionOpen_project);
-    actionOpen_project->setText(_gui->tr("&Open Project..."));
+    actionOpen_project->setText(QObject::tr("&Open Project..."));
     assert(actionSave_project);
-    actionSave_project->setText(_gui->tr("&Save Project"));
+    actionSave_project->setText(QObject::tr("&Save Project"));
     assert(actionSaveAs_project);
-    actionSaveAs_project->setText(_gui->tr("Save Project As..."));
+    actionSaveAs_project->setText(QObject::tr("Save Project As..."));
     assert(actionPreferences);
-    actionPreferences->setText(_gui->tr("Preferences"));
+    actionPreferences->setText(QObject::tr("Preferences"));
     assert(actionExit);
-    actionExit->setText(_gui->tr("E&xit"));
+    actionExit->setText(QObject::tr("E&xit"));
     assert(actionProject_settings);
-    actionProject_settings->setText(_gui->tr("Project Settings..."));
+    actionProject_settings->setText(QObject::tr("Project Settings..."));
     assert(actionShowOfxLog);
-    actionShowOfxLog->setText(_gui->tr("Show OpenFX log"));
+    actionShowOfxLog->setText(QObject::tr("Show OpenFX log"));
     assert(actionFullScreen);
-    actionFullScreen->setText(_gui->tr("Toggle Full Screen"));
+    actionFullScreen->setText(QObject::tr("Toggle Full Screen"));
     assert(actionClearDiskCache);
-    actionClearDiskCache->setText(_gui->tr("Clear Playback Disk Cache"));
+    actionClearDiskCache->setText(QObject::tr("Clear Playback Disk Cache"));
     assert(actionClearPlayBackCache);
-    actionClearPlayBackCache->setText(_gui->tr("Clear Playback Memory Cache"));
+    actionClearPlayBackCache->setText(QObject::tr("Clear Playback Memory Cache"));
     assert(actionClearNodeCache);
-    actionClearNodeCache->setText(_gui->tr("Clear Per-Node Memory Cache"));
+    actionClearNodeCache->setText(QObject::tr("Clear Per-Node Memory Cache"));
     assert(actionClearAllCaches);
-    actionClearAllCaches->setText(_gui->tr("Clear All Memory and Disk Caches"));
+    actionClearAllCaches->setText(QObject::tr("Clear All Memory and Disk Caches"));
     assert(actionClearPluginsLoadingCache);
-    actionClearPluginsLoadingCache->setText(_gui->tr("Clear OpenFX Plugin Cache"));
+    actionClearPluginsLoadingCache->setText(QObject::tr("Clear OpenFX Plugin Cache"));
     assert(actionShowAboutWindow);
-    actionShowAboutWindow->setText(_gui->tr("About"));
+    actionShowAboutWindow->setText(QObject::tr("About"));
     assert(renderAllWriters);
-    renderAllWriters->setText(_gui->tr("Render all writers"));
+    renderAllWriters->setText(QObject::tr("Render all writers"));
     assert(renderSelectedNode);
-    renderSelectedNode->setText(_gui->tr("Render selected node"));
+    renderSelectedNode->setText(QObject::tr("Render selected node"));
     
     assert(actionConnectInput1);
-    actionConnectInput1->setText(_gui->tr("Connect to input 1"));
+    actionConnectInput1->setText(QObject::tr("Connect to input 1"));
     assert(actionConnectInput2);
-    actionConnectInput2 ->setText(_gui->tr("Connect to input 2"));
+    actionConnectInput2 ->setText(QObject::tr("Connect to input 2"));
     assert(actionConnectInput3);
-    actionConnectInput3 ->setText(_gui->tr("Connect to input 3"));
+    actionConnectInput3 ->setText(QObject::tr("Connect to input 3"));
     assert(actionConnectInput4);
-    actionConnectInput4 ->setText(_gui->tr("Connect to input 4"));
+    actionConnectInput4 ->setText(QObject::tr("Connect to input 4"));
     assert(actionConnectInput5);
-    actionConnectInput5 ->setText(_gui->tr("Connect to input 5"));
+    actionConnectInput5 ->setText(QObject::tr("Connect to input 5"));
     assert(actionConnectInput6);
-    actionConnectInput6 ->setText(_gui->tr("Connect to input 6"));
+    actionConnectInput6 ->setText(QObject::tr("Connect to input 6"));
     assert(actionConnectInput7);
-    actionConnectInput7 ->setText(_gui->tr("Connect to input 7"));
+    actionConnectInput7 ->setText(QObject::tr("Connect to input 7"));
     assert(actionConnectInput8);
-    actionConnectInput8 ->setText(_gui->tr("Connect to input 8"));
+    actionConnectInput8 ->setText(QObject::tr("Connect to input 8"));
     assert(actionConnectInput9);
-    actionConnectInput9 ->setText(_gui->tr("Connect to input 9"));
+    actionConnectInput9 ->setText(QObject::tr("Connect to input 9"));
     assert(actionConnectInput10);
-    actionConnectInput10 ->setText(_gui->tr("Connect to input 10"));
+    actionConnectInput10 ->setText(QObject::tr("Connect to input 10"));
     
     
     assert(menuFile);
-    menuFile->setTitle(_gui->tr("File"));
+    menuFile->setTitle(QObject::tr("File"));
     assert(menuRecentFiles);
-    menuRecentFiles->setTitle(_gui->tr("Open recent"));
+    menuRecentFiles->setTitle(QObject::tr("Open recent"));
     assert(menuEdit);
-    menuEdit->setTitle(_gui->tr("Edit"));
+    menuEdit->setTitle(QObject::tr("Edit"));
     assert(menuDisplay);
-    menuDisplay->setTitle(_gui->tr("Display"));
+    menuDisplay->setTitle(QObject::tr("Display"));
     assert(menuOptions);
-    menuOptions->setTitle(_gui->tr("Options"));
+    menuOptions->setTitle(QObject::tr("Options"));
     assert(menuRender);
-    menuRender->setTitle(_gui->tr("Render"));
+    menuRender->setTitle(QObject::tr("Render"));
     assert(viewersMenu);
-    viewersMenu->setTitle(_gui->tr("Viewer(s)"));
+    viewersMenu->setTitle(QObject::tr("Viewer(s)"));
     assert(cacheMenu);
-    cacheMenu->setTitle(_gui->tr("Cache"));
+    cacheMenu->setTitle(QObject::tr("Cache"));
     assert(viewerInputsMenu);
-    viewerInputsMenu->setTitle(_gui->tr("Connect Current Viewer"));
+    viewerInputsMenu->setTitle(QObject::tr("Connect Current Viewer"));
     assert(viewersViewMenu);
-    viewersViewMenu->setTitle(_gui->tr("Display view number"));
+    viewersViewMenu->setTitle(QObject::tr("Display view number"));
 }
 void Gui::setupUi()
 {
@@ -916,7 +916,7 @@ void Gui::setupUi()
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
     _imp->_clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
     _imp->_clearAllPanelsButton->setMaximumSize(15, 15);
-    _imp->_clearAllPanelsButton->setToolTip(Qt::convertFromPlainText("Clears all the panels in the properties bin pane.",
+    _imp->_clearAllPanelsButton->setToolTip(Qt::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
                                                                      Qt::WhiteSpaceNormal));
     QObject::connect(_imp->_clearAllPanelsButton,SIGNAL(clicked(bool)),this,SLOT(clearAllVisiblePanels()));
     
@@ -925,9 +925,9 @@ void Gui::setupUi()
     _imp->_maxPanelsOpenedSpinBox->setMaximumSize(15,15);
     _imp->_maxPanelsOpenedSpinBox->setMinimum(0);
     _imp->_maxPanelsOpenedSpinBox->setMaximum(100);
-    _imp->_maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText("Set the maximum of panels that can be opened at the same time "
+    _imp->_maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
                                                                        "in the properties bin pane. The special value of 0 indicates "
-                                                                       "that an unlimited number of panels can be opened.",
+                                                                       "that an unlimited number of panels can be opened."),
                                                                        Qt::WhiteSpaceNormal));
     _imp->_maxPanelsOpenedSpinBox->setValue(appPTR->getCurrentSettings()->getMaxPanelsOpened());
     QObject::connect(_imp->_maxPanelsOpenedSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onMaxPanelsSpinBoxValueChanged(double)));
@@ -1145,14 +1145,14 @@ void Gui::updateViewsActions(int viewsCount){
         left->setCheckable(false);
         left->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_1));
         _imp->viewersViewMenu->addAction(left);
-        left->setText("Display left view");
+        left->setText(tr("Display left view"));
         QObject::connect(left,SIGNAL(triggered()),this,SLOT(showView0()));
         
         QAction* right = new QAction(this);
         right->setCheckable(false);
         right->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_2));
         _imp->viewersViewMenu->addAction(right);
-        right->setText("Display right view");
+        right->setText(tr("Display right view"));
         QObject::connect(right,SIGNAL(triggered()),this,SLOT(showView1()));
         
         _imp->viewersMenu->addAction(_imp->viewersViewMenu->menuAction());
@@ -1168,7 +1168,7 @@ void Gui::updateViewsActions(int viewsCount){
             }
             _imp->viewersViewMenu->addAction(viewI);
             const char* slot = slotForView(i);
-            viewI->setText(QString("Display view ")+QString::number(i+1));
+            viewI->setText(QString(tr("Display view "))+QString::number(i+1));
             if(slot){
                 QObject::connect(viewI,SIGNAL(triggered()),this,slot);
             }
@@ -1732,7 +1732,7 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
 
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
         if (found == readersForFormat.end()) {
-            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
+            errorDialog(tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString());
         } else {
             ret = _imp->_appInstance->createNode(CreateNodeArgs(found->second.c_str(),"",-1,-1,false));
             
@@ -1746,7 +1746,7 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
                     assert(fk);
                     
                     if(!fk->isAnimationEnabled() && files.size() > 1){
-                        errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
+                        errorDialog(tr("Reader").toStdString(), tr("This plug-in doesn't support image sequences, please select only 1 file.").toStdString());
                         break;
                     } else {
                         fk->setFiles(files);
@@ -1797,7 +1797,7 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
                 }
             }
         }else{
-            errorDialog("Writer", "No plugin capable of encoding " + ext + " was found.");
+            errorDialog(tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString());
         }
         
     }
@@ -1831,7 +1831,7 @@ void Gui::autoSave(){
 int Gui::saveWarning(){
     
     if(!_imp->_appInstance->getProject()->isGraphWorthLess() && !_imp->_appInstance->getProject()->isSaveUpToDate()){
-        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,"Save changes to " +
+        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
                                Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
         if(ret == Natron::Escape || ret == Natron::Cancel){
@@ -2554,7 +2554,7 @@ void Gui::renderSelectedNode()
 
         }
     } else {
-        Natron::warningDialog("Render", "You must select a node to render first!");
+        Natron::warningDialog(tr("Render").toStdString(), tr("You must select a node to render first!").toStdString());
     }
 }
 

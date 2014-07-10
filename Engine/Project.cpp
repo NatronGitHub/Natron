@@ -68,7 +68,7 @@ bool Project::loadProject(const QString& path,const QString& name){
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
         }
-        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
+        Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what());
         if(!appPTR->isBackground()) {
             getApp()->createNode(CreateNodeArgs("Viewer"));
         }
@@ -78,7 +78,7 @@ bool Project::loadProject(const QString& path,const QString& name){
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
         }
-        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
+        Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString());
         if(!appPTR->isBackground()) {
             getApp()->createNode(CreateNodeArgs("Viewer"));
         }
@@ -209,7 +209,7 @@ void Project::saveProject(const QString& path,const QString& name,bool autoS){
     } catch (const std::exception& e) {
         
         if(!autoS) {
-            Natron::errorDialog("Save", e.what());
+            Natron::errorDialog(QObject::tr("Save").toStdString(), e.what());
         } else {
             qDebug() << "Save failure: " << e.what();
         }
@@ -423,9 +423,9 @@ bool Project::findAndTryLoadAutoSave() {
             QString text;
 
             if (exists) {
-                text = QString(tr("A recent auto-save of %1 was found.\n"
+                text = tr("A recent auto-save of %1 was found.\n"
                                   "Would you like to restore it entirely? "
-                                  "Clicking No will remove this auto-save.")).arg(filename);;
+                                  "Clicking No will remove this auto-save.").arg(filename);;
             } else {
                 text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
                           "Would you like to restore it ? Clicking No will remove this auto-save forever.");
@@ -449,10 +449,10 @@ bool Project::findAndTryLoadAutoSave() {
                 try {
                     loadProjectInternal(savesDir.path()+QDir::separator(), entry);
                 } catch (const std::exception& e) {
-                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
+                    Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what());
                     getApp()->createNode(CreateNodeArgs("Viewer"));
                 } catch (...) {
-                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
+                    Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString());
                     getApp()->createNode(CreateNodeArgs("Viewer"));
                 }
                 

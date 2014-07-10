@@ -260,7 +260,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     
     _imp->splineLayout = new QHBoxLayout(_imp->splineContainer);
     _imp->splineLayout->setSpacing(2);
-    _imp->splineLabel = new ClickableLabel("Spline keyframe:",_imp->splineContainer);
+    _imp->splineLabel = new ClickableLabel(tr("Spline keyframe:"),_imp->splineContainer);
     _imp->splineLabel->setSunken(false);
     _imp->splineLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->splineLabel);
@@ -268,7 +268,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::DOUBLE_SPINBOX);
     _imp->currentKeyframe->setEnabled(false);
     _imp->currentKeyframe->setReadOnly(true);
-    _imp->currentKeyframe->setToolTip("The current keyframe for the selected shape(s)");
+    _imp->currentKeyframe->setToolTip(tr("The current keyframe for the selected shape(s)"));
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
     
     _imp->ofLabel = new ClickableLabel("of",_imp->splineContainer);
@@ -278,7 +278,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::INT_SPINBOX);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly(true);
-    _imp->totalKeyframes->setToolTip("The keyframe count for all the selected shapes.");
+    _imp->totalKeyframes->setToolTip(tr("The keyframe count for all the selected shapes."));
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
     
     QPixmap prevPix,nextPix,addPix,removePix;
@@ -288,28 +288,28 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, &removePix);
     
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
-    _imp->prevKeyframe->setToolTip("Go to the previous keyframe");
+    _imp->prevKeyframe->setToolTip(tr("Go to the previous keyframe"));
     _imp->prevKeyframe->setEnabled(false);
     _imp->prevKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
     
     _imp->nextKeyframe = new Button(QIcon(nextPix),"",_imp->splineContainer);
-    _imp->nextKeyframe->setToolTip("Go to the next keyframe");
+    _imp->nextKeyframe->setToolTip(tr("Go to the next keyframe"));
     _imp->nextKeyframe->setEnabled(false);
     _imp->nextKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
     
     _imp->addKeyframe = new Button(QIcon(addPix),"",_imp->splineContainer);
-    _imp->addKeyframe->setToolTip("Add keyframe at the current timeline's time");
+    _imp->addKeyframe->setToolTip(tr("Add keyframe at the current timeline's time"));
     _imp->addKeyframe->setEnabled(false);
     _imp->addKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->addKeyframe);
     
     _imp->removeKeyframe = new Button(QIcon(removePix),"",_imp->splineContainer);
-    _imp->removeKeyframe->setToolTip("Remove keyframe at the current timeline's time");
+    _imp->removeKeyframe->setToolTip(tr("Remove keyframe at the current timeline's time"));
     _imp->removeKeyframe->setEnabled(false);
     _imp->removeKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()));
@@ -336,7 +336,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
 
     _imp->tree->setColumnCount(MAX_COLS);
     _imp->treeHeader = new QTreeWidgetItem;
-    _imp->treeHeader->setText(0, "Name");
+    _imp->treeHeader->setText(0, tr("Name"));
     
     QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
@@ -391,7 +391,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     QObject::connect(_imp->addLayerButton, SIGNAL(clicked(bool)), this, SLOT(onAddLayerButtonClicked()));
     
     _imp->removeItemButton = new Button("-",_imp->buttonContainer);
-    _imp->removeItemButton->setToolTip("Remove selected items");
+    _imp->removeItemButton->setToolTip(tr("Remove selected items"));
     _imp->buttonLayout->addWidget(_imp->removeItemButton);
     QObject::connect(_imp->removeItemButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveItemButtonClicked()));
     
@@ -1107,7 +1107,7 @@ void RotoPanel::onItemChanged(QTreeWidgetItem* item,int column)
         std::string newName = item->text(column).toStdString();
         boost::shared_ptr<RotoItem> existingItem = _imp->context->getItemByName(newName);
         if (existingItem && existingItem != it->rotoItem) {
-            Natron::warningDialog("", "An item with the name "+ newName + " already exists. Please pick something else.");
+            Natron::warningDialog("", tr("An item with the name ").toStdString() + newName + tr(" already exists. Please pick something else.").toStdString());
             item->setText(COL_NAME, _imp->editedItemName.c_str());
         } else {
             it->rotoItem->setName(newName);

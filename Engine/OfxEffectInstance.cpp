@@ -695,7 +695,7 @@ Natron::EffectInstance::FramesNeededMap OfxEffectInstance::getFramesNeeded(Seque
     
     OfxStatus stat = effect_->getFrameNeededAction((OfxTime)time, inputRanges);
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        Natron::errorDialog(getName(), "Failed to specify the frame ranges needed from inputs.");
+        Natron::errorDialog(getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString());
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it!=inputRanges.end(); ++it) {
             int inputNb = dynamic_cast<OfxClipInstance*>(it->first)->getInputNb();

@@ -1828,12 +1828,12 @@ ColorPickerLabel::ColorPickerLabel(QWidget* parent)
 , _pickingEnabled(false)
 {
     
-    setToolTip(Qt::convertFromPlainText("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+    setToolTip(Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                         "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
                                         "To deselect the picker left click anywhere."
-                                        "Note that by default " NATRON_APPLICATION_NAME " converts to linear the color picked\n"
+                                        "Note that by default %1 converts to linear the color picked\n"
                                         "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                        "preference panel.", Qt::WhiteSpaceNormal));
+                                        "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal));
     setMouseTracking(true);
 }
 
@@ -2029,8 +2029,8 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         if (hasToolTip()) {
             QString tt = toolTip();
             if (useRichText) {
-                tt += " This text area supports html encoding. "
-                "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ";
+                tt += tr(" This text area supports html encoding. "
+                "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
             }
             _textEdit->setAcceptRichText(useRichText);
             _textEdit->setToolTip(tt);
@@ -2055,7 +2055,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontCombo = new QFontComboBox(_richTextOptions);
             QFont font("Verdana",NATRON_FONT_SIZE_12);
             _fontCombo->setCurrentFont(font);
-            _fontCombo->setToolTip("Font");
+            _fontCombo->setToolTip(tr("Font"));
             _richTextOptionsLayout->addWidget(_fontCombo);
             
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -2063,7 +2063,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
             QObject::connect(_fontSizeSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onFontSizeChanged(double)));
-            _fontSizeSpinBox->setToolTip("Font size");
+            _fontSizeSpinBox->setToolTip(tr("Font size"));
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
             
             QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
@@ -2076,7 +2076,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
             _setBoldButton->setCheckable(true);
-            _setBoldButton->setToolTip("Bold");
+            _setBoldButton->setToolTip(tr("Bold"));
             _setBoldButton->setMaximumSize(18, 18);
             QObject::connect(_setBoldButton,SIGNAL(clicked(bool)),this,SLOT(boldChanged(bool)));
             _richTextOptionsLayout->addWidget(_setBoldButton);
@@ -2087,7 +2087,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
-            _setItalicButton->setToolTip("Italic");
+            _setItalicButton->setToolTip(tr("Italic"));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect(_setItalicButton,SIGNAL(clicked(bool)),this,SLOT(italicChanged(bool)));
             _richTextOptionsLayout->addWidget(_setItalicButton);
@@ -2096,7 +2096,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             pixBlack.fill(Qt::black);
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
-            _fontColorButton->setToolTip("Font color");
+            _fontColorButton->setToolTip(tr("Font color"));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect(_fontColorButton, SIGNAL(clicked(bool)), this, SLOT(colorFontButtonClicked()));
             _richTextOptionsLayout->addWidget(_fontColorButton);
@@ -2965,7 +2965,7 @@ void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     treeColumnLayout->addWidget(_tree);
     
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip(Qt::convertFromPlainText("Reset the selected curves in the tree to their default shape", Qt::WhiteSpaceNormal));
+    _resetButton->setToolTip(Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape"), Qt::WhiteSpaceNormal));
     QObject::connect(_resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()));
     treeColumnLayout->addWidget(_resetButton);
     

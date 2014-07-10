@@ -1767,7 +1767,7 @@ void ViewerGL::initAndCheckGlExtensions()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Natron::errorDialog("OpenGL/GLEW error",
+        Natron::errorDialog(tr("OpenGL/GLEW error").toStdString(),
                              (const char*)glewGetErrorString(err));
     }
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
@@ -1781,9 +1781,9 @@ void ViewerGL::initAndCheckGlExtensions()
                          //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
                          //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
                          )) {
-        Natron::errorDialog("Missing OpenGL requirements",
-                             "The viewer may not be fully functionnal. "
-                             "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
+        Natron::errorDialog(tr("Missing OpenGL requirements").toStdString(),
+                             tr("The viewer may not be fully functional. "
+                             "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ").toStdString());
     }
     
     _imp->viewerTab->getGui()->setOpenGLVersion(getOpenGLVersionString());

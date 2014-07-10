@@ -63,8 +63,8 @@ void RenderingProgressDialog::onFrameRendered(int frame){
     double percent = (double)(frame - _imp->_firstFrame+1)/(double)(_imp->_lastFrame - _imp->_firstFrame+1);
     int progress = std::floor(percent*100);
     _imp->_totalProgress->setValue(progress);
-    _imp->_perFrameLabel->setText("Frame " + QString::number(frame) + ":");
-    QString title = QString::number(progress) + "% of " + _imp->_sequenceName;
+    _imp->_perFrameLabel->setText(tr("Frame ") + QString::number(frame) + ":");
+    QString title = QString::number(progress) + tr("% of ") + _imp->_sequenceName;
     setWindowTitle(title);
     _imp->_perFrameLabel->hide();
     _imp->_perFrameProgress->hide();
@@ -83,7 +83,7 @@ void RenderingProgressDialog::onCurrentFrameProgress(int progress){
 void RenderingProgressDialog::onProcessCanceled() {
     if (isVisible()) {
         hide();
-        Natron::informationDialog("Render", "Render aborted.");
+        Natron::informationDialog(tr("Render").toStdString(), tr("Render aborted.").toStdString());
     }
     
 }
@@ -95,36 +95,36 @@ void RenderingProgressDialog::onProcessFinished(int retCode) {
         bool showLog = false;
         if (retCode == 0) {
             if (_imp->_process) {
-                Natron::StandardButton reply = Natron::questionDialog("Render","The render ended successfully.\n"
-                                                                      "Would you like to see the log ?");
+                Natron::StandardButton reply = Natron::questionDialog(tr("Render").toStdString(),tr("The render ended successfully.\n"
+                                                                      "Would you like to see the log ?").toStdString());
                 if (reply == Natron::Yes) {
                     showLog = true;
                 }
             } else {
-                Natron::informationDialog("Render", "The render ended successfully.");
+                Natron::informationDialog(tr("Render").toStdString(), tr("The render ended successfully.").toStdString());
             }
             
         } else if (retCode == 1) {
             if (_imp->_process) {
-                Natron::StandardButton reply = Natron::questionDialog("Render",
-                                                                      "The render ended with a return code of 1, a problem occured.\n"
-                                                                      "Would you like to see the log ?");
+                Natron::StandardButton reply = Natron::questionDialog(tr("Render").toStdString(),
+                                                                      tr("The render ended with a return code of 1, a problem occured.\n"
+                                                                      "Would you like to see the log ?").toStdString());
                 if (reply == Natron::Yes) {
                     showLog = true;
                 }
             } else {
-                Natron::errorDialog("Render","The render ended with a return code of 1, a problem occured.");
+                Natron::errorDialog(tr("Render").toStdString(),tr("The render ended with a return code of 1, a problem occured.").toStdString());
             }
             
         } else {
             if (_imp->_process) {
-                Natron::StandardButton reply = Natron::questionDialog("Render","The render crashed.\n"
-                                                                      "Would you like to see the log ?");
+                Natron::StandardButton reply = Natron::questionDialog(tr("Render").toStdString(),tr("The render crashed.\n"
+                                                                      "Would you like to see the log ?").toStdString());
                 if (reply == Natron::Yes) {
                     showLog = true;
                 }
             } else {
-                Natron::errorDialog("Render","The render crashed.");
+                Natron::errorDialog(tr("Render").toStdString(),tr("The render crashed.").toStdString());
             }
         }
         if (showLog) {
@@ -152,16 +152,16 @@ RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int
 
 {
     
-    QString title = QString::number(0) + "% of " + _imp->_sequenceName;
+    QString title = QString::number(0) + tr("% of ") + _imp->_sequenceName;
     setMinimumWidth(fontMetrics().width(title)+100);
-    setWindowTitle(QString::number(0) + "% of " + _imp->_sequenceName);
+    setWindowTitle(QString::number(0) + tr("% of ") + _imp->_sequenceName);
     //setWindowFlags(Qt::WindowStaysOnTopHint);
     _imp->_mainLayout = new QVBoxLayout(this);
     setLayout(_imp->_mainLayout);
     _imp->_mainLayout->setContentsMargins(5, 5, 0, 0);
     _imp->_mainLayout->setSpacing(5);
     
-    _imp->_totalLabel = new QLabel("Total progress:",this);
+    _imp->_totalLabel = new QLabel(tr("Total progress:"),this);
     _imp->_mainLayout->addWidget(_imp->_totalLabel);
     _imp->_totalProgress = new QProgressBar(this);
     _imp->_totalProgress->setRange(0, 100);
@@ -188,7 +188,7 @@ RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int
     _imp->_perFrameProgress->setRange(0, 100);
     _imp->_mainLayout->addWidget(_imp->_perFrameProgress);
     
-    _imp->_cancelButton = new Button("Cancel",this);
+    _imp->_cancelButton = new Button(tr("Cancel"),this);
     _imp->_cancelButton->setMaximumWidth(50);
     _imp->_mainLayout->addWidget(_imp->_cancelButton);
     
@@ -232,7 +232,7 @@ LogWindow::LogWindow(const QString& log,QWidget* parent)
     
     mainLayout->addWidget(textBrowser);
     
-    okButton = new Button("Ok",this);
+    okButton = new Button(tr("Ok"),this);
     QObject::connect(okButton, SIGNAL(clicked()), this, SLOT(accept()));
     mainLayout->addWidget(okButton);
 }

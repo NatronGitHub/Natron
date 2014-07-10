@@ -741,7 +741,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 std::stringstream ss;
                 ss << "Failed to allocate a texture of ";
                 ss << printAsRAM(cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t)).toStdString();
-                Natron::errorDialog("Out of memory",ss.str());
+                Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
                 return StatFailed;
             }
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
@@ -1166,18 +1166,18 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                             r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
                             g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
                             b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) ;
-                            a = Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]);
+                            a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
                             break;
                         case Natron::ImageComponentRGB:
                             r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
                             g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
                             b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
-                            a = 255;
+                            a = (src_pixels ? 255 : 0);
                             break;
                         case Natron::ImageComponentAlpha:
                             r = src_pixels ? src_pixels[srcIndex] : 0.;
                             g = b = r;
-                            a = 255;
+                            a = src_pixels ? 255 : 0;
                             break;
                         default:
                             assert(false);

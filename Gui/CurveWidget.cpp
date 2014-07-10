@@ -583,99 +583,99 @@ void CurveWidgetPrivate::createMenu()
     
     QMenu* fileMenu = new QMenu(_rightClickMenu);
     fileMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-    fileMenu->setTitle("File");
+    fileMenu->setTitle(QObject::tr("File"));
     _rightClickMenu->addAction(fileMenu->menuAction());
     
     QMenu* editMenu = new QMenu(_rightClickMenu);
     editMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-    editMenu->setTitle("Edit");
+    editMenu->setTitle(QObject::tr("Edit"));
     _rightClickMenu->addAction(editMenu->menuAction());
     
     QMenu* interpMenu = new QMenu(_rightClickMenu);
     interpMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-    interpMenu->setTitle("Interpolation");
+    interpMenu->setTitle(QObject::tr("Interpolation"));
     _rightClickMenu->addAction(interpMenu->menuAction());
     
     QMenu* viewMenu = new QMenu(_rightClickMenu);
     viewMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-    viewMenu->setTitle("View");
+    viewMenu->setTitle(QObject::tr("View"));
     _rightClickMenu->addAction(viewMenu->menuAction());
     
     
-    QAction* exportCurveToAsciiAction = new QAction("Export curve to Ascii",fileMenu);
+    QAction* exportCurveToAsciiAction = new QAction(QObject::tr("Export curve to Ascii"),fileMenu);
     QObject::connect(exportCurveToAsciiAction,SIGNAL(triggered()),_widget,SLOT(exportCurveToAscii()));
     fileMenu->addAction(exportCurveToAsciiAction);
     
-    QAction* importCurveFromAsciiAction = new QAction("Import curve from Ascii",fileMenu);
+    QAction* importCurveFromAsciiAction = new QAction(QObject::tr("Import curve from Ascii"),fileMenu);
     QObject::connect(importCurveFromAsciiAction,SIGNAL(triggered()),_widget,SLOT(importCurveFromAscii()));
     fileMenu->addAction(importCurveFromAsciiAction);
     
-    QAction* deleteKeyFramesAction = new QAction("Delete selected keyframes",editMenu);
+    QAction* deleteKeyFramesAction = new QAction(QObject::tr("Delete selected keyframes"),editMenu);
     deleteKeyFramesAction->setShortcut(QKeySequence(Qt::Key_Backspace));
     QObject::connect(deleteKeyFramesAction,SIGNAL(triggered()),_widget,SLOT(deleteSelectedKeyFrames()));
     editMenu->addAction(deleteKeyFramesAction);
     
-    QAction* copyKeyFramesAction = new QAction("Copy selected keyframes",editMenu);
+    QAction* copyKeyFramesAction = new QAction(QObject::tr("Copy selected keyframes"),editMenu);
     copyKeyFramesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
     QObject::connect(copyKeyFramesAction,SIGNAL(triggered()),_widget,SLOT(copySelectedKeyFrames()));
     editMenu->addAction(copyKeyFramesAction);
     
-    QAction* pasteKeyFramesAction = new QAction("Paste to selected curve",editMenu);
+    QAction* pasteKeyFramesAction = new QAction(QObject::tr("Paste to selected curve"),editMenu);
     pasteKeyFramesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_V));
     QObject::connect(pasteKeyFramesAction,SIGNAL(triggered()),_widget,SLOT(pasteKeyFramesFromClipBoardToSelectedCurve()));
     editMenu->addAction(pasteKeyFramesAction);
     
-    QAction* selectAllAction = new QAction("Select all keyframes",editMenu);
+    QAction* selectAllAction = new QAction(QObject::tr("Select all keyframes"),editMenu);
     selectAllAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
     QObject::connect(selectAllAction,SIGNAL(triggered()),_widget,SLOT(selectAllKeyFrames()));
     editMenu->addAction(selectAllAction);
     
     
-    QAction* constantInterp = new QAction("Constant",interpMenu);
+    QAction* constantInterp = new QAction(QObject::tr("Constant"),interpMenu);
     constantInterp->setShortcut(QKeySequence(Qt::Key_K));
     QObject::connect(constantInterp,SIGNAL(triggered()),_widget,SLOT(constantInterpForSelectedKeyFrames()));
     interpMenu->addAction(constantInterp);
     
-    QAction* linearInterp = new QAction("Linear",interpMenu);
+    QAction* linearInterp = new QAction(QObject::tr("Linear"),interpMenu);
     linearInterp->setShortcut(QKeySequence(Qt::Key_L));
     QObject::connect(linearInterp,SIGNAL(triggered()),_widget,SLOT(linearInterpForSelectedKeyFrames()));
     interpMenu->addAction(linearInterp);
     
     
-    QAction* smoothInterp = new QAction("Smooth",interpMenu);
+    QAction* smoothInterp = new QAction(QObject::tr("Smooth"),interpMenu);
     smoothInterp->setShortcut(QKeySequence(Qt::Key_Z));
     QObject::connect(smoothInterp,SIGNAL(triggered()),_widget,SLOT(smoothForSelectedKeyFrames()));
     interpMenu->addAction(smoothInterp);
     
     
-    QAction* catmullRomInterp = new QAction("Catmull-Rom",interpMenu);
+    QAction* catmullRomInterp = new QAction(QObject::tr("Catmull-Rom"),interpMenu);
     catmullRomInterp->setShortcut(QKeySequence(Qt::Key_R));
     QObject::connect(catmullRomInterp,SIGNAL(triggered()),_widget,SLOT(catmullromInterpForSelectedKeyFrames()));
     interpMenu->addAction(catmullRomInterp);
     
     
-    QAction* cubicInterp = new QAction("Cubic",interpMenu);
+    QAction* cubicInterp = new QAction(QObject::tr("Cubic"),interpMenu);
     cubicInterp->setShortcut(QKeySequence(Qt::Key_C));
     QObject::connect(cubicInterp,SIGNAL(triggered()),_widget,SLOT(cubicInterpForSelectedKeyFrames()));
     interpMenu->addAction(cubicInterp);
     
-    QAction* horizontalInterp = new QAction("Horizontal",interpMenu);
+    QAction* horizontalInterp = new QAction(QObject::tr("Horizontal"),interpMenu);
     horizontalInterp->setShortcut(QKeySequence(Qt::Key_H));
     QObject::connect(horizontalInterp,SIGNAL(triggered()),_widget,SLOT(horizontalInterpForSelectedKeyFrames()));
     interpMenu->addAction(horizontalInterp);
     
     
-    QAction* breakDerivatives = new QAction("Break",interpMenu);
+    QAction* breakDerivatives = new QAction(QObject::tr("Break"),interpMenu);
     breakDerivatives->setShortcut(QKeySequence(Qt::Key_X));
     QObject::connect(breakDerivatives,SIGNAL(triggered()),_widget,SLOT(breakDerivativesForSelectedKeyFrames()));
     interpMenu->addAction(breakDerivatives);
     
-    QAction* frameCurve = new QAction("Frame selected curve",viewMenu);
+    QAction* frameCurve = new QAction(QObject::tr("Frame selected curve"),viewMenu);
     frameCurve->setShortcut(QKeySequence(Qt::Key_F));
     QObject::connect(frameCurve,SIGNAL(triggered()),_widget,SLOT(frameSelectedCurve()));
     viewMenu->addAction(frameCurve);
     
-    QAction* updateOnPenUp = new QAction("Update on mouse release only",_rightClickMenu);
+    QAction* updateOnPenUp = new QAction(QObject::tr("Update on mouse release only"),_rightClickMenu);
     updateOnPenUp->setCheckable(true);
     updateOnPenUp->setChecked(appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly());
     _rightClickMenu->addAction(updateOnPenUp);
@@ -2673,7 +2673,7 @@ void CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
         }
     }
     if(!curve){
-        warningDialog("Curve Editor","You must select a curve first.");
+        warningDialog(QObject::tr("Curve Editor").toStdString(),QObject::tr("You must select a curve first.").toStdString());
         return;
     }
     //this function will call updateGL() for us
@@ -2722,7 +2722,7 @@ void CurveWidget::frameSelectedCurve()
             return;
         }
     }
-    warningDialog("Curve Editor","You must select a curve first.");
+    warningDialog(tr("Curve Editor").toStdString(),tr("You must select a curve first.").toStdString());
 }
 
 void CurveWidget::onTimeLineFrameChanged(SequenceTime,int /*reason*/)
@@ -2842,7 +2842,7 @@ void CurveWidget::exportCurveToAscii()
         }
     }
     if (curves.empty()) {
-        warningDialog("Curve Editor","You must have a curve on the editor first.");
+        warningDialog(tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString());
         return;
     }
     
@@ -2861,7 +2861,7 @@ void CurveWidget::exportCurveToAscii()
             double endInt = std::floor(end);
             if (curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() &&
                 (incrInt != incr || xInt != x || endInt != end)) {
-                warningDialog("Curve Export",curves[i]->getName().toStdString() + " doesn't support X values that are not integers.");
+                warningDialog(tr("Curve Export").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString());
                 return;
             }
         }
@@ -2911,7 +2911,7 @@ void CurveWidget::importCurveFromAscii()
         }
     }
     if (curves.empty()) {
-        warningDialog("Curve Editor","You must have a curve on the editor first.");
+        warningDialog(tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString());
         return;
     }
     
@@ -2919,7 +2919,7 @@ void CurveWidget::importCurveFromAscii()
     if (dialog.exec()) {
         QString filePath = dialog.getFilePath();
         if (!QFile::exists(filePath)) {
-            warningDialog("Curve Import","File not found.");
+            warningDialog(tr("Curve Import").toStdString(),tr("File not found.").toStdString());
             return;
         }
         
@@ -2935,7 +2935,7 @@ void CurveWidget::importCurveFromAscii()
             double xInt = std::floor(x);
             if (curves[i]->getInternalCurve()->areKeyFramesTimeClampedToIntegers() &&
                 (incrInt != incr || xInt != x)) {
-                warningDialog("Curve Import",curves[i]->getName().toStdString() + " doesn't support X values that are not integers.");
+                warningDialog(tr("Curve Import").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString());
                 return;
             }
         }
@@ -2963,7 +2963,7 @@ void CurveWidget::importCurveFromAscii()
                 }
                 if (i < line.size()) {
                     if (line.at(i) != QChar('_')) {
-                        errorDialog("Curve Import","The file could not be read.");
+                        errorDialog(tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString());
                         return;
                     }
                     ++i;
@@ -2971,20 +2971,20 @@ void CurveWidget::importCurveFromAscii()
                 bool ok;
                 double v = value.toDouble(&ok);
                 if (!ok) {
-                    errorDialog("Curve Import","The file could not be read.");
+                    errorDialog(tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString());
                     return;
                 }
                 values.push_back(v);
             }
             ///assert that the values count is greater than the number of curves provided by the user
             if (values.size() < columns.size()) {
-                errorDialog("Curve Import","The file contains less curves than what you selected.");
+                errorDialog(tr("Curve Import").toStdString(),tr("The file contains less curves than what you selected.").toStdString());
                 return;
             }
             
             for(std::map<int,CurveGui*>::const_iterator col = columns.begin();col!=columns.end();++col){
                 if (col->first >= (int)values.size()) {
-                    errorDialog("Curve Import","One of the curve column index is not a valid index for the given file.");
+                    errorDialog(tr("Curve Import").toStdString(),tr("One of the curve column index is not a valid index for the given file.").toStdString());
                     return;
                 }
                 std::map<CurveGui*, std::vector<double> >::iterator foundCurve = curvesValues.find(col->second);
@@ -3055,10 +3055,10 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
     //////File
     _fileContainer = new QWidget(this);
     _fileLayout = new QHBoxLayout(_fileContainer);
-    _fileLabel = new QLabel("File:",_fileContainer);
+    _fileLabel = new QLabel(tr("File:"),_fileContainer);
     _fileLayout->addWidget(_fileLabel);
     _fileLineEdit = new LineEdit(_fileContainer);
-    _fileLineEdit->setPlaceholderText("File path...");
+    _fileLineEdit->setPlaceholderText(tr("File path..."));
     _fileLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     _fileLayout->addWidget(_fileLineEdit);
     _fileBrowseButton = new Button(_fileContainer);
@@ -3073,7 +3073,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
     //////x start value
     _startContainer = new QWidget(this);
     _startLayout = new QHBoxLayout(_startContainer);
-    _startLabel = new QLabel("X start value:",_startContainer);
+    _startLabel = new QLabel(tr("X start value:"),_startContainer);
     _startLayout->addWidget(_startLabel);
     _startSpinBox = new SpinBox(_startContainer,SpinBox::DOUBLE_SPINBOX);
     _startSpinBox->setValue(0);
@@ -3083,7 +3083,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
     //////x increment
     _incrContainer = new QWidget(this);
     _incrLayout = new QHBoxLayout(_incrContainer);
-    _incrLabel = new QLabel("X increment:",_incrContainer);
+    _incrLabel = new QLabel(tr("X increment:"),_incrContainer);
     _incrLayout->addWidget(_incrLabel);
     _incrSpinBox = new SpinBox(_incrContainer,SpinBox::DOUBLE_SPINBOX);
     _incrSpinBox->setValue(0.01);
@@ -3094,7 +3094,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
     if(isExportDialog) {
         _endContainer = new QWidget(this);
         _endLayout = new QHBoxLayout(_endContainer);
-        _endLabel = new QLabel("X end value:",_endContainer);
+        _endLabel = new QLabel(tr("X end value:"),_endContainer);
         _endLayout->addWidget(_endLabel);
         _endSpinBox = new SpinBox(_endContainer,SpinBox::DOUBLE_SPINBOX);
         _endSpinBox->setValue(1);
@@ -3121,7 +3121,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
         column._curve = curves[i];
         column._curveContainer = new QWidget(this);
         column._curveLayout = new QHBoxLayout(column._curveContainer);
-        column._curveLabel = new QLabel(curves[i]->getName() + " column:");
+        column._curveLabel = new QLabel(curves[i]->getName() + tr(" column:"));
         column._curveLayout->addWidget(column._curveLabel);
         column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::INT_SPINBOX);
         column._curveSpinBox->setValue((double)i+1.);
@@ -3139,10 +3139,10 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
     /////buttons
     _buttonsContainer = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsContainer);
-    _okButton = new Button("Ok",_buttonsContainer);
+    _okButton = new Button(tr("Ok"),_buttonsContainer);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _buttonsLayout->addWidget(_okButton);
-    _cancelButton = new Button("Cancel",_buttonsContainer);
+    _cancelButton = new Button(tr("Cancel"),_buttonsContainer);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _buttonsLayout->addWidget(_cancelButton);
     _mainLayout->addWidget(_buttonsContainer);

@@ -133,10 +133,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                                                                         ,it->getPluginMinorVersion(),&(*it),false));
         if (!n) {
             project->clearNodes();
-            QString text("Failed to restore the graph! \n The node ");
+            QString text(QObject::tr("Failed to restore the graph! \n The node "));
             text.append(it->getPluginID().c_str());
-            text.append(" was found in the script but doesn't seem \n"
-                        "to exist in the currently loaded plug-ins.");
+            text.append(QObject::tr(" was found in the script but doesn't seem \n"
+                        "to exist in the currently loaded plug-ins."));
             qDebug() << text;
             Natron::errorDialog("", text.toStdString());
             continue;

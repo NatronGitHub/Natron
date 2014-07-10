@@ -21,4 +21,5 @@ Ole Andre Rodlie <olar@github> (Linux)
 
 Omar Brown <blackearth2014@github>
 Ole Andre Rodlie <olar@github>
-Fraiçois "CoyHot" Grassard <Francois-Grassard@github>
+Paul Geraskin <mifth@github>
+François "CoyHot" Grassard <Francois-Grassard@github>

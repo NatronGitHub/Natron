@@ -110,10 +110,10 @@ void AppInstance::newVersionCheckDownloaded()
     
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
     if (versionEncoded > NATRON_VERSION_ENCODED) {
-        QString text(QString("Updates for " NATRON_APPLICATION_NAME " are now available for download. "
-                        "You are currently using " NATRON_APPLICATION_NAME " version " NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS
-                        ". The latest version of " NATRON_APPLICATION_NAME " is version ") + data +
-                     QString(". You can download it from <a href='http://sourceforge.net/projects/natron/'>"
+        QString text(QObject::tr("Updates for %1 are now available for download. "
+                        "You are currently using %1 version %2 - %3"
+                        ". The latest version of %1 is version ").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(NATRON_DEVELOPMENT_STATUS) + data +
+                     QObject::tr(". You can download it from") + QString("<a href='http://sourceforge.net/projects/natron/'>"
                              "<font color=\"orange\">Sourceforge</a>."));
         Natron::informationDialog("New version",text.toStdString());
     }

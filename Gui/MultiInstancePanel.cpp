@@ -405,7 +405,7 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     QObject::connect(_imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()));
     
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
-    _imp->removeButton->setToolTip("Remove selection");
+    _imp->removeButton->setToolTip(tr("Remove selection"));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     _imp->removeButton->setFixedSize(18,18);
     QObject::connect(_imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()));
@@ -414,7 +414,7 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
     
     _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
-    _imp->selectAll->setToolTip("Select all");
+    _imp->selectAll->setToolTip(tr("Select all"));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
     _imp->selectAll->setFixedSize(18,18);
     QObject::connect(_imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()));
@@ -422,7 +422,7 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
     QObject::connect(_imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()));
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip("Reset selected items");
+    _imp->resetTracksButton->setToolTip(tr("Reset selected items"));
     
     layout->addWidget(_imp->buttonsContainer);
     appendExtraGui(layout);
@@ -458,7 +458,7 @@ public:
         assert(index != -1);
         _panel->removeRow(index);
         _node->deactivate();
-        setText(QString("Add %1").arg(_node->getName().c_str()));
+        setText(QObject::tr("Add %1").arg(_node->getName().c_str()));
     }
     
     virtual void redo() OVERRIDE FINAL
@@ -468,7 +468,7 @@ public:
             _panel->addRow(_node);
         }
         _firstRedoCalled = true;
-        setText(QString("Add %1").arg(_node->getName().c_str()));
+        setText(QObject::tr("Add %1").arg(_node->getName().c_str()));
     }
     
     
@@ -626,7 +626,7 @@ public:
             _panel->addRow(*it);
             (*it)->activate();
         }
-        setText(QString("Remove instance(s)"));
+        setText(QObject::tr("Remove instance(s)"));
     }
     
     virtual void redo() OVERRIDE FINAL
@@ -639,7 +639,7 @@ public:
             bool isMainInstance = (*it) == mainInstance;
             (*it)->deactivate(!isMainInstance);
         }
-        setText(QString("Remove instance(s)"));
+        setText(QObject::tr("Remove instance(s)"));
     }
 };
 
@@ -1116,8 +1116,8 @@ void TrackerPanel::appendExtraGui(QVBoxLayout* /*layout*/)
 
 void TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
 {
-    _imp->averageTracksButton = new Button("Average tracks",buttonLayout->parentWidget());
-    _imp->averageTracksButton->setToolTip("Make a new track which is the average of the selected tracks");
+    _imp->averageTracksButton = new Button(tr("Average tracks"),buttonLayout->parentWidget());
+    _imp->averageTracksButton->setToolTip(tr("Make a new track which is the average of the selected tracks"));
     QObject::connect(_imp->averageTracksButton, SIGNAL(clicked(bool)), this, SLOT(onAverageTracksButtonClicked()));
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
@@ -1141,7 +1141,7 @@ void TrackerPanel::onAverageTracksButtonClicked()
     std::list<Natron::Node*> selectedInstances;
     getSelectedInstances(&selectedInstances);
     if (selectedInstances.empty()) {
-        Natron::warningDialog("Average", "No tracks selected");
+        Natron::warningDialog(tr("Average").toStdString(), tr("No tracks selected").toStdString());
         return;
     }
     
@@ -1226,7 +1226,7 @@ void TrackerPanel::onButtonTriggered(Button_Knob* button)
     std::list<Node*> selectedInstances;
     getSelectedInstances(&selectedInstances);
     if (selectedInstances.empty()) {
-        Natron::warningDialog("Tracker", "You must select something to track first");
+        Natron::warningDialog(tr("Tracker").toStdString(), tr("You must select something to track first").toStdString());
         return;
     }
     
@@ -1242,7 +1242,7 @@ void TrackerPanel::onButtonTriggered(Button_Knob* button)
         int start = timeline->currentFrame();
         int cur = start;
         Gui* gui = getGui();
-        gui->startProgress(selectedInstances.front()->getLiveInstance(), "Tracking...");
+        gui->startProgress(selectedInstances.front()->getLiveInstance(), tr("Tracking...").toStdString());
         while (cur > end) {
             handleTrackNextAndPrevious(prevBtn, selectedInstances);
             QCoreApplication::processEvents();
@@ -1264,7 +1264,7 @@ void TrackerPanel::onButtonTriggered(Button_Knob* button)
         int cur = start;
         
         Gui* gui = getGui();
-        gui->startProgress(selectedInstances.front()->getLiveInstance(), "Tracking...");
+        gui->startProgress(selectedInstances.front()->getLiveInstance(), tr("Tracking...").toStdString());
         while (cur < end) {
             handleTrackNextAndPrevious(nextBtn, selectedInstances);
             QCoreApplication::processEvents();
