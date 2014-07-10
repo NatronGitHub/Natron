@@ -572,22 +572,23 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
     
     ///Get the union of the inputs.
     RectI inputsUnion;
-    for (int i = 0; i < maximumInputs(); ++i) {
-        Natron::EffectInstance* input = input_other_thread(i);
-        if (input) {
-            RectI inputRod;
-            bool isProjectFormat;
-            Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
-            if (st != StatFailed) {
-                if (i == 0) {
-                    inputsUnion = inputRod;
-                } else {
-                    inputsUnion.merge(inputRod);
+    if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
+        for (int i = 0; i < maximumInputs(); ++i) {
+            Natron::EffectInstance* input = input_other_thread(i);
+            if (input) {
+                RectI inputRod;
+                bool isProjectFormat;
+                Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
+                if (st != StatFailed) {
+                    if (i == 0) {
+                        inputsUnion = inputRod;
+                    } else {
+                        inputsUnion.merge(inputRod);
+                    }
                 }
             }
         }
     }
-    
     ///If infinite : clip to inputsUnion if not null, otherwise to project default
     
     // BE CAREFUL:
@@ -986,6 +987,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                          args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
                 ///Clear input images pointer because getImage has stored ret .
                 _imp->clearInputImagePointers();
+                return ret;
             } else {
                 return boost::shared_ptr<Image>();
             }
