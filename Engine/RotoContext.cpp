@@ -68,11 +68,10 @@ bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterOrR
             relative = _imp->relativePoint;
         }
         if (masterTrack) {
-            bool ok;
             KeyFrame k;
             if (masterTrack->getCurve(0)->getKeyFrameWithTime(time, &k)) {
                 *x = k.getValue();
-                masterTrack->getCurve(1)->getKeyFrameWithTime(time, &k);
+                (void)masterTrack->getCurve(1)->getKeyFrameWithTime(time, &k);
                 *y = k.getValue();
                 return true;
             } else {

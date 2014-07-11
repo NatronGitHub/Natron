@@ -200,6 +200,7 @@ void Project::saveProject(const QString& path,const QString& name,bool autoS){
 
             //}
         } else {
+            ///Don't autosave worthless graphs
             if (!isGraphWorthLess()) {
 
                 removeAutoSaves();
@@ -746,6 +747,11 @@ QString Project::getLastAutoSaveFilePath() const {
     return _imp->lastAutoSaveFilePath;
 }
 
+bool Project::hasEverAutoSaved() const
+{
+    return !getLastAutoSaveFilePath().isEmpty();
+}
+    
 QString Project::getProjectPath() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->projectPath;
@@ -1000,6 +1006,7 @@ bool Project::isLoadingProject() const {
 }
 
 bool Project::isGraphWorthLess() const {
+    /*
     bool worthLess = true;
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         if (!_imp->currentNodes[i]->isOutputNode() && _imp->currentNodes[i]->isActivated()) {
@@ -1008,6 +1015,10 @@ bool Project::isGraphWorthLess() const {
         }
     }
     return worthLess;
+     */
+    
+    ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
+    return !hasEverAutoSaved() && !hasProjectBeenSavedByUser();
 }
 
 void Project::removeAutoSaves() {

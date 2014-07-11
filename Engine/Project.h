@@ -121,6 +121,8 @@ public:
     
     QString getLastAutoSaveFilePath() const;
     
+    bool hasEverAutoSaved() const;
+    
     QString getProjectPath() const WARN_UNUSED_RETURN;
     
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
