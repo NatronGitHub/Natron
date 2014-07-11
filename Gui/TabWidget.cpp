@@ -289,10 +289,16 @@ static void getTabWidgetRecursively(Splitter* parentSplitter,TabWidget*& tab) {
     for (int i = 0; i < parentSplitter->count(); ++i) {
         QWidget* w = parentSplitter->widget(i);
         TabWidget* isTab = dynamic_cast<TabWidget*>(w);
+        Splitter* isSplitter = dynamic_cast<Splitter*>(w);
         if (isTab) {
             tab = isTab;
             found = true;
             break;
+        } else if (isSplitter) {
+            getTabWidgetRecursively(isSplitter, tab);
+            if (tab) {
+                return;
+            }
         }
     }
     if (!found) {
