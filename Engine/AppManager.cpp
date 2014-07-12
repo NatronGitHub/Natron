@@ -311,10 +311,13 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
 
     Natron::Log::instance();//< enable logging
 
+    _imp->_settings->initializeKnobsPublic();
+    ///Call restore after initializing knobs
+    _imp->_settings->restoreSettings();
+
     ///basically show a splashScreen
     initGui();
 
-    _imp->_settings->initializeKnobsPublic();
 
 
     QObject::connect(_imp->ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
@@ -332,7 +335,6 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     setLoadingStatus(tr("Restoring user settings..."));
 
 
-    _imp->_settings->restoreSettings();
     
     ///Set host properties after restoring settings since it depends on the host name.
     _imp->ofxHost->setProperties();

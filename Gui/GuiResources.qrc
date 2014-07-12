@@ -110,32 +110,6 @@
         <file>Resources/Images/bold_unchecked.png</file>
         <file>Resources/Images/featherDisabled.png</file>
         <file>Resources/Images/featherEnabled.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/3D_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/channel_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/color_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/image_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/keyer_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/merge_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/misc_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/multiview_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/paint_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/time_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/toolsets_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/transform_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/3D_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/channel_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/color_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/filter_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/image_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/keyer_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/merge_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/misc_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/multiview_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/paint_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/time_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/toolsets_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/transform_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set1/color_grouping_1.png</file>
         <file>Resources/Images/GroupingIcons/Set1/deep_grouping_1.png</file>
         <file>Resources/Images/GroupingIcons/Set1/filter_grouping_1.png</file>
@@ -146,5 +120,33 @@
         <file>Resources/Images/GroupingIcons/Set1/paint_grouping_1.png</file>
         <file>Resources/Images/GroupingIcons/Set1/time_grouping_1.png</file>
         <file>Resources/Images/GroupingIcons/Set1/transform_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/3D_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/channel_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/color_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/deep_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/filter_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/image_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/keyer_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/merge_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/misc_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/multiview_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/paint_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/time_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/toolsets_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/transform_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/3D_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/channel_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/color_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/deep_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/image_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/keyer_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/merge_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/multiview_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/paint_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/toolsets_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/transform_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/misc_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/time_grouping_3.png</file>
     </qresource>
 </RCC>

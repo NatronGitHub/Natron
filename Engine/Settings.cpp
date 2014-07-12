@@ -36,6 +36,7 @@ using namespace Natron;
 Settings::Settings(AppInstance* appInstance)
 : KnobHolder(appInstance)
 , _wereChangesMadeSinceLastSave(false)
+, _restoringSettings(false)
 {
     
 }
@@ -286,6 +287,12 @@ void Settings::initializeKnobs(){
     _snapNodesToConnections->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_snapNodesToConnections);
     
+    _useBWIcons = Natron::createKnob<Bool_Knob>(this, "Use black & white toolbutton icons");
+    _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar will be in black and white. Changing this takes "
+                                "effect upon the next launch of the application.");
+    _useBWIcons->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_useBWIcons);
+    
     _useNodeGraphHints = Natron::createKnob<Bool_Knob>(this, "Use connection hints");
     _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
                                        "nearby will display a hint for possible connections. Releasing the mouse on such a "
@@ -487,6 +494,7 @@ void Settings::setDefaultValues() {
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
     _snapNodesToConnections->setDefaultValue(true);
+    _useBWIcons->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
@@ -629,6 +637,7 @@ void Settings::saveSettings(){
     
     settings.beginGroup("Nodegraph");
     settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
+    settings.setValue("UseBWIcons", _useBWIcons->getValue());
     settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
     settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
     settings.setValue("DisconnectedArrowLength", _disconnectedArrowLength->getValue());
@@ -713,7 +722,7 @@ void Settings::saveSettings(){
 }
 
 void Settings::restoreSettings(){
-    
+    _restoringSettings = true;
     _wereChangesMadeSinceLastSave = false;
     
     notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
@@ -795,6 +804,9 @@ void Settings::restoreSettings(){
     settings.beginGroup("Nodegraph");
     if (settings.contains("SnapToNode")) {
         _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
+    }
+    if (settings.contains("UseBWIcons")) {
+        _useBWIcons->setValue(settings.value("UseBWIcons").toBool(), 0);
     }
     if (settings.contains("ConnectionHints")) {
         _useNodeGraphHints->setValue(settings.value("ConnectionHints").toBool(), 0);
@@ -991,7 +1003,7 @@ void Settings::restoreSettings(){
     }
     settings.endGroup();
     notifyProjectEndKnobsValuesChanged();
-
+    _restoringSettings = false;
 }
 
 bool Settings::tryLoadOpenColorIOConfig()
@@ -1049,8 +1061,9 @@ bool Settings::tryLoadOpenColorIOConfig()
 void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/){
 
     _wereChangesMadeSinceLastSave = true;
-
-    
+    if (_restoringSettings) {
+        return;
+    }
     if (k == _texturesMode.get()) {
         std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
@@ -1437,4 +1450,9 @@ bool Settings::getRenderOnEditingFinishedOnly() const
 void Settings::setRenderOnEditingFinishedOnly(bool render)
 {
     _renderOnEditingFinished->setValue(render, 0);
+}
+
+bool Settings::getIconsBlackAndWhite() const
+{
+    return _useBWIcons->getValue();
 }

@@ -71,7 +71,9 @@
 ///Natron will load all icons that are associated to a group toolbutton with the following icon set number, i.e:
 ///if it is 2, then it will load color_grouping_2.png , filter_grouping_2.png , etc... this way you can compile
 ///with different icons set easily.
-#define NATRON_ICON_SET_NUMBER "3"
+#define NATRON_ICON_SET_BLACK_AND_WHITE "2"
+#define NATRON_ICON_SET_FADED_COLOURS "3"
+#define NATRON_ICON_SET_NUMBER NATRON_ICON_SET_FADED_COLOURS
 
 #define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
 #define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"

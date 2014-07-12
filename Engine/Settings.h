@@ -144,6 +144,8 @@ public:
     bool getRenderOnEditingFinishedOnly() const;
     void setRenderOnEditingFinishedOnly(bool render);
     
+    bool getIconsBlackAndWhite() const;
+    
     std::string getHostName() const;
 private:
     
@@ -188,6 +190,7 @@ private:
     boost::shared_ptr<Page_Knob> _nodegraphTab;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
+    boost::shared_ptr<Bool_Knob> _useBWIcons;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
@@ -216,6 +219,7 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     
     bool _wereChangesMadeSinceLastSave;
+    bool _restoringSettings;
     
 };
 
