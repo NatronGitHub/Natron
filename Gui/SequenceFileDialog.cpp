@@ -29,7 +29,7 @@
 #include <QDialog>
 #include <QScrollBar>
 #include <QFileDialog>
-#include <QtCore/QRegExp>
+#include <QStyleFactory>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
@@ -657,6 +657,7 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if (!directory.isEmpty() && newDirectory.isEmpty())
         return;
     _requestedDir = newDirectory;
+    //_proxy->clear(); //< clear already recorded frame sequences to speed-up filterAcceptsRow
     _model->setRootPath(newDirectory); // < calls filterAcceptsRow
     _createDirButton->setEnabled(_dialogMode != OPEN_DIALOG);
     if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
@@ -714,39 +715,17 @@ bool SequenceFileDialog::sequenceModeEnabled() const{
 }
 
 
-bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const{
+bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const {
     if(_filter.isEmpty()) return true;
-    std::vector<QString> regExps;
-    int i = 0;
-    while (i < _filter.size()) {
-        QString regExp;
-        while( i < _filter.size() && _filter.at(i) != QChar(' ')){
-            regExp.append(_filter.at(i));
-            ++i;
-        }
-        ++i;
-        regExps.push_back(regExp);
-    }
-    bool recognized = false;
-    bool noRegExpValid = true;
-    for (U32 j = 0; j < regExps.size(); ++j) {
-        QRegExp rx(regExps[j],Qt::CaseInsensitive,QRegExp::Wildcard);
-        if(!rx.isValid()){
-            continue;
-        }else{
-            noRegExpValid = false;
-            if(rx.exactMatch(path)){
-                recognized = true;
-                break;
-            }
+    
+    for (std::list<QRegExp>::const_iterator it = _regexps.begin() ; it!= _regexps.end();++it) {
+        
+        if(it->exactMatch(path)){
+            return true;
         }
         
     }
-    if(!noRegExpValid && recognized){
-        return true;
-    }else{
-        return false;
-    }
+    return false;
 }
 
 /*Complex filter to actually extract the sequences from the file system*/
@@ -772,16 +751,17 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         }
     }
     
-    /*if the item does not match the filter regexp set by the user, discard it*/
-    if(!isAcceptedByUser(item.data().toString())){
-        return false;
-    }
-    
     /*If file sequence fetching is disabled, just call the base class version.*/
     if(!_fd->sequenceModeEnabled()){
         return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
     }
 
+    /*if the item does not match the filter regexp set by the user, discard it*/
+    if (!isAcceptedByUser(path)) {
+        return false;
+    }
+    
+    
     /*if we reach here, this is a valid file and we need to take actions*/
     SequenceParsing::FileNameContent fileContent(path.toStdString());
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
@@ -817,26 +797,44 @@ void SequenceDialogProxyModel::getSequenceFromFilesForFole(const QString& file,S
     }
 }
 
+void SequenceDialogProxyModel::setFilter(const QString& filter)
+{
+    _filter = filter;
+    _regexps.clear();
+    int i = 0;
+    while (i < _filter.size()) {
+        QString regExp;
+        while( i < _filter.size() && _filter.at(i) != QChar(' ')){
+            regExp.append(_filter.at(i));
+            ++i;
+        }
+        ++i;
+        QRegExp rx(regExp,Qt::CaseInsensitive,QRegExp::Wildcard);
+        if (rx.isValid()) {
+            _regexps.push_back(rx);
+        }
+    }
+
+}
+
 void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
     _nameMapping.clear();
     if(!sequenceModeEnabled()){
         return;
     }
-    /*Iterating over all the content of the parent directory.
-     *Note that only 1 item is left per sequence already,
-     *We just need to change its name to reflect the number
-     *of elements in the sequence.
-     */
-	int rowCount = _model->rowCount(parent);
-    
-    
+  
+    int rowCount = _model->rowCount(parent);
+    //QModelIndex proxyIndex = _proxy->mapFromSource(parent);
+    //int rowCount = _proxy->rowCount(proxyIndex);
     for(int c = 0 ; c < rowCount ; ++c) {
         QModelIndex item = _model->index(c,0,parent);
+        //QModelIndex item = _proxy->index(c, 0,proxyIndex);
         /*We skip directories*/
-        if(!item.isValid() || _model->isDir(item)){
+        QString name = item.data(QFileSystemModel::FilePathRole).toString();
+
+        if (!item.isValid() || _model->isDir(item)) {
             continue;
         }
-        QString name = item.data(QFileSystemModel::FilePathRole).toString();
         quint64 sequenceSize;
         QString mappedName = _proxy->getUserFriendlyFileSequencePatternForFile(name,&sequenceSize);
         {
@@ -850,12 +848,11 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
     }
     QReadLocker locker(&_nameMappingMutex);
     _view->updateNameMapping(_nameMapping);
-    //_view->repaint();
 }
 void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
 }
-#include <QStyleFactory>
+
 SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd):QTreeView(fd),_fd(fd){
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
