@@ -279,9 +279,19 @@ EffectInstance::~EffectInstance()
 }
 
 void EffectInstance::clearPluginMemoryChunks() {
-    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-    while (!_imp->pluginMemoryChunks.empty()) {
-        delete *(_imp->pluginMemoryChunks.begin());
+    int toRemove;
+    {
+        QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+        toRemove = (int)_imp->pluginMemoryChunks.size();
+    }
+    while (toRemove > 0) {
+        PluginMemory* mem;
+        {
+            QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+            mem = (*_imp->pluginMemoryChunks.begin());
+        }
+        delete mem;
+        --toRemove;
     }
 }
 
