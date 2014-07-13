@@ -1061,8 +1061,8 @@ bool Settings::tryLoadOpenColorIOConfig()
 void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/){
 
     _wereChangesMadeSinceLastSave = true;
-    if (_restoringSettings) {
-        return;
+    if (_restoringSettings && (k == _maxDiskCacheGB.get() || k == _maxRAMPercent.get() || k == _maxPlayBackPercent.get())) {
+        return; 
     }
     if (k == _texturesMode.get()) {
         std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
