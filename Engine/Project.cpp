@@ -200,12 +200,10 @@ void Project::saveProject(const QString& path,const QString& name,bool autoS){
 
             //}
         } else {
-            ///Don't autosave worthless graphs
-            if (!isGraphWorthLess()) {
-
-                removeAutoSaves();
-                saveProjectInternal(path,name,true);
-            }
+            
+            removeAutoSaves();
+            saveProjectInternal(path,name,true);
+            
         }
     } catch (const std::exception& e) {
         

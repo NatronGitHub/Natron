@@ -1291,6 +1291,9 @@ void Node::deactivate(bool hideGui)
     ///kill any thread it could have started (e.g: VideoEngine or preview)
     quitAnyProcessing();
     
+    ///Free all memory used by the plug-in.
+    _imp->liveInstance->clearPluginMemoryChunks();
+    
     if (hideGui) {
         emit deactivated();
     }

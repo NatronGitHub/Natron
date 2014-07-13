@@ -612,6 +612,11 @@ public:
     void registerPluginMemory(size_t nBytes);
     void unregisterPluginMemory(size_t nBytes);
     
+    void addPluginMemoryPointer(PluginMemory* mem);
+    void removePluginMemoryPointer(PluginMemory* mem);
+    
+    void clearPluginMemoryChunks();
+    
     /**
      * @brief Called right away when the user first opens the settings panel of the node.
      * This is called after each params had its default value set.

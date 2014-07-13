@@ -105,6 +105,8 @@ struct EffectInstance::Implementation {
     , lastImage()
     , duringInteractActionMutex()
     , duringInteractAction(false)
+    , pluginMemoryChunksMutex()
+    , pluginMemoryChunks()
     {
     }
 
@@ -125,6 +127,9 @@ struct EffectInstance::Implementation {
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
+    mutable QMutex pluginMemoryChunksMutex;
+    std::list<PluginMemory*> pluginMemoryChunks;
+    
     void setDuringInteractAction(bool b) {
         QWriteLocker l(&duringInteractActionMutex);
         duringInteractAction = b;
@@ -257,6 +262,8 @@ struct EffectInstance::Implementation {
             inputImages.localData().clear();
         }
     }
+    
+    
 };
 
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
@@ -268,6 +275,14 @@ EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
 
 EffectInstance::~EffectInstance()
 {
+    clearPluginMemoryChunks();
+}
+
+void EffectInstance::clearPluginMemoryChunks() {
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    while (!_imp->pluginMemoryChunks.empty()) {
+        delete *(_imp->pluginMemoryChunks.begin());
+    }
 }
 
 U64 EffectInstance::hash() const
@@ -1770,6 +1785,21 @@ PluginMemory* EffectInstance::newMemoryInstance(size_t nBytes) {
     bool wasntLocked = ret->alloc(nBytes);
     assert(wasntLocked);
     return ret;
+}
+
+void EffectInstance::addPluginMemoryPointer(PluginMemory* mem)
+{
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    _imp->pluginMemoryChunks.push_back(mem);
+}
+
+void EffectInstance::removePluginMemoryPointer(PluginMemory* mem)
+{
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    std::list<PluginMemory*>::iterator it = std::find(_imp->pluginMemoryChunks.begin(),_imp->pluginMemoryChunks.end(),mem);
+    if (it != _imp->pluginMemoryChunks.end()) {
+        _imp->pluginMemoryChunks.erase(it);
+    }
 }
 
 
