@@ -332,8 +332,8 @@ signals:
     
 public slots:
 
-    bool exitGui(); //< exit, asking questions to the user
-    void quit(); //< exit right away, without any user interaction
+    bool closeProject(); //< close project, asking questions to the user
+    void abortProject(); //< close project right away, without any user interaction
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
     void newProject();

@@ -176,6 +176,7 @@ struct GuiPrivate {
     ///all the menu actions
     QAction *actionNew_project;
     QAction *actionOpen_project;
+    QAction *actionClose_project;
     QAction *actionSave_project;
     QAction *actionSaveAs_project;
     QAction *actionPreferences;
@@ -339,6 +340,7 @@ struct GuiPrivate {
     , _splitters()
     , actionNew_project(0)
     , actionOpen_project(0)
+    , actionClose_project(0)
     , actionSave_project(0)
     , actionSaveAs_project(0)
     , actionPreferences(0)
@@ -460,7 +462,7 @@ Gui::~Gui()
     }
 }
 
-bool Gui::exitGui()
+bool Gui::closeProject()
 {
     int ret = saveWarning();
     if (ret == 0) {
@@ -472,12 +474,12 @@ bool Gui::exitGui()
     }
     removeEventFilter(this);
     _imp->saveGuiGeometry();
-    quit();
+    abortProject();
     return true;
 }
  
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
-void Gui::quit()
+void Gui::abortProject()
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -501,12 +503,14 @@ void Gui::toggleFullScreen()
     }
 }
 
-void Gui::closeEvent(QCloseEvent *e) {
+void
+Gui::closeEvent(QCloseEvent *e)
+{
     assert(e);
 	if (_imp->_appInstance->isClosing()) {
 		e->ignore();
 	} else {
-		if (!exitGui()) {
+		if (!closeProject()) {
 			e->ignore();
 			return;
 		}
@@ -579,6 +583,8 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     actionNew_project->setText(QObject::tr("&New Project"));
     assert(actionOpen_project);
     actionOpen_project->setText(QObject::tr("&Open Project..."));
+    assert(actionClose_project);
+    actionClose_project->setText(QObject::tr("Close Project"));
     assert(actionSave_project);
     actionSave_project->setText(QObject::tr("&Save Project"));
     assert(actionSaveAs_project);
@@ -699,6 +705,12 @@ void Gui::setupUi()
     _imp->actionOpen_project->setIcon(get_icon("document-open"));
     _imp->actionOpen_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect(_imp->actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
+    _imp->actionClose_project = new QAction(this);
+    _imp->actionClose_project->setObjectName(QString::fromUtf8("actionClose_project"));
+    _imp->actionClose_project->setShortcut(QKeySequence::Close);
+    _imp->actionClose_project->setShortcutContext(Qt::WindowShortcut);
+    _imp->actionClose_project->setIcon(get_icon("document-close"));
+    QObject::connect(_imp->actionClose_project, SIGNAL(triggered()), this, SLOT(closeProject()));
     _imp->actionSave_project = new QAction(this);
     _imp->actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
     _imp->actionSave_project->setShortcut(QKeySequence::Save);
@@ -713,9 +725,11 @@ void Gui::setupUi()
     _imp->actionPreferences = new QAction(this);
     _imp->actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
+    _imp->actionPreferences->setShortcut(QKeySequence::Preferences);
     _imp->actionExit = new QAction(this);
     _imp->actionExit->setObjectName(QString::fromUtf8("actionExit"));
     _imp->actionExit->setMenuRole(QAction::QuitRole);
+    _imp->actionExit->setShortcut(QKeySequence::Quit);
     _imp->actionExit->setShortcutContext(Qt::WindowShortcut);
     _imp->actionExit->setIcon(get_icon("application-exit"));
     _imp->actionProject_settings = new QAction(this);
@@ -747,6 +761,7 @@ void Gui::setupUi()
     _imp->actionClearAllCaches->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
     _imp->actionShowAboutWindow = new QAction(this);
     _imp->actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
+    _imp->actionShowAboutWindow->setMenuRole(QAction::AboutRole);
     _imp->actionShowAboutWindow->setCheckable(false);
     
     _imp->renderAllWriters = new QAction(this);
@@ -983,6 +998,8 @@ void Gui::setupUi()
         _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
     }
 
+    _imp->menuFile->addSeparator();
+    _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
     _imp->menuFile->addSeparator();
@@ -1032,7 +1049,8 @@ void Gui::setupUi()
     
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     QObject::connect(_imp->actionClearNodeCache, SIGNAL(triggered()),_imp->_appInstance,SLOT(clearOpenFXPluginsCaches()));
-    QObject::connect(_imp->actionExit,SIGNAL(triggered()),this,SLOT(exitGui()));
+#pragma message WARN("TODO: AppManager::exitApp() is not implemented")
+    QObject::connect(_imp->actionExit,SIGNAL(triggered()),appPTR,SLOT(exitApp()));
     QObject::connect(_imp->actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     QObject::connect(_imp->actionShowOfxLog,SIGNAL(triggered()),this,SLOT(showOfxLog()));
     
