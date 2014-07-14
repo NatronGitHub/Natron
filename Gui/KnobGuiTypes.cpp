@@ -142,24 +142,23 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         box->setMaximum(max);
         box->setMinimum(min);
         box->setIncrement(increments[i]);
-        if(hasToolTip()) {
+        if (hasToolTip()) {
             box->setToolTip(toolTip());
         }
         boxContainerLayout->addWidget(box);
         if (getKnob()->getDimension() == 1 && !_knob->isSliderDisabled()) {
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
-            double sliderMin = dispmin,sliderMax = dispmax;
-            if ((dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
-                ///use min max for slider if dispmin/dispmax was not set
-                if ((max - min) < SLIDER_MAX_RANGE) {
-                    sliderMin = min;
-                    sliderMax = max;
-                }
+            double sliderMin = dispmin;
+            double sliderMax = dispmax;
+            if ((sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
+                // use min max for slider if dispmin/dispmax was not set
+                sliderMin = min;
+                sliderMax = max;
             }
             if ((sliderMax > sliderMin) && (sliderMax - sliderMin) < SLIDER_MAX_RANGE && sliderMax < INT_MAX && sliderMin > INT_MIN) {
                 _slider = new ScaleSliderQWidget(sliderMin, sliderMax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
-                if(hasToolTip()) {
+                if (hasToolTip()) {
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
