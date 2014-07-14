@@ -1421,7 +1421,11 @@ void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::Imag
         assert(clip);
         const std::vector<std::string>& supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
-            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            try {
+                comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            } catch (const std::runtime_error &e) {
+                // ignore unsupported components
+            }
         }
     } else {
         assert(inputNb == -1);
@@ -1429,21 +1433,14 @@ void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::Imag
         assert(clip);
         const std::vector<std::string>& supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
-            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            try {
+                comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            } catch (const std::runtime_error &e) {
+                // ignore unsupported components
+            }
         }
     }
 
-}
-
-static Natron::ImageBitDepth ofxBitDepthToNatron(const std::string& bitDepth)
-{
-    if (bitDepth == kOfxBitDepthFloat) {
-        return Natron::IMAGE_FLOAT;
-    } else if (bitDepth == kOfxBitDepthByte) {
-        return Natron::IMAGE_BYTE;
-    } else {
-        return Natron::IMAGE_SHORT;
-    }
 }
 
 void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
@@ -1452,7 +1449,11 @@ void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* d
     int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
     for (int i = 0; i < dim ; ++i) {
         const std::string& depth = prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths,i);
-        depths->push_back(ofxBitDepthToNatron(depth));
+        try {
+            depths->push_back(OfxClipInstance::ofxDepthToNatronDepth(depth));
+        } catch (const std::runtime_error &e) {
+            // ignore unsupported bitdepth
+        }
     }
 }
 
