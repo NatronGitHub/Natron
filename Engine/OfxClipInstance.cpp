@@ -45,6 +45,7 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
 
 const std::string& OfxClipInstance::getUnmappedBitDepth() const
 {
+#pragma message WARN("TODO: it should return the clip bit depth before Natron converts it using clip preferences")
     // we always use floats
     static const std::string v(kOfxBitDepthFloat);
     return v;
@@ -52,6 +53,7 @@ const std::string& OfxClipInstance::getUnmappedBitDepth() const
 
 const std::string &OfxClipInstance::getUnmappedComponents() const
 {
+#pragma message WARN("TODO: it should return the clip components before Natron converts it using clip preferences - the Components could be Alpha, and the UnmappedComponents RGBA (Natron lets the user select which component is converted to Alpha)")
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
@@ -382,7 +384,7 @@ Natron::ImageComponents OfxClipInstance::ofxComponentsToNatronComponents(const s
     } else if (comp == kOfxImageComponentNone) {
         return Natron::ImageComponentNone;
     } else {
-        assert(false); //< comp unsupported
+        throw std::runtime_error(comp+": unsupported component "); //< comp unsupported
     }
 }
 
@@ -395,7 +397,7 @@ Natron::ImageBitDepth OfxClipInstance::ofxDepthToNatronDepth(const std::string& 
     } else if (depth == kOfxBitDepthFloat) {
         return Natron::IMAGE_FLOAT;
     } else {
-        assert(false);//< shouldve been caught earlier
+        throw std::runtime_error(depth+": unsupported bitdepth"); //< comp unsupported
     }
 }
 
