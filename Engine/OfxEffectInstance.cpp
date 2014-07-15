@@ -146,7 +146,12 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         if (!effect_->getClipPreferences()) {
            qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
-        
+#pragma message WARN("FIXME: Check here that bitdepth and components given by getClipPreferences are supported by the effect")
+        // FIXME: Check here that bitdepth and components given by getClipPreferences are supported by the effect.
+        // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
+        // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
+        // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
+
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
         const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
         for (U32 i = 0; i < clips.size(); ++i) {
