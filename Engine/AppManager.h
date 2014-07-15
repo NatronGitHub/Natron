@@ -242,6 +242,10 @@ public:
 
 public slots:
 
+#pragma message WARN("TODO: AppManager::exitApp() is not implemented")
+    // missing: a slot that closes all projects, asking the user to save each one
+    //void exitApp();
+
     void clearPlaybackCache();
 
     void clearDiskCache();

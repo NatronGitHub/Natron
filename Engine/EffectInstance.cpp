@@ -590,10 +590,10 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert(!projectDefault.isNull());
     
-    bool x1Infinite = rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity();
-    bool y1Infinite = rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity();
-    bool x2Infinite = rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity();
-    bool y2Infinite = rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity();
+    bool x1Infinite = rod->x1 <= kOfxFlagInfiniteMin;
+    bool y1Infinite = rod->y1 <= kOfxFlagInfiniteMin;
+    bool x2Infinite = rod->x2 >= kOfxFlagInfiniteMax;
+    bool y2Infinite = rod->y2 >= kOfxFlagInfiniteMax;
     
     ///Get the union of the inputs.
     RectI inputsUnion;
@@ -2397,19 +2397,19 @@ bool OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()
     bool isRodProjctFormat = false;
-    if (rod->left() == kOfxFlagInfiniteMin || rod->left() == std::numeric_limits<int>::min()) {
+    if (rod->left() <= kOfxFlagInfiniteMin) {
         rod->set_left(projectDefault.left());
         isRodProjctFormat = true;
     }
-    if (rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == std::numeric_limits<int>::min()) {
+    if (rod->bottom() <= kOfxFlagInfiniteMin) {
         rod->set_bottom(projectDefault.bottom());
         isRodProjctFormat = true;
     }
-    if (rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<int>::max()) {
+    if (rod->right() >= kOfxFlagInfiniteMax) {
         rod->set_right(projectDefault.right());
         isRodProjctFormat = true;
     }
-    if (rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<int>::max()) {
+    if (rod->top() >= kOfxFlagInfiniteMax) {
         rod->set_top(projectDefault.top());
         isRodProjctFormat = true;
     }
