@@ -122,6 +122,13 @@ void RemoveKeysCommand::redo(){
     addOrRemoveKeyframe(false);
 }
 
+namespace  {
+    static bool selectedKeyLessFunctor(const KeyPtr& lhs,const KeyPtr& rhs)
+    {
+        return lhs->key.getTime() < rhs->key.getTime();
+    }
+}
+
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,const SelectedKeys &keys, double dt, double dv,bool updateOnFirstRedo,
                                  QUndoCommand *parent )
@@ -133,6 +140,8 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,const SelectedKeys &keys, d
 , _keys(keys)
 , _widget(widget)
 {
+    ///sort keys by increasing time
+    _keys.sort(selectedKeyLessFunctor);
 }
 
 static void
@@ -186,7 +195,7 @@ void MoveKeysCommand::move(double dt, double dv)
 
     SelectedKeys newSelectedKeys;
     try {
-        if(dt < 0) {
+        if(dt <= 0) {
             for (SelectedKeys::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
                 moveKey(*it, dt, dv);
             }
@@ -199,7 +208,6 @@ void MoveKeysCommand::move(double dt, double dv)
         qDebug() << "The keyframe set has changed since this action. This is probably because another user interaction is not "
         "linked to undo/redo stack.";
     }
-    _widget->refreshSelectedKeys();
     
     
     for (std::map<KnobGui*, bool>::iterator it = oldEvaluateOnChange.begin(); it!=oldEvaluateOnChange.end(); ++it) {
@@ -209,7 +217,8 @@ void MoveKeysCommand::move(double dt, double dv)
         }
     }
         
-    
+    _widget->refreshSelectedKeys();
+
 }
 
 void MoveKeysCommand::undo()
