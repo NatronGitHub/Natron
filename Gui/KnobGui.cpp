@@ -203,9 +203,10 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
     }
     _imp->widgetCreated = true;
     
-    for(int i = 0; i < knob->getDimension();++i) {
+    for (int i = 0; i < knob->getDimension();++i) {
         updateGuiInternal(i);
     }
+    onAnimationLevelChanged(knob->getAnimationLevel(0));
     
     setEnabledSlot();
     if (isOnNewLine) {

@@ -2970,7 +2970,7 @@ void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     
     layout->addWidget(treeColumn);
     
-    _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
+    _curveWidget = new CurveWidget(getGui(),boost::shared_ptr<TimeLine>(),layout->parentWidget());
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if(hasToolTip()) {
         _curveWidget->setToolTip(toolTip());

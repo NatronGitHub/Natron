@@ -39,6 +39,7 @@ class QSplitter;
 class KnobGui;
 class KeyFrame;
 class Variant;
+class Gui;
 class QAction;
 class TimeLine;
 class NodeCurveEditorElement : public QObject
@@ -123,7 +124,7 @@ class CurveEditor  : public QWidget
 
 public:
 
-    CurveEditor(boost::shared_ptr<TimeLine> timeline,QWidget* parent = 0);
+    CurveEditor(Gui* gui,boost::shared_ptr<TimeLine> timeline,QWidget* parent = 0);
 
     virtual ~CurveEditor() OVERRIDE;
 

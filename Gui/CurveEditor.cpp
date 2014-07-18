@@ -63,7 +63,7 @@ void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *c
 
 
 
-CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
+CurveEditor::CurveEditor(Gui* gui,boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     : QWidget(parent)
     , _nodes()
     , _mainLayout(NULL)
@@ -87,7 +87,7 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     _splitter = new QSplitter(Qt::Horizontal,this);
     _splitter->setObjectName("CurveEditorSplitter");
 
-    _curveWidget = new CurveWidget(timeline,_splitter);
+    _curveWidget = new CurveWidget(gui,timeline,_splitter);
     _curveWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     
     _tree = new QTreeWidget(_splitter);

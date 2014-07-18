@@ -67,8 +67,10 @@ void File_Knob::setFilesInternal(const SequenceParsing::SequenceFromFiles& fileS
         if (isAnimationEnabled()) {
             const std::map<int, std::string>& filesMap  = fileSequence.getFrameIndexes();
             if (!filesMap.empty()) {
-                for (std::map<int, std::string>::const_iterator it = filesMap.begin(); it!=filesMap.end(); ++it) {
-                    setValueAtTime(it->first, it->second,0);
+                std::map<int, std::string>::const_iterator next = filesMap.begin();
+                ++next;
+                for (std::map<int, std::string>::const_iterator it = filesMap.begin(); it!=filesMap.end(); ++it,++next) {
+                    setValueAtTime(it->first, it->second,0,next == filesMap.end());
                 }
             } else {
                 ///the sequence has no indexes,if it has one file set a keyframe at time 0 for the single file

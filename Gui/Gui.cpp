@@ -879,7 +879,7 @@ void Gui::setupUi()
     _imp->_nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _imp->_workshopPane->appendTab(_imp->_nodeGraphArea);
     
-    _imp->_curveEditor = new CurveEditor(_imp->_appInstance->getTimeLine(),this);
+    _imp->_curveEditor = new CurveEditor(this,_imp->_appInstance->getTimeLine(),this);
 
     _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
     _imp->_workshopPane->appendTab(_imp->_curveEditor);
