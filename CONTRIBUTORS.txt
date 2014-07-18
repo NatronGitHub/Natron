@@ -23,3 +23,4 @@ Omar Brown <blackearth2014@github>
 Ole Andre Rodlie <olar@github>
 Paul Geraskin <mifth@github>
 François "CoyHot" Grassard <Francois-Grassard@github>
+Francesco Paglia <fPaglia@github>
