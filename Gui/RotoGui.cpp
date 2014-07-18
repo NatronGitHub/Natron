@@ -1608,8 +1608,12 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 } else if (featherBarSel.first) {
                     _imp->clearCPSSelection();
                     _imp->rotoData->featherBarBeingDragged = featherBarSel;
-                    _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
-                    _imp->handleBezierSelection(nearbyBezier);
+                    
+                    ///Also select the point only if the curve is the same!
+                    if (featherBarSel.first->getCurve() == nearbyBezier.get()) {
+                        _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
+                        _imp->handleBezierSelection(nearbyBezier);
+                    }
                     _imp->state = DRAGGING_FEATHER_BAR;
                     didSomething = true;
                 } else {
