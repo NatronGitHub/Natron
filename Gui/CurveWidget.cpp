@@ -2052,19 +2052,6 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
         
         _imp->refreshKeyTangents(selected);
         
-        
-        //also check that the last  command made was a move command
-        bool wasLastCmdMoveCmd = false;
-        if(hadASelectedKey){
-            const QUndoCommand* lastCmd = previouslySelectedKey->curve->getKnob()->getLastUndoCommand();
-            if(lastCmd && lastCmd->id() == kCurveEditorMoveMultipleKeysCommandCompressionID){
-                wasLastCmdMoveCmd = true;
-#pragma message WARN("Value stored to 'wasLastCmdMoveCmd' is never read")
-            }
-        }
-       
-        
-        
         //insert it into the _selectedKeyFrames
         _imp->insertSelectedKeyFrameConditionnaly(selected);
         
