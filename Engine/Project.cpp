@@ -1052,7 +1052,15 @@ void Project::reset() {
         _imp->projectName = NATRON_PROJECT_UNTITLED;
         _imp->projectPath.clear();
         _imp->autoSaveTimer->stop();
+        _imp->additionalFormats.clear();
     }
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+            knobs[i]->resetToDefaultValue(j);
+        }
+    }
+    
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
 }
