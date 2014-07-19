@@ -109,7 +109,7 @@ struct ProjectPrivate {
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
     
-    boost::scoped_ptr<QTimer> autoSaveTimer;
+    boost::shared_ptr<QTimer> autoSaveTimer;
     
     ProjectPrivate(Natron::Project* project);
     

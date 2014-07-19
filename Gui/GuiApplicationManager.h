@@ -90,6 +90,9 @@ public slots:
                                       const QString& pluginIconPath,
                                       const QString& groupIconPath) OVERRIDE FINAL;
     
+    ///Closes the application, asking the user to save each opened project that has unsaved changes
+    virtual void exitApp() OVERRIDE FINAL;
+    
 private:
     
     

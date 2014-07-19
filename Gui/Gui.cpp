@@ -462,7 +462,7 @@ Gui::~Gui()
     }
 }
 
-bool Gui::closeProject()
+bool Gui::closeInstance()
 {
     int ret = saveWarning();
     if (ret == 0) {
@@ -474,24 +474,44 @@ bool Gui::closeProject()
     }
     removeEventFilter(this);
     _imp->saveGuiGeometry();
-    abortProject();
+    abortProject(true);
     return true;
+}
+
+void Gui::closeProject()
+{
+    int ret = saveWarning();
+    if (ret == 0) {
+        if (!saveProject()) {
+            return;
+        }
+    } else if (ret == 2) {
+        return;
+    }
+    abortProject(false);
 }
  
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
-void Gui::abortProject()
+void Gui::abortProject(bool quitApp)
 {
-    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-    {
-        QMutexLocker l(&_imp->aboutToCloseMutex);
-        _imp->_aboutToClose = true;
+    if (quitApp) {
+        ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+        {
+            QMutexLocker l(&_imp->aboutToCloseMutex);
+            _imp->_aboutToClose = true;
+        }
+        
+        assert(_imp->_appInstance);
+        
+        ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
+        ///cause bad pointer dereference to the Gui object since we're destroying it.
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+            (*it)->notifyAppClosing();
+        }
+        _imp->_appInstance->quit();
+    } else {
+        _imp->_appInstance->getProject()->closeProject();
     }
-
-    assert(_imp->_appInstance);
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
-        (*it)->notifyAppClosing();
-    }
-    _imp->_appInstance->quit();
 }
 
 void Gui::toggleFullScreen()
@@ -510,7 +530,7 @@ Gui::closeEvent(QCloseEvent *e)
 	if (_imp->_appInstance->isClosing()) {
 		e->ignore();
 	} else {
-		if (!closeProject()) {
+		if (!closeInstance()) {
 			e->ignore();
 			return;
 		}
@@ -1049,7 +1069,6 @@ void Gui::setupUi()
     
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     QObject::connect(_imp->actionClearNodeCache, SIGNAL(triggered()),_imp->_appInstance,SLOT(clearOpenFXPluginsCaches()));
-#pragma message WARN("TODO: AppManager::exitApp() is not implemented")
     QObject::connect(_imp->actionExit,SIGNAL(triggered()),appPTR,SLOT(exitApp()));
     QObject::connect(_imp->actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     QObject::connect(_imp->actionShowOfxLog,SIGNAL(triggered()),this,SLOT(showOfxLog()));
@@ -1848,7 +1867,7 @@ void Gui::autoSave(){
 
 int Gui::saveWarning(){
     
-    if(!_imp->_appInstance->getProject()->isGraphWorthLess() && !_imp->_appInstance->getProject()->isSaveUpToDate()){
+    if (!_imp->_appInstance->getProject()->isSaveUpToDate()) {
         Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
                                Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);

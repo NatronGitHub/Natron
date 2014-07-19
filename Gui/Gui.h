@@ -323,6 +323,8 @@ public:
     
     void disconnectViewersFromViewerCache();
     
+    ///Close the application instance, asking questions to the user
+    bool closeInstance();
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -332,8 +334,8 @@ signals:
     
 public slots:
 
-    bool closeProject(); //< close project, asking questions to the user
-    void abortProject(); //< close project right away, without any user interaction
+   ///Close the project instance, asking questions to the user and leaving the main window intact
+    void closeProject();
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
     void newProject();
@@ -414,6 +416,12 @@ public slots:
 
     
 private:
+    
+    /**
+     * @brief Close project right away, without any user interaction. 
+     * @param quitApp If true, the application will exit, otherwise the main window will stay active.
+     **/
+    void abortProject(bool quitApp);
     
     void openProjectInternal(const std::string& absoluteFileName);
 

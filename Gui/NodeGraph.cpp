@@ -408,6 +408,11 @@ void NodeGraph::onProjectNodesCleared() {
     _nodes.clear();
     _nodesTrash.clear();
     _undoStack->clear();
+    
+    for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it!= _backdrops.end(); ++it) {
+        delete *it;
+    }
+    _backdrops.clear();
 }
 
 void NodeGraph::resizeEvent(QResizeEvent* event){
@@ -1605,6 +1610,9 @@ void AddCommand::undo(){
     _outputs = _node->getNode()->getOutputs();
     
     _node->getNode()->deactivate();
+    _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->redrawAllViewers();
+
     
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
@@ -1655,7 +1663,9 @@ void RemoveCommand::redo() {
     _outputs = _node->getNode()->getOutputs();
     
     _node->getNode()->deactivate();
-    
+    _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->redrawAllViewers();
+
     
     for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         assert(*it);
@@ -2595,7 +2605,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
         getGui()->getApp()->deleteNode(n);
         
         
-        getGui()->getCurveEditor()->removeNode(n);
+        getGui()->getCurveEditor()->removeNode(n.get());
         n->deleteReferences();
         if (_nodeSelected == n) {
             deselect();

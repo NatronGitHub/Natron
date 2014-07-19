@@ -224,6 +224,9 @@ public:
 public slots:
 
     void onAutoSaveTimerTriggered();
+    
+    ///Closes the project, clearing all nodes and reseting the project name
+    void closeProject() { reset(); }
 signals:
     
     void mustCreateFormat();
@@ -254,7 +257,7 @@ private:
  
     
     /**
-     * @brief Resets the project state.
+     * @brief Resets the project state clearing all nodes and the project name.
      **/
     void reset();
     

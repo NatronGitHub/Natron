@@ -839,3 +839,14 @@ void GuiApplicationManager::onLoadCompleted()
     }
 }
 
+void GuiApplicationManager::exitApp()
+{
+    ///make a copy of the map because it will be modified when closing projects
+    std::map<int,AppInstanceRef> instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+        GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (!app->getGui()->closeInstance()) {
+            return;
+        }
+    }
+}

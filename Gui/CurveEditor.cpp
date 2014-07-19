@@ -143,9 +143,9 @@ void CurveEditor::addNode(boost::shared_ptr<NodeGui> node){
 
 }
 
-void CurveEditor::removeNode(boost::shared_ptr<NodeGui> node){
+void CurveEditor::removeNode(NodeGui* node) {
     for(std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin();it!=_nodes.end();++it){
-        if((*it)->getNode() == node){
+        if((*it)->getNode().get() == node){
             delete (*it);
             _nodes.erase(it);
             break;

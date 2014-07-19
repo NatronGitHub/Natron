@@ -1009,18 +1009,16 @@ void NodeGui::deactivate() {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
     _graph->moveToTrash(this);
-    _graph->getGui()->getCurveEditor()->removeNode(_graph->getNodeGuiSharedPtr(this));
+    _graph->getGui()->getCurveEditor()->removeNode(this);
     
     
     if (!isMultiInstanceChild) {
-        getNode()->getApp()->triggerAutoSave();
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
             (*it)->updateTreeAndRender();
         }
     }
-    _graph->getGui()->getApp()->redrawAllViewers();
 }
 
 void NodeGui::initializeKnobs(){

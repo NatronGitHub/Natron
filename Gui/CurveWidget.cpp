@@ -580,11 +580,7 @@ CurveWidgetPrivate::~CurveWidgetPrivate()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    
-    if (_widget->parentWidget()->objectName() != "CurveEditorSplitter") {
-        ///if this is not the curve widget associated to the CurveEditor
-        _gui->removeUndoStack(_undoStack.get());
-    }
+
     delete _font;
     for (std::list<CurveGui*>::const_iterator it = _curves.begin(); it!=_curves.end(); ++it) {
         delete (*it);

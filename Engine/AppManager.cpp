@@ -1222,6 +1222,14 @@ void AppManager::writeToOfxLog_mt_safe(const QString& str)
     _imp->_ofxLog.append(str + '\n');
 }
 
+void AppManager::exitApp()
+{
+    const std::map<int,AppInstanceRef>& instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+        it->second.app->quit();
+    }
+}
+
 
 #ifdef Q_OS_UNIX
 QString AppManager::qt_tildeExpansion(const QString &path, bool *expanded)

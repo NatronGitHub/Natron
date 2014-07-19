@@ -633,12 +633,16 @@ void Project::clearNodes(bool emitSignal) {
     {
         QMutexLocker l(&_imp->nodesLock);
         nodesToDelete = _imp->currentNodes;
-        _imp->currentNodes.clear();
     }
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->quitAnyProcessing();
+        nodesToDelete[i]->deactivate();
         nodesToDelete[i]->removeReferences();
     }
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        _imp->currentNodes.clear();
+    }
+
     nodesToDelete.clear();
     
     if (emitSignal) {
@@ -1047,6 +1051,7 @@ void Project::reset() {
         _imp->projectCreationTime = QDateTime::currentDateTime();
         _imp->projectName = NATRON_PROJECT_UNTITLED;
         _imp->projectPath.clear();
+        _imp->autoSaveTimer->stop();
     }
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
