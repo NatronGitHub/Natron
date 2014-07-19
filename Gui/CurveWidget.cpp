@@ -2059,6 +2059,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
             const QUndoCommand* lastCmd = previouslySelectedKey->curve->getKnob()->getLastUndoCommand();
             if(lastCmd && lastCmd->id() == kCurveEditorMoveMultipleKeysCommandCompressionID){
                 wasLastCmdMoveCmd = true;
+#pragma message WARN("Value stored to 'wasLastCmdMoveCmd' is never read")
             }
         }
        
