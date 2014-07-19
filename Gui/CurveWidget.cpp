@@ -1155,7 +1155,6 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     
     bool clampToIntegers = (*_selectedKeyFrames.begin())->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
 
-    //1st off, round to the nearest integer the keyframes total motion (in X only)
     QPointF totalMovement;
     totalMovement.rx() = newClick_opengl.x() - dragStartPointOpenGL.x();
     totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
@@ -1172,7 +1171,7 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
     totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
     
-    
+    /// round to the nearest integer the keyframes total motion (in X only)
     if (clampToIntegers) {
         totalMovement.rx() = std::floor(totalMovement.x() + 0.5);
     }
@@ -1183,7 +1182,12 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     } else {
         dt = 0;
     }
-    double dv = totalMovement.y() - _keyDragLastMovement.y();
+    double dv;
+    if (_mouseDragOrientation.y() != 0) {
+        dv = totalMovement.y() - _keyDragLastMovement.y();
+    } else {
+        dv = 0;
+    }
     if (dv < _keyDragMaxMovement.bottom) {
         dv = _keyDragMaxMovement.bottom;
     } else if (dv > _keyDragMaxMovement.top) {
@@ -1222,7 +1226,9 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     if (_mouseDragOrientation.x() != 0 || !clampToIntegers) {
         _keyDragLastMovement.rx() = totalMovement.x();
     }
-    _keyDragLastMovement.ry() = totalMovement.y();
+    if (_mouseDragOrientation.y() != 0) {
+        _keyDragLastMovement.ry() = totalMovement.y();
+    }
 }
 
 
