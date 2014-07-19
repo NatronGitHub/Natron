@@ -146,9 +146,7 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,const SelectedKeys &keys, d
 
 static void
 moveKey(KeyPtr&k, double dt, double dv)
-{
-    //   k->curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-    
+{    
     std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
     
     double newX = k->key.getTime() + dt;
@@ -160,10 +158,12 @@ moveKey(KeyPtr&k, double dt, double dv)
         newY = k->key.getValue();
     }
     
-    int keyframeIndex = k->curve->getInternalCurve()->keyFrameIndex(k->key.getTime());
+    double oldTime = k->key.getTime();
+    int keyframeIndex = k->curve->getInternalCurve()->keyFrameIndex(oldTime);
     int newIndex;
     
     k->key = k->curve->getInternalCurve()->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
+    k->curve->getKnob()->onKeyFrameMoved(oldTime, k->key.getTime());
 }
 
 void MoveKeysCommand::move(double dt, double dv)

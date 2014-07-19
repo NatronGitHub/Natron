@@ -1336,6 +1336,19 @@ void KnobGui::setKeyframeMarkerOnTimeline(int time)
     
 }
 
+void KnobGui::onKeyFrameMoved(int oldTime,int newTime)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    
+    if (!knob->isAnimationEnabled() || !knob->canAnimate()) {
+        return;
+    }
+    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+    timeline->removeKeyFrameIndicator(oldTime);
+    timeline->addKeyframeIndicator(newTime);
+    
+}
+
 void KnobGui::onAnimationLevelChanged(int level)
 {
     if (!_imp->customInteract) {
@@ -1376,3 +1389,5 @@ void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool cr
     
     pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,triggerOnKnobChanged,values,time));
 }
+
+
