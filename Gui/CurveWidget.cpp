@@ -516,13 +516,13 @@ public:
     bool _timelineEnabled;
     std::pair<CurveGui::SelectedDerivative,KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
-    
+    QPointF _keyDragLastMovement;
+
 private:
     
     QColor _baseAxisColor;
     QColor _scaleColor;
     MaxMovement _keyDragMaxMovement;
-    QPointF _keyDragLastMovement;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
@@ -557,10 +557,10 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,boost::shared_ptr<TimeLine> time
 , _timelineEnabled(false)
 , _selectedDerivative()
 , _evaluateOnPenUp(false)
+, _keyDragLastMovement()
 , _baseAxisColor(118,215,90,255)
 , _scaleColor(67,123,52,255)
 , _keyDragMaxMovement()
-, _keyDragLastMovement()
 , _timelineTopPoly()
 , _timelineBtmPoly()
 , _widget(widget)
@@ -1145,28 +1145,19 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-
-    if(_selectedKeyFrames.empty()){
-        return;
-    }
-    
     
     QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates(_dragStartPoint.x(),_dragStartPoint.y());
     
     bool clampToIntegers = (*_selectedKeyFrames.begin())->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
 
     QPointF totalMovement;
-    totalMovement.rx() = newClick_opengl.x() - dragStartPointOpenGL.x();
-    totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
-    
-    ///If we changed the movement, e.g we were dragging top to bottom and now bottom to top, update the key drag max movemeent
-    double oldDirection = oldClick_opengl.y() - dragStartPointOpenGL.y();
-    if ((oldDirection < 0 && totalMovement.y() > 0) ||
-        (oldDirection > 0 && totalMovement.y() < 0)) {
-        updateSelectedKeysMaxMovement();
+    if (!clampToIntegers) {
+        totalMovement.rx() = newClick_opengl.x() - oldClick_opengl.x();
+        totalMovement.ry() = newClick_opengl.y() - oldClick_opengl.y();
+    } else {
+        totalMovement.rx() = newClick_opengl.x() - dragStartPointOpenGL.x();
+        totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
     }
-
-    
     // clamp totalMovement to _keyDragMaxMovement
     totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
     totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
@@ -1177,21 +1168,29 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
     }
     
     double dt;
+    
+    ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
+    ///We also want them to allow the user to move freely the keyframes around, hence the !clampToIntegers
     if (_mouseDragOrientation.x() != 0 || !clampToIntegers) {
-        dt =  totalMovement.x() - _keyDragLastMovement.x();
+        if (!clampToIntegers) {
+            dt =  totalMovement.x();
+        } else {
+            dt = totalMovement.x() - _keyDragLastMovement.x();
+        }
     } else {
         dt = 0;
     }
     double dv;
-    if (_mouseDragOrientation.y() != 0) {
-        dv = totalMovement.y() - _keyDragLastMovement.y();
+    ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
+    ///We also want them to allow the user to move freely the keyframes around, hence the !clampToIntegers
+    if (_mouseDragOrientation.y() != 0  || !clampToIntegers) {
+        if (!clampToIntegers) {
+            dv = totalMovement.y();
+        } else {
+            dv = totalMovement.y() - _keyDragLastMovement.y();
+        }
     } else {
         dv = 0;
-    }
-    if (dv < _keyDragMaxMovement.bottom) {
-        dv = _keyDragMaxMovement.bottom;
-    } else if (dv > _keyDragMaxMovement.top) {
-        dv = _keyDragMaxMovement.top;
     }
 
     if (dt != 0 || dv != 0) {
@@ -1220,8 +1219,6 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         }
         
     }
-    
-    
     //update last drag movement
     if (_mouseDragOrientation.x() != 0 || !clampToIntegers) {
         _keyDragLastMovement.rx() = totalMovement.x();
@@ -1557,7 +1554,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                 } else {
                     KeyFrameSet::const_iterator prev = leftMost;
                     --prev;
-                    double leftMaxMovement = std::min(-NATRON_CURVE_X_SPACING_EPSILON,
+                    double leftMaxMovement = std::min(std::min(-NATRON_CURVE_X_SPACING_EPSILON + minimumTimeSpanBetween2Keys,0.),
                                                       prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime());
                     curveMaxMovement.left = leftMaxMovement;
                     assert(curveMaxMovement.left <= 0);
@@ -1571,7 +1568,7 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                 if (next == ks.end()) {
                     curveMaxMovement.right = curveXRange.second - rightMost->getTime();
                 } else {
-                    double rightMaxMovement = std::max(NATRON_CURVE_X_SPACING_EPSILON,
+                    double rightMaxMovement = std::max(std::max(NATRON_CURVE_X_SPACING_EPSILON - minimumTimeSpanBetween2Keys,0.),
                                                        next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime());
                     curveMaxMovement.right = rightMaxMovement;
                     assert(curveMaxMovement.right >= 0);
@@ -1624,8 +1621,6 @@ void CurveWidgetPrivate::updateSelectedKeysMaxMovement()
     assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
            && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
     
-    _keyDragLastMovement.rx() = 0.;
-    _keyDragLastMovement.ry() = 0.;
 }
 
 void CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeType type)
@@ -2025,8 +2020,10 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
         _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_KEYS;
         _imp->updateSelectedKeysMaxMovement();
-        _imp->_oldClick = event->pos();
+        _imp->_keyDragLastMovement.rx() = 0.;
+        _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = event->pos();
+        _imp->_oldClick = event->pos();
         // no need to updateGL()
         return;
     }
@@ -2058,8 +2055,10 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
         _imp->insertSelectedKeyFrameConditionnaly(selected);
         
         _imp->updateSelectedKeysMaxMovement();
-        _imp->_oldClick = event->pos();
+        _imp->_keyDragLastMovement.rx() = 0.;
+        _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = event->pos();
+        _imp->_oldClick = event->pos();
         update(); // the keyframe changes color and the derivatives must be drawn
         return;
     }
@@ -2219,15 +2218,20 @@ void CurveWidget::mouseMoveEvent(QMouseEvent *event)
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->_oldClick.x(),_imp->_oldClick.y());
     double dx = (oldClick_opengl.x() - newClick_opengl.x());
     double dy = (oldClick_opengl.y() - newClick_opengl.y());
-
     switch (_imp->_state) {
         case DRAGGING_VIEW:
             _imp->zoomCtx.translate(dx, dy);
             break;
             
         case DRAGGING_KEYS:
-            if(!_imp->_mustSetDragOrientation){
-                _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
+            if(!_imp->_mustSetDragOrientation) {
+                if (!_imp->_selectedKeyFrames.empty()) {
+                    bool clampToIntegers = (*_imp->_selectedKeyFrames.begin())->curve->getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+                    if (!clampToIntegers) {
+                        _imp->updateSelectedKeysMaxMovement();
+                    }
+                    _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
+                }
             }
             break;
             
