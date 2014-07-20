@@ -95,6 +95,8 @@ public:
      **/
     std::vector< boost::shared_ptr<Natron::Node> > getCurrentNodes() const;
     
+    bool hasNodes() const;
+    
     bool connectNodes(int inputNumber,const std::string& inputName,boost::shared_ptr<Natron::Node> output);
     
     /**

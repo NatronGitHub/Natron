@@ -738,6 +738,12 @@ std::vector<boost::shared_ptr<Natron::Node> > Project::getCurrentNodes() const {
     return _imp->currentNodes;
 }
 
+bool Project::hasNodes() const
+{
+    QMutexLocker l(&_imp->nodesLock);
+    return !_imp->currentNodes.empty();
+}
+    
 QString Project::getProjectName() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->projectName;

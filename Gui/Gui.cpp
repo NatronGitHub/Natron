@@ -464,13 +464,15 @@ Gui::~Gui()
 
 bool Gui::closeInstance()
 {
-    int ret = saveWarning();
-    if (ret == 0) {
-        if (!saveProject()) {
+    if (getApp()->getProject()->hasNodes()) {
+        int ret = saveWarning();
+        if (ret == 0) {
+            if (!saveProject()) {
+                return false;
+            }
+        } else if (ret == 2) {
             return false;
         }
-    } else if (ret == 2) {
-        return false;
     }
     removeEventFilter(this);
     _imp->saveGuiGeometry();
@@ -480,17 +482,19 @@ bool Gui::closeInstance()
 
 void Gui::closeProject()
 {
-    int ret = saveWarning();
-    if (ret == 0) {
-        if (!saveProject()) {
+    if (getApp()->getProject()->hasNodes()) {
+        int ret = saveWarning();
+        if (ret == 0) {
+            if (!saveProject()) {
+                return;
+            }
+        } else if (ret == 2) {
             return;
         }
-    } else if (ret == 2) {
-        return;
     }
     abortProject(false);
 }
- 
+
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
 void Gui::abortProject(bool quitApp)
 {
