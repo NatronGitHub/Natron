@@ -1293,6 +1293,11 @@ void Node::deactivate(bool hideGui)
     
     ///Free all memory used by the plug-in.
     _imp->liveInstance->clearPluginMemoryChunks();
+    _imp->liveInstance->clearLastRenderedImage();
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
+    if (isViewer) {
+        isViewer->clearLastRenderedTexture();
+    }
     
     if (hideGui) {
         emit deactivated();

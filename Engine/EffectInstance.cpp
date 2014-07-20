@@ -275,6 +275,9 @@ EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
 
 EffectInstance::~EffectInstance()
 {
+    if (_node) {
+        appPTR->removeAllImagesFromCacheWithMatchingKey(hash());
+    }
     clearPluginMemoryChunks();
 }
 
@@ -297,7 +300,7 @@ void EffectInstance::clearPluginMemoryChunks() {
 
 U64 EffectInstance::hash() const
 {
-    return getNode()->getHashValue();
+    return _node->getHashValue();
 }
 
 bool EffectInstance::getRenderHash(U64* hash) const

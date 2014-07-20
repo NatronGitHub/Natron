@@ -492,6 +492,9 @@ void Gui::closeProject()
             return;
         }
     }
+    ///When closing a project we can remove the ViewerCache from memory and put it on disk
+    ///since we're not sure it will be used right away
+    appPTR->clearPlaybackCache();
     abortProject(false);
 }
 
