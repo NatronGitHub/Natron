@@ -4198,7 +4198,9 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,Natron
         
     }
     
-    if (lastRenderedImage && lastRenderHash != hash.value()) {
+    if (lastRenderedImage &&
+        (lastRenderHash != hash.value() ||
+         lastRenderedImage->getMipMapLevel() != mipmapLevel)) {
         ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
         Natron::OutputImageLocker imgLocker(_imp->node,lastRenderedImage);
         ///once we got it remove it from the cache

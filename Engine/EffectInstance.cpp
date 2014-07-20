@@ -749,6 +749,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
+        ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
+        ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
+        ///in the cache since the ViewerCache already has it ready.
         boost::shared_ptr<Image> lastRenderedImage;
         U64 lastRenderHash;
         {
@@ -756,7 +759,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             lastRenderedImage = _imp->lastImage;
             lastRenderHash = _imp->lastRenderHash;
         }
-        if (lastRenderedImage && lastRenderHash != nodeHash) {
+        if (lastRenderedImage &&
+            (lastRenderHash != nodeHash ||
+             args.mipMapLevel != lastRenderedImage->getMipMapLevel())) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             OutputImageLocker imgLocker(_node.get(),lastRenderedImage);
             ///once we got it remove it from the cache
