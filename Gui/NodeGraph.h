@@ -93,8 +93,6 @@ public:
     
     boost::shared_ptr<NodeGui> getSelectedNode() const {return _nodeSelected;}
     
-    void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
-    
     void selectNode(const boost::shared_ptr<NodeGui>& n);
     
     ///The visible portion of the graph, in scene coordinates.
