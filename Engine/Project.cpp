@@ -16,6 +16,7 @@
 #include <QtConcurrentRun>
 #include <QCoreApplication>
 #include <QTimer>
+#include <QThreadPool>
 #include <QTemporaryFile>
 
 #include "Engine/AppManager.h"
@@ -634,6 +635,15 @@ void Project::clearNodes(bool emitSignal) {
         QMutexLocker l(&_imp->nodesLock);
         nodesToDelete = _imp->currentNodes;
     }
+    
+    ///First quit any processing
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->quitAnyProcessing();
+    }
+    ///Kill thread pool so threads are killed before killing thread storage
+    QThreadPool::globalInstance()->waitForDone();
+
+    ///Kill effects
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->deactivate();
         nodesToDelete[i]->removeReferences();
