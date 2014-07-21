@@ -1167,6 +1167,18 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
         totalMovement.rx() = std::floor(totalMovement.x() + 0.5);
     }
     
+    if (clampToIntegers) {
+        ///Only for the curve editor, parametric curves are not affected by the following
+        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+            if ((*it)->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans()) {
+                totalMovement.ry() = std::max(0.,std::min(std::floor(totalMovement.y() + 0.5),1.));
+                break;
+            } else if ((*it)->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers()) {
+                totalMovement.ry() = std::floor(totalMovement.y() + 0.5);
+            }
+        }
+    }
+    
     double dt;
     
     ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
@@ -1195,19 +1207,9 @@ void CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF& oldClick_opengl,co
 
     if (dt != 0 || dv != 0) {
         
-        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            
-            
+        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {  
             if (!(*it)->curve->getInternalCurve()->isYComponentMovable()) {
                 dv = 0;
-            }
-            
-            if ((*it)->curve->getInternalCurve()->areKeyFramesValuesClampedToBooleans()) {
-                dv = dv > 1. ? 1 : 0;
-                dv = dv < 0 ? -1 : 0;
-            }
-            if ((*it)->curve->getInternalCurve()->areKeyFramesValuesClampedToIntegers()) {
-                dv = std::floor(dv + 0.5);
             }
         }
         

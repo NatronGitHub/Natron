@@ -151,6 +151,12 @@ moveKey(KeyPtr&k, double dt, double dv)
     
     double newX = k->key.getTime() + dt;
     double newY = k->key.getValue() + dv;
+    boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
+    if (curve->areKeyFramesValuesClampedToIntegers()) {
+        newY = std::floor(newY + 0.5);
+    } else if (curve->areKeyFramesValuesClampedToBooleans()) {
+        newY = newY < 0.5 ? 0 : 1;
+    }
     
     if (newY > curveYRange.second) {
         newY = k->key.getValue();
@@ -159,10 +165,10 @@ moveKey(KeyPtr&k, double dt, double dv)
     }
     
     double oldTime = k->key.getTime();
-    int keyframeIndex = k->curve->getInternalCurve()->keyFrameIndex(oldTime);
+    int keyframeIndex = curve->keyFrameIndex(oldTime);
     int newIndex;
     
-    k->key = k->curve->getInternalCurve()->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
+    k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
     k->curve->getKnob()->onKeyFrameMoved(oldTime, k->key.getTime());
 }
 
