@@ -279,7 +279,6 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(qreal(0.8), qreal(0.8));
     
-    smartNodeCreationEnabled=true;
     _root = new QGraphicsTextItem(0);
     _nodeRoot = new QGraphicsTextItem(_root);
     // _root->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -1151,23 +1150,19 @@ bool NodeGraph::event(QEvent* event){
     if ( event->type() == QEvent::KeyPress ) {
         QKeyEvent *ke = static_cast<QKeyEvent*>(event);
         if (ke &&  ke->key() == Qt::Key_Tab && _nodeCreationShortcutEnabled ) {
-            if(smartNodeCreationEnabled){
-                //releaseKeyboard();
-                QPoint global = mapToGlobal(mapFromScene(_lastScenePosClick.toPoint()));
-                SmartInputDialog* nodeCreation=new SmartInputDialog(this);
-                nodeCreation->move(global.x(), global.y());
-                QPoint position=_gui->getWorkshopPane()->pos();
-                position+=QPoint(_gui->width()/2,0);
-                nodeCreation->move(position);
-                setMouseTracking(false);
-                
-                nodeCreation->show();
-                nodeCreation->raise();
-                nodeCreation->activateWindow();
-                
-                
-                smartNodeCreationEnabled=false;
+            QPoint global = QCursor::pos();
+            NodeCreationDialog nodeCreation(this);
+            QSize sizeH = nodeCreation.sizeHint();
+            global.rx() -= sizeH.width() / 2;
+            global.ry() -= sizeH.height() / 2;
+            nodeCreation.move(global.x(), global.y());
+            if (nodeCreation.exec()) {
+                QString res = nodeCreation.getNodeName();
+                if (appPTR->getNodeNameList().contains(res)) {
+                    getGui()->getApp()->createNode(res);
+                }
             }
+            setFocus(Qt::ActiveWindowFocusReason);
             ke->accept();
             return true;
         }
@@ -1334,18 +1329,14 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
 void NodeGraph::enterEvent(QEvent *event)
 {
     QGraphicsView::enterEvent(event);
-    if (smartNodeCreationEnabled) {
-        _nodeCreationShortcutEnabled=true;
-        setFocus();
-    }
+    _nodeCreationShortcutEnabled = true;
+    setFocus();
 }
 void NodeGraph::leaveEvent(QEvent *event)
 {
     QGraphicsView::leaveEvent(event);
-    if(smartNodeCreationEnabled){
-        _nodeCreationShortcutEnabled=false;
-        setFocus();
-    }
+    _nodeCreationShortcutEnabled = false;
+    setFocus();
 }
 
 
@@ -1859,8 +1850,8 @@ void ConnectCommand::redo() {
 
 
 
-SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
-    : QDialog()
+NodeCreationDialog::NodeCreationDialog(NodeGraph* graph_)
+    : QDialog(/*graph_*/)
     , graph(graph_)
     , layout(NULL)
     , textLabel(NULL)
@@ -1869,67 +1860,37 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
     setWindowTitle(tr("Node creation tool"));
     setWindowFlags(Qt::Popup);
     setObjectName(QString("SmartDialog"));
-    setStyleSheet(QString("SmartInputDialog#SmartDialog{border-style:outset;border-width: 2px; border-color: black; background-color:silver;}"));
-    layout=new QVBoxLayout(this);
-    textLabel=new QLabel(tr("Input a node name:"),this);
-    textEdit=new QComboBox(this);
+    setStyleSheet("SmartInputDialog#SmartDialog"
+                  "{"
+                  "border-style:outset;"
+                  "border-width: 2px;"
+                  "border-color: black;"
+                  "background-color:silver;"
+                  "}"
+                  );
+    layout = new QVBoxLayout(this);
+    textLabel = new QLabel(tr("Input a node name:"),this);
+    textEdit = new QComboBox(this);
     textEdit->setEditable(true);
     
     textEdit->addItems(appPTR->getNodeNameList());
     layout->addWidget(textLabel);
     layout->addWidget(textEdit);
     textEdit->lineEdit()->selectAll();
-    //textEdit->setFocusPolicy(Qt::StrongFocus);
-    // setFocusProxy(textEdit->lineEdit());
-    //textEdit->lineEdit()->setFocus(Qt::ActiveWindowFocusReason);
     textEdit->setFocus();
-    installEventFilter(this);
-    
-    
-}
-void SmartInputDialog::keyPressEvent(QKeyEvent *e){
-    if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
-        QString res=textEdit->lineEdit()->text();
-        if(appPTR->getNodeNameList().contains(res)){
-            graph->getGui()->getApp()->createNode(res);
-            graph->setSmartNodeCreationEnabled(true);
-            graph->setMouseTracking(true);
-            //textEdit->releaseKeyboard();
-            
-            graph->setFocus(Qt::ActiveWindowFocusReason);
-            delete this;
-            
-            
-        }
-    }else if(e->key()== Qt::Key_Escape){
-        graph->setSmartNodeCreationEnabled(true);
-        graph->setMouseTracking(true);
-        //textEdit->releaseKeyboard();
-        
-        graph->setFocus(Qt::ActiveWindowFocusReason);
-        
-        
-        delete this;
-        
-        
-    }
 }
 
-bool
-SmartInputDialog::eventFilter(QObject *obj, QEvent *e)
+QString NodeCreationDialog::getNodeName() const
 {
-    Q_UNUSED(obj);
-    
-    if(e->type()==QEvent::Close){
-        graph->setSmartNodeCreationEnabled(true);
-        graph->setMouseTracking(true);
-        //textEdit->releaseKeyboard();
-        
-        graph->setFocus(Qt::ActiveWindowFocusReason);
-        
-        
+    return textEdit->lineEdit()->text();
+}
+
+void NodeCreationDialog::keyPressEvent(QKeyEvent *e) {
+    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+        accept();
+    } else if (e->key() == Qt::Key_Escape) {
+        reject();
     }
-    return false;
 }
 
 void

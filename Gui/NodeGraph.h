@@ -268,8 +268,6 @@ private:
     // FIXME: PIMPL
     QRectF calcNodesBoundingRect();
     
-    bool smartNodeCreationEnabled;
-    
     Gui* _gui;
     
     QPointF _lastScenePosClick;
@@ -289,6 +287,8 @@ private:
     std::list<boost::shared_ptr<NodeGui> > _nodes;
     std::list<boost::shared_ptr<NodeGui> > _nodesTrash;
     
+    ///Enables the "Tab" shortcut to popup the node creation dialog.
+    ///This is set to true on enterEvent and set back to false on leaveEvent
     bool _nodeCreationShortcutEnabled;
         
     QGraphicsItem* _root; ///< this is the parent of all items in the graph
@@ -352,16 +352,24 @@ private:
 
 
 
-class SmartInputDialog:public QDialog
+class NodeCreationDialog : public QDialog
 {
-Q_OBJECT
+    
+    Q_OBJECT
 
 public:
-    explicit SmartInputDialog(NodeGraph* graph);
-    virtual ~SmartInputDialog() OVERRIDE {}
-    void keyPressEvent(QKeyEvent *e);
-    bool eventFilter(QObject * obj, QEvent * e);
+    
+    explicit NodeCreationDialog(NodeGraph* graph);
+    
+    virtual ~NodeCreationDialog() OVERRIDE {}
+    
+    QString getNodeName() const;
+    
 private:
+    
+    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+
+    
     NodeGraph* graph;
     QVBoxLayout* layout;
     QLabel* textLabel;
