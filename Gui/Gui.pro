@@ -67,6 +67,7 @@ SOURCES += \
     NodeBackDrop.cpp \
     NodeBackDropSerialization.cpp \
     NodeGraph.cpp \
+    NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
     PreferencesPanel.cpp \
@@ -92,7 +93,7 @@ SOURCES += \
     ToolButton.cpp \
     TimeLineGui.cpp \
     ViewerGL.cpp \
-    ViewerTab.cpp \
+    ViewerTab.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -125,6 +126,7 @@ HEADERS += \
     NodeBackDrop.h \
     NodeBackDropSerialization.h \
     NodeGraph.h \
+    NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeGuiSerialization.h \
     PreferencesPanel.h \

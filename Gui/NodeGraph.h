@@ -14,23 +14,16 @@
 
 #include <vector>
 #include <map>
-
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
-#include <QtCore/QRectF>
-#include <QtCore/QTimer>
-#include <QDialog>
-#include <QLabel>
-#include <QUndoCommand>
-#include <QMutex>
-#include <QAction>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
@@ -38,48 +31,25 @@ CLANG_DIAG_ON(uninitialized)
 
 class QVBoxLayout;
 class QScrollArea;
-class QGraphicsProxyWidget;
-class QUndoStack;
-class QGraphicsTextItem;
-class QComboBox;
 class QEvent;
 class QKeyEvent;
 class Gui;
-class NodeSettingsPanel;
 class NodeGui;
-class AppInstance;
-class Edge;
-class QMenu;
-class SmartInputDialog;
 class QDropEvent;
 class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
 class NodeBackDrop;
+struct NodeGraphPrivate;
 namespace Natron{
     class Node;
 }
 
-
-class NodeGraph: public QGraphicsView , public boost::noncopyable{
-    
-    enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING,BACKDROP_DRAGGING,BACKDROP_RESIZING};
-    
+class NodeGraph: public QGraphicsView , public boost::noncopyable
+{
+        
     Q_OBJECT
-    
-    class NodeGraphNavigator : public QLabel{
-        int _w,_h;
-    public:
-        
-        explicit NodeGraphNavigator(QWidget* parent = 0);
-        
-        void setImage(const QImage& img);
-        
-        virtual QSize sizeHint() const OVERRIDE FINAL {return QSize(_w,_h);};
-        
-        virtual ~NodeGraphNavigator(){}
-    };
 
 public:
 
@@ -87,11 +57,11 @@ public:
 
     virtual ~NodeGraph() OVERRIDE;
  
-    void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
+    void setPropertyBinPtr(QScrollArea* propertyBin);
+    
+    boost::shared_ptr<NodeGui> getSelectedNode() const;
     
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad);
-    
-    boost::shared_ptr<NodeGui> getSelectedNode() const {return _nodeSelected;}
     
     void selectNode(const boost::shared_ptr<NodeGui>& n);
     
@@ -106,8 +76,6 @@ public:
     
     void updateNavigator();
     
-    QGraphicsItem* getRootItem() const {return _root;}
-    
     const std::list<boost::shared_ptr<NodeGui> >& getAllActiveNodes() const;
     
     std::list<boost::shared_ptr<NodeGui> > getAllActiveNodes_mt_safe() const;
@@ -115,18 +83,16 @@ public:
     void moveToTrash(NodeGui* node);
     
     void restoreFromTrash(NodeGui* node);
-        
-    Gui* getGui() const {return _gui;}
     
-    void discardGuiPointer() { _gui = 0; }
+    QGraphicsItem* getRootItem() const;
+    
+    Gui* getGui() const;
+    
+    void discardGuiPointer();
+    
+    bool areAllPreviewTurnedOff() const;
     
     void refreshAllEdges();
-
-    bool areAllPreviewTurnedOff() const {
-        QMutexLocker l(&_previewsTurnedOffMutex);
-        return _previewsTurnedOff;
-    }
-    
     
     void centerOnNode(const boost::shared_ptr<NodeGui>& n);
     void deleteNode(const boost::shared_ptr<NodeGui>& n);
@@ -261,117 +227,9 @@ private:
 
 private:
     
-    void resetAllClipboards();
-    
-    // FIXME: PIMPL
-    QRectF calcNodesBoundingRect();
-    
-    Gui* _gui;
-    
-    QPointF _lastScenePosClick;
-    
-    QPointF _lastNodeDragStartPoint;
-
-    EVENT_STATE _evtState;
-    
-    boost::shared_ptr<NodeGui> _nodeSelected;
-    double _nodeSelectedScaleBeforeMagnif;
-    bool _magnifOn;
-    
-    Edge* _arrowSelected;
-    
-    mutable QMutex _nodesMutex;
-    
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    std::list<boost::shared_ptr<NodeGui> > _nodesTrash;
-    
-    ///Enables the "Tab" shortcut to popup the node creation dialog.
-    ///This is set to true on enterEvent and set back to false on leaveEvent
-    bool _nodeCreationShortcutEnabled;
-        
-    QGraphicsItem* _root; ///< this is the parent of all items in the graph
-    QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
-    
-    QScrollArea* _propertyBin;
-
-    QGraphicsTextItem* _cacheSizeText;
-    
-    QTimer _refreshCacheTextTimer;
-    
-    NodeGraphNavigator* _navigator;
-    
-    QGraphicsLineItem* _navLeftEdge;
-    QGraphicsLineItem* _navBottomEdge;
-    QGraphicsLineItem* _navRightEdge;
-    QGraphicsLineItem* _navTopEdge;
-    
-    QGraphicsProxyWidget* _navigatorProxy;
-    
-    QUndoStack* _undoStack;
-
-        
-    QMenu* _menu;
-    
-    QGraphicsItem *_tL,*_tR,*_bR,*_bL;
-    
-    bool _refreshOverlays;
-    
-    mutable QMutex _previewsTurnedOffMutex;
-    bool _previewsTurnedOff;
-    
-    struct NodeClipBoard {
-        boost::shared_ptr<NodeSerialization> _internal;
-        boost::shared_ptr<NodeGuiSerialization> _gui;
-        
-        NodeClipBoard()
-        : _internal()
-        , _gui()
-        {
-        }
-        
-        bool isEmpty() const { return !_internal || !_gui; }
-    };
-    
-    NodeClipBoard _nodeClipBoard;
-    
-    Edge* _highLightedEdge;
-    
-    ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
-    Edge* _hintInputEdge;
-    Edge* _hintOutputEdge;
-    
-    std::list<NodeBackDrop*> _backdrops;
-    boost::shared_ptr<NodeBackDropSerialization> _backdropClipboard;
-
-    NodeBackDrop* _selectedBackDrop;
-    std::list<boost::shared_ptr<NodeGui> > _nodesToMoveWithBackDrop;
-    bool _firstMove;
-};
-
-
-
-class NodeCreationDialog : public QDialog
-{
-    
-    Q_OBJECT
-
-public:
-    
-    explicit NodeCreationDialog(NodeGraph* graph);
-    
-    virtual ~NodeCreationDialog() OVERRIDE {}
-    
-    QString getNodeName() const;
-    
-private:
-    
-    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
-
-    
-    NodeGraph* graph;
-    QVBoxLayout* layout;
-    QLabel* textLabel;
-    QComboBox* textEdit;
+    boost::scoped_ptr<NodeGraphPrivate> _imp;
     
 };
+
+
 #endif // NATRON_GUI_NODEGRAPH_H_
