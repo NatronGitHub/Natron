@@ -113,10 +113,7 @@ struct KeyFrame_compare_time {
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
-/**
-  * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
-  * own interpolation method (that can differ from other curves).
-**/
+
 class KnobI;
 struct CurvePrivate;
 class RectD;
