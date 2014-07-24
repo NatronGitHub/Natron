@@ -2044,6 +2044,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
         if(_imp->_selectedKeyFrames.size() == 1){
             previouslySelectedKey = *(_imp->_selectedKeyFrames.begin());
             hadASelectedKey = true;
+#pragma message WARN("FIXME: value stored in hadASelectedKey is never read")
         }
         
         if (!event->modifiers().testFlag(Qt::ControlModifier)) {
