@@ -202,8 +202,9 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
 
     
     if (!loadRequest && multiInstanceParentName.empty()) {
-        if(_imp->_gui->getSelectedNode()){
-            boost::shared_ptr<Node> selected = _imp->_gui->getSelectedNode()->getNode();
+        const std::list<boost::shared_ptr<NodeGui> >& selectedNodes = _imp->_gui->getSelectedNodes();
+        if (selectedNodes.size() == 1) {
+            const boost::shared_ptr<Node>& selected = selectedNodes.front()->getNode();
             getProject()->autoConnectNodes(selected, node);
         }
         _imp->_gui->selectNode(nodegui);

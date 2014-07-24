@@ -88,21 +88,8 @@ public slots:
     
     void setSelected(bool selected);
     
-    void cut();
-    
-    void copy();
-    
-    void duplicate();
-    
-    void clone();
-    
-    void declone();
-    
-    void remove();
-    
     void refreshSlaveMasterLinkPosition();
     
-    void showMenu(const QPoint& pos);
 private:
     
     virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;

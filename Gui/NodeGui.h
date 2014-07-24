@@ -319,9 +319,6 @@ public slots:
     
     void setVisibleSettingsPanel(bool b);
     
-    /*pos is in global coordinates*/
-    void showMenu(const QPoint& pos);
-    
     void onRenderingStarted();
     
     void onRenderingFinished();
@@ -339,16 +336,6 @@ public slots:
     void onSlaveStateChanged(bool b);
     
     void refreshSlaveMasterLinkPosition();
-    
-    void copyNode();
-    
-    void cutNode();
-    
-    void cloneNode();
-    
-    void decloneNode();
-    
-    void duplicateNode();
     
     void refreshOutputEdgeVisibility();
     
@@ -424,9 +411,7 @@ private:
     QGradient* _defaultGradient;
     QGradient* _clonedGradient;
     QGradient* _disabledGradient;
-    
-    QMenu* _menu;
-    
+        
     timeval _lastRenderStartedSlotCallTime;
     timeval _lastInputNRenderStartedSlotCallTime;
     bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted
@@ -439,6 +424,9 @@ private:
     boost::shared_ptr<NodeGui> _masterNodeGui;
     
     bool _magnecEnabled;
+    QPoint _magnecDistance;
+    bool _updateDistanceSinceLastMagnec;
+    QPoint _distanceSinceLastMagnec;
     QPoint _magnecStartingPos;
     
     QString _nodeLabel;

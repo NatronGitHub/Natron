@@ -50,9 +50,9 @@
 
 #define NATRON_EDGE_DROP_TOLERANCE 15
 
-#define NATRON_MAGNETIC_GRID_GRIP_TOLERANCE 10
+#define NATRON_MAGNETIC_GRID_GRIP_TOLERANCE 20
 
-#define NATRON_MAGNETIC_GRID_RELEASE_DISTANCE 25
+#define NATRON_MAGNETIC_GRID_RELEASE_DISTANCE 30
 
 #define NATRON_ELLIPSE_WARN_DIAMETER 10
 
@@ -96,7 +96,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
 , _clonedGradient(NULL)
-, _menu()
 , _lastRenderStartedSlotCallTime()
 , _lastInputNRenderStartedSlotCallTime()
 , _wasRenderStartedSlotRun(false)
@@ -105,6 +104,9 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _slaveMasterLink(NULL)
 , _masterNodeGui()
 , _magnecEnabled(false)
+, _magnecDistance()
+, _updateDistanceSinceLastMagnec(false)
+, _distanceSinceLastMagnec()
 , _magnecStartingPos()
 , _nodeLabel()
 , _parentMultiInstance()
@@ -133,8 +135,6 @@ void NodeGui::initialize(NodeGraph* dag,
     _internalNode = internalNode;
     assert(internalNode);
     _graph = dag;
-    _menu = new QMenu(dag);
-    _menu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     
     QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode.get(), SLOT(setName(QString)));
     
@@ -225,7 +225,7 @@ void NodeGui::initialize(NodeGraph* dag,
         }
 	}
     
-    if (_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()) {
+    if (_internalNode->makePreviewByDefault()) {
         togglePreview_internal(false);
         
     } else {
@@ -378,7 +378,8 @@ void NodeGui::updateShape(int width,int height){
 
 
 
-void NodeGui::refreshPosition(double x,double y,bool skipMagnet){
+void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
+{
     
     
     QRectF bbox = mapRectToScene(_boundingBox->rect());
@@ -388,46 +389,62 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet){
         
         
         if (_magnecEnabled) {
-            double dist = sqrt((x - _magnecStartingPos.x()) * (x - _magnecStartingPos.x()) +
-                               (y - _magnecStartingPos.y()) * (y - _magnecStartingPos.y()));
+            _magnecDistance += (QPoint(x,y) - _magnecStartingPos);
+            double dist = sqrt(_magnecDistance.x() * _magnecDistance.x() +
+                               _magnecDistance.y() * _magnecDistance.y());
             if (dist >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
                 _magnecEnabled = false;
+                _updateDistanceSinceLastMagnec = true;
+                _distanceSinceLastMagnec = QPoint(0,0);
             } else {
                 return;
             }
         }
         
-        
-        QSize size = getSize();
-        
-        ///handle magnetic grid
-        QPointF middlePos(x + size.width() / 2,y + size.height() / 2);
-        for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
-            boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
-            if (inputSource) {
-                QSize inputSize = inputSource->getSize();
-                QPointF inputScenePos = inputSource->pos();
-                QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
-                QPointF mapped = mapFromParent(inputPos);
-                if (!contains(mapped)) {
-                    if ((inputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                         inputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                        _magnecEnabled = true;
-                        x = inputPos.x() - size.width() / 2;
-                        _magnecStartingPos.setX(x);
-                        _magnecStartingPos.setY(y);
-                    } else if ((inputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                                inputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                        _magnecEnabled = true;
-                        _magnecStartingPos.setX(x);
-                        y = inputPos.y() - size.height() / 2;
-                        _magnecStartingPos.setY(y);
-                    }
-                }
+        bool continueMagnet = true;
+        if (_updateDistanceSinceLastMagnec) {
+            _distanceSinceLastMagnec =  QPoint(x,y) - _magnecStartingPos;
+            if (std::abs(_distanceSinceLastMagnec.x()) > NATRON_MAGNETIC_GRID_GRIP_TOLERANCE ||
+                std::abs(_distanceSinceLastMagnec.y()) > NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) {
+                _updateDistanceSinceLastMagnec = false;
+            } else {
+                continueMagnet = false;
             }
         }
         
-        if (!_magnecEnabled) {
+        
+        QSize size = getSize();
+        ///handle magnetic grid
+        QPointF middlePos(x + size.width() / 2,y + size.height() / 2);
+        
+        if (!_magnecEnabled && continueMagnet) {
+            for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+                ///For each input try to find if the magnet should be enabled
+                boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
+                if (inputSource) {
+                    QSize inputSize = inputSource->getSize();
+                    QPointF inputScenePos = inputSource->pos();
+                    QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
+                    QPointF mapped = mapFromParent(inputPos);
+                    if (!contains(mapped)) {
+                        if ((inputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                             inputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                            _magnecEnabled = true;
+                            _magnecDistance = QPoint(0,0);
+                            x = inputPos.x() - size.width() / 2;
+                            _magnecStartingPos.setX(x);
+                            _magnecStartingPos.setY(y);
+                        } else if ((inputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                    inputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                            _magnecEnabled = true;
+                            _magnecDistance = QPoint(0,0);
+                            _magnecStartingPos.setX(x);
+                            y = inputPos.y() - size.height() / 2;
+                            _magnecStartingPos.setY(y);
+                        }
+                    }
+                }
+            }
             ///check now the outputs
             for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
                 boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
@@ -440,12 +457,14 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet){
                     if ((outputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
                          outputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
                         _magnecEnabled = true;
+                        _magnecDistance = QPoint(0,0);
                         x = outputPos.x() - size.width() / 2;
                         _magnecStartingPos.setX(x);
                         _magnecStartingPos.setY(y);
                     } else if ((outputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
                                 outputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
                         _magnecEnabled = true;
+                        _magnecDistance = QPoint(0,0);
                         _magnecStartingPos.setX(x);
                         y = outputPos.y() - size.height() / 2;
                         _magnecStartingPos.setY(y);
@@ -925,11 +944,6 @@ void NodeGui::activate() {
     _graph->restoreFromTrash(this);
     _graph->getGui()->getCurveEditor()->addNode(_graph->getNodeGuiSharedPtr(this));
 
-    if (!isMultiInstanceChild) {
-        getNode()->getApp()->triggerAutoSave();
-        getNode()->getApp()->checkViewersConnection();
-    }
-
 }
 
 void NodeGui::hideGui()
@@ -1118,60 +1132,8 @@ QVBoxLayout* NodeGui::getDockContainer() const {
 void NodeGui::paint(QPainter* /*painter*/,const QStyleOptionGraphicsItem* /*options*/,QWidget* /*parent*/){
     //nothing special
 }
-void NodeGui::showMenu(const QPoint& pos){
-    populateMenu();
-    _menu->exec(pos);
-}
 
-void NodeGui::populateMenu(){
-    _menu->clear();
-    
-    QAction* copyAction = new QAction(tr("Copy"),_menu);
-    copyAction->setShortcut(QKeySequence::Copy);
-    QObject::connect(copyAction,SIGNAL(triggered()),this,SLOT(copyNode()));
-    _menu->addAction(copyAction);
-    
-    QAction* cutAction = new QAction(tr("Cut"),_menu);
-    cutAction->setShortcut(QKeySequence::Cut);
-    QObject::connect(cutAction,SIGNAL(triggered()),this,SLOT(cutNode()));
-    _menu->addAction(cutAction);
-    
-    QAction* duplicateAction = new QAction(tr("Duplicate"),_menu);
-    duplicateAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_C));
-    QObject::connect(duplicateAction,SIGNAL(triggered()),this,SLOT(duplicateNode()));
-    _menu->addAction(duplicateAction);
-    
-    bool isCloned = _internalNode->getMasterNode() != NULL;
-    
-    QAction* cloneAction = new QAction(tr("Clone"),_menu);
-    cloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_K));
-    QObject::connect(cloneAction,SIGNAL(triggered()),this,SLOT(cloneNode()));
-    cloneAction->setEnabled(!isCloned);
-    _menu->addAction(cloneAction);
-    
-    QAction* decloneAction = new QAction(tr("Declone"),_menu);
-    decloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::ShiftModifier + Qt::Key_K));
-    QObject::connect(decloneAction,SIGNAL(triggered()),this,SLOT(decloneNode()));
-    decloneAction->setEnabled(isCloned);
-    _menu->addAction(decloneAction);
-    
-    QAction* togglePreviewAction = new QAction(tr("Toggle preview image"),_menu);
-    togglePreviewAction->setCheckable(true);
-    togglePreviewAction->setChecked(_internalNode->isPreviewEnabled());
-    QObject::connect(togglePreviewAction,SIGNAL(triggered()),this,SLOT(togglePreview()));
-    _menu->addAction(togglePreviewAction);
-    
-    QAction* deleteAction = new QAction(tr("Delete"),_menu);
-    QObject::connect(deleteAction,SIGNAL(triggered()),_graph,SLOT(deleteSelectedNode()));
-    _menu->addAction(deleteAction);
-    
-    if (_internalNode->maximumInputs() >= 2) {
-        QAction* switchInputs = new QAction(tr("Switch inputs 1 & 2"),_menu);
-        QObject::connect(switchInputs, SIGNAL(triggered()), this, SLOT(onSwitchInputActionTriggered()));
-        _menu->addAction(switchInputs);
-    }
 
-}
 const std::map<boost::shared_ptr<KnobI> ,KnobGui*>& NodeGui::getKnobs() const{
     assert(_settingsPanel);
     return _settingsPanel->getKnobs();
@@ -1343,26 +1305,6 @@ void NodeGui::refreshSlaveMasterLinkPosition() {
     QPointF src = _slaveMasterLink->mapFromItem(this,QPointF(bboxThisNode.x(),bboxThisNode.y())
                               + QPointF(bboxThisNode.width() / 2., bboxThisNode.height() / 2.));
     _slaveMasterLink->setLine(QLineF(src,dst));
-}
-
-void NodeGui::copyNode() {
-    _graph->copyNode(_graph->getNodeGuiSharedPtr(this));
-}
-
-void NodeGui::cutNode() {
-    _graph->cutNode(_graph->getNodeGuiSharedPtr(this));
-}
-
-void NodeGui::cloneNode() {
-    _graph->cloneNode(_graph->getNodeGuiSharedPtr(this));
-}
-
-void NodeGui::decloneNode() {
-    _graph->decloneNode(_graph->getNodeGuiSharedPtr(this));
-}
-
-void NodeGui::duplicateNode() {
-    _graph->duplicateNode(_graph->getNodeGuiSharedPtr(this));
 }
 
 void NodeGui::refreshOutputEdgeVisibility() {

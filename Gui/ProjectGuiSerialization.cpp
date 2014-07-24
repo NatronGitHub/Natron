@@ -117,9 +117,6 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
 
      }
      
-     _arePreviewTurnedOffGlobally = projectGui->getGui()->getNodeGraph()->areAllPreviewTurnedOff();
-     
-     
      ///save histograms
     std::list<Histogram*> histograms = projectGui->getGui()->getHistograms_mt_safe();
      for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {

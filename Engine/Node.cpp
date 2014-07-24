@@ -1207,7 +1207,8 @@ int Node::inputIndex(Node* n) const {
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
-void Node::deactivate(bool hideGui)
+void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect,
+                      bool disconnectAll,bool reconnect,bool hideGui)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1220,37 +1221,38 @@ void Node::deactivate(bool hideGui)
     boost::shared_ptr<Node> inputToConnectTo;
     boost::shared_ptr<Node> firstOptionalInput;
     int firstNonOptionalInput = -1;
-    bool hasOnlyOneInputConnected = false;
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
-            if (_imp->inputsQueue[i]) {
-                if (!_imp->liveInstance->isInputOptional(i)) {
-                    if (firstNonOptionalInput == -1) {
-                        firstNonOptionalInput = i;
-                        hasOnlyOneInputConnected = true;
-                    } else {
-                        hasOnlyOneInputConnected = false;
-                    }
-                } else if(!firstOptionalInput) {
-                    firstOptionalInput = _imp->inputsQueue[i];
-                    if (hasOnlyOneInputConnected) {
-                        hasOnlyOneInputConnected = false;
-                    } else {
-                        hasOnlyOneInputConnected = true;
+    if (reconnect) {
+        bool hasOnlyOneInputConnected = false;
+        {
+            QMutexLocker l(&_imp->inputsMutex);
+            for (U32 i = 0; i < _imp->inputsQueue.size() ; ++i) {
+                if (_imp->inputsQueue[i]) {
+                    if (!_imp->liveInstance->isInputOptional(i)) {
+                        if (firstNonOptionalInput == -1) {
+                            firstNonOptionalInput = i;
+                            hasOnlyOneInputConnected = true;
+                        } else {
+                            hasOnlyOneInputConnected = false;
+                        }
+                    } else if(!firstOptionalInput) {
+                        firstOptionalInput = _imp->inputsQueue[i];
+                        if (hasOnlyOneInputConnected) {
+                            hasOnlyOneInputConnected = false;
+                        } else {
+                            hasOnlyOneInputConnected = true;
+                        }
                     }
                 }
             }
         }
-    }
-    if (hasOnlyOneInputConnected) {
-        if (firstNonOptionalInput != -1) {
-            inputToConnectTo = input(firstNonOptionalInput);
-        } else if(firstOptionalInput) {
-            inputToConnectTo = firstOptionalInput;
+        if (hasOnlyOneInputConnected) {
+            if (firstNonOptionalInput != -1) {
+                inputToConnectTo = input(firstNonOptionalInput);
+            } else if(firstOptionalInput) {
+                inputToConnectTo = firstOptionalInput;
+            }
         }
     }
-    
     /*Removing this node from the output of all inputs*/
     _imp->deactivatedState.clear();
     
@@ -1275,18 +1277,29 @@ void Node::deactivate(bool hideGui)
         QMutexLocker l(&_imp->outputsMutex);
         outputsQueueCopy = _imp->outputsQueue;
     }
+    
+    
     for (std::list<boost::shared_ptr<Node> >::iterator it = outputsQueueCopy.begin(); it!=outputsQueueCopy.end(); ++it) {
         assert(*it);
-        int inputNb = (*it)->disconnectInput(thisShared);
-        _imp->deactivatedState.insert(make_pair(*it, inputNb));
-    }
-    
-    if (inputToConnectTo) {
-        for (std::map<boost::shared_ptr<Node>,int >::iterator it = _imp->deactivatedState.begin();
-             it!=_imp->deactivatedState.end(); ++it) {
-            getApp()->getProject()->connectNodes(it->second, inputToConnectTo, it->first);
+        bool dc;
+        if (disconnectAll) {
+            dc = true;
+        } else {
+            std::list<boost::shared_ptr<Node> >::const_iterator found =
+            std::find(outputsToDisconnect.begin(), outputsToDisconnect.end(), *it);
+            dc = found != outputsToDisconnect.end();
+        }
+        if (dc) {
+            int inputNb = (*it)->disconnectInput(thisShared);
+            _imp->deactivatedState.insert(make_pair(*it, inputNb));
+            
+            ///reconnect if inputToConnectTo is not null
+            if (inputToConnectTo) {
+                getApp()->getProject()->connectNodes(inputNb, inputToConnectTo, *it);
+            }
         }
     }
+    
     
     ///kill any thread it could have started (e.g: VideoEngine or preview)
     quitAnyProcessing();
@@ -1309,7 +1322,7 @@ void Node::deactivate(bool hideGui)
     
 }
 
-void Node::activate()
+void Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore,bool restoreAll)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1331,17 +1344,29 @@ void Node::activate()
     for (std::map<boost::shared_ptr<Node>,int >::iterator it = _imp->deactivatedState.begin();
          it!= _imp->deactivatedState.end(); ++it) {
         
-        ///before connecting the outputs to this node, disconnect any link that has been made
-        ///between the outputs by the user. This should normally never happen as the undo/redo
-        ///stack follow always the same order.
-        boost::shared_ptr<Node> outputHasInput = it->first->input(it->second);
-        if (outputHasInput) {
-            bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
-            assert(ok);
+        bool restore;
+        if (restoreAll) {
+            restore = true;
+        } else {
+            std::list<boost::shared_ptr<Node> >::const_iterator found =
+            std::find(outputsToRestore.begin(), outputsToRestore.end(), it->first);
+            restore = found != outputsToRestore.end();
         }
-
-        ///and connect the output to this node
-        it->first->connectInput(thisShared, it->second);
+        
+        if (restore) {
+            ///before connecting the outputs to this node, disconnect any link that has been made
+            ///between the outputs by the user. This should normally never happen as the undo/redo
+            ///stack follow always the same order.
+            boost::shared_ptr<Node> outputHasInput = it->first->input(it->second);
+            if (outputHasInput) {
+                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
+                assert(ok);
+            }
+            
+            ///and connect the output to this node
+            it->first->connectInput(thisShared, it->second);
+            
+        }
     }
     
     {

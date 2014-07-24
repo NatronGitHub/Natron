@@ -12,8 +12,6 @@
 #ifndef NATRON_GUI_NODEGRAPH_H_
 #define NATRON_GUI_NODEGRAPH_H_
 
-#include <vector>
-#include <map>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -59,11 +57,13 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin);
     
-    boost::shared_ptr<NodeGui> getSelectedNode() const;
+    const std::list< boost::shared_ptr<NodeGui> >& getSelectedNodes() const;
     
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad);
     
-    void selectNode(const boost::shared_ptr<NodeGui>& n);
+    void selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection);
+    
+    void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
     
     ///The visible portion of the graph, in scene coordinates.
     QRectF visibleRect();
@@ -89,25 +89,15 @@ public:
     Gui* getGui() const;
     
     void discardGuiPointer();
-    
-    bool areAllPreviewTurnedOff() const;
-    
+        
     void refreshAllEdges();
     
-    void centerOnNode(const boost::shared_ptr<NodeGui>& n);
-    void deleteNode(const boost::shared_ptr<NodeGui>& n);
-    void copyNode(const boost::shared_ptr<NodeGui>& n);
-    void cutNode(const boost::shared_ptr<NodeGui>& n);
-    boost::shared_ptr<NodeGui> duplicateNode(const boost::shared_ptr<NodeGui>& n);
-    boost::shared_ptr<NodeGui> cloneNode(const boost::shared_ptr<NodeGui>& n);
-    void decloneNode(const boost::shared_ptr<NodeGui>& n);
+    /**
+     * @brief Removes the given node from the nodegraph, using the undo/redo stack.
+     **/
+    void removeNode(const boost::shared_ptr<NodeGui>& node);
     
-    void deleteBackdrop(NodeBackDrop* n);
-    void copyBackdrop(NodeBackDrop* n);
-    void cutBackdrop(NodeBackDrop* n);
-    void duplicateBackdrop(NodeBackDrop* n);
-    void cloneBackdrop(NodeBackDrop* n);
-    void decloneBackdrop(NodeBackDrop* n);
+    void centerOnNode(const boost::shared_ptr<NodeGui>& n);
     
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
     
@@ -132,18 +122,14 @@ public:
      * @brief This function just removes the given backdrop from the list, it does not delete it or anything.
      **/
     void removeBackDrop(NodeBackDrop* bd);
-    
-    void pushRemoveBackDropCommand(NodeBackDrop* bd);
-    
+        
     std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
     
     
 public slots:
     
-    void deleteSelectedNode();
-    
-    void deleteSelectedBackdrop();
-    
+    void deleteSelection();
+        
     void connectCurrentViewerToSelection(int inputNB);
 
     void updateCacheSizeText();
@@ -154,7 +140,7 @@ public slots:
     
     void toggleCacheInfos();
     
-    void turnOffPreviewForAllNodes();
+    void togglePreviewsForSelectedNodes();
     
     void toggleAutoPreview();
     
@@ -162,22 +148,30 @@ public slots:
 
     void onProjectNodesCleared();
     
+    void switchInputs1and2ForSelectedNodes();
+    
     ///All these actions also work for backdrops
-    void copySelectedNode();
-    void cutSelectedNode();
-    void pasteNodeClipBoard();
-    void duplicateSelectedNode();
-    void cloneSelectedNode();
-    void decloneSelectedNode();
+    /////////////////////////////////////////////
+    ///Copy selected nodes to the clipboard, wiping previous clipboard
+    void copySelectedNodes();
+    
+    void cutSelectedNodes();
+    void pasteNodeClipBoards();
+    void duplicateSelectedNodes();
+    void cloneSelectedNodes();
+    void decloneSelectedNodes();
+    /////////////////////////////////////////////
     
     void centerOnAllNodes();
     
     void toggleConnectionHints();
     
+    ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     
 
 private:
+    
     
     /**
      * @brief Given the node, it tries to move it to the ideal position
@@ -187,11 +181,6 @@ private:
      * so they do not overlap.
      **/
     void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
-    
-    boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization);
-    
-    NodeBackDrop* pasteBackdrop(const NodeBackDropSerialization& serialization,bool offset = true);
-  
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
 

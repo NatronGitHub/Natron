@@ -572,9 +572,9 @@ void Gui::createViewerGui(boost::shared_ptr<Node> viewer){
 }
 
 
-boost::shared_ptr<NodeGui> Gui::getSelectedNode() const {
+const std::list<boost::shared_ptr<NodeGui> >& Gui::getSelectedNodes() const {
     assert(_imp->_nodeGraphArea);
-    return _imp->_nodeGraphArea->getSelectedNode();
+    return _imp->_nodeGraphArea->getSelectedNodes();
 }
 
 
@@ -1351,7 +1351,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
-        _imp->_nodeGraphArea->deleteNode(_imp->_appInstance->getNodeGui(tab->getInternalNode()->getNode()));
+        _imp->_nodeGraphArea->removeNode(_imp->_appInstance->getNodeGui(tab->getInternalNode()->getNode()));
     } else {
         
         tab->hide();
@@ -2062,8 +2062,9 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
 }
 
 
-void Gui::selectNode(boost::shared_ptr<NodeGui> node){
-    _imp->_nodeGraphArea->selectNode(node);
+void Gui::selectNode(boost::shared_ptr<NodeGui> node)
+{
+    _imp->_nodeGraphArea->selectNode(node,false); //< wipe current selection
 }
 
 void Gui::connectInput1(){
@@ -2584,8 +2585,13 @@ void Gui::renderAllWriters()
 
 void Gui::renderSelectedNode()
 {
-    boost::shared_ptr<NodeGui> selectedNode = _imp->_nodeGraphArea->getSelectedNode();
-    if (selectedNode) {
+    const std::list<boost::shared_ptr<NodeGui> >& selectedNodes = _imp->_nodeGraphArea->getSelectedNodes();
+    if (selectedNodes.size() > 1) {
+        Natron::warningDialog(tr("Render").toStdString(), tr("Please select only a single node").toStdString());
+    } else if (selectedNodes.empty()) {
+        Natron::warningDialog(tr("Render").toStdString(), tr("You must select a node to render first!").toStdString());
+    } else {
+        const boost::shared_ptr<NodeGui>& selectedNode = selectedNodes.front();
         if (selectedNode->getNode()->getLiveInstance()->isWriter()) {
             ///if the node is a writer, just use it to render!
             _imp->_appInstance->startWritersRendering(QStringList(selectedNode->getNode()->getName().c_str()));
@@ -2595,10 +2601,8 @@ void Gui::renderSelectedNode()
             if (writer) {
                 _imp->_appInstance->startWritersRendering(QStringList(writer->getName().c_str()));
             }
-
+            
         }
-    } else {
-        Natron::warningDialog(tr("Render").toStdString(), tr("You must select a node to render first!").toStdString());
     }
 }
 

@@ -279,11 +279,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
     ProjectGuiSerialization obj;
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
-    
-    if (obj.arePreviewsTurnedOffGlobally()) {
-        _gui->getNodeGraph()->turnOffPreviewForAllNodes();
-    }
-    
+ 
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
     ///default color for nodes
@@ -299,16 +295,11 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         nGui->setPos(it->getX(),it->getY());
         _gui->deselectAllNodes();
         
-        if (obj.arePreviewsTurnedOffGlobally()) {
-            if (nGui->getNode()->isPreviewEnabled()) {
-                nGui->togglePreview();
-            }
-        } else {
-            if((it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
-               (!it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())){
-                nGui->togglePreview();
-            }
+        if ((it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
+           (!it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())) {
+            nGui->togglePreview();
         }
+        
         Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
         
         if (it->colorWasFound()) {

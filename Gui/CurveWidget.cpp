@@ -2038,14 +2038,6 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
         _imp->_state = DRAGGING_KEYS;
         setCursor(QCursor(Qt::CrossCursor));
         
-        //get the previous selected key to determine whether we need to stop merging move commands
-        KeyPtr previouslySelectedKey;
-        bool hadASelectedKey = false;
-        if(_imp->_selectedKeyFrames.size() == 1){
-            previouslySelectedKey = *(_imp->_selectedKeyFrames.begin());
-            hadASelectedKey = true;
-        }
-        
         if (!event->modifiers().testFlag(Qt::ControlModifier)) {
             _imp->_selectedKeyFrames.clear();
         }

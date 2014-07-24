@@ -366,18 +366,27 @@ public:
      as if it was removed from the graph editor
      but the object still lives to allow
      undo/redo operations.
+     @param outputsToDisconnect A list of the outputs whose inputs must be disconnected
+     @param disconnectAll If set to true the parameter outputsToDisconnect is ignored and all outputs' inputs are disconnected
+     @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
      @param hideGui When true, the node gui will be notified so it gets hidden
      */
-    void deactivate(bool hideGui = true);
+    void deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect = std::list< boost::shared_ptr<Natron::Node> >()
+                    , bool disconnectAll = true
+                    , bool reconnect = true
+                    , bool hideGui = true);
     
     /* @brief Make this node active. It will appear
      again on the node graph.
      WARNING: this function can only be called
      after a call to deactivate() has been made.
-     Calling activate() on a node whose already
-     been activated will not do anything.
+     *
+     * @param outputsToRestore Only the outputs specified that were previously connected to the node prior to the call to
+     * deactivate() will be reconnected as output to this node.
+     * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
-    void activate();
+    void activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore = std::list< boost::shared_ptr<Natron::Node> >(),
+                  bool restoreAll = true);
     
     /**
      * @brief Forwarded to the live effect instance

@@ -30,7 +30,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FRAME_RANGE
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_BACKDROPS
+#define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED
 
 class ProjectGui;
 
@@ -125,8 +126,6 @@ class ProjectGuiSerialization {
     std::list<std::string> _histograms;
     
     std::list<NodeBackDropSerialization> _backdrops;
-
-    bool _arePreviewTurnedOffGlobally;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -137,7 +136,10 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
-        ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",_arePreviewTurnedOffGlobally);
+        if (version < PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED) {
+            bool tmp = false;
+            ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",tmp);
+        }
         ar & boost::serialization::make_nvp("Histograms",_histograms);
         if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS) {
             ar & boost::serialization::make_nvp("Backdrops",_backdrops);
@@ -159,9 +161,7 @@ public:
     const std::map<std::string,std::string>& getSplittersStates() const { return _splittersStates; }
     
     const std::map<std::string, ViewerData >& getViewersProjections() const { return _viewersData; }
-    
-    bool arePreviewsTurnedOffGlobally() const { return _arePreviewTurnedOffGlobally; }
-    
+        
     const std::list<std::string>& getHistograms() const { return _histograms; }
     
     const std::list<NodeBackDropSerialization>& getBackdrops() const { return _backdrops; }

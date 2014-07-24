@@ -17,7 +17,11 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QUndoCommand>
-#include <QPointF>
+
+/**
+ * This file gathers undo/redo command associated to the node graph. Each of them triggers an autosave when redone/undone
+ * except the move command.
+ **/
 
 class Edge;
 class NodeGui;
@@ -28,10 +32,20 @@ namespace Natron
 class Node;
 }
 
-class MoveCommand : public QUndoCommand
+
+class MoveMultipleNodesCommand : public QUndoCommand
 {
 public:
-    MoveCommand(const boost::shared_ptr<NodeGui>& node, const QPointF &oldPos,
+    
+    struct NodeToMove
+    {
+        boost::shared_ptr<NodeGui> node;
+        bool isWithinBD;
+    };
+    
+    MoveMultipleNodesCommand(const std::list<NodeToMove>& nodes,
+                const std::list<NodeBackDrop*>& bds,
+                double dx,double dy,
                 QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -40,46 +54,78 @@ public:
     
     
 private:
-    boost::shared_ptr<NodeGui> _node;
-    QPointF _oldPos;
-    QPointF _newPos;
+    
+    void move(double dx,double dy);
+    
+    std::list<NodeToMove> _nodes;
+    std::list<NodeBackDrop*> _bds;
+    double _dx,_dy;
 };
 
-
-class AddCommand : public QUndoCommand
+/**
+ * @class The first redo() call will do nothing, it assumes the node has already been added.
+ * undo() just call deactivate() on all nodes, and following calls to redo() call activate()
+ *
+ * This class is used for many similar action such as add/duplicate/paste,etc...
+ **/
+class AddMultipleNodesCommand : public QUndoCommand
 {
 public:
     
-    AddCommand(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QUndoCommand *parent = 0);
+    AddMultipleNodesCommand(NodeGraph* graph,
+                            const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                            const std::list<NodeBackDrop*>& bds,
+                            QUndoCommand *parent = 0);
     
-    virtual ~AddCommand();
+    AddMultipleNodesCommand(NodeGraph* graph,
+                            const boost::shared_ptr<NodeGui>& node,
+                            QUndoCommand* parent = 0);
+    
+    AddMultipleNodesCommand(NodeGraph* graph,
+                            NodeBackDrop* bd,
+                            QUndoCommand* parent = 0);
+    
+    virtual ~AddMultipleNodesCommand();
     
     virtual void undo();
     virtual void redo();
     
 private:
-    std::list<boost::shared_ptr<Natron::Node> > _outputs;
-    std::vector<boost::shared_ptr<Natron::Node> > _inputs;
-    boost::shared_ptr<NodeGui> _node;
+    
+    std::list<boost::shared_ptr<NodeGui> > _nodes;
+    std::list<NodeBackDrop*> _bds;
     NodeGraph* _graph;
-    bool _undoWasCalled;
+    bool _firstRedoCalled;
     bool _isUndone;
 };
 
-class RemoveCommand : public QUndoCommand{
+
+class RemoveMultipleNodesCommand : public QUndoCommand
+{
 public:
     
-    RemoveCommand(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QUndoCommand *parent = 0);
+    RemoveMultipleNodesCommand(NodeGraph* graph,
+                  const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                  const std::list<NodeBackDrop*>& bds,
+                  QUndoCommand *parent = 0);
     
-    virtual ~RemoveCommand();
+    virtual ~RemoveMultipleNodesCommand();
     
     virtual void undo();
     virtual void redo();
     
 private:
-    std::list<boost::shared_ptr<Natron::Node> > _outputs;
-    std::vector<boost::shared_ptr<Natron::Node> > _inputs;
-    boost::shared_ptr<NodeGui> _node; //< mutable because we need to modify it externally
+    struct NodeToRemove
+    {
+        ///This contains the output nodes whose input should be reconnected to this node afterwards.
+        ///This list contains only nodes that are not part of the selection: we restore only the
+        ///inputs of the outputs nodes of the graph that were not removed
+        std::list<boost::shared_ptr<Natron::Node> > outputsToRestore;
+        boost::shared_ptr<NodeGui> node;
+    };
+    
+    std::list<NodeToRemove> _nodes;
+    std::list<NodeBackDrop*> _bds;
     NodeGraph* _graph;
     bool _isRedone;
 };
@@ -100,67 +146,6 @@ private:
     int _inputNb;
 };
 
-class AddBackDropCommand : public QUndoCommand {
-    
-public:
-    
-    AddBackDropCommand(NodeGraph* graph,NodeBackDrop* bd,QUndoCommand *parent = 0);
-    virtual ~AddBackDropCommand();
-    
-    virtual void undo();
-    virtual void redo();
-    
-private:
-    
-    NodeGraph* _graph;
-    NodeBackDrop* _bd;
-    bool _isUndone;
-};
-
-
-class RemoveBackDropCommand : public QUndoCommand {
-    
-public:
-    
-    RemoveBackDropCommand(NodeGraph* graph,NodeBackDrop* bd,const std::list<boost::shared_ptr<NodeGui> >& nodes,QUndoCommand *parent = 0);
-    virtual ~RemoveBackDropCommand();
-    
-    virtual void undo();
-    virtual void redo();
-    
-private:
-    
-    NodeGraph* _graph;
-    NodeBackDrop* _bd;
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    bool _isRedone;
-};
-
-
-class MoveBackDropCommand : public QUndoCommand {
-    
-public:
-    
-    MoveBackDropCommand(NodeBackDrop* bd,double dx,double dy,
-                        const std::list<boost::shared_ptr<NodeGui> >& nodes,
-                        QUndoCommand *parent = 0);
-    virtual ~MoveBackDropCommand();
-    
-    virtual void undo();
-    virtual void redo();
-    virtual int id() const { return kNodeGraphMoveNodeBackDropCommandCompressionID; }
-    virtual bool mergeWith(const QUndoCommand *command);
-    
-    
-private:
-    
-    void move(double dx,double dy);
-    
-    NodeBackDrop* _bd;
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    double _dx,_dy;
-    
-};
 
 class ResizeBackDropCommand : public QUndoCommand {
     
@@ -183,23 +168,39 @@ private:
     
 };
 
-class DuplicateBackDropCommand : public QUndoCommand {
-    
+
+class DecloneMultipleNodesCommand : public QUndoCommand
+{
 public:
     
-    DuplicateBackDropCommand(NodeGraph* graph,NodeBackDrop* bd,const std::list<boost::shared_ptr<NodeGui> >& nodes,QUndoCommand *parent = 0);
-    virtual ~DuplicateBackDropCommand();
+    DecloneMultipleNodesCommand(NodeGraph* graph,
+                            const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                            const std::list<NodeBackDrop*>& bds,
+                            QUndoCommand *parent = 0);
+    
+    
+    virtual ~DecloneMultipleNodesCommand();
     
     virtual void undo();
     virtual void redo();
     
 private:
     
+    struct NodeToDeclone
+    {
+        boost::shared_ptr<NodeGui> node;
+        boost::shared_ptr<Natron::Node> master;
+    };
+    
+    struct BDToDeclone
+    {
+        NodeBackDrop* bd;
+        NodeBackDrop* master;
+    };
+    
+    std::list<NodeToDeclone> _nodes;
+    std::list<BDToDeclone> _bds;
     NodeGraph* _graph;
-    NodeBackDrop* _bd;
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    bool _isUndone;
-    bool _firstRedoCalled;
 };
 
 #endif // NODEGRAPHUNDOREDO_H

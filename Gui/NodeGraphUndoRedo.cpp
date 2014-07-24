@@ -24,148 +24,289 @@
 #include "Gui/Edge.h"
 #include "Gui/NodeBackDrop.h"
 
-MoveCommand::MoveCommand(const boost::shared_ptr<NodeGui>& node, const QPointF &oldPos,
-                         QUndoCommand *parent):QUndoCommand(parent),
-_node(node),
-_oldPos(oldPos),
-_newPos(node->pos()){
-    assert(node);
-    
+MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove>& nodes,
+                         const std::list<NodeBackDrop*>& bds,
+                         double dx,double dy,
+                         QUndoCommand *parent)
+: QUndoCommand(parent)
+, _nodes(nodes)
+, _bds(bds)
+, _dx(dx)
+, _dy(dy)
+{
+    assert(!nodes.empty() || !bds.empty());
 }
-void MoveCommand::undo(){
-    
-    _node->refreshPosition(_oldPos.x(),_oldPos.y());
-    _node->refreshEdges();
-    
-    if(_node->scene())
-        _node->scene()->update();
-    setText(QObject::tr("Move %1")
-            .arg(_node->getNode()->getName().c_str()));
+
+void MoveMultipleNodesCommand::move(double dx,double dy)
+{
+    for (std::list<NodeToMove>::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        QPointF pos = it->node->getPos_mt_safe();
+        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD);
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _bds.begin();it!=_bds.end();++it) {
+        QPointF pos = (*it)->getPos_mt_safe();
+        pos += QPointF(dx,dy);
+        (*it)->setPos_mt_safe(pos);
+    }
 }
-void MoveCommand::redo(){
+
+void MoveMultipleNodesCommand::undo(){
     
-    _node->refreshPosition(_newPos.x(),_newPos.y());
-    _node->refreshEdges();
-    setText(QObject::tr("Move %1")
-            .arg(_node->getNode()->getName().c_str()));
+    move(-_dx, -_dy);
+    setText(QObject::tr("Move nodes"));
 }
-bool MoveCommand::mergeWith(const QUndoCommand *command){
+void MoveMultipleNodesCommand::redo(){
     
-    const MoveCommand *moveCommand = static_cast<const MoveCommand *>(command);
+    move(_dx, _dy);
+    setText(QObject::tr("Move nodes"));
+}
+bool MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command){
     
-    const boost::shared_ptr<NodeGui>& node = moveCommand->_node;
-    if(_node != node)
+    const MoveMultipleNodesCommand *mvCmd = static_cast<const MoveMultipleNodesCommand *>(command);
+    
+    if (!mvCmd) {
         return false;
-    _newPos = node->pos();
-    setText(QObject::tr("Move %1")
-            .arg(node->getNode()->getName().c_str()));
+    }
+    if (mvCmd->_bds.size() != _bds.size() || mvCmd->_nodes.size() != _nodes.size()) {
+        return false;
+    }
+    {
+        std::list<NodeToMove >::const_iterator itOther = mvCmd->_nodes.begin();
+        for (std::list<NodeToMove>::const_iterator it = _nodes.begin();it!=_nodes.end();++it,++itOther) {
+            if (it->node != itOther->node) {
+                return false;
+            }
+        }
+        
+    }
+    {
+        std::list<NodeBackDrop*>::const_iterator itOther = mvCmd->_bds.begin();
+        for (std::list<NodeBackDrop*>::const_iterator it = _bds.begin();it!=_bds.end();++it,++itOther) {
+            if (*itOther != *it) {
+                return false;
+            }
+        }
+    }
+    _dx += mvCmd->_dx;
+    _dy += mvCmd->_dy;
     return true;
 }
 
 
-AddCommand::AddCommand(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QUndoCommand *parent):QUndoCommand(parent),
-_node(node),_graph(graph),_undoWasCalled(false), _isUndone(false){
+AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                                                 const std::list<NodeBackDrop*>& bds,
+                                                 QUndoCommand *parent)
+: QUndoCommand(parent)
+, _nodes(nodes)
+, _bds(bds)
+, _graph(graph)
+, _firstRedoCalled(false)
+, _isUndone(false)
+{
     
 }
 
-AddCommand::~AddCommand()
+AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
+                        const boost::shared_ptr<NodeGui>& node,
+                        QUndoCommand* parent)
+: QUndoCommand(parent)
+, _nodes()
+, _bds()
+, _graph(graph)
+, _firstRedoCalled(false)
+, _isUndone(false)
+{
+    _nodes.push_back(node);
+}
+
+AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
+                        NodeBackDrop* bd,
+                        QUndoCommand* parent)
+: QUndoCommand(parent)
+, _nodes()
+, _bds()
+, _graph(graph)
+, _firstRedoCalled(false)
+, _isUndone(false)
+{
+    _bds.push_back(bd);
+}
+
+AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
-        _graph->deleteNodePermanantly(_node);
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+            _graph->deleteNodePermanantly(*it);
+        }
+        
+        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
+            (*it)->setParentItem(NULL);
+            _graph->removeBackDrop(*it);
+            delete *it;
+        }
     }
 }
 
-void AddCommand::undo(){
+void AddMultipleNodesCommand::undo() {
     
     _isUndone = true;
-    _undoWasCalled = true;
     
+    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
+        (*it)->deactivate();
+    }
     
-    
-    _inputs = _node->getNode()->getInputs_mt_safe();
-    _outputs = _node->getNode()->getOutputs();
-    
-    _node->getNode()->deactivate();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        (*it)->getNode()->deactivate();
+    }
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->redrawAllViewers();
+    _graph->getGui()->getApp()->checkViewersConnection();
     
     
-    _graph->scene()->update();
-    setText(QObject::tr("Add %1")
-            .arg(_node->getNode()->getName().c_str()));
+    setText(QObject::tr("Add node"));
     
 }
-void AddCommand::redo(){
+void AddMultipleNodesCommand::redo() {
     
     _isUndone = false;
-    if(_undoWasCalled){
-        ///activate will trigger an autosave
-        _node->getNode()->activate();
-    }
-    _graph->scene()->update();
-    setText(QObject::tr("Add %1")
-            .arg(_node->getNode()->getName().c_str()));
-    
-    
-}
-
-RemoveCommand::RemoveCommand(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QUndoCommand *parent):QUndoCommand(parent),
-_node(node),_graph(graph) , _isRedone(false){
-    assert(node);
-}
-
-RemoveCommand::~RemoveCommand()
-{
-    if (_isRedone) {
-        _graph->deleteNodePermanantly(_node);
-    }
-}
-
-void RemoveCommand::undo() {
-    
-    _node->getNode()->activate();
-    _isRedone = false;
-    _graph->scene()->update();
-    setText(QObject::tr("Remove %1")
-            .arg(_node->getNode()->getName().c_str()));
-    
-    
-    
-}
-void RemoveCommand::redo() {
-    
-    _isRedone = true;
-    _inputs = _node->getNode()->getInputs_mt_safe();
-    _outputs = _node->getNode()->getOutputs();
-    
-    _node->getNode()->deactivate();
-    _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->redrawAllViewers();
-    
-    
-    for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        assert(*it);
-        boost::shared_ptr<InspectorNode> inspector = boost::dynamic_pointer_cast<InspectorNode>(*it);
-        ///if the node is an inspector, when disconnecting the active input just activate another input instead
-        if (inspector) {
-            const std::vector<boost::shared_ptr<Natron::Node> >& inputs = inspector->getInputs_mt_safe();
-            ///set as active input the first non null input
-            for (U32 i = 0; i < inputs.size() ;++i) {
-                if (inputs[i]) {
-                    inspector->setActiveInputAndRefresh(i);
-                    break;
-                }
-            }
+    if (_firstRedoCalled) {
+        
+        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
+            (*it)->activate();
+        }
+        
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+            (*it)->getNode()->activate();
         }
     }
     
-    std::list<SequenceTime> keyframes;
-    _node->getNode()->getAllKnobsKeyframes(&keyframes);
-    _graph->getGui()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keyframes);
+    _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->checkViewersConnection();
+
+    
+    _firstRedoCalled = true;
+    setText(QObject::tr("Add node"));
+    
+    
+}
+
+RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
+                             const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                             const std::list<NodeBackDrop*>& bds,
+                             QUndoCommand *parent)
+: QUndoCommand(parent)
+, _nodes()
+, _bds(bds)
+, _graph(graph)
+, _isRedone(false)
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodeToRemove n;
+        n.node = *it;
+        
+        ///find all outputs to restore
+        const std::list<boost::shared_ptr<Natron::Node> >& outputs = (*it)->getNode()->getOutputs();
+        for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+            bool restore = true;
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = nodes.begin();it3!=nodes.end();++it3) {
+                if ((*it3)->getNode() == *it2) {
+                    ///we found the output in the selection, don't restore it
+                    restore = false;
+                }
+            }
+            if (restore) {
+                n.outputsToRestore.push_back(*it2);
+            }
+        }
+        _nodes.push_back(n);
+
+    }
+}
+
+RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
+{
+    if (_isRedone) {
+        for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+            _graph->deleteNodePermanantly(it->node);
+        }
+        
+        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
+            (*it)->setParentItem(NULL);
+            _graph->removeBackDrop(*it);
+            delete *it;
+        }
+    }
+}
+
+void RemoveMultipleNodesCommand::undo() {
+    
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        it->node->getNode()->activate(it->outputsToRestore,false);
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
+        (*it)->activate();
+    }
+    
+    _isRedone = false;
+    _graph->scene()->update();
+    setText(QObject::tr("Remove node"));
+    
+    
+    
+}
+void RemoveMultipleNodesCommand::redo() {
+    
+    _isRedone = true;
+    
+    std::list<SequenceTime> allKeysToRemove;
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        
+        
+        ///Make a copy before calling deactivate which will modify the list
+        std::list<boost::shared_ptr<Natron::Node> > outputs = it->node->getNode()->getOutputs();
+
+        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1);
+        
+        if (_nodes.size() == 1) {
+            ///If we're deleting a single node and there's a viewer in output,reconnect the viewer to another connected input it has
+            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+                assert(*it2);
+                
+                ///the output must be in the outputs to restore
+                std::list<boost::shared_ptr<Natron::Node> >::const_iterator found =
+                std::find(it->outputsToRestore.begin(),it->outputsToRestore.end(),*it2);
+                
+                if (found != it->outputsToRestore.end()) {
+                    InspectorNode* inspector = dynamic_cast<InspectorNode*>(it2->get());
+                    ///if the node is an inspector, when disconnecting the active input just activate another input instead
+                    if (inspector) {
+                        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = inspector->getInputs_mt_safe();
+                        ///set as active input the first non null input
+                        for (U32 i = 0; i < inputs.size() ;++i) {
+                            if (inputs[i]) {
+                                inspector->setActiveInputAndRefresh(i);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        
+        it->node->getNode()->getAllKnobsKeyframes(&allKeysToRemove);
+
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
+        (*it)->deactivate();
+    }
+    
+    _graph->getGui()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(allKeysToRemove);
+
+    _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->redrawAllViewers();
     
     _graph->scene()->update();
-    setText(QObject::tr("Remove %1")
-            .arg(_node->getNode()->getName().c_str()));
+    setText(QObject::tr("Remove node"));
     
 }
 
@@ -335,157 +476,6 @@ void ConnectCommand::redo() {
 
 
 
-//////// Implementation of Backdrops undo/redo commands
-AddBackDropCommand::AddBackDropCommand(NodeGraph* graph,NodeBackDrop* bd,QUndoCommand *parent)
-: QUndoCommand(parent)
-, _graph(graph)
-, _bd(bd)
-, _isUndone(false)
-{
-    
-}
-
-AddBackDropCommand::~AddBackDropCommand()
-{
-    if (_isUndone) {
-        _bd->setParentItem(NULL);
-        _graph->removeBackDrop(_bd);
-        delete _bd;
-    }
-}
-
-void AddBackDropCommand::undo()
-{
-    _bd->setActive(false);
-    _bd->setVisible(false);
-    _bd->setSettingsPanelClosed(true);
-    _isUndone = true;
-    _graph->getGui()->getApp()->triggerAutoSave();
-    setText(QObject::tr("Add %1").arg(_bd->getName()));
-}
-
-void AddBackDropCommand::redo()
-{
-    _bd->setActive(true);
-    _bd->setVisible(true);
-    _isUndone = false;
-    _graph->getGui()->getApp()->triggerAutoSave();
-    setText(QObject::tr("Add %1").arg(_bd->getName()));
-}
-
-
-RemoveBackDropCommand::RemoveBackDropCommand(NodeGraph* graph,NodeBackDrop* bd,const std::list<boost::shared_ptr<NodeGui> >& nodes,
-                                             QUndoCommand *parent)
-: QUndoCommand(parent)
-, _graph(graph)
-, _bd(bd)
-, _nodes(nodes)
-, _isRedone(false)
-{
-    
-}
-
-RemoveBackDropCommand::~RemoveBackDropCommand()
-{
-    if (_isRedone) {
-        _bd->setParentItem(NULL);
-        _graph->removeBackDrop(_bd);
-        delete _bd;
-    }
-}
-
-
-void RemoveBackDropCommand::undo()
-{
-    _bd->activate();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!= _nodes.end();++it) {
-        (*it)->getNode()->activate();
-    }
-    _graph->getGui()->getApp()->triggerAutoSave();
-    _isRedone = false;
-    setText(QObject::tr("Remove %1").arg(_bd->getName()));
-}
-
-void RemoveBackDropCommand::redo()
-{
-    _bd->deactivate();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!= _nodes.end();++it) {
-        (*it)->getNode()->deactivate();
-    }
-    _graph->getGui()->getApp()->triggerAutoSave();
-    _isRedone = true;
-    setText(QObject::tr("Remove %1").arg(_bd->getName()));
-}
-
-MoveBackDropCommand::MoveBackDropCommand(NodeBackDrop* bd,double dx,double dy,
-                                         const std::list<boost::shared_ptr<NodeGui> >& nodes,
-                                         QUndoCommand *parent )
-: QUndoCommand(parent)
-, _bd(bd)
-, _nodes(nodes)
-, _dx(dx)
-, _dy(dy)
-{
-    
-}
-
-MoveBackDropCommand::~MoveBackDropCommand()
-{
-    
-}
-
-
-void MoveBackDropCommand::undo()
-{
-    move(-_dx,-_dy);
-    setText(QObject::tr("Move %1").arg(_bd->getName()));
-}
-
-void MoveBackDropCommand::move(double dx,double dy)
-{
-    QPointF delta(dx,dy);
-    QPointF bdPos = _bd->pos();
-    _bd->setPos_mt_safe(bdPos + delta);
-    
-    ///Also move all the nodes
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!= _nodes.end();++it) {
-        QPointF nodePos = (*it)->pos();
-        nodePos += delta;
-        (*it)->refreshPosition(nodePos.x(), nodePos.y(),true);
-    }
-    
-    
-}
-
-void MoveBackDropCommand::redo()
-{
-    move(_dx,_dy);
-    setText(QObject::tr("Move %1").arg(_bd->getName()));
-}
-
-bool MoveBackDropCommand::mergeWith(const QUndoCommand *command)
-{
-    const MoveBackDropCommand* mvCmd = dynamic_cast<const MoveBackDropCommand*>(command);
-    if (!mvCmd) {
-        return false;
-    }
-    if (mvCmd->_bd != _bd || mvCmd->_nodes.size() != _nodes.size()) {
-        return false;
-    }
-    
-    ///check nodes
-    std::list<boost::shared_ptr<NodeGui> >::const_iterator itOther = mvCmd->_nodes.begin();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!= _nodes.end();++it,++itOther) {
-        if (*itOther != *it) {
-            return false;
-        }
-    }
-    _dx += mvCmd->_dx;
-    _dy += mvCmd->_dy;
-    return true;
-}
-
-
 ResizeBackDropCommand::ResizeBackDropCommand(NodeBackDrop* bd,int w,int h,QUndoCommand *parent)
 : QUndoCommand(parent)
 , _bd(bd)
@@ -531,51 +521,58 @@ bool ResizeBackDropCommand::mergeWith(const QUndoCommand *command)
 }
 
 
-DuplicateBackDropCommand::DuplicateBackDropCommand(NodeGraph* graph,NodeBackDrop* bd,
-                                                   const std::list<boost::shared_ptr<NodeGui> >& nodes,QUndoCommand *parent)
+DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
+                                                     const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                                                     const std::list<NodeBackDrop*>& bds,
+                                                     QUndoCommand *parent)
 : QUndoCommand(parent)
+, _nodes()
+, _bds()
 , _graph(graph)
-, _bd(bd)
-, _nodes(nodes)
-, _isUndone(false)
-, _firstRedoCalled(false)
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodeToDeclone n;
+        n.node = *it;
+        n.master = (*it)->getNode()->getMasterNode();
+        assert(n.master);
+        _nodes.push_back(n);
+    }
+    
+    for (std::list<NodeBackDrop*>::const_iterator it = bds.begin(); it!=bds.end(); ++it) {
+        BDToDeclone b;
+        b.bd = *it;
+        b.master = (*it)->getMaster();
+        assert(b.master);
+        _bds.push_back(b);
+    }
+}
+
+
+DecloneMultipleNodesCommand::~DecloneMultipleNodesCommand()
 {
     
 }
 
-DuplicateBackDropCommand::~DuplicateBackDropCommand()
+void DecloneMultipleNodesCommand::undo()
 {
-    if (_isUndone) {
-        _bd->setParentItem(NULL);
-        _graph->removeBackDrop(_bd);
-        delete _bd;
+    for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        it->node->getNode()->getLiveInstance()->unslaveAllKnobs();
     }
-}
-
-void DuplicateBackDropCommand::undo()
-{
-    _bd->deactivate();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!= _nodes.end();++it) {
-        (*it)->getNode()->deactivate();
+    for (std::list<BDToDeclone>::iterator it = _bds.begin(); it!=_bds.end(); ++it) {
+        it->bd->unslave();
     }
-    _isUndone = true;
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText(QObject::tr("Duplicate %1").arg(_bd->getName()));
+    setText("Declone node");
 }
 
-void DuplicateBackDropCommand::redo()
+void DecloneMultipleNodesCommand::redo()
 {
-    if (_firstRedoCalled) {
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!= _nodes.end();++it) {
-            (*it)->getNode()->activate();
-        }
-        _bd->activate();
+    for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        it->node->getNode()->getLiveInstance()->slaveAllKnobs(it->master->getLiveInstance());
     }
-    _isUndone = false;
+    for (std::list<BDToDeclone>::iterator it = _bds.begin(); it!=_bds.end(); ++it) {
+        it->bd->slaveTo(it->master);
+    }
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText(QObject::tr("Duplicate %1").arg(_bd->getName()));
+    setText("Declone node");
 }
-
-
-
-

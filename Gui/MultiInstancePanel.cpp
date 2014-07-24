@@ -637,7 +637,7 @@ public:
             assert(index != -1);
             _panel->removeRow(index);
             bool isMainInstance = (*it) == mainInstance;
-            (*it)->deactivate(!isMainInstance);
+            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),true,!isMainInstance);
         }
         setText(QObject::tr("Remove instance(s)"));
     }

@@ -57,8 +57,6 @@ struct NodeBackDropPrivate
     
     bool isSelected;
     
-    QMenu* menu;
-    
     NodeBackDropPrivate(NodeBackDrop* publicInterface,NodeGraph* dag)
     : _publicInterface(publicInterface)
     , graph(dag)
@@ -74,7 +72,6 @@ struct NodeBackDropPrivate
     , knobLabel()
     , positionMutex()
     , isSelected(false)
-    , menu(NULL)
     {
         
     }
@@ -85,7 +82,6 @@ struct NodeBackDropPrivate
     
     void refreshLabelText(const QString& text);
     
-    void populateMenu();
 };
 
 NodeBackDrop::NodeBackDrop(NodeGraph* dag,QGraphicsItem* parent)
@@ -102,9 +98,7 @@ NodeBackDrop::NodeBackDrop(NodeGraph* dag,QGraphicsItem* parent)
 
 void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,QVBoxLayout *dockContainer)
 {
-    
-    _imp->menu = new QMenu(_imp->graph);
-    
+        
     QString tooltip(tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
                     "move all the nodes inside the backdrop."));
     _imp->settingsPanel = new DockablePanel(_imp->graph->getGui(), //< pointer to the gui
@@ -389,78 +383,6 @@ void NodeBackDrop::setSelected(bool selected)
     _imp->setColorInternal(_imp->settingsPanel->getCurrentColor());
 }
 
-void NodeBackDropPrivate::populateMenu()
-{
-    menu->clear();
-    
-    QAction* copyAction = new QAction(QObject::tr("Copy"),menu);
-    copyAction->setShortcut(QKeySequence::Copy);
-    QObject::connect(copyAction,SIGNAL(triggered()),_publicInterface,SLOT(copy()));
-    menu->addAction(copyAction);
-    
-    QAction* cutAction = new QAction(QObject::tr("Cut"),menu);
-    cutAction->setShortcut(QKeySequence::Cut);
-    QObject::connect(cutAction,SIGNAL(triggered()),_publicInterface,SLOT(cut()));
-    menu->addAction(cutAction);
-    
-    QAction* duplicateAction = new QAction(QObject::tr("Duplicate"),menu);
-    duplicateAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_C));
-    QObject::connect(duplicateAction,SIGNAL(triggered()),_publicInterface,SLOT(duplicate()));
-    menu->addAction(duplicateAction);
-    
-    QAction* cloneAction = new QAction(QObject::tr("Clone"),menu);
-    cloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::Key_K));
-    QObject::connect(cloneAction,SIGNAL(triggered()),_publicInterface,SLOT(clone()));
-    cloneAction->setEnabled(!_publicInterface->isSlave());
-    menu->addAction(cloneAction);
-    
-    QAction* decloneAction = new QAction(QObject::tr("Declone"),menu);
-    decloneAction->setShortcut(QKeySequence(Qt::AltModifier + Qt::ShiftModifier + Qt::Key_K));
-    QObject::connect(decloneAction,SIGNAL(triggered()),_publicInterface,SLOT(declone()));
-    decloneAction->setEnabled(_publicInterface->isSlave());
-    menu->addAction(decloneAction);
-    
-    
-    QAction* deleteAction = new QAction(QObject::tr("Delete"),menu);
-    QObject::connect(deleteAction,SIGNAL(triggered()),_publicInterface,SLOT(remove()));
-    menu->addAction(deleteAction);
-
-}
-
-void NodeBackDrop::showMenu(const QPoint& pos) {
-    _imp->populateMenu();
-    _imp->menu->exec(pos);
-}
-
-void NodeBackDrop::cut()
-{
-    _imp->graph->cutBackdrop(this);
-}
-
-void NodeBackDrop::copy()
-{
-    _imp->graph->copyBackdrop(this);
-}
-
-void NodeBackDrop::duplicate()
-{
-    _imp->graph->duplicateBackdrop(this);
-}
-
-void NodeBackDrop::clone()
-{
-    _imp->graph->cloneBackdrop(this);
-}
-
-void NodeBackDrop::declone()
-{
-    _imp->graph->decloneBackdrop(this);
-}
-
-void NodeBackDrop::remove()
-{
-    _imp->graph->deleteBackdrop(this);
-}
 
 void NodeBackDrop::slaveTo(NodeBackDrop* master)
 {

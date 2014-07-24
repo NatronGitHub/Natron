@@ -86,7 +86,7 @@ public:
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
         
-    boost::shared_ptr<NodeGui> getSelectedNode() const;
+    const std::list<boost::shared_ptr<NodeGui> >& getSelectedNodes() const;
     
     void setLastSelectedViewer(ViewerTab* tab);
     
@@ -148,6 +148,9 @@ public:
                                            Natron::StandardButtons(Natron::Yes | Natron::No),
                                            Natron::StandardButton defaultButton = Natron::NoButton);
     
+    /**
+     * @brief Selects the given node on the node graph, wiping any previous selection.
+     **/
     void selectNode(boost::shared_ptr<NodeGui> node);
     
     GuiAppInstance* getApp() const;
