@@ -2037,7 +2037,7 @@ void CurveWidget::mousePressEvent(QMouseEvent *event)
         _imp->_mustSetDragOrientation = true;
         _imp->_state = DRAGGING_KEYS;
         setCursor(QCursor(Qt::CrossCursor));
-        
+
         if (!event->modifiers().testFlag(Qt::ControlModifier)) {
             _imp->_selectedKeyFrames.clear();
         }
