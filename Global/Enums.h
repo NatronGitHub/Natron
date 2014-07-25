@@ -230,7 +230,8 @@ namespace Natron{
         USER_EDITED = 0, //< a user change triggered the call
         PLUGIN_EDITED = 1, //< a plugin change triggered the call
         TIME_CHANGED = 2, //< a time-line seek changed the call
-        PROJECT_LOADING = 3 //< the project loader triggered the call
+        PROJECT_LOADING = 3, //< the project loader triggered the call
+        SLAVE_REFRESH = 4 //< a master parameter ordered the slave to refresh its value
     };
     
     enum AnimationLevel {

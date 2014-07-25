@@ -1071,8 +1071,9 @@ void NodeGui::initializeKnobs(){
 
 
 void NodeGui::setVisibleSettingsPanel(bool b){
-    if(_settingsPanel){
-        _settingsPanel->setClosed(!b);
+    if (_settingsPanel) {
+        bool setTimelineKeys = !_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty();
+        _settingsPanel->setClosed2(!b,setTimelineKeys);
     }
 }
 

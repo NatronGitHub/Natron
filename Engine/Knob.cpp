@@ -67,7 +67,7 @@ void KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 
 void KnobSignalSlotHandler::onMasterChanged(int dimension)
 {
-    k->evaluateValueChange(dimension, Natron::PLUGIN_EDITED);
+    k->evaluateValueChange(dimension, Natron::SLAVE_REFRESH);
 }
 
 void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, int reason)
@@ -396,7 +396,7 @@ void KnobHelper::endValueChange()
             
             processNewValue(_imp->beginEndReason);
             
-            if (_signalSlotHandler) {
+            if (_signalSlotHandler && _imp->beginEndReason != Natron::SLAVE_REFRESH) {
                 if ((_imp->beginEndReason != Natron::USER_EDITED)) {
                     for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
                         _signalSlotHandler->s_valueChanged(_imp->dimensionChanged[i]);
