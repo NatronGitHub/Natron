@@ -239,12 +239,16 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 
 void RemoveMultipleNodesCommand::undo() {
     
+    std::list<SequenceTime> allKeysToAdd;
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
         it->node->getNode()->activate(it->outputsToRestore,false);
+        it->node->getNode()->getAllKnobsKeyframes(&allKeysToAdd);
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->activate();
     }
+    
+    _graph->getGui()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(allKeysToAdd);
     
     _isRedone = false;
     _graph->scene()->update();
