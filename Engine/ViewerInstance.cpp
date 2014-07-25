@@ -303,13 +303,18 @@ ViewerInstance::getFrameRange(SequenceTime *first,
 void ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 {
     assert(QThread::currentThread() == qApp->thread());
-    _imp->uiContext->disconnectInputTexture(index);
+    if (_imp->uiContext) {
+        _imp->uiContext->disconnectInputTexture(index);
+    }
 }
 
 Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded,bool isSequentialRender)
 {
+    if (!_imp->uiContext) {
+        return StatReplyDefault;
+    }
     Natron::Status ret[2] = { StatOK,StatOK };
     for (int i = 0; i < 2; ++i) {
         if (i == 1 && _imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) {
@@ -350,8 +355,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     Format dispW;
     getRenderFormat(&dispW);
     int viewsCount = getRenderViewsCount();
-    assert(viewsCount <= 0 || _imp->uiContext);
-    int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
+    int view = (viewsCount > 0  && _imp->uiContext) ? _imp->uiContext->getCurrentView() : 0;
 
     int activeInputIndex;
     if (textureIndex == 0) {
