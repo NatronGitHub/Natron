@@ -3175,9 +3175,9 @@ void ImportExportCurveDialog::open_file()
     } else {
         SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::OPEN_DIALOG);
         if (dialog.exec()) {
-            std::vector<std::string> files = dialog.selectedFiles();
+            std::string files = dialog.selectedFiles();
             if(!files.empty()) {
-                _fileLineEdit->setText(files.at(0).c_str());
+                _fileLineEdit->setText(files.c_str());
             }
         }
     }

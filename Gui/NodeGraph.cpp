@@ -961,8 +961,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
         _imp->editSelectionFromSelectionRectangle(event->modifiers().testFlag(Qt::ControlModifier));
     }
     scene()->update();
-    
-    
+    update();
     setCursor(QCursor(Qt::ArrowCursor));
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
@@ -2071,8 +2070,7 @@ NodeGraph::dropEvent(QDropEvent* event)
         boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence = files[i];
         
         ///find a decoder for this file type
-        QString first = sequence->getFilesList()[0].c_str();
-        std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
+        std::string ext = sequence->fileExtension();
         
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
         if (found == readersForFormat.end()) {
@@ -2089,7 +2087,7 @@ NodeGraph::dropEvent(QDropEvent* event)
                         errorDialog(tr("Reader").toStdString(), tr("This plug-in doesn't support image sequences, please select only 1 file.").toStdString());
                         break;
                     } else {
-                        fk->setFiles(sequence->getFilesList());
+                        fk->setValue(sequence->generateValidSequencePattern(),0);
                         if (n->isPreviewEnabled()) {
                             n->computePreviewImage(_imp->_gui->getApp()->getTimeLine()->currentFrame());
                         }

@@ -279,12 +279,10 @@ public:
     ///Returns the same as SequenceParsing::removePath excepts that str is left untouched.
     static QString getFilePath(const QString& str);
     
-    ///Returns the selected sequence.
+    ///Returns the selected pattern sequence or file name.
     ///Works only in OPEN_DIALOG mode.
-    std::vector<std::string> selectedFiles();
+    std::string selectedFiles();
     
-    ///Same as selectedFiles() but more convenient when the dialog is in sequence mode.
-    SequenceParsing::SequenceFromFiles getSelectedFilesAsSequence();
     
     ///Returns  the content of the selection line edit.
     ///Works only in SAVE_DIALOG mode.

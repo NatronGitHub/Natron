@@ -771,10 +771,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                         + " ymax= " + QString::number(renderWindow.top())).toStdString());
 #endif
     
-    ///The effect caching policy might forbid caching (Readers could use this when going out of the original frame range.)
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
-    if (getCachePolicy(args.time) == NEVER_CACHE || isWriter()) {
+    if (isWriter()) {
         byPassCache = true;
     }
     
@@ -1802,29 +1801,6 @@ int EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const {
         }
     }
     return -1;
-}
-
-
-void EffectInstance::setInputFilesForReader(const std::vector<std::string>& files) {
-    
-    if (!isReader()) {
-        return;
-    }
-    
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
-            boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
-            assert(fk);
-            if (fk->isInputImageFile()) {
-                if (files.size() > 1 && ! fk->isAnimationEnabled()) {
-                    throw std::invalid_argument("This reader does not support image sequences. Please provide a single file.");
-                }
-                fk->setFiles(files);
-                break;
-            }
-        }
-    }
 }
 
 void EffectInstance::setOutputFilesForWriter(const std::string& pattern) {

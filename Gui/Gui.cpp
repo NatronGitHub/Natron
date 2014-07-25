@@ -1699,10 +1699,10 @@ void Gui::newProject() {
 void Gui::openProject() {
     std::vector<std::string> filters;
     filters.push_back(NATRON_PROJECT_FILE_EXT);
-    std::vector<std::string> selectedFiles =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
+    std::string selectedFile =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
     
-    if (selectedFiles.size() > 0) {
-        openProjectInternal(selectedFiles.at(0));
+    if (!selectedFile.empty()) {
+        openProjectInternal(selectedFile);
     }
     
 }
@@ -1795,10 +1795,10 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
     for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    std::vector<std::string> files = popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString());
-    if(!files.empty()){
-        QString first = files.at(0).c_str();
-        std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
+    std::string pattern = popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString());
+    if(!pattern.empty()){
+        QString qpattern(pattern.c_str());
+        std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
 
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
         if (found == readersForFormat.end()) {
@@ -1815,19 +1815,12 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
                     assert(fk);
                     
-                    if(!fk->isAnimationEnabled() && files.size() > 1){
-                        errorDialog(tr("Reader").toStdString(), tr("This plug-in doesn't support image sequences, please select only 1 file.").toStdString());
-                        break;
-                    } else {
-                        fk->setFiles(files);
-                        
-                        if (ret->isPreviewEnabled()) {
-                            ret->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());
-                        }
-                        
-                        break;
+                    fk->setValue(pattern,0);
+                    if (ret->isPreviewEnabled()) {
+                        ret->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());
                     }
-                
+                    
+                    break;
                 }
             }
         }
@@ -1874,13 +1867,13 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
     return ret;
 }
 
-std::vector<std::string> Gui::popOpenFileDialog(bool sequenceDialog,
+std::string Gui::popOpenFileDialog(bool sequenceDialog,
                                                 const std::vector<std::string>& initialfilters,const std::string& initialDir) {
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir);
     if (dialog.exec()) {
         return dialog.selectedFiles();
     }else{
-        return std::vector<std::string>();
+        return std::string();
     }
 }
 

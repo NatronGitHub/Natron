@@ -185,7 +185,7 @@ public:
     
     void registerSplitter(Splitter* s);
 
-    std::vector<std::string> popOpenFileDialog(bool sequenceDialog,
+    std::string popOpenFileDialog(bool sequenceDialog,
                                                const std::vector<std::string>& initialfilters,const std::string& initialDir);
     
     std::string popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);

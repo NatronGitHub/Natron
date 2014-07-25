@@ -320,6 +320,7 @@ DockablePanel::DockablePanel(Gui* gui
                                                                     ,Qt::WhiteSpaceNormal));
             QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
             _imp->_colorButton->setFixedSize(15,15);
+            
         }
         QPixmap pixUndo ;
         appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
@@ -947,7 +948,7 @@ void DockablePanel::showHelp(){
     QToolTip::showText(QCursor::pos(), _imp->_helpButton->toolTip());
 }
 
-void DockablePanel::setClosed(bool c)
+void DockablePanel::setClosed2(bool c,bool setTimelineKeys)
 {
     if (_imp->_floating) {
         floatPanel();
@@ -955,11 +956,14 @@ void DockablePanel::setClosed(bool c)
     setVisible(!c);
     {
         QMutexLocker l(&_imp->_isClosedMutex);
+        if (c == _imp->_isClosed) {
+            return;
+        }
         _imp->_isClosed = c;
     }
     emit closeChanged(c);
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (nodePanel) {
+    if (nodePanel && setTimelineKeys) {
         std::list<SequenceTime> nodeKeyframes;
         nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
         if (c) {

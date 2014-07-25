@@ -480,12 +480,6 @@ public:
     
     void notifyRenderingEnded();
     
-    
-    /**
-     * @brief forwarded to the live instance
-     **/
-    void setInputFilesForReader(const std::vector<std::string>& files);
-    
     /**
      * @brief forwarded to the live instance
      **/

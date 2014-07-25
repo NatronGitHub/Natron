@@ -217,7 +217,9 @@ void NodeGui::initialize(NodeGraph* dag,
             _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
             _graph->getGui()->addVisibleDockablePanel(_settingsPanel);
         } else {
-            setVisibleSettingsPanel(false);
+            if (_settingsPanel) {
+                _settingsPanel->setClosed2(true,false);
+            }
         }
         
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());

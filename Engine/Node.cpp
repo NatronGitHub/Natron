@@ -1745,11 +1745,6 @@ void Node::notifyRenderingEnded() {
     emit renderingEnded();
 }
 
-
-void Node::setInputFilesForReader(const std::vector<std::string>& files) {
-    _imp->liveInstance->setInputFilesForReader(files);
-}
-
 void Node::setOutputFilesForWriter(const std::string& pattern) {
     _imp->liveInstance->setOutputFilesForWriter(pattern);
 }

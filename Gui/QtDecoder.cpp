@@ -358,13 +358,13 @@ void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filenam
    
     
     int missingChoice = _missingFrameChoice->getValue();
-    filename = _fileKnob->getValueAtTimeConditionally(time, false);
+    filename = _fileKnob->getFileName(time, 0);
     
     switch (missingChoice) {
         case 0: // Load nearest
                 ///the nearest frame search went out of range and couldn't find a frame.
             if(filename.empty()){
-                filename = _fileKnob->getValueAtTimeConditionally(time, true);
+                filename = _fileKnob->getFileName(time, 0);
                 if (filename.empty()) {
                     setPersistentMessage(Natron::ERROR_MESSAGE, QObject::tr("Nearest frame search went out of range").toStdString());
                 }
@@ -484,17 +484,6 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
     return StatOK;
 }
 
-Natron::EffectInstance::CachePolicy QtReader::getCachePolicy(SequenceTime time) const{
-    //if we're in nearest mode and the frame could not be found do not cache it, otherwise
-    //we would cache multiple copies of the same frame
-    if(_missingFrameChoice->getValue() == 0){
-        std::string filename = _fileKnob->getValueAtTimeConditionally(time,false);
-        if(filename.empty()){
-            return NEVER_CACHE;
-        }
-    }
-    return ALWAYS_CACHE;
-}
 
 void QtReader::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
 {

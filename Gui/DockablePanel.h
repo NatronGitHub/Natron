@@ -125,6 +125,9 @@ public:
     
     KnobHolder* getHolder() const;
     
+    void setClosed2(bool c,bool setTimelineKeys);
+
+    
 public slots:
     
     /*Internal slot, not meant to be called externally.*/
@@ -158,13 +161,11 @@ public slots:
     
     void floatPanel();
     
-    void setClosed(bool c);
-    
     void onColorButtonClicked();
     
     void onColorDialogColorChanged(const QColor& color);
     
-
+    void setClosed(bool closed) { setClosed2(closed,true); }
     
 signals:
     

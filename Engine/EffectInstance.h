@@ -94,7 +94,6 @@ public:
     
 public:
     
-    enum CachePolicy { ALWAYS_CACHE = 0 , NEVER_CACHE };
     
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -543,14 +542,7 @@ public:
     virtual void purgeCaches(){};
     
     void clearLastRenderedImage();
-    
-    /**
-     * @brief Can be overloaded to indicate whether a plug-in wants to cache
-     * a frame rendered or not.
-     **/
-    virtual CachePolicy getCachePolicy(SequenceTime /*time*/) const { return ALWAYS_CACHE; }
-
-    
+     
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
      * a dialog. The message can be of 4 types...
@@ -588,13 +580,6 @@ public:
      * @brief Does this effect supports rendering at a different scale than 1 ?
      **/
     virtual bool supportsRenderScale() const { return false; }
-    
-    /**
-     * @brief If this effect is a reader then the file path corresponding to the input images path will be fed
-     * with the content of files. Note that an exception is thrown if the file knob does not support image sequences
-     * but you attempt to feed-in several files.
-     **/
-    void setInputFilesForReader(const std::vector<std::string>& files);
     
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed

@@ -1232,8 +1232,8 @@ void SequenceFileDialog::openSelectedFiles(){
     if (_dialogMode != DIR_DIALOG) {
         if(!isDirectory(str)){
             if (_dialogMode == OPEN_DIALOG) {
-                std::vector<std::string> files = selectedFiles();
-                if(!files.empty()){
+                std::string pattern = selectedFiles();
+                if (!pattern.empty()) {
                     QDialog::accept();
                 }
             } else {
@@ -1294,12 +1294,9 @@ void SequenceFileDialog::cancelSlot(){
 void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter){
         QString str = _selectionLineEdit->text();
-        if(!isDirectory(str)){
-            std::vector<std::string> files = selectedFiles();
-            //if(!files.empty()){
-                QDialog::accept();
-            //}
-        }else{
+        if (!isDirectory(str)) {
+            QDialog::accept();
+        } else {
             setDirectory(str);
         }
         return;
@@ -1441,11 +1438,7 @@ QStringList SequenceFileDialog::history() const{
     return currentHistory;
 }
 
-std::vector<std::string> SequenceFileDialog::selectedFiles() {
-    return getSelectedFilesAsSequence().getFilesList();
-}
-
-SequenceParsing::SequenceFromFiles SequenceFileDialog::getSelectedFilesAsSequence() {
+std::string SequenceFileDialog::selectedFiles() {
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     assert(indexes.count() <= 1);
     if (sequenceModeEnabled()) {
@@ -1454,26 +1447,12 @@ SequenceParsing::SequenceFromFiles SequenceFileDialog::getSelectedFilesAsSequenc
             QString absoluteFileName = sequenceIndex.data(QFileSystemModel::FilePathRole).toString();
             SequenceParsing::SequenceFromFiles ret(false);
             _proxy->getSequenceFromFilesForFole(absoluteFileName, &ret);
-            return ret;
+            return ret.generateValidSequencePattern();
         } else {
             //if nothing is selected, pick whatever the line edit tells us
-            QString lineEditTxt = _selectionLineEdit->text();
-            SequenceParsing::SequenceFromPattern seqFromPattern;
-            SequenceParsing::filesListFromPattern(lineEditTxt.toStdString(), &seqFromPattern);
-            StringList filesList = SequenceParsing::sequenceFromPatternToFilesList(seqFromPattern);
-            SequenceParsing::SequenceFromFiles ret(false);
-            for (U32 i = 0; i < filesList.size(); ++i) {
-                SequenceParsing::FileNameContent content(filesList.at(i));
-                bool ok = ret.tryInsertFile(content);
-                if (!ok) {
-                    qDebug() << "Failure to add " << filesList.at(i).c_str() << " to the sequence with the following pattern: "
-                    << ret.generateValidSequencePattern().c_str() << ". (Debug info: the pattern on the left should be equal to: "
-                    << lineEditTxt << " , if not, this is probably a bug in the sequence parsing.";
-                }
-            }
-            return ret;
+            return  _selectionLineEdit->text().toStdString();
         }
-
+        
     } else {
         SequenceParsing::SequenceFromFiles seq(false);
         if (indexes.count() == 1) {
@@ -1487,7 +1466,7 @@ SequenceParsing::SequenceFromFiles SequenceFileDialog::getSelectedFilesAsSequenc
                 seq.tryInsertFile(SequenceParsing::FileNameContent(lineEditTxt.toStdString()));
             }
         }
-        return seq;
+        return seq.generateValidSequencePattern();
     }
 
 }

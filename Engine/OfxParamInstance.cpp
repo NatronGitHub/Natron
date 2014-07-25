@@ -2002,7 +2002,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     int currentFrame = _node->getCurrentFrameRecursive();
     if(_fileKnob){
-        str = _fileKnob->getValueAtTimeConditionally(currentFrame,true);
+        str = _fileKnob->getFileName(currentFrame,/*view*/0);
     }else if(_outputFileKnob){
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
     }else if(_stringKnob){
@@ -2016,7 +2016,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        str = _fileKnob->getValueAtTimeConditionally(time,true);
+        str = _fileKnob->getFileName(std::floor(time + 0.5),/*view*/0);
     }else if(_outputFileKnob){
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
     }else if(_stringKnob){
@@ -2158,13 +2158,6 @@ OfxStringInstance::setEvaluateOnChange()
         _pathKnob->setEvaluateOnChange(getEvaluateOnChange());
     }
 }
-
-const std::string
-OfxStringInstance::getRandomFrameName(int f) const
-{
-    return _fileKnob ? _fileKnob->getValueAtTimeConditionally(f,true) : "";
-}
-
 
 OfxStatus
 OfxStringInstance::getNumKeys(unsigned int &nKeys) const

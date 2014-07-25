@@ -242,7 +242,9 @@ void RemoveMultipleNodesCommand::undo() {
     std::list<SequenceTime> allKeysToAdd;
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
         it->node->getNode()->activate(it->outputsToRestore,false);
-        it->node->getNode()->getAllKnobsKeyframes(&allKeysToAdd);
+        if (it->node->isSettingsPanelVisible()) {
+            it->node->getNode()->getAllKnobsKeyframes(&allKeysToAdd);
+        }
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->activate();
@@ -296,8 +298,9 @@ void RemoveMultipleNodesCommand::redo() {
             }
 
         }
-        
-        it->node->getNode()->getAllKnobsKeyframes(&allKeysToRemove);
+        if (it->node->isSettingsPanelVisible()) {
+            it->node->getNode()->getAllKnobsKeyframes(&allKeysToRemove);
+        }
 
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
@@ -560,10 +563,10 @@ DecloneMultipleNodesCommand::~DecloneMultipleNodesCommand()
 void DecloneMultipleNodesCommand::undo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
-        it->node->getNode()->getLiveInstance()->unslaveAllKnobs();
+        it->node->getNode()->getLiveInstance()->slaveAllKnobs(it->master->getLiveInstance());
     }
     for (std::list<BDToDeclone>::iterator it = _bds.begin(); it!=_bds.end(); ++it) {
-        it->bd->unslave();
+        it->bd->slaveTo(it->master);
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     setText("Declone node");
@@ -572,10 +575,10 @@ void DecloneMultipleNodesCommand::undo()
 void DecloneMultipleNodesCommand::redo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
-        it->node->getNode()->getLiveInstance()->slaveAllKnobs(it->master->getLiveInstance());
+        it->node->getNode()->getLiveInstance()->unslaveAllKnobs();
     }
     for (std::list<BDToDeclone>::iterator it = _bds.begin(); it!=_bds.end(); ++it) {
-        it->bd->slaveTo(it->master);
+        it->bd->unslave();
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     setText("Declone node");
