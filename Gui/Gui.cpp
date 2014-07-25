@@ -1299,6 +1299,16 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     std::pair<NodeGui*,RotoGui*> currentRoto;
     if (!_imp->_viewerTabs.empty()) {
         (*_imp->_viewerTabs.begin())->getRotoContext(&rotoNodes, &currentRoto);
+    } else {
+        const std::list<boost::shared_ptr<NodeGui> >& allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+            if ((*it)->getNode()->getRotoContext()) {
+                rotoNodesList.push_back(it->get());
+                if (!currentRoto.first) {
+                    currentRoto.first = it->get();
+                }
+            }
+        }
     }
     for (std::map<NodeGui*,RotoGui*>::iterator it = rotoNodes.begin() ;it!=rotoNodes.end();++it) {
         rotoNodesList.push_back(it->first);
