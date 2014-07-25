@@ -350,6 +350,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     Format dispW;
     getRenderFormat(&dispW);
     int viewsCount = getRenderViewsCount();
+    assert(viewsCount <= 0 || _imp->uiContext);
     int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
 
     int activeInputIndex;
@@ -414,6 +415,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         mipMapLevel = _imp->viewerMipMapLevel;
     }
      
+    assert(_imp->uiContext);
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / M_LN2));
     mipMapLevel = std::max((double)mipMapLevel,std::log(closestPowerOf2) / M_LN2);
@@ -556,6 +558,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
     emit rodChanged(rod,textureIndex);
 
+    assert(_imp->uiContext);
     bool isClippingToProjectWindow = _imp->uiContext->isClippingImageToProjectWindow();
     if (!isClippingToProjectWindow) {
         dispW.set(rod);
@@ -565,6 +568,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
     ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
+    assert(_imp->uiContext);
     RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD,mipMapLevel);
     
     
@@ -616,6 +620,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         return StatOK;
     }
     
+    assert(_imp->uiContext);
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
     
     //half float is not supported yet so it is the same as float
@@ -661,6 +666,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     if (!forceRender) {
         ///we never use the texture cache when the user RoI is enabled, otherwise we would have
         ///zillions of textures in the cache, each a few pixels different.
+        assert(_imp->uiContext);
         if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams;
             isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
@@ -715,6 +721,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
+        assert(_imp->uiContext);
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
             assert(!params->cachedFrame);
             // don't reallocate if we need less memory (avoid fragmentation)
@@ -1559,7 +1566,8 @@ ViewerInstance::onGainChanged(double exp)
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsGain = exp;
     }
-    if((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
+    assert(_imp->uiContext);
+    if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false,true);
     } else {
@@ -1618,6 +1626,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
     
     _imp->viewerParamsLut = colorspace;
 
+    assert(_imp->uiContext);
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false,true);
@@ -1792,6 +1801,7 @@ ViewerInstance::supportsGLSL() const
     ///This is a short-cut, this is primarily used when the user switch the
     /// texture mode in the preferences menu. If the hardware doesn't support GLSL
     /// it returns false, true otherwise. @see Settings::onKnobValueChanged
+    assert(_imp->uiContext);
     return _imp->uiContext->supportsGLSL();
 }
 
@@ -1800,6 +1810,7 @@ ViewerInstance::redrawViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(_imp->uiContext);
     _imp->uiContext->redraw();
 }
 
@@ -1848,6 +1859,7 @@ int
 ViewerInstance::getMipMapLevelCombinedToZoomFactor() const
 {
     int mmLvl = getMipMapLevel();
+    assert(_imp->uiContext);
     double factor = _imp->uiContext->getZoomFactor();
     if (factor > 1) {
         factor = 1;
@@ -1873,6 +1885,7 @@ void ViewerInstance::addAcceptedComponents(int /*inputNb*/,std::list<Natron::Ima
 
 int ViewerInstance::getCurrentView() const
 {
+    assert(_imp->uiContext);
     return _imp->uiContext->getCurrentView();
 }
 
@@ -1930,7 +1943,7 @@ void ViewerInstance::setInputB(int inputNb)
 
 bool ViewerInstance::isFrameRangeLocked() const
 {
-    return _imp->uiContext->isFrameRangeLocked();
+    return _imp->uiContext ? _imp->uiContext->isFrameRangeLocked() : true;
 }
 
 void ViewerInstance::clearLastRenderedTexture()
