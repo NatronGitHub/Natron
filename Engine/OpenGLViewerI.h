@@ -88,6 +88,12 @@ public:
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) = 0;
 
     /**
+     * @brief Must use OpenGL to query the texture color at the given image coordinates
+     * X and Y are in canonical coordinates
+     **/
+    virtual void getTextureColorAt(int x,int y,double* r,double *g,double *b,double *a) = 0;
+    
+    /**
      * @brief Make the OpenGL context current to the thread.
     **/
     virtual void makeOpenGLcontextCurrent()  = 0;

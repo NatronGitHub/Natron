@@ -143,7 +143,7 @@ public:
     void updateViewerVideoEngine(const boost::shared_ptr<UpdateViewerParams> &params);
     
     void redrawViewer() { emit mustRedrawViewer(); }
-
+    
     public slots:
     /**
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.

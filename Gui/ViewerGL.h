@@ -277,6 +277,8 @@ public:
     **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL ;
     
+    virtual void getTextureColorAt(int x,int y,double* r,double *g,double *b,double *a) OVERRIDE FINAL;
+    
     ViewerInstance* getInternalNode() const;
     
     ViewerTab* getViewerTab() const;

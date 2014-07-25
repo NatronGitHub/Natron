@@ -714,6 +714,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
         ramBuffer = params->cachedFrame->data();
+
+        {
+            QMutexLocker l(&_imp->lastRenderedTextureMutex);
+            _imp->lastRenderedTexture = params->cachedFrame;
+            _imp->lastRenderHash = nodeHash;
+        }
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
@@ -1731,13 +1737,25 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
 bool
 ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex)
 {
+    
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
-    QMutexLocker l(&_imp->lastRenderedImageMutex);
-    if (!_imp->lastRenderedImage[textureIndex]) {
-        return false;
+    
+    ///Convert to pixel coords
+    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
+    int xPixel = x,yPixel = y;
+    if (mipMapLevel != 0) {
+        xPixel /= (1 << mipMapLevel);
+        yPixel /= (1 << mipMapLevel);
+    }
+    
+    
+    boost::shared_ptr<Image> img;
+    {
+        QMutexLocker l(&_imp->lastRenderedImageMutex);
+        img = _imp->lastRenderedImage[textureIndex];
     }
     
     ViewerColorSpace lut;
@@ -1745,9 +1763,30 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
         QMutexLocker l(&_imp->viewerParamsMutex);
         lut = _imp->viewerParamsLut;
     }
+    
+    if (!img || img->getMipMapLevel() != mipMapLevel) {
+        double colorGPU[4];
+        _imp->uiContext->getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
+        *a = colorGPU[3];
+        if (forceLinear && lut != Linear) {
+            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(lut);
+
+            *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
+            *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
+            *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
+            
+        } else {
+            *r = colorGPU[0];
+            *g = colorGPU[1];
+            *b = colorGPU[2];
+        }
+        return true;
+    }
+    
+    
     const Natron::Color::Lut* dstColorSpace = lutFromColorspace(lut);
     
-    Natron::ImageBitDepth depth = _imp->lastRenderedImage[textureIndex]->getBitDepth();
+    Natron::ImageBitDepth depth = img->getBitDepth();
     bool queried = true;
     switch (depth) {
         case IMAGE_BYTE: {
@@ -1757,7 +1796,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
                 srcColorSpace = 0;
                 dstColorSpace = 0;
             }
-            queried = getColorAtInternal<unsigned char, 255>(_imp->lastRenderedImage[textureIndex].get(), x, y,forceLinear,
+            queried = getColorAtInternal<unsigned char, 255>(img.get(), xPixel, yPixel,forceLinear,
                                                              srcColorSpace,
                                                              dstColorSpace,r, g, b, a);
         }   break;
@@ -1769,7 +1808,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
                 dstColorSpace = 0;
             }
 
-            queried = getColorAtInternal<unsigned short, 65535>(_imp->lastRenderedImage[textureIndex].get(), x, y, forceLinear,
+            queried = getColorAtInternal<unsigned short, 65535>(img.get(), xPixel, yPixel, forceLinear,
                                                                 srcColorSpace,
                                                                 dstColorSpace,r, g, b, a);
         }   break;
@@ -1780,7 +1819,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
                 srcColorSpace = 0;
                 dstColorSpace = 0;
             }
-            queried = getColorAtInternal<float, 1>(_imp->lastRenderedImage[textureIndex].get(), x, y,forceLinear,
+            queried = getColorAtInternal<float, 1>(img.get(), xPixel, yPixel,forceLinear,
                                                    srcColorSpace,
                                                    dstColorSpace, r, g, b, a);
         }   break;

@@ -2482,10 +2482,6 @@ void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
              imgPos.x() < dispW.right() &&
              imgPos.y() >= dispW.bottom() &&
              imgPos.y() < dispW.top()) || !clipping) {
-            unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
-            if (mipMapLevel != 0) {
-                imgPos /= (1 << mipMapLevel);
-            }
             picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,textureIndex);
         }
         
@@ -3515,4 +3511,55 @@ Natron::ViewerCompositingOperator ViewerGL::getCompositingOperator() const
 bool ViewerGL::isFrameRangeLocked() const
 {
     return _imp->viewerTab->isFrameRangeLocked();
+}
+
+void ViewerGL::getTextureColorAt(int x,int y,double* r,double *g,double *b,double *a)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    makeCurrent();
+    
+    *r = 0;
+    *g = 0;
+    *b = 0;
+    *a = 0;
+    
+    Texture::DataType type;
+    if (_imp->displayTextures[0]) {
+        type = _imp->displayTextures[0]->type();
+    } else if (_imp->displayTextures[1]) {
+        type = _imp->displayTextures[1]->type();
+    } else {
+        return;
+    }
+    
+    QPointF pos;
+    {
+        QMutexLocker k(&_imp->zoomCtxMutex);
+        pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
+    }
+    
+    
+    if (type == Texture::BYTE || !_imp->supportsGLSL){
+        U32 pixel;
+        glReadBuffer(GL_FRONT);
+        glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
+        U8 red = 0, green = 0, blue = 0, alpha = 0;
+        blue |= pixel;
+        green |= (pixel >> 8);
+        red |= (pixel >> 16);
+        alpha |= (pixel >> 24);
+        *r = (double)red / 255.;
+        *g = (double)green / 255.;
+        *b = (double)blue / 255.;
+        *a = (double)alpha / 255.;
+        glCheckError();
+    } else if(type == Texture::FLOAT && _imp->supportsGLSL) {
+        GLfloat pixel[4];
+        glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
+        *r = (double)pixel[0];
+        *g = (double)pixel[1];
+        *b = (double)pixel[2];
+        *a = (double)pixel[3];
+        glCheckError();
+    }
 }
