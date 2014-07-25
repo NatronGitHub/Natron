@@ -41,7 +41,7 @@ void MoveMultipleNodesCommand::move(double dx,double dy)
 {
     for (std::list<NodeToMove>::iterator it = _nodes.begin();it!=_nodes.end();++it) {
         QPointF pos = it->node->getPos_mt_safe();
-        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD);
+        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD || _nodes.size() > 1);
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin();it!=_bds.end();++it) {
         QPointF pos = (*it)->getPos_mt_safe();

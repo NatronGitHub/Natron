@@ -31,4 +31,5 @@ void NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui>& n)
     _r = color.redF();
     _g = color.greenF();
     _b = color.blueF();
+    _selected = n->isSelected();
 }

@@ -1106,6 +1106,8 @@ public:
     
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level);
     
+    virtual bool isProject() const { return false; }
+    
 protected:
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).

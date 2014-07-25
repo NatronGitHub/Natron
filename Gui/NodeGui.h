@@ -22,6 +22,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QGraphicsItem>
 #include <QGradient>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -184,10 +185,11 @@ public:
     
         
        
-    /*toggles selected on/off*/
+    /* @brief toggles selected on/off. MT-Safe*/
     void setSelected(bool b);
     
-    bool isSelected(){return _selected;}
+    /* @brief Is the node selected ? MT-Safe */
+    bool isSelected() ;
     
     /*Returns a pointer to the first available input. Otherwise returns NULL*/
     Edge* firstAvailableEdge();
@@ -377,6 +379,7 @@ private:
     
     /*true if the node is selected by the user*/
     bool _selected;
+    mutable QMutex _selectedMutex;
 
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;

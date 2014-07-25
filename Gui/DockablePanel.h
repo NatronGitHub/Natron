@@ -122,6 +122,9 @@ public:
     void setCurrentColor(const QColor& c);
     
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const { return boost::shared_ptr<MultiInstancePanel>(); }
+    
+    KnobHolder* getHolder() const;
+    
 public slots:
     
     /*Internal slot, not meant to be called externally.*/

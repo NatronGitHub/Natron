@@ -223,6 +223,9 @@ public:
      * @brief Remove all the autosave files from the disk.
      **/
     static void removeAutoSaves();
+    
+    virtual bool isProject() const { return true; }
+    
 public slots:
 
     void onAutoSaveTimerTriggered();

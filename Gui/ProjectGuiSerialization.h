@@ -31,7 +31,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED
+#define PROJECT_GUI_INTRODUCES_PANELS 4
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_PANELS
 
 class ProjectGui;
 
@@ -127,6 +128,8 @@ class ProjectGuiSerialization {
     
     std::list<NodeBackDropSerialization> _backdrops;
     
+    std::list<std::string> _openedPanelsOrdered;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
@@ -143,6 +146,9 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("Histograms",_histograms);
         if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS) {
             ar & boost::serialization::make_nvp("Backdrops",_backdrops);
+        }
+        if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
+            ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
         }
     }
     
@@ -165,6 +171,8 @@ public:
     const std::list<std::string>& getHistograms() const { return _histograms; }
     
     const std::list<NodeBackDropSerialization>& getBackdrops() const { return _backdrops; }
+    
+    const std::list<std::string>& getOpenedPanels() const { return _openedPanelsOrdered; }
     
 private:
     

@@ -765,7 +765,10 @@ void NodeGui::refreshCurrentBrush()
 }
 
 void NodeGui::setSelected(bool b){
-    _selected = b;
+    {
+        QMutexLocker l(&_selectedMutex);
+        _selected = b;
+    }
     refreshCurrentBrush();
     update();
     if(_settingsPanel){
@@ -776,6 +779,8 @@ void NodeGui::setSelected(bool b){
         }
     }
 }
+
+bool NodeGui::isSelected() { QMutexLocker l(&_selectedMutex); return _selected; }
 
 void NodeGui::setSelectedGradient(const QLinearGradient& gradient){
     *_selectedGradient = gradient;

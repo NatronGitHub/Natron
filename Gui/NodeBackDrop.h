@@ -56,6 +56,8 @@ public:
     void resize(int w,int h);
     void getSize(int& w,int& h) const;
     
+    double getHeaderHeight() const;
+    
     bool isNearbyHeader(const QPointF& scenePos);
     bool isNearbyResizeHandle(const QPointF& scenePos);
     
@@ -74,6 +76,9 @@ public:
     
     void deactivate();
     void activate();
+    
+    ///MT-Safe
+    bool getIsSelected() const;
     
 signals:
     

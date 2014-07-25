@@ -116,6 +116,7 @@ namespace
         MOVING_AREA,
         ARROW_DRAGGING,
         NODE_DRAGGING,
+        BACKDROP_DRAGGING,
         BACKDROP_RESIZING,
         SELECTION_RECT,
     };
@@ -739,12 +740,16 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     if (selected) {
         didSomething = true;
         if (event->button() == Qt::LeftButton) {
-            selectNode(selected,event->modifiers().testFlag(Qt::ControlModifier));
+            if (!selected->isSelected()) {
+                selectNode(selected,event->modifiers().testFlag(Qt::ControlModifier));
+            }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();
         }
         else if (event->button() == Qt::RightButton) {
-            selectNode(selected,true); ///< don't wipe the selection
+            if (!selected->isSelected()) {
+                selectNode(selected,true); ///< don't wipe the selection
+            }
         }
     } else if (selectedEdge) {
         _imp->_arrowSelected = selectedEdge;
@@ -759,16 +764,20 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 newSelectedBd = *it;
-                selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
+                if (!(*it)->isSelected()) {
+                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
+                }
                 if (event->button() == Qt::LeftButton) {
-                    _imp->_evtState = NODE_DRAGGING;
+                    _imp->_evtState = BACKDROP_DRAGGING;
                 }
                 break;
             } else if ((*it)->isNearbyResizeHandle(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 newSelectedBd = *it;
                 _imp->_backdropResized = *it;
-                selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
+                if (!(*it)->isSelected()) {
+                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
+                }
                 if (event->button() == Qt::LeftButton) {
                     _imp->_evtState = BACKDROP_RESIZING;
                 }
@@ -998,7 +1007,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 _imp->_arrowSelected->dragSource(np);
             }
         } break;
-        case NODE_DRAGGING: {
+        case NODE_DRAGGING:
+        case BACKDROP_DRAGGING: {
             
             if (!_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty()) {
                 _imp->_undoStack->setActive();
@@ -1012,25 +1022,28 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 }
                 //= _imp->_selection.nodes;
 
-                ///For all backdrops also move all the nodes contained within it
-                for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
-                    std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
-                    for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2!=nodesWithinBD.end(); ++it2) {
-                        ///add it only if it's not already in the list
-                        bool found = false;
-                        for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
-                             it3!=nodesToMove.end(); ++it3) {
-                            if (it3->node == *it2) {
-                                found = true;
-                                break;
+                if ((_imp->_evtState == BACKDROP_DRAGGING && !event->modifiers().testFlag(Qt::ControlModifier)) ||
+                    _imp->_evtState == NODE_DRAGGING) {
+                    ///For all backdrops also move all the nodes contained within it
+                    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
+                        std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
+                        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2!=nodesWithinBD.end(); ++it2) {
+                            ///add it only if it's not already in the list
+                            bool found = false;
+                            for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
+                                 it3!=nodesToMove.end(); ++it3) {
+                                if (it3->node == *it2) {
+                                    found = true;
+                                    break;
+                                }
                             }
-                        }
-                        if (!found) {
-                            MoveMultipleNodesCommand::NodeToMove n;
-                            n.node = *it2;
-                            n.isWithinBD = true;
-                            nodesToMove.push_back(n);
-
+                            if (!found) {
+                                MoveMultipleNodesCommand::NodeToMove n;
+                                n.node = *it2;
+                                n.isWithinBD = true;
+                                nodesToMove.push_back(n);
+                                
+                            }
                         }
                     }
                 }
@@ -2622,12 +2635,14 @@ NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requeste
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it!=_imp->_selection.nodes.end(); ++it) {
-                QRectF nodeBbox = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
-                bbox.unite(nodeBbox);
+                QRectF nodeBbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+                bbox = bbox.united(nodeBbox);
             }
             
-            bd->setPos(bbox.x() - bbox.width() / 2., bbox.y() - bbox.height() * 2);
-            bd->resize(bbox.width() * 2, bbox.height() * 4);
+            int border = 100;
+            int headerHeight = bd->getHeaderHeight();
+            bd->setPos(bbox.x() - border, bbox.y() - border);
+            bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
         } else {
             QRectF viewPos = visibleRect();
             QPointF mapped = bd->mapFromScene(QPointF((viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.,

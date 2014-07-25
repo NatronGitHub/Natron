@@ -9,7 +9,7 @@
 #include "Gui/NodeBackDrop.h"
 
 NodeBackDropSerialization::NodeBackDropSerialization()
-: posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0)
+: posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0),selected(false)
 {
 }
 
@@ -31,4 +31,5 @@ void NodeBackDropSerialization::initialize(const NodeBackDrop* n)
     if (master) {
         masterBackdropName = master->getName_mt_safe();
     }
+    selected = n->getIsSelected();
 }

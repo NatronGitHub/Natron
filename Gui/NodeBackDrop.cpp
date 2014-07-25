@@ -55,6 +55,7 @@ struct NodeBackDropPrivate
     mutable QMutex positionMutex;
     mutable QMutex bboxMutex;
     
+    mutable QMutex selectedMutex;
     bool isSelected;
     
     NodeBackDropPrivate(NodeBackDrop* publicInterface,NodeGraph* dag)
@@ -71,6 +72,7 @@ struct NodeBackDropPrivate
     , settingsPanel(0)
     , knobLabel()
     , positionMutex()
+    , selectedMutex()
     , isSelected(false)
     {
         
@@ -284,6 +286,13 @@ void NodeBackDrop::setSettingsPanelClosed(bool closed)
     _imp->settingsPanel->setClosed(closed);
 }
 
+double NodeBackDrop::getHeaderHeight() const
+{
+    QRectF textBbox = _imp->name->boundingRect();
+    int minH = (textBbox.height() * 1.5) + 20;
+    return textBbox.height() < minH ? textBbox.height() : minH;
+}
+
 void NodeBackDrop::resize(int w,int h)
 {
     QMutexLocker l(&_imp->bboxMutex);
@@ -377,9 +386,18 @@ bool NodeBackDrop::isNearbyResizeHandle(const QPointF& scenePos)
     return resizePoly.containsPoint(p,Qt::OddEvenFill);
 }
 
+bool NodeBackDrop::getIsSelected() const
+{
+    QMutexLocker l(&_imp->selectedMutex);
+    return _imp->isSelected;
+}
+
 void NodeBackDrop::setSelected(bool selected)
 {
-    _imp->isSelected = selected;
+    {
+        QMutexLocker l(&_imp->selectedMutex);
+        _imp->isSelected = selected;
+    }
     _imp->setColorInternal(_imp->settingsPanel->getCurrentColor());
 }
 

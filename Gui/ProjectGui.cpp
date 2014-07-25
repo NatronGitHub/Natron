@@ -282,6 +282,55 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
  
     const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
+    
+    ///now restore the backdrops
+    const std::list<NodeBackDropSerialization>& backdrops = obj.getBackdrops();
+    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+        NodeBackDrop* bd = _gui->createBackDrop(true);
+        QPointF pos;
+        it->getPos(pos.rx(), pos.ry());
+        bd->setPos_mt_safe(pos);
+        
+        int w,h;
+        it->getSize(w, h);
+        bd->resize(w, h);
+        float r,g,b;
+        it->getColor(r, g, b);
+        QColor color;
+        color.setRgbF(r, g, b);
+        bd->setCurrentColor(color);
+        bd->setName(it->getName().c_str());
+        bd->getLabelKnob()->clone(it->getLabelSerialization());
+        bd->refreshTextLabelFromKnob();
+        
+        if (it->isSelected()) {
+            _gui->getNodeGraph()->selectBackDrop(bd, true);
+        }
+    }
+    
+    ///now restore backdrops slave/master links
+    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
+    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it!=newBDs.end(); ++it) {
+        ///find its serialization
+        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
+            if (it2->getName() == (*it)->getName_mt_safe()) {
+                
+                std::string masterName = it2->getMasterBackdropName();
+                if (!masterName.empty()) {
+                    ///search the master backdrop by name
+                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3!=newBDs.end(); ++it3) {
+                        if ((*it3)->getName_mt_safe() == masterName) {
+                            (*it)->slaveTo(*it3);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    
     ///default color for nodes
     float defR,defG,defB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -293,7 +342,6 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
             continue;
         }
         nGui->setPos(it->getX(),it->getY());
-        _gui->deselectAllNodes();
         
         if ((it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
            (!it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())) {
@@ -370,6 +418,10 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
             }
         }
         
+        if (it->isSelected()) {
+            _gui->getNodeGraph()->selectNode(nGui, true);
+        }
+        
     }
     
     
@@ -422,45 +474,23 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         
     }
     
-    ///now restore the backdrops
-    const std::list<NodeBackDropSerialization>& backdrops = obj.getBackdrops();
-    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDrop* bd = _gui->createBackDrop(true);
-        QPointF pos;
-        it->getPos(pos.rx(), pos.ry());
-        bd->setPos_mt_safe(pos);
-        
-        int w,h;
-        it->getSize(w, h);
-        bd->resize(w, h);
-        float r,g,b;
-        it->getColor(r, g, b);
-        QColor color;
-        color.setRgbF(r, g, b);
-        bd->setCurrentColor(color);
-        bd->setName(it->getName().c_str());
-        bd->getLabelKnob()->clone(it->getLabelSerialization());
-        bd->refreshTextLabelFromKnob();
-    }
+
     
-    ///now restore backdrops slave/master links
-    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
-    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it!=newBDs.end(); ++it) {
-        ///find its serialization
-        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
-            if (it2->getName() == (*it)->getName_mt_safe()) {
-                
-                std::string masterName = it2->getMasterBackdropName();
-                if (!masterName.empty()) {
-                    ///search the master backdrop by name
-                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3!=newBDs.end(); ++it3) {
-                        if ((*it3)->getName_mt_safe() == masterName) {
-                            (*it)->slaveTo(*it3);
-                            break;
-                        }
+    ///now restore opened settings panels
+    const std::list<std::string>& openedPanels = obj.getOpenedPanels();
+    //reverse the iterator to fill the layout bottom up
+    for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it!=openedPanels.rend(); ++it) {
+        if (*it == "Natron_Project_Settings_Panel") {
+            _gui->setVisibleProjectSettingsPanel();
+        } else {
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin(); it2 != nodesGui.end();++it2) {
+                if ((*it2)->getNode()->getName() == *it) {
+                    NodeSettingsPanel* panel = (*it2)->getSettingPanel();
+                    if (panel) {
+                        (*it2)->setVisibleSettingsPanel(true);
+                        _gui->putSettingsPanelFirst(panel);
                     }
                 }
-                break;
             }
         }
     }

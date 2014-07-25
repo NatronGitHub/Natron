@@ -20,6 +20,7 @@
 #include <QUndoCommand>
 #include <QDebug>
 #include <QToolTip>
+#include <QMutex>
 #include <QColorDialog>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -125,7 +126,8 @@ struct DockablePanelPrivate
     
     DockablePanel::HeaderMode _mode;
     
-    bool _isClosed;
+    mutable QMutex _isClosedMutex;
+    bool _isClosed; //< accessed by serialization thread too
     
     DockablePanelPrivate(DockablePanel* publicI
                          ,Gui* gui
@@ -162,6 +164,7 @@ struct DockablePanelPrivate
     ,_defaultPageName(defaultPageName)
     ,_useScrollAreasForTabs(useScrollAreasForTabs)
     ,_mode(headerMode)
+    ,_isClosedMutex()
     ,_isClosed(false)
     {
         
@@ -411,6 +414,11 @@ DockablePanel::~DockablePanel(){
             delete it->second;
         }
     }
+}
+
+KnobHolder* DockablePanel::getHolder() const
+{
+    return _imp->_holder;
 }
 
 DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
@@ -945,7 +953,10 @@ void DockablePanel::setClosed(bool c)
         floatPanel();
     }
     setVisible(!c);
-    _imp->_isClosed = c;
+    {
+        QMutexLocker l(&_imp->_isClosedMutex);
+        _imp->_isClosed = c;
+    }
     emit closeChanged(c);
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
@@ -969,7 +980,10 @@ void DockablePanel::closePanel() {
         floatPanel();
     }
     close();
-    _imp->_isClosed = true;
+    {
+        QMutexLocker l(&_imp->_isClosedMutex);
+        _imp->_isClosed = true;
+    }
     emit closeChanged(true);
     _imp->_gui->removeVisibleDockablePanel(this);
     
@@ -1084,7 +1098,7 @@ QVBoxLayout* DockablePanel::getContainer() const {return _imp->_container;}
 
 QUndoStack* DockablePanel::getUndoStack() const { return _imp->_undoStack; }
 
-bool DockablePanel::isClosed() const { return _imp->_isClosed; }
+bool DockablePanel::isClosed() const { QMutexLocker l(&_imp->_isClosedMutex); return _imp->_isClosed; }
 
 bool DockablePanel::isFloating() const { return _imp->_floating; }
 

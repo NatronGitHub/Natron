@@ -23,7 +23,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 #include "Engine/KnobSerialization.h"
 
-#define NODE_BACKDROP_SERIALIZATION_VERSION 1
+#define NODE_BACKDROP_INTRODUCES_SELECTED 2
+#define NODE_BACKDROP_SERIALIZATION_VERSION NODE_BACKDROP_INTRODUCES_SELECTED
 
 class NodeBackDrop;
 
@@ -45,6 +46,8 @@ public:
     boost::shared_ptr<KnobI> getLabelSerialization() const { return label->getKnob(); }
 
     void getColor(float& red,float &green,float& blue) const { red = r; green = g; blue = b; }
+    
+    bool isSelected() const { return selected; }
 private:
     
     double posX;
@@ -54,6 +57,7 @@ private:
     boost::shared_ptr<KnobSerialization> label;
     float r,g,b;
     std::string masterBackdropName;
+    bool selected;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -70,10 +74,11 @@ private:
         ar & boost::serialization::make_nvp("r",r);
         ar & boost::serialization::make_nvp("g",g);
         ar & boost::serialization::make_nvp("b",b);
+        ar & boost::serialization::make_nvp("Selected",selected);
     }
     
     template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
+    void load(Archive & ar, const unsigned int version)
     {
         
         ar & boost::serialization::make_nvp("X_position",posX);
@@ -87,6 +92,9 @@ private:
         ar & boost::serialization::make_nvp("r",r);
         ar & boost::serialization::make_nvp("g",g);
         ar & boost::serialization::make_nvp("b",b);
+        if (version >= NODE_BACKDROP_INTRODUCES_SELECTED) {
+            ar & boost::serialization::make_nvp("Selected",selected);
+        }
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()

@@ -15,6 +15,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QSplitter>
+#include <QVBoxLayout>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -32,6 +33,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
+#include "Gui/DockablePanel.h"
 
 void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) { 
      std::list<boost::shared_ptr<NodeGui> > activeNodes = projectGui->getVisibleNodes();
@@ -129,7 +131,23 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
         s.initialize(*it);
         _backdrops.push_back(s);
     }
-     
+    
+    ///save opened panels by order
+    QVBoxLayout* propLayout = projectGui->getGui()->getPropertiesLayout();
+    for (int i = 0; i < propLayout->count(); ++i) {
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(propLayout->itemAt(i)->widget());
+        if (isPanel) {
+            KnobHolder* holder = isPanel->getHolder();
+            assert(holder);
+            NamedKnobHolder* namedHolder = dynamic_cast<NamedKnobHolder*>(holder);
+            if (namedHolder) {
+                _openedPanelsOrdered.push_back(namedHolder->getName_mt_safe());
+            } else if (holder->isProject()) {
+                _openedPanelsOrdered.push_back("Natron_Project_Settings_Panel");
+            }
+        }
+    }
+    
 }
 
 void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::iterator it){
