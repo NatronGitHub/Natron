@@ -1423,10 +1423,11 @@ RemoveItemsUndoCommand::~RemoveItemsUndoCommand()
 void RemoveItemsUndoCommand::undo()
 {
     for (std::list<RemovedItem>::iterator it = _items.begin(); it!= _items.end(); ++it) {
-        _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->item,RotoContext::SETTINGS_PANEL);
         if (it->parentTreeItem) {
             it->parentTreeItem->addChild(it->treeItem);
         }
+        _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->item,RotoContext::SETTINGS_PANEL);
+
         it->treeItem->setHidden(false);
     }
     _roto->getContext()->evaluateChange();

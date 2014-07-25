@@ -239,6 +239,8 @@ struct RotoPanelPrivate
     void setItemKey(RotoItem* item,int time);
     
     void removeItemKey(RotoItem* item,int time);
+    
+    void insertItemInternal(int reason,int time,const boost::shared_ptr<RotoItem>& item);
 };
 
 RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
@@ -771,28 +773,46 @@ void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
 void RotoPanel::onItemInserted(int reason)
 {
     boost::shared_ptr<RotoItem> lastInsertedItem = _imp->context->getLastInsertedItem();
+    int time = _imp->context->getTimelineCurrentTime();
+    _imp->insertItemInternal(reason,time, lastInsertedItem);
+    
+}
 
-    Bezier* isBezier = dynamic_cast<Bezier*>(lastInsertedItem.get());
+void RotoPanelPrivate::insertItemInternal(int reason,int time,const boost::shared_ptr<RotoItem>& item)
+{
+    Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
     if (isBezier) {
-        ItemKeys::iterator it = _imp->keyframes.find(isBezier);
-        if (it == _imp->keyframes.end()) {
+        ItemKeys::iterator it = keyframes.find(isBezier);
+        if (it == keyframes.end()) {
             std::set<int> keys;
             isBezier->getKeyframeTimes(&keys);
-            _imp->keyframes.insert(std::make_pair(isBezier, keys));
+            keyframes.insert(std::make_pair(isBezier, keys));
             std::list<SequenceTime> markers;
             for (std::set<int>::iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
                 markers.push_back(*it2);
             }
-            _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers);
+            node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers);
             
         }
     }
     if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
+        TreeItems::iterator found = findItem(item.get());
+        if (found != items.end()) {
+            RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
+            ComboBox* cb = new ComboBox;
+            QObject::connect(cb,SIGNAL(currentIndexChanged(int)),publicInterface,SLOT(onCurrentItemCompOperatorChanged(int)));
+            std::vector<std::string> compositingOperators,tooltips;
+            getCompositingOperators(&compositingOperators, &tooltips);
+            for (U32 i = 0; i < compositingOperators.size(); ++i) {
+                cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+            }
+            cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
+            tree->setItemWidget(found->treeItem, COL_OPERATOR, cb);
+        }
         return;
     }
-    int time = _imp->context->getTimelineCurrentTime();
-    assert(lastInsertedItem);
-    _imp->insertItemRecursively(time, lastInsertedItem);
+    assert(item);
+    insertItemRecursively(time, item);
 }
 
 void RotoPanel::onItemRemoved(RotoItem* item,int reason)

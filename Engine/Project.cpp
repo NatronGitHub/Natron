@@ -539,7 +539,7 @@ void Project::initializeKnobs(){
     page->addKnob(_imp->mainView);
     
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
-    _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
+    _imp->previewMode->setHintToolTip("When checked, preview images on the node graph will be "
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->setAnimationEnabled(false);
