@@ -925,13 +925,13 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 if (drawable) {
                     QColorDialog dialog;
                     _imp->dialogEdition = EDITING_OVERLAY_COLOR;
-                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
                     double oc[4];
                     drawable->getOverlayColor(oc);
                     QColor color;
                     color.setRgbF(oc[0], oc[1], oc[2]);
                     color.setAlphaF(oc[3]);
                     dialog.setCurrentColor(color);
+                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
                     if (dialog.exec()) {
                         color = dialog.selectedColor();
                         oc[0] = color.redF();
@@ -964,11 +964,11 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 if (drawable) {
                     QColorDialog dialog;
                     _imp->dialogEdition = EDITING_SHAPE_COLOR;
-                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
                     drawable->getColor(time,shapeColor);
                     QColor color;
                     color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
                     dialog.setCurrentColor(color);
+                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
                     if (dialog.exec()) {
                         color = dialog.selectedColor();
                         shapeColor[0] = color.redF();
@@ -1037,7 +1037,6 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
 
 void RotoPanel::onItemColorDialogEdited(const QColor& color)
 {
-    int time = _imp->context->getTimelineCurrentTime();
     QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {
         TreeItems::iterator found = _imp->findItem(selected[i]);
@@ -1058,9 +1057,9 @@ void RotoPanel::onItemColorDialogEdited(const QColor& color)
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
                 
-                _imp->context->getColorKnob()->setValue(time, colorArray[0], 0);
-                _imp->context->getColorKnob()->setValue(time, colorArray[1], 1);
-                _imp->context->getColorKnob()->setValue(time, colorArray[2], 2);
+                _imp->context->getColorKnob()->setValue(colorArray[0], 0);
+                _imp->context->getColorKnob()->setValue(colorArray[1], 1);
+                _imp->context->getColorKnob()->setValue(colorArray[2], 2);
                 
             } else if (_imp->dialogEdition == EDITING_OVERLAY_COLOR) {
                 double colorArray[4];
