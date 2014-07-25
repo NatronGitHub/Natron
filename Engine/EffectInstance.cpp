@@ -398,6 +398,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     
     bool isMask = isInputMask(inputNb);
     
+    
     if (isMask && !isMaskEnabled(inputNb)) {
         ///This is last resort, the plug-in should've checked getConnected() before which would have returned false.
         return boost::shared_ptr<Natron::Image>();
@@ -504,12 +505,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     }
     
     
+    ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
+    ///return a null image
+    SequenceTime inputTimeIdentity = 0.;
+    int inputNbIdentity;
+    bool identity = isIdentity_public(time,scale,roi,view,&inputTimeIdentity,&inputNbIdentity);
+    if (identity && inputNbIdentity != inputNb) {
+        return boost::shared_ptr<Image>();
+    }
+    
     ///Both the result of getRegionOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates (FIXME: take the par into account)/
     if (mipMapLevel != 0) {
         roi = roi.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
-    
     
     int channelForAlpha = !isMask ? 3 : getMaskChannel(inputNb);
     
@@ -536,8 +545,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     QThreadPool::globalInstance()->reserveThread();
     U64 inputNodeHash;
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
-                RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
-                              byPassCache, NULL,comp,depth,channelForAlpha),&inputNodeHash);
+                                                                    RenderRoIArgs(time,
+                                                                                  scale,
+                                                                                  mipMapLevel,
+                                                                                  view,
+                                                                                  roi,
+                                                                                  isSequentialRender,
+                                                                                  isRenderUserInteraction,
+                                                                                  byPassCache,
+                                                                                  NULL,
+                                                                                  comp,
+                                                                                  depth,
+                                                                                  channelForAlpha)
+                                                                    ,&inputNodeHash);
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
@@ -851,8 +871,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
-        
-        
+    
         if (identity) {
             
             ///The effect is an identity but it has no inputs

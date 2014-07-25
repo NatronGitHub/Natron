@@ -124,6 +124,20 @@ void BezierCP::setPositionAtTime(int time,double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
+    
     {
         KeyFrame k(time,x);
         k.setInterpolation(Natron::KEYFRAME_LINEAR);
@@ -149,6 +163,18 @@ void BezierCP::setLeftBezierStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     _imp->leftX = x;
     _imp->leftY = y;
 }
@@ -157,6 +183,18 @@ void BezierCP::setRightBezierStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     _imp->rightX = x;
     _imp->rightY = y;
 }
@@ -280,6 +318,18 @@ void BezierCP::setLeftBezierPointAtTime(int time,double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     {
         KeyFrame k(time,x);
         k.setInterpolation(Natron::KEYFRAME_LINEAR);
@@ -296,6 +346,18 @@ void BezierCP::setRightBezierPointAtTime(int time,double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     {
         KeyFrame k(time,x);
         k.setInterpolation(Natron::KEYFRAME_LINEAR);
@@ -501,6 +563,18 @@ bool BezierCP::cuspPoint(int time,bool autoKeying,bool rippleEdit)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return false;
+    }
     
     double x,y,leftX,leftY,rightX,rightY;
     getPositionAtTime(time, &x, &y);
@@ -535,6 +609,18 @@ bool BezierCP::smoothPoint(int time,bool autoKeying,bool rippleEdit)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return false;
+    }
     
     double x,y,leftX,leftY,rightX,rightY;
     getPositionAtTime(time, &x, &y);
