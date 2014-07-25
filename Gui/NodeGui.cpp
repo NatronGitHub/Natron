@@ -853,14 +853,33 @@ Edge* NodeGui::hasEdgeNearbyRect(const QRectF& rect)
     };
     
     QPointF intersection;
+    QPointF middleRect = rect.center();
+    Edge* closest = 0;
+    double closestSquareDist = 0;
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
         QLineF edgeLine = i->second->line();
         for (int j = 0; j < 4; ++j) {
             if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
-                return i->second;
+                if (!closest) {
+                    closest = i->second;
+                    closestSquareDist = (intersection.x() - middleRect.x()) * (intersection.x() - middleRect.x())
+                    + (intersection.y() - middleRect.y()) * (intersection.y() - middleRect.y());
+                } else {
+                    double dist = (intersection.x() - middleRect.x()) * (intersection.x() - middleRect.x())
+                    + (intersection.y() - middleRect.y()) * (intersection.y() - middleRect.y());
+                    if (dist < closestSquareDist) {
+                        closestSquareDist = dist;
+                        closest = i->second;
+                    }
+                }
+                break;
             }
         }
     }
+    if (closest) {
+        return closest;
+    }
+    
     if (_outputEdge) {
         QLineF edgeLine = _outputEdge->line();
         for (int j = 0; j < 4; ++j) {
