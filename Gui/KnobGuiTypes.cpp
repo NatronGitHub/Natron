@@ -790,9 +790,7 @@ void Choice_KnobGui::createWidget(QHBoxLayout* layout)
   
     _comboBox = new ComboBox(layout->parentWidget());
     onEntriesPopulated();
-    if (hasToolTip()) {
-        _comboBox->setToolTip(toolTip());
-    }
+    
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     
     ///set the copy/link actions in the right click menu
@@ -810,8 +808,8 @@ void Choice_KnobGui::onEntriesPopulated()
 {
     int activeIndex = _comboBox->activeIndex();
     _comboBox->clear();
-    _entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
-    const std::vector<std::string> &help =  boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntriesHelp();
+    _entries = _knob->getEntries();
+    const std::vector<std::string> &help =  _knob->getEntriesHelp();
     for (U32 i = 0; i < _entries.size(); ++i) {
         std::string helpStr = help.empty() ? "" : help[i];
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
@@ -819,6 +817,21 @@ void Choice_KnobGui::onEntriesPopulated()
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
+    
+    QString tt(getKnob()->getHintToolTip().c_str());
+    tt.append(QChar('\n'));
+    tt.append(QChar('\n'));
+    for (U32 i = 0; i < help.size(); ++i) {
+        tt.append(_entries[i].c_str());
+        tt.append(": ");
+        tt.append(help[i].c_str());
+        tt.append(QChar('\n'));
+    }
+    tt = Qt::convertFromPlainText(tt,Qt::WhiteSpaceNormal);
+    if (hasToolTip()) {
+        _comboBox->setToolTip(tt);
+    }
+
 }
 
 void Choice_KnobGui::updateGUI(int /*dimension*/)
