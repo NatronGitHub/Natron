@@ -183,6 +183,7 @@ struct GuiPrivate {
     QAction *actionExit;
     QAction *actionProject_settings;
     QAction *actionShowOfxLog;
+    QAction *actionNewViewer;
     QAction *actionFullScreen;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
@@ -347,6 +348,7 @@ struct GuiPrivate {
     , actionExit(0)
     , actionProject_settings(0)
     , actionShowOfxLog(0)
+    , actionNewViewer(0)
     , actionFullScreen(0)
     , actionClearDiskCache(0)
     , actionClearPlayBackCache(0)
@@ -624,6 +626,8 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     actionProject_settings->setText(QObject::tr("Project Settings..."));
     assert(actionShowOfxLog);
     actionShowOfxLog->setText(QObject::tr("Show OpenFX log"));
+    assert(actionNewViewer);
+    actionNewViewer->setText(QObject::tr("New Viewer"));
     assert(actionFullScreen);
     actionFullScreen->setText(QObject::tr("Toggle Full Screen"));
     assert(actionClearDiskCache);
@@ -765,6 +769,10 @@ void Gui::setupUi()
     _imp->actionProject_settings->setShortcut(QKeySequence(Qt::Key_S));
     _imp->actionShowOfxLog = new QAction(this);
     _imp->actionShowOfxLog->setObjectName(QString::fromUtf8("actionShowOfxLog"));
+    _imp->actionNewViewer = new QAction(this);
+    _imp->actionNewViewer->setObjectName(QString::fromUtf8("actionNewViewer"));
+    _imp->actionNewViewer->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_I));
+    _imp->actionNewViewer->setShortcutContext(Qt::WindowShortcut);
     _imp->actionFullScreen = new QAction(this);
     _imp->actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
     _imp->actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
@@ -1036,6 +1044,7 @@ void Gui::setupUi()
 
     _imp->menuOptions->addAction(_imp->actionProject_settings);
     _imp->menuOptions->addAction(_imp->actionShowOfxLog);
+    _imp->menuDisplay->addAction(_imp->actionNewViewer);
     _imp->menuDisplay->addAction(_imp->viewersMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewerInputsMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewersViewMenu->menuAction());
@@ -1066,6 +1075,7 @@ void Gui::setupUi()
     QObject::connect(_imp->renderAllWriters,SIGNAL(triggered()),this,SLOT(renderAllWriters()));
     QObject::connect(_imp->renderSelectedNode,SIGNAL(triggered()),this,SLOT(renderSelectedNode()));
     QObject::connect(_imp->actionShowAboutWindow,SIGNAL(triggered()),this,SLOT(showAbout()));
+    QObject::connect(_imp->actionNewViewer,SIGNAL(triggered()),this,SLOT(createNewViewer()));
     QObject::connect(_imp->actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(_imp->actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(_imp->actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
@@ -1759,6 +1769,11 @@ bool Gui::saveProjectAs(){
         return true;
     }
     return false;
+}
+
+void Gui::createNewViewer()
+{
+    (void)_imp->_appInstance->createNode(CreateNodeArgs("Viewer"));
 }
 
 boost::shared_ptr<Natron::Node> Gui::createReader(){

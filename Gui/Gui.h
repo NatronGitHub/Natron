@@ -347,6 +347,8 @@ public slots:
     bool saveProjectAs();
     void autoSave();
     
+    void createNewViewer();
+    
     void connectInput1();
     void connectInput2();
     void connectInput3();
