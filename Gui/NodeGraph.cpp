@@ -467,12 +467,15 @@ void NodeGraph::discardGuiPointer() { _imp->_gui = 0; }
 void NodeGraph::onProjectNodesCleared() {
     
     _imp->_selection.nodes.clear();
-    QMutexLocker l(&_imp->_nodesMutex);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
-        (*it)->deleteReferences();
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        while (!_imp->_nodes.empty()) {
+            deleteNodePermanantly(*_imp->_nodes.begin());
+        }
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
-        (*it)->deleteReferences();
+    
+    while (!_imp->_nodesTrash.empty()) {
+        deleteNodePermanantly(*(_imp->_nodesTrash.begin()));
     }
     _imp->_nodes.clear();
     _imp->_nodesTrash.clear();
@@ -2589,13 +2592,21 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
     if (it != _imp->_nodesTrash.end()) {
         _imp->_nodesTrash.erase(it);
     }
+    
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodes.begin(),_imp->_nodes.end(),n);
+        if (it != _imp->_nodes.end()) {
+            _imp->_nodes.erase(it);
+        }
+    }
+    
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
     assert(internalNode);
 
     if (getGui()) {
-        if (internalNode->hasEffect() && internalNode->isRotoNode()) {
-            getGui()->removeRotoInterface(n.get(),true);
-        }
+        getGui()->removeRotoInterface(n.get(),true);
+        
         ///now that we made the command dirty, delete the node everywhere in Natron
         getGui()->getApp()->deleteNode(n);
         

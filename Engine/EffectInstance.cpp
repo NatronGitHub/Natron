@@ -75,6 +75,9 @@ struct EffectInstance::RenderArgs {
     U64 _nodeHash;
     U64 _rotoAge;
     int _channelForAlpha;
+    bool _isIdentity;
+    SequenceTime _identityTime;
+    int _identityInputNb;
     
     RenderArgs()
     : _roi()
@@ -90,6 +93,9 @@ struct EffectInstance::RenderArgs {
     , _nodeHash(0)
     , _rotoAge(0)
     , _channelForAlpha(3)
+    , _isIdentity(false)
+    , _identityTime(0)
+    , _identityInputNb(-1)
     {}
 };
 
@@ -150,7 +156,10 @@ struct EffectInstance::Implementation {
                                   bool isSequential,
                                   bool byPassCache,
                                   U64 nodeHash,
-                                  U64 rotoAge)
+                                  U64 rotoAge,
+                                  bool isIdentity,
+                                  SequenceTime identityTime,
+                                  int inputNbIdentity)
         : args()
         , _dst(dst)
         {
@@ -168,6 +177,9 @@ struct EffectInstance::Implementation {
             args._nodeHash = nodeHash;
             args._rotoAge = rotoAge;
             args._channelForAlpha = 3;
+            args._isIdentity = isIdentity;
+            args._identityTime = identityTime;
+            args._identityInputNb = inputNbIdentity;
             args._validArgs = true;
             _dst->setLocalData(args);
         }
@@ -205,7 +217,10 @@ struct EffectInstance::Implementation {
                          bool bypassCache,
                          U64 nodeHash,
                          U64 rotoAge,
-                         int channelForAlpha)
+                         int channelForAlpha,
+                         bool isIdentity,
+                         SequenceTime identityTime,
+                         int inputNbIdentity)
         : args()
         , _dst(dst)
         {
@@ -222,6 +237,9 @@ struct EffectInstance::Implementation {
             args._nodeHash = nodeHash;
             args._rotoAge = rotoAge;
             args._channelForAlpha = channelForAlpha;
+            args._isIdentity = isIdentity;
+            args._identityTime = identityTime;
+            args._identityInputNb = inputNbIdentity;
             args._validArgs = true;
             _dst->setLocalData(args);
         }
@@ -431,6 +449,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     bool isSequentialRender,isRenderUserInteraction,byPassCache;
     unsigned int mipMapLevel;
     RoIMap inputsRoI;
+    bool isIdentity;
+    SequenceTime identityTime;
+    int inputNbIdentity;
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
     
@@ -484,7 +505,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
             ///// should never happen.
             inputsRoI = getRegionOfInterest(time, scale, optionalBoundsI, optionalBoundsI, 0);
         }
-
+        isIdentity = isIdentity_public(time,scale,optionalBoundsI,view,&identityTime,&inputNbIdentity);
         
     } else {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
@@ -492,6 +513,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         byPassCache = _imp->renderArgs.localData()._byPassCache;
         mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
         inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
+        isIdentity = _imp->renderArgs.localData()._isIdentity;
+        identityTime = _imp->renderArgs.localData()._identityTime;
+        inputNbIdentity = _imp->renderArgs.localData()._identityInputNb;
     }
     
     RectI roi;
@@ -507,10 +531,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     
     ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
     ///return a null image
-    SequenceTime inputTimeIdentity = 0.;
-    int inputNbIdentity;
-    bool identity = isIdentity_public(time,scale,roi,view,&inputTimeIdentity,&inputNbIdentity);
-    if (identity && inputNbIdentity != inputNb) {
+    if (isIdentity && inputNbIdentity != inputNb) {
         return boost::shared_ptr<Image>();
     }
     
@@ -899,7 +920,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                             byPassCache,
                                                             nodeHash,
                                                             0,
-                                                            args.channelForAlpha);
+                                                            args.channelForAlpha,
+                                                            identity,
+                                                            inputTimeIdentity,
+                                                            inputNbIdentity);
                 Natron::ImageComponents inputPrefComps;
                 Natron::ImageBitDepth inputPrefDepth;
                 Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
@@ -1029,7 +1053,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         byPassCache,
                                                         nodeHash,
                                                         0,
-                                                        args.channelForAlpha);
+                                                        args.channelForAlpha,
+                                                        true,
+                                                        inputTimeIdentity,
+                                                        inputNbIdentity);
             Natron::ImageComponents inputPrefComps;
             Natron::ImageBitDepth inputPrefDepth;
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
@@ -1280,7 +1307,10 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                                                     byPassCache,
                                                     nodeHash,
                                                     rotoAge,
-                                                    channelForAlpha );
+                                                    channelForAlpha,
+                                                    false, //< if we reached here the node is not an identity!
+                                                    0.,
+                                                    -1);
         const RenderArgs& args = scopedArgs.getArgs();
     
        
@@ -2349,6 +2379,10 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
                 rotoAge = roto->getAge();
             }
             
+            SequenceTime identityTime;
+            int identityNb;
+            bool isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);
+            
             ///These args remain valid on the thread storage 'til it gets out of scope
             Implementation::ScopedInstanceChangedArgs args(&_imp->renderArgs,
                                                            time,
@@ -2359,7 +2393,10 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
                                                            false,
                                                            false,
                                                            nodeHash,
-                                                           rotoAge);
+                                                           rotoAge,
+                                                           isIdentity,
+                                                           identityTime,
+                                                           identityNb);
             ///Recursive action, must not call assertActionIsNotRecursive()
             incrementRecursionLevel();
             knobChanged(k, reason,rod);

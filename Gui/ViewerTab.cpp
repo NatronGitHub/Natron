@@ -935,6 +935,9 @@ ViewerTab::~ViewerTab()
 			_imp->_gui->setLastSelectedViewer(NULL);
 		}
 	}
+    for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.begin(); it!=_imp->_rotoNodes.end(); ++it) {
+        delete it->second;
+    }
    
 }
 
