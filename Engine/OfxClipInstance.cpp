@@ -133,7 +133,7 @@ const std::string &OfxClipInstance::getFieldOrder() const
 bool OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
-    if (getName() == "Brush"  && _nodeInstance->getNode()->isRotoNode()) {
+    if (getName() == "Roto"  && _nodeInstance->getNode()->isRotoNode()) {
         return true;
     } else {
         if (_isOutput) {
@@ -207,7 +207,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     }
     
     
-    if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
+    if (getName() == "Roto" && _nodeInstance->getNode()->isRotoNode()) {
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
         assert(rotoCtx);
         RectI rod;
@@ -478,7 +478,7 @@ int OfxClipInstance::getInputNb() const{
 Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
 {
     assert(_nodeInstance);
-    if (getName() == "Brush" && _nodeInstance->getNode()->isRotoNode()) {
+    if (getName() == "Roto" && _nodeInstance->getNode()->isRotoNode()) {
         return _nodeInstance;
     }
     if(_isOutput) {

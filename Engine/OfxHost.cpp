@@ -277,18 +277,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
             context = kOfxImageEffectContextWriter;
             return;
         }
-        
-        ////Special case for the "Draw" nodes: default to paint context.
-        ////We don't want to do this for other nodes that support the paint context.
-        ////For example we don't want to instantiate the transform node in the paint context
-        ////Maybe we should just always instantiate in paint context and deal with it with
-        ////the GUI
-        found = contexts.find(kOfxImageEffectContextPaint);
-        bool paint = found != contexts.end();
-        if (paint && QString(pluginID.c_str()).contains("RotoOFX",Qt::CaseInsensitive)) {
-            context = kOfxImageEffectContextPaint;
-            return;
-        }
+     
         
         found = contexts.find(kOfxImageEffectContextGeneral);
         bool general = found != contexts.end();
@@ -296,11 +285,18 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
             context = kOfxImageEffectContextGeneral;
             return;
         }
-        
+                
         found = contexts.find(kOfxImageEffectContextFilter);
         bool filter = found != contexts.end();
         if (filter) {
             context = kOfxImageEffectContextFilter;
+            return;
+        }
+        
+        found = contexts.find(kOfxImageEffectContextPaint);
+        bool paint = found != contexts.end();
+        if (paint) {
+            context = kOfxImageEffectContextPaint;
             return;
         }
         

@@ -433,7 +433,7 @@ bool OfxEffectInstance::isInputRotoBrush(int inputNb) const
     assert(inputNb < (int)inputs.size());
     
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
-    return inputs[inputs.size()-1-inputNb]->getName() == "Brush" && getNode()->isRotoNode();
+    return inputs[inputs.size()-1-inputNb]->getName() == "Roto" && getNode()->isRotoNode();
 }
 
 /// the smallest RectI enclosing the given RectD
@@ -751,7 +751,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
                 ///Uncommented te clip->isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
                 ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
                 ///not taking optional inputs into accounts messes it up.
-                if (!clip->isOutput() && /*!clip->isOptional() &&*/ (clip->getName() != "Brush" || !getNode()->isRotoNode())) {
+                if (!clip->isOutput() && /*!clip->isOptional() &&*/ (clip->getName() != "Roto" || !getNode()->isRotoNode())) {
                     double f,l;
                     clip->getFrameRange(f, l);
                     if (!firstValidClip) {
