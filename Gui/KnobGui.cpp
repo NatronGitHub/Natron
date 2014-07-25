@@ -788,7 +788,8 @@ void KnobGui::show(int index){
         QLayoutItem* item = _imp->containerLayout->itemAt(_imp->row, QFormLayout::FieldRole);
         if ((item && item->widget() != _imp->field) || !item) {
             int indexToUse = index != -1 ? index : _imp->row;
-            _imp->containerLayout->insertRow(indexToUse, _imp->descriptionLabel, _imp->field);
+            _imp->containerLayout->setWidget(indexToUse, QFormLayout::LabelRole,_imp->descriptionLabel);
+            _imp->containerLayout->setWidget(indexToUse, QFormLayout::FieldRole, _imp->field);
         }
         _imp->field->setParent(_imp->containerLayout->parentWidget());
         _imp->field->show();
