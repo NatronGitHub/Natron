@@ -79,7 +79,10 @@ GuiAppInstance::~GuiAppInstance() {
     ///clear nodes prematurely so that any thread running is stopped
     ///process events before closing gui
     QCoreApplication::processEvents();
+
     getProject()->clearNodes(false);
+    
+    _imp->_nodeMapping.clear();
     QCoreApplication::processEvents();
 //#ifndef __NATRON_WIN32__
     _imp->_gui->getNodeGraph()->discardGuiPointer();
@@ -101,9 +104,6 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 
-    /// clear the nodes mapping (node<-->nodegui) when the project's node are cleared.
-    /// This should go away when we remove that mapping.
-    QObject::connect(getProject().get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
     
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
     const std::vector<PluginGroupNode*>& _toolButtons = appPTR->getPluginsToolButtons();
@@ -217,7 +217,7 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
 
         }
     }
-    if (!loadRequest && !isViewer) {
+    if (!loadRequest && !isViewer) { 
         triggerAutoSave();
     }
 
@@ -422,9 +422,12 @@ void GuiAppInstance::onProcessFinished() {
     }
 }
 
-void GuiAppInstance::onProjectNodesCleared() {
+void GuiAppInstance::clearNodeGuiMapping()
+{
     _imp->_nodeMapping.clear();
+
 }
+
 
 void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceName,
                                        int firstFrame,int lastFrame,

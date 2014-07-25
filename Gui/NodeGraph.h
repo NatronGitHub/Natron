@@ -129,6 +129,11 @@ public:
     
     void selectAllNodes(bool onlyInVisiblePortion);
     
+    /**
+     * @brief Calls setParentItem(NULL) on all items of the scene to avoid Qt to double delete the nodes.
+     **/
+    void invalidateAllNodesParenting();
+    
 public slots:
     
     void deleteSelection();

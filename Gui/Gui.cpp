@@ -456,6 +456,7 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
 
 Gui::~Gui()
 {
+    _imp->_nodeGraphArea->invalidateAllNodesParenting();
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
     _imp->_viewerTabs.clear();

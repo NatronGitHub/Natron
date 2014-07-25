@@ -114,10 +114,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     
 }
 
-NodeGui::~NodeGui(){
-    
-    ///make sure Qt doesn't try to delete it again
-    setParentItem(NULL);
+NodeGui::~NodeGui()
+{
     
     deleteReferences();
     

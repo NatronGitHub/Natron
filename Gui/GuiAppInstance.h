@@ -97,10 +97,9 @@ public:
     
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
 
+    virtual void clearNodeGuiMapping() OVERRIDE FINAL;
 public slots:
-    
-    void onProjectNodesCleared();
-    
+        
     void onProcessFinished();
     
 private:

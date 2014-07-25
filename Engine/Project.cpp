@@ -654,7 +654,7 @@ void Project::clearNodes(bool emitSignal) {
     }
 
     nodesToDelete.clear();
-    
+
     if (emitSignal) {
         emit nodesCleared();
     }

@@ -2603,6 +2603,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
     
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
     assert(internalNode);
+    n->deleteReferences();
 
     if (getGui()) {
         getGui()->removeRotoInterface(n.get(),true);
@@ -2612,7 +2613,6 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
         
         
         getGui()->getCurveEditor()->removeNode(n.get());
-        n->deleteReferences();
         std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n);
         if (found != _imp->_selection.nodes.end()) {
             n->setSelected(false);
@@ -2637,7 +2637,29 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
             break;
         }
     }
+}
 
+void
+NodeGraph::invalidateAllNodesParenting()
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+        (*it)->setParentItem(NULL);
+        if ((*it)->scene()) {
+            (*it)->scene()->removeItem(it->get());
+        }
+    }
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+        (*it)->setParentItem(NULL);
+        if ((*it)->scene()) {
+            (*it)->scene()->removeItem(it->get());
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it!=_imp->_backdrops.end(); ++it) {
+        (*it)->setParentItem(NULL);
+        if ((*it)->scene()) {
+            (*it)->scene()->removeItem(*it);
+        }
+    }
 }
 
 void

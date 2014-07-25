@@ -197,6 +197,11 @@ public:
     virtual void registerVideoEngineBeingAborted(VideoEngine* /*engine*/) {}
     virtual void unregisterVideoEngineBeingAborted(VideoEngine* /*engine*/) {}
     
+    /**
+     * @brief Clears any shared ptr to NodeGuis left
+     **/
+    virtual void clearNodeGuiMapping() {}
+    
 public slots:
     
     void quit();
