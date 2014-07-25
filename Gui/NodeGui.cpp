@@ -1274,6 +1274,7 @@ void NodeGui::onSlaveStateChanged(bool b) {
                 _boundingBox->setBrush(*_clonedGradient);
             }
         }
+        refreshSlaveMasterLinkPosition();
         
     } else {
         QObject::disconnect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));

@@ -497,15 +497,14 @@ void DockablePanel::onLineEditNameEditingFinished() {
             return;
         }
         
-        std::vector<boost::shared_ptr<Natron::Node> > allNodes = _imp->_holder->getApp()->getProject()->getCurrentNodes();
-        for (U32 i = 0;  i < allNodes.size(); ++i) {
-            if (allNodes[i]->getName() == newName) {
-                _imp->_nameLineEdit->blockSignals(true);
-                Natron::errorDialog(tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString());
-                _imp->_nameLineEdit->setText(effect->getName().c_str());
-                _imp->_nameLineEdit->blockSignals(false);
-                return;
-            }
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+        assert(nodePanel);
+        if (_imp->_gui->getNodeGraph()->checkIfNodeNameExists(newName, nodePanel->getNode().get())) {
+            _imp->_nameLineEdit->blockSignals(true);
+            Natron::errorDialog(tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString());
+            _imp->_nameLineEdit->setText(effect->getName().c_str());
+            _imp->_nameLineEdit->blockSignals(false);
+            return;
         }
     }
     emit nameChanged(_imp->_nameLineEdit->text());

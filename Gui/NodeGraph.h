@@ -110,6 +110,8 @@ public:
     ///Returns true if it already exists
     bool checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const;
     
+    bool checkIfNodeNameExists(const std::string& n,const NodeGui* node) const;
+    
     std::list<NodeBackDrop*> getBackDrops() const;
     std::list<NodeBackDrop*> getActiveBackDrops() const;
     

@@ -304,6 +304,13 @@ struct NodeGraphPrivate
     NodeBackDrop* pasteBackdrop(const NodeBackDropSerialization& serialization,
                                 const QPointF& offset);
     
+    /**
+     * @brief This is called once all nodes of a clipboard have been pasted to try to restore connections between them
+     * WARNING: The 2 lists must be ordered the same: each item in serializations corresponds to the same item in the newNodes
+     * list. We're not using 2 lists to avoid a copy from the paste function.
+     **/
+    void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> >& serializations,
+                            const std::list<boost::shared_ptr<NodeGui> >& newNodes);
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
     
@@ -536,9 +543,11 @@ boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,c
         _imp->_gui->registerNewUndoStack(nodeStack);
     }
     
-    ///before we add a new node, clear exceeding entries
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push(new AddMultipleNodesCommand(this,node_ui));
+    ///When loading don't add a undo/redo command
+    if (!requestedByLoad) {
+        _imp->_undoStack->setActive();
+        _imp->_undoStack->push(new AddMultipleNodesCommand(this,node_ui));
+    }
     _imp->_evtState = DEFAULT;
     return node_ui;
     
@@ -2165,14 +2174,20 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard& clipboard)
         std::list<boost::shared_ptr<NodeGui> > newNodes;
         std::list<NodeBackDrop*> newBds;
         
-        double xmax = 0;
+        double xmax = INT_MIN;
+        double xmin = INT_MAX;
         ///find out what is the right most X coordinate and offset relative to that coordinate
         for (std::list <boost::shared_ptr<NodeBackDropSerialization> >::const_iterator it = clipboard.bds.begin();
              it!=clipboard.bds.end(); ++it) {
             double x,y;
+            int w,h;
             (*it)->getPos(x, y);
-            if (x > xmax) {
-                xmax = x;
+            (*it)->getSize(w, h);
+            if ((x + w) > xmax) {
+                xmax = x + w;
+            }
+            if (x < xmin) {
+                xmin = x;
             }
         }
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
@@ -2181,24 +2196,39 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard& clipboard)
             if (x > xmax) {
                 xmax = x;
             }
+            if (x < xmin) {
+                xmin = x;
+            }
         }
+    
+        
+        ///offset of 100 pixels to be sure we copy on the right side of any node (true size of nodes isn't serializd unlike
+        ///the size of the backdrops)
+        xmax += 100;
+        
+        double offset = xmax - xmin;
         
         for (std::list <boost::shared_ptr<NodeBackDropSerialization> >::const_iterator it = clipboard.bds.begin();
              it!=clipboard.bds.end(); ++it) {
-            double x,y;
-            (*it)->getPos(x, y);
-            NodeBackDrop* bd = pasteBackdrop(**it,QPointF(xmax - x,0));
+            NodeBackDrop* bd = pasteBackdrop(**it,QPointF(offset,0));
             newBds.push_back(bd);
         }
+        
+      
         
         assert(clipboard.nodes.size() == clipboard.nodesUI.size());
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it!=clipboard.nodesUI.end(); ++it,++itOther) {
-            double x = (*it)->getX();
-            boost::shared_ptr<NodeGui> node = pasteNode(**itOther,**it,QPointF(xmax - x,0));
+            boost::shared_ptr<NodeGui> node = pasteNode(**itOther,**it,QPointF(offset,0));
             newNodes.push_back(node);
         }
+        assert(clipboard.nodes.size() == newNodes.size());
+        
+        ///Now that all nodes have been duplicated, try to restore nodes connections
+        restoreConnections(clipboard.nodes, newNodes);
+        
+        
         _undoStack->setActive();
         _undoStack->push(new AddMultipleNodesCommand(_publicInterface,newNodes,newBds));
     }
@@ -2215,6 +2245,24 @@ NodeGraphPrivate::pasteNode(const NodeSerialization& internalSerialization,
                                                internalSerialization.getPluginMajorVersion(),
                                                internalSerialization.getPluginMinorVersion(),&internalSerialization,false));
     assert(n);
+    boost::shared_ptr<NodeGui> gui = _gui->getApp()->getNodeGui(n);
+    assert(gui);
+    
+    std::stringstream ss;
+    ss << internalSerialization.getPluginLabel();
+    ss << (" - copy");
+    std::string bearName = ss.str();
+    int no = 0;
+    while (_publicInterface->checkIfNodeNameExists(ss.str(),gui.get())) {
+        ++no;
+        ss.str(std::string());
+        ss.clear();
+        ss << bearName;
+        ss << no;
+    }
+    
+    n->setName(ss.str().c_str());
+    
     const std::string& masterNodeName = internalSerialization.getMasterNodeName();
     if (masterNodeName.empty()) {
         std::vector<boost::shared_ptr<Natron::Node> > allNodes;
@@ -2232,14 +2280,39 @@ NodeGraphPrivate::pasteNode(const NodeSerialization& internalSerialization,
             n->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
         }
     }
-    boost::shared_ptr<NodeGui> gui = _gui->getApp()->getNodeGui(n);
-    assert(gui);
+   
     
     gui->copyFrom(guiSerialization);
-    QPointF newPos = gui->pos() + offset;//QPointF(NATRON_NODE_DUPLICATE_X_OFFSET,0);
+    QPointF newPos = gui->pos() + offset;
     gui->refreshPosition(newPos.x(), newPos.y());
     gui->forceComputePreview(_gui->getApp()->getProject()->currentFrame());
     return gui;
+}
+
+void
+NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> >& serializations,
+                        const std::list<boost::shared_ptr<NodeGui> >& newNodes)
+{
+    ///For all nodes restore its connections
+    std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = newNodes.begin();it!= newNodes.end();++it,++itSer) {
+        const std::vector<std::string>& inputNames = (*itSer)->getInputs();
+        
+        ///Restore each input
+        for (U32 i = 0; i < inputNames.size(); ++i) {
+            if (inputNames[i].empty()) {
+                continue;
+            }
+            ///find a node with the containing the same name. It should not match exactly because there's already
+            /// the "-copy" that was added to its name
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = newNodes.begin();it2!= newNodes.end();++it2) {
+                if ((*it2)->getNode()->getName().find(inputNames[i]) != std::string::npos) {
+                    _publicInterface->getGui()->getApp()->getProject()->connectNodes(i, (*it2)->getNode(), (*it)->getNode());
+                    break;
+                }
+            }
+        }
+    }
 }
 
 NodeBackDrop*
@@ -2296,7 +2369,8 @@ NodeGraph::cloneSelectedNodes()
         return;
     }
    
-    double xmax = 0;
+    double xmax = INT_MIN;
+    double xmin = INT_MAX;
     std::list<boost::shared_ptr<NodeGui> > nodesToCopy = _imp->_selection.nodes;
     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
         
@@ -2304,9 +2378,12 @@ NodeGraph::cloneSelectedNodes()
             Natron::errorDialog(tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString());
             return;
         }
-        QPointF pos = (*it)->getPos_mt_safe();
-        if (pos.x() > xmax) {
-            xmax = pos.x();
+        QRectF bbox = (*it)->boundingRect();
+        if ((bbox.x() + bbox.width()) > xmax) {
+            xmax = (bbox.x() + bbox.width());
+        }
+        if (bbox.x() < xmin) {
+            xmin = bbox.x();
         }
 
         ///Also copy all nodes within the backdrop
@@ -2320,9 +2397,12 @@ NodeGraph::cloneSelectedNodes()
     }
     
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it!=nodesToCopy.end();++it) {
-        QPointF pos = (*it)->getPos_mt_safe();
-        if (pos.x() > xmax) {
-            xmax = pos.x();
+        QRectF bbox = (*it)->boundingRect();
+        if ((bbox.x() + bbox.width()) > xmax) {
+            xmax = bbox.x() + bbox.width();
+        }
+        if (bbox.x() < xmin) {
+            xmin = bbox.x();
         }
         if ((*it)->getNode()->getLiveInstance()->isSlave()) {
             Natron::errorDialog(tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString());
@@ -2340,25 +2420,38 @@ NodeGraph::cloneSelectedNodes()
         }
     }
     
+    ///Offset of some pixels to clone on the right of the original nodes
+    xmax += 30;
+    
+    double offset = xmax - xmin;
+    
     std::list<boost::shared_ptr<NodeGui> > newNodes;
     std::list<NodeBackDrop*> newBackdrops;
     
+    std::list <boost::shared_ptr<NodeSerialization> > serializations;
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it!=nodesToCopy.end();++it) {
-        NodeSerialization internalSerialization((*it)->getNode());
+        boost::shared_ptr<NodeSerialization>  internalSerialization(new NodeSerialization((*it)->getNode()));
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
-        boost::shared_ptr<NodeGui> clone = _imp->pasteNode(internalSerialization, guiSerialization, QPointF(xmax,0));
+        boost::shared_ptr<NodeGui> clone = _imp->pasteNode(*internalSerialization, guiSerialization, QPointF(offset,0));
         clone->getNode()->getLiveInstance()->slaveAllKnobs((*it)->getNode()->getLiveInstance());
         newNodes.push_back(clone);
+        serializations.push_back(internalSerialization);
     }
     
     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
         NodeBackDropSerialization s;
         s.initialize(*it);
-        NodeBackDrop* bd = _imp->pasteBackdrop(s,QPointF(xmax,0));
+        NodeBackDrop* bd = _imp->pasteBackdrop(s,QPointF(offset,0));
         bd->slaveTo(*it);
         newBackdrops.push_back(bd);
     }
+    
+    assert(serializations.size() == newNodes.size());
+    ///restore connections
+    _imp->restoreConnections(serializations, newNodes);
+    
+    
     _imp->_undoStack->setActive();
     _imp->_undoStack->push(new AddMultipleNodesCommand(this,newNodes,newBackdrops));
     
@@ -2553,6 +2646,18 @@ NodeGraph::checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) co
 {
     for (std::list<NodeBackDrop*>::const_iterator it = _imp->_backdrops.begin(); it!=_imp->_backdrops.end(); ++it) {
         if ((*it)->getName() == n && (*it) != bd) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+NodeGraph::checkIfNodeNameExists(const std::string& n,const NodeGui* node) const
+{
+    
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+        if (it->get() != node && (*it)->getNode()->getName() == n) {
             return true;
         }
     }
