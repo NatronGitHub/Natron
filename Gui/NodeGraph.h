@@ -127,6 +127,7 @@ public:
         
     std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
     
+    void selectAllNodes(bool onlyInVisiblePortion);
     
 public slots:
     

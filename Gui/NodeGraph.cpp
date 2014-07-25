@@ -315,6 +315,8 @@ struct NodeGraphPrivate
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
     
+    void resetSelection();
+    
 };
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent)
@@ -1218,20 +1220,26 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void
+NodeGraphPrivate::resetSelection()
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.nodes.begin(); it!=_selection.nodes.end(); ++it) {
+        (*it)->setSelected(false);
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _selection.bds.begin(); it!= _selection.bds.end();++it) {
+        (*it)->setSelected(false);
+    }
+    
+    _selection.nodes.clear();
+    _selection.bds.clear();
+}
+
+void
 NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 {
     
     
     if (!addToSelection) {
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.nodes.begin(); it!=_selection.nodes.end(); ++it) {
-            (*it)->setSelected(false);
-        }
-        for (std::list<NodeBackDrop*>::iterator it = _selection.bds.begin(); it!= _selection.bds.end();++it) {
-            (*it)->setSelected(false);
-        }
-        
-        _selection.nodes.clear();
-        _selection.bds.clear();
+        resetSelection();
     }
     
     QRectF selection = _selectionRect->mapToScene(_selectionRect->rect()).boundingRect();
@@ -1460,10 +1468,55 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         }
         
     }
+    else if (e->key() == Qt::Key_A && !e->modifiers().testFlag(Qt::ShiftModifier)
+            && e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        selectAllNodes(false);
+    }
+    else if (e->key() == Qt::Key_A && e->modifiers().testFlag(Qt::ShiftModifier)
+             && e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        selectAllNodes(true);
+    }
 
     
 }
-void NodeGraph::connectCurrentViewerToSelection(int inputNB){
+
+void
+NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
+{
+    _imp->resetSelection();
+    if (onlyInVisiblePortion) {
+        QRectF r = visibleRect();
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+            QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+            if (r.intersects(bbox)) {
+                (*it)->setSelected(true);
+                _imp->_selection.nodes.push_back(*it);
+            }
+        }
+        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
+            QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+            if (r.intersects(bbox)) {
+                (*it)->setSelected(true);
+                _imp->_selection.bds.push_back(*it);
+            }
+        }
+    } else {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+            (*it)->setSelected(true);
+            _imp->_selection.nodes.push_back(*it);
+        }
+        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
+            (*it)->setSelected(true);
+            _imp->_selection.bds.push_back(*it);
+        }
+    }
+}
+
+void
+NodeGraph::connectCurrentViewerToSelection(int inputNB)
+{
     
     if (!_imp->_gui->getLastSelectedViewer()) {
         _imp->_gui->getApp()->createNode(CreateNodeArgs("Viewer"));
