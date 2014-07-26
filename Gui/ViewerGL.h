@@ -300,6 +300,9 @@ public:
     
     virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
     
+    ///Not MT-Safe
+    void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
+    
 signals:
 
     /**
@@ -311,6 +314,16 @@ signals:
      * @brief Emitted when the image texture changes.
      **/
     void imageChanged(int texIndex);
+    
+    /**
+     * @brief Emitted when the selection rectangle has changed.
+     * @param onRelease When true, this signal is emitted on the mouse release event
+     * which means this is the last selection desired by the user.
+     * Receivers can either update the selection always or just on mouse release.
+     **/
+    void selectionRectangleChanged(bool onRelease);
+    
+    void selectionCleared();
 
 private:
     /**

@@ -205,6 +205,10 @@ signals:
         
 public slots:
     
+    void updateSelectionFromSelectionRectangle(bool onRelease);
+    
+    void onSelectionCleared();
+    
     void onToolActionTriggered();
     
     void onToolActionTriggered(QAction* act);

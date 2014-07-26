@@ -214,8 +214,10 @@ void NodeGui::initialize(NodeGraph* dag,
         dockContainer->addWidget(_settingsPanel);
         
         if (!requestedByLoad) {
-            _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
-            _graph->getGui()->addVisibleDockablePanel(_settingsPanel);
+            if (!_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
+                _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
+                _graph->getGui()->addVisibleDockablePanel(_settingsPanel);
+            }
         } else {
             if (_settingsPanel) {
                 _settingsPanel->setClosed2(true,false);
@@ -923,7 +925,7 @@ void NodeGui::showGui()
         _graph->getGui()->activateViewerTab(viewer);
     } else {
         if (isSettingsPanelVisible()) {
-            setVisibleSettingsPanel(false);
+            setVisibleSettingsPanel(true);
         }
         if (_internalNode->isRotoNode()) {
             _graph->getGui()->setRotoInterface(this);
@@ -1025,7 +1027,9 @@ void NodeGui::hideGui()
         if (_internalNode->isRotoNode()) {
             _graph->getGui()->removeRotoInterface(this, false);
         }
-        
+        if (_internalNode->isTrackerNode() && _internalNode->getParentMultiInstanceName().empty()) {
+            _graph->getGui()->removeTrackerInterface(this, false);
+        }
       
     }
 }
@@ -1747,6 +1751,13 @@ bool NodeGui::shouldDrawOverlay() const
     if (_internalNode->isNodeDisabled()) {
         return false;
     }
+    
+    if (_internalNode->isTrackerNode()) {
+        ///Tracker overlays are handled in the TrackerGui by Natron so we can have more control over them
+        ///This also allows us to have control with the selection in the settings panel
+        return false;
+    }
+    
     if (_parentMultiInstance) {
         return _parentMultiInstance->isSettingsPanelVisible();
     } else {

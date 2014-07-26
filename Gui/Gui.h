@@ -299,6 +299,14 @@ public:
     
     void onViewerRotoEvaluated(ViewerTab* viewer);
     
+    /**
+     * @brief Make a new tracker interface for the given node.
+     * This will create new widgets and enrich the interface of the viewer tab.
+     **/
+    void createNewTrackerInterface(NodeGui* n);
+    
+    void removeTrackerInterface(NodeGui* n,bool permanantly);
+    
     void startProgress(Natron::EffectInstance* effect,const std::string& message);
     
     void endProgress(Natron::EffectInstance* effect);

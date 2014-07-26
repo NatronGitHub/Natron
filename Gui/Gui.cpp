@@ -1298,8 +1298,14 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     std::map<NodeGui*,RotoGui*> rotoNodes;
     std::list<NodeGui*> rotoNodesList;
     std::pair<NodeGui*,RotoGui*> currentRoto;
+    
+    std::map<NodeGui*,TrackerGui*> trackerNodes;
+    std::list<NodeGui*> trackerNodesList;
+    std::pair<NodeGui*,TrackerGui*> currentTracker;
+    
     if (!_imp->_viewerTabs.empty()) {
         (*_imp->_viewerTabs.begin())->getRotoContext(&rotoNodes, &currentRoto);
+        (*_imp->_viewerTabs.begin())->getTrackerContext(&trackerNodes, &currentTracker);
     } else {
         const std::list<boost::shared_ptr<NodeGui> >& allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
@@ -1308,6 +1314,11 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
                 if (!currentRoto.first) {
                     currentRoto.first = it->get();
                 }
+            } else if ((*it)->getNode()->isTrackerNode()) {
+                trackerNodesList.push_back(it->get());
+                if (!currentTracker.first) {
+                    currentTracker.first = it->get();
+                }
             }
         }
     }
@@ -1315,7 +1326,11 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
         rotoNodesList.push_back(it->first);
     }
     
-    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,this,viewer,_imp->_viewersPane);
+    for (std::map<NodeGui*,TrackerGui*>::iterator it = trackerNodes.begin() ;it!=trackerNodes.end();++it) {
+        trackerNodesList.push_back(it->first);
+    }
+    
+    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,trackerNodesList,currentTracker.first,this,viewer,_imp->_viewersPane);
     QObject::connect(tab->getViewer(),SIGNAL(imageChanged(int)),this,SLOT(onViewerImageChanged(int)));
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -2635,6 +2650,22 @@ void Gui::showOfxLog()
     LogWindow lw(log,this);
     lw.setWindowTitle(tr("OpenFX messages log"));
     lw.exec();
+}
+
+void Gui::createNewTrackerInterface(NodeGui* n)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->createTrackerInterface(n);
+    }
+}
+
+void Gui::removeTrackerInterface(NodeGui* n,bool permanantly)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->removeTrackerInterface(n, permanantly,false);
+    }
 }
 
 void Gui::onRotoSelectedToolChanged(int tool)

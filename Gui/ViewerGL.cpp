@@ -94,7 +94,8 @@ namespace {
  *@brief basic state switching for mouse events
  **/
 enum MOUSE_STATE{
-    DRAGGING_IMAGE = 0,
+    SELECTING = 0,
+    DRAGGING_IMAGE,
     DRAGGING_ROI_LEFT_EDGE,
     DRAGGING_ROI_RIGHT_EDGE,
     DRAGGING_ROI_TOP_EDGE,
@@ -109,7 +110,8 @@ enum MOUSE_STATE{
     DRAGGING_WIPE_CENTER,
     DRAGGING_WIPE_MIX_HANDLE,
     ROTATING_WIPE_HANDLE,
-    UNDEFINED};
+    UNDEFINED
+};
     
 enum HOVER_STATE{
     HOVERING_NOTHING = 0,
@@ -163,6 +165,7 @@ struct ViewerGL::Implementation {
     , textRenderer()
     , isUserRoISet(false)
     , lastMousePosition()
+    , lastDragStartPos()
     , currentViewerInfos()
     , currentViewerInfos_btmLeftBBOXoverlay()
     , currentViewerInfos_topRightBBOXoverlay()
@@ -176,6 +179,7 @@ struct ViewerGL::Implementation {
     , mixAmount(1.) // protected by mutex
     , wipeAngle(M_PI / 2.) // protected by mutex
     , wipeCenter()
+    , selectionRectangle()
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -240,7 +244,8 @@ struct ViewerGL::Implementation {
     Natron::TextRenderer textRenderer;
 
     bool isUserRoISet;
-    QPoint lastMousePosition;
+    QPoint lastMousePosition; //< in widget coordinates
+    QPointF lastDragStartPos; //< in zoom coordinates
     
     /////// currentViewerInfos
     ImageInfo currentViewerInfos[2];/*!< Pointer to the ViewerInfos  used for rendering*/
@@ -271,6 +276,7 @@ struct ViewerGL::Implementation {
     double wipeAngle; /// the angle to the X axis
     QPointF wipeCenter; /// the center of the wipe control
     
+    QRectF selectionRectangle;
     
     bool isNearbyWipeCenter(const QPointF& pos,double tolerance) const;
     bool isNearbyWipeRotateBar(const QPointF& pos,double tolerance) const;
@@ -323,6 +329,10 @@ struct ViewerGL::Implementation {
     static void getPolygonTextureCoordinates(const QPolygonF& polygonPoints,const RectI& texRect,
                                              GLfloat bottom,GLfloat top,GLfloat left,GLfloat right,
                                              QPolygonF& texCoords);
+    
+    void refreshSelectionRectangle(const QPointF& pos);
+    
+    void drawSelectionRectangle();
 };
 
 #if 0
@@ -1065,6 +1075,10 @@ void ViewerGL::paintGL()
     if (_imp->displayPersistentMessage) {
         drawPersistentMessage();
     }
+    
+    if (_imp->ms == SELECTING) {
+        _imp->drawSelectionRectangle();
+    }
     glCheckErrorAssert();
 }
 
@@ -1597,6 +1611,47 @@ void ViewerGL::drawPersistentMessage()
 }
 
 
+void ViewerGL::Implementation::drawSelectionRectangle()
+{
+    
+    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
+    glEnable(GL_LINE_SMOOTH);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
+    
+    glColor4f(0.5,0.8,1.,0.4);
+    QPointF btmRight = selectionRectangle.bottomRight();
+    QPointF topLeft = selectionRectangle.topLeft();
+    
+    glBegin(GL_POLYGON);
+    glVertex2f(topLeft.x(),btmRight.y());
+    glVertex2f(topLeft.x(),topLeft.y());
+    glVertex2f(btmRight.x(),topLeft.y());
+    glVertex2f(btmRight.x(),btmRight.y());
+    glEnd();
+    
+    
+    glLineWidth(1.5);
+    
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(topLeft.x(),btmRight.y());
+    glVertex2f(topLeft.x(),topLeft.y());
+    glVertex2f(btmRight.x(),topLeft.y());
+    glVertex2f(btmRight.x(),btmRight.y());
+    glVertex2f(topLeft.x(),btmRight.y());
+    glEnd();
+    
+    
+    glDisable(GL_LINE_SMOOTH);
+    glCheckError();
+    
+    glLineWidth(1.);
+    glPopAttrib();
+    glColor4f(1., 1., 1., 1.);
+    
+}
+
 
 void ViewerGL::initializeGL()
 {
@@ -1991,7 +2046,8 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         userRoI = _imp->userRoI;
     }
 
-    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
+    if (event->button() == Qt::MiddleButton || (event->button() == Qt::LeftButton  && event->modifiers().testFlag(Qt::AltModifier)
+                                                && !event->modifiers().testFlag(Qt::ControlModifier)) ) {
         _imp->ms = DRAGGING_IMAGE;
         return;
     }
@@ -2064,32 +2120,50 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton &&
               isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
+        return;
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_LEFT_EDGE;
+        return;
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_RIGHT_EDGE;
+        return;
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_TOP_EDGE;
+        return;
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoIMiddleHandle(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_CROSS;
+        return;
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoITopLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_TOP_LEFT;
+        return;
     } else if(event->button() == Qt::LeftButton &&
               isNearByUserRoITopRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_TOP_RIGHT;
+        return;
     }  else if(event->button() == Qt::LeftButton &&
                isNearByUserRoIBottomLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
+        return;
     }  else if(event->button() == Qt::LeftButton &&
                isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
         _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
+        return;
     }
-   
+
+    ///build selection rectangle
+    _imp->selectionRectangle.setTopLeft(zoomPos);
+    _imp->selectionRectangle.setBottomRight(zoomPos);
+    _imp->lastDragStartPos = zoomPos;
+    _imp->ms = SELECTING;
+    if (!event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
+        emit selectionCleared();
+        updateGL();
+    }
     
 }
 
@@ -2098,8 +2172,14 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     
+    bool mustRedraw = false;
     if (_imp->ms == BUILDING_PICKER_RECTANGLE) {
         updateRectangleColorPicker();
+    }
+    
+    if (_imp->ms == SELECTING) {
+        mustRedraw = true;
+        emit selectionRectangleChanged(true);
     }
     
     _imp->ms = UNDEFINED;
@@ -2110,9 +2190,11 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event)
     }
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
     if (_imp->viewerTab->notifyOverlaysPenUp(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
+        mustRedraw = true;
+    }
+    if (mustRedraw) {
         updateGL();
     }
-
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event)
 {
@@ -2390,6 +2472,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
             _imp->pickerRect.setBottomRight(btmRight);
             mustRedraw = true;
         } break;
+        case SELECTING: {
+            _imp->refreshSelectionRectangle(zoomPos);
+            mustRedraw = true;
+            emit selectionRectangleChanged(false);
+        }; break;
         default: {
             if (_imp->overlay &&
                 _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
@@ -3562,4 +3649,23 @@ void ViewerGL::getTextureColorAt(int x,int y,double* r,double *g,double *b,doubl
         *a = (double)pixel[3];
         glCheckError();
     }
+}
+
+void ViewerGL::Implementation::refreshSelectionRectangle(const QPointF& pos)
+{
+    double xmin = std::min(pos.x(),lastDragStartPos.x());
+    double xmax = std::max(pos.x(),lastDragStartPos.x());
+    double ymin = std::min(pos.y(),lastDragStartPos.y());
+    double ymax = std::max(pos.y(),lastDragStartPos.y());
+    selectionRectangle.setRect(xmin,ymin,xmax - xmin,ymax - ymin);
+}
+
+void ViewerGL::getSelectionRectangle(double &left,double &right,double &bottom,double &top) const
+{
+    QPointF topLeft = _imp->selectionRectangle.topLeft();
+    QPointF btmRight = _imp->selectionRectangle.bottomRight();
+    left = std::min(topLeft.x(), btmRight.x());
+    right = std::max(topLeft.x(), btmRight.x());
+    bottom = std::min(topLeft.y(), btmRight.y());
+    top = std::max(topLeft.y(), btmRight.y());
 }

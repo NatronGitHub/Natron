@@ -474,6 +474,11 @@ public:
     
 };
 
+boost::shared_ptr<Natron::Node> MultiInstancePanel::createNewInstance()
+{
+    return addInstanceInternal();
+}
+
 void MultiInstancePanel::onAddButtonClicked()
 {
     (void)addInstanceInternal();
@@ -604,6 +609,75 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
     view->selectionModel()->select(newIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 }
 
+void MultiInstancePanel::selectNode(const boost::shared_ptr<Natron::Node>& node,bool addToSelection)
+{
+    if (!addToSelection) {
+        _imp->view->selectionModel()->clear();
+    }
+    
+    int index = -1;
+    int i = 0;
+    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it!=_imp->instances.end(); ++it,++i) {
+        if (it->first == node) {
+            index = i;
+            break;
+        }
+    }
+    assert(index != -1);
+
+    QItemSelection newSelection(_imp->model->index(index, 0),_imp->model->index(index,_imp->view->columnCount() - 1));
+    _imp->view->selectionModel()->select(newSelection, QItemSelectionModel::Select);
+}
+
+void MultiInstancePanel::removeNodeFromSelection(const boost::shared_ptr<Natron::Node>& node)
+{
+    int index = -1;
+    int i = 0;
+    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it!=_imp->instances.end(); ++it,++i) {
+        if (it->first == node) {
+            index = i;
+            break;
+        }
+    }
+    assert(index != -1);
+    QItemSelection newSelection(_imp->model->index(index, 0),_imp->model->index(index,_imp->view->columnCount() - 1));
+    _imp->view->selectionModel()->select(newSelection, QItemSelectionModel::Deselect);
+}
+
+void MultiInstancePanel::clearSelection()
+{
+    _imp->view->selectionModel()->clear();
+}
+
+void MultiInstancePanel::selectNodes(const std::list<Natron::Node*>& nodes)
+{
+    //_imp->view->selectionModel()->blockSignals(true);
+    _imp->view->clearSelection();
+//    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
+//         it2!=_imp->instances.end(); ++it2) {
+//        it2->second = false;
+//    }
+//    _imp->view->selectionModel()->blockSignals(false);
+    if (nodes.empty()) {
+        return;
+    }
+    
+    
+    QItemSelection newSelection;
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+        int i = 0;
+        for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
+             it2!=_imp->instances.end(); ++it2,++i) {
+            if (it2->first.get() == *it) {
+                QItemSelection sel(_imp->model->index(i, 0),_imp->model->index(i,_imp->view->columnCount() - 1));
+                newSelection.merge(sel, QItemSelectionModel::Select);
+                break;
+            }
+        }
+    }
+    _imp->view->selectionModel()->select(newSelection, QItemSelectionModel::Select);
+}
+
 class RemoveNodeCommand : public QUndoCommand
 {
     MultiInstancePanel* _panel;
@@ -637,7 +711,7 @@ public:
             assert(index != -1);
             _panel->removeRow(index);
             bool isMainInstance = (*it) == mainInstance;
-            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),true,!isMainInstance);
+            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),true,false,!isMainInstance);
         }
         setText(QObject::tr("Remove instance(s)"));
     }

@@ -762,14 +762,11 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
         _imp->_evtState = ARROW_DRAGGING;
     }
     
-    NodeBackDrop* newSelectedBd = 0;
     if (_imp->_evtState == DEFAULT) {
         ///check if nearby a backdrop
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it!=_imp->_backdrops.end(); ++it) {
             if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
                 didSomething = true;
-                newSelectedBd = *it;
-#pragma message WARN("value stored to newSelectedBd is never read")
                 if (!(*it)->isSelected()) {
                     selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
                 }
@@ -779,8 +776,6 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
                 break;
             } else if ((*it)->isNearbyResizeHandle(_imp->_lastScenePosClick)) {
                 didSomething = true;
-                newSelectedBd = *it;
-#pragma message WARN("value stored to newSelectedBd is never read")
                 _imp->_backdropResized = *it;
                 if (!(*it)->isSelected()) {
                     selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));

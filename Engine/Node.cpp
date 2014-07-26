@@ -227,15 +227,25 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
     assert(!_imp->liveInstance);
     
     
+    bool nameSet = false;
+
     bool isMultiInstanceChild = false;
     if (!parentMultiInstanceName.empty()) {
         _imp->multiInstanceParentName = parentMultiInstanceName;
+        
+        ///Fetch the parent pointer ONLY when not loading (otherwise parent node might still node be created
+        ///at that time)
+        if (serialization.isNull()) {
+            fetchParentMultiInstancePointer();
+            setName(QString(parentMultiInstanceName.c_str()) + '_' + QString::number(childIndex));
+            nameSet = true;
+        }
         isMultiInstanceChild = true;
         _imp->isMultiInstance = false;
+       
     }
     
-    bool nameSet = false;
-    if (!serialization.isNull() && !dontLoadName) {
+    if (!serialization.isNull() && !dontLoadName && !nameSet) {
         setName(serialization.getPluginLabel().c_str());
         nameSet = true;
     }
@@ -280,9 +290,12 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
         getApp()->getProject()->initNodeCountersAndSetName(this);
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
             updateEffectLabelKnob(getName().c_str());
-        } else if (isMultiInstanceChild) {
-            updateEffectLabelKnob(QString(parentMultiInstanceName.c_str()) + '_' + QString::number(childIndex));
         }
+    }
+    if (isMultiInstanceChild && serialization.isNull()) {
+        assert(nameSet);
+        updateEffectLabelKnob(QString(parentMultiInstanceName.c_str()) + '_' + QString::number(childIndex));
+
     }
 
     computeHash(); 
@@ -2061,7 +2074,7 @@ void Node::replaceCustomDataInlabel(const QString& data)
     
     QString customTagStart(NATRON_CUSTOM_HTML_TAG_START);
     QString customTagEnd(NATRON_CUSTOM_HTML_TAG_END);
-    int foundNatronCustomDataTag = label.indexOf(customTagStart,endFontTag);
+    int foundNatronCustomDataTag = label.indexOf(customTagStart,endFontTag == -1 ? 0 : endFontTag);
     if (foundNatronCustomDataTag != -1) {
         ///remove the current custom data
         int foundNatronEndTag = label.indexOf(customTagEnd,foundNatronCustomDataTag);

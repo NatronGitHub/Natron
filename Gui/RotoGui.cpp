@@ -67,7 +67,6 @@ enum EventState
     NONE = 0,
     DRAGGING_CP,
     DRAGGING_SELECTED_CPS,
-    SELECTING,
     BUILDING_BEZIER_CP_TANGENT,
     BUILDING_ELLIPSE,
     BULDING_ELLIPSE_CENTER,
@@ -121,9 +120,6 @@ struct RotoGuiSharedData
     ////like it does in inkscape.
     SelectedCpsTransformMode transformMode;
     
-    
-    QRectF selectionRectangle;
-    
     boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
     
     SelectedCP cpBeingDragged; //< the cp being dragged
@@ -139,7 +135,6 @@ struct RotoGuiSharedData
     , selectedCpsBbox()
     , showCpsBbox(false)
     , transformMode()
-    , selectionRectangle()
     , builtBezier()
     , cpBeingDragged()
     , tangentBeingDragged()
@@ -250,12 +245,6 @@ struct RotoGui::RotoGuiPrivate
     
     bool removeBezierFromSelection(const Bezier* b);
     
-    void refreshSelectionRectangle(const QPointF& pos);
-    
-    void updateSelectionFromSelectionRectangle();
-    
-    void drawSelectionRectangle();
-    
     void computeSelectedCpsBBOX();
     
     QPointF getSelectedCpsBBOXCenter();
@@ -363,6 +352,9 @@ RotoGui::RotoGui(NodeGui* node,ViewerTab* parent,const boost::shared_ptr<RotoGui
 : _imp(new RotoGuiPrivate(this,node,parent,sharedData))
 {
     assert(parent);
+    
+    QObject::connect(parent->getViewer(),SIGNAL(selectionRectangleChanged(bool)),this,SLOT(updateSelectionFromSelectionRectangle(bool)));
+    QObject::connect(parent->getViewer(), SIGNAL(selectionCleared()), this, SLOT(onSelectionCleared()));
     
     QPixmap pixBezier,pixEllipse,pixRectangle,pixAddPts,pixRemovePts,pixCuspPts,pixSmoothPts,pixOpenCloseCurve,pixRemoveFeather;
     QPixmap pixSelectAll,pixSelectPoints,pixSelectFeather,pixSelectCurves,pixAutoKeyingEnabled,pixAutoKeyingDisabled;
@@ -1004,12 +996,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
     glDisable(GL_BLEND);
     glPopAttrib();
     
-
-    if (_imp->state == SELECTING) {
-        _imp->drawSelectionRectangle();
-    }
-    
-    if (_imp->rotoData->showCpsBbox && _imp->state != SELECTING) {
+    if (_imp->rotoData->showCpsBbox && _imp->node->isSettingsPanelVisible()) {
         _imp->drawSelectedCpsBBOX();
     }
     glCheckError();
@@ -1220,104 +1207,58 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     glColor4f(1., 1., 1., 1.);
 }
 
-void RotoGui::RotoGuiPrivate::drawSelectionRectangle()
+void RotoGui::onSelectionCleared()
 {
-    
-    glPushAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-    
-    glColor4f(0.5,0.8,1.,0.2);
-    QPointF btmRight = rotoData->selectionRectangle.bottomRight();
-    QPointF topLeft = rotoData->selectionRectangle.topLeft();
-    
-    glBegin(GL_POLYGON);
-    glVertex2f(topLeft.x(),btmRight.y());
-    glVertex2f(topLeft.x(),topLeft.y());
-    glVertex2f(btmRight.x(),topLeft.y());
-    glVertex2f(btmRight.x(),btmRight.y());
-    glEnd();
-    
-    
-    glLineWidth(1.5);
-    
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(topLeft.x(),btmRight.y());
-    glVertex2f(topLeft.x(),topLeft.y());
-    glVertex2f(btmRight.x(),topLeft.y());
-    glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
-    glEnd();
-    
-    
-    glDisable(GL_LINE_SMOOTH);
-    glCheckError();
-    
-    glLineWidth(1.);
-    glPopAttrib();
-    glColor4f(1., 1., 1., 1.);
-
+    if (!isStickySelectionEnabled()) {
+        _imp->clearSelection();
+    }
 }
 
-void RotoGui::RotoGuiPrivate::refreshSelectionRectangle(const QPointF& pos)
+void RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
 {
-    RectD selection(std::min(lastClickPos.x(),pos.x()),
-                    std::min(lastClickPos.y(),pos.y()),
-                    std::max(lastClickPos.x(),pos.x()),
-                    std::max(lastClickPos.y(),pos.y()));
-
-    rotoData->selectionRectangle.setBottomRight(QPointF(selection.x2,selection.y1));
-    rotoData->selectionRectangle.setTopLeft(QPointF(selection.x1,selection.y2));
-}
-
-void RotoGui::RotoGuiPrivate::updateSelectionFromSelectionRectangle()
-{
+    if (!onRelease || !_imp->node->isSettingsPanelVisible()) {
+        return;
+    }
     
-    if (!publicInterface->isStickySelectionEnabled()) {
-        clearSelection();
+    if (!isStickySelectionEnabled()) {
+        _imp->clearSelection();
     }
     
     int selectionMode = -1;
-    if (selectedTool == SELECT_ALL) {
+    if (_imp->selectedTool == SELECT_ALL) {
         selectionMode = 0;
-    } else if (selectedTool == SELECT_POINTS) {
+    } else if (_imp->selectedTool == SELECT_POINTS) {
         selectionMode = 1;
-    } else if (selectedTool == SELECT_FEATHER_POINTS || selectedTool == SELECT_CURVES) {
+    } else if (_imp->selectedTool == SELECT_FEATHER_POINTS || _imp->selectedTool == SELECT_CURVES) {
         selectionMode = 2;
     }
     
-    QPointF topLeft = rotoData->selectionRectangle.topLeft();
-    QPointF btmRight = rotoData->selectionRectangle.bottomRight();
-    int l = std::min(topLeft.x(), btmRight.x());
-    int r = std::max(topLeft.x(), btmRight.x());
-    int b = std::min(topLeft.y(), btmRight.y());
-    int t = std::max(topLeft.y(), btmRight.y());
-    std::list<boost::shared_ptr<Bezier> > curves = context->getCurvesByRenderOrder();
+    double l,r,b,t;
+    _imp->viewer->getSelectionRectangle(l, r, b, t);
+    std::list<boost::shared_ptr<Bezier> > curves = _imp->context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it!=curves.end(); ++it) {
         
         if (!(*it)->isLockedRecursive()) {
             SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
-            if (selectedTool != SELECT_CURVES) {
+            if (_imp->selectedTool != SELECT_CURVES) {
                 for (SelectedCPs::iterator ptIt = points.begin(); ptIt != points.end(); ++ptIt) {
-                    if (!publicInterface->isFeatherVisible() && ptIt->first->isFeatherPoint()) {
+                    if (!isFeatherVisible() && ptIt->first->isFeatherPoint()) {
                         continue;
                     }
-                    rotoData->selectedCps.push_back(*ptIt);
+                    _imp->rotoData->selectedCps.push_back(*ptIt);
                 }
             }
             if (!points.empty()) {
-                rotoData->selectedBeziers.push_back(*it);
+                _imp->rotoData->selectedBeziers.push_back(*it);
             }
         }
     }
     
     
     
-    context->select(rotoData->selectedBeziers, RotoContext::OVERLAY_INTERACT);
+    _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::OVERLAY_INTERACT);
     
-    computeSelectedCpsBBOX();
+    _imp->computeSelectedCpsBBOX();
 
 }
 
@@ -1641,17 +1582,6 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
                     ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
                     didSomething = true;
-                } else {
-                    if (!_imp->modifiers.testFlag(Natron::ShiftModifier) && e->button() == Qt::LeftButton) {
-                        if (!isStickySelectionEnabled()) {
-                            bool hadSelection = _imp->hasSelection();
-                            _imp->clearSelection();
-                            didSomething = hadSelection;
-                        }
-                        _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                        _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                        _imp->state = SELECTING;
-                    }
                 }
             }
             
@@ -1669,18 +1599,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                 if (e->button() == Qt::RightButton) {
                     showMenuForCurve(nearbyBezier);
                 }
-            } else {
-                
-                if (!isStickySelectionEnabled() && !_imp->modifiers.testFlag(Natron::ShiftModifier)) {
-                    _imp->clearSelection();
-                    _imp->rotoData->selectionRectangle.setTopLeft(pos);
-                    _imp->rotoData->selectionRectangle.setBottomRight(pos);
-                    _imp->state = SELECTING;
-                    
-                }
-                
             }
-            
             break;
         case ADD_POINTS:
             ///If the user clicked on a bezier and this bezier is selected add a control point by
@@ -2006,11 +1925,6 @@ bool RotoGui::penMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& /*vie
             didSomething = true;
 
         };  break;
-        case SELECTING:
-        {
-            _imp->refreshSelectionRectangle(pos);
-            didSomething = true;
-        }   break;
         case BUILDING_BEZIER_CP_TANGENT:
         {
             assert(_imp->rotoData->builtBezier);
@@ -2183,10 +2097,7 @@ void RotoGui::autoSaveAndRedraw()
 
 bool RotoGui::penUp(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
 {
-    if (_imp->state == SELECTING) {
-        _imp->updateSelectionFromSelectionRectangle();
-    }
-    
+  
     if (_imp->evaluateOnPenUp) {
         _imp->context->evaluateChange();
         _imp->node->getNode()->getApp()->triggerAutoSave();

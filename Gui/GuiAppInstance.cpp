@@ -188,6 +188,10 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
         _imp->_gui->createNewRotoInterface(nodegui.get());
     }
     
+    if (node->isTrackerNode() && multiInstanceParentName.empty()) {
+        _imp->_gui->createNewTrackerInterface(nodegui.get());
+    }
+    
     if (multiInstanceParentName.empty()) {
         nodegui->initializeInputs();
         nodegui->initializeKnobs();

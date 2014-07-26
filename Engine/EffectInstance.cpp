@@ -841,7 +841,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
         }
         
-        if (image) {
+        //Do the following only if we're not an identity
+        if (image && cachedImgParams->getInputNbIdentity() == -1) {
             ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
             ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
             if ((image->getComponents() != args.components && Image::hasEnoughDataToConvert(image->getComponents(),args.components)) ||

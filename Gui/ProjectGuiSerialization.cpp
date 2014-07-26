@@ -136,7 +136,7 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
     QVBoxLayout* propLayout = projectGui->getGui()->getPropertiesLayout();
     for (int i = 0; i < propLayout->count(); ++i) {
         DockablePanel* isPanel = dynamic_cast<DockablePanel*>(propLayout->itemAt(i)->widget());
-        if (isPanel) {
+        if (isPanel && isPanel->isVisible()) {
             KnobHolder* holder = isPanel->getHolder();
             assert(holder);
             NamedKnobHolder* namedHolder = dynamic_cast<NamedKnobHolder*>(holder);

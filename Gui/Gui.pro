@@ -92,6 +92,7 @@ SOURCES += \
     ticks.cpp \
     ToolButton.cpp \
     TimeLineGui.cpp \
+    TrackerGui.cpp \
     ViewerGL.cpp \
     ViewerTab.cpp
 
@@ -151,6 +152,7 @@ HEADERS += \
     ticks.h \
     TimeLineGui.h \
     ToolButton.h \
+    TrackerGui.h \
     ViewerGL.h \
     ViewerTab.h \
     ZoomContext.h

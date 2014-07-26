@@ -32,6 +32,7 @@ class Format;
 class QMouseEvent;
 class RotoGui;
 class NodeGui;
+class TrackerGui;
 struct RotoGuiSharedData;
 
 struct ViewerTabPrivate;
@@ -40,8 +41,10 @@ class ViewerTab: public QWidget
     Q_OBJECT
     
 public:
-    explicit ViewerTab(const std::list<NodeGui*> existingRotoNodes,
+    explicit ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
                        NodeGui* currentRoto,
+                       const std::list<NodeGui*>& existingTrackerNodes,
+                       NodeGui* currentTracker,
                        Gui* gui,
                        ViewerInstance* node,
                        QWidget* parent=0);
@@ -147,6 +150,16 @@ public:
     
     void onRotoEvaluatedForThisViewer();
     
+    
+    void createTrackerInterface(NodeGui* n);
+    
+    void setTrackerInterface(NodeGui* n);
+    
+    void removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother);
+    
+    void getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes,std::pair<NodeGui*,TrackerGui*>* currentTracker) const;
+    
+    
     Natron::ViewerCompositingOperator getCompositingOperator() const;
     
     void setCompositingOperator(Natron::ViewerCompositingOperator op);
@@ -206,6 +219,8 @@ public slots:
     void onRotoRoleChanged(int previousRole,int newRole);
     
     void onRotoNodeGuiSettingsPanelClosed(bool closed);
+    
+    void onTrackerNodeGuiSettingsPanelClosed(bool closed);
 
     void onGainSliderChanged(double v);
     

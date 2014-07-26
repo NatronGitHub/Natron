@@ -478,6 +478,9 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
 
 void DockablePanel::onLineEditNameEditingFinished() {
     
+    if (_imp->_gui->getApp()->isClosing()) {
+        return;
+    }
     NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
     if (bd) {
         QString newName = _imp->_nameLineEdit->text();

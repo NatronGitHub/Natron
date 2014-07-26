@@ -69,6 +69,16 @@ public:
     
     virtual void setIconForButton(Button_Knob* /*knob*/) {}
 
+    boost::shared_ptr<Natron::Node> createNewInstance();
+    
+    void selectNode(const boost::shared_ptr<Natron::Node>& node,bool addToSelection);
+    
+    void selectNodes(const std::list<Natron::Node*>& nodes);
+    
+    void removeNodeFromSelection(const boost::shared_ptr<Natron::Node>& node);
+    
+    void clearSelection();
+    
 public slots:
 
     void onAddButtonClicked();

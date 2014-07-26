@@ -54,6 +54,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/RotoGui.h"
+#include "Gui/TrackerGui.h"
+#include "Gui/MultiInstancePanel.h"
 
 using namespace Natron;
 
@@ -151,6 +153,8 @@ struct ViewerTabPrivate {
     std::map<NodeGui*,RotoGui*> _rotoNodes;
     std::pair<NodeGui*,RotoGui*> _currentRoto;
     
+    std::map<NodeGui*,TrackerGui*> _trackerNodes;
+    std::pair<NodeGui*,TrackerGui*> _currentTracker;
 
     InputNamesMap _inputNamesMap;
     mutable QMutex compOperatorMutex;
@@ -175,8 +179,10 @@ struct ViewerTabPrivate {
     }
 };
 
-ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
+ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
                      NodeGui* currentRoto,
+                     const std::list<NodeGui*>& existingTrackerNodes,
+                     NodeGui* currentTracker,
                      Gui* gui,
                      ViewerInstance* node,
                      QWidget* parent)
@@ -750,6 +756,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> existingRotoNodes,
         setRotoInterface(currentRoto);
     }
     
+    for (std::list<NodeGui*>::const_iterator it = existingTrackerNodes.begin(); it!=existingTrackerNodes.end(); ++it) {
+        createTrackerInterface(*it);
+    }
+    if (currentTracker && currentTracker->isSettingsPanelVisible()) {
+        setRotoInterface(currentTracker);
+    }
+    
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 }
 
@@ -938,7 +951,9 @@ ViewerTab::~ViewerTab()
     for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.begin(); it!=_imp->_rotoNodes.end(); ++it) {
         delete it->second;
     }
-   
+    for (std::map<NodeGui*,TrackerGui*>::iterator it = _imp->_trackerNodes.begin(); it!=_imp->_trackerNodes.end(); ++it) {
+        delete it->second;
+    }
 }
 
 bool ViewerTab::isPlayingForward() const
@@ -1147,6 +1162,10 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
         _imp->_currentRoto.second->drawOverlays(scaleX, scaleY);
     }
     
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        _imp->_currentTracker.second->drawOverlays(scaleX, scaleY);
+    }
+    
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
         if ((*it)->shouldDrawOverlay()) {
@@ -1182,13 +1201,19 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
         }
     }
     
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e)) {
+            return true;
+        }
+    }
+
+    
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e)) {
             didSomething  = true;
         }
     }
 
-    
     return didSomething;
 }
 
@@ -1203,6 +1228,13 @@ bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const Q
             return true;
         }
     }
+    
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->penDoubleClicked(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
+    }
+    
     return false;
 }
 
@@ -1229,12 +1261,19 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
         }
     }
     
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
+    }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
             didSomething = true;
         }
     }
+    
+    
     
     return didSomething;
 }
@@ -1263,11 +1302,21 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
         }
     }
     
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->penUp(scaleX, scaleY,viewportPos,pos)) {
+            return true;
+        }
+    }
+    
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penUp(scaleX, scaleY,viewportPos,pos)) {
             didSomething  =  true;
         }
     }
+    
+    
+   
+    
 
     return didSomething ;
 }
@@ -1279,15 +1328,15 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
         return false;
     }
     
-    
+    Natron::Key natronKey = QtEnumConvert::fromQtKey((Qt::Key)e->key());
+    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
         if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,
-                                                              QtEnumConvert::fromQtKey((Qt::Key)e->key()),QtEnumConvert::fromQtModifiers(e->modifiers()));
+            bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,natronKey,natronMod);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -1297,12 +1346,20 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
         }
     }
     
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->keyDown(scaleX, scaleY,e)) {
+            return true;
+        }
+    }
+
+    
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->keyDown(scaleX, scaleY,e)) {
             didSomething = true;
         }
     }
-
+    
+   
     return didSomething;
 }
 
@@ -1332,11 +1389,19 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
         }
     }
     
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->keyUp(scaleX, scaleY,e)) {
+            return true;
+        }
+    }
+    
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->keyUp(scaleX, scaleY,e)) {
             didSomething = true;
         }
     }
+    
+    
     
     return didSomething;
 }
@@ -1587,6 +1652,109 @@ void ViewerTab::setInfoBarResolution(const Format& f)
     _imp->_infosWidget[1]->setResolution(f);
 }
 
+void ViewerTab::createTrackerInterface(NodeGui* n)
+{
+    boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+    boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
+    assert(trackPanel);
+    TrackerGui* tracker = new TrackerGui(trackPanel,this);
+    std::pair<std::map<NodeGui*,TrackerGui*>::iterator,bool> ret = _imp->_trackerNodes.insert(std::make_pair(n,tracker));
+    assert(ret.second);
+    QObject::connect(n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)));
+    if (n->isSettingsPanelVisible()) {
+        setTrackerInterface(n);
+    } else {
+        tracker->getButtonsBar()->hide();
+    }
+}
+
+void ViewerTab::setTrackerInterface(NodeGui* n)
+{
+    assert(n);
+    std::map<NodeGui*,TrackerGui*>::iterator it = _imp->_trackerNodes.find(n);
+    if (it != _imp->_trackerNodes.end()) {
+        if (_imp->_currentTracker.first == n) {
+            return;
+        }
+        
+        ///remove any existing tracker gui
+        if (_imp->_currentTracker.first != NULL) {
+            removeRotoInterface(_imp->_currentTracker.first, false,true);
+        }
+        
+        ///Add the widgets
+        
+        ///if there's a current roto add it before it
+        int index;
+        if (_imp->_currentRoto.second) {
+            index = _imp->_mainLayout->indexOf(_imp->_currentRoto.second->getCurrentButtonsBar());
+            assert(index != -1);
+        } else {
+            index = _imp->_mainLayout->indexOf(_imp->_viewerContainer);
+        }
+        
+        assert(index >= 0);
+        QWidget* buttonsBar = it->second->getButtonsBar();
+        _imp->_mainLayout->insertWidget(index,buttonsBar);
+        buttonsBar->show();
+        
+        _imp->_currentTracker.first = n;
+        _imp->_currentTracker.second = it->second;
+        _imp->viewer->redraw();
+    }
+
+}
+
+void ViewerTab::removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother)
+{
+    
+    std::map<NodeGui*,TrackerGui*>::iterator it = _imp->_trackerNodes.find(n);
+    if (it != _imp->_trackerNodes.end()) {
+        if (!_imp->_gui) {
+            if (permanantly) {
+                delete it->second;
+            }
+            return;
+        }
+        
+        if (_imp->_currentTracker.first == n) {
+            ///Remove the widgets of the current tracker node
+            
+            int buttonsBarIndex = _imp->_mainLayout->indexOf(_imp->_currentTracker.second->getButtonsBar());
+            assert(buttonsBarIndex >= 0);
+            QLayoutItem* buttonsBar = _imp->_mainLayout->itemAt(buttonsBarIndex);
+            assert(buttonsBar);
+            _imp->_mainLayout->removeItem(buttonsBar);
+            buttonsBar->widget()->hide();
+            
+            if (!removeAndDontSetAnother) {
+                ///If theres another tracker node, set it as the current tracker interface
+                std::map<NodeGui*,TrackerGui*>::iterator newTracker = _imp->_trackerNodes.end();
+                for (std::map<NodeGui*,TrackerGui*>::iterator it2 = _imp->_trackerNodes.begin(); it2 != _imp->_trackerNodes.end(); ++it2) {
+                    if (it2->second != it->second && it2->first->isSettingsPanelVisible()) {
+                        newTracker = it2;
+                        break;
+                    }
+                }
+                
+                _imp->_currentTracker.first = 0;
+                _imp->_currentTracker.second = 0;
+                
+                if (newTracker != _imp->_trackerNodes.end()) {
+                    setRotoInterface(newTracker->first);
+                }
+            }
+            
+        }
+        
+        if (permanantly) {
+            delete it->second;
+            _imp->_trackerNodes.erase(it);
+        }
+    }
+
+}
+
 void ViewerTab::createRotoInterface(NodeGui* n)
 {
     RotoGui* roto = new RotoGui(n,this,getRotoGuiSharedData(n));
@@ -1621,10 +1789,19 @@ void ViewerTab::setRotoInterface(NodeGui* n)
         QToolBar* toolBar = it->second->getToolBar();
         _imp->_viewerLayout->insertWidget(0, toolBar);
         toolBar->show();
-        int viewerIndex = _imp->_mainLayout->indexOf(_imp->_viewerContainer);
-        assert(viewerIndex >= 0);
+        
+        ///If there's a tracker add it right after the tracker
+        int index;
+        if (_imp->_currentTracker.second) {
+            index = _imp->_mainLayout->indexOf(_imp->_currentTracker.second->getButtonsBar());
+            assert(index != -1);
+            ++index;
+        } else {
+            index = _imp->_mainLayout->indexOf(_imp->_viewerContainer);
+        }
+        assert(index >= 0);
         QWidget* buttonsBar = it->second->getCurrentButtonsBar();
-        _imp->_mainLayout->insertWidget(viewerIndex,buttonsBar);
+        _imp->_mainLayout->insertWidget(index,buttonsBar);
         buttonsBar->show();
         
         QObject::connect(it->second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)));
@@ -1689,6 +1866,12 @@ void ViewerTab::getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<
     *currentRoto = _imp->_currentRoto;
 }
 
+void ViewerTab::getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes,std::pair<NodeGui*,TrackerGui*>* currentTracker) const
+{
+    *trackerNodes = _imp->_trackerNodes;
+    *currentTracker = _imp->_currentTracker;
+}
+
 void ViewerTab::onRotoRoleChanged(int previousRole,int newRole)
 {
     RotoGui* roto = qobject_cast<RotoGui*>(sender());
@@ -1739,6 +1922,20 @@ void ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
         } else {
             if (n != _imp->_currentRoto.first) {
                 setRotoInterface(n);
+            }
+        }
+    }
+}
+
+void ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
+{
+    NodeGui* n = qobject_cast<NodeGui*>(sender());
+    if (n) {
+        if (closed) {
+            removeTrackerInterface(n, false,false);
+        } else {
+            if (n != _imp->_currentTracker.first) {
+                setTrackerInterface(n);
             }
         }
     }
