@@ -64,7 +64,7 @@ public:
      */
     int lastFrame() const;
     
-    void open_file() { emit openFile(isAnimationEnabled()); }
+    void open_file() { emit openFile(); }
 
     /**
      * @brief getRandomFrameName
@@ -75,7 +75,7 @@ public:
 
 signals:
     
-    void openFile(bool);
+    void openFile();
     
 private:
     

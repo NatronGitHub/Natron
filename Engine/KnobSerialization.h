@@ -12,7 +12,7 @@
 #ifndef KNOBSERIALIZATION_H
 #define KNOBSERIALIZATION_H
 #include <map>
-
+#include <vector>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
@@ -30,6 +30,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/KnobFile.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
+#include <SequenceParsing.h>
 
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS 2
 #define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS
@@ -70,16 +71,17 @@ struct ValueSerialization
     template<class Archive>
     void save(Archive & ar, const unsigned int /*version*/) const
     {
-        boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(_knob);
-        boost::shared_ptr<Bool_Knob> isBool = boost::dynamic_pointer_cast<Bool_Knob>(_knob);
-        boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(_knob);
-        boost::shared_ptr<Choice_Knob> isChoice = boost::dynamic_pointer_cast<Choice_Knob>(_knob);
-        boost::shared_ptr<String_Knob> isString = boost::dynamic_pointer_cast<String_Knob>(_knob);
-        boost::shared_ptr<File_Knob> isFile = boost::dynamic_pointer_cast<File_Knob>(_knob);
-        boost::shared_ptr<OutputFile_Knob> isOutputFile = boost::dynamic_pointer_cast<OutputFile_Knob>(_knob);
-        boost::shared_ptr<Path_Knob> isPath = boost::dynamic_pointer_cast<Path_Knob>(_knob);
-        boost::shared_ptr<Color_Knob> isColor = boost::dynamic_pointer_cast<Color_Knob>(_knob);
-        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(_knob);
+        Int_Knob* isInt = dynamic_cast<Int_Knob*>(_knob.get());
+        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(_knob.get());
+        Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_knob.get());
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(_knob.get());
+        String_Knob* isString = dynamic_cast<String_Knob*>(_knob.get());
+        File_Knob* isFile = dynamic_cast<File_Knob*>(_knob.get());
+        OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>(_knob.get());
+        Path_Knob* isPath = dynamic_cast<Path_Knob*>(_knob.get());
+        Color_Knob* isColor = dynamic_cast<Color_Knob*>(_knob.get());
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
+
         
         ///Make sure the knob is one of these types
         assert(isInt || isBool || isDouble || isChoice || isString || isFile || isOutputFile || isPath || isColor || isParametric);
@@ -142,16 +144,16 @@ struct ValueSerialization
     void load(Archive & ar, const unsigned int /*version*/)
     {
         
-        boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(_knob);
-        boost::shared_ptr<Bool_Knob> isBool = boost::dynamic_pointer_cast<Bool_Knob>(_knob);
-        boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(_knob);
-        boost::shared_ptr<Choice_Knob> isChoice = boost::dynamic_pointer_cast<Choice_Knob>(_knob);
-        boost::shared_ptr<String_Knob> isString = boost::dynamic_pointer_cast<String_Knob>(_knob);
-        boost::shared_ptr<File_Knob> isFile = boost::dynamic_pointer_cast<File_Knob>(_knob);
-        boost::shared_ptr<OutputFile_Knob> isOutputFile = boost::dynamic_pointer_cast<OutputFile_Knob>(_knob);
-        boost::shared_ptr<Path_Knob> isPath = boost::dynamic_pointer_cast<Path_Knob>(_knob);
-        boost::shared_ptr<Color_Knob> isColor = boost::dynamic_pointer_cast<Color_Knob>(_knob);
-        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(_knob);
+        Int_Knob* isInt = dynamic_cast<Int_Knob*>(_knob.get());
+        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(_knob.get());
+        Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_knob.get());
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(_knob.get());
+        String_Knob* isString = dynamic_cast<String_Knob*>(_knob.get());
+        File_Knob* isFile = dynamic_cast<File_Knob*>(_knob.get());
+        OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>(_knob.get());
+        Path_Knob* isPath = dynamic_cast<Path_Knob*>(_knob.get());
+        Color_Knob* isColor = dynamic_cast<Color_Knob*>(_knob.get());
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
         
         ///Make sure the knob is one of these types
         assert(isInt || isBool || isDouble || isChoice || isString || isFile || isOutputFile || isPath || isColor || isParametric);
@@ -162,10 +164,16 @@ struct ValueSerialization
         
         bool hasAnimation;
         ar & boost::serialization::make_nvp("HasAnimation",hasAnimation);
+        bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
             Curve c;
             ar & boost::serialization::make_nvp("Curve",c);
-            _knob->getCurve(_dimension)->clone(c);
+            ///This is to overcome the change to the animation of file params: They no longer hold keyframes
+            ///Don't try to load keyframes
+            convertOldFileKeyframesToPattern = isFile && isFile->getName() == "filename";
+            if (!convertOldFileKeyframesToPattern) {
+                _knob->getCurve(_dimension)->clone(c);
+            }
         }
         
         if (isInt) {
@@ -196,6 +204,15 @@ struct ValueSerialization
         else if (isFile) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
+            
+            ///Convert the old keyframes stored in the file parameter by analysing one keyframe
+            ///and deducing the pattern from it and setting it as a value instead
+            if (convertOldFileKeyframesToPattern) {
+                SequenceParsing::FileNameContent content(v);
+                std::vector<int> indexes(1);
+                indexes[0] = content.getPotentialFrameNumbersCount() - 1;
+                content.generatePatternWithFrameNumberAtIndexes(indexes, &v);
+            }
             isFile->setValue(v,_dimension);
         }
         else if (isOutputFile) {
@@ -263,9 +280,11 @@ class KnobSerialization
             ar & boost::serialization::make_nvp("ParametricCurves",curves);
         }
         else if (isString) {
+            
             std::map<int,std::string> extraDatas;
             isString->getAnimation().save(&extraDatas);
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
+            
         }
         else if (isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
             std::list<Double_Knob::SerializedTrack> tracks;
@@ -311,6 +330,7 @@ class KnobSerialization
         _knob->setSecret(secret);
         
         AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<AnimatingString_KnobHelper*>(_knob.get());
+        File_Knob* isFile = dynamic_cast<File_Knob*>(_knob.get());
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
         Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_knob.get());
         for (int i = 0; i < _knob->getDimension(); ++i) {
@@ -328,7 +348,11 @@ class KnobSerialization
         else if (isStringAnimated) {
             std::map<int,std::string> extraDatas;
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
-            isStringAnimated->loadAnimation(extraDatas);
+            ///Don't load animation for input image files: they no longer hold keyframes
+            // in the Reader context, the script name must be "filename", @see kOfxImageEffectContextReader
+            if (!isFile || (isFile && isFile->getName() != "filename")) {
+                isStringAnimated->loadAnimation(extraDatas);
+            }
         }
         else if (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS &&
                  isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {

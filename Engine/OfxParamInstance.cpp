@@ -2240,7 +2240,9 @@ void
 OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
-    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    ///This assert might crash Natron when reading a project made with a version
+    ///of Natron prior to 0.96 when file params still had keyframes.
+    //assert(l == Natron::NO_ANIMATION || getCanAnimate());
     getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }

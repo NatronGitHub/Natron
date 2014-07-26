@@ -38,7 +38,7 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *contain
 {
     _knob = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(_knob);
-    QObject::connect(_knob.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
+    QObject::connect(_knob.get(), SIGNAL(openFile()), this, SLOT(open_file()));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -85,11 +85,11 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void File_KnobGui::onButtonClicked() {
-    open_file(_knob->isAnimationEnabled());
+    open_file();
 }
 
 
-void File_KnobGui::open_file(bool openSequence)
+void File_KnobGui::open_file()
 {
     
     std::vector<std::string> filters;
