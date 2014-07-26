@@ -389,16 +389,19 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
     const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
 
     if (appPTR->getCurrentSettings()->isSnapToNodeEnabled() && !skipMagnet) {
-        
+        QSize size = getSize();
+        ///handle magnetic grid
+        QPointF middlePos(x + size.width() / 2,y + size.height() / 2);
+
         
         if (_magnecEnabled) {
-            _magnecDistance += (QPoint(x,y) - _magnecStartingPos);
+            _magnecDistance += (QPointF(x,y) - _magnecStartingPos);
             double dist = sqrt(_magnecDistance.x() * _magnecDistance.x() +
                                _magnecDistance.y() * _magnecDistance.y());
             if (dist >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
                 _magnecEnabled = false;
                 _updateDistanceSinceLastMagnec = true;
-                _distanceSinceLastMagnec = QPoint(0,0);
+                _distanceSinceLastMagnec = QPointF(0,0);
             } else {
                 return;
             }
@@ -406,9 +409,9 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
         
         bool continueMagnet = true;
         if (_updateDistanceSinceLastMagnec) {
-            _distanceSinceLastMagnec =  QPoint(x,y) - _magnecStartingPos;
-            if (std::abs(_distanceSinceLastMagnec.x()) > NATRON_MAGNETIC_GRID_GRIP_TOLERANCE ||
-                std::abs(_distanceSinceLastMagnec.y()) > NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) {
+            _distanceSinceLastMagnec =  (QPointF(x,y) - _magnecStartingPos);
+            if (std::abs(_distanceSinceLastMagnec.x()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)   ||
+                std::abs(_distanceSinceLastMagnec.y()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) {
                 _updateDistanceSinceLastMagnec = false;
             } else {
                 continueMagnet = false;
@@ -416,9 +419,6 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
         }
         
         
-        QSize size = getSize();
-        ///handle magnetic grid
-        QPointF middlePos(x + size.width() / 2,y + size.height() / 2);
         
         if (!_magnecEnabled && continueMagnet) {
             for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
@@ -426,54 +426,57 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
                 boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
                 if (inputSource) {
                     QSize inputSize = inputSource->getSize();
-                    QPointF inputScenePos = inputSource->pos();
+                    QPointF inputScenePos = inputSource->scenePos();
                     QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
-                    QPointF mapped = mapFromParent(inputPos);
+                    QPointF mapped = mapToParent(mapFromScene(inputPos));
                     if (!contains(mapped)) {
-                        if ((inputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                             inputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                        if ((mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                             mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
                             _magnecEnabled = true;
-                            _magnecDistance = QPoint(0,0);
-                            x = inputPos.x() - size.width() / 2;
+                            _magnecDistance = QPointF(0,0);
+                            x = mapped.x() - size.width() / 2;
                             _magnecStartingPos.setX(x);
                             _magnecStartingPos.setY(y);
-                        } else if ((inputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                                    inputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                        } else if ((mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                    mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
                             _magnecEnabled = true;
-                            _magnecDistance = QPoint(0,0);
+                            _magnecDistance = QPointF(0,0);
+                            y = mapped.y() - size.height() / 2;
                             _magnecStartingPos.setX(x);
-                            y = inputPos.y() - size.height() / 2;
                             _magnecStartingPos.setY(y);
                         }
                     }
                 }
             }
-            ///check now the outputs
-            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-                boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
-                assert(node);
-                QSize outputSize = node->getSize();
-                QPointF nodeScenePos = node->pos();
-                QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);
-                QPointF mapped = mapFromParent(outputPos);
-                if (!contains(mapped)) {
-                    if ((outputPos.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                         outputPos.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                        _magnecEnabled = true;
-                        _magnecDistance = QPoint(0,0);
-                        x = outputPos.x() - size.width() / 2;
-                        _magnecStartingPos.setX(x);
-                        _magnecStartingPos.setY(y);
-                    } else if ((outputPos.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                                outputPos.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                        _magnecEnabled = true;
-                        _magnecDistance = QPoint(0,0);
-                        _magnecStartingPos.setX(x);
-                        y = outputPos.y() - size.height() / 2;
-                        _magnecStartingPos.setY(y);
+            
+            if (!_magnecEnabled) {
+                ///check now the outputs
+                for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+                    boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
+                    assert(node);
+                    QSize outputSize = node->getSize();
+                    QPointF nodeScenePos = node->scenePos();
+                    QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);
+                    QPointF mapped = mapToParent(mapFromScene(outputPos));
+                    if (!contains(mapped)) {
+                        if ((mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                             mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                            _magnecEnabled = true;
+                            _magnecDistance = QPointF(0,0);
+                            x = mapped.x() - size.width() / 2;
+                            _magnecStartingPos.setX(x);
+                            _magnecStartingPos.setY(y);
+                        } else if ((mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                    mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                            _magnecEnabled = true;
+                            _magnecDistance = QPointF(0,0);
+                            y = mapped.y() - size.height() / 2;
+                            _magnecStartingPos.setX(x);
+                            _magnecStartingPos.setY(y);
+                        }
                     }
+                    
                 }
-                
             }
             
         }

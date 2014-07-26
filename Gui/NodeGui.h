@@ -427,10 +427,10 @@ private:
     boost::shared_ptr<NodeGui> _masterNodeGui;
     
     bool _magnecEnabled;
-    QPoint _magnecDistance;
+    QPointF _magnecDistance;
     bool _updateDistanceSinceLastMagnec;
-    QPoint _distanceSinceLastMagnec;
-    QPoint _magnecStartingPos;
+    QPointF _distanceSinceLastMagnec;
+    QPointF _magnecStartingPos;
     
     QString _nodeLabel;
     
