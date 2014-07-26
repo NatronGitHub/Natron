@@ -637,7 +637,9 @@ void GuiApplicationManager::setLoadingStatus(const QString& str) {
     if (isLoaded()) {
         return;
     }
-    _imp->_splashScreen->updateText(str);
+    if (_imp->_splashScreen) {
+        _imp->_splashScreen->updateText(str);
+    }
 
 }
 
