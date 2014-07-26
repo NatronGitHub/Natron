@@ -803,8 +803,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             lastRenderHash = _imp->lastRenderHash;
         }
         if (lastRenderedImage &&
-            (lastRenderHash != nodeHash ||
-             args.mipMapLevel != lastRenderedImage->getMipMapLevel())) {
+            (lastRenderHash != nodeHash)) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             OutputImageLocker imgLocker(_node.get(),lastRenderedImage);
             ///once we got it remove it from the cache
