@@ -769,6 +769,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 newSelectedBd = *it;
+#pragma message WARN("value stored to newSelectedBd is never read")
                 if (!(*it)->isSelected()) {
                     selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
                 }
@@ -779,6 +780,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             } else if ((*it)->isNearbyResizeHandle(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 newSelectedBd = *it;
+#pragma message WARN("value stored to newSelectedBd is never read")
                 _imp->_backdropResized = *it;
                 if (!(*it)->isSelected()) {
                     selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
