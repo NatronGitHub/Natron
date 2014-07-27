@@ -1208,6 +1208,12 @@ void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason)
 {
     if (reason == Natron::USER_EDITED) {
+        
+        ///Buttons are already handled in evaluate()
+        Button_Knob* isButton = dynamic_cast<Button_Knob*>(k);
+        if (isButton) {
+            return;
+        }
         ///for all selected instances update the same knob because it might not be slaved (see
         ///onSelectionChanged for an explanation why)
         for (Nodes::iterator it = _imp->instances.begin();it!=_imp->instances.end();++it) {
