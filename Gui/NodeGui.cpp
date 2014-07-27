@@ -204,7 +204,7 @@ void NodeGui::initialize(NodeGraph* dag,
         _panelDisplayed = true;
         assert(dockContainer);
         boost::shared_ptr<MultiInstancePanel> multiPanel;
-        if (_internalNode->isTrackerNode()) {
+        if (_internalNode->isTrackerNode() && _internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
             multiPanel.reset(new TrackerPanel(thisAsShared));
         }
         _settingsPanel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
@@ -1037,8 +1037,9 @@ void NodeGui::hideGui()
 
 void NodeGui::deactivate() {
     ///first deactivate all child instance if any
-    if (_internalNode->isMultiInstance()) {
+    if (_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        assert(panel);
         const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
         for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
              it!=childrenInstances.end(); ++it) {

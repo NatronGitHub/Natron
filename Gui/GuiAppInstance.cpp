@@ -185,10 +185,12 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
         _imp->_gui->createNewTrackerInterface(nodegui.get());
     }
     
+    ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
     if (multiInstanceParentName.empty()) {
         nodegui->initializeInputs();
-        nodegui->initializeKnobs();
     }
+    
+    nodegui->initializeKnobs();
     
     if (!loadRequest) {
         nodegui->beginEditKnobs();
