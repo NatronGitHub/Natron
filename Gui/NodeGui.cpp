@@ -93,8 +93,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _inputEdges()
 , _outputEdge(NULL)
 , _panelDisplayed(false)
-, _settingsPanel(0)
-, _mainInstancePanel()
+, _settingsPanel(NULL)
+, _mainInstancePanel(NULL)
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
 , _clonedGradient(NULL)
@@ -212,8 +212,8 @@ void NodeGui::initialize(NodeGraph* dag,
             ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
             ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
 
-            _mainInstancePanel.reset(new NodeSettingsPanel(boost::shared_ptr<MultiInstancePanel>(),_graph->getGui(),
-                                                       thisAsShared,dockContainer,dockContainer->parentWidget()));
+            _mainInstancePanel = new NodeSettingsPanel(boost::shared_ptr<MultiInstancePanel>(),_graph->getGui(),
+                                                       thisAsShared,dockContainer,dockContainer->parentWidget());
             _mainInstancePanel->blockSignals(true);
             _mainInstancePanel->setClosed(true);
             _mainInstancePanel->initializeKnobs();

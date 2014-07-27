@@ -413,7 +413,7 @@ private:
     ///This is valid only if the node is a multi-instance and this is the main instance.
     ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
     ///another panel for the main-instance (hidden) knobs to function properly
-    boost::shared_ptr<NodeSettingsPanel> _mainInstancePanel;
+    NodeSettingsPanel* _mainInstancePanel;
     
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
