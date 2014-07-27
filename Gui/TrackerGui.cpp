@@ -185,12 +185,20 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
             glVertex2d(_imp->lastMousePos.x() + offset, _imp->lastMousePos.y() - offset);
             glVertex2d(_imp->lastMousePos.x() - offset, _imp->lastMousePos.y() - offset);
             glEnd();
+            
+            ///draw a cross at the cursor position
+            double halfOffset = offset / 2.;
+            glBegin(GL_LINES);
+            glVertex2d(_imp->lastMousePos.x() - halfOffset, _imp->lastMousePos.y());
+            glVertex2d(_imp->lastMousePos.x() + halfOffset, _imp->lastMousePos.y());
+            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - halfOffset);
+            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + halfOffset);
+            glEnd();
+
             if (i == 0) {
                 glPopMatrix();
             }
-            
 
-           
         }
         glDisable(GL_LINE_SMOOTH);
         glDisable(GL_BLEND);
