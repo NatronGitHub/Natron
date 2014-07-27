@@ -1689,7 +1689,7 @@ void ViewerTab::setTrackerInterface(NodeGui* n)
         
         ///remove any existing tracker gui
         if (_imp->_currentTracker.first != NULL) {
-            removeRotoInterface(_imp->_currentTracker.first, false,true);
+            removeTrackerInterface(_imp->_currentTracker.first, false,true);
         }
         
         ///Add the widgets
@@ -1751,7 +1751,7 @@ void ViewerTab::removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAn
                 _imp->_currentTracker.second = 0;
                 
                 if (newTracker != _imp->_trackerNodes.end()) {
-                    setRotoInterface(newTracker->first);
+                    setTrackerInterface(newTracker->first);
                 }
             }
             

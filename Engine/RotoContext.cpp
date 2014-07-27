@@ -997,10 +997,10 @@ RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,
 : RotoItem(context,name,parent)
 , _imp(new RotoDrawableItemPrivate())
 {
-    QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this, SIGNAL(inversionChanged()));
+    QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(inversionChanged()));
     QObject::connect(this, SIGNAL(overlayColorChanged()), context, SIGNAL(refreshViewerOverlays()));
-    QObject::connect(_imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this, SIGNAL(shapeColorChanged()));
-    QObject::connect(_imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this,
+    QObject::connect(_imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(shapeColorChanged()));
+    QObject::connect(_imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this,
                      SIGNAL(compositingOperatorChanged()));
 }
 

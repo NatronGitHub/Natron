@@ -348,10 +348,14 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
         didSomething = true;
     } else if (controlHeld && !shiftHeld && !altHeld && e->key() == Qt::Key_A) {
         _imp->panel->onSelectAllButtonClicked();
-        didSomething = true;
+        std::list<Natron::Node*> selectedInstances;
+        _imp->panel->getSelectedInstances(&selectedInstances);
+        didSomething = !selectedInstances.empty();
     } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
         _imp->panel->onDeleteKeyPressed();
-        didSomething = true;
+        std::list<Natron::Node*> selectedInstances;
+        _imp->panel->getSelectedInstances(&selectedInstances);
+        didSomething = !selectedInstances.empty();
     }
     
     return didSomething;

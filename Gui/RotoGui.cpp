@@ -987,6 +987,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                 }
             }
         }
+        glCheckError();
     }
     
     glDisable(GL_LINE_SMOOTH);
@@ -1077,7 +1078,6 @@ void RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,double centerY,doub
     glVertex2f(right.x(), right.y() + arrowWidth);
     glEnd();
     
-    glEnd();
     glPopMatrix();
 }
 
@@ -1131,7 +1131,6 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     glEnd();
     
     glCheckError();
-    glDisable(GL_LINE_SMOOTH);
 
     
     QPointF midTop((topLeft.x() + btmRight.x()) / 2.,topLeft.y());
@@ -1203,6 +1202,8 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     
     glPointSize(1.f);
     glLineWidth(1.f);
+    glDisable(GL_LINE_SMOOTH);
+    glDisable(GL_BLEND);
     glPopAttrib();
     glColor4f(1., 1., 1., 1.);
 }
