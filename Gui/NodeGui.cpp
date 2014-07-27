@@ -74,6 +74,7 @@ static QString replaceLineBreaksWithHtmlParagraph(QString txt) {
     return txt;
 }
 
+
 NodeGui::NodeGui(QGraphicsItem *parent)
 : QObject()
 , QGraphicsItem(parent)
@@ -214,7 +215,7 @@ void NodeGui::initialize(NodeGraph* dag,
         dockContainer->addWidget(_settingsPanel);
         
         if (!requestedByLoad) {
-            if (!_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
+            if (_internalNode->getParentMultiInstanceName().empty()) {
                 _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
                 _graph->getGui()->addVisibleDockablePanel(_settingsPanel);
             }
@@ -1629,9 +1630,14 @@ void NodeGui::setNameItemHtml(const QString& name,const QString& label)
 
 void NodeGui::onNodeExtraLabelChanged(const QString& label)
 {
-    if (!_internalNode->isMultiInstance()) {
-        _nodeLabel = replaceLineBreaksWithHtmlParagraph(label); ///< maybe we should do this in the knob itself when the user writes ?
+    _nodeLabel = label;
+    if (_internalNode->isMultiInstance()) {
+        ///The multi-instances store in the kOfxParamStringSublabelName knob the name of the instance
+        ///Since the "main-instance" is the one displayed on the node-graph we don't want it to display its name
+        ///hence we remove it
+        _nodeLabel = String_KnobGui::removeNatronHtmlTag(_nodeLabel);
     }
+    _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(_internalNode->getName().c_str(),_nodeLabel);
 }
 

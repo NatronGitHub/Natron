@@ -513,7 +513,7 @@ public:
     void s_evaluateValueChangedInMainThread(int dimension,int reason) { emit evaluateValueChangedInMainThread(dimension,reason); }
     void s_animationLevelChanged(int level) { emit animationLevelChanged(level); }
     void s_deleted() { emit deleted(); }
-    void s_valueChanged(int dimension) { emit valueChanged(dimension); }
+    void s_valueChanged(int dimension,int reason) { emit valueChanged(dimension,reason); }
     void s_secretChanged() { emit secretChanged(); }
     void s_enabledChanged() { emit enabledChanged(); }
     void s_keyFrameSet(SequenceTime time,int dimension) { emit keyFrameSet(time,dimension); }
@@ -572,8 +572,10 @@ signals:
     ///emitted when the destructor is entered
     void deleted();
     
-    ///Emitted when the value is changed by the plugin by a call to setValue
-    void valueChanged(int dimension);
+    ///Emitted when the value is changed with a reason different than USER_EDITED
+    ///This can happen as the result of a setValue() call from the plug-in or by
+    ///a slaved knob whose master's value changed. The reason is passed in parameter.
+    void valueChanged(int dimension,int reason);
     
     ///Emitted when the secret state of the knob changed
     void secretChanged();

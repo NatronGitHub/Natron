@@ -125,7 +125,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     KnobHelper* helper = dynamic_cast<KnobHelper*>(knob.get());
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
     
-    QObject::connect(handler,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
+    QObject::connect(handler,SIGNAL(valueChanged(int,int)),this,SLOT(onInternalValueChanged(int,int)));
     QObject::connect(handler,SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
     QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),handler,SLOT(onKeyFrameSet(SequenceTime,int)));
     QObject::connect(handler,SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
@@ -845,7 +845,7 @@ QWidget* KnobGui::getFieldContainer() const {
     return _imp->field;
 }
 
-void KnobGui::onInternalValueChanged(int dimension) {
+void KnobGui::onInternalValueChanged(int dimension,int /*reason*/) {
     if(_imp->widgetCreated){
         updateGuiInternal(dimension);
     }

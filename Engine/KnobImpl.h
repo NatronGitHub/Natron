@@ -484,7 +484,6 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
     }
 
     if (_signalSlotHandler) {
-        //_signalSlotHandler->s_valueChanged(dimension);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
             checkAnimationLevel(dimension);
@@ -518,7 +517,7 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
                         SLOT(onMasterChanged(int)));
     resetMaster(dimension);
     
-    _signalSlotHandler->s_valueChanged(dimension);
+    _signalSlotHandler->s_valueChanged(dimension,reason);
     if (reason == Natron::PLUGIN_EDITED) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
@@ -796,9 +795,9 @@ template<typename T>
 void Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
-    (void)setValue(_defaultValues[dimension], dimension,Natron::PROJECT_LOADING,NULL,false);
+    (void)setValue(_defaultValues[dimension], dimension,Natron::RESTORE_DEFAULT,NULL,false);
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::RESTORE_DEFAULT);
     }
 }
 
@@ -840,7 +839,7 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
     for (int i = 0; i < dimMin;++i) {
         getCurve(i)->clone(*other->getCurve(i));
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(i);
+            _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }
         setEnabled(i, other->isEnabled(i));
     }
@@ -856,7 +855,7 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, 
     for (int i = 0; i < dimMin; ++i) {
         getCurve(i)->clone(*other->getCurve(i), offset, range);
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(i);
+            _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }
     }
     cloneExtraData(other,offset,range);

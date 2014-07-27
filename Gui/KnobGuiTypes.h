@@ -654,6 +654,8 @@ public slots:
     ///of the font size.
     static void parseFont(const QString& s,QFont& f);
     
+    static QString removeNatronHtmlTag(QString text);
+
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
@@ -676,6 +678,7 @@ private:
     
     void restoreTextInfosFromString();
     
+    
     /**
      * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
      * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
@@ -689,7 +692,6 @@ private:
      **/
     static QString stripWhitespaces(const QString& str);
     
-private:
     LineEdit *_lineEdit; //< if single line
     QWidget* _container; //< only used when multiline is on
     QVBoxLayout* _mainLayout; //< only used when multiline is on

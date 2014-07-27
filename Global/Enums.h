@@ -231,7 +231,8 @@ namespace Natron{
         PLUGIN_EDITED = 1, //< a plugin change triggered the call
         TIME_CHANGED = 2, //< a time-line seek changed the call
         PROJECT_LOADING = 3, //< the project loader triggered the call
-        SLAVE_REFRESH = 4 //< a master parameter ordered the slave to refresh its value
+        SLAVE_REFRESH = 4, //< a master parameter ordered the slave to refresh its value
+        RESTORE_DEFAULT = 5, //< the knob value has been restored to its defaults
     };
     
     enum AnimationLevel {

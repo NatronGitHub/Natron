@@ -93,6 +93,10 @@ struct MultiInstancePanelPrivate
     
     boost::shared_ptr<Natron::Node> getMainInstance() const { return mainInstance->getNode(); }
     
+    /**
+     * @brief Called to make an exact copy of a main-instance's knob. The resulting copy will
+     * be what is displayed on the GUI
+     **/
     void createKnob(const boost::shared_ptr<KnobI>& ref)
     {
         if (ref->isInstanceSpecific()) {
@@ -176,13 +180,16 @@ struct MultiInstancePanelPrivate
             ret->turnOffNewLine();
         }
         bool refSecret = ref->getIsSecret();
-        if (!refSecret && !declaredByPlugin && ref->getName() != "disable_natron") {
-            for (int i = 0; i < ref->getDimension();++i) {
-                ref->slaveTo(i, ret, i,true);
-            }
-        } else {
+        if (declaredByPlugin) {
             ret->setAllDimensionsEnabled(false);
+        } else {
+            ///If this is a knob added by Natron (i.e: the knobs in the "Node" page),
+            ///slave the main-instance knob to the GUI knob instead
+            for (int i = 0; i < ref->getDimension() ; ++i) {
+                ref->slaveTo(i, ret,i,true);
+            }
         }
+        
         if (refSecret) {
             ret->setSecret(true);
         }
@@ -525,7 +532,7 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
             dynamic_cast<KnobHelper*>(instanceKnobs[i].get())->getSignalSlotHandler();
             if (slotsHandler) {
-                QObject::connect(slotsHandler.get(), SIGNAL(valueChanged(int)), publicInterface,SLOT(onInstanceKnobValueChanged(int)));
+                QObject::connect(slotsHandler.get(), SIGNAL(valueChanged(int,int)), publicInterface,SLOT(onInstanceKnobValueChanged(int,int)));
             }
 
             if (instanceKnobs[i]->isInstanceSpecific()) {
@@ -836,10 +843,13 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
  
     
     for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin(); it!=newlySelectedInstances.end(); ++it) {
-        ///slave all the knobs
+
         if (it->second) {
             continue;
         }
+        
+        ///slave all the knobs that are declared by the plug-in (i.e: not the ones from the "Node" page)
+        //and which are not instance specific (not the knob displayed in the table)
         const std::vector<boost::shared_ptr<KnobI> >& knobs = it->first->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             
@@ -999,8 +1009,12 @@ void MultiInstancePanel::onCheckBoxChecked(bool checked)
     }
 }
 
-void MultiInstancePanel::onInstanceKnobValueChanged(int dim)
+void MultiInstancePanel::onInstanceKnobValueChanged(int dim,int reason)
 {
+    if ((Natron::ValueChangedReason)reason == Natron::SLAVE_REFRESH) {
+        return;
+    }
+    
     KnobSignalSlotHandler* signalEmitter = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (!signalEmitter) {
         return;

@@ -396,10 +396,10 @@ void KnobHelper::endValueChange()
             
             processNewValue(_imp->beginEndReason);
             
-            if (_signalSlotHandler && _imp->beginEndReason != Natron::SLAVE_REFRESH) {
+            if (_signalSlotHandler) {
                 if ((_imp->beginEndReason != Natron::USER_EDITED)) {
                     for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
-                        _signalSlotHandler->s_valueChanged(_imp->dimensionChanged[i]);
+                        _signalSlotHandler->s_valueChanged(_imp->dimensionChanged[i],(int)_imp->beginEndReason);
                     }
                 }
                 for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
@@ -715,7 +715,7 @@ bool KnobHelper::slaveTo(int dimension,
         QObject::connect(helper->_signalSlotHandler.get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(), SLOT(onMasterChanged(int)));
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension);
+        _signalSlotHandler->s_valueChanged(dimension,reason);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }

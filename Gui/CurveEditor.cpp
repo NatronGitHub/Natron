@@ -339,7 +339,9 @@ void NodeCurveEditorElement::checkVisibleState()
             _curve->setVisibleAndRefresh(false);
         }
     }
-    _knob->onInternalValueChanged(_dimension);//< also update the gui of the knob to indicate the animation is gone
+    // also update the gui of the knob to indicate the animation is gone
+    // the reason doesn't matter here
+    _knob->onInternalValueChanged(_dimension,Natron::PLUGIN_EDITED);
 
 }
 

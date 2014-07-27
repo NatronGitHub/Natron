@@ -903,12 +903,12 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     ///remember the last caller, this is the one on which we will call evaluate
     _imp->lastKnobChanged = k;
 
-    ///if the reason of the outermost begin call is OTHER_REASON then we don't call
+    ///if the reason of the outermost begin call is RESTORE_DEFAULT or PROJECT_LOADING then we don't call
     ///the onKnobValueChanged. This way the plugin can avoid infinite recursions by doing so:
     /// beginValueChange(PROJECT_LOADING)
     /// ...
     /// endValueChange()
-    if (reason != Natron::PROJECT_LOADING) {
+    if (reason != Natron::PROJECT_LOADING && reason != Natron::RESTORE_DEFAULT) {
         caller->onKnobValueChanged_public(k,reason);
     }
     
@@ -968,7 +968,7 @@ void Project::endProjectWideValueChanges(KnobHolder* caller){
         ///if the outermost bracket reason was not PROJECT_LOADING or TIME_CHANGED, then call evaluate
         ///on the last caller with
         ///the significant param recorded in the stackEvaluateRequest function.
-        if(outerMostReason != Natron::PROJECT_LOADING && outerMostReason != Natron::TIME_CHANGED){
+        if(outerMostReason != Natron::PROJECT_LOADING && outerMostReason != Natron::TIME_CHANGED) {
             
             caller->evaluate_public(_imp->lastKnobChanged,_imp->isSignificantChange,outerMostReason);
             

@@ -161,7 +161,7 @@ public slots:
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(int dimension);
+    void onInternalValueChanged(int dimension,int reason);
     
     void onInternalKeySet(SequenceTime time,int dimension);
 

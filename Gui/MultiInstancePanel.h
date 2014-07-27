@@ -95,7 +95,7 @@ public slots:
     
     void onDeleteKeyPressed();
     
-    void onInstanceKnobValueChanged(int dim);
+    void onInstanceKnobValueChanged(int dim,int reason);
     
     void resetSelectedInstances();
     

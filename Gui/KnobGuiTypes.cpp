@@ -2312,7 +2312,9 @@ void String_KnobGui::restoreTextInfosFromString()
         QString fontColorString;
         toFind = QString(kFontSizeTag);
         i = text.indexOf(toFind);
+        bool foundFontTag = false;
         if (i != -1) {
+            foundFontTag = true;
             i += toFind.size();
             while (i < text.size() && text.at(i).isDigit()) {
                 fontSizeString.append(text.at(i));
@@ -2321,6 +2323,7 @@ void String_KnobGui::restoreTextInfosFromString()
         }
         toFind = QString(kFontColorTag);
         i = text.indexOf(toFind,i);
+        assert((!foundFontTag && i == -1) || (foundFontTag && i != -1));
         if (i != -1) {
             i += toFind.size();
             while (i < text.size() && text.at(i) != QChar('"')) {
@@ -2330,6 +2333,7 @@ void String_KnobGui::restoreTextInfosFromString()
         }
         toFind = QString(kFontFaceTag);
         i = text.indexOf(toFind,i);
+        assert((!foundFontTag && i == -1) || (foundFontTag && i != -1));
         if (i != -1) {
             i += toFind.size();
             while (i < text.size() && text.at(i) != QChar('"')) {
@@ -2338,13 +2342,30 @@ void String_KnobGui::restoreTextInfosFromString()
             }
         }
         
-        _fontCombo->setCurrentFont(QFont(_fontFamily));
+        if (!foundFontTag) {
+            _fontSize = _fontSizeSpinBox->value();
+            _fontColor = Qt::black;
+            _fontFamily = _fontCombo->currentFont().family();
+            _boldActivated = false;
+            _italicActivated = false;
+            QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+            .arg(_fontSize)
+            .arg(_fontColor.name())
+            .arg(_fontFamily);
+            text.prepend(fontTag);
+            text.append(kFontEndTag);
+            _knob->setValue(text.toStdString(), 0);
+        } else {
+            _fontCombo->setCurrentFont(QFont(_fontFamily));
+            
+            _fontSize = fontSizeString.toInt();
+            
+            _fontSizeSpinBox->setValue(_fontSize);
+            
+            _fontColor = QColor(fontColorString);
+        }
         
-        _fontSize = fontSizeString.toInt();
-        
-        _fontSizeSpinBox->setValue(_fontSize);
-        
-        _fontColor = QColor(fontColorString);
+       
         updateFontColorIcon(_fontColor);
         
     }
@@ -2354,7 +2375,8 @@ void String_KnobGui::restoreTextInfosFromString()
 
 void String_KnobGui::parseFont(const QString& label,QFont& f)
 {
-    QString toFind = QString("<font size=\"");
+
+    QString toFind = QString(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
     assert(startFontTag != -1);
     startFontTag += toFind.size();
@@ -2366,10 +2388,10 @@ void String_KnobGui::parseFont(const QString& label,QFont& f)
         ++j;
     }
     
-    toFind = QString("face=\"");
+    toFind = QString(kFontFaceTag);
     startFontTag = label.indexOf(toFind,startFontTag);
     assert(startFontTag != -1);
-    
+    startFontTag += toFind.size();
     j = startFontTag;
     QString faceStr;
     while (j < label.size() && label.at(j) != QChar('"')) {
@@ -2395,6 +2417,7 @@ void String_KnobGui::onCurrentFontChanged(const QFont& font)
     //find the first font tag
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
+    _fontFamily = font.family();
     if (i != -1) {
         toFind = QString(kFontFaceTag);
         i = text.indexOf(toFind,i);
@@ -2408,9 +2431,16 @@ void String_KnobGui::onCurrentFontChanged(const QFont& font)
             ++j;
         }
         text.remove(i, currentFontFace.size());
+        text.insert(i != - 1 ? i : 0, font.family());
+
+    } else {
+        QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+        .arg(_fontSize)
+        .arg(_fontColor.name())
+        .arg(_fontFamily);
+        text.prepend(fontTag);
+        text.append(kFontEndTag);
     }
-    text.insert(i != - 1 ? i : 0, font.family());
-    _fontFamily = font.family();
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
     
 }
@@ -2550,6 +2580,20 @@ void String_KnobGui::italicChanged(bool toggled)
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
 }
 
+QString String_KnobGui::removeNatronHtmlTag(QString text)
+{
+    ///we also remove any custom data added by natron so the user doesn't see it
+    int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);
+    if (startCustomData != -1) {
+        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = text.indexOf(endTag,startCustomData);
+        assert(endCustomData != -1);
+        endCustomData += endTag.size();
+        text.remove(startCustomData, endCustomData - startCustomData);
+    }
+    return text;
+}
+
 QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
 {
     QString toFind = QString(kFontSizeTag);
@@ -2606,16 +2650,7 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     }
     
     ///we also remove any custom data added by natron so the user doesn't see it
-    int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);
-    if (startCustomData != -1) {
-        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
-        int endCustomData = text.indexOf(endTag,startCustomData);
-        assert(endCustomData != -1);
-        endCustomData += endTag.size();
-        text.remove(startCustomData, endCustomData - startCustomData);
-    }
-    
-    return text;
+    return removeNatronHtmlTag(text);
 }
 
 void String_KnobGui::updateGUI(int /*dimension*/)
