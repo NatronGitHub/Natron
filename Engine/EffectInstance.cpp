@@ -602,15 +602,18 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     }
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) {
-    
-   
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,
+                                                     const RenderScale& scale,
+                                                     int view,
+                                                     RectI* rod)
+{
     for (int i = 0; i < maximumInputs(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectI inputRod;
             bool isProjectFormat;
-            Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
+            Status st = input->getRegionOfDefinition_public(time, scale, view, &inputRod, &isProjectFormat);
+            assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == StatFailed) {
                 return st;
             }
@@ -620,13 +623,17 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const Ren
             } else {
                 rod->merge(inputRod);
             }
-
+            assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
         }
     }
     return StatReplyDefault;
 }
 
-bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScale& scale, int view,RectI* rod) const {
+bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
+                                              const RenderScale& scale,
+                                              int view,
+                                              RectI* rod) const
+{
     /*If the rod is infinite clip it to the project's default*/
     
     Format projectDefault;
@@ -634,6 +641,8 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert(!projectDefault.isNull());
     
+    assert(rod);
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
     bool x1Infinite = rod->x1 <= kOfxFlagInfiniteMin;
     bool y1Infinite = rod->y1 <= kOfxFlagInfiniteMin;
     bool x2Infinite = rod->x2 >= kOfxFlagInfiniteMax;
@@ -698,6 +707,7 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
     if (isProjectFormat && !isGenerator()) {
         isProjectFormat = false;
     }
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
     return isProjectFormat;
 }
 
@@ -1877,7 +1887,7 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
     }
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
@@ -1898,7 +1908,7 @@ bool EffectInstance::onOverlayPenDown_public(double scaleX,double scaleY,const Q
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -1929,7 +1939,7 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
     }
 
     assertActionIsNotRecursive();
@@ -1954,7 +1964,7 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
 
     assertActionIsNotRecursive();
     incrementRecursionLevel();
@@ -1977,7 +1987,7 @@ bool EffectInstance::onOverlayKeyDown_public(double scaleX,double scaleY,Natron:
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -2001,7 +2011,7 @@ bool EffectInstance::onOverlayKeyUp_public(double scaleX,double scaleY,Natron::K
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -2026,7 +2036,7 @@ bool EffectInstance::onOverlayKeyRepeat_public(double scaleX,double scaleY,Natro
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -2058,7 +2068,7 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
     }
 
     
@@ -2090,7 +2100,7 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
     }
 
     
@@ -2166,24 +2176,33 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
     return ret;
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
-                                            RectI* rod,bool* isProjectFormat)
+Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,
+                                                            const RenderScale& scale,
+                                                            int view,
+                                                            RectI* rod,
+                                                            bool* isProjectFormat)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    Natron::Status ret = getRegionOfDefinition(time, scale,view ,rod);
+    Natron::Status ret = getRegionOfDefinition(time, scale, view, rod);
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+
     decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
     return ret;
 }
 
 EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime time,RenderScale scale,
                                                                   const RectI& outputRoD,
-                                                                  const RectI& renderWindow,int view)
+                                                                  const RectI& renderWindow,
+                                                                  int view)
 {
     assertActionIsNotRecursive();
+    assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
     incrementRecursionLevel();
-    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, outputRoD,renderWindow, view);
+    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, outputRoD, renderWindow, view);
     decrementRecursionLevel();
     return ret;
 }
@@ -2303,29 +2322,33 @@ void EffectInstance::updateCurrentFrameRecursive(int time)
     }
 }
 
-void EffectInstance::getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD)
+void EffectInstance::getClipThreadStorageData(SequenceTime *time,
+                                              int *view,
+                                              unsigned int *mipMapLevel,
+                                              RectI *outputRoD)
 {
-    time = getApp()->getTimeLine()->currentFrame();
-    view = 0;
-    mipMapLevel = 0;
+    assert(time && view && mipMapLevel && outputRoD);
+    *time = getApp()->getTimeLine()->currentFrame();
+    *view = 0;
+    *mipMapLevel = 0;
     std::list<ViewerInstance*> connectedViewers;
     _node->hasViewersConnected(&connectedViewers);
     if (!connectedViewers.empty()) {
-        view = (*connectedViewers.begin())->getCurrentView();
-        mipMapLevel = (*connectedViewers.begin())->getMipMapLevel();
+        *view = (*connectedViewers.begin())->getCurrentView();
+        *mipMapLevel = (*connectedViewers.begin())->getMipMapLevel();
     }
     RenderScale scale;
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.x = Image::getScaleFromMipMapLevel(*mipMapLevel);
     scale.y = scale.x;
     bool isProjectFormat;
     
     ///we don't care if it fails
-    (void)getRegionOfDefinition_public(time, scale, view, &outputRoD,&isProjectFormat);
-    
-
+    (void)getRegionOfDefinition_public(*time, scale, *view, outputRoD, &isProjectFormat);
+    assert(outputRoD->x2 >= outputRoD->x1 && outputRoD->y2 >= outputRoD->y1);
 }
 
-void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason)
+void EffectInstance::onKnobValueChanged_public(KnobI* k,
+                                               Natron::ValueChangedReason reason)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
@@ -2341,7 +2364,8 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
             SequenceTime time ;
             int view ;
             unsigned int mipMapLevel;
-            getClipThreadStorageData(time, view, mipMapLevel, rod);
+            getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+            assert(rod.x2 >= rod.x1 && rod.y2 >= rod.y1);
             RenderScale scale;
             scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
             scale.y = scale.x;

@@ -637,14 +637,17 @@ OfxRectD rectToOfxRect2D(const RectI b){
 
 EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,
                                                               const RectI& outputRoD,
-                                                              const RectI& renderWindow,int view) {
-    
+                                                              const RectI& renderWindow,
+                                                              int view)
+{
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
-    if(!_initialized){
+    if (!_initialized) {
         return ret;
     }
-    
+    assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
+
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     ///before calling getRoIaction set the relevant infos on the clips
     effectInstance()->setClipsMipMapLevel(mipMapLevel);

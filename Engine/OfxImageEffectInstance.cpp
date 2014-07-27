@@ -608,7 +608,9 @@ void OfxImageEffectInstance::discardClipsImage()
 
 void OfxImageEffectInstance::setClipsOutputRoD(const RectI& rod)
 {
-    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+    assert(rod.x2 >= rod.x1 && rod.y2 >= rod.y1);
+
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->setOutputRoD(rod);
     }
 }
