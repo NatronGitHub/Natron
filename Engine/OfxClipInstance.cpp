@@ -105,6 +105,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
     SequenceTime first,last;
     EffectInstance* n = getAssociatedNode();
     if(n) {
+#pragma message WARN("In the same way than other data, we should store it in the thread storage to avoid recursive action calls.")
        n->getFrameRange_public(&first, &last);
     } else {
         assert(_nodeInstance);
