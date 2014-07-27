@@ -570,16 +570,12 @@ void DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared
     }
 }
 
-void DockablePanel::initializeKnobs() {
-    
-    /// function called to create the gui for each knob. It can be called several times in a row
-    /// without any damage
-    const std::vector< boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
-    
+void DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> >& knobs)
+{
     _imp->initializeKnobVector(knobs,NULL, false);
     
     ///add all knobs left  to the default page
-        
+    
     RotoPanel* roto = initializeRotoPanel();
     if (roto) {
         PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
@@ -607,7 +603,7 @@ void DockablePanel::initializeKnobs() {
                 parentTab = _imp->addPage(_imp->_defaultPageName);
             }
         }
-
+        
         assert(parentTab != _imp->_pages.end());
         QFormLayout* layout;
         if (_imp->_useScrollAreasForTabs) {
@@ -620,6 +616,14 @@ void DockablePanel::initializeKnobs() {
     }
     
     initializeExtraGui(_imp->_mainLayout);
+}
+
+void DockablePanel::initializeKnobs() {
+    
+    /// function called to create the gui for each knob. It can be called several times in a row
+    /// without any damage
+    const std::vector< boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
+    initializeKnobsInternal(knobs);
 }
 
 

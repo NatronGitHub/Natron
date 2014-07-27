@@ -182,12 +182,18 @@ struct MultiInstancePanelPrivate
         bool refSecret = ref->getIsSecret();
         if (declaredByPlugin) {
             ret->setAllDimensionsEnabled(false);
-        } else {
+        } else if (ret->getName() != "disable_natron") {
             ///If this is a knob added by Natron (i.e: the knobs in the "Node" page),
             ///slave the main-instance knob to the GUI knob instead
+            ///An exception is made for the "disable_natron" knob which GUI knob shouldn't be linked
             for (int i = 0; i < ref->getDimension() ; ++i) {
                 ref->slaveTo(i, ret,i,true);
             }
+        }
+        
+        ///Don't allow disabling of multi-instances
+        if (ret->getName() == "disable_natron") {
+            ret->setEnabled(false, 0);
         }
         
         if (refSecret) {
@@ -1011,6 +1017,9 @@ void MultiInstancePanel::onItemDataChanged(TableItem* item)
     
 }
 
+///The checkbox interacts directly with the "disable_natron" knob of the node
+///It doesn't call deactivate() on the node so calling isActivated() on a node
+///will still return true even if you set the value of "disable_natron" to false.
 void MultiInstancePanel::onCheckBoxChecked(bool checked)
 {
     AnimatedCheckBox* checkbox = qobject_cast<AnimatedCheckBox*>(sender());

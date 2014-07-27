@@ -198,7 +198,7 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
     } else {
         createWidget(layout);
     }
-    if(knob->isAnimationEnabled() && knob->typeName() != File_Knob::typeNameStatic()){
+    if(knob->isAnimationEnabled()){
         createAnimationButton(layout);
     }
     _imp->widgetCreated = true;

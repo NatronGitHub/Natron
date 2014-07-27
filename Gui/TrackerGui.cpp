@@ -108,6 +108,9 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
     ///For each instance: <pointer,selected ? >
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+        if (it->first->isNodeDisabled()) {
+            continue;
+        }
         if (it->second) {
             ///The track is selected, use the plug-ins interact
             Natron::EffectInstance* effect = it->first->getLiveInstance();
@@ -215,7 +218,7 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
     
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
-        if (it->second) {
+        if (it->second && !it->first->isNodeDisabled()) {
             Natron::EffectInstance* effect = it->first->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer->getViewer());
@@ -277,7 +280,7 @@ bool TrackerGui::penMotion(double scaleX,double scaleY,const QPointF& viewportPo
     
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
-        if (it->second) {
+        if (it->second && !it->first->isNodeDisabled()) {
             Natron::EffectInstance* effect = it->first->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer->getViewer());
@@ -301,7 +304,7 @@ bool TrackerGui::penUp(double scaleX,double scaleY,const QPointF& viewportPos,co
     bool didSomething = false;
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
-        if (it->second) {
+        if (it->second && !it->first->isNodeDisabled()) {
             Natron::EffectInstance* effect = it->first->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer->getViewer());
@@ -330,7 +333,7 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
-        if (it->second) {
+        if (it->second && !it->first->isNodeDisabled()) {
             Natron::EffectInstance* effect = it->first->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer->getViewer());
@@ -374,7 +377,7 @@ bool TrackerGui::keyUp(double scaleX,double scaleY,QKeyEvent* e)
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
-        if (it->second) {
+        if (it->second && !it->first->isNodeDisabled()) {
             Natron::EffectInstance* effect = it->first->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays(_imp->viewer->getViewer());

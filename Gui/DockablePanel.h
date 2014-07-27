@@ -198,6 +198,8 @@ protected:
     virtual void initializeExtraGui(QVBoxLayout* /*layout*/){}
     
 private:
+    
+    void initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> >& knobs);
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL {
         emit selected();

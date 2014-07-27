@@ -2041,7 +2041,7 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
         if (reason == Natron::USER_EDITED || reason == Natron::SLAVE_REFRESH) {
             emit previewKnobToggled();
         }
-    } else if (what == _imp->disableNodeKnob.get()) {
+    } else if (what == _imp->disableNodeKnob.get() && !_imp->isMultiInstance && !_imp->multiInstanceParent) {
         emit disabledKnobToggled(_imp->disableNodeKnob->getValue());
         getApp()->redrawAllViewers();
     } else if (what == _imp->nodeLabelKnob.get()) {

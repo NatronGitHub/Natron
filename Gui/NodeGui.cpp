@@ -94,6 +94,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _outputEdge(NULL)
 , _panelDisplayed(false)
 , _settingsPanel(0)
+, _mainInstancePanel()
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
 , _clonedGradient(NULL)
@@ -206,10 +207,20 @@ void NodeGui::initialize(NodeGraph* dag,
         boost::shared_ptr<MultiInstancePanel> multiPanel;
         if (_internalNode->isTrackerNode() && _internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
             multiPanel.reset(new TrackerPanel(thisAsShared));
+            
+            ///This is valid only if the node is a multi-instance and this is the main instance.
+            ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
+            ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
+
+            _mainInstancePanel.reset(new NodeSettingsPanel(boost::shared_ptr<MultiInstancePanel>(),_graph->getGui(),
+                                                       thisAsShared,dockContainer,dockContainer->parentWidget()));
+            _mainInstancePanel->blockSignals(true);
+            _mainInstancePanel->setClosed(true);
+            _mainInstancePanel->initializeKnobs();
         }
         _settingsPanel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
-        QObject::connect(_settingsPanel, SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
+        QObject::connect(_settingsPanel,SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
         QObject::connect(_settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(setDefaultGradientColor(QColor)));
 
         dockContainer->addWidget(_settingsPanel);
@@ -1173,6 +1184,9 @@ void NodeGui::paint(QPainter* /*painter*/,const QStyleOptionGraphicsItem* /*opti
 
 const std::map<boost::shared_ptr<KnobI> ,KnobGui*>& NodeGui::getKnobs() const{
     assert(_settingsPanel);
+    if (_mainInstancePanel) {
+        return _mainInstancePanel->getKnobs();
+    }
     return _settingsPanel->getKnobs();
 }
 
