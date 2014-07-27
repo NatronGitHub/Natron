@@ -33,6 +33,7 @@ ComboBox::ComboBox(QWidget* parent)
 #if IS_MAXIMUMTEXTSIZE_USEFUL
 , _maximumTextSize(0)
 #endif
+, _wasDirtyPriorToMousePress(false)
 {
     
     _mainLayout = new QHBoxLayout(this);
@@ -81,6 +82,7 @@ void ComboBox::mousePressEvent(QMouseEvent* e){
         QPixmap pixC;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
         _dropDownIcon->setPixmap(pixC);
+        _wasDirtyPriorToMousePress = _dropDownIcon->getDirty();
         setDirty(true);
         createMenu();
         QFrame::mousePressEvent(e);
@@ -92,7 +94,9 @@ void ComboBox::mouseReleaseEvent(QMouseEvent* e){
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
-    setDirty(false);
+    if (!_wasDirtyPriorToMousePress) {
+        setDirty(false);
+    }
     QFrame::mouseReleaseEvent(e);
 }
 
@@ -119,7 +123,9 @@ void ComboBox::createMenu(){
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_COMBOBOX, &pixC);
     _dropDownIcon->setPixmap(pixC);
-    setDirty(false);
+    if (!_wasDirtyPriorToMousePress) {
+        setDirty(false);
+    }
     
 }
 

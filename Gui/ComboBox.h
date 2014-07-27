@@ -52,7 +52,7 @@ class ComboBox : public QFrame
     std::vector<QAction*> _actions;
     MenuWithToolTips* _menu;
 
-
+    bool _wasDirtyPriorToMousePress;
 public:
     
     explicit ComboBox(QWidget* parent = 0);

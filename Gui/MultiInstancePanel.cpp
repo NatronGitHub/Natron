@@ -803,13 +803,39 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
     
     bool copyOnUnSlave = previouslySelectedInstances.size()  <= 1;
     
+    /// new selection
+    std::list<std::pair<Node*,bool> > newlySelectedInstances;
+    QModelIndexList newIndexes = newSelection.indexes();
+    for (int i = 0; i < newIndexes.size(); ++i) {
+        TableItem* item = _imp->model->item(newIndexes[i]);
+        if (item) {
+            item->setFlags(item->flags() | Qt::ItemIsEditable);
+        }
+    }
+    _imp->getNodesFromSelection(newIndexes, &newlySelectedInstances);
+    
+    ///Don't consider items that are in both previouslySelectedInstances && newlySelectedInstances
+    
+    
+    
     
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
     
     for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin(); it!=previouslySelectedInstances.end(); ++it) {
+        
+        ///if the item is in the new selection, don't consider it
+        bool skip = false;
+        for (std::list<std::pair<Node*,bool> >::iterator it2 = newlySelectedInstances.begin();
+             it2!=newlySelectedInstances.end(); ++it2) {
+            if (it2->first == it->first) {
+                skip = true;
+                break;
+            }
+        }
+        
         ///disconnect all the knobs
-        if (!it->second) {
+        if (!it->second || skip) {
             continue;
         }
         const std::vector<boost::shared_ptr<KnobI> >& knobs = it->first->getKnobs();
@@ -830,20 +856,20 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
         }
     }
     
-    ///now slave new selection
-    std::list<std::pair<Node*,bool> > newlySelectedInstances;
-    QModelIndexList newIndexes = newSelection.indexes();
-    for (int i = 0; i < newIndexes.size(); ++i) {
-        TableItem* item = _imp->model->item(newIndexes[i]);
-        if (item) {
-            item->setFlags(item->flags() | Qt::ItemIsEditable);
-        }
-    }
-    _imp->getNodesFromSelection(newIndexes, &newlySelectedInstances);
  
     
     for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin(); it!=newlySelectedInstances.end(); ++it) {
 
+        ///if the item is in the old selection, don't consider it
+        bool skip = false;
+        for (std::list<std::pair<Node*,bool> >::iterator it2 = previouslySelectedInstances.begin();
+             it2!=previouslySelectedInstances.end(); ++it2) {
+            if (it2->first == it->first) {
+                skip = true;
+                break;
+            }
+        }
+        
         if (it->second) {
             continue;
         }
@@ -858,19 +884,16 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
                 boost::shared_ptr<KnobI> otherKnob = getKnobByName(knobs[i]->getName());
                 assert(otherKnob);
                 
-                ///Slave only when 1 node is attached to the knobs
-                if (!setDirty) {
-                    
-                    ///do not slave buttons, handle them separatly in onButtonTriggered()
-                    Button_Knob* isButton = dynamic_cast<Button_Knob*>(knobs[i].get());
-                    if (!isButton) {
-                        otherKnob->clone(knobs[i]);
-                        for (int j = 0; j < knobs[i]->getDimension();++j) {
-                            knobs[i]->slaveTo(j, otherKnob, j,true);
-                        }
+                ///do not slave buttons, handle them separatly in onButtonTriggered()
+                Button_Knob* isButton = dynamic_cast<Button_Knob*>(knobs[i].get());
+                if (!isButton) {
+                    otherKnob->clone(knobs[i]);
+                    for (int j = 0; j < knobs[i]->getDimension();++j) {
+                        knobs[i]->slaveTo(j, otherKnob, j,true);
                     }
-                    
                 }
+                
+                
                 otherKnob->setAllDimensionsEnabled(true);
                 otherKnob->setDirty(setDirty);
                 
