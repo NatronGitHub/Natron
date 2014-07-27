@@ -326,7 +326,7 @@ DockablePanel::DockablePanel(Gui* gui
             QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
             _imp->_colorButton->setFixedSize(15,15);
             
-            if (iseffect) {
+            if (iseffect && !iseffect->getNode()->isMultiInstance()) {
                 ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
                 iseffect->getNode()->showKeyframesOnTimeline(true);
             }
@@ -943,7 +943,7 @@ void DockablePanel::showHelp(){
     QToolTip::showText(QCursor::pos(), _imp->_helpButton->toolTip());
 }
 
-void DockablePanel::setClosed2(bool c,bool setTimelineKeys)
+void DockablePanel::setClosed(bool c)
 {
     if (_imp->_floating) {
         floatPanel();
@@ -958,12 +958,34 @@ void DockablePanel::setClosed2(bool c,bool setTimelineKeys)
     }
     emit closeChanged(c);
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (nodePanel && setTimelineKeys) {
-        if (c) {
-            nodePanel->getNode()->getNode()->hideKeyframesFromTimeline(true);
+    if (nodePanel) {
+        boost::shared_ptr<Natron::Node> internalNode = nodePanel->getNode()->getNode();
+        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        
+        if (panel) {
+            ///show all selected instances
+            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+            
+            std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            ++next;
+            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+                 it!=childrenInstances.end(); ++it,++next) {
+                if (c) {
+                    it->first->hideKeyframesFromTimeline(next == childrenInstances.end());
+                } else if (!c && it->second) {
+                    it->first->showKeyframesOnTimeline(next == childrenInstances.end());
+                }
+                
+            }
         } else {
-            nodePanel->getNode()->getNode()->showKeyframesOnTimeline(true);
+            ///Regular show/hide
+            if (c) {
+                internalNode->hideKeyframesFromTimeline(true);
+            } else {
+                internalNode->showKeyframesOnTimeline(true);
+            }
         }
+
     }
     if (!c) {
         _imp->_gui->addVisibleDockablePanel(this);
@@ -986,8 +1008,24 @@ void DockablePanel::closePanel() {
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        nodePanel->getNode()->getNode()->hideKeyframesFromTimeline(true);
+        boost::shared_ptr<Natron::Node> internalNode = nodePanel->getNode()->getNode();
+        internalNode->hideKeyframesFromTimeline(true);
+        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        if (panel) {
+            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+            
+            std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            ++next;
+            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+                 it!=childrenInstances.end(); ++it,++next) {
+                if (it->second && it->first != internalNode) {
+                    it->first->hideKeyframesFromTimeline(next == childrenInstances.end());
+                }
+            }
+        }
     }
+    
+    
     getGui()->getApp()->redrawAllViewers();
     
 }

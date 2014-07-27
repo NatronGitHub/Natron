@@ -232,7 +232,7 @@ void NodeGui::initialize(NodeGraph* dag,
             }
         } else {
             if (_settingsPanel) {
-                _settingsPanel->setClosed2(true,false);
+                _settingsPanel->setClosed(true);
             }
         }
         
@@ -1055,12 +1055,9 @@ void NodeGui::deactivate() {
         ///Remove keyframes since the settings panel is already closed anyway
         const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
         
-        std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-        ++next;
         for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-             it!=childrenInstances.end(); ++it,++next) {
+             it!=childrenInstances.end(); ++it) {
             
-            it->first->hideKeyframesFromTimeline(next == childrenInstances.end());
             if (it->first == _internalNode) {
                 continue;
             }
@@ -1099,8 +1096,7 @@ void NodeGui::initializeKnobs(){
 
 void NodeGui::setVisibleSettingsPanel(bool b){
     if (_settingsPanel) {
-        bool setTimelineKeys = !_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty();
-        _settingsPanel->setClosed2(!b,setTimelineKeys);
+        _settingsPanel->setClosed(!b);
     }
 }
 

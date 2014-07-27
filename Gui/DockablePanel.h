@@ -125,9 +125,6 @@ public:
     
     KnobHolder* getHolder() const;
     
-    void setClosed2(bool c,bool setTimelineKeys);
-
-    
 public slots:
     
     /*Internal slot, not meant to be called externally.*/
@@ -165,7 +162,7 @@ public slots:
     
     void onColorDialogColorChanged(const QColor& color);
     
-    void setClosed(bool closed) { setClosed2(closed,true); }
+    void setClosed(bool closed);
     
 signals:
     

@@ -619,7 +619,7 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
     ///select the new item
     QModelIndex newIndex = model->index(newRowIndex, 0);
     assert(newIndex.isValid());
-    view->selectionModel()->select(newIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+    view->selectionModel()->select(newIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 void MultiInstancePanel::selectNode(const boost::shared_ptr<Natron::Node>& node,bool addToSelection)
