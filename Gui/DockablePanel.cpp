@@ -273,6 +273,11 @@ DockablePanel::DockablePanel(Gui* gui
             float r,g,b;
             Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
             NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
+            MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
+            if (isMultiInstance) {
+                iseffect = isMultiInstance->getMainInstance()->getLiveInstance();
+                assert(iseffect);
+            }
             if (iseffect) {
                 std::list<std::string> grouping;
                 iseffect->pluginGrouping(&grouping);
