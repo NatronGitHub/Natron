@@ -884,15 +884,18 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
                 boost::shared_ptr<KnobI> otherKnob = getKnobByName(knobs[i]->getName());
                 assert(otherKnob);
                 
-                ///do not slave buttons, handle them separatly in onButtonTriggered()
-                Button_Knob* isButton = dynamic_cast<Button_Knob*>(knobs[i].get());
-                if (!isButton) {
-                    otherKnob->clone(knobs[i]);
-                    for (int j = 0; j < knobs[i]->getDimension();++j) {
-                        knobs[i]->slaveTo(j, otherKnob, j,true);
+                ///Don't slave knobs when several are selected otherwise all the instances would then share the same values
+                ///while being selected
+                if (!setDirty) {
+                    ///do not slave buttons, handle them separatly in onButtonTriggered()
+                    Button_Knob* isButton = dynamic_cast<Button_Knob*>(knobs[i].get());
+                    if (!isButton) {
+                        otherKnob->clone(knobs[i]);
+                        for (int j = 0; j < knobs[i]->getDimension();++j) {
+                            knobs[i]->slaveTo(j, otherKnob, j,true);
+                        }
                     }
                 }
-                
                 
                 otherKnob->setAllDimensionsEnabled(true);
                 otherKnob->setDirty(setDirty);
@@ -1092,13 +1095,13 @@ void MultiInstancePanel::onInstanceKnobValueChanged(int dim,int reason)
                         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                         if (isInt) {
-                            dynamic_cast<Knob<int>*>(master.second.get())->clone(knob);
+                            dynamic_cast<Knob<int>*>(master.second.get())->clone(knob.get());
                         } else if (isBool) {
-                            dynamic_cast<Knob<bool>*>(master.second.get())->clone(knob);
+                            dynamic_cast<Knob<bool>*>(master.second.get())->clone(knob.get());
                         } else if (isDouble) {
-                            dynamic_cast<Knob<double>*>(master.second.get())->clone(knob);
+                            dynamic_cast<Knob<double>*>(master.second.get())->clone(knob.get());
                         } else if (isString) {
-                            dynamic_cast<Knob<std::string>*>(master.second.get())->clone(knob);
+                            dynamic_cast<Knob<std::string>*>(master.second.get())->clone(knob.get());
                         }
                         knob->slaveTo(dim, master.second, master.first,true);
                         --_imp->knobValueRecursion;
@@ -1198,6 +1201,41 @@ void MultiInstancePanel::onButtonTriggered(Button_Knob* button)
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(button->getName());
         assert(k && dynamic_cast<Button_Knob*>(k.get()));
         (*it)->getLiveInstance()->onKnobValueChanged_public(k.get(),USER_EDITED);
+    }
+}
+
+void
+MultiInstancePanel::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason)
+{
+    if (reason == Natron::USER_EDITED) {
+        ///for all selected instances update the same knob because it might not be slaved (see
+        ///onSelectionChanged for an explanation why)
+        for (Nodes::iterator it = _imp->instances.begin();it!=_imp->instances.end();++it) {
+            if (it->second) {
+                boost::shared_ptr<KnobI> sameKnob = it->first->getKnobByName(k->getName());
+                assert(sameKnob);
+                Knob<int>* isInt = dynamic_cast<Knob<int>*>(sameKnob.get());
+                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(sameKnob.get());
+                Knob<double>* isDouble = dynamic_cast<Knob<double>*>(sameKnob.get());
+                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sameKnob.get());
+                if (isInt) {
+                    isInt->clone(k);
+                } else if (isBool) {
+                    isBool->clone(k);
+                } else if (isDouble) {
+                    isDouble->clone(k);
+                } else if (isString) {
+                    isString->clone(k);
+                }
+                sameKnob->beginValueChange(Natron::PLUGIN_EDITED);
+                for (int i = 0; i < sameKnob->getDimension(); ++i) {
+                    sameKnob->evaluateValueChange(i, Natron::PLUGIN_EDITED);
+                }
+                sameKnob->endValueChange();
+                
+
+            }
+        }
     }
 }
 

@@ -480,7 +480,7 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
     resetMaster(dimension);
     if (copyState) {
         ///clone the master
-        clone(master.second);
+        clone(master.second.get());
     }
 
     if (_signalSlotHandler) {
@@ -510,7 +510,7 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
         }
         getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
         
-        cloneExtraData(master.second);
+        cloneExtraData(master.second.get());
     }
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
     QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
@@ -803,36 +803,36 @@ void Knob<T>::resetToDefaultValue(int dimension)
 
 
 template<>
-void Knob<int>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<int>::cloneValues(KnobI* other)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other.get());
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     assert(isInt);
     _values = isInt->_values;
 }
 template<>
-void Knob<bool>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<bool>::cloneValues(KnobI* other)
 {
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other.get());
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     assert(isBool),
     _values = isBool->_values;
 }
 template<>
-void Knob<double>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<double>::cloneValues(KnobI* other)
 {
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other.get());
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     assert(isDouble);
     _values = isDouble->_values;
 }
 template<>
-void Knob<std::string>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<std::string>::cloneValues(KnobI* other)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other.get());
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
     assert(isString);
     _values = isString->_values;
 }
 
 template<typename T>
-void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
+void Knob<T>::clone(KnobI* other)
 {
     int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
@@ -841,14 +841,14 @@ void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }
-        setEnabled(i, other->isEnabled(i));
+        //setEnabled(i, other->isEnabled(i));
     }
     cloneExtraData(other);
-    setSecret(other->getIsSecret());
+    //setSecret(other->getIsSecret());
 }
 
 template<typename T>
-void Knob<T>::clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
+void Knob<T>::clone(KnobI* other, SequenceTime offset, const RangeD* range)
 {
     cloneValues(other);
     int dimMin = std::min(getDimension() , other->getDimension());

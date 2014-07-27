@@ -271,7 +271,7 @@ signals:
     
 private:
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -366,7 +366,6 @@ signals:
     
 private:
     
-    //virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -714,9 +713,9 @@ private:
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     
     static const std::string _typeNameStr;
 };

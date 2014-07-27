@@ -591,9 +591,9 @@ Double_Knob::~Double_Knob()
     }
 }
 
-void Double_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+void Double_Knob::cloneExtraData(KnobI* other)
 {
-    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other.get());
+    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other);
     if (!isDouble) {
         return;
     }
@@ -686,15 +686,6 @@ const std::string &Choice_Knob::getActiveEntryText() const
     return _entries[activeIndex];
 }
 
-//void Choice_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
-//{
-//    Choice_Knob* oChoice = dynamic_cast<Choice_Knob*>(other.get());
-//    if (oChoice) {
-//        _entries = oChoice->_entries;
-//        _entriesHelp = oChoice->_entriesHelp;
-//        emit populated();
-//    }
-//}
 
 /******************************SEPARATOR_KNOB**************************************/
 
@@ -1242,10 +1233,10 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int dimension)
 }
 
 
-void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+void Parametric_Knob::cloneExtraData(KnobI* other)
 {
     ///Mt-safe as Curve is MT-safe
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
     if (isParametric && isParametric->getDimension() == getDimension()) {
         for (int i = 0; i < getDimension(); ++i) {
             _curves[i]->clone(*isParametric->getParametricCurve(i));
@@ -1253,9 +1244,9 @@ void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
     }
 }
 
-void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
+void Parametric_Knob::cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range)
 {
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
     if (isParametric) {
         int dimMin = std::min(getDimension(), isParametric->getDimension());
         for (int i = 0; i < dimMin; ++i) {

@@ -301,7 +301,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         color.setRgbF(r, g, b);
         bd->setCurrentColor(color);
         bd->setName(it->getName().c_str());
-        bd->getLabelKnob()->clone(it->getLabelSerialization());
+        bd->getLabelKnob()->clone(it->getLabelSerialization().get());
         bd->refreshTextLabelFromKnob();
         
         if (it->isSelected()) {

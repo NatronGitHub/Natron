@@ -1226,17 +1226,17 @@ int KnobHolder::getRecursionLevel() const
 }
 
 /***************************STRING ANIMATION******************************************/
-void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+void AnimatingString_KnobHelper::cloneExtraData(KnobI* other)
 {
-    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other.get());
+    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
     if (isAnimatedString) {
         _animation->clone(isAnimatedString->getAnimation());
     }
 }
 
-void AnimatingString_KnobHelper::cloneExtraData(const boost::shared_ptr<KnobI> &other, SequenceTime offset, const RangeD* range)
+void AnimatingString_KnobHelper::cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range)
 {
-    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other.get());
+    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
     if (isAnimatedString) {
         _animation->clone(isAnimatedString->getAnimation(), offset, range);
     }

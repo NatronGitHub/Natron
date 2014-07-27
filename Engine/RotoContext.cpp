@@ -1013,11 +1013,11 @@ void RotoDrawableItem::clone(const RotoDrawableItem& other)
 {
     {
         QMutexLocker l(&itemMutex);
-        _imp->activated->clone(other._imp->activated);
-        _imp->feather->clone(other._imp->feather);
-        _imp->featherFallOff->clone(other._imp->featherFallOff);
-        _imp->opacity->clone(other._imp->opacity);
-        _imp->inverted->clone(other._imp->inverted);
+        _imp->activated->clone(other._imp->activated.get());
+        _imp->feather->clone(other._imp->feather.get());
+        _imp->featherFallOff->clone(other._imp->featherFallOff.get());
+        _imp->opacity->clone(other._imp->opacity.get());
+        _imp->inverted->clone(other._imp->inverted.get());
         memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double)*4);
     }
     RotoItem::clone(other);
@@ -1066,14 +1066,14 @@ void RotoDrawableItem::load(const RotoItemSerialization &obj)
     
     
     {
-        _imp->activated->clone(s._activated.getKnob());
-        _imp->opacity->clone(s._opacity.getKnob());
-        _imp->feather->clone(s._feather.getKnob());
-        _imp->featherFallOff->clone(s._featherFallOff.getKnob());
-        _imp->inverted->clone(s._inverted.getKnob());
+        _imp->activated->clone(s._activated.getKnob().get());
+        _imp->opacity->clone(s._opacity.getKnob().get());
+        _imp->feather->clone(s._feather.getKnob().get());
+        _imp->featherFallOff->clone(s._featherFallOff.getKnob().get());
+        _imp->inverted->clone(s._inverted.getKnob().get());
         if (s._hasColorAndCompOp) {
-            _imp->color->clone(s._color.getKnob());
-            _imp->compOperator->clone(s._compOp.getKnob());
+            _imp->color->clone(s._color.getKnob().get());
+            _imp->compOperator->clone(s._compOp.getKnob().get());
         }
         QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
@@ -3719,13 +3719,13 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
         boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
-        _imp->activated->clone(activated);
-        _imp->feather->clone(feather);
-        _imp->featherFallOff->clone(featherFallOff);
-        _imp->opacity->clone(opacity);
-        _imp->inverted->clone(inverted);
-        _imp->colorKnob->clone(colorknob);
-        _imp->compOperator->clone(compOp);
+        _imp->activated->clone(activated.get());
+        _imp->feather->clone(feather.get());
+        _imp->featherFallOff->clone(featherFallOff.get());
+        _imp->opacity->clone(opacity.get());
+        _imp->inverted->clone(inverted.get());
+        _imp->colorKnob->clone(colorknob.get());
+        _imp->compOperator->clone(compOp.get());
         
         ///link this bezier knobs to the context
         activated->slaveTo(0, _imp->activated, 0);

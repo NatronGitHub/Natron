@@ -104,11 +104,14 @@ public:
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
      * to this knob. This function calls cloneExtraData.
+     * The evaluateValueChange function will not be called as a result of the clone.
+     * However a valueChanged signal will be emitted by the KnobSignalSlotHandler if there's any.
      *
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
-    virtual void clone(const boost::shared_ptr<KnobI>& other) = 0;
-    
+    virtual void clone(KnobI* other) = 0;
+    virtual void clone(const boost::shared_ptr<KnobI>& other) { clone(other.get()); }
+
     /**
      * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
      * on the keyframes time and only the keyframes withing the given range are copied.
@@ -118,7 +121,10 @@ public:
      * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
      * The restriction on types still apply.
      **/
-    virtual void clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) = 0;
+    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range) = 0;
+    virtual void clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) {
+        clone(other.get(),offset,range);
+    }
     
 protected:
     
@@ -796,8 +802,8 @@ protected:
      * @brief Called when you must copy any extra data you maintain from the other knob.
      * The other knob is guaranteed to be of the same type.
      **/
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/) {}
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/, SequenceTime /*offset*/, const RangeD* /*range*/) {}
+    virtual void cloneExtraData(KnobI* /*other*/) {}
+    virtual void cloneExtraData(KnobI* /*other*/, SequenceTime /*offset*/, const RangeD* /*range*/) {}
     
     /**
      * @brief Called when a keyframe is removed.
@@ -976,13 +982,13 @@ public:
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
     
-    virtual void clone(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    virtual void clone(KnobI* other)  OVERRIDE FINAL;
     
-    virtual void clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
+    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     
 private:
     
-    void cloneValues(const boost::shared_ptr<KnobI>& other);
+    void cloneValues(KnobI* other);
     
     T getValueFromMaster(int dimension);
     
@@ -1045,9 +1051,9 @@ public:
     
 protected:
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other) OVERRIDE;
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE;
     
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE ;
     
