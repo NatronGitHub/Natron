@@ -35,18 +35,19 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
-namespace Natron{
+namespace Natron {
 
 
 Project::Project(AppInstance* appInstance)
-    : KnobHolder(appInstance)
+    : QObject()
+    , KnobHolder(appInstance)
     , _imp(new ProjectPrivate(this))
 {
     QObject::connect(_imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()));
 }
 
 Project::~Project() {
-    clearNodes(false);
+    
     
     ///Don't clear autosaves if the program is shutting down by user request.
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
@@ -643,11 +644,13 @@ void Project::clearNodes(bool emitSignal) {
     ///Kill thread pool so threads are killed before killing thread storage
     QThreadPool::globalInstance()->waitForDone();
 
+
     ///Kill effects
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),true,false);
+        nodesToDelete[i]->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false);
         nodesToDelete[i]->removeReferences();
     }
+    
     {
         QMutexLocker l(&_imp->nodesLock);
         _imp->currentNodes.clear();
