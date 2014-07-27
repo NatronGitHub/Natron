@@ -45,6 +45,7 @@
 #include "Gui/Splitter.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeBackDrop.h"
+#include "Gui/MultiInstancePanel.h"
 
 ProjectGui::ProjectGui(Gui* gui)
 : _gui(gui)
@@ -429,6 +430,27 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodesGui.begin();it!=nodesGui.end();++it) {
         (*it)->refreshEdges();
         (*it)->refreshSlaveMasterLinkPosition();
+        
+        ///restore the multi-instance panels now that all nodes are restored
+        std::string parentName = (*it)->getNode()->getParentMultiInstanceName();
+        
+        if (!parentName.empty()) {
+            boost::shared_ptr<NodeGui> parent;
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin();it2!=nodesGui.end();++it2) {
+                if ((*it2)->getNode()->getName() == parentName) {
+                    parent = *it2;
+                    break;
+                }
+            }
+            
+            ///The parent must have been restored already.
+            assert(parent);
+            
+            boost::shared_ptr<MultiInstancePanel> panel = parent->getMultiInstancePanel();
+            ///the main instance must have a panel!
+            assert(panel);
+            panel->addRow((*it)->getNode());
+        }
     }
     
     ///restore the histograms

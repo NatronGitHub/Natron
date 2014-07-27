@@ -2385,6 +2385,11 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
             decrementRecursionLevel();
         }
         
+        ///Clear input images pointers that were stored in getImage() for the main-thread.
+        ///This is safe to do so because if this is called while in render() it won't clear the input images
+        ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
+        ///and whose render() function is never called.
+        _imp->clearInputImagePointers();
         
     }
     

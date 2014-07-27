@@ -167,13 +167,6 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
         
         boost::shared_ptr<NodeGui> parentNodeGui = getNodeGui(multiInstanceParentName);
         nodegui->setParentMultiInstance(parentNodeGui);
-        ///If this is a load request, restore the multi instance table
-        if (loadRequest) {
-            boost::shared_ptr<MultiInstancePanel> panel = parentNodeGui->getMultiInstancePanel();
-            ///the main instance must have a panel!
-            assert(panel);
-            panel->addRow(node);
-        }
     }
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));
     
