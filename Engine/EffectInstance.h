@@ -754,7 +754,7 @@ protected:
      * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
      * viewer and the rod of the output.
      **/
-    void getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD) ;
+    void getClipThreadStorageData(SequenceTime *time, int *view, unsigned int *mipMapLevel, RectI *outputRoD);
     
     boost::shared_ptr<Node> _node; //< the node holding this effect
 
