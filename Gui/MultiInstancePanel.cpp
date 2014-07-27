@@ -1227,13 +1227,8 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reaso
                 } else if (isString) {
                     isString->clone(k);
                 }
-                sameKnob->beginValueChange(Natron::PLUGIN_EDITED);
-                for (int i = 0; i < sameKnob->getDimension(); ++i) {
-                    sameKnob->evaluateValueChange(i, Natron::PLUGIN_EDITED);
-                }
-                sameKnob->endValueChange();
                 
-
+                sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), PLUGIN_EDITED);
             }
         }
     }
