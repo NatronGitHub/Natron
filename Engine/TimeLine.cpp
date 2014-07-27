@@ -22,23 +22,29 @@ _firstFrame(0)
 , _project(project)
 {}
 
-void TimeLine::setFrameRange(SequenceTime first,SequenceTime last){
-    QMutexLocker l(&_lock);
-    SequenceTime oldFirst = _firstFrame;
-    SequenceTime oldLast = _lastFrame;
-    _firstFrame = first;
-    _lastFrame = last;
+void TimeLine::setFrameRange(SequenceTime first,SequenceTime last) {
+    SequenceTime oldFirst,oldLast;
+    {
+        
+        QMutexLocker l(&_lock);
+        oldFirst = _firstFrame;
+        oldLast = _lastFrame;
+        _firstFrame = first;
+        _lastFrame = last;
+    }
     if(first != oldFirst || last != oldLast){
         emit frameRangeChanged(first, last);
         setBoundaries(first,last);
     }
-
+    
 }
 
 void TimeLine::seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller){
-    QMutexLocker l(&_lock);
-    _currentFrame = frame;
-    _project->setLastTimelineSeekCaller(caller);
+    {
+        QMutexLocker l(&_lock);
+        _currentFrame = frame;
+        _project->setLastTimelineSeekCaller(caller);
+    }
     emit frameChanged(_currentFrame,(int)Natron::PLAYBACK_SEEK);
 }
 
