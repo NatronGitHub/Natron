@@ -650,6 +650,8 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
     
     ///Get the union of the inputs.
     RectI inputsUnion;
+    
+    ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         for (int i = 0; i < maximumInputs(); ++i) {
             Natron::EffectInstance* input = input_other_thread(i);

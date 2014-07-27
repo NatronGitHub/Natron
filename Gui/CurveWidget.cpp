@@ -137,7 +137,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2,con
     }
     
     if (x1 < xminCurveWidgetCoord) {
-         if (curveYRange.first == INT_MIN && curveYRange.second == INT_MAX) {
+         if (curveYRange.first <= kOfxFlagInfiniteMin && curveYRange.second >= kOfxFlagInfiniteMax) {
             *x2 = xminCurveWidgetCoord;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
@@ -170,7 +170,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1, double* x2,con
             }
         }
     } else if(x1 >= xmaxCurveWidgetCoord) {
-        if (curveYRange.first == INT_MIN && curveYRange.second == INT_MAX) {
+        if (curveYRange.first <= kOfxFlagInfiniteMin && curveYRange.second >= kOfxFlagInfiniteMax) {
             *x2 = _curveWidget->width() - 1;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
