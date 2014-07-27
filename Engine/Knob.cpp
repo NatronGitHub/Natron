@@ -1225,6 +1225,27 @@ int KnobHolder::getRecursionLevel() const
     }
 }
 
+void KnobHolder::restoreDefaultValues()
+{
+    aboutToRestoreDefaultValues();
+    notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
+    
+    for (U32 i = 0; i < _imp->knobs.size() ;++i) {
+        Button_Knob* isBtn = dynamic_cast<Button_Knob*>(_imp->knobs[i].get());
+        
+        ///Don't restore buttons and the node label
+        if (!isBtn && _imp->knobs[i]->getName() != "label_natron") {
+            for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
+                _imp->knobs[i]->resetToDefaultValue(d);
+            }
+        }
+    }
+    notifyProjectEndKnobsValuesChanged();
+    evaluate_public(NULL, true, Natron::USER_EDITED);
+    
+
+}
+
 /***************************STRING ANIMATION******************************************/
 void AnimatingString_KnobHelper::cloneExtraData(KnobI* other)
 {

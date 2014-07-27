@@ -1051,9 +1051,16 @@ void NodeGui::deactivate() {
     if (_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         assert(panel);
+        
+        ///Remove keyframes since the settings panel is already closed anyway
         const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+        
+        std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+        ++next;
         for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-             it!=childrenInstances.end(); ++it) {
+             it!=childrenInstances.end(); ++it,++next) {
+            
+            it->first->hideKeyframesFromTimeline(next == childrenInstances.end());
             if (it->first == _internalNode) {
                 continue;
             }

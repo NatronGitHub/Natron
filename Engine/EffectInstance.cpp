@@ -2430,6 +2430,18 @@ void EffectInstance::clearLastRenderedImage()
     }
 }
 
+
+void EffectInstance::aboutToRestoreDefaultValues()
+{
+    ///Invalidate the cache by incrementing the age
+    _node->incrementKnobsAge();
+    
+    if (_node->areKeyframesVisibleOnTimeline()) {
+        _node->hideKeyframesFromTimeline(true);
+    }
+    
+}
+
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 : Natron::EffectInstance(node)
 , _videoEngine(node ? new VideoEngine(this) : 0)

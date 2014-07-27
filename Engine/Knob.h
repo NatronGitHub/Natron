@@ -1116,7 +1116,15 @@ public:
     
     virtual bool isProject() const { return false; }
     
+    /**
+     * @brief Restore all knobs to their default values
+     **/
+    void restoreDefaultValues();
+    
 protected:
+    
+    virtual void aboutToRestoreDefaultValues() {}
+    
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
      * In release mode an exception is thrown instead.

@@ -552,7 +552,7 @@ void RotoPanel::onSelectedBezierAboutToClone()
             for (std::set<int>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
                 markers.push_back(*it2);
             }
-            _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers);
+            _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers,true);
         }
     }
 }
@@ -570,7 +570,7 @@ void RotoPanel::onSelectedBezierCloned()
                 markers.push_back(*it2);
             }
             it->second = keys;
-            _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers);
+            _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
         }
 
     }
@@ -791,7 +791,7 @@ void RotoPanelPrivate::insertItemInternal(int reason,int time,const boost::share
             for (std::set<int>::iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
                 markers.push_back(*it2);
             }
-            node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers);
+            node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
             
         }
     }
@@ -1683,7 +1683,7 @@ void RotoPanel::onSettingsPanelClosed(bool closed) {
                     for (std::set<int>::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
                         markers.push_back(*it3);
                     }
-                    _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers);
+                    _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers,true);
                     _imp->keyframes.erase(it2);
                 }
             }
@@ -1702,7 +1702,7 @@ void RotoPanel::onSettingsPanelClosed(bool closed) {
                     markers.push_back(*it3);
                 }
                 _imp->keyframes.insert(std::make_pair(isBezier, keys));
-                _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers);
+                _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
                 
             }
         }

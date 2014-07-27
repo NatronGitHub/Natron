@@ -81,7 +81,7 @@ public:
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1,bool declaredByPlugin = true){
         return appPTR->getKnobFactory().createKnob<K>(getLiveInstance(),description,dimension,declaredByPlugin);
     }
-    
+
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes,
@@ -533,12 +533,6 @@ public:
     
     bool isNodeDisabled() const;
     
-    /**
-     * @brief Fills keyframes with all different keyframes time that all parameters of this
-     * node have. Some keyframes might appear several times.
-     **/
-    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
-    
     Natron::ImageBitDepth getBitDepth() const;
     
     bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;
@@ -546,6 +540,22 @@ public:
     void toggleBitDepthWarning(bool on,const QString& tooltip) { emit bitDepthWarningToggled(on, tooltip); }
     
     std::string getNodeExtraLabel() const;
+    
+    /**
+     * @brief Show keyframe markers on the timeline. The signal to refresh the timeline's gui
+     * will be emitted only if emitSignal is set to true.
+     * Calling this function without calling hideKeyframesFromTimeline() has no effect.
+     **/
+    void showKeyframesOnTimeline(bool emitSignal);
+    
+    /**
+     * @brief Hide keyframe markers on the timeline. The signal to refresh the timeline's gui
+     * will be emitted only if emitSignal is set to true.
+     * Calling this function without calling showKeyframesOnTimeline() has no effect.
+     **/
+    void hideKeyframesFromTimeline(bool emitSignal);
+    
+    bool areKeyframesVisibleOnTimeline() const;
     
     /**
      * @brief The given label is appended in the node's label but will not be editable
@@ -575,6 +585,8 @@ public:
      * @brief Returns true if an effect should be able to connect this node.
      **/
     bool canOthersConnectToThisNode() const;
+    
+
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -683,6 +695,13 @@ protected:
     void initializeInputs();
 
 private:
+    
+    
+    /**
+     * @brief Fills keyframes with all different keyframes time that all parameters of this
+     * node have. Some keyframes might appear several times.
+     **/
+    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
     /**
      * @brief Forwarded to the live effect instance

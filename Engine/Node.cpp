@@ -102,6 +102,7 @@ struct Node::Implementation {
         , multiInstanceParent(NULL)
         , multiInstanceParentName()
         , duringInputChangedAction(false)
+        , keyframesDisplayedOnTimeline(false)
     {
     }
     
@@ -183,7 +184,8 @@ struct Node::Implementation {
     std::string multiInstanceParentName;
     
     bool duringInputChangedAction; //< true if we're during onInputChanged(...). MT-safe since only modified by the main thread
-
+    
+    bool keyframesDisplayedOnTimeline;
 };
 
 /**
@@ -2094,6 +2096,38 @@ bool Node::isNodeDisabled() const
     return _imp->disableNodeKnob->getValue();
 }
 
+void Node::showKeyframesOnTimeline(bool emitSignal)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (_imp->keyframesDisplayedOnTimeline || appPTR->isBackground()) {
+        return;
+    }
+    _imp->keyframesDisplayedOnTimeline = true;
+    std::list<SequenceTime> keys;
+    getAllKnobsKeyframes(&keys);
+    getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
+    
+}
+
+void Node::hideKeyframesFromTimeline(bool emitSignal)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (!_imp->keyframesDisplayedOnTimeline || appPTR->isBackground()) {
+        return;
+    }
+    _imp->keyframesDisplayedOnTimeline = false;
+    std::list<SequenceTime> keys;
+    getAllKnobsKeyframes(&keys);
+    getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys, emitSignal);
+
+}
+
+bool Node::areKeyframesVisibleOnTimeline() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->keyframesDisplayedOnTimeline;
+}
+
 void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
@@ -2115,6 +2149,9 @@ void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
         }
     }
 }
+
+
+
 
 Natron::ImageBitDepth Natron::Node::getBitDepth() const
 {

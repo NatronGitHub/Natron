@@ -854,8 +854,7 @@ void KnobGui::onInternalValueChanged(int dimension,int /*reason*/) {
 void KnobGui::onInternalKeySet(SequenceTime time,int ){
     boost::shared_ptr<KnobI> knob = getKnob();
     
-    ///For file knobs do not add keys
-    if (!dynamic_cast<File_Knob*>(knob.get()) && !knob->getIsSecret()) {
+    if (!knob->getIsSecret()) {
         knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     }
     
@@ -1304,7 +1303,7 @@ void KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                 times.push_back(it->getTime());
             }
         }
-        timeline->removeMultipleKeyframeIndicator(times);
+        timeline->removeMultipleKeyframeIndicator(times,true);
     }
 }
 
@@ -1327,7 +1326,7 @@ void KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
             times.push_back(it->getTime());
         }
     }
-    timeline->addMultipleKeyframeIndicatorsAdded(times);
+    timeline->addMultipleKeyframeIndicatorsAdded(times,true);
 }
 
 void KnobGui::setKeyframeMarkerOnTimeline(int time)

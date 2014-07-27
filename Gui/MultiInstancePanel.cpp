@@ -715,6 +715,7 @@ public:
             _panel->addRow(*it);
             (*it)->activate(std::list<boost::shared_ptr<Natron::Node> >(),false);
         }
+        _panel->getMainInstance()->getApp()->triggerAutoSave();
         setText(QObject::tr("Remove instance(s)"));
     }
     
@@ -728,6 +729,8 @@ public:
             bool isMainInstance = (*it) == mainInstance;
             (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance);
         }
+        
+        mainInstance->getApp()->triggerAutoSave();
         setText(QObject::tr("Remove instance(s)"));
     }
 };
@@ -799,12 +802,6 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
 {
     std::list<std::pair<Node*,bool> > previouslySelectedInstances;
     QModelIndexList oldIndexes = oldSelection.indexes();
-    for (int i = 0; i < oldIndexes.size(); ++i) {
-        TableItem* item = _imp->model->item(oldIndexes[i]);
-        if (item) {
-            item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-        }
-    }
     _imp->getNodesFromSelection(oldIndexes, &previouslySelectedInstances);
     
     bool copyOnUnSlave = previouslySelectedInstances.size()  <= 1;
@@ -827,8 +824,12 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
     
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
+
     
-    for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin(); it!=previouslySelectedInstances.end(); ++it) {
+    std::list<std::pair<Node*,bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
+    ++nextPreviouslySelected;
+    for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin();
+         it!=previouslySelectedInstances.end(); ++it,++nextPreviouslySelected) {
         
         ///if the item is in the new selection, don't consider it
         bool skip = false;
@@ -844,6 +845,9 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
         if (!it->second || skip) {
             continue;
         }
+        
+        it->first->hideKeyframesFromTimeline(nextPreviouslySelected == previouslySelectedInstances.end());
+        
         const std::vector<boost::shared_ptr<KnobI> >& knobs = it->first->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             if (knobs[i]->isDeclaredByPlugin() && !knobs[i]->isInstanceSpecific() && !knobs[i]->getIsSecret()) {
@@ -862,9 +866,13 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
         }
     }
     
- 
     
-    for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin(); it!=newlySelectedInstances.end(); ++it) {
+    std::list<SequenceTime> allKeysToAdd;
+
+    std::list<std::pair<Node*,bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
+    ++nextNewlySelected;
+    for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin();
+         it!=newlySelectedInstances.end(); ++it,++nextNewlySelected) {
 
         ///if the item is in the old selection, don't consider it
         bool skip = false;
@@ -879,6 +887,9 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
         if (it->second) {
             continue;
         }
+        
+        it->first->showKeyframesOnTimeline(nextNewlySelected == newlySelectedInstances.end());
+
         
         ///slave all the knobs that are declared by the plug-in (i.e: not the ones from the "Node" page)
         //and which are not instance specific (not the knob displayed in the table)
@@ -998,15 +1009,15 @@ void MultiInstancePanel::onItemDataChanged(TableItem* item)
                     Color_Knob* isColor = dynamic_cast<Color_Knob*>(knobs[i].get());
                     String_Knob* isString = dynamic_cast<String_Knob*>(knobs[i].get());
                     if (isInt) {
-                        isInt->setValue(data.toInt(), j);
+                        isInt->setValue(data.toInt(), j,true);
                     } else if (isBool) {
-                        isBool->setValue(data.toBool(), j);
+                        isBool->setValue(data.toBool(), j,true);
                     } else if (isDouble) {
-                        isDouble->setValue(data.toDouble(), j);
+                        isDouble->setValue(data.toDouble(), j,true);
                     } else if (isColor) {
-                        isColor->setValue(data.toDouble(), j);
+                        isColor->setValue(data.toDouble(), j,true);
                     } else if (isString) {
-                        isString->setValue(data.toString().toStdString(), j);
+                        isString->setValue(data.toString().toStdString(), j,true);
                     }
                     return;
                 }
@@ -1163,18 +1174,16 @@ void MultiInstancePanel::resetInstances(const std::list<Natron::Node*>& instance
     if (instances.empty()) {
         return;
     }
-    for (std::list<Natron::Node*>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
-        
-//        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>((*it)->getLiveInstance());
-//        assert(isEffect);
-//        std::list <SequenceTime> keys;
-//        isEffect->getNode()->getAllKnobsKeyframes(&keys);
-//        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
-        
+    
+    std::list<Natron::Node*>::const_iterator next = instances.begin();
+    ++next;
+    for (std::list<Natron::Node*>::const_iterator it = instances.begin(); it!=instances.end(); ++it,++next) {
         
         //invalidate the cache by incrementing the age
         (*it)->incrementKnobsAge();
-        
+        if ((*it)->areKeyframesVisibleOnTimeline()) {
+            (*it)->hideKeyframesFromTimeline(next == instances.end());
+        }
         notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
         const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size();++i) {

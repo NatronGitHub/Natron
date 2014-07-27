@@ -240,17 +240,17 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 void RemoveMultipleNodesCommand::undo() {
     
     std::list<SequenceTime> allKeysToAdd;
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+    std::list<NodeToRemove>::iterator next = _nodes.begin();
+    ++next;
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it,++next) {
         it->node->getNode()->activate(it->outputsToRestore,false);
         if (it->node->isSettingsPanelVisible()) {
-            it->node->getNode()->getAllKnobsKeyframes(&allKeysToAdd);
+            it->node->getNode()->showKeyframesOnTimeline(next == _nodes.end());
         }
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->activate();
     }
-    
-    _graph->getGui()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(allKeysToAdd);
     
     _isRedone = false;
     _graph->scene()->update();
@@ -263,8 +263,9 @@ void RemoveMultipleNodesCommand::redo() {
     
     _isRedone = true;
     
-    std::list<SequenceTime> allKeysToRemove;
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+    std::list<NodeToRemove>::iterator next = _nodes.begin();
+    ++next;
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it,++next) {
         
         
         ///Make a copy before calling deactivate which will modify the list
@@ -299,7 +300,7 @@ void RemoveMultipleNodesCommand::redo() {
 
         }
         if (it->node->isSettingsPanelVisible()) {
-            it->node->getNode()->getAllKnobsKeyframes(&allKeysToRemove);
+            it->node->getNode()->hideKeyframesFromTimeline(next == _nodes.end());
         }
 
     }
@@ -307,8 +308,6 @@ void RemoveMultipleNodesCommand::redo() {
         (*it)->deactivate();
     }
     
-    _graph->getGui()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(allKeysToRemove);
-
     _graph->getGui()->getApp()->triggerAutoSave();
     _graph->getGui()->getApp()->redrawAllViewers();
     

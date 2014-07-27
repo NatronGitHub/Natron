@@ -522,6 +522,10 @@ void Gui::abortProject(bool quitApp)
     } else {
         _imp->_appInstance->getProject()->closeProject();
     }
+    
+    ///Reset current undo/reso actions
+    _imp->_currentUndoAction = 0;
+    _imp->_currentRedoAction = 0;
 }
 
 void Gui::toggleFullScreen()

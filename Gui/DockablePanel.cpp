@@ -326,6 +326,11 @@ DockablePanel::DockablePanel(Gui* gui
             QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
             _imp->_colorButton->setFixedSize(15,15);
             
+            if (iseffect) {
+                ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
+                iseffect->getNode()->showKeyframesOnTimeline(true);
+            }
+            
         }
         QPixmap pixUndo ;
         appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
@@ -455,29 +460,7 @@ void DockablePanel::onRestoreDefaultsButtonClicked() {
         multiPanel->resetAllInstances();
         return;
     }
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
-    if (isEffect) {
-        
-        ///Invalidate the cache by incrementing the age
-        isEffect->getNode()->incrementKnobsAge();
-        
-        std::list <SequenceTime> keys;
-        isEffect->getNode()->getAllKnobsKeyframes(&keys);
-        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
-    }
-    _imp->_holder->notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
-        Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->first.get());
-        for (int i = 0; i < it->first->getDimension(); ++i) {
-            if (!isBtn && it->first->getName() != "label_natron") {
-                it->first->resetToDefaultValue(i);
-            }
-        }
-    }
-    _imp->_holder->notifyProjectEndKnobsValuesChanged();
-    if (isEffect) {
-        isEffect->evaluate_public(NULL, true, Natron::USER_EDITED);
-    }
+    _imp->_holder->restoreDefaultValues();
    
 }
 
@@ -976,12 +959,10 @@ void DockablePanel::setClosed2(bool c,bool setTimelineKeys)
     emit closeChanged(c);
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel && setTimelineKeys) {
-        std::list<SequenceTime> nodeKeyframes;
-        nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
         if (c) {
-            _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(nodeKeyframes);
+            nodePanel->getNode()->getNode()->hideKeyframesFromTimeline(true);
         } else {
-            _imp->_gui->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(nodeKeyframes);
+            nodePanel->getNode()->getNode()->showKeyframesOnTimeline(true);
         }
     }
     if (!c) {
@@ -1005,9 +986,7 @@ void DockablePanel::closePanel() {
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        std::list<SequenceTime> nodeKeyframes;
-        nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
-        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(nodeKeyframes);
+        nodePanel->getNode()->getNode()->hideKeyframesFromTimeline(true);
     }
     getGui()->getApp()->redrawAllViewers();
     

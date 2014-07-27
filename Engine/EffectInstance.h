@@ -433,6 +433,9 @@ public:
     
 protected:
     
+    virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
+
+    
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
