@@ -887,6 +887,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     effectInstance()->setClipsMipMapLevel(mipMapLevel);
     effectInstance()->setClipsRenderedImage(output);
+    effectInstance()->setClipsOutputRoD(output->getRoD());
     
     ///This is passed to the render action to plug-ins that don't support render scale
     RenderScale scaleOne;
@@ -900,6 +901,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     effectInstance()->discardClipsMipMapLevel();
     effectInstance()->discardClipsView();
     effectInstance()->discardClipsImage();
+    effectInstance()->discardClipsOutputRoD();
     
     if (stat != kOfxStatOK) {
         return StatFailed;
