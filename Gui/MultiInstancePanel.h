@@ -73,7 +73,7 @@ public:
     
     void selectNode(const boost::shared_ptr<Natron::Node>& node,bool addToSelection);
     
-    void selectNodes(const std::list<Natron::Node*>& nodes);
+    void selectNodes(const std::list<Natron::Node*>& nodes,bool addToSelection);
     
     void removeNodeFromSelection(const boost::shared_ptr<Natron::Node>& node);
     

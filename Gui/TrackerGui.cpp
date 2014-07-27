@@ -38,6 +38,8 @@ struct TrackerGuiPrivate
     
     QRectF selectionRectangle;
     
+    bool controlDown;
+    
     TrackerGuiPrivate(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* parent)
     : panel(panel)
     , viewer(parent)
@@ -47,6 +49,7 @@ struct TrackerGuiPrivate
     , clickToAddTrackEnabled(false)
     , lastMousePos()
     , selectionRectangle()
+    , controlDown(false)
     {
         
     }
@@ -245,7 +248,7 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
         didSomething = true;
     }
     
-    if (!didSomething) {
+    if (!didSomething && !e->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->panel->clearSelection();
     }
     
@@ -308,6 +311,13 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
 {
     bool didSomething = false;
     
+    if (e->key() == Qt::Key_Control) {
+        _imp->controlDown = true;
+    }
+    bool controlHeld = e->modifiers().testFlag(Qt::ControlModifier);
+    bool shiftHeld = e->modifiers().testFlag(Qt::ShiftModifier);
+    bool altHeld = e->modifiers().testFlag(Qt::AltModifier);
+    
     Natron::Key natronKey = QtEnumConvert::fromQtKey((Qt::Key)e->key());
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
@@ -323,13 +333,19 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
         }
     }
     
-    if (e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::AltModifier) &&
-        (e->key() == Qt::Key_Control || e->key() == Qt::Key_Alt)) {
+    if (controlHeld && altHeld && (e->key() == Qt::Key_Control || e->key() == Qt::Key_Alt)) {
         _imp->clickToAddTrackEnabled = true;
         _imp->addTrackButton->setDown(true);
         _imp->addTrackButton->setChecked(true);
         didSomething = true;
+    } else if (controlHeld && !shiftHeld && !altHeld && e->key() == Qt::Key_A) {
+        _imp->panel->onSelectAllButtonClicked();
+        didSomething = true;
+    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
+        _imp->panel->onDeleteKeyPressed();
+        didSomething = true;
     }
+    
     return didSomething;
 
 }
@@ -337,6 +353,10 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
 bool TrackerGui::keyUp(double scaleX,double scaleY,QKeyEvent* e)
 {
     bool didSomething = false;
+    
+    if (e->key() == Qt::Key_Control) {
+        _imp->controlDown = false;
+    }
     
     Natron::Key natronKey = QtEnumConvert::fromQtKey((Qt::Key)e->key());
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
@@ -389,7 +409,7 @@ void TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         }
         
     }
-    _imp->panel->selectNodes(currentSelection);
+    _imp->panel->selectNodes(currentSelection,_imp->controlDown);
 }
 
 void TrackerGui::onSelectionCleared()

@@ -958,7 +958,7 @@ void NodeGui::activate() {
             if (it->first == _internalNode) {
                 continue;
             }
-            it->first->activate();
+            it->first->activate(std::list< boost::shared_ptr<Natron::Node> >(),false);
         }
     }
     
@@ -1044,7 +1044,7 @@ void NodeGui::deactivate() {
             if (it->first == _internalNode) {
                 continue;
             }
-            it->first->deactivate();
+            it->first->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false);
         }
     }
     

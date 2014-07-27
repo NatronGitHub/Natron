@@ -973,35 +973,45 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
-    }else if (event->key() == Qt::Key_Y) {
+    }else if (event->key() == Qt::Key_Y && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(0);
         }
-    }else if (event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier) {
+    }else if (event->key() == Qt::Key_R && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 2) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(2);
         }
-    }else if (event->key() == Qt::Key_G) {
+    }else if (event->key() == Qt::Key_G && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 3) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(3);
         }
-    }else if (event->key() == Qt::Key_B) {
+    }else if (event->key() == Qt::Key_B  && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 4) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(4);
         }
-    }else if (event->key() == Qt::Key_A) {
+    }else if (event->key() == Qt::Key_A && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 5) {
             _imp->_viewerChannels->setCurrentIndex(1);
