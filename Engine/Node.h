@@ -571,6 +571,10 @@ public:
      **/
     void updateEffectLabelKnob(const QString& name);
     
+    /**
+     * @brief Returns true if an effect should be able to connect this node.
+     **/
+    bool canOthersConnectToThisNode() const;
 public slots:
     
     void setKnobsAge(U64 newAge) ;

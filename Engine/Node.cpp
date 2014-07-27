@@ -2196,6 +2196,16 @@ void Node::updateEffectLabelKnob(const QString& name)
     }
 }
 
+bool Node::canOthersConnectToThisNode() const
+{
+    ///In debug mode only allow connections to Writer nodes
+#ifndef NATRON_DEBUG
+    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL && !_imp->liveInstance->isWriter();
+#else
+    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL;
+#endif
+}
+
 //////////////////////////////////
 
 InspectorNode::InspectorNode(AppInstance* app,LibraryBinary* plugin)

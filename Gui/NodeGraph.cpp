@@ -863,9 +863,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
                
                 
                 if (!_imp->_arrowSelected->isOutputEdge()) {
-                    ///can't connect to a viewer
-                    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance());
-                    if (isViewer) {
+
+                    if (!n->getNode()->canOthersConnectToThisNode()) {
                         break;
                     }
                    
@@ -1105,8 +1104,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                                 }
                                 
                                 if (edge && !edge->isOutputEdge()) {
-                                    ///if the edge is an input edge but the selected node is a viewer don't continue (viewer can't have output)
-                                    if (selectedNode->getNode()->pluginID() == "Viewer") {
+                                    ///if the edge is an input edge but the selected node can't be connected don't continue
+                                    if (!selectedNode->getNode()->canOthersConnectToThisNode()) {
                                         edge = 0;
                                     }
                                     
@@ -1543,9 +1542,9 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
     
     boost::shared_ptr<NodeGui> selected = _imp->_selection.nodes.front();
-    ///if the selected node is a viewer, return, we can't connect a viewer to another viewer.
-    ViewerInstance* isSelectedAViewer = dynamic_cast<ViewerInstance*>(selected->getNode()->getLiveInstance());
-    if (isSelectedAViewer) {
+    
+    
+    if (!selected->getNode()->canOthersConnectToThisNode()) {
         return;
     }
     
