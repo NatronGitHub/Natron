@@ -316,16 +316,7 @@ QComboBox {
     selection-color: %1;
     selection-background-color: %3;
 }
-QComboBox  {
-    border-radius:0px;
-    border:0px;
-    selection-background-color: %3;
-    background: %3;
-    color: %5;
-}
-
-
-QAbstractItemView {
+QComboBox QAbstractItemView  {
     border-radius:0px;
     border:0px;
     selection-background-color: %3;
