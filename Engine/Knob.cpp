@@ -336,14 +336,16 @@ void KnobHelper::removeAnimation(int dimension, Natron::ValueChangedReason reaso
         return;
     }
     
+    
+    if (reason != Natron::USER_EDITED) {
+        _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
+    }
+    
     _imp->curves[dimension]->clearKeyFrames();
     
     //virtual portion
     animationRemoved_virtual(dimension);
-        
-    if (reason != Natron::USER_EDITED) {
-        _signalSlotHandler->s_animationRemoved(dimension);
-    }
+   
     
 }
 

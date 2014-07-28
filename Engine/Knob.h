@@ -536,7 +536,7 @@ public:
     void s_enabledChanged() { emit enabledChanged(); }
     void s_keyFrameSet(SequenceTime time,int dimension,bool added) { emit keyFrameSet(time,dimension,added); }
     void s_keyFrameRemoved(SequenceTime time ,int dimension) { emit keyFrameRemoved(time,dimension); }
-    void s_animationRemoved(int dimension) { emit animationRemoved(dimension); }
+    void s_animationAboutToBeRemoved(int dimension) { emit animationAboutToBeRemoved(dimension); }
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
     void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
@@ -609,7 +609,7 @@ signals:
     void keyFrameRemoved(SequenceTime,int);
     
     ///Emitted whenever all keyframes of a dimension are removed with a reason different of USER_EDITED
-    void animationRemoved(int);
+    void animationAboutToBeRemoved(int);
     
     ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
     ///of the changes that occured in this knob, letting them a chance to update their interface.
