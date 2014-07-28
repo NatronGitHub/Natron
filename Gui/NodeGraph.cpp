@@ -23,9 +23,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QFileSystemModel>
 #include <QScrollArea>
 #include <QScrollBar>
-#include <QComboBox>
 #include <QVBoxLayout>
-#include <QScrollBar>
 #include <QGraphicsLineItem>
 #include <QUndoStack>
 #include <QMenu>
@@ -42,7 +40,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QPainter>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QDialog>
 #include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -81,6 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeBackDrop.h"
 #include "Gui/NodeBackDropSerialization.h"
 #include "Gui/NodeGraphUndoRedo.h"
+#include "Gui/NodeCreationDialog.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -1288,73 +1286,6 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
     }
 }
 
-namespace {
-class NodeCreationDialog : public QDialog
-{
-    
-public:
-    
-    explicit NodeCreationDialog(NodeGraph* graph);
-    
-    virtual ~NodeCreationDialog() OVERRIDE {}
-    
-    QString getNodeName() const;
-    
-private:
-    
-    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
-    
-    
-    /*NodeGraph* graph*/;
-    QVBoxLayout* layout;
-    QLabel* textLabel;
-    QComboBox* textEdit;
-    
-};
-
-NodeCreationDialog::NodeCreationDialog(NodeGraph* /*graph_*/)
-: QDialog(/*graph_*/) //< uncomment to inherit from the stylesheet of the application.
-/*, graph(graph_)*/
-, layout(NULL)
-, textLabel(NULL)
-, textEdit(NULL)
-{
-    setWindowTitle(tr("Node creation tool"));
-    setWindowFlags(Qt::Popup);
-    setObjectName(QString("SmartDialog"));
-    setStyleSheet("SmartInputDialog#SmartDialog"
-                  "{"
-                  "border-style:outset;"
-                  "border-width: 2px;"
-                  "border-color: black;"
-                  "background-color:silver;"
-                  "}"
-                  );
-    layout = new QVBoxLayout(this);
-    textLabel = new QLabel(tr("Input a node name:"),this);
-    textEdit = new QComboBox(this);
-    textEdit->setEditable(true);
-    
-    textEdit->addItems(appPTR->getNodeNameList());
-    layout->addWidget(textLabel);
-    layout->addWidget(textEdit);
-    textEdit->lineEdit()->selectAll();
-    textEdit->setFocus();
-}
-}
-
-QString NodeCreationDialog::getNodeName() const
-{
-    return textEdit->lineEdit()->text();
-}
-
-void NodeCreationDialog::keyPressEvent(QKeyEvent *e) {
-    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
-        accept();
-    } else if (e->key() == Qt::Key_Escape) {
-        reject();
-    }
-}
 
 
 bool NodeGraph::event(QEvent* event){
@@ -1369,8 +1300,12 @@ bool NodeGraph::event(QEvent* event){
             nodeCreation.move(global.x(), global.y());
             if (nodeCreation.exec()) {
                 QString res = nodeCreation.getNodeName();
-                if (appPTR->getNodeNameList().contains(res)) {
-                    getGui()->getApp()->createNode(res);
+                const std::vector<Natron::Plugin*>& allPlugins = appPTR->getPluginsList();
+                for (U32 i = 0; i < allPlugins.size(); ++i) {
+                    if (allPlugins[i]->getPluginID() == res) {
+                        getGui()->getApp()->createNode(res);
+                        break;
+                    }
                 }
             }
             setFocus(Qt::ActiveWindowFocusReason);

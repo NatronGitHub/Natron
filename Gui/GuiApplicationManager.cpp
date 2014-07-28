@@ -557,7 +557,7 @@ void GuiApplicationManager::initGui() {
     
 }
 
-void GuiApplicationManager::addPluginToolButtons(const QStringList& groups,
+void GuiApplicationManager::onPluginLoaded(const QStringList& groups,
                           const QString& pluginID,
                           const QString& pluginLabel,
                           const QString& pluginIconPath,
@@ -681,9 +681,9 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
-                                                    (QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
+                                                    "",(QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
         plugins->push_back(plugin);
-        addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "","");
+        onPluginLoaded(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "","");
         
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for(U32 k = 0; k < extensions.size();++k){
@@ -708,9 +708,9 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
+                                                    "",(QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
         plugins->push_back(plugin);
-        addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "","");
+        onPluginLoaded(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "","");
         
         std::vector<std::string> extensions = writer->supportedFileFormats();
         for(U32 k = 0; k < extensions.size();++k){
@@ -740,17 +740,17 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
+                                                    "",(QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
         plugins->push_back(plugin);
-        addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
+        onPluginLoaded(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
     }
     
     {
         QString label(NATRON_BACKDROP_NODE_NAME);
-        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,NULL,1,0);
+        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,"",NULL,1,0);
         plugins->push_back(plugin);
         QStringList backdropGrouping(PLUGIN_GROUP_TOOLSETS);
-        addPluginToolButtons(backdropGrouping, label, label, "", "");
+        onPluginLoaded(backdropGrouping, label, label, "", "");
     }
 }
 

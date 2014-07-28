@@ -70,6 +70,7 @@ namespace Natron{
         Natron::LibraryBinary* _binary;
         QString _id;
         QString _label;
+        QString _iconFilePath;
         QMutex* _lock;
         int _majorVersion;
         int _minorVersion;
@@ -80,6 +81,7 @@ namespace Natron{
         _binary(NULL)
         , _id()
         , _label()
+        , _iconFilePath()
         , _lock()
         , _majorVersion(0)
         , _minorVersion(0)
@@ -88,6 +90,7 @@ namespace Natron{
         Plugin(Natron::LibraryBinary* binary,
                const QString& id,
                const QString& label,
+               const QString& iconFilePath,
                QMutex* lock,
                int majorVersion,
                int minorVersion
@@ -95,6 +98,7 @@ namespace Natron{
         _binary(binary)
         , _id(id)
         , _label(label)
+        , _iconFilePath(iconFilePath)
         , _lock(lock)
         , _majorVersion(majorVersion)
         , _minorVersion(minorVersion)
@@ -111,6 +115,8 @@ namespace Natron{
         void setPluginLabel(const QString& label){ _label = label; }
         
         const QString& getPluginLabel() const { return _label; }
+        
+        const QString& getIconFilePath() const { return _iconFilePath; }
         
         QMutex* getPluginLock() const  { return _lock; }
         

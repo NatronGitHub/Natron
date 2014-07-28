@@ -66,6 +66,7 @@ SOURCES += \
     MultiInstancePanel.cpp \
     NodeBackDrop.cpp \
     NodeBackDropSerialization.cpp \
+    NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
@@ -126,6 +127,7 @@ HEADERS += \
     MultiInstancePanel.h \
     NodeBackDrop.h \
     NodeBackDropSerialization.h \
+    NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \

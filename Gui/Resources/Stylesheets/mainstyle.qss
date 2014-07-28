@@ -262,6 +262,12 @@ QDialog {
 }
 
 
+NodeCreationDialog {
+    background-color: %2;
+    border: 5px black;
+    border-radius:2px;
+}
+
 QToolButton {
     background-color: %3;
 }
@@ -310,7 +316,16 @@ QComboBox {
     selection-color: %1;
     selection-background-color: %3;
 }
-QComboBox QAbstractItemView {
+QComboBox  {
+    border-radius:0px;
+    border:0px;
+    selection-background-color: %3;
+    background: %3;
+    color: %5;
+}
+
+
+QAbstractItemView {
     border-radius:0px;
     border:0px;
     selection-background-color: %3;

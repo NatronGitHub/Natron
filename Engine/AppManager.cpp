@@ -319,9 +319,6 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     initGui();
 
 
-
-    QObject::connect(_imp->ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString,QString)),
-                     this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString,QString)));
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
     U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
@@ -606,45 +603,41 @@ void AppManager::loadAllPlugins()
     
     /*loading node plugins*/
     
-    loadNodePlugins(&readersMap,&writersMap);
-    
+    loadBuiltinNodePlugins(&_imp->_plugins, &readersMap, &writersMap);
+
     /*loading ofx plugins*/
-    _imp->ofxHost->loadOFXPlugins(&_imp->_plugins, &readersMap, &writersMap);
+    _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
     
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
     
 }
 
-void AppManager::loadNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
-                                 std::map<std::string,std::vector<std::string> >* writersMap)
-{
-    std::vector<std::string> functions;
-    functions.push_back("BuildEffect");
-    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_NODES_PLUGINS_PATH, functions);
-    for (U32 i = 0 ; i < plugins.size(); ++i) {
-        std::pair<bool,EffectBuilder> func = plugins[i]->findFunction<EffectBuilder>("BuildEffect");
-        if(func.first){
-            boost::shared_ptr<EffectInstance> effect(func.second(boost::shared_ptr<Natron::Node>()));
-            assert(effect);
-            QMutex* pluginMutex = NULL;
-            if(effect->renderThreadSafety() == Natron::EffectInstance::UNSAFE){
-                pluginMutex = new QMutex(QMutex::Recursive);
-            }
-            Natron::Plugin* plugin = new Natron::Plugin(plugins[i],effect->pluginID().c_str(),effect->pluginLabel().c_str(),
-                                                        pluginMutex,effect->majorVersion(),effect->minorVersion());
-            _imp->_plugins.push_back(plugin);
-        }
-    }
-    
-    loadBuiltinNodePlugins(&_imp->_plugins, readersMap, writersMap);
-}
 
 void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* /*plugins*/,
                                         std::map<std::string,std::vector<std::string> >* /*readersMap*/,
                                         std::map<std::string,std::vector<std::string> >* /*writersMap*/){
 }
 
+void AppManager::registerPlugin(const QStringList& groups,
+                    const QString& pluginID,
+                    const QString& pluginLabel,
+                    const QString& pluginIconPath,
+                    const QString& groupIconPath,
+                    Natron::LibraryBinary* binary,
+                    bool mustCreateMutex,
+                    int major,
+                    int minor)
+{
+    QMutex* pluginMutex = 0;
+    if (mustCreateMutex) {
+        pluginMutex = new QMutex(QMutex::Recursive);
+    }
+    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,pluginMutex,major,minor);
+    _imp->_plugins.push_back(plugin);
+    onPluginLoaded(groups, pluginID, pluginLabel, pluginIconPath, groupIconPath);
+
+}
 
 
 void AppManagerPrivate::loadBuiltinFormats(){
@@ -751,13 +744,9 @@ void AppManager::clearExceedingEntriesFromNodeCache(){
     _imp->_nodeCache->clearExceedingEntries();
 }
 
-QStringList AppManager::getNodeNameList() const{
-    QStringList ret;
-    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        ret.append(_imp->_plugins[i]->getPluginID());
-    }
-    ret.sort();
-    return ret;
+const std::vector<Natron::Plugin*>& AppManager::getPluginsList() const
+{
+    return _imp->_plugins;
 }
 
 QMutex* AppManager::getMutexForPlugin(const QString& pluginId) const {
