@@ -54,6 +54,7 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     for (unsigned int i = 0; i < _imp->items.size(); ++i) {
         strings.push_back(_imp->items[i]->getPluginID());
     }
+    strings.sort();
     QCompleter* completer = new QCompleter(strings,this);
     completer->setModelSorting(QCompleter::CaseInsensitivelySortedModel);
     
