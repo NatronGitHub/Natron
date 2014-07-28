@@ -534,7 +534,7 @@ public:
     void s_valueChanged(int dimension,int reason) { emit valueChanged(dimension,reason); }
     void s_secretChanged() { emit secretChanged(); }
     void s_enabledChanged() { emit enabledChanged(); }
-    void s_keyFrameSet(SequenceTime time,int dimension) { emit keyFrameSet(time,dimension); }
+    void s_keyFrameSet(SequenceTime time,int dimension,bool added) { emit keyFrameSet(time,dimension,added); }
     void s_keyFrameRemoved(SequenceTime time ,int dimension) { emit keyFrameRemoved(time,dimension); }
     void s_animationRemoved(int dimension) { emit animationRemoved(dimension); }
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
@@ -602,7 +602,8 @@ signals:
     void enabledChanged();
     
     ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
-    void keyFrameSet(SequenceTime,int);
+    ///@param added True if this is the first time that the keyframe was set
+    void keyFrameSet(SequenceTime time,int dimension,bool added);
     
     ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
     void keyFrameRemoved(SequenceTime,int);

@@ -135,7 +135,9 @@ public:
         KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey,triggerKnobChanged);
         if(ret > 0){
             assert(newKey);
-            setKeyframeMarkerOnTimeline(newKey->getTime());
+            if (ret == KnobHelper::KEYFRAME_ADDED) {
+                setKeyframeMarkerOnTimeline(newKey->getTime());
+            }
             emit keyFrameSet();
         }
         if (refreshGui) {
@@ -163,7 +165,7 @@ public slots:
      **/
     void onInternalValueChanged(int dimension,int reason);
     
-    void onInternalKeySet(SequenceTime time,int dimension);
+    void onInternalKeySet(SequenceTime time,int dimension,bool added);
 
     void onInternalKeyRemoved(SequenceTime time,int dimension);
     

@@ -126,7 +126,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
     
     QObject::connect(handler,SIGNAL(valueChanged(int,int)),this,SLOT(onInternalValueChanged(int,int)));
-    QObject::connect(handler,SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
+    QObject::connect(handler,SIGNAL(keyFrameSet(SequenceTime,int,bool)),this,SLOT(onInternalKeySet(SequenceTime,int,bool)));
     QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),handler,SLOT(onKeyFrameSet(SequenceTime,int)));
     QObject::connect(handler,SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
     QObject::connect(this,SIGNAL(keyFrameRemovedByUser(SequenceTime,int)),handler,SLOT(onKeyFrameRemoved(SequenceTime,int)));
@@ -626,9 +626,6 @@ void KnobGui::onHorizontalInterpActionTriggered(){
 void KnobGui::setKeyframe(double time,int dimension) {
     boost::shared_ptr<KnobI> knob = getKnob();
     assert(knob->getHolder()->getApp());
-//    if (!knob->getIsSecret()) {
-//        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
-//    }
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -851,11 +848,13 @@ void KnobGui::onInternalValueChanged(int dimension,int /*reason*/) {
     }
 }
 
-void KnobGui::onInternalKeySet(SequenceTime time,int ){
-    boost::shared_ptr<KnobI> knob = getKnob();
+void KnobGui::onInternalKeySet(SequenceTime time,int,bool added ){
     
-    if (!knob->getIsSecret()) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    if (added) {
+        boost::shared_ptr<KnobI> knob = getKnob();
+        if (!knob->getIsSecret()) {
+            knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+        }
     }
     
     emit keyFrameSet();

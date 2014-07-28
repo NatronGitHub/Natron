@@ -113,7 +113,7 @@ void PasteUndoCommand::undo()
             ++i;
         }
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0);
+        _knob->onInternalKeySet(0, 0,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
     
@@ -195,7 +195,7 @@ void PasteUndoCommand::redo()
     }
     if (_copyAnimation && hasKeyframeData && !newCurves.empty()) {
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0);
+        _knob->onInternalKeySet(0, 0,false);
     }
     
     if (isAnimatingString) {
