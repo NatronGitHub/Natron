@@ -492,6 +492,26 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"italic_checked.png");
                 *pix = QPixmap::fromImage(img).scaled(15, 15);
                 break;
+            case NATRON_PIXMAP_CLEAR_ALL_ANIMATION:
+                img.load(NATRON_IMAGES_PATH"clearAnimation.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION:
+                img.load(NATRON_IMAGES_PATH"clearAnimationBw.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION:
+                img.load(NATRON_IMAGES_PATH"clearAnimationFw.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_UPDATE_VIEWER_ENABLED:
+                img.load(NATRON_IMAGES_PATH"updateViewerEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_UPDATE_VIEWER_DISABLED:
+                img.load(NATRON_IMAGES_PATH"updateViewerDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
             default:
                 assert(!"Missing image.");
         }

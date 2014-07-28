@@ -1058,7 +1058,7 @@ bool Settings::tryLoadOpenColorIOConfig()
     return true;
 }
 
-void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/){
+void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/){
 
     _wereChangesMadeSinceLastSave = true;
     if (_restoringSettings && (k == _maxDiskCacheGB.get() || k == _maxRAMPercent.get() || k == _maxPlayBackPercent.get())) {

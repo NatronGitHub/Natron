@@ -185,6 +185,16 @@ public:
     void removeKeyFrameWithIndex(int index);
     
     bool getNearestKeyFrameWithTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the previous keyframe to the given time, which doesn't have to be a keyframe time
+     **/
+    bool getPreviousKeyframeTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the next keyframe to the given time, which doesn't have to be a keyframe time
+     **/
+    bool getNextKeyframeTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
 

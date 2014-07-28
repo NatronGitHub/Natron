@@ -308,14 +308,18 @@ void MultipleKnobEditsUndoCommand::undo()
         knobsUnique.insert(originalKnob.get());
     }
     
-    for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
-        (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED);
-    }
     
     assert(!knobs.empty());
     KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
     QString holderName;
+
+    
     if (holder) {
+        int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
+        for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
+        }
+
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
             
@@ -345,8 +349,10 @@ void MultipleKnobEditsUndoCommand::redo()
             
             knobsUnique.insert(originalKnob.get());
             
+            
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
-                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED);
+                int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
+                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
             }
         }
 

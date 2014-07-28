@@ -62,7 +62,7 @@ public:
 
     virtual int maximumInputs() const OVERRIDE {return 1;}
     
-    void knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod) OVERRIDE FINAL;
+    void knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time) OVERRIDE FINAL;
 
     virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/,
                                   bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,

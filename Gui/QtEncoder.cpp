@@ -128,7 +128,7 @@ void QtWriter::initializeKnobs(){
     _renderKnob->setAsRenderButton();
 }
 
-void QtWriter::knobChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/){
+void QtWriter::knobChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/){
     if(k == _frameRangeChoosal.get()){
         int index = _frameRangeChoosal->getValue();
         if(index != 2){

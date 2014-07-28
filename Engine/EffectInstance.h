@@ -351,7 +351,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
 
 protected:
     /**
@@ -648,7 +648,7 @@ protected:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/) {}
+    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/) {}
     
     
     virtual Natron::Status beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
@@ -662,7 +662,8 @@ protected:
                                              int /*view*/) { return Natron::StatOK;}
 public:
     
-    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    ///Doesn't do anything, instead we overriden onKnobValueChanged_public
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
     
     
     Natron::Status beginSequenceRender_public(SequenceTime first,SequenceTime last,
@@ -757,7 +758,7 @@ protected:
      * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
      * viewer and the rod of the output.
      **/
-    void getClipThreadStorageData(SequenceTime *time, int *view, unsigned int *mipMapLevel, RectI *outputRoD);
+    void getClipThreadStorageData(SequenceTime time, int *view, unsigned int *mipMapLevel, RectI *outputRoD);
     
     boost::shared_ptr<Node> _node; //< the node holding this effect
 

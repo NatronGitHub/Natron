@@ -1264,7 +1264,7 @@ static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::Value
     }
 }
 
-void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod)
+void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time)
 {
     if(!_initialized){
         return;
@@ -1285,8 +1285,6 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(renderScale.x);
-    int view;
-    effectInstance()->getViewRecursive(view);
     
     if (getRecursionLevel() == 1) {
         effectInstance()->setClipsMipMapLevel(mipMapLevel);
@@ -1294,11 +1292,10 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         effectInstance()->setClipsOutputRoD(rod);
     }
     
-    OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     if (!ofxReason.empty()) {
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,time,renderScale);
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     }
 
     if (getRecursionLevel() == 1) {

@@ -335,7 +335,7 @@ void NodeBackDrop::getSize(int& w,int& h) const
     h = bbox.height();
 }
 
-void NodeBackDrop::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/)
+void NodeBackDrop::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/)
 {
     if (k == _imp->knobLabel.get()) {
         QString text(_imp->knobLabel->getValue().c_str());

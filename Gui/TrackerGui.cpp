@@ -10,16 +10,20 @@
 #include <QHBoxLayout>
 #include <QTextEdit>
 #include <QKeyEvent>
+#include <QPixmap>
+#include <QIcon>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
 #include "Gui/FromQtEnums.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
+
 
 using namespace Natron;
 
@@ -32,6 +36,18 @@ struct TrackerGuiPrivate
     QHBoxLayout* buttonsLayout;
     
     Button* addTrackButton;
+    
+    Button* trackBwButton;
+    Button* trackPrevButton;
+    Button* trackNextButton;
+    Button* trackFwButton;
+    
+    Button* clearAllAnimationButton;
+    Button* clearBwAnimationButton;
+    Button* clearFwAnimationButton;
+    
+    Button* updateViewerButton;
+    Button* centerViewerButton;
     
     bool clickToAddTrackEnabled;
     QPointF lastMousePos;
@@ -46,6 +62,15 @@ struct TrackerGuiPrivate
     , buttonsBar(NULL)
     , buttonsLayout(NULL)
     , addTrackButton(NULL)
+    , trackBwButton(NULL)
+    , trackPrevButton(NULL)
+    , trackNextButton(NULL)
+    , trackFwButton(NULL)
+    , clearAllAnimationButton(NULL)
+    , clearBwAnimationButton(NULL)
+    , clearFwAnimationButton(NULL)
+    , updateViewerButton(NULL)
+    , centerViewerButton(NULL)
     , clickToAddTrackEnabled(false)
     , lastMousePos()
     , selectionRectangle()
@@ -69,6 +94,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* p
     _imp->buttonsLayout->setContentsMargins(3, 2, 0, 0);
     
     _imp->addTrackButton = new Button("+",_imp->buttonsBar);
+    _imp->addTrackButton->setFixedSize(25, 25);
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
     _imp->addTrackButton->setToolTip(tr(Qt::convertFromPlainText("When enabled you can add new tracks by clicking on the Viewer. "
@@ -76,6 +102,73 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* p
                                                                  ,Qt::WhiteSpaceNormal).toStdString().c_str()));
     _imp->buttonsLayout->addWidget(_imp->addTrackButton);
     QObject::connect(_imp->addTrackButton, SIGNAL(clicked(bool)), this, SLOT(onAddTrackClicked(bool)));
+    
+    QPixmap pixBw,pixPrev,pixNext,pixFw,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND, &pixBw);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY, &pixFw);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_ENABLED, &pixUpdateViewerEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
+    
+    _imp->trackBwButton = new Button(QIcon(pixBw),"",_imp->buttonsBar);
+    _imp->trackBwButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks backward until left bound of the timeline.",
+                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->trackBwButton,SIGNAL(clicked(bool)),this,SLOT(onTrackBwClicked()));
+    _imp->buttonsLayout->addWidget(_imp->trackBwButton);
+    
+    _imp->trackPrevButton = new Button(QIcon(pixPrev),"",_imp->buttonsBar);
+    _imp->trackPrevButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks on the previous frame.",
+                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->trackPrevButton,SIGNAL(clicked(bool)),this,SLOT(onTrackPrevClicked()));
+    _imp->buttonsLayout->addWidget(_imp->trackPrevButton);
+    
+    _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
+    _imp->trackNextButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks on the next frame.",
+                                                                  Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->trackNextButton,SIGNAL(clicked(bool)),this,SLOT(onTrackNextClicked()));
+    _imp->buttonsLayout->addWidget(_imp->trackNextButton);
+
+    
+    _imp->trackFwButton = new Button(QIcon(pixFw),"",_imp->buttonsBar);
+    _imp->trackFwButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks forward until right bound of the timeline.",
+                                                                  Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->trackFwButton,SIGNAL(clicked(bool)),this,SLOT(onTrackFwClicked()));
+    _imp->buttonsLayout->addWidget(_imp->trackFwButton);
+
+    
+    _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
+    _imp->clearAllAnimationButton->setToolTip(tr(Qt::convertFromPlainText("Clear all animation for selected tracks.",
+                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->clearAllAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearAllAnimationClicked()));
+    _imp->buttonsLayout->addWidget(_imp->clearAllAnimationButton);
+    
+    _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
+    _imp->clearBwAnimationButton->setToolTip(tr(Qt::convertFromPlainText("Clear animation backward from the current frame.",
+                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->clearBwAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearBwAnimationClicked()));
+    _imp->buttonsLayout->addWidget(_imp->clearBwAnimationButton);
+    
+    _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
+    _imp->clearFwAnimationButton->setToolTip(tr(Qt::convertFromPlainText("Clear animation forward from the current frame.",
+                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->clearFwAnimationButton,SIGNAL(clicked(bool)),this,SLOT(onClearFwAnimationClicked()));
+    _imp->buttonsLayout->addWidget(_imp->clearFwAnimationButton);
+    
+    QIcon updateViewerIC;
+    updateViewerIC.addPixmap(pixUpdateViewerEnabled,QIcon::Normal,QIcon::On);
+    updateViewerIC.addPixmap(pixUpdateViewerDisabled,QIcon::Normal,QIcon::Off);
+    _imp->updateViewerButton = new Button(updateViewerIC,"",_imp->buttonsBar);
+    _imp->updateViewerButton->setCheckable(true);
+    _imp->updateViewerButton->setChecked(true);
+    _imp->updateViewerButton->setToolTip(tr(Qt::convertFromPlainText("Update viewer during tracking for each frame instead of just the tracks."
+                                                                     , Qt::WhiteSpaceNormal).toStdString().c_str()));
+    QObject::connect(_imp->updateViewerButton,SIGNAL(clicked(bool)),this,SLOT(onUpdateViewerClicked(bool)));
+    _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
+    
     
     _imp->buttonsLayout->addStretch();
     
@@ -430,4 +523,46 @@ void TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
 void TrackerGui::onSelectionCleared()
 {
     _imp->panel->clearSelection();
+}
+
+void TrackerGui::onTrackBwClicked()
+{
+    _imp->panel->trackBackward();
+}
+
+void TrackerGui::onTrackPrevClicked()
+{
+    _imp->panel->trackPrevious();
+}
+
+void TrackerGui::onTrackNextClicked()
+{
+    _imp->panel->trackNext();
+}
+
+void TrackerGui::onTrackFwClicked()
+{
+    _imp->panel->trackForward();
+}
+
+void TrackerGui::onUpdateViewerClicked(bool clicked)
+{
+    _imp->panel->setUpdateViewerOnTracking(clicked);
+    _imp->updateViewerButton->setDown(clicked);
+    _imp->updateViewerButton->setChecked(clicked);
+}
+
+void TrackerGui::onClearAllAnimationClicked()
+{
+    _imp->panel->clearAllAnimationForSelection();
+}
+
+void TrackerGui::onClearBwAnimationClicked()
+{
+    _imp->panel->clearBackwardAnimationForSelection();
+}
+
+void TrackerGui::onClearFwAnimationClicked()
+{
+    _imp->panel->clearForwardAnimationForSelection();
 }

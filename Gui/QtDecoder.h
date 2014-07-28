@@ -83,7 +83,7 @@ public:
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
 
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason,const RectI& rod) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time) OVERRIDE FINAL;
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
             

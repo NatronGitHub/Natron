@@ -49,7 +49,7 @@ public:
         
     virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL {}
     
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
     
     int getViewersBitDepth() const;
     

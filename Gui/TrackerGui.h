@@ -61,6 +61,22 @@ public slots:
     
     void onAddTrackClicked(bool clicked);
     
+    void onTrackBwClicked();
+    
+    void onTrackPrevClicked();
+    
+    void onTrackNextClicked();
+    
+    void onTrackFwClicked();
+    
+    void onUpdateViewerClicked(bool clicked);
+    
+    void onClearAllAnimationClicked();
+    
+    void onClearBwAnimationClicked();
+    
+    void onClearFwAnimationClicked();
+    
     void updateSelectionFromSelectionRectangle(bool onRelease);
     
     void onSelectionCleared();

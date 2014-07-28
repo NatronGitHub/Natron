@@ -104,6 +104,7 @@ void KnobI::deleteValueAtTime(int time,int dimension)
     deleteValueAtTime(time, dimension, Natron::PLUGIN_EDITED);
 }
 
+
 void KnobI::removeAnimation(int dimension)
 {
     removeAnimation(dimension, Natron::PLUGIN_EDITED);
@@ -805,20 +806,36 @@ Natron::AnimationLevel KnobHelper::getAnimationLevel(int dimension) const
     return _imp->animationLevel[dimension];
 }
 
+void KnobHelper::deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason)
+{
+    assert(0 <= dimension && dimension < getDimension());
+    KeyFrame k;
+    bool ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
+    while (ok) {
+        deleteValueAtTime(k.getTime(), dimension, reason);
+        ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
+    }
+}
+
+void KnobHelper::deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason)
+{
+    assert(0 <= dimension && dimension < getDimension());
+    KeyFrame k;
+    bool ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
+    while (ok) {
+        deleteValueAtTime(k.getTime(), dimension, reason);
+        ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
+    }
+}
+
 
 bool KnobHelper::getKeyFrameTime(int index, int dimension, double* time) const
 {
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        return master.second->getKeyFrameTime(index,master.first,time);
-    }
-    
     assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return false;
     }
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    boost::shared_ptr<Curve> curve = getCurve(dimension); //< getCurve will return the master's curve if any
     assert(curve);
     KeyFrame kf;
     bool ret = curve->getKeyFrameWithIndex(index, &kf);
@@ -831,18 +848,12 @@ bool KnobHelper::getKeyFrameTime(int index, int dimension, double* time) const
 
 bool KnobHelper::getLastKeyFrameTime(int dimension,double* time) const
 {
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        return master.second->getLastKeyFrameTime(master.first,time);
-    }
-    
     assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return false;
     }
     
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    boost::shared_ptr<Curve> curve = getCurve(dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     *time = curve->getMaximumTimeCovered();
     return true;
@@ -855,24 +866,17 @@ bool KnobHelper::getFirstKeyFrameTime(int dimension,double* time) const
 
 int KnobHelper::getKeyFramesCount(int dimension) const
 {
-    //get curve forwards it to the master
-    return getCurve(dimension)->getKeyFramesCount();
+     return getCurve(dimension)->getKeyFramesCount();  //< getCurve will return the master's curve if any
 }
 
 bool KnobHelper::getNearestKeyFrameTime(int dimension,double time,double* nearestTime) const
 {
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        return master.second->getNearestKeyFrameTime(master.first,time,nearestTime);
-    }
-    
     assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return false;
     }
     
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    boost::shared_ptr<Curve> curve = getCurve(dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     KeyFrame kf;
     bool ret = curve->getNearestKeyFrameWithTime(time, &kf);
@@ -884,18 +888,13 @@ bool KnobHelper::getNearestKeyFrameTime(int dimension,double time,double* neares
 
 int KnobHelper::getKeyFrameIndex(int dimension, double time) const
 {
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        return master.second->getKeyFrameIndex(master.first,time);
-    }
-    
+
     assert(0 <= dimension && dimension < getDimension());
     if (!isAnimated(dimension)) {
         return -1;
     }
     
-    boost::shared_ptr<Curve> curve = getCurve(dimension);
+    boost::shared_ptr<Curve> curve = getCurve(dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     
     return curve->keyFrameIndex(time);
@@ -1059,7 +1058,8 @@ void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason rea
     if (_imp->app) {
         getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
     } else {
-        onKnobValueChanged(k, reason);
+        ///Time is irrelevant since it doesn't have a timeline
+        onKnobValueChanged(k, reason,0);
     }
 }
 
@@ -1150,14 +1150,14 @@ void KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReason reason)
 }
 
 
-void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason)
+void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
     
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
-    onKnobValueChanged(k, reason);
+    onKnobValueChanged(k, reason,time);
     decrementRecursionLevel();
 }
 

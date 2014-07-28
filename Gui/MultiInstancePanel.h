@@ -79,6 +79,7 @@ public:
     
     void clearSelection();
     
+    
 public slots:
 
     void onAddButtonClicked();
@@ -119,7 +120,7 @@ private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
     
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE;
     
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
     
@@ -136,6 +137,22 @@ public:
     
     virtual ~TrackerPanel();
    
+    void trackBackward();
+    
+    void trackForward();
+    
+    void trackPrevious();
+    
+    void trackNext();
+    
+    void clearAllAnimationForSelection();
+    
+    void clearBackwardAnimationForSelection();
+    
+    void clearForwardAnimationForSelection();
+    
+    void setUpdateViewerOnTracking(bool update);
+    
 public slots:
     
     void onAverageTracksButtonClicked();
@@ -148,7 +165,7 @@ private:
     
     virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
     
-    void handleTrackNextAndPrevious(Button_Knob* button,const std::list<Natron::Node*>& selectedInstances);
+    void handleTrackNextAndPrevious(const std::list<Button_Knob*>& selectedInstances,SequenceTime currentFrame);
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };

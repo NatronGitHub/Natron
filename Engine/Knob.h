@@ -146,6 +146,18 @@ public:
     void deleteValueAtTime(int time,int dimension);
     
     /**
+     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
+     * a signal will be emitted
+     **/
+    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    
+    /**
+     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
+     * a signal will be emitted
+     **/
+    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    
+    /**
      * @brief Calls removeAnimation with a reason of Natron::PLUGIN_EDITED.
      **/
     void removeAnimation(int dimension);
@@ -680,6 +692,11 @@ private:
     
 public:
     
+    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+
+    
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool getKeyFrameTime(int index,int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1196,7 +1213,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason);
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time);
 
 
     /**
@@ -1256,7 +1273,7 @@ protected:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
+    virtual void onKnobValueChanged(KnobI* /*k*/,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/){}
 
     /**
      * @brief Must be implemented to evaluate a value change

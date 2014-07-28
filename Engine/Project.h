@@ -299,7 +299,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;
     

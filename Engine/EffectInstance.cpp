@@ -1878,7 +1878,7 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     if (!hasOverlay()) {
         return;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -1889,7 +1889,7 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
@@ -1906,11 +1906,11 @@ bool EffectInstance::onOverlayPenDown_public(double scaleX,double scaleY,const Q
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -1930,7 +1930,7 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -1941,7 +1941,7 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
     assertActionIsNotRecursive();
@@ -1962,11 +1962,11 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     assertActionIsNotRecursive();
     incrementRecursionLevel();
@@ -1985,11 +1985,11 @@ bool EffectInstance::onOverlayKeyDown_public(double scaleX,double scaleY,Natron:
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -2009,11 +2009,11 @@ bool EffectInstance::onOverlayKeyUp_public(double scaleX,double scaleY,Natron::K
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -2034,11 +2034,11 @@ bool EffectInstance::onOverlayKeyRepeat_public(double scaleX,double scaleY,Natro
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -2059,7 +2059,7 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -2070,7 +2070,7 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
     
@@ -2092,7 +2092,7 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -2102,7 +2102,7 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
     
@@ -2305,7 +2305,7 @@ bool EffectInstance::isMaskEnabled(int inputNb) const
 }
 
 
-void EffectInstance::onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) {
+void EffectInstance::onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/) {
     
 }
 
@@ -2324,13 +2324,12 @@ void EffectInstance::updateCurrentFrameRecursive(int time)
     }
 }
 
-void EffectInstance::getClipThreadStorageData(SequenceTime *time,
+void EffectInstance::getClipThreadStorageData(SequenceTime time,
                                               int *view,
                                               unsigned int *mipMapLevel,
                                               RectI *outputRoD)
 {
-    assert(time && view && mipMapLevel && outputRoD);
-    *time = getApp()->getTimeLine()->currentFrame();
+    assert(view && mipMapLevel && outputRoD);
     *view = 0;
     *mipMapLevel = 0;
     std::list<ViewerInstance*> connectedViewers;
@@ -2345,12 +2344,12 @@ void EffectInstance::getClipThreadStorageData(SequenceTime *time,
     bool isProjectFormat;
     
     ///we don't care if it fails
-    (void)getRegionOfDefinition_public(*time, scale, *view, outputRoD, &isProjectFormat);
+    (void)getRegionOfDefinition_public(time, scale, *view, outputRoD, &isProjectFormat);
     assert(outputRoD->x2 >= outputRoD->x1 && outputRoD->y2 >= outputRoD->y1);
 }
 
 void EffectInstance::onKnobValueChanged_public(KnobI* k,
-                                               Natron::ValueChangedReason reason)
+                                               Natron::ValueChangedReason reason,SequenceTime time)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
@@ -2363,10 +2362,9 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,
         
         RectI rod;
         if (getRecursionLevel() == 0) {
-            SequenceTime time ;
             int view ;
             unsigned int mipMapLevel;
-            getClipThreadStorageData(&time, &view, &mipMapLevel, &rod);
+            getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
             assert(rod.x2 >= rod.x1 && rod.y2 >= rod.y1);
             RenderScale scale;
             scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
@@ -2401,13 +2399,26 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                            identityNb);
             ///Recursive action, must not call assertActionIsNotRecursive()
             incrementRecursionLevel();
-            knobChanged(k, reason,rod);
+            knobChanged(k, reason,rod,view,time);
             decrementRecursionLevel();
         
         } else {
+            int view;
+            if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+                view = _imp->renderArgs.localData()._view;
+            } else {
+#pragma message WARN("This is a bad way to get the current view")
+                std::list<ViewerInstance*> connectedViewers;
+                _node->hasViewersConnected(&connectedViewers);
+                if (!connectedViewers.empty()) {
+                    view = (*connectedViewers.begin())->getCurrentView();
+                } else {
+                    view = 0;
+                }
+            }
             ///Recursive action, must not call assertActionIsNotRecursive()
             incrementRecursionLevel();
-            knobChanged(k, reason,rod);
+            knobChanged(k, reason,rod,view,time);
             decrementRecursionLevel();
         }
         

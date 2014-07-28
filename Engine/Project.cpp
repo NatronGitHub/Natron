@@ -912,7 +912,7 @@ void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder*
     /// ...
     /// endValueChange()
     if (reason != Natron::PROJECT_LOADING && reason != Natron::RESTORE_DEFAULT) {
-        caller->onKnobValueChanged_public(k,reason);
+        caller->onKnobValueChanged_public(k,reason,_imp->timeline->currentFrame());
     }
     
     ////if begin was not call prior to calling this function, call the end bracket oruselves
@@ -994,7 +994,7 @@ void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
 
 
 ///this function is only called on the main thread
-void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason*/) {
+void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/) {
     if (knob == _imp->viewsCount.get()) {
         int viewsCount = _imp->viewsCount->getValue();
         getApp()->setupViewersForViews(viewsCount);

@@ -962,7 +962,7 @@ void NodeGui::showGui()
 void NodeGui::activate() {
     
     ///first activate all child instance if any
-    if (_internalNode->isMultiInstance()) {
+    if (_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
         for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
