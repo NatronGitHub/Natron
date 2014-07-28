@@ -115,27 +115,27 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* p
     appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
     
     _imp->trackBwButton = new Button(QIcon(pixBw),"",_imp->buttonsBar);
-    _imp->trackBwButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks backward until left bound of the timeline.",
-                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    _imp->trackBwButton->setToolTip(tr("Track selected tracks backward until left bound of the timeline.") +
+                                    "<p><b>" + tr("Keyboard shortcut") + ": Z</b></p>");
     QObject::connect(_imp->trackBwButton,SIGNAL(clicked(bool)),this,SLOT(onTrackBwClicked()));
     _imp->buttonsLayout->addWidget(_imp->trackBwButton);
     
     _imp->trackPrevButton = new Button(QIcon(pixPrev),"",_imp->buttonsBar);
-    _imp->trackPrevButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks on the previous frame.",
-                                                                Qt::WhiteSpaceNormal).toStdString().c_str()));
+    _imp->trackPrevButton->setToolTip(tr("Track selected tracks on the previous frame.") +
+                                      "<p><b>" + tr("Keyboard shortcut") + ": X</b></p>");
     QObject::connect(_imp->trackPrevButton,SIGNAL(clicked(bool)),this,SLOT(onTrackPrevClicked()));
     _imp->buttonsLayout->addWidget(_imp->trackPrevButton);
     
     _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
-    _imp->trackNextButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks on the next frame.",
-                                                                  Qt::WhiteSpaceNormal).toStdString().c_str()));
+    _imp->trackNextButton->setToolTip(tr("Track selected tracks on the next frame.") +
+                                         "<p><b>" + tr("Keyboard shortcut") + ": C</b></p>");
     QObject::connect(_imp->trackNextButton,SIGNAL(clicked(bool)),this,SLOT(onTrackNextClicked()));
     _imp->buttonsLayout->addWidget(_imp->trackNextButton);
 
     
     _imp->trackFwButton = new Button(QIcon(pixFw),"",_imp->buttonsBar);
-    _imp->trackFwButton->setToolTip(tr(Qt::convertFromPlainText("Track selected tracks forward until right bound of the timeline.",
-                                                                  Qt::WhiteSpaceNormal).toStdString().c_str()));
+    _imp->trackFwButton->setToolTip(tr("Track selected tracks forward until right bound of the timeline.") +
+                                    "<p><b>" + tr("Keyboard shortcut") + ": V</b></p>");
     QObject::connect(_imp->trackFwButton,SIGNAL(clicked(bool)),this,SLOT(onTrackFwClicked()));
     _imp->buttonsLayout->addWidget(_imp->trackFwButton);
 
@@ -452,6 +452,14 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
+    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_Z)) {
+        didSomething = _imp->panel->trackBackward();
+    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_X)) {
+        didSomething = _imp->panel->trackPrevious();
+    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_C)) {
+        didSomething = _imp->panel->trackNext();
+    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_V)) {
+        didSomething = _imp->panel->trackForward();
     }
     
     return didSomething;

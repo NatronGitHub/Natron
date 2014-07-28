@@ -137,13 +137,11 @@ public:
     
     virtual ~TrackerPanel();
    
-    void trackBackward();
-    
-    void trackForward();
-    
-    void trackPrevious();
-    
-    void trackNext();
+    ///Each function below returns true if there is a selection, false otherwise
+    bool trackBackward();
+    bool trackForward();
+    bool trackPrevious();
+    bool trackNext();
     
     void clearAllAnimationForSelection();
     

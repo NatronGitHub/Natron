@@ -672,7 +672,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
                                            "on the viewer to the project format. "
                                            "When off, everything in the union of all nodes "
                                            "region of definition will be displayed.") + "</p>"
-                                           "<p><b>" + tr("Keyboard shortcut") + ": C</b></p>");
+                                                 "<p><b>" + tr("Keyboard shortcut") + ": " + QKeySequence(Qt::SHIFT + Qt::Key_C).toString()+
+                                                 "</b></p>");
 
     QKeySequence enableViewerKey(Qt::SHIFT + Qt::Key_W);
     _imp->_enableViewerRoI->setToolTip("<p>" + tr("When active, enables the region of interest that will limit"
@@ -1050,20 +1051,24 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         //prev incr
         previousIncrement();
     } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)
-             && !event->modifiers().testFlag(Qt::ControlModifier)) {
+             && !event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::AltModifier)) {
         //next incr
         nextIncrement();
     } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ShiftModifier)
+               && !event->modifiers().testFlag(Qt::AltModifier)) {
         //first frame
         firstFrame();
     } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ShiftModifier)
+               && !event->modifiers().testFlag(Qt::AltModifier)) {
         //last frame
         lastFrame();
     }
     else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
-            && event->modifiers().testFlag(Qt::ShiftModifier)) {
+            && event->modifiers().testFlag(Qt::ShiftModifier)
+             && !event->modifiers().testFlag(Qt::AltModifier)) {
         //prev key
         _imp->app->getTimeLine()->goToPreviousKeyframe();
     }
@@ -1071,26 +1076,44 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             &&  event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next key
         _imp->app->getTimeLine()->goToNextKeyframe();
-    } else if(event->key() == Qt::Key_F) {
+    } else if(event->key() == Qt::Key_F && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         centerViewer();
         
-    } else if(event->key() == Qt::Key_C) {
+    } else if(event->key() == Qt::Key_C && !event->modifiers().testFlag(Qt::ControlModifier)
+              && event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         onClipToProjectButtonToggle(!_imp->_clipToProjectFormatButton->isDown());
     } else if(event->key() == Qt::Key_U) {
         refresh();
-    } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)) {
+    } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)
+              && !event->modifiers().testFlag(Qt::ControlModifier)
+              && !event->modifiers().testFlag(Qt::AltModifier)) {
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
-    } else if (event->key() == Qt::Key_P && event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (event->key() == Qt::Key_P && event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)
+               && !event->modifiers().testFlag(Qt::AltModifier)) {
         onRenderScaleButtonClicked(!_imp->_renderScaleActive);
-    } else if (event->key() == Qt::Key_1 && event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (event->key() == Qt::Key_1 && event->modifiers().testFlag(Qt::AltModifier)
+               && !event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(0);
-    } else if (event->key() == Qt::Key_2 && event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (event->key() == Qt::Key_2 && event->modifiers().testFlag(Qt::AltModifier)
+               && !event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(1);
-    } else if (event->key() == Qt::Key_3 && event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (event->key() == Qt::Key_3 && event->modifiers().testFlag(Qt::AltModifier)
+               && !event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(2);
-    } else if (event->key() == Qt::Key_4 && event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (event->key() == Qt::Key_4 && event->modifiers().testFlag(Qt::AltModifier)
+               && !event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(3);
-    } else if (event->key() == Qt::Key_5 && event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (event->key() == Qt::Key_5 && event->modifiers().testFlag(Qt::AltModifier)
+               && !event->modifiers().testFlag(Qt::ControlModifier)
+               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(4);
     }
 

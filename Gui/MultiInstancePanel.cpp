@@ -1445,14 +1445,14 @@ void TrackerPanel::handleTrackNextAndPrevious(const std::list<Button_Knob*>& sel
 
 }
 
-void TrackerPanel::trackBackward()
+bool TrackerPanel::trackBackward()
 {
     
     std::list<Node*> selectedInstances;
     getSelectedInstances(&selectedInstances);
     if (selectedInstances.empty()) {
         Natron::warningDialog(tr("Tracker").toStdString(), tr("You must select something to track first").toStdString());
-        return;
+        return false;
     }
     
     boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
@@ -1462,7 +1462,7 @@ void TrackerPanel::trackBackward()
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
         if (!(*it)->getLiveInstance()) {
-            return;
+            return true;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(prevBtn->getName());
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1480,21 +1480,22 @@ void TrackerPanel::trackBackward()
         QCoreApplication::processEvents();
         if (getGui() && !getGui()->progressUpdate(selectedInstances.front()->getLiveInstance(),
                                                   ((double)(start - cur) / (double)(start - end)))) {
-            return;
+            return true;
         }
         --cur;
     }
     gui->endProgress(selectedInstances.front()->getLiveInstance());
+    return true;
 }
 
-void TrackerPanel::trackForward()
+bool TrackerPanel::trackForward()
 {
     
     std::list<Node*> selectedInstances;
     getSelectedInstances(&selectedInstances);
     if (selectedInstances.empty()) {
         Natron::warningDialog(tr("Tracker").toStdString(), tr("You must select something to track first").toStdString());
-        return;
+        return false;
     }
 
     boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
@@ -1503,7 +1504,7 @@ void TrackerPanel::trackForward()
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
         if (!(*it)->getLiveInstance()) {
-            return;
+            return true;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackNextButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1522,26 +1523,26 @@ void TrackerPanel::trackForward()
         QCoreApplication::processEvents();
         if (getGui() && !getGui()->progressUpdate(selectedInstances.front()->getLiveInstance(),
                                                   ((double)(cur - start) / (double)(end - start)))) {
-            return;
+            return true;
         }
         ++cur;
     }
     gui->endProgress(selectedInstances.front()->getLiveInstance());
-
+    return true;
 }
 
-void TrackerPanel::trackPrevious()
+bool TrackerPanel::trackPrevious()
 {
     std::list<Node*> selectedInstances;
     getSelectedInstances(&selectedInstances);
     if (selectedInstances.empty()) {
         Natron::warningDialog(tr("Tracker").toStdString(), tr("You must select something to track first").toStdString());
-        return;
+        return false;
     }
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
         if (!(*it)->getLiveInstance()) {
-            return;
+            return true;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackPreviousButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1550,21 +1551,21 @@ void TrackerPanel::trackPrevious()
     }
     
     handleTrackNextAndPrevious(instanceButtons,getApp()->getTimeLine()->currentFrame());
-
+    return true;
 }
 
-void TrackerPanel::trackNext()
+bool TrackerPanel::trackNext()
 {
     std::list<Node*> selectedInstances;
     getSelectedInstances(&selectedInstances);
     if (selectedInstances.empty()) {
         Natron::warningDialog(tr("Tracker").toStdString(), tr("You must select something to track first").toStdString());
-        return;
+        return false;
     }
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
         if (!(*it)->getLiveInstance()) {
-            return;
+            return true;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackNextButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1573,6 +1574,7 @@ void TrackerPanel::trackNext()
     }
     
     handleTrackNextAndPrevious(instanceButtons,getApp()->getTimeLine()->currentFrame());
+    return true;
 }
 
 void TrackerPanel::clearAllAnimationForSelection()
