@@ -2317,6 +2317,31 @@ int EffectInstance::getCurrentFrameRecursive() const
     return getApp()->getTimeLine()->currentFrame();
 }
 
+
+int EffectInstance::getCurrentViewRecursive() const
+{
+    if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+        return _imp->renderArgs.localData()._view;
+    }
+    ///If we reach here, that's means this is not during a call to renderRoI
+    ///hence this is probably asked but doesn't matter so just return 0
+    return 0;
+
+}
+
+
+int EffectInstance::getCurrentMipMapLevelRecursive() const
+{
+    if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+        return _imp->renderArgs.localData()._mipMapLevel;
+    }
+    
+    ///If we reach here, that's means this is not during a call to renderRoI
+    ///hence this is probably asked but doesn't matter so just return 0
+    return 0;
+
+}
+
 void EffectInstance::updateCurrentFrameRecursive(int time)
 {
     if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
@@ -2330,14 +2355,9 @@ void EffectInstance::getClipThreadStorageData(SequenceTime time,
                                               RectI *outputRoD)
 {
     assert(view && mipMapLevel && outputRoD);
-    *view = 0;
-    *mipMapLevel = 0;
-    std::list<ViewerInstance*> connectedViewers;
-    _node->hasViewersConnected(&connectedViewers);
-    if (!connectedViewers.empty()) {
-        *view = (*connectedViewers.begin())->getCurrentView();
-        *mipMapLevel = (*connectedViewers.begin())->getMipMapLevel();
-    }
+    *view = getCurrentViewRecursive();
+    *mipMapLevel = getCurrentMipMapLevelRecursive();
+
     RenderScale scale;
     scale.x = Image::getScaleFromMipMapLevel(*mipMapLevel);
     scale.y = scale.x;
@@ -2403,19 +2423,7 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,
             decrementRecursionLevel();
         
         } else {
-            int view;
-            if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
-                view = _imp->renderArgs.localData()._view;
-            } else {
-#pragma message WARN("This is a bad way to get the current view")
-                std::list<ViewerInstance*> connectedViewers;
-                _node->hasViewersConnected(&connectedViewers);
-                if (!connectedViewers.empty()) {
-                    view = (*connectedViewers.begin())->getCurrentView();
-                } else {
-                    view = 0;
-                }
-            }
+            int view = getCurrentViewRecursive();
             ///Recursive action, must not call assertActionIsNotRecursive()
             incrementRecursionLevel();
             knobChanged(k, reason,rod,view,time);

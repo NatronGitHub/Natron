@@ -108,7 +108,6 @@ public:
     /// renderScale
     virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE FINAL;
     
-    void getViewRecursive(int& view) const;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -197,6 +196,10 @@ public:
     void setClipsOutputRoD(const RectI& rod);
     
     void discardClipsOutputRoD();
+    
+    void setClipsFrameRange(double first,double last);
+    
+    void discardClipsFrameRange();
 private:
     OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 

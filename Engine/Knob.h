@@ -1167,9 +1167,11 @@ protected:
      **/
     void decrementRecursionLevel();
     
-    int getRecursionLevel() const;
     
 public:
+    
+    int getRecursionLevel() const;
+
     
     /**
      * @brief Used to bracket a series of calls to setValue(...) in case many complex changes are done

@@ -2046,14 +2046,9 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         userRoI = _imp->userRoI;
     }
 
-    if (event->button() == Qt::MiddleButton || (event->button() == Qt::LeftButton  && event->modifiers().testFlag(Qt::AltModifier)
-                                                && !event->modifiers().testFlag(Qt::ControlModifier)) ) {
-        _imp->ms = DRAGGING_IMAGE;
-        return;
-    }
     
     bool overlaysCaught = false;
-    
+    bool mustRedraw = false;
     
     double wipeSelectionTol;
     {
@@ -2061,107 +2056,115 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
         wipeSelectionTol = 8. / _imp->zoomCtx.factor();
     }
     
-    if (_imp->overlay && isWipeHandleVisible() &&
-        event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
-        _imp->ms = DRAGGING_WIPE_CENTER;
-        return;
-    } else if (_imp->overlay &&  isWipeHandleVisible() &&
-               event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
-        _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
-        return;
-    } else if (_imp->overlay &&  isWipeHandleVisible() &&
-               event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
-        _imp->ms = ROTATING_WIPE_HANDLE;
-        return;
-    }
-    
-    
-    if (event->button() == Qt::LeftButton &&
-        !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-        displayingImage()) {
-        _imp->pickerState = PICKER_INACTIVE;
-        updateGL();
-    }
-    
-    bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
-    if (hasPickers && event->button() == Qt::LeftButton &&
-       event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-       displayingImage()) {
-        _imp->pickerState = PICKER_POINT;
-        if (pickColor(event->x(),event->y())) {
-            _imp->ms = PICKING_COLOR;
-            updateGL();
-        }
-    } else if (hasPickers && event->button() == Qt::LeftButton &&
-          event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
-          displayingImage()) {
-        _imp->pickerState = PICKER_RECTANGLE;
-        _imp->pickerRect.setTopLeft(zoomPos);
-        _imp->pickerRect.setBottomRight(zoomPos);
-        _imp->ms = BUILDING_PICKER_RECTANGLE;
-        updateGL();
-    }
-    
-    if (_imp->ms == UNDEFINED && _imp->overlay) {
+    if (event->button() == Qt::MiddleButton || (event->button() == Qt::LeftButton  && event->modifiers().testFlag(Qt::AltModifier)
+                                                && !event->modifiers().testFlag(Qt::ControlModifier)) ) {
+        _imp->ms = DRAGGING_IMAGE;
+        overlaysCaught = true;
+    } else if (_imp->ms == UNDEFINED && _imp->overlay) {
         unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
         overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos,event);
         if (overlaysCaught) {
-            updateGL();
-            return;
+            mustRedraw = true;
         }
     }
     
-    if (event->button() == Qt::RightButton) {
-        _imp->menu->exec(mapToGlobal(event->pos()));
-        return;
-    }
     
-    
-    if (event->button() == Qt::LeftButton &&
-              isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
-        return;
-    } else if(event->button() == Qt::LeftButton &&
-              isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_LEFT_EDGE;
-        return;
-    } else if(event->button() == Qt::LeftButton &&
-              isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_RIGHT_EDGE;
-        return;
-    } else if(event->button() == Qt::LeftButton &&
-              isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_TOP_EDGE;
-        return;
-    } else if(event->button() == Qt::LeftButton &&
-              isNearByUserRoIMiddleHandle(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_CROSS;
-        return;
-    } else if(event->button() == Qt::LeftButton &&
-              isNearByUserRoITopLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_TOP_LEFT;
-        return;
-    } else if(event->button() == Qt::LeftButton &&
-              isNearByUserRoITopRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_TOP_RIGHT;
-        return;
-    }  else if(event->button() == Qt::LeftButton &&
-               isNearByUserRoIBottomLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
-        return;
-    }  else if(event->button() == Qt::LeftButton &&
-               isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
-        _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
-        return;
+    if (!overlaysCaught) {
+        bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
+        
+        if (hasPickers && _imp->pickerState != PICKER_INACTIVE && event->button() == Qt::LeftButton &&
+            !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
+            displayingImage()) {
+            _imp->pickerState = PICKER_INACTIVE;
+            mustRedraw = true;
+            overlaysCaught = true;
+        } else if (hasPickers && event->button() == Qt::LeftButton &&
+                   event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
+                   displayingImage()) {
+            _imp->pickerState = PICKER_POINT;
+            if (pickColor(event->x(),event->y())) {
+                _imp->ms = PICKING_COLOR;
+                mustRedraw = true;
+                overlaysCaught = true;
+            }
+        } else if (hasPickers && event->button() == Qt::LeftButton &&
+                   event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
+                   displayingImage()) {
+            _imp->pickerState = PICKER_RECTANGLE;
+            _imp->pickerRect.setTopLeft(zoomPos);
+            _imp->pickerRect.setBottomRight(zoomPos);
+            _imp->ms = BUILDING_PICKER_RECTANGLE;
+            mustRedraw = true;
+            overlaysCaught = true;
+        } else if (event->button() == Qt::LeftButton &&
+                   isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
+            overlaysCaught = true;
+        } else if(event->button() == Qt::LeftButton &&
+                  isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_LEFT_EDGE;
+            overlaysCaught = true;
+        } else if(event->button() == Qt::LeftButton &&
+                  isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_RIGHT_EDGE;
+            overlaysCaught = true;
+        } else if(event->button() == Qt::LeftButton &&
+                  isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_TOP_EDGE;
+            overlaysCaught = true;
+        } else if(event->button() == Qt::LeftButton &&
+                  isNearByUserRoIMiddleHandle(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_CROSS;
+            overlaysCaught = true;
+        } else if(event->button() == Qt::LeftButton &&
+                  isNearByUserRoITopLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_TOP_LEFT;
+            overlaysCaught = true;
+        } else if(event->button() == Qt::LeftButton &&
+                  isNearByUserRoITopRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_TOP_RIGHT;
+            overlaysCaught = true;
+        }  else if(event->button() == Qt::LeftButton &&
+                   isNearByUserRoIBottomLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
+            overlaysCaught = true;
+        }  else if(event->button() == Qt::LeftButton &&
+                   isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
+            _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
+            overlaysCaught = true;
+        } else if (_imp->overlay && isWipeHandleVisible() &&
+             event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
+            _imp->ms = DRAGGING_WIPE_CENTER;
+            overlaysCaught = true;
+        } else if (_imp->overlay &&  isWipeHandleVisible() &&
+                   event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+            _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
+            overlaysCaught = true;
+        } else if (_imp->overlay &&  isWipeHandleVisible() &&
+                   event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+            _imp->ms = ROTATING_WIPE_HANDLE;
+            overlaysCaught = true;
+        }
+        
+        
     }
 
-    ///build selection rectangle
-    _imp->selectionRectangle.setTopLeft(zoomPos);
-    _imp->selectionRectangle.setBottomRight(zoomPos);
-    _imp->lastDragStartPos = zoomPos;
-    _imp->ms = SELECTING;
-    if (!event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
-        emit selectionCleared();
+    if (!overlaysCaught) {
+        if (event->button() == Qt::RightButton) {
+            _imp->menu->exec(mapToGlobal(event->pos()));
+        } else if (event->button() == Qt::LeftButton) {
+            ///build selection rectangle
+            _imp->selectionRectangle.setTopLeft(zoomPos);
+            _imp->selectionRectangle.setBottomRight(zoomPos);
+            _imp->lastDragStartPos = zoomPos;
+            _imp->ms = SELECTING;
+            if (!event->modifiers().testFlag(Qt::ControlModifier)) {
+                emit selectionCleared();
+            }
+        }
+    }
+
+    if (mustRedraw) {
         updateGL();
     }
     

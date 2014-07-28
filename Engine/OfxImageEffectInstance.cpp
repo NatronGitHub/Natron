@@ -197,7 +197,7 @@ double OfxImageEffectInstance::getFrameRate() const {
 /// the recursive instanceChangedAction will be fed the correct frame
 double OfxImageEffectInstance::getFrameRecursive() const {
     assert(node());
-    return node()->getApp()->getTimeLine()->currentFrame();
+    return node()->getCurrentFrameRecursive();
 }
 
 /// This is called whenever a param is changed by the plugin so that
@@ -219,19 +219,6 @@ void OfxImageEffectInstance::getRenderScaleRecursive(double &x, double &y) const
     }
 }
 
-void OfxImageEffectInstance::getViewRecursive(int& view) const
-{
-    assert(node());
-    std::list<ViewerInstance*> attachedViewers;
-    node()->getNode()->hasViewersConnected(&attachedViewers);
-    ///get the render scale of the 1st viewer
-    if (!attachedViewers.empty()) {
-        ViewerInstance* first = attachedViewers.front();
-        view = first->getCurrentView();
-    } else {
-        view = 0;
-    }
-}
 
  ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
        ///expects those properties to exist, so we add them to the INTERACT descriptor.
@@ -572,7 +559,7 @@ void OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
 void OfxImageEffectInstance::setClipsView(int view)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        it->second->setView(view);
+        dynamic_cast<OfxClipInstance*>(it->second)->setRenderedView(view);
     }
 }
 
@@ -595,14 +582,19 @@ void OfxImageEffectInstance::discardClipsView()
 void OfxImageEffectInstance::setClipsRenderedImage(const boost::shared_ptr<Natron::Image>& image)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->setRenderedImage(image);
+        ///Set the rendered image only on the output clip
+        if (it->second->isOutput()) {
+            dynamic_cast<OfxClipInstance*>(it->second)->setRenderedImage(image);
+        }
     }
 }
 
 void OfxImageEffectInstance::discardClipsImage()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        dynamic_cast<OfxClipInstance*>(it->second)->discardRenderedImage();
+        if (it->second->isOutput()) {
+            dynamic_cast<OfxClipInstance*>(it->second)->discardRenderedImage();
+        }
     }
 }
 
@@ -619,6 +611,20 @@ void OfxImageEffectInstance::discardClipsOutputRoD()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->discardOutputRoD();
+    }
+}
+
+void OfxImageEffectInstance::setClipsFrameRange(double first,double last)
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->setFrameRange(first, last);
+    }
+}
+
+void OfxImageEffectInstance::discardClipsFrameRange()
+{
+    for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        dynamic_cast<OfxClipInstance*>(it->second)->discardFrameRange();
     }
 }
 

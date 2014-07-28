@@ -144,10 +144,18 @@ public:
     /// This is called by Instance::renderAction() for each clip, before calling
     /// kOfxImageEffectActionRender on the Instance.
     /// The view number has to be stored in the Clip, so this is typically not thread-safe,
-    /// except if thread-local storage is used.
-    virtual void setView(int view) OVERRIDE FINAL;
+    /// except if thread-local storage is used
+    //// EDIT: We don't use this function anymore, instead we handle thread storage ourselves in OfxEffectInstance
+    //// via the ClipsThreadStorageSetter, this way we can be sure actions are not called recursively and do other checks.
+    virtual void setView(int /*view*/) {}
+    
+    void setRenderedView(int view);
     
     void setMipMapLevel(unsigned int mipMapLevel);
+    
+    void setFrameRange(double first,double last);
+    
+    void discardFrameRange();
     
     ///Set the view stored in the thread-local storage to be invalid
     void discardView();
@@ -195,6 +203,8 @@ private:
         bool isImageValid;
         RectI rod;
         bool rodValid;
+        double firstFrame,lastFrame;
+        bool frameRangeValid;
         
         LastRenderArgs()
         : isMipMapLevelValid(false)
@@ -205,6 +215,9 @@ private:
         , isImageValid(false)
         , rod()
         , rodValid(false)
+        , firstFrame(0)
+        , lastFrame(0)
+        , frameRangeValid(false)
         {}
     };
     
