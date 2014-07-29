@@ -1452,21 +1452,15 @@ std::string SequenceFileDialog::selectedFiles() {
             //if nothing is selected, pick whatever the line edit tells us
             return  _selectionLineEdit->text().toStdString();
         }
-        
     } else {
-        SequenceParsing::SequenceFromFiles seq(false);
         if (indexes.count() == 1) {
             QModelIndex sequenceIndex = mapToSource(indexes.at(0));
             QString absoluteFileName = sequenceIndex.data(QFileSystemModel::FilePathRole).toString();
-            seq.tryInsertFile(SequenceParsing::FileNameContent(absoluteFileName.toStdString()));
+            return absoluteFileName.toStdString();
         } else {
             //if nothing is selected, pick whatever the line edit tells us
-            QString lineEditTxt = _selectionLineEdit->text();
-            if (QFile::exists(lineEditTxt)) {
-                seq.tryInsertFile(SequenceParsing::FileNameContent(lineEditTxt.toStdString()));
-            }
+            return _selectionLineEdit->text().toStdString();
         }
-        return seq.generateValidSequencePattern();
     }
 
 }

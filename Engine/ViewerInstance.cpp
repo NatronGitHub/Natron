@@ -1991,6 +1991,13 @@ bool ViewerInstance::isFrameRangeLocked() const
 
 void ViewerInstance::clearLastRenderedTexture()
 {
-    QMutexLocker l(&_imp->lastRenderedTextureMutex);
-    _imp->lastRenderedTexture.reset();
+    {
+        QMutexLocker l(&_imp->lastRenderedTextureMutex);
+        _imp->lastRenderedTexture.reset();
+    }
+    {
+        QMutexLocker l(&_imp->lastRenderedImageMutex);
+        _imp->lastRenderedImage[0].reset();
+        _imp->lastRenderedImage[1].reset();
+    }
 }

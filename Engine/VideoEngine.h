@@ -47,15 +47,12 @@ class Timer;
 
 
 /**
- *@class Tree
+ *@class RenderTree
  *@brief This class represents the tree upstream of the output node as seen internally by the video engine.
- *It provides means to sort the tree and access to the nodes in topological order. It also
- *provides access to the input nodes and the output node of the tree.
- *An input node is a node that does not depend on any upstream node,i.e :
- *it can generate data.
+ *It provides means to sort the tree and access to the nodes in topological order.
  *An output node is a node whose output cannot be connected to any other node and whose
- *sole purpose is to visulize the data flowing through the graph in a given configuration.
- *A Tree is represented by 1 output node, connected to its input, and so on recursively.
+ *sole purpose is to output the data flowing through the graph in a given configuration.
+ *A RenderTree is represented by 1 output node, connected to its input, and so on and so forth recursively.
  *
  **/
 class RenderTree {
@@ -188,11 +185,7 @@ public slots:
     
     ///convenience function for signal/slots
     void abortRenderingNonBlocking() { abortRendering(false); }
-    
-    /*
-     *@brief Slot called internally by the render() function when it reports progress for the current frame.
-     *Do not call this yourself.
-     */
+  
     void toggleLoopMode(bool b);
     
     
