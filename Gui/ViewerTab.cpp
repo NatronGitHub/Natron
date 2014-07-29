@@ -1120,6 +1120,17 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     
 }
 
+
+bool ViewerTab::isPlayForwardButtonDown() const
+{
+    return _imp->play_Forward_Button->isDown();
+}
+
+bool ViewerTab::isPlayBackwardButtonDown() const
+{
+    return _imp->play_Backward_Button->isDown();
+}
+
 void ViewerTab::onGainSliderChanged(double v)
 {
     _imp->viewer->setGain(v);

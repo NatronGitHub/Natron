@@ -174,6 +174,9 @@ public:
     void disconnectFromViewerCache();
     
     void clearTimelineCacheLine();
+    
+    bool isPlayForwardButtonDown() const;
+    bool isPlayBackwardButtonDown() const;
 public slots:
     
     void startPause(bool);

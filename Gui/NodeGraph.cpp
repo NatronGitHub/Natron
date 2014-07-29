@@ -1507,7 +1507,78 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         }
         
     }
-
+    else if (e->key() == Qt::Key_Left && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+            && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->previousFrame();
+        }
+    }
+    else if (e->key() == Qt::Key_Right && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->nextFrame();
+        }
+    }
+    else if (e->key() == Qt::Key_Left && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->firstFrame();
+        }
+    }
+    else if (e->key() == Qt::Key_Right && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->lastFrame();
+        }
+    }
+    else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->previousIncrement();
+        }
+    }
+    else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->nextIncrement();
+        }
+    }
+    else if (e->key() == Qt::Key_J && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->startBackward(!getGui()->getLastSelectedViewer()->isPlayBackwardButtonDown());
+        }
+    }
+    else if (e->key() == Qt::Key_K && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->abortRendering();
+        }
+    }
+    else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
+             && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        if (getGui()->getLastSelectedViewer()) {
+            getGui()->getLastSelectedViewer()->startPause(!getGui()->getLastSelectedViewer()->isPlayForwardButtonDown());
+        }
+        
+    }
+    else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::ShiftModifier)
+                && e->modifiers().testFlag(Qt::ControlModifier)) {
+        getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
+    }
+    else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::ShiftModifier)
+                && e->modifiers().testFlag(Qt::ControlModifier)) {
+        getGui()->getApp()->getTimeLine()->goToNextKeyframe();
+    }
     
 }
 
