@@ -39,6 +39,7 @@
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
 #include "Engine/Rect.h"
+#include "Engine/NoOp.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
@@ -614,9 +615,28 @@ void AppManager::loadAllPlugins()
 }
 
 
-void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* /*plugins*/,
+void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                                         std::map<std::string,std::vector<std::string> >* /*readersMap*/,
-                                        std::map<std::string,std::vector<std::string> >* /*writersMap*/){
+                                        std::map<std::string,std::vector<std::string> >* /*writersMap*/)
+{
+    {
+        boost::shared_ptr<EffectInstance> dotNode(Dot::BuildEffect(boost::shared_ptr<Natron::Node>()));
+        std::map<std::string,void*> functions;
+        functions.insert(std::make_pair("BuildEffect", (void*)&Dot::BuildEffect));
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+
+        Natron::Plugin* plugin = new Natron::Plugin(binary,dotNode->pluginID().c_str(),dotNode->pluginLabel().c_str(),
+                                                    "",NULL,dotNode->majorVersion(),dotNode->minorVersion());
+        plugins->push_back(plugin);
+        std::list<std::string> grouping;
+        dotNode->pluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it!=grouping.end();++it) qgrouping.push_back(it->c_str());
+        
+        onPluginLoaded(qgrouping, dotNode->pluginID().c_str(),dotNode->pluginLabel().c_str(), "", "");
+    }
 }
 
 void AppManager::registerPlugin(const QStringList& groups,

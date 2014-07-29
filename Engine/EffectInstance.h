@@ -101,14 +101,14 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(boost::shared_ptr<Node> node);
+    explicit EffectInstance(boost::shared_ptr<Natron::Node> node);
     
     virtual ~EffectInstance();
     
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    boost::shared_ptr<Node> getNode() const WARN_UNUSED_RETURN { return _node; }
+    boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN { return _node; }
     
     /**
      * @brief Returns the "real" hash of the node synchronized with the gui state

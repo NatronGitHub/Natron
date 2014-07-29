@@ -752,6 +752,9 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         QStringList backdropGrouping(PLUGIN_GROUP_TOOLSETS);
         onPluginLoaded(backdropGrouping, label, label, "", "");
     }
+    
+    ///Also load the plug-ins of the AppManager
+    AppManager::loadBuiltinNodePlugins(plugins, readersMap, writersMap);
 }
 
 AppInstance* GuiApplicationManager::makeNewInstance(int appID) const {
