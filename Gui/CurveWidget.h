@@ -253,6 +253,8 @@ private:
     virtual void keyPressEvent(QKeyEvent *event) OVERRIDE FINAL;
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
 

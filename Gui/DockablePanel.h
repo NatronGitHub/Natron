@@ -203,6 +203,8 @@ private:
         QFrame::mousePressEvent(e);
     }
     
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
 

@@ -517,6 +517,7 @@ public:
     std::pair<CurveGui::SelectedDerivative,KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
+    boost::scoped_ptr<QUndoStack> _undoStack;
 
 private:
     
@@ -526,7 +527,6 @@ private:
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
-    boost::scoped_ptr<QUndoStack> _undoStack;
     Gui* _gui;
     
 };
@@ -558,13 +558,13 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,boost::shared_ptr<TimeLine> time
 , _selectedDerivative()
 , _evaluateOnPenUp(false)
 , _keyDragLastMovement()
+, _undoStack(new QUndoStack)
 , _baseAxisColor(118,215,90,255)
 , _scaleColor(67,123,52,255)
 , _keyDragMaxMovement()
 , _timelineTopPoly()
 , _timelineBtmPoly()
 , _widget(widget)
-, _undoStack(new QUndoStack)
 , _gui(gui)
 {
     // always running in the main thread
@@ -2839,6 +2839,12 @@ void CurveWidget::onUpdateOnPenUpActionTriggered()
 {
     bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     appPTR->getCurrentSettings()->setRenderOnEditingFinishedOnly(!updateOnPenUpOnly);
+}
+
+void CurveWidget::focusInEvent(QFocusEvent* e)
+{
+    QGLWidget::focusInEvent(e);
+    _imp->_undoStack->setActive();
 }
 
 void CurveWidget::exportCurveToAscii()

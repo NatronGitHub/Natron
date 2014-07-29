@@ -1178,6 +1178,12 @@ void DockablePanel::setCurrentColor(const QColor& c)
     onColorDialogColorChanged(c);
 }
 
+void DockablePanel::focusInEvent(QFocusEvent* e)
+{
+    QFrame::focusInEvent(e);
+    _imp->_undoStack->setActive();
+}
+
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
                                      Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
 : DockablePanel(gui,

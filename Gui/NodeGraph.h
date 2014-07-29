@@ -200,27 +200,29 @@ private:
 
     virtual bool event(QEvent* event) OVERRIDE FINAL;
 
-    void mousePressEvent(QMouseEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void mouseReleaseEvent(QMouseEvent *event);
+    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void mouseMoveEvent(QMouseEvent *event);
+    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void mouseDoubleClickEvent(QMouseEvent *event);
+    virtual void mouseDoubleClickEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void resizeEvent(QResizeEvent* event);
+    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
     
-    void paintEvent(QPaintEvent* event);
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
 
-    void wheelEvent(QWheelEvent *event);
+    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
 
-    void dropEvent(QDropEvent* event);
+    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
     
-    void dragEnterEvent(QDragEnterEvent *ev);
+    virtual void dragEnterEvent(QDragEnterEvent *ev) OVERRIDE FINAL;
     
-    void dragMoveEvent(QDragMoveEvent* e);
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     
-    void dragLeaveEvent(QDragLeaveEvent* e);
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
 private:
     

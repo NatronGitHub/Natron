@@ -2868,3 +2868,9 @@ void NodeGraph::onTimeChanged(SequenceTime time,int reason)
     }
     project->setLastTimelineSeekCaller(NULL);
 }
+
+void NodeGraph::focusInEvent(QFocusEvent* e)
+{
+    QGraphicsView::focusInEvent(e);
+    _imp->_undoStack->setActive();
+}
