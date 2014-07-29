@@ -491,7 +491,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     
     
     ////While the inputs are identity get the RoD of the first non identity input
-    while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
+    while (inputIdentityNumber != -1 && isInputImgCached) {
         EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
             inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, mipMapLevel,view);
