@@ -180,7 +180,6 @@ void NodeGui::initialize(NodeGraph* dag,
         QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
         QObject::connect(_settingsPanel,SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
         QObject::connect(_settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(setDefaultGradientColor(QColor)));
-        dockContainer->addWidget(_settingsPanel);
     }
     OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
     if (ofxNode) {
