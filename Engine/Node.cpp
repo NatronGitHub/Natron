@@ -1220,6 +1220,11 @@ int Node::inputIndex(Node* n) const {
     return -1;
 }
 
+void Node::clearLastRenderedImage()
+{
+    _imp->liveInstance->clearLastRenderedImage();
+}
+
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
 void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect,
@@ -1321,7 +1326,7 @@ void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& output
     
     ///Free all memory used by the plug-in.
     _imp->liveInstance->clearPluginMemoryChunks();
-    _imp->liveInstance->clearLastRenderedImage();
+    clearLastRenderedImage();
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
     if (isViewer) {
         isViewer->clearLastRenderedTexture();

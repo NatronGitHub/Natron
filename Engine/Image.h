@@ -135,7 +135,7 @@ namespace Natron {
          as it is not needed.*/
         Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel,Natron::ImageBitDepth bitdepth);
         
-        virtual ~Image(){}
+        virtual ~Image(){ deallocate(); }
 #ifdef NATRON_DEBUG
         virtual void onMemoryAllocated() OVERRIDE FINAL;
 #endif

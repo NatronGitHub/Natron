@@ -586,7 +586,11 @@ public:
      **/
     bool canOthersConnectToThisNode() const;
     
-
+    /**
+     * @brief Clears any pointer refering to the last rendered image
+     **/
+    void clearLastRenderedImage();
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;

@@ -2133,13 +2133,20 @@ Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scal
     ///Clear any previous input image which may be left
     _imp->clearInputImagePointers();
     
-    Natron::Status ret = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+    Natron::Status stat;
+    
+    try {
+        stat = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+    } catch (const std::exception & e) {
+        ///Also clear images when catching an exception
+        _imp->clearInputImagePointers();
+    }
     
     ///Clear any previous input image which may be left
     _imp->clearInputImagePointers();
 
     decrementRecursionLevel();
-    return ret;
+    return stat;
 }
 
 bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,

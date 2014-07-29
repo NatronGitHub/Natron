@@ -446,7 +446,7 @@ public:
                     _cache->notifyEntryStorageChanged(Natron::RAM, Natron::DISK,getTime(), size());
                 }
             } else {
-                _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
+                _cache->notifyEntryDestroyed(getTime(),size(),Natron::RAM);
             }
         }
         _data.deallocate();
@@ -455,6 +455,9 @@ public:
     /**
      * @brief Returns the size of the cache entry in bytes. This is made virtual
      * so derived class could add any extra size related to a buffer it may have (@see Natron::Image::size())
+     *
+     * WARNING: When overloading this, make sure you call then the deallocate() function in your destructor right prior
+     * anything else is destroyed, to make sure the good amount of memory to be destroyed is notified to the cache.
      **/
     virtual size_t size() const OVERRIDE { return dataSize(); }
 
