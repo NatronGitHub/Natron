@@ -20,8 +20,10 @@
 #include <QStyledItemDelegate>
 #include <QUndoCommand>
 #include <QPainter>
+#include <QLabel>
 
 #include "Gui/Button.h"
+#include "Gui/ComboBox.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/AnimatedCheckBox.h"
@@ -375,6 +377,9 @@ bool MultiInstancePanel::isGuiCreated() const
 
 void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
 {
+    appendExtraGui(layout);
+    layout->addSpacing(20);
+    
     std::list<boost::shared_ptr<KnobI> > instanceSpecificKnobs;
     _imp->getInstanceSpecificKnobs(_imp->getMainInstance().get(), &instanceSpecificKnobs);
     
@@ -412,6 +417,7 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
     _imp->view->header()->setStretchLastSection(true);
     
+    
     layout->addWidget(_imp->view);
     
     _imp->buttonsContainer = new QWidget(layout->parentWidget());
@@ -444,7 +450,6 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->resetTracksButton->setToolTip(tr("Reset selected items"));
     
     layout->addWidget(_imp->buttonsContainer);
-    appendExtraGui(layout);
     appendButtons(_imp->buttonsLayout);
     _imp->buttonsLayout->addStretch();
     ///finally insert the main instance in the table
@@ -1267,18 +1272,42 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reaso
     }
 }
 
+namespace  {
+    enum ExportTransformType
+    {
+        STABILIZE,
+        MATCHMOVE
+    };
+}
+
 /////////////// Tracker panel
 struct TrackerPanelPrivate
 {
     Button* averageTracksButton;
     bool updateViewerOnTrackingEnabled;
     
+    QLabel* exportLabel;
+    
+    QWidget* exportContainer;
+    QHBoxLayout* exportLayout;
+    ComboBox* exportChoice;
+    Button* exportButton;
+    
     TrackerPanelPrivate()
     : averageTracksButton(0)
     , updateViewerOnTrackingEnabled(true)
+    , exportLabel(NULL)
+    , exportLayout(NULL)
+    , exportChoice(NULL)
+    , exportButton(NULL)
     {
         
     }
+    
+
+    void createTransformFromSelection(const std::list<Node*>& selection,bool linked,ExportTransformType type);
+    
+    void createCornerPinFromSelection(const std::list<Node*>& selection,bool linked,bool useTransformRefFrame);
     
 };
 
@@ -1294,9 +1323,69 @@ TrackerPanel::~TrackerPanel()
     
 }
 
-void TrackerPanel::appendExtraGui(QVBoxLayout* /*layout*/)
+void TrackerPanel::appendExtraGui(QVBoxLayout* layout)
 {
+    _imp->exportLabel = new QLabel(tr("Export data"),layout->parentWidget());
+    layout->addWidget(_imp->exportLabel);
+    layout->addSpacing(10);
+    _imp->exportContainer = new QWidget(layout->parentWidget());
+    _imp->exportLayout = new QHBoxLayout(_imp->exportContainer);
+    _imp->exportLayout->setContentsMargins(0, 0, 0, 0);
     
+    _imp->exportChoice = new ComboBox(_imp->exportContainer);
+    _imp->exportChoice->setToolTip(tr("<p><b>CornerPinOFX (Use current frame):</p></b>"
+                                      "<p>Warp the image according to the relative transform using the current frame as reference.</p>"
+                                      "<p><b>CornerPinOFX (Use transform ref frame):</p></b>"
+                                      "<p>Warp the image according to the relative transform using the "
+                                      "reference frame specified in the transform tab.</p>"
+                                      "<p><b>Transform (Stabilize):</p></b>"
+                                      "<p>Transform the image so that the tracked points do not move.</p>"
+                                      "<p><b>Transform (Match-move):</p></b>"
+                                      "<p>Transform another image so that it moves to match the tracked points.</p>"
+                                      "<p>The linked versions keep a link between the new node and the track, the others just copy"
+                                      " the values.</p>"));
+    std::vector<std::string> choices;
+    std::vector<std::string> helps;
+    
+    choices.push_back(tr("CornerPinOFX (Use current frame. Linked)").toStdString());
+    helps.push_back(tr("Warp the image according to the relative transform using the current frame as reference.").toStdString());
+    
+    choices.push_back(tr("CornerPinOFX (Use transform ref frame. Linked)").toStdString());
+    helps.push_back(tr("Warp the image according to the relative transform using the "
+                       "reference frame specified in the transform tab.").toStdString());
+    
+    
+    choices.push_back(tr("CornerPinOFX (Use current frame. Copy)").toStdString());
+    helps.push_back(tr("Same as the linked version except that it copies values instead of "
+                       "referencing them via a link to the track").toStdString());
+    
+    choices.push_back(tr("CornerPinOFX (Use transform ref frame. Copy)").toStdString());
+    helps.push_back(tr("Same as the linked version except that it copies values instead of "
+                       "referencing them via a link to the track").toStdString());
+
+    choices.push_back(tr("Transform (Stabilize. Linked)").toStdString());
+    helps.push_back(tr("Transform the image so that the tracked points do not move.").toStdString());
+    
+    choices.push_back(tr("Transform (Match-move. Linked)").toStdString());
+    helps.push_back(tr("Transform another image so that it moves to match the tracked points.").toStdString());
+    
+    choices.push_back(tr("Transform (Stabilize. Copy)").toStdString());
+    helps.push_back(tr("Same as the linked version except that it copies values instead of "
+                       "referencing them via a link to the track").toStdString());
+    
+    choices.push_back(tr("Transform (Match-move. Copy)").toStdString());
+    helps.push_back(tr("Same as the linked version except that it copies values instead of "
+                       "referencing them via a link to the track").toStdString());
+    for (U32 i = 0; i < choices.size(); ++i) {
+        _imp->exportChoice->addItem(choices[i].c_str(),QIcon(),QKeySequence(),helps[i].c_str());
+    }
+    _imp->exportLayout->addWidget(_imp->exportChoice);
+    
+    _imp->exportButton = new Button(tr("Export"),_imp->exportContainer);
+    QObject::connect(_imp->exportButton,SIGNAL(clicked(bool)),this,SLOT(onExportButtonClicked()));
+    _imp->exportLayout->addWidget(_imp->exportButton);
+    _imp->exportLayout->addStretch();
+    layout->addWidget(_imp->exportContainer);
 }
 
 void TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
@@ -1624,4 +1713,53 @@ void TrackerPanel::clearForwardAnimationForSelection()
 void TrackerPanel::setUpdateViewerOnTracking(bool update)
 {
     _imp->updateViewerOnTrackingEnabled = update;
+}
+
+void TrackerPanel::onExportButtonClicked()
+{
+    int index = _imp->exportChoice->activeIndex();
+    std::list<Node*> selection;
+    getSelectedInstances(&selection);
+    
+    switch (index) {
+        case 0:
+            _imp->createCornerPinFromSelection(selection, true, false);
+            break;
+        case 1:
+            _imp->createCornerPinFromSelection(selection, true, true);
+            break;
+        case 2:
+            _imp->createCornerPinFromSelection(selection, false, false);
+            break;
+        case 3:
+            _imp->createCornerPinFromSelection(selection, false, true);
+            break;
+        case 4:
+            _imp->createTransformFromSelection(selection, true, STABILIZE);
+            break;
+        case 5:
+            _imp->createTransformFromSelection(selection, true, MATCHMOVE);
+            break;
+        case 6:
+            _imp->createTransformFromSelection(selection, false, STABILIZE);
+            break;
+        case 7:
+            _imp->createTransformFromSelection(selection, false, MATCHMOVE);
+            break;
+        default:
+            break;
+    }
+}
+
+void TrackerPanelPrivate::createTransformFromSelection(const std::list<Node*>& selection,bool linked,ExportTransformType type)
+{
+    
+}
+
+void TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& selection,bool linked,bool useTransformRefFrame)
+{
+    if (selection.size() != 4) {
+        Natron::errorDialog("Export", QObject::tr("Export to corner pin needs exactly 4 tracks selected.").toStdString());
+        return;
+    }
 }

@@ -1476,10 +1476,38 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     else if (e->key() == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
     }
-    else if (e->key() == Qt::Key_Up&& !e->modifiers().testFlag(Qt::ControlModifier)
+    else if (e->key() == Qt::Key_Up && !e->modifiers().testFlag(Qt::ControlModifier)
              && !e->modifiers().testFlag(Qt::AltModifier)) {
-        ///If a
+        ///We try to find if the last selected node has an input, if so move selection (or add to selection)
+        ///the first valid input node
+        if (!_imp->_selection.nodes.empty()) {
+            boost::shared_ptr<NodeGui> lastSelected = (*_imp->_selection.nodes.rbegin());
+            const std::map<int,Edge*>& inputs = lastSelected->getInputsArrows();
+            for (std::map<int,Edge*>::const_iterator it = inputs.begin();it!=inputs.end();++it) {
+                if (it->second->hasSource()) {
+                    selectNode(it->second->getSource(), e->modifiers().testFlag(Qt::ShiftModifier));
+                    break;
+                }
+            }
+        }
+        
     }
+    else if (e->key() == Qt::Key_Down && !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        ///We try to find if the last selected node has an output, if so move selection (or add to selection)
+        ///the first valid output node
+        if (!_imp->_selection.nodes.empty()) {
+            boost::shared_ptr<NodeGui> lastSelected = (*_imp->_selection.nodes.rbegin());
+            const std::list<boost::shared_ptr<Natron::Node> >& outputs = lastSelected->getNode()->getOutputs();
+            if (!outputs.empty()) {
+                boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui(outputs.front());
+                assert(output);
+                selectNode(output, e->modifiers().testFlag(Qt::ShiftModifier));
+            }
+        }
+        
+    }
+
     
 }
 

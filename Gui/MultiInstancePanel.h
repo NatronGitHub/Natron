@@ -154,7 +154,7 @@ public:
 public slots:
     
     void onAverageTracksButtonClicked();
-    
+    void onExportButtonClicked();
 private:
     
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;

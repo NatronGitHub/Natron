@@ -284,40 +284,36 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
         QMutexLocker l(&_setValueRecursionLevelMutex);
         ++_setValueRecursionLevel;
     }
-
-    ///if the knob is slaved to another knob,return, because we don't want the
-    ///gui to be unsynchronized with what lies internally.
-    // if (!isSlave(dimension)) {
-
-        {
-            QWriteLocker l(&_valueMutex);
-            _values[dimension] = v;
+    
+    {
+        QWriteLocker l(&_valueMutex);
+        _values[dimension] = v;
+    }
+    
+    ///Add automatically a new keyframe
+    if (getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
+        getHolder() && //< the knob is part of a KnobHolder
+        getHolder()->getApp() && //< the app pointer is not NULL
+        !getHolder()->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
+        (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
+        newKey != NULL) { //< the keyframe to set is not null
+        
+        SequenceTime time;
+        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
+        if (isEffect) {
+            time = isEffect->getCurrentFrameRecursive();
+        } else {
+            time = getHolder()->getApp()->getTimeLine()->currentFrame();
         }
-
-        ///Add automatically a new keyframe
-        if (getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
-            getHolder() && //< the knob is part of a KnobHolder
-                getHolder()->getApp() && //< the app pointer is not NULL
-                !getHolder()->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
-                (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
-                newKey != NULL) { //< the keyframe to set is not null
-
-            SequenceTime time;
-            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
-            if (isEffect) {
-                time = isEffect->getCurrentFrameRecursive();
-            } else {
-                time = getHolder()->getApp()->getTimeLine()->currentFrame();
-            }
-            bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey,triggerKnobChanged);
-            if (addedKeyFrame) {
-                ret = KEYFRAME_ADDED;
-            } else {
-                ret = KEYFRAME_MODIFIED;
-            }
-
+        bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey,triggerKnobChanged);
+        if (addedKeyFrame) {
+            ret = KEYFRAME_ADDED;
+        } else {
+            ret = KEYFRAME_MODIFIED;
         }
-    // }
+        
+    }
+    
     if (ret == NO_KEYFRAME_ADDED && triggerKnobChanged) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason);
     }
