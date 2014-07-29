@@ -185,7 +185,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
                                                                 int majorVersion,int minorVersion,
                                                                 bool requestedByLoad,bool openImageFileDialog,
                                                                 const NodeSerialization& serialization,bool dontLoadName,
-                                                                int childIndex )
+                                                                int childIndex,bool autoConnect)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -226,7 +226,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     }
     
     _imp->_currentProject->addNodeToProject(node);
-    createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog);
+    createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog,autoConnect);
     return node;
 
 }
@@ -240,13 +240,14 @@ boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& ar
         return boost::shared_ptr<Natron::Node>();
     }
     return createNodeInternal(args.pluginID,args.multiInstanceParentName, args.majorV, args.minorV, false,
-                              args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false,args.childIndex);
+                              args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false,args.childIndex,
+                              args.autoConnect);
 }
 
 boost::shared_ptr<Natron::Node> AppInstance::loadNode(const LoadNodeArgs& args)
 {
     return createNodeInternal(args.pluginID,args.multiInstanceParentName ,args.majorV, args.minorV,
-                              true, false, *args.serialization,args.dontLoadName,-1);
+                              true, false, *args.serialization,args.dontLoadName,-1,false);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

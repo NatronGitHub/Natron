@@ -37,11 +37,11 @@ public:
     Gui* getGui() const WARN_UNUSED_RETURN;
     
     //////////
-    boost::shared_ptr<NodeGui> getNodeGui(boost::shared_ptr<Natron::Node> n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<NodeGui> getNodeGui(const boost::shared_ptr<Natron::Node>& n) const WARN_UNUSED_RETURN;
     
     boost::shared_ptr<NodeGui> getNodeGui(const std::string& nodeName) const WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<Natron::Node> getNode(boost::shared_ptr<NodeGui> n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<Natron::Node> getNode(const boost::shared_ptr<NodeGui>& n) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Remove the node n from the mapping in GuiAppInstance and from the project so the pointer is no longer
@@ -109,7 +109,8 @@ private:
     virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,
                                const std::string& multiInstanceParentName,
                                bool loadRequest,
-                               bool openImageFileDialog) OVERRIDE FINAL;
+                               bool openImageFileDialog,
+                               bool autoConnect) OVERRIDE FINAL;
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
     

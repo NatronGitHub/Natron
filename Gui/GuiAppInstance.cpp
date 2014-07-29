@@ -156,7 +156,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
 }
 
 void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const std::string& multiInstanceParentName,
-                                   bool loadRequest,bool openImageFileDialog) {
+                                   bool loadRequest,bool openImageFileDialog,bool autoConnect) {
     
     
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
@@ -202,7 +202,7 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
     
     if (!loadRequest && multiInstanceParentName.empty()) {
         const std::list<boost::shared_ptr<NodeGui> >& selectedNodes = _imp->_gui->getSelectedNodes();
-        if (selectedNodes.size() == 1) {
+        if (selectedNodes.size() == 1 && autoConnect) {
             const boost::shared_ptr<Node>& selected = selectedNodes.front()->getNode();
             getProject()->autoConnectNodes(selected, node);
         }
@@ -230,7 +230,7 @@ bool GuiAppInstance::shouldRefreshPreview() const {
 }
 
 
-boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(boost::shared_ptr<Node> n) const {
+boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const boost::shared_ptr<Node>& n) const {
     std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.find(n);
     if (it == _imp->_nodeMapping.end()) {
         return boost::shared_ptr<NodeGui>();
@@ -251,7 +251,7 @@ boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const std::string& nodeNam
     return boost::shared_ptr<NodeGui>();
 }
 
-boost::shared_ptr<Node> GuiAppInstance::getNode(boost::shared_ptr<NodeGui> n) const{
+boost::shared_ptr<Node> GuiAppInstance::getNode(const boost::shared_ptr<NodeGui>& n) const{
     for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
         if(it->second == n){
             return it->first;

@@ -47,6 +47,7 @@ struct CreateNodeArgs
     bool openImageFileDialog;
     std::string multiInstanceParentName;
     int childIndex;
+    bool autoConnect;
     
     ///Constructor used to create a new node
     CreateNodeArgs(const QString& pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
@@ -54,14 +55,15 @@ struct CreateNodeArgs
                    int majorVersion = -1, //< use greatest version found
                    int minorVersion = -1, //< use greatest version found
                    bool openImageFileDialog = true, //< open a file dialog if the node is a reader/writer
-                   int childIndex = -1
-                   )
+                   int childIndex = -1,
+                   bool autoConnect = true)
     : pluginID(pluginID)
     , majorV(majorVersion)
     , minorV(minorVersion)
     , openImageFileDialog(openImageFileDialog)
     , multiInstanceParentName(multiInstanceParentName)
     , childIndex(childIndex)
+    , autoConnect(autoConnect)
     {
         
     }
@@ -235,7 +237,8 @@ protected:
     virtual void createNodeGui(boost::shared_ptr<Natron::Node> /*node*/,
                                const std::string& /*multiInstanceParentName*/,
                                bool /*loadRequest*/,
-                               bool /*openImageFileDialog*/) {}
+                               bool /*openImageFileDialog*/,
+                               bool /*autoConnect*/) {}
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
@@ -251,7 +254,7 @@ private:
                                                        int majorVersion,int minorVersion,
                                                        bool requestedByLoad,bool openImageFileDialog,
                                                        const NodeSerialization& serialization,bool dontLoadName,
-                                                       int childIndex);
+                                                       int childIndex,bool autoConnect);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
     

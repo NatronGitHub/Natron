@@ -14,6 +14,7 @@
 #include "Global/GlobalDefines.h"
 
 #include <vector>
+#include <QPointF>
 #include <boost/shared_ptr.hpp>
 
 #include <QUndoCommand>
@@ -44,9 +45,10 @@ public:
     };
     
     MoveMultipleNodesCommand(const std::list<NodeToMove>& nodes,
-                const std::list<NodeBackDrop*>& bds,
-                double dx,double dy,
-                QUndoCommand *parent = 0);
+                             const std::list<NodeBackDrop*>& bds,
+                             double dx,double dy,
+                             const QPointF& mouseScenePos,
+                             QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
     virtual int id() const { return kNodeGraphMoveNodeCommandCompressionID; }
@@ -59,6 +61,7 @@ private:
     
     std::list<NodeToMove> _nodes;
     std::list<NodeBackDrop*> _bds;
+    QPointF _mouseScenePos;
     double _dx,_dy;
 };
 

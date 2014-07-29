@@ -42,6 +42,9 @@ Edge::Edge(int inputNb_, double angle_,const boost::shared_ptr<NodeGui>& dest_, 
 , _useRenderingColor(false)
 , _useHighlight(false)
 , _paintWithDash(false)
+, _paintBendPoint(false)
+, _bendPointHiddenAutomatically(false)
+, _middlePoint()
 {
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     if (inputNb != -1 && dest) {
@@ -146,25 +149,46 @@ void Edge::initLine()
         dst = QPointF(sourceBBOX.x(),sourceBBOX.y()) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
     
-    QLineF edges[4];
+    QLineF dstEdges[4];
+    QLineF srcEdges[4];
     if (dest) {
         QPointF dstBBoxTopLeft = destBBOX.topLeft();
-        edges[0] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // right
+        dstEdges[0] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // right
                           dstBBoxTopLeft.y(),
                           dstBBoxTopLeft.x()+dstNodeSize.width(),
                           dstBBoxTopLeft.y()+dstNodeSize.height());
-        edges[1] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // bottom
+        dstEdges[1] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // bottom
                           dstBBoxTopLeft.y()+dstNodeSize.height(),
                           dstBBoxTopLeft.x(),
                           dstBBoxTopLeft.y()+dstNodeSize.height());
-        edges[2] = QLineF(dstBBoxTopLeft.x(),  // left
+        dstEdges[2] = QLineF(dstBBoxTopLeft.x(),  // left
                           dstBBoxTopLeft.y()+dstNodeSize.height(),
                           dstBBoxTopLeft.x(),
                           dstBBoxTopLeft.y());
-        edges[3] = QLineF(dstBBoxTopLeft.x(), // top
+        dstEdges[3] = QLineF(dstBBoxTopLeft.x(), // top
                           dstBBoxTopLeft.y(),
                           dstBBoxTopLeft.x()+dstNodeSize.width(),
                           dstBBoxTopLeft.y());
+    }
+    if (source) {
+        QPointF srcBBoxTopLeft = sourceBBOX.topLeft();
+        srcEdges[0] = QLineF(srcBBoxTopLeft.x()+srcNodeSize.width(), // right
+                             srcBBoxTopLeft.y(),
+                             srcBBoxTopLeft.x()+srcNodeSize.width(),
+                             srcBBoxTopLeft.y()+srcNodeSize.height());
+        srcEdges[1] = QLineF(srcBBoxTopLeft.x()+srcNodeSize.width(), // bottom
+                             srcBBoxTopLeft.y()+srcNodeSize.height(),
+                             srcBBoxTopLeft.x(),
+                             srcBBoxTopLeft.y()+srcNodeSize.height());
+        srcEdges[2] = QLineF(srcBBoxTopLeft.x(),  // left
+                             srcBBoxTopLeft.y()+srcNodeSize.height(),
+                             srcBBoxTopLeft.x(),
+                             srcBBoxTopLeft.y());
+        srcEdges[3] = QLineF(srcBBoxTopLeft.x(), // top
+                             srcBBoxTopLeft.y(),
+                             srcBBoxTopLeft.x()+srcNodeSize.width(),
+                             srcBBoxTopLeft.y());
+
     }
     
     QPointF srcpt;
@@ -189,7 +213,43 @@ void Edge::initLine()
             }
         }
         setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+        
+        bool foundIntersection = false;
 
+        QPointF dstIntersection;
+        for (int i = 0; i < 4; ++i) {
+            QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
+            if(type == QLineF::BoundedIntersection){
+                setLine(QLineF(dstIntersection,line().p2()));
+                foundIntersection = true;
+                break;
+            }
+        }
+        QPointF srcInteresect;
+
+        if (foundIntersection) {
+            ///Find the intersection with the source bbox
+            foundIntersection = false;
+            for (int i = 0; i < 4; ++i) {
+                QLineF::IntersectType type = srcEdges[i].intersect(line(), &srcInteresect);
+                if(type == QLineF::BoundedIntersection){
+                    foundIntersection = true;
+                    break;
+                }
+            }
+        }
+        if (foundIntersection) {
+            _middlePoint = (srcInteresect + dstIntersection) / 2;
+            ///Hide bend point for short edges
+            double visibleLength  = QLineF(srcInteresect,dstIntersection).length();
+            if (visibleLength < 50 && _paintBendPoint) {
+                _paintBendPoint = false;
+                _bendPointHiddenAutomatically = true;
+            } else if (visibleLength >= 50 && _bendPointHiddenAutomatically) {
+                _bendPointHiddenAutomatically = false;
+                _paintBendPoint = true;
+            }
+        }
     
     } else if (!source && dest) {
         ///// The edge is an input edge which is unconnected
@@ -202,7 +262,7 @@ void Edge::initLine()
         QPointF intersection;
         bool foundIntersection = false;
         for (int i = 0; i < 4; ++i) {
-            QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
+            QLineF::IntersectType type = dstEdges[i].intersect(line(), &intersection);
             if(type == QLineF::BoundedIntersection){
                 setLine(QLineF(intersection,line().p2()));
                 foundIntersection = true;
@@ -246,20 +306,12 @@ void Edge::initLine()
         ///output edges don't have labels
     }
     
-
-    if (dest) {
-        for (int i = 0; i < 4; ++i) {
-            QPointF intersection;
-            QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
-            if(type == QLineF::BoundedIntersection){
-                setLine(QLineF(intersection,line().p2()));
-                break;
-            }
-        }
-    }
+    
+    double length = line().length();
+    
     
     ///This is the angle the edge forms with the X axis
-    qreal a = std::acos(line().dx() / line().length());
+    qreal a = std::acos(line().dx() / length);
     
     if (line().dy() >= 0) {
         a = 2 * M_PI - a;
@@ -349,6 +401,26 @@ void Edge::dragDest(const QPointF& dst)
     
 }
 
+void Edge::setBendPointVisible(bool visible)
+{
+    _paintBendPoint = visible;
+    if (!visible) {
+        _bendPointHiddenAutomatically = false;
+    }
+    update();
+}
+
+bool Edge::isNearbyBendPoint(const QPointF& scenePoint)
+{
+    assert(source && dest);
+    QPointF pos =mapFromScene(scenePoint);
+    if (pos.x() >= (_middlePoint.x() - 10) && pos.x() <= (_middlePoint.x() + 10) &&
+        pos.y() >= (_middlePoint.y() - 10) && pos.y() <= (_middlePoint.y() + 10)) {
+        return true;
+    }
+    return false;
+}
+
 void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/,
            QWidget * /*parent*/)
  {
@@ -374,7 +446,8 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
      }
      myPen.setColor(color);
      painter->setPen(myPen);
-     painter->drawLine(line());
+     QLineF l = line();
+     painter->drawLine(l);
 
      myPen.setStyle(Qt::SolidLine);
      painter->setPen(myPen);
@@ -383,6 +456,14 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/
      headPath.addPolygon(arrowHead);
      headPath.closeSubpath();
      painter->fillPath(headPath, color);
+     
+     if (_paintBendPoint) {
+         QRectF arcRect(_middlePoint.x() - 5,_middlePoint.y() - 5,10,10);
+         QPainterPath bendPointPath;
+         bendPointPath.addEllipse(arcRect);
+         bendPointPath.closeSubpath();
+         painter->fillPath(bendPointPath,Qt::yellow);
+     }
 
   }
 

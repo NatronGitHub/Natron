@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Plugin.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/NoOp.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -233,6 +234,8 @@ struct NodeGraphPrivate
     NodeSelection _selection;
     
     QGraphicsRectItem* _selectionRect;
+    
+    bool _bendPointsVisible;
 
     
     NodeGraphPrivate(Gui* gui,NodeGraph* p)
@@ -277,6 +280,7 @@ struct NodeGraphPrivate
     , _firstMove(true)
     , _selection()
     , _selectionRect(NULL)
+    , _bendPointsVisible(false)
     {
         
     }
@@ -314,6 +318,8 @@ struct NodeGraphPrivate
     void editSelectionFromSelectionRectangle(bool addToSelection);
     
     void resetSelection();
+    
+    void setNodesBendPointsVisible(bool visible);
     
 };
 
@@ -530,7 +536,13 @@ QRectF NodeGraph::visibleRect() {
 boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,
                                                     bool requestedByLoad){
   
-    boost::shared_ptr<NodeGui> node_ui(new NodeGui(_imp->_nodeRoot));
+    boost::shared_ptr<NodeGui> node_ui;
+    Dot* isDot = dynamic_cast<Dot*>(node->getLiveInstance());
+    if (!isDot) {
+        node_ui.reset(new NodeGui(_imp->_nodeRoot));
+    } else {
+        node_ui.reset(new DotGui(_imp->_nodeRoot));
+    }
     node_ui->initialize(this, node_ui, dockContainer, node, requestedByLoad);
     
     ///only move main instances
@@ -717,6 +729,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     boost::shared_ptr<NodeGui> selected ;
     Edge* selectedEdge = 0;
+    Edge* selectedBendPoint = 0;
     {
         QMutexLocker l(&_imp->_nodesMutex);
         for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin();it!=_imp->_nodes.rend();++it) {
@@ -731,11 +744,16 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             ///try to find a selected edge
             for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin();it!=_imp->_nodes.rend();++it) {
                 boost::shared_ptr<NodeGui>& n = *it;
+                Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
+                if (bendPointEdge) {
+                    selectedBendPoint = bendPointEdge;
+                    break;
+                }
                 Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
                 if (edge) {
                     selectedEdge = edge;
-                    break;
                 }
+                
             }
         }
     }
@@ -744,7 +762,8 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
         didSomething = true;
         if (event->button() == Qt::LeftButton) {
             if (!selected->isSelected()) {
-                selectNode(selected,event->modifiers().testFlag(Qt::ControlModifier));
+                _imp->_magnifiedNode = selected;
+                selectNode(selected,event->modifiers().testFlag(Qt::ShiftModifier));
             }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();
@@ -754,6 +773,49 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
                 selectNode(selected,true); ///< don't wipe the selection
             }
         }
+    } else if (selectedBendPoint) {
+        _imp->setNodesBendPointsVisible(false);
+        
+        boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(CreateNodeArgs("Dot",
+                                                                                                  std::string(),
+                                                                                                  -1,
+                                                                                                  -1,
+                                                                                                  true,
+                                                                                                  -1,
+                                                                                                  false));
+        assert(dotNode);
+        boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
+        assert(dotNodeGui);
+        
+        std::list<boost::shared_ptr<NodeGui> > nodesList;
+        nodesList.push_back(dotNodeGui);
+        _imp->_undoStack->push(new AddMultipleNodesCommand(this,nodesList,std::list<NodeBackDrop*>()));
+        
+        ///Now connect the node to the edge input
+        boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
+        assert(inputNode);
+        ///disconnect previous connection
+        boost::shared_ptr<Natron::Node> outputNode = selectedBendPoint->getDest()->getNode();
+        assert(outputNode);
+
+        int inputNb = outputNode->inputIndex(inputNode.get());
+        assert(inputNb != -1);
+        bool ok = _imp->_gui->getApp()->getProject()->disconnectNodes(inputNode, outputNode);
+        assert(ok);
+        
+        ok = _imp->_gui->getApp()->getProject()->connectNodes(0, inputNode, dotNode);
+        assert(ok);
+        
+        _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode);
+        
+        QPointF pos = dotNodeGui->mapToParent(dotNodeGui->mapFromScene(_imp->_lastScenePosClick));
+        dotNodeGui->refreshPosition(pos.x(), pos.y());
+        if (!dotNodeGui->isSelected()) {
+            selectNode(dotNodeGui,event->modifiers().testFlag(Qt::ShiftModifier));
+        }
+        _imp->_evtState = NODE_DRAGGING;
+        _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
+        didSomething = true;
     } else if (selectedEdge) {
         _imp->_arrowSelected = selectedEdge;
         didSomething = true;
@@ -766,7 +828,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
+                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ShiftModifier));
                 }
                 if (event->button() == Qt::LeftButton) {
                     _imp->_evtState = BACKDROP_DRAGGING;
@@ -776,7 +838,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
                 didSomething = true;
                 _imp->_backdropResized = *it;
                 if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ControlModifier));
+                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ShiftModifier));
                 }
                 if (event->button() == Qt::LeftButton) {
                     _imp->_evtState = BACKDROP_RESIZING;
@@ -797,7 +859,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     }
     if (!didSomething) {
         if (event->button() == Qt::LeftButton) {
-            if (!event->modifiers().testFlag(Qt::ControlModifier)) {
+            if (!event->modifiers().testFlag(Qt::ShiftModifier)) {
                 deselect();
             }
             _imp->_evtState = SELECTION_RECT;
@@ -952,7 +1014,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
         }
     } else if (state == SELECTION_RECT) {
         _imp->_selectionRect->hide();
-        _imp->editSelectionFromSelectionRectangle(event->modifiers().testFlag(Qt::ControlModifier));
+        _imp->editSelectionFromSelectionRectangle(event->modifiers().testFlag(Qt::ShiftModifier));
     }
     scene()->update();
     update();
@@ -1020,7 +1082,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 }
                 //= _imp->_selection.nodes;
 
-                if ((_imp->_evtState == BACKDROP_DRAGGING && !event->modifiers().testFlag(Qt::ControlModifier)) ||
+                if ((_imp->_evtState == BACKDROP_DRAGGING && !event->modifiers().testFlag(Qt::ShiftModifier)) ||
                     _imp->_evtState == NODE_DRAGGING) {
                     ///For all backdrops also move all the nodes contained within it
                     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
@@ -1048,7 +1110,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 _imp->_undoStack->push(new MoveMultipleNodesCommand(nodesToMove,
                                                                     _imp->_selection.bds,
                                                                     newPos.x() - _imp->_lastScenePosClick.x(),
-                                                                    newPos.y() - _imp->_lastScenePosClick.y()));
+                                                                    newPos.y() - _imp->_lastScenePosClick.y(),newPos));
                 
             }
             
@@ -1411,8 +1473,32 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
              && !e->modifiers().testFlag(Qt::AltModifier)) {
         selectAllNodes(true);
     }
+    else if (e->key() == Qt::Key_Control) {
+        _imp->setNodesBendPointsVisible(true);
+    }
 
     
+}
+
+void
+NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
+{
+    _bendPointsVisible = visible;
+
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        const std::map<int,Edge*>& edges = (*it)->getInputsArrows();
+        for (std::map<int,Edge*>::const_iterator it2= edges.begin(); it2!=edges.end(); ++it2) {
+            if (visible) {
+                if (!it2->second->isOutputEdge() && it2->second->hasSource() && it2->second->line().length() > 50) {
+                    it2->second->setBendPointVisible(visible);
+                }
+            } else {
+                if (!it2->second->isOutputEdge()) {
+                    it2->second->setBendPointVisible(visible);
+                }
+            }
+        }
+    }
 }
 
 void
@@ -1542,9 +1628,14 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 
 void NodeGraph::keyReleaseEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Control && _imp->_magnifOn) {
-        _imp->_magnifOn = false;
-        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+    if (e->key() == Qt::Key_Control) {
+        if (_imp->_magnifOn) {
+            _imp->_magnifOn = false;
+            _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+        }
+        if (_imp->_bendPointsVisible) {
+            _imp->setNodesBendPointsVisible(false);
+        }
     }
 }
 
@@ -2432,7 +2523,13 @@ NodeGraph::cloneSelectedNodes()
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
         boost::shared_ptr<NodeGui> clone = _imp->pasteNode(*internalSerialization, guiSerialization, QPointF(offset,0));
-        clone->getNode()->getLiveInstance()->slaveAllKnobs((*it)->getNode()->getLiveInstance());
+        
+        DotGui* isDot = dynamic_cast<DotGui*>(clone.get());
+        ///Dots cannot be cloned, just copy them
+        if (!isDot) {
+            clone->getNode()->getLiveInstance()->slaveAllKnobs((*it)->getNode()->getLiveInstance());
+        }
+        
         newNodes.push_back(clone);
         serializations.push_back(internalSerialization);
     }

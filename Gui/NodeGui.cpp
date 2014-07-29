@@ -61,6 +61,8 @@
 #define NODE_WITH_PREVIEW_WIDTH NODE_WIDTH / 2 + NATRON_PREVIEW_WIDTH
 #define NODE_WITH_PREVIEW_HEIGHT NODE_HEIGHT + NATRON_PREVIEW_HEIGHT
 
+#define DOT_GUI_DIAMETER 15
+
 using namespace Natron;
 
 using std::make_pair;
@@ -92,7 +94,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _bitDepthWarning(NULL)
 , _inputEdges()
 , _outputEdge(NULL)
-, _panelDisplayed(false)
 , _settingsPanel(NULL)
 , _mainInstancePanel(NULL)
 , _selectedGradient(NULL)
@@ -166,18 +167,123 @@ void NodeGui::initialize(NodeGraph* dag,
     setCacheMode(DeviceCoordinateCache);
     setZValue(4);
     
+    gettimeofday(&_lastRenderStartedSlotCallTime, 0);
+    gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
+    
+
+    
+    createGui();
+    
+    /*building settings panel*/
+    _settingsPanel = createPanel(dockContainer,requestedByLoad,thisAsShared);
+    if (_settingsPanel) {
+        QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
+        QObject::connect(_settingsPanel,SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
+        QObject::connect(_settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(setDefaultGradientColor(QColor)));
+        dockContainer->addWidget(_settingsPanel);
+    }
+    OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
+    if (ofxNode) {
+        ofxNode->effectInstance()->beginInstanceEditAction();
+    }
+    
+    
+    if (_internalNode->makePreviewByDefault()) {
+        ///It calls updateShape
+        togglePreview_internal(false);
+        
+    } else {
+        initializeShape();
+    }
+    
+    
+    QRectF rect = boundingRect();
+    
+    _selectedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    
+    _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    QColor defaultColor = getCurrentColor();
+
+    _clonedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    _clonedGradient->setColorAt(0, QColor(200,70,100));
+    _clonedGradient->setColorAt(1, QColor(120,120,120));
+    
+    _disabledGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    _disabledGradient->setColorAt(0,QColor(0,0,0));
+    _disabledGradient->setColorAt(1, QColor(20,20,20));
+    
+    setDefaultGradientColor(defaultColor);
+
+    if (!_internalNode->isMultiInstance()) {
+        _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
+        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+    }
+ 
+    ///Refresh the name in the line edit
+    onInternalNameChanged(_internalNode->getName().c_str());
+    
+    ///Make the output edge
+    if (!_internalNode->isOutputNode()) {
+        _outputEdge = new Edge(thisAsShared,parentItem());
+    }
+    
+    ///Refresh the disabled knob
+    if (_internalNode->isNodeDisabled()) {
+        onDisabledKnobToggled(true);
+    }
+    
+}
+
+void NodeGui::initializeShape()
+{
+    updateShape(NODE_WIDTH,NODE_HEIGHT);
+}
+
+NodeSettingsPanel* NodeGui::createPanel(QVBoxLayout* container,bool requestedByLoad,const boost::shared_ptr<NodeGui>& thisAsShared)
+{
+    NodeSettingsPanel* panel = 0;
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+    if (!isViewer) {
+        assert(container);
+        boost::shared_ptr<MultiInstancePanel> multiPanel;
+        if (_internalNode->isTrackerNode() && _internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
+            multiPanel.reset(new TrackerPanel(thisAsShared));
+            
+            ///This is valid only if the node is a multi-instance and this is the main instance.
+            ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
+            ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
+            
+            _mainInstancePanel = new NodeSettingsPanel(boost::shared_ptr<MultiInstancePanel>(),_graph->getGui(),
+                                                       thisAsShared,container,container->parentWidget());
+            _mainInstancePanel->blockSignals(true);
+            _mainInstancePanel->setClosed(true);
+            _mainInstancePanel->initializeKnobs();
+        }
+        panel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,container,container->parentWidget());
+        
+        if (!requestedByLoad) {
+            if (_internalNode->getParentMultiInstanceName().empty()) {
+                _graph->getGui()->putSettingsPanelFirst(panel);
+                _graph->getGui()->addVisibleDockablePanel(panel);
+            }
+        } else {
+            if (panel) {
+                panel->setClosed(true);
+            }
+        }
+	}
+    return panel;
+}
+
+void NodeGui::createGui()
+{
     _boundingBox = new QGraphicsRectItem(this);
     _boundingBox->setZValue(0);
-	
-    QPixmap pixmap;
-    appPTR->getIcon(NATRON_PIXMAP_RGBA_CHANNELS,&pixmap);
-    //_channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
 	
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     _nameItem->setDefaultTextColor(QColor(0,0,0,255));
     _nameItem->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_12));
     _nameItem->setZValue(1);
-
     
     _persistentMessage = new QGraphicsTextItem("",this);
     _persistentMessage->setZValue(3);
@@ -198,96 +304,7 @@ void NodeGui::initialize(NodeGraph* dag,
     _bitDepthWarning = new NodeGuiIndicator("C",bitDepthPos,NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                             bitDepthGrad,QColor(0,0,0,255),this);
     _bitDepthWarning->setActive(false);
-    
-    /*building settings panel*/
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
-    if (!isViewer) {
-        _panelDisplayed = true;
-        assert(dockContainer);
-        boost::shared_ptr<MultiInstancePanel> multiPanel;
-        if (_internalNode->isTrackerNode() && _internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
-            multiPanel.reset(new TrackerPanel(thisAsShared));
-            
-            ///This is valid only if the node is a multi-instance and this is the main instance.
-            ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
-            ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
 
-            _mainInstancePanel = new NodeSettingsPanel(boost::shared_ptr<MultiInstancePanel>(),_graph->getGui(),
-                                                       thisAsShared,dockContainer,dockContainer->parentWidget());
-            _mainInstancePanel->blockSignals(true);
-            _mainInstancePanel->setClosed(true);
-            _mainInstancePanel->initializeKnobs();
-        }
-        _settingsPanel = new NodeSettingsPanel(multiPanel,_graph->getGui(),thisAsShared,dockContainer,dockContainer->parentWidget());
-        QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
-        QObject::connect(_settingsPanel,SIGNAL(closeChanged(bool)), this, SIGNAL(settingsPanelClosed(bool)));
-        QObject::connect(_settingsPanel,SIGNAL(colorChanged(QColor)),this,SLOT(setDefaultGradientColor(QColor)));
-
-        dockContainer->addWidget(_settingsPanel);
-        
-        if (!requestedByLoad) {
-            if (_internalNode->getParentMultiInstanceName().empty()) {
-                _graph->getGui()->putSettingsPanelFirst(_settingsPanel);
-                _graph->getGui()->addVisibleDockablePanel(_settingsPanel);
-            }
-        } else {
-            if (_settingsPanel) {
-                _settingsPanel->setClosed(true);
-            }
-        }
-        
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
-        }
-	}
-    
-    if (_internalNode->makePreviewByDefault()) {
-        togglePreview_internal(false);
-        
-    } else {
-        updateShape(NODE_WIDTH,NODE_HEIGHT);
-    }
-    
-    
-    QRectF rect = _boundingBox->rect();
-    
-    _selectedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
-    
-    _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
-    QColor defaultColor = getCurrentColor();
-
-    _clonedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
-    _clonedGradient->setColorAt(0, QColor(200,70,100));
-    _clonedGradient->setColorAt(1, QColor(120,120,120));
-    
-    _disabledGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
-    _disabledGradient->setColorAt(0,QColor(0,0,0));
-    _disabledGradient->setColorAt(1, QColor(20,20,20));
-    
-    setDefaultGradientColor(defaultColor);
-
-    _boundingBox->setBrush(*_defaultGradient);
-
-    
-    gettimeofday(&_lastRenderStartedSlotCallTime, 0);
-    gettimeofday(&_lastInputNRenderStartedSlotCallTime, 0);
-    
-    if (!_internalNode->isMultiInstance()) {
-        _nodeLabel = _internalNode->getNodeExtraLabel().c_str();
-        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
-    }
- 
-    onInternalNameChanged(_internalNode->getName().c_str());
-    
-    if (!_internalNode->isOutputNode()) {
-        _outputEdge = new Edge(thisAsShared,parentItem());
-    }
-    
-    if (_internalNode->isNodeDisabled()) {
-        onDisabledKnobToggled(true);
-    }
-    
 }
 
 void NodeGui::setDefaultGradientColor(const QColor& color)
@@ -309,6 +326,9 @@ void NodeGui::beginEditKnobs() {
 
 void NodeGui::togglePreview_internal(bool refreshPreview)
 {
+    if (!canMakePreview()) {
+        return;
+    }
     if (_internalNode->isPreviewEnabled()) {
         if(!_previewPixmap){
             QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
@@ -354,14 +374,14 @@ void NodeGui::removeSettingsPanel(){
     _settingsPanel = NULL;
 }
 
-void NodeGui::updateShape(int width,int height){
+void NodeGui::updateShape(int width,int height)
+{
     QPointF topLeft = mapFromParent(pos());
     
     QRectF labelBbox = _nameItem->boundingRect();
     double realHeight =  std::max((double)height,labelBbox.height());
     
     _boundingBox->setRect(topLeft.x(),topLeft.y(),width,realHeight);
-    //_channelsPixmap->setPos(topLeft.x()+1,topLeft.y()+1);
     
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
@@ -384,24 +404,33 @@ void NodeGui::updateShape(int width,int height){
         _previewPixmap->setPos(topLeft.x() + width / 2 - NATRON_PREVIEW_WIDTH / 2,
                                topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
 
+    refreshPosition(pos().x(), pos().y());
+}
+
+void NodeGui::refreshPositionEnd(double x, double y)
+{
+    setPos(x, y);
+    QRectF bbox = mapRectToScene(boundingRect());
+    const std::list<boost::shared_ptr<NodeGui> >& allNodes = _graph->getAllActiveNodes();
+    
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if (it->get() != this && (*it)->intersects(bbox)) {
+            setAboveItem(it->get());
+        }
+    }
     refreshEdges();
     const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
+
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
-    refreshPosition(pos().x(), pos().y());
+    emit positionChanged();
 }
 
-
-
-void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
+void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& mouseScenePos)
 {
     
-    
-    QRectF bbox = mapRectToScene(_boundingBox->rect());
-    const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
-
     if (appPTR->getCurrentSettings()->isSnapToNodeEnabled() && !skipMagnet) {
         QSize size = getSize();
         ///handle magnetic grid
@@ -416,6 +445,13 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
                 _magnecEnabled = false;
                 _updateDistanceSinceLastMagnec = true;
                 _distanceSinceLastMagnec = QPointF(0,0);
+                
+                ///When reelasing the grip, make sure to follow the mouse
+                QPointF newPos = (mapToParent(mapFromScene(mouseScenePos)));
+                newPos.rx() -= size.width() / 2;
+                newPos.ry() -= size.height() / 2;
+                refreshPositionEnd(newPos.x(),newPos.y());
+                return;
             } else {
                 return;
             }
@@ -465,6 +501,7 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
             
             if (!_magnecEnabled) {
                 ///check now the outputs
+                const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
                 for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
                     boost::shared_ptr<NodeGui> node = _graph->getGui()->getApp()->getNodeGui(*it);
                     assert(node);
@@ -496,24 +533,7 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet)
         }
     }
     
-    
-    setPos(x, y);
-    
-    const std::list<boost::shared_ptr<NodeGui> >& allNodes = _graph->getAllActiveNodes();
-    
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        if (it->get() != this && (*it)->intersects(bbox)) {
-            setAboveItem(it->get());
-        }
-    }
-    
-    refreshEdges();
-    
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-        assert(*it);
-        (*it)->doRefreshEdgesGUI();
-    }
-    emit positionChanged();
+    refreshPositionEnd(x, y);
 }
 
 void NodeGui::setAboveItem(QGraphicsItem* item)
@@ -679,14 +699,16 @@ void NodeGui::initializeInputs()
     }
     
 }
-bool NodeGui::contains(const QPointF &point) const{
-    return _boundingBox->contains(point);
+bool NodeGui::contains(const QPointF &point) const {
+    QRectF bbox = boundingRect();
+    bbox.adjust(-10, -10, 10, 10);
+    return bbox.contains(point);
 }
 
 bool NodeGui::intersects(const QRectF& rect) const
 {
     QRectF mapped = mapRectFromScene(rect);
-    return _boundingBox->rect().intersects(mapped);
+    return boundingRect().intersects(mapped);
 }
 
 QPainterPath NodeGui::shape() const
@@ -706,7 +728,8 @@ QRectF NodeGui::boundingRect() const{
 }
 QRectF NodeGui::boundingRectWithEdges() const{
     QRectF ret;
-    ret = ret.united(mapToScene(_boundingBox->boundingRect()).boundingRect());
+    QRectF bbox = boundingRect();
+    ret = ret.united(mapToScene(bbox).boundingRect());
     for (InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         ret = ret.united(it->second->mapToScene(it->second->boundingRect()).boundingRect());
     }
@@ -717,8 +740,9 @@ QRectF NodeGui::boundingRectWithEdges() const{
 
 bool NodeGui::isNearby(QPointF &point){
     QPointF p = mapFromScene(point);
-    QRectF r(_boundingBox->rect().x()-NATRON_EDGE_DROP_TOLERANCE,_boundingBox->rect().y()-NATRON_EDGE_DROP_TOLERANCE,
-             _boundingBox->rect().width()+NATRON_EDGE_DROP_TOLERANCE,_boundingBox->rect().height()+NATRON_EDGE_DROP_TOLERANCE);
+    QRectF bbox = boundingRect();
+    QRectF r(bbox.x()-NATRON_EDGE_DROP_TOLERANCE,bbox.y()-NATRON_EDGE_DROP_TOLERANCE,
+             bbox.width()+NATRON_EDGE_DROP_TOLERANCE,bbox.height()+NATRON_EDGE_DROP_TOLERANCE);
     return r.contains(p);
 }
 
@@ -754,9 +778,13 @@ Edge* NodeGui::firstAvailableEdge(){
     return NULL;
 }
 
+void NodeGui::applyBrush(const QBrush& brush)
+{
+     _boundingBox->setBrush(brush);
+}
+
 void NodeGui::refreshCurrentBrush()
 {
-    assert(_boundingBox);
     assert(_clonedGradient && _defaultGradient && _disabledGradient && _selectedGradient);
     if (_internalNode && !_internalNode->isNodeDisabled()) {
         if (_selected) {
@@ -770,17 +798,17 @@ void NodeGui::refreshCurrentBrush()
                                        ,Natron::clamp(selColor.blueF() * 1.2));
             _selectedGradient->setColorAt(1, selColor);
             _selectedGradient->setColorAt(0, brightenedSelColor);
-            _boundingBox->setBrush(*_selectedGradient);
+            applyBrush(*_selectedGradient);
         } else {
            if (_slaveMasterLink) {
-                _boundingBox->setBrush(*_clonedGradient);
+                applyBrush(*_clonedGradient);
             } else {
-                _boundingBox->setBrush(*_defaultGradient);
+                applyBrush(*_defaultGradient);
             }
         }
 
     } else {
-        _boundingBox->setBrush(*_disabledGradient);
+        applyBrush(*_disabledGradient);
     }
 }
 
@@ -805,14 +833,14 @@ bool NodeGui::isSelected() { QMutexLocker l(&_selectedMutex); return _selected; 
 void NodeGui::setSelectedGradient(const QLinearGradient& gradient){
     *_selectedGradient = gradient;
     if(_selected){
-        _boundingBox->setBrush(*_selectedGradient);
+        applyBrush(*_selectedGradient);
     }
 }
 
 void NodeGui::setDefaultGradient(const QLinearGradient& gradient){
     *_defaultGradient = gradient;
     if(!_selected){
-        _boundingBox->setBrush(*_defaultGradient);
+        applyBrush(*_defaultGradient);
     }
 }
 
@@ -855,6 +883,18 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
     }
     if (_outputEdge && _outputEdge->contains(_outputEdge->mapFromScene(pt))) {
         return _outputEdge;
+    }
+    return NULL;
+}
+
+Edge* NodeGui::hasBendPointNearbyPoint(const QPointF& pt)
+{
+    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i) {
+        if (i->second->hasSource() && i->second->isBendPointVisible()) {
+            if (i->second->isNearbyBendPoint(pt)) {
+                return i->second;
+            }
+        }
     }
     return NULL;
 }
@@ -1109,13 +1149,14 @@ bool NodeGui::isSettingsPanelVisible() const{
 }
 
 
-void NodeGui::onPersistentMessageChanged(int type,const QString& message){
+void NodeGui::onPersistentMessageChanged(int type,const QString& message)
+{
     //keep type in synch with this enum:
     //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
     
     
     ///don't do anything if the last persistent message is the same
-    if (message == _lastPersistentMessage) {
+    if (message == _lastPersistentMessage || !_persistentMessage || !_stateIndicator) {
         return;
     }
     _persistentMessage->show();
@@ -1157,7 +1198,7 @@ void NodeGui::onPersistentMessageChanged(int type,const QString& message){
 
 void NodeGui::onPersistentMessageCleared() {
     
-    if (!_persistentMessage->isVisible()) {
+    if (!_persistentMessage || !_persistentMessage->isVisible()) {
         return;
     }
     _lastPersistentMessage.clear();
@@ -1325,7 +1366,7 @@ void NodeGui::onSlaveStateChanged(bool b) {
         _slaveMasterLink->setPen(pen);
         if (!_internalNode->isNodeDisabled()) {
             if (!isSelected()) {
-                _boundingBox->setBrush(*_clonedGradient);
+                applyBrush(*_clonedGradient);
             }
         }
         refreshSlaveMasterLinkPosition();
@@ -1340,7 +1381,7 @@ void NodeGui::onSlaveStateChanged(bool b) {
         _masterNodeGui.reset();
         if (!_internalNode->isNodeDisabled()) {
             if (!isSelected()) {
-                _boundingBox->setBrush(*_defaultGradient);
+                applyBrush(*_defaultGradient);
             }
         }
     }
@@ -1413,7 +1454,7 @@ void NodeGui::deleteReferences()
 
 QSize NodeGui::getSize() const
 {
-    QRectF bbox = _boundingBox->rect();
+    QRectF bbox = boundingRect();
     return QSize(bbox.width(),bbox.height());
 }
 
@@ -1585,6 +1626,9 @@ Edge* NodeGui::getOutputArrow() const
 
 void NodeGui::setNameItemHtml(const QString& name,const QString& label)
 {
+    if (!_nameItem) {
+        return;
+    }
     QString textLabel;
     textLabel.append("<div align=\"center\">");
     bool hasFontData = true;
@@ -1754,7 +1798,9 @@ void NodeGui::refreshKnobsAfterTimeChange(SequenceTime time)
 
 void NodeGui::onSettingsPanelClosedChanged(bool closed)
 {
-    assert(_settingsPanel);
+    if (!_settingsPanel) {
+        return;
+    }
     if (!closed) {
         SequenceTime time = _internalNode->getApp()->getTimeLine()->currentFrame();
         _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
@@ -1792,4 +1838,54 @@ bool NodeGui::shouldDrawOverlay() const
 void NodeGui::setParentMultiInstance(const boost::shared_ptr<NodeGui>& node)
 {
     _parentMultiInstance = node;
+}
+
+
+//////////Dot node gui
+DotGui::DotGui(QGraphicsItem* parent)
+: NodeGui(parent)
+, diskShape(NULL)
+{
+    
+}
+
+void DotGui::createGui()
+{
+    diskShape = new QGraphicsEllipseItem(this);
+    QPointF topLeft = mapFromParent(pos());
+    diskShape->setRect(QRectF(topLeft.x(),topLeft.y(),DOT_GUI_DIAMETER,DOT_GUI_DIAMETER)) ;
+}
+
+void DotGui::applyBrush(const QBrush& brush)
+{
+    diskShape->setBrush(brush);
+}
+
+NodeSettingsPanel* DotGui::createPanel(QVBoxLayout* container,bool /*requestedByLoad*/,
+                                       const boost::shared_ptr<NodeGui>& thisAsShared)
+{
+    NodeSettingsPanel* panel = new NodeSettingsPanel(boost::shared_ptr<MultiInstancePanel>(),
+                                                     getDagGui()->getGui(),
+                                                     thisAsShared,
+                                                     container,container->parentWidget());
+    ///Always close the panel by default for Dots
+    panel->setClosed(true);
+    return panel;
+}
+
+QRectF DotGui::boundingRect() const
+{
+    QTransform t;
+    QRectF bbox = diskShape->boundingRect();
+    QPointF center = bbox.center();
+    t.translate(center.x(), center.y());
+    t.scale(scale(), scale());
+    t.translate(-center.x(), -center.y());
+    return t.mapRect(bbox);
+}
+
+QPainterPath DotGui::shape() const
+{
+    return diskShape->shape();
+    
 }

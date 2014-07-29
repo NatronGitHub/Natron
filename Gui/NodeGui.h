@@ -144,7 +144,7 @@ public:
     
   
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
-    virtual bool contains(const QPointF &point) const OVERRIDE;
+    virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
     
     /*Returns true if the bounding box of the node intersects the given rectangle in scene coordinates.*/
     bool intersects(const QRectF& rect) const;
@@ -208,7 +208,6 @@ public:
 
         
     QSize getSize() const;
-    
         
     /*Returns an edge if the node has an edge close to the
      point pt. pt is in scene coord.*/
@@ -216,7 +215,9 @@ public:
     
     Edge* hasEdgeNearbyRect(const QRectF& rect);
     
-    void refreshPosition(double x,double y,bool skipMagnet = false);
+    Edge* hasBendPointNearbyPoint(const QPointF& pt);
+    
+    void refreshPosition(double x,double y,bool skipMagnet = false,const QPointF& mouseScenePos = QPointF());
     
     void changePosition(double dx,double dy);
     
@@ -266,6 +267,8 @@ public:
     bool shouldDrawOverlay() const;
     
     void setParentMultiInstance(const boost::shared_ptr<NodeGui>& parent);
+    
+    
     
 public slots:
     
@@ -357,7 +360,21 @@ signals:
     
     void settingsPanelClosed(bool b);
     
+protected:
+    
+    virtual void createGui();
+    
+    virtual void initializeShape();
+    
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,const boost::shared_ptr<NodeGui>& thisAsShared);
+    
+    virtual bool canMakePreview() { return true; }
+    
+    virtual void applyBrush(const QBrush& brush);
+    
 private:
+    
+    void refreshPositionEnd(double x,double y);
     
     void setNameItemHtml(const QString& name,const QString& label);
     
@@ -405,9 +422,7 @@ private:
     std::map<int,Edge*> _inputEdges;
     
     Edge* _outputEdge;
-    
-    /*settings panel related*/
-    bool _panelDisplayed;
+  
     NodeSettingsPanel* _settingsPanel;
     
     ///This is valid only if the node is a multi-instance and this is the main instance.
@@ -440,6 +455,36 @@ private:
     QString _nodeLabel;
     
     boost::shared_ptr<NodeGui> _parentMultiInstance;
+};
+
+
+class DotGui : public NodeGui
+{
+public:
+    
+    DotGui(QGraphicsItem *parent = 0);
+    
+private:
+    
+    
+    virtual void createGui() OVERRIDE FINAL;
+    
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,
+                                           const boost::shared_ptr<NodeGui>& thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+
+    virtual void applyBrush(const QBrush& brush) OVERRIDE FINAL;
+    
+    ///Doesn't do anything, preview cannot be activated
+    virtual void initializeShape() OVERRIDE FINAL {}
+    
+    virtual QRectF boundingRect() const OVERRIDE FINAL;
+    
+    virtual QPainterPath shape() const OVERRIDE FINAL;
+    
+    QGraphicsEllipseItem* diskShape;
+    
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

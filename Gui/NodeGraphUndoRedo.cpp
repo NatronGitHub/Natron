@@ -25,12 +25,14 @@
 #include "Gui/NodeBackDrop.h"
 
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove>& nodes,
-                         const std::list<NodeBackDrop*>& bds,
-                         double dx,double dy,
-                         QUndoCommand *parent)
+                                                   const std::list<NodeBackDrop*>& bds,
+                                                   double dx,double dy,
+                                                   const QPointF& mouseScenePos,
+                                                   QUndoCommand *parent)
 : QUndoCommand(parent)
 , _nodes(nodes)
 , _bds(bds)
+, _mouseScenePos(mouseScenePos)
 , _dx(dx)
 , _dy(dy)
 {
@@ -41,7 +43,7 @@ void MoveMultipleNodesCommand::move(double dx,double dy)
 {
     for (std::list<NodeToMove>::iterator it = _nodes.begin();it!=_nodes.end();++it) {
         QPointF pos = it->node->getPos_mt_safe();
-        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD || _nodes.size() > 1);
+        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD || _nodes.size() > 1,_mouseScenePos);
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin();it!=_bds.end();++it) {
         QPointF pos = (*it)->getPos_mt_safe();

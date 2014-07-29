@@ -83,6 +83,12 @@ public:
     
     void setDefaultColor(const QColor& color) { _defaultColor = color; }
     
+    void setBendPointVisible(bool visible);
+    
+    bool isBendPointVisible() const { return _paintBendPoint; }
+    
+    bool isNearbyBendPoint(const QPointF& scenePoint);
+    
 private:
 
     bool _isOutputEdge;
@@ -97,6 +103,9 @@ private:
     bool _useRenderingColor;
     bool _useHighlight;
     bool _paintWithDash;
+    bool _paintBendPoint;
+    bool _bendPointHiddenAutomatically;
+    QPointF _middlePoint; //updated only when dest && source are valid
 };
 
 #endif // NATRON_GUI_EDGE_H_
