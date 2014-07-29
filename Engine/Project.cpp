@@ -596,12 +596,18 @@ void Project::initNodeCountersAndSetName(Node* n) {
     assert(n);
     QMutexLocker l(&_imp->nodesLock);
     std::map<std::string,int>::iterator it = _imp->nodeCounters.find(n->pluginID());
+    QString pluginLabel = n->pluginLabel().c_str();
+
     if(it != _imp->nodeCounters.end()){
         it->second++;
-        n->setName(QString(QString(n->pluginLabel().c_str()) + QString::number(it->second)));
+        int foundOFX = pluginLabel.lastIndexOf("OFX");
+        if (foundOFX != -1) {
+            pluginLabel = pluginLabel.remove(foundOFX, 3);
+        }
+        n->setName(pluginLabel + QString::number(it->second));
     }else{
         _imp->nodeCounters.insert(make_pair(n->pluginID(), 1));
-        n->setName(QString(QString(n->pluginLabel().c_str()) + QString::number(1)));
+        n->setName(pluginLabel + QString::number(1));
     }
 }
     
