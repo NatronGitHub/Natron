@@ -920,7 +920,7 @@ public:
      * not set a new keyframe.
      * @param triggerOnKnobChanged When true (default) : onKnobValueChanged will be called on the KnobHolder.
      **/
-    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false,bool triggerOnKnobChanged = true);
+    ValueChangedReturnCode setValue(const T& value,int dimension,bool turnOffAutoKeying = false,bool triggerOnKnobChanged = true);
     
     /**
      * @brief Calls setValue with a reason of Natron::USER_EDITED.

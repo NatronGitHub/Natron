@@ -372,13 +372,13 @@ void MultipleKnobEditsUndoCommand::redo()
                 Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                 bool doKnobChanged = next == it->second.newValues.end() && triggerOnKnobChanged;
                 if (isInt) {
-                    it->first->setValue<int>(i, it2->toInt(), &k,true,doKnobChanged);
+                    it->first->setValue<int>(i, it2->toInt(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
                 } else if (isBool) {
-                    it->first->setValue<bool>(i, it2->toBool(), &k,true,doKnobChanged);
+                    it->first->setValue<bool>(i, it2->toBool(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
                 } else if (isDouble) {
-                    it->first->setValue<double>(i, it2->toDouble(), &k,true,doKnobChanged);
+                    it->first->setValue<double>(i, it2->toDouble(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
                 } else if (isString) {
-                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true,doKnobChanged);
+                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
                 } else {
                     assert(false);
                 }

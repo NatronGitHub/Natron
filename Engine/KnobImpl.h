@@ -243,6 +243,10 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        ++_setValueRecursionLevel;
+                    }
                     _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false,triggerKnobChanged);
                     return ret;
                 }
@@ -252,6 +256,10 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        ++_setValueRecursionLevel;
+                    }
                     _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false,triggerKnobChanged);
                     return ret;
                 }
@@ -288,7 +296,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
 
         ///Add automatically a new keyframe
         if (getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
-            getHolder() &&
+            getHolder() && //< the knob is part of a KnobHolder
                 getHolder()->getApp() && //< the app pointer is not NULL
                 !getHolder()->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
                 (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
@@ -524,13 +532,13 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
 }
 
 template<typename T>
-void Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying,bool triggerOnKnobChanged)
+KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying,bool triggerOnKnobChanged)
 {
     if (turnOffAutoKeying) {
-        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,NULL,triggerOnKnobChanged);
+        return setValue(value,dimension,Natron::PLUGIN_EDITED,NULL,triggerOnKnobChanged);
     } else {
         KeyFrame k;
-        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,&k,triggerOnKnobChanged);
+        return setValue(value,dimension,Natron::PLUGIN_EDITED,&k,triggerOnKnobChanged);
     }
 }
 

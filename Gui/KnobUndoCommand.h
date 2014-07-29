@@ -90,7 +90,7 @@ private:
             
             int dimension = _dimension == -1 ? i : _dimension;
             bool triggerOnKnobChanged = next == _oldValue.end();
-            _knob->setValue(dimension,*it,NULL,true,triggerOnKnobChanged);
+            _knob->setValue(dimension,*it,NULL,true,triggerOnKnobChanged,Natron::USER_EDITED);
             if (_knob->getKnob()->getHolder()->getApp()) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                     _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
@@ -142,7 +142,7 @@ private:
             } else {
                 refreshGui = _refreshGuiFirstTime;
             }
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,triggerOnKnobChanged);
+            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,triggerOnKnobChanged,Natron::USER_EDITED);
             if(_valueChangedReturnCode[i] != KnobHelper::NO_KEYFRAME_ADDED){
                 modifiedKeyFrames = true;
             }
@@ -204,6 +204,10 @@ private:
 };
 
 
+/**
+ * @brief This class is used by the internal knob when it wants to group multiple edits into a single undo/redo action.
+ * It is not used by the GUI 
+ **/
 class MultipleKnobEditsUndoCommand : public QUndoCommand
 {
     struct ValueToSet {

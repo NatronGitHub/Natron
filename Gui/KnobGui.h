@@ -129,10 +129,15 @@ public:
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
     template<typename T>
-    int setValue(int dimension,const T& v,KeyFrame* newKey,bool refreshGui,bool triggerKnobChanged)
+    int setValue(int dimension,const T& v,KeyFrame* newKey,bool refreshGui,bool triggerKnobChanged,Natron::ValueChangedReason reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>(getKnob().get());
-        KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey,triggerKnobChanged);
+        KnobHelper::ValueChangedReturnCode ret;
+        if (reason == Natron::USER_EDITED) {
+            ret = knob->onValueChanged(dimension, v, newKey,triggerKnobChanged);
+        } else {
+            ret = knob->setValue(v,dimension,false,triggerKnobChanged);
+        }
         if(ret > 0){
             assert(newKey);
             if (ret == KnobHelper::KEYFRAME_ADDED) {
