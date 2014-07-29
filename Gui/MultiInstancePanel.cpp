@@ -848,7 +848,7 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
                 break;
             }
         }
-        
+#pragma message WARN("value stored to skip never read")
         ///disconnect all the knobs
         if (!it->second || skip) {
             continue;
