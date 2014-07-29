@@ -717,7 +717,7 @@ void NodeGui::initializeInputs()
 }
 bool NodeGui::contains(const QPointF &point) const {
     QRectF bbox = boundingRect();
-    bbox.adjust(-10, -10, 10, 10);
+    bbox.adjust(-5, -5, 5, 5);
     return bbox.contains(point);
 }
 
@@ -1051,12 +1051,16 @@ void NodeGui::hideGui()
     hide();
     setActive(false);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
-        _graph->scene()->removeItem(it->second);
+        if (it->second->scene()) {
+            it->second->scene()->removeItem(it->second);
+        }
         it->second->setActive(false);
         it->second->setSource(boost::shared_ptr<NodeGui>());
     }
     if (_outputEdge) {
-        _graph->scene()->removeItem(_outputEdge);
+        if (_outputEdge->scene()) {
+            _outputEdge->scene()->removeItem(_outputEdge);
+        }
         _outputEdge->setActive(false);
     }
     
