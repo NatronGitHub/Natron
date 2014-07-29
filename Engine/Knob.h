@@ -111,6 +111,11 @@ public:
      **/
     virtual void clone(KnobI* other) = 0;
     virtual void clone(const boost::shared_ptr<KnobI>& other) { clone(other.get()); }
+    
+    /**
+     * @brief Performs the same as clone but also refresh any gui it has
+     **/
+    virtual void cloneAndUpdateGui(KnobI* other) = 0;
 
     /**
      * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
@@ -1004,6 +1009,7 @@ public:
     
     virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     
+    virtual void cloneAndUpdateGui(KnobI* other) OVERRIDE FINAL;
 private:
     
     void cloneValues(KnobI* other);

@@ -47,11 +47,19 @@
 #define kTrackPreviousButtonName "trackPrevious"
 #define kTrackNextButtonName "trackNext"
 #define kTrackForwardButtonName "trackForward"
-
+#define kTrackCenterName "center"
 using namespace Natron;
 
 namespace {
 typedef std::list < std::pair<boost::shared_ptr<Node>,bool> > Nodes;
+Double_Knob* getCenterKnobForTracker(Node* node)
+{
+    boost::shared_ptr<KnobI> knob = node->getKnobByName(kTrackCenterName);
+    assert(knob);
+    Double_Knob* dblKnob = dynamic_cast<Double_Knob*>(knob.get());
+    assert(dblKnob);
+    return dblKnob;
+}
 }
 
 struct MultiInstancePanelPrivate
@@ -1282,6 +1290,7 @@ namespace  {
 /////////////// Tracker panel
 struct TrackerPanelPrivate
 {
+    TrackerPanel* publicInterface;
     Button* averageTracksButton;
     bool updateViewerOnTrackingEnabled;
     
@@ -1292,8 +1301,9 @@ struct TrackerPanelPrivate
     ComboBox* exportChoice;
     Button* exportButton;
     
-    TrackerPanelPrivate()
-    : averageTracksButton(0)
+    TrackerPanelPrivate(TrackerPanel* publicInterface)
+    : publicInterface(publicInterface)
+    , averageTracksButton(0)
     , updateViewerOnTrackingEnabled(true)
     , exportLabel(NULL)
     , exportLayout(NULL)
@@ -1312,7 +1322,7 @@ struct TrackerPanelPrivate
 
 TrackerPanel::TrackerPanel(const boost::shared_ptr<NodeGui>& node)
 : MultiInstancePanel(node)
-, _imp(new TrackerPanelPrivate())
+, _imp(new TrackerPanelPrivate(this))
 {
     
 }
@@ -1432,11 +1442,7 @@ void TrackerPanel::onAverageTracksButtonClicked()
     newInstance->setName(newName);
     newInstance->updateEffectLabelKnob(newName);
     
-    
-    boost::shared_ptr<KnobI> newInstanceKnob = newInstance->getKnobByName("center");
-    assert(newInstanceKnob);
-    Double_Knob* newInstanceCenter = dynamic_cast<Double_Knob*>(newInstanceKnob.get());
-    assert(newInstanceCenter);
+    Double_Knob* newInstanceCenter = getCenterKnobForTracker(newInstance.get());
     
     std::list<Double_Knob*> centers;
     RangeD keyframesRange;
@@ -1444,10 +1450,8 @@ void TrackerPanel::onAverageTracksButtonClicked()
     keyframesRange.max = INT_MIN;
     
     for (std::list<Natron::Node*>::iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = (*it)->getKnobByName("center");
-        assert(knob);
-        Double_Knob* dblKnob = dynamic_cast<Double_Knob*>(knob.get());
-        assert(dblKnob);
+       
+        Double_Knob* dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini,maxi;
         bool hasKey = dblKnob->getFirstKeyFrameTime(0, &mini);
@@ -1755,10 +1759,70 @@ void TrackerPanelPrivate::createTransformFromSelection(const std::list<Node*>& s
     
 }
 
+
+namespace  {
+    Double_Knob* getCornerPinPoint(Natron::Node* node,bool isFrom,int index)
+    {
+        QString name = isFrom ? QString("from%1").arg(index + 1) : QString("to%1").arg(index+ 1);
+        boost::shared_ptr<KnobI> knob = node->getKnobByName(name.toStdString());
+        assert(knob);
+        Double_Knob* ret = dynamic_cast<Double_Knob*>(knob.get());
+        assert(ret);
+        return ret;
+    }
+}
+
 void TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& selection,bool linked,bool useTransformRefFrame)
 {
     if (selection.size() != 4) {
-        Natron::errorDialog("Export", QObject::tr("Export to corner pin needs exactly 4 tracks selected.").toStdString());
+        Natron::errorDialog(QObject::tr("Export").toStdString(), QObject::tr("Export to corner pin needs exactly 4 tracks selected.").toStdString());
         return;
     }
+    
+    if (linked) {
+        Natron::warningDialog(QObject::tr("Missing feature").toStdString(), QObject::tr("Expressions and scripting are not yet "
+                                                                                        "available in Natron hence we can't "
+                                                                                        "make a link. Instead a node with a copy "
+                                                                                        "of the values will be created.").toStdString());
+        linked = false;
+    }
+    
+    Double_Knob* centers[4];
+    int i = 0;
+    for (std::list<Node*>::const_iterator it = selection.begin();it!=selection.end(); ++it,++i) {
+        centers[i] = getCenterKnobForTracker(*it);
+    }
+    GuiAppInstance* app = publicInterface->getGui()->getApp();
+    boost::shared_ptr<Natron::Node> cornerPin = app->createNode(CreateNodeArgs("CornerPinOFX  [Transform]","",
+                                                                                                       -1,-1,true,-1,false));
+    if (!cornerPin) {
+        return;
+    }
+    
+    ///Move the node on the right of the tracker node
+    boost::shared_ptr<NodeGui> cornerPinGui = app->getNodeGui(cornerPin);
+    assert(cornerPinGui);
+    
+    boost::shared_ptr<NodeGui> mainInstanceGui = app->getNodeGui(publicInterface->getMainInstance());
+    assert(mainInstanceGui);
+    
+    QPointF mainInstancePos = mainInstanceGui->scenePos();
+    mainInstancePos = cornerPinGui->mapToParent(cornerPinGui->mapFromScene(mainInstancePos));
+    cornerPinGui->refreshPosition(mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y());
+    
+    Double_Knob* toPoints[4];
+    Double_Knob* fromPoints[4];
+    
+    int timeForFromPoints = useTransformRefFrame ? 0 : app->getTimeLine()->currentFrame();
+    
+    for (int i = 0; i < 4; ++i) {
+        fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
+        for (int j = 0; j < fromPoints[i]->getDimension();++j) {
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), j);
+        }
+        toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
+        toPoints[i]->cloneAndUpdateGui(centers[i]);
+    }
+    
+    
 }

@@ -845,10 +845,8 @@ void Knob<T>::clone(KnobI* other)
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }
-        //setEnabled(i, other->isEnabled(i));
     }
     cloneExtraData(other);
-    //setSecret(other->getIsSecret());
 }
 
 template<typename T>
@@ -865,4 +863,35 @@ void Knob<T>::clone(KnobI* other, SequenceTime offset, const RangeD* range)
     cloneExtraData(other,offset,range);
 }
 
+template<typename T>
+void Knob<T>::cloneAndUpdateGui(KnobI* other)
+{
+    int dimMin = std::min(getDimension() , other->getDimension());
+    cloneValues(other);
+    for (int i = 0; i < dimMin;++i) {
+        if (_signalSlotHandler) {
+            int nKeys = getKeyFramesCount(i);
+            for (int k = 0; k < nKeys;++k) {
+                double time;
+                bool ok = getKeyFrameTime(k, i, &time);
+                assert(ok);
+                _signalSlotHandler->s_keyFrameRemoved(time, i);
+            }
+        }
+        getCurve(i)->clone(*other->getCurve(i));
+        if (_signalSlotHandler) {
+            int nKeys = getKeyFramesCount(i);
+            for (int k = 0; k < nKeys;++k) {
+                double time;
+                bool ok = getKeyFrameTime(k, i, &time);
+                assert(ok);
+                _signalSlotHandler->s_keyFrameSet(time, i,true);
+            }
+            _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
+        }
+        checkAnimationLevel(i);
+        
+    }
+    cloneExtraData(other);
+}
 #endif // KNOBIMPL_H
