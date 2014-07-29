@@ -1538,14 +1538,21 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance,plugin,plugin->getID(),plugin->getLabel(),icon);
     
     
-    if(isLeaf){
+   
+
+    if (isLeaf) {
+        QString label = pluginsToolButton->getLabel();
+        int foundOFX = label.lastIndexOf("OFX");
+        if (foundOFX != -1) {
+            label = label.remove(foundOFX, 3);
+        }
         assert(parentToolButton);
         QAction* action = new QAction(this);
-        action->setText(pluginsToolButton->getLabel());
+        action->setText(label);
         action->setIcon(pluginsToolButton->getIcon());
         QObject::connect(action , SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()));
         pluginsToolButton->setAction(action);
-    }else{
+    } else {
         QMenu* menu = new QMenu(this);
         menu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
         menu->setTitle(pluginsToolButton->getLabel());
