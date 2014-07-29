@@ -128,6 +128,7 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString(_knob->getDimensionName(i).c_str())+':', boxContainer);
+            subDesc->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -507,6 +508,7 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
+            subDesc->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
