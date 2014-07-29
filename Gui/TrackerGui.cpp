@@ -164,6 +164,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* p
     _imp->updateViewerButton = new Button(updateViewerIC,"",_imp->buttonsBar);
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
+    _imp->updateViewerButton->setDown(true);
     _imp->updateViewerButton->setToolTip(tr(Qt::convertFromPlainText("Update viewer during tracking for each frame instead of just the tracks."
                                                                      , Qt::WhiteSpaceNormal).toStdString().c_str()));
     QObject::connect(_imp->updateViewerButton,SIGNAL(clicked(bool)),this,SLOT(onUpdateViewerClicked(bool)));

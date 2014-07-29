@@ -1082,7 +1082,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 }
                 //= _imp->_selection.nodes;
 
-                if ((_imp->_evtState == BACKDROP_DRAGGING && !event->modifiers().testFlag(Qt::ShiftModifier)) ||
+                if ((_imp->_evtState == BACKDROP_DRAGGING && !event->modifiers().testFlag(Qt::ControlModifier)) ||
                     _imp->_evtState == NODE_DRAGGING) {
                     ///For all backdrops also move all the nodes contained within it
                     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
