@@ -1555,6 +1555,10 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         ///don't do anything since it is handled upstream
         return;
     }
+    
+    if (reason == SLAVE_REFRESH) {
+        reason = PLUGIN_EDITED;
+    }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert(!ofxReason.empty());
     OfxPointD renderScale;
