@@ -1476,7 +1476,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     else if (e->key() == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
     }
-
+    else if (e->key() == Qt::Key_Up&& !e->modifiers().testFlag(Qt::ControlModifier)
+             && !e->modifiers().testFlag(Qt::AltModifier)) {
+        ///If a
+    }
     
 }
 

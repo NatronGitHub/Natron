@@ -106,9 +106,9 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , positionMutex()
 , _slaveMasterLink(NULL)
 , _masterNodeGui()
-, _magnecEnabled(false)
+, _magnecEnabled()
 , _magnecDistance()
-, _updateDistanceSinceLastMagnec(false)
+, _updateDistanceSinceLastMagnec()
 , _distanceSinceLastMagnec()
 , _magnecStartingPos()
 , _nodeLabel()
@@ -430,39 +430,60 @@ void NodeGui::refreshPositionEnd(double x, double y)
 
 void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& mouseScenePos)
 {
-    
+   
     if (appPTR->getCurrentSettings()->isSnapToNodeEnabled() && !skipMagnet) {
         QSize size = getSize();
         ///handle magnetic grid
         QPointF middlePos(x + size.width() / 2,y + size.height() / 2);
 
         
-        if (_magnecEnabled) {
-            _magnecDistance += (QPointF(x,y) - _magnecStartingPos);
-            double dist = sqrt(_magnecDistance.x() * _magnecDistance.x() +
-                               _magnecDistance.y() * _magnecDistance.y());
-            if (dist >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
-                _magnecEnabled = false;
-                _updateDistanceSinceLastMagnec = true;
-                _distanceSinceLastMagnec = QPointF(0,0);
-                
-                ///When reelasing the grip, make sure to follow the mouse
+        if (_magnecEnabled.x() || _magnecEnabled.y()) {
+            if (_magnecEnabled.x()) {
+                _magnecDistance.rx() += (x - _magnecStartingPos.x());
+                if (std::abs(_magnecDistance.x()) >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
+                    _magnecEnabled.rx() = 0;
+                    _updateDistanceSinceLastMagnec.rx() = 1;
+                    _distanceSinceLastMagnec.rx() = 0;
+                }
+            } else if (_magnecEnabled.y()) {
+                _magnecDistance.ry() += (y - _magnecStartingPos.y());
+                if (std::abs(_magnecDistance.y()) >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
+                    _magnecEnabled.ry() = 0;
+                    _updateDistanceSinceLastMagnec.ry() = 1;
+                    _distanceSinceLastMagnec.ry() = 0;
+                }
+            }
+            
+            
+            if (!_magnecEnabled.x() && !_magnecEnabled.y()) {
+                ///When releasing the grip, make sure to follow the mouse
                 QPointF newPos = (mapToParent(mapFromScene(mouseScenePos)));
                 newPos.rx() -= size.width() / 2;
                 newPos.ry() -= size.height() / 2;
                 refreshPositionEnd(newPos.x(),newPos.y());
                 return;
+
+            } else if (_magnecEnabled.x() && !_magnecEnabled.y()) {
+                x = pos().x();
+            } else if (!_magnecEnabled.x() && _magnecEnabled.y()) {
+                y = pos().y();
             } else {
                 return;
             }
         }
         
         bool continueMagnet = true;
-        if (_updateDistanceSinceLastMagnec) {
-            _distanceSinceLastMagnec =  (QPointF(x,y) - _magnecStartingPos);
-            if (std::abs(_distanceSinceLastMagnec.x()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)   ||
-                std::abs(_distanceSinceLastMagnec.y()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) {
-                _updateDistanceSinceLastMagnec = false;
+        if (_updateDistanceSinceLastMagnec.rx() == 1) {
+            _distanceSinceLastMagnec.rx() = x - _magnecStartingPos.x();
+            if (std::abs(_distanceSinceLastMagnec.x()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) {
+                _updateDistanceSinceLastMagnec.rx() = 0;
+            } else {
+                continueMagnet = false;
+            }
+        } else if (_updateDistanceSinceLastMagnec.ry() == 1) {
+            _distanceSinceLastMagnec.ry() = y - _magnecStartingPos.y();
+            if (std::abs(_distanceSinceLastMagnec.y()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) {
+                _updateDistanceSinceLastMagnec.ry() = 0;
             } else {
                 continueMagnet = false;
             }
@@ -470,7 +491,7 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& m
         
         
         
-        if (!_magnecEnabled && continueMagnet) {
+        if ((!_magnecEnabled.x() || !_magnecEnabled.y()) && continueMagnet) {
             for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
                 ///For each input try to find if the magnet should be enabled
                 boost::shared_ptr<NodeGui> inputSource = it->second->getSource();
@@ -480,26 +501,24 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& m
                     QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
                     QPointF mapped = mapToParent(mapFromScene(inputPos));
                     if (!contains(mapped)) {
-                        if ((mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                        if (!_magnecEnabled.x() && (mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
                              mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                            _magnecEnabled = true;
-                            _magnecDistance = QPointF(0,0);
+                            _magnecEnabled.rx() = 1;
+                            _magnecDistance.rx() = 0;
                             x = mapped.x() - size.width() / 2;
                             _magnecStartingPos.setX(x);
-                            _magnecStartingPos.setY(y);
-                        } else if ((mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                        } else if (!_magnecEnabled.y() && (mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
                                     mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                            _magnecEnabled = true;
-                            _magnecDistance = QPointF(0,0);
+                            _magnecEnabled.ry() = 1;
+                            _magnecDistance.ry() = 0;
                             y = mapped.y() - size.height() / 2;
-                            _magnecStartingPos.setX(x);
                             _magnecStartingPos.setY(y);
                         }
                     }
                 }
             }
             
-            if (!_magnecEnabled) {
+            if ((!_magnecEnabled.x() || !_magnecEnabled.y())) {
                 ///check now the outputs
                 const std::list<boost::shared_ptr<Natron::Node> >& outputs = _internalNode->getOutputs();
                 for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
@@ -510,19 +529,17 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& m
                     QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);
                     QPointF mapped = mapToParent(mapFromScene(outputPos));
                     if (!contains(mapped)) {
-                        if ((mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                             mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                            _magnecEnabled = true;
-                            _magnecDistance = QPointF(0,0);
+                        if (!_magnecEnabled.x() && (mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                                    mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                            _magnecEnabled.rx() = 1;
+                            _magnecDistance.rx() = 0;
                             x = mapped.x() - size.width() / 2;
                             _magnecStartingPos.setX(x);
-                            _magnecStartingPos.setY(y);
-                        } else if ((mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
-                                    mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
-                            _magnecEnabled = true;
-                            _magnecDistance = QPointF(0,0);
+                        } else if (!_magnecEnabled.y() && (mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) &&
+                                                           mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE))) {
+                            _magnecEnabled.ry() = 1;
+                             _magnecDistance.ry() = 0;
                             y = mapped.y() - size.height() / 2;
-                            _magnecStartingPos.setX(x);
                             _magnecStartingPos.setY(y);
                         }
                     }

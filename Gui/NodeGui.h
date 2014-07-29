@@ -446,11 +446,11 @@ private:
     QGraphicsLineItem* _slaveMasterLink;
     boost::shared_ptr<NodeGui> _masterNodeGui;
     
-    bool _magnecEnabled;
-    QPointF _magnecDistance;
-    bool _updateDistanceSinceLastMagnec;
-    QPointF _distanceSinceLastMagnec;
-    QPointF _magnecStartingPos;
+    QPoint _magnecEnabled; //<enabled in X or/and Y
+    QPointF _magnecDistance; //for x and for  y
+    QPoint _updateDistanceSinceLastMagnec; //for x and for y
+    QPointF _distanceSinceLastMagnec; //for x and for y
+    QPointF _magnecStartingPos; //for x and for y
     
     QString _nodeLabel;
     
