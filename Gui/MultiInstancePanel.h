@@ -107,6 +107,8 @@ protected:
     virtual void appendButtons(QHBoxLayout* /*buttonLayout*/) {}
     
     boost::shared_ptr<Natron::Node> addInstanceInternal();
+    
+    virtual void initializeExtraKnobs() {}
 
 private:
     
@@ -157,6 +159,7 @@ public slots:
     void onExportButtonClicked();
 private:
     
+    virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
     virtual void setIconForButton(Button_Knob* knob) OVERRIDE FINAL;

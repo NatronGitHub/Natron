@@ -1134,6 +1134,8 @@ public:
     
     void refreshAfterTimeChange(SequenceTime time);
     
+    void refreshInstanceSpecificKnobsOnly(SequenceTime time);
+    
     KnobHolder::MultipleParamsEditLevel getMultipleParamsEditLevel() const;
     
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level);

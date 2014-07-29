@@ -1811,8 +1811,10 @@ void TextItem::init()
 
 void NodeGui::refreshKnobsAfterTimeChange(SequenceTime time)
 {
-    if (_settingsPanel && !_settingsPanel->isClosed()) {
+    if ((_settingsPanel && !_settingsPanel->isClosed())) {
         _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
+    } else if (!_internalNode->getParentMultiInstanceName().empty()) {
+        _internalNode->getLiveInstance()->refreshInstanceSpecificKnobsOnly(time);
     }
 }
 

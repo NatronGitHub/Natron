@@ -1029,6 +1029,15 @@ void KnobHolder::refreshAfterTimeChange(SequenceTime time)
     }
 }
 
+void KnobHolder::refreshInstanceSpecificKnobsOnly(SequenceTime time)
+{
+    for (U32 i = 0; i < _imp->knobs.size() ; ++i) {
+        if (_imp->knobs[i]->isInstanceSpecific()) {
+            _imp->knobs[i]->onTimeChanged(time);
+        }
+    }
+}
+
 void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason)
 {
     if (!_imp->knobsInitialized) {
