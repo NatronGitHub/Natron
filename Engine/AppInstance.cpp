@@ -194,9 +194,6 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     } catch (const std::exception& e) {
         Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable") + ": " + e.what());
         return node;
-    } catch (...) {
-        Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable"));
-        return node;
     }
     
     if (pluginID != "Viewer") { // for now only the viewer can be an inspector.

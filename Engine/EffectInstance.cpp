@@ -2140,6 +2140,8 @@ Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scal
     } catch (const std::exception & e) {
         ///Also clear images when catching an exception
         _imp->clearInputImagePointers();
+        decrementRecursionLevel();
+        throw e;
     }
     
     ///Clear any previous input image which may be left
@@ -2193,9 +2195,17 @@ Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    Natron::Status ret = getRegionOfDefinition(time, scale, view, rod);
+    Natron::Status ret;
+    
+    try {
+        ret = getRegionOfDefinition(time, scale, view, rod);
+        
+    } catch (const std::exception& e) {
+        decrementRecursionLevel();
+        throw e;
+    }
     assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
-
+    
     decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
     assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
@@ -2211,7 +2221,13 @@ EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime t
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
     incrementRecursionLevel();
-    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, outputRoD, renderWindow, view);
+    EffectInstance::RoIMap ret;
+    try {
+        ret = getRegionOfInterest(time, scale, outputRoD, renderWindow, view);
+    } catch (const std::exception& e) {
+        decrementRecursionLevel();
+        throw e;
+    }
     decrementRecursionLevel();
     return ret;
 }

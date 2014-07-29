@@ -1578,6 +1578,26 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::ShiftModifier)
                 && e->modifiers().testFlag(Qt::ControlModifier)) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
+    } else if (e->key() == Qt::Key_T && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
+        getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]"));
+    } else if (e->key() == Qt::Key_O && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
+        getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]"));
+    } else if (e->key() == Qt::Key_M && !e->modifiers().testFlag(Qt::ShiftModifier)
+                && !e->modifiers().testFlag(Qt::ControlModifier)
+                && !e->modifiers().testFlag(Qt::AltModifier)) {
+        getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]"));
+    } else if (e->key() == Qt::Key_G && !e->modifiers().testFlag(Qt::ShiftModifier)
+                && !e->modifiers().testFlag(Qt::ControlModifier)
+                && !e->modifiers().testFlag(Qt::AltModifier)) {
+        getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]"));
+    } else if (e->key() == Qt::Key_C && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
+        getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]"));
     }
     
 }
