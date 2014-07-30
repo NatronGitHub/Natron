@@ -444,7 +444,8 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& m
                     _updateDistanceSinceLastMagnec.rx() = 1;
                     _distanceSinceLastMagnec.rx() = 0;
                 }
-            } else if (_magnecEnabled.y()) {
+            }
+            if (_magnecEnabled.y()) {
                 _magnecDistance.ry() += (y - _magnecStartingPos.y());
                 if (std::abs(_magnecDistance.y()) >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
                     _magnecEnabled.ry() = 0;
