@@ -1316,7 +1316,7 @@ struct TrackerPanelPrivate
     , exportLayout(NULL)
     , exportChoice(NULL)
     , exportButton(NULL)
-    , transformPage(NULL)
+    , transformPage()
     , referenceFrame()
     {
         
