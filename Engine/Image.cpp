@@ -519,7 +519,37 @@ unsigned int Image::getComponentsCount() const
 
 bool Image::hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to)
 {
-    return getElementsCountForComponents(from) >= getElementsCountForComponents(to);
+    switch (from) {
+        case ImageComponentRGBA:
+            return true;
+        case ImageComponentRGB: {
+            switch (to) {
+                case ImageComponentRGBA:
+                    return false;
+                case ImageComponentRGB:
+                    return true;
+                case ImageComponentAlpha:
+                    return false;
+                default:
+                    return false;
+            }
+        } break;
+        case ImageComponentAlpha: {
+            switch (to) {
+                case ImageComponentRGBA:
+                    return false;
+                case ImageComponentRGB:
+                    return false;
+                case ImageComponentAlpha:
+                    return true;
+                default:
+                    return false;
+            }
+        } break;
+        default:
+            return false;
+            break;
+    }
 }
 
 std::string Image::getFormatString(Natron::ImageComponents comps,Natron::ImageBitDepth depth)
