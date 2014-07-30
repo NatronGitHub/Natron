@@ -480,7 +480,8 @@ void NodeGui::refreshPosition(double x,double y,bool skipMagnet,const QPointF& m
             } else {
                 continueMagnet = false;
             }
-        } else if (_updateDistanceSinceLastMagnec.ry() == 1) {
+        }
+        if (_updateDistanceSinceLastMagnec.ry() == 1) {
             _distanceSinceLastMagnec.ry() = y - _magnecStartingPos.y();
             if (std::abs(_distanceSinceLastMagnec.y()) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) {
                 _updateDistanceSinceLastMagnec.ry() = 0;
