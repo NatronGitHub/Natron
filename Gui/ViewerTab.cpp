@@ -1096,24 +1096,19 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
                && !event->modifiers().testFlag(Qt::AltModifier)) {
         onRenderScaleButtonClicked(!_imp->_renderScaleActive);
     } else if (event->key() == Qt::Key_1 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(0);
     } else if (event->key() == Qt::Key_2 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(1);
     } else if (event->key() == Qt::Key_3 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(2);
     } else if (event->key() == Qt::Key_4 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(3);
     } else if (event->key() == Qt::Key_5 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)) {
+               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         _imp->_renderScaleCombo->setCurrentIndex(4);
     }
 
