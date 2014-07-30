@@ -652,10 +652,34 @@ void Tree::buildTreeInternal(NodeGui* currentNode,const QPointF& currentNodeScen
             bool isMask = internalNode->getLiveInstance()->isInputMask(it->first);
             if (!firstNonMaskInput && !isMask) {
                 firstNonMaskInput = source;
+                for (std::list<TreeNode>::iterator it2 = nodes.begin(); it2!=nodes.end(); ++it2) {
+                    if (it2->first == firstNonMaskInput) {
+                        firstNonMaskInput.reset();
+                        break;
+                    }
+                }
             } else if (!isMask) {
-                otherNonMaskInputs.push_back(source);
+                bool found = false;
+                for (std::list<TreeNode>::iterator it2 = nodes.begin(); it2!=nodes.end(); ++it2) {
+                    if (it2->first == source) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    otherNonMaskInputs.push_back(source);
+                }
             } else if (isMask) {
-                maskInputs.push_back(source);
+                bool found = false;
+                for (std::list<TreeNode>::iterator it2 = nodes.begin(); it2!=nodes.end(); ++it2) {
+                    if (it2->first == source) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    maskInputs.push_back(source);
+                }
             } else {
                 ///this can't be happening
                 assert(false);
@@ -784,7 +808,9 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     for (TreeList::iterator it = trees.begin(); it!=trees.end(); ++it) {
         const QPointF& treeTop = (*it)->getTopLevelNodeCenter();
         QPointF delta(0,topLevelPos.y() - treeTop.y());
-        (*it)->moveAllTree(delta);
+        if (delta.x() != 0 || delta.y() != 0) {
+            (*it)->moveAllTree(delta);
+        }
         
         ///and insert the final result into the _nodes list
         const std::list<TreeNode>& treeNodes = (*it)->getNodes();

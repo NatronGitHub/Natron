@@ -1565,7 +1565,9 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 void
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
-    _undoStack->push(new RearrangeNodesCommand(_selection.nodes));
+    if (!_selection.nodes.empty()) {
+        _undoStack->push(new RearrangeNodesCommand(_selection.nodes));
+    }
 }
 
 void
