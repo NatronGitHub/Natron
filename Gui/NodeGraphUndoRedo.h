@@ -57,13 +57,15 @@ public:
     
 private:
     
-    void move(double dx,double dy);
+    void move(bool skipMagnet,double dx,double dy);
     
+    bool _firstRedoCalled;
     std::list<NodeToMove> _nodes;
     std::list<NodeBackDrop*> _bds;
     QPointF _mouseScenePos;
     double _dx,_dy;
 };
+
 
 /**
  * @class The first redo() call will do nothing, it assumes the node has already been added.
@@ -205,5 +207,28 @@ private:
     std::list<BDToDeclone> _bds;
     NodeGraph* _graph;
 };
+
+
+
+class RearrangeNodesCommand : public QUndoCommand
+{
+public:
+    
+    struct NodeToRearrange
+    {
+        boost::shared_ptr<NodeGui> node;
+        QPointF oldPos,newPos;
+    };
+    
+    RearrangeNodesCommand(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                          QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    std::list<NodeToRearrange> _nodes;
+};
+
 
 #endif // NODEGRAPHUNDOREDO_H

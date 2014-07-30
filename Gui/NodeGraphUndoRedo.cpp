@@ -24,12 +24,17 @@
 #include "Gui/Edge.h"
 #include "Gui/NodeBackDrop.h"
 
+#define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
+
+typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove>& nodes,
                                                    const std::list<NodeBackDrop*>& bds,
                                                    double dx,double dy,
                                                    const QPointF& mouseScenePos,
                                                    QUndoCommand *parent)
 : QUndoCommand(parent)
+, _firstRedoCalled(false)
 , _nodes(nodes)
 , _bds(bds)
 , _mouseScenePos(mouseScenePos)
@@ -39,11 +44,11 @@ MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove>& 
     assert(!nodes.empty() || !bds.empty());
 }
 
-void MoveMultipleNodesCommand::move(double dx,double dy)
+void MoveMultipleNodesCommand::move(bool skipMagnet,double dx,double dy)
 {
     for (std::list<NodeToMove>::iterator it = _nodes.begin();it!=_nodes.end();++it) {
         QPointF pos = it->node->getPos_mt_safe();
-        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD || _nodes.size() > 1,_mouseScenePos);
+        it->node->refreshPosition(pos.x() + dx , pos.y() + dy,it->isWithinBD || _nodes.size() > 1 || skipMagnet,_mouseScenePos);
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin();it!=_bds.end();++it) {
         QPointF pos = (*it)->getPos_mt_safe();
@@ -54,12 +59,13 @@ void MoveMultipleNodesCommand::move(double dx,double dy)
 
 void MoveMultipleNodesCommand::undo(){
     
-    move(-_dx, -_dy);
+    move(true,-_dx, -_dy);
     setText(QObject::tr("Move nodes"));
 }
 void MoveMultipleNodesCommand::redo(){
     
-    move(_dx, _dy);
+    move(_firstRedoCalled,_dx, _dy);
+    _firstRedoCalled = true;
     setText(QObject::tr("Move nodes"));
 }
 bool MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command){
@@ -570,7 +576,7 @@ void DecloneMultipleNodesCommand::undo()
         it->bd->slaveTo(it->master);
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText("Declone node");
+    setText(QObject::tr("Declone node"));
 }
 
 void DecloneMultipleNodesCommand::redo()
@@ -582,5 +588,233 @@ void DecloneMultipleNodesCommand::redo()
         it->bd->unslave();
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText("Declone node");
+    setText(QObject::tr("Declone node"));
 }
+
+namespace {
+typedef std::pair<NodeGuiPtr,QPointF> TreeNode; ///< all points are expressed as being the CENTER of the node!
+    
+class Tree
+{
+    std::list<TreeNode> nodes;
+    QPointF topLevelNodeCenter; //< in scene coords
+    
+public:
+    
+    Tree()
+    : nodes()
+    , topLevelNodeCenter(0,INT_MAX)
+    {}
+    
+    void buildTree(const NodeGuiPtr& output,std::list<NodeGui*>& usedNodes)
+    {
+        QPointF outputPos = output->pos();
+        QSize nodeSize = output->getSize();
+        outputPos += QPointF(nodeSize.width() / 2.,nodeSize.height() / 2.);
+        addNode(output, outputPos);
+        
+        buildTreeInternal(output.get(),outputPos, usedNodes);
+    }
+    
+    const std::list<TreeNode>& getNodes() const { return nodes; }
+    
+    const QPointF& getTopLevelNodeCenter() const { return topLevelNodeCenter; }
+    
+    void moveAllTree(const QPointF& delta)
+    {
+        for (std::list<TreeNode>::iterator it = nodes.begin();it!=nodes.end();++it) {
+            it->second += delta;
+        }
+    }
+private:
+    
+    void addNode(const NodeGuiPtr& node,const QPointF& point) { nodes.push_back(std::make_pair(node, point)); }
+    
+    void buildTreeInternal(NodeGui* currentNode,const QPointF& currentNodeScenePos,std::list<NodeGui*>& usedNodes);
+};
+    
+    typedef std::list< boost::shared_ptr<Tree> > TreeList;
+    
+void Tree::buildTreeInternal(NodeGui* currentNode,const QPointF& currentNodeScenePos,std::list<NodeGui*>& usedNodes)
+{
+    
+    
+    QSize nodeSize = currentNode->getSize();
+    boost::shared_ptr<Natron::Node> internalNode = currentNode->getNode();
+    const std::map<int,Edge*>& inputs = currentNode->getInputsArrows();
+    
+    NodeGuiPtr firstNonMaskInput;
+    std::list<NodeGuiPtr> otherNonMaskInputs;
+    std::list<NodeGuiPtr> maskInputs;
+    for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        NodeGuiPtr source = it->second->getSource();
+        if (source) {
+            bool isMask = internalNode->getLiveInstance()->isInputMask(it->first);
+            if (!firstNonMaskInput && !isMask) {
+                firstNonMaskInput = source;
+            } else if (!isMask) {
+                otherNonMaskInputs.push_back(source);
+            } else if (isMask) {
+                maskInputs.push_back(source);
+            } else {
+                ///this can't be happening
+                assert(false);
+            }
+        }
+    }
+
+    
+    ///The node has already been processed in another tree, skip it.
+    if (std::find(usedNodes.begin(), usedNodes.end(), currentNode) == usedNodes.end()) {
+        
+        
+        ///mark it
+        usedNodes.push_back(currentNode);
+        
+        
+        QPointF firstNonMaskInputPos;
+        std::list<QPointF> otherNonMaskInputsPos;
+        std::list<QPointF> maskInputsPos;
+        
+        ///Position the first non mask input
+        if (firstNonMaskInput) {
+            firstNonMaskInputPos = firstNonMaskInput->mapToParent(firstNonMaskInput->mapFromScene(currentNodeScenePos));
+            firstNonMaskInputPos.ry() -= ((nodeSize.height() / 2.) +
+                                          MINIMUM_VERTICAL_SPACE_BETWEEN_NODES +
+                                          (firstNonMaskInput->getSize().height() / 2.));
+            
+            ///and add it to the tree
+            addNode(firstNonMaskInput, firstNonMaskInputPos);
+        }
+        
+        ///Position all other non mask inputs
+        int index = 0;
+        for (std::list<NodeGuiPtr>::iterator it = otherNonMaskInputs.begin(); it!=otherNonMaskInputs.end(); ++it,++index) {
+            QPointF p = (*it)->mapToParent((*it)->mapFromScene(currentNodeScenePos));
+            
+            p.rx() -= ((nodeSize.width() + (*it)->getSize().width() / 2.)) * (index + 1);
+            
+            ///and add it to the tree
+            addNode(*it, p);
+            otherNonMaskInputsPos.push_back(p);
+        }
+        
+        ///Position all mask inputs
+        index = 0;
+        for (std::list<NodeGuiPtr>::iterator it = maskInputs.begin(); it!=maskInputs.end(); ++it,++index) {
+            QPointF p = (*it)->mapToParent((*it)->mapFromScene(currentNodeScenePos));
+            ///Note that here we subsctract nodeSize.width(): Actually we substract twice nodeSize.width() / 2: once to get to the left of the node
+            ///and another time to add the space of half a node
+            p.rx() += ((nodeSize.width() + (*it)->getSize().width() / 2.)) * (index + 1);
+            
+            ///and add it to the tree
+            addNode(*it, p);
+            maskInputsPos.push_back(p);
+        }
+        
+        ///Now that we built the tree at this level, call this function again on the inputs that we just treated
+        if (firstNonMaskInput) {
+            buildTreeInternal(firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
+        }
+        
+        std::list<QPointF>::iterator pointsIt = otherNonMaskInputsPos.begin();
+        for (std::list<NodeGuiPtr>::iterator it = otherNonMaskInputs.begin(); it!=otherNonMaskInputs.end(); ++it,++pointsIt) {
+            buildTreeInternal(it->get(),*pointsIt, usedNodes);
+        }
+        
+        pointsIt = maskInputsPos.begin();
+        for (std::list<NodeGuiPtr>::iterator it = maskInputs.begin(); it!=maskInputs.end(); ++it,++pointsIt) {
+            buildTreeInternal(it->get(),*pointsIt, usedNodes);
+        }
+        
+    }
+    ///update the top level node center if the node doesn't have any input
+    if (!firstNonMaskInput && otherNonMaskInputs.empty() && maskInputs.empty()) {
+        ///QGraphicsView Y axis is top-->down oriented
+        if (currentNodeScenePos.y() < topLevelNodeCenter.y()) {
+            topLevelNodeCenter = currentNodeScenePos;
+        }
+    }
+}
+    
+}
+RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                      QUndoCommand *parent)
+: QUndoCommand(parent)
+, _nodes()
+{
+
+    ///1) Separate the nodes in trees they belong to, once a node has been "used" by a tree, mark it
+    ///and don't try to reposition it for another tree
+    ///2) For all trees : recursively position each nodes so that each input of a node is positionned as following:
+    /// a) The first non mask input is positionned above the node
+    /// b) All others non mask inputs are positionned on the left of the node, each one separated by the space of half a node
+    /// c) All masks are positionned on the right of the node, each one separated by the space of half a node
+    ///3) Move all trees so that they are next to each other and their "top level" node
+    ///(the input that is at the highest position in the Y coordinate) is at the same
+    ///Y level (node centers have the same Y)
+    
+    std::list<NodeGui*> usedNodes;
+    
+    ///A list of Tree
+    ///Each tree is a lit of nodes with a boolean indicating if it was already positionned( "used" ) by another tree, if set to
+    ///true we don't do anything
+    /// Each node that doesn't have any output is a potential tree.
+    TreeList trees;
+    
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        const std::list<boost::shared_ptr<Natron::Node> >& outputs = (*it)->getNode()->getOutputs();
+        if (outputs.empty()) {
+            boost::shared_ptr<Tree> newTree(new Tree);
+            newTree->buildTree(*it, usedNodes);
+            trees.push_back(newTree);
+        }
+    }
+    
+    ///For all trees find out which one has the top most level node
+    QPointF topLevelPos(0,INT_MAX);
+    for (TreeList::iterator it = trees.begin(); it!=trees.end(); ++it) {
+        const QPointF& treeTop = (*it)->getTopLevelNodeCenter();
+        if (treeTop.y() < topLevelPos.y()) {
+            topLevelPos = treeTop;
+        }
+    }
+    
+    ///now offset all trees to be top aligned at the same level
+    for (TreeList::iterator it = trees.begin(); it!=trees.end(); ++it) {
+        const QPointF& treeTop = (*it)->getTopLevelNodeCenter();
+        QPointF delta(0,topLevelPos.y() - treeTop.y());
+        (*it)->moveAllTree(delta);
+        
+        ///and insert the final result into the _nodes list
+        const std::list<TreeNode>& treeNodes = (*it)->getNodes();
+        for (std::list<TreeNode>::const_iterator it2 = treeNodes.begin(); it2!=treeNodes.end(); ++it2) {
+            NodeToRearrange n;
+            n.node = it2->first;
+            QSize size = n.node->getSize();
+            n.newPos = it2->second - QPointF(size.width() / 2.,size.height() / 2.);
+            n.oldPos = n.node->pos();
+            _nodes.push_back(n);
+        }
+    }
+    
+    
+    
+}
+
+void RearrangeNodesCommand::undo()
+{
+    for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        it->node->refreshPosition(it->oldPos.x(), it->oldPos.y(),true);
+    }
+    setText(QObject::tr("Rearrange nodes"));
+}
+
+void RearrangeNodesCommand::redo()
+{
+    for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        it->node->refreshPosition(it->newPos.x(), it->newPos.y(),true);
+    }
+    setText(QObject::tr("Rearrange nodes"));
+}
+

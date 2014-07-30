@@ -152,9 +152,9 @@ ViewerInstance::~ViewerInstance()
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    if (getVideoEngine()) {
-        getVideoEngine()->quitEngineThread();
-    }
+//    if (getVideoEngine()) {
+//        getVideoEngine()->quitEngineThread();
+//    }
     
     // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
     // not yet processed. Since we're in the main thread and it is processed in the main thread,

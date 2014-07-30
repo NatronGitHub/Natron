@@ -2497,9 +2497,9 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 }
 
 OutputEffectInstance::~OutputEffectInstance(){
-    if(_videoEngine){
-        _videoEngine->quitEngineThread();
-    }
+//    if(_videoEngine){
+//        _videoEngine->quitEngineThread();
+//    }
     delete _outputEffectDataLock;
 }
 

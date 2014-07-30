@@ -196,22 +196,6 @@ void Edge::initLine()
         /////// This is a connected edge, either input or output
         srcpt = sourceBBOX.center();
         
-        /////// Only input edges have a label
-        if (label) {
-            /*adjusting src and dst to show label at the middle of the line*/
-            QPointF labelSrcpt= QPointF(sourceBBOX.x(),sourceBBOX.y()) + QPointF(srcNodeSize.width() / 2.,srcNodeSize.height());
-            
-            
-            QPointF labelDst = QPointF(destBBOX.x(),destBBOX.y()) + QPointF(dstNodeSize.width() / 2.,0);
-            double norm = sqrt(pow(labelDst.x() - labelSrcpt.x(),2) + pow(labelDst.y() - labelSrcpt.y(),2));
-            if(norm > 20.){
-                label->setPos((labelDst.x()+labelSrcpt.x())/2.-5.,
-                              (labelDst.y()+labelSrcpt.y())/2.-10);
-                label->show();
-            }else{
-                label->hide();
-            }
-        }
         setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
         
         bool foundIntersection = false;
@@ -248,6 +232,19 @@ void Edge::initLine()
             } else if (visibleLength >= 50 && _bendPointHiddenAutomatically) {
                 _bendPointHiddenAutomatically = false;
                 _paintBendPoint = true;
+            }
+            
+            
+            if (label && isActive()) {
+                label->setPos(_middlePoint + QPointF(-5,-10));
+                QFontMetrics fm(label->font());
+                int fontHeight = fm.height();
+                double txtWidth = fm.width(label->toPlainText());
+                if ((visibleLength < fontHeight * 2) || (visibleLength < txtWidth)) {
+                    label->hide();
+                } else {
+                    label->show();
+                }
             }
         }
     

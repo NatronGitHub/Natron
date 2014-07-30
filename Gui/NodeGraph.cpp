@@ -321,6 +321,8 @@ struct NodeGraphPrivate
     
     void setNodesBendPointsVisible(bool visible);
     
+    void rearrangeSelectedNodes();
+    
 };
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent)
@@ -1438,30 +1440,6 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
         switchInputs1and2ForSelectedNodes();
         
-    }  else if (e->key() == Qt::Key_J && !e->modifiers().testFlag(Qt::ShiftModifier)
-                && !e->modifiers().testFlag(Qt::ControlModifier)
-                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        ViewerTab* lastSelectedViewer = _imp->_gui->getLastSelectedViewer();
-        if (lastSelectedViewer) {
-            lastSelectedViewer->startBackward(!lastSelectedViewer->isPlayingBackward());
-        }
-    }
-    else if (e->key() == Qt::Key_K && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
-        ViewerTab* lastSelectedViewer = _imp->_gui->getLastSelectedViewer();
-        if (lastSelectedViewer) {
-           lastSelectedViewer-> abortRendering();
-        }
-    }
-    else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
-        ViewerTab* lastSelectedViewer = _imp->_gui->getLastSelectedViewer();
-        if (lastSelectedViewer) {
-            lastSelectedViewer->startPause(!lastSelectedViewer->isPlayingForward());
-        }
-        
     }
     else if (e->key() == Qt::Key_A && !e->modifiers().testFlag(Qt::ShiftModifier)
             && e->modifiers().testFlag(Qt::ControlModifier)
@@ -1549,28 +1527,6 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
             getGui()->getLastSelectedViewer()->nextIncrement();
         }
     }
-    else if (e->key() == Qt::Key_J && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
-        if (getGui()->getLastSelectedViewer()) {
-            getGui()->getLastSelectedViewer()->startBackward(!getGui()->getLastSelectedViewer()->isPlayBackwardButtonDown());
-        }
-    }
-    else if (e->key() == Qt::Key_K && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
-        if (getGui()->getLastSelectedViewer()) {
-            getGui()->getLastSelectedViewer()->abortRendering();
-        }
-    }
-    else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
-        if (getGui()->getLastSelectedViewer()) {
-            getGui()->getLastSelectedViewer()->startPause(!getGui()->getLastSelectedViewer()->isPlayForwardButtonDown());
-        }
-        
-    }
     else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::ShiftModifier)
                 && e->modifiers().testFlag(Qt::ControlModifier)) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
@@ -1598,8 +1554,18 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
         getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]"));
+    } else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->rearrangeSelectedNodes();
     }
     
+}
+
+void
+NodeGraphPrivate::rearrangeSelectedNodes()
+{
+    _undoStack->push(new RearrangeNodesCommand(_selection.nodes));
 }
 
 void
