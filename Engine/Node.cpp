@@ -79,9 +79,9 @@ struct Node::Implementation {
         , computingPreviewCond()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
-        , mustQuitProcessing(false)
-        , mustQuitProcessingMutex()
-        , mustQuitProcessingCond()
+        , mustQuitPreview(false)
+        , mustQuitPreviewMutex()
+        , mustQuitPreviewCond()
         , perFrameMutexesLock()
         , renderInstancesFullySafePerFrameMutexes()
         , knobsAge(0)
@@ -141,9 +141,9 @@ struct Node::Implementation {
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
     
-    bool mustQuitProcessing;
-    QMutex mustQuitProcessingMutex;
-    QWaitCondition mustQuitProcessingCond;
+    bool mustQuitPreview;
+    QMutex mustQuitPreviewMutex;
+    QWaitCondition mustQuitPreviewCond;
     
     QMutex renderInstancesSharedMutex; //< see INSTANCE_SAFE in EffectInstance::renderRoI
                                        //only 1 clone can render at any time
@@ -186,6 +186,8 @@ struct Node::Implementation {
     bool duringInputChangedAction; //< true if we're during onInputChanged(...). MT-safe since only modified by the main thread
     
     bool keyframesDisplayedOnTimeline;
+    
+    void abortPreview();
 };
 
 /**
@@ -497,24 +499,39 @@ bool Node::isRenderingPreview() const {
     return _imp->computingPreview;
 }
 
+void Node::Implementation::abortPreview()
+{
+    bool computing;
+    {
+        QMutexLocker locker(&computingPreviewMutex);
+        computing = computingPreview;
+    }
+    if (computing) {
+        QMutexLocker l(&mustQuitPreviewMutex);
+        mustQuitPreview = true;
+        while (mustQuitPreview) {
+            mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
+        }
+    }
+    
+
+}
+
+void Node::abortAnyProcessing()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(getLiveInstance());
+    if (isOutput) {
+        isOutput->getVideoEngine()->abortRendering(true);
+    }
+    _imp->abortPreview();
+}
+
 void Node::quitAnyProcessing() {
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(getLiveInstance());
     if (isOutput) {
         isOutput->getVideoEngine()->quitEngineThread();
     }
-    bool computingPreview;
-    {
-        QMutexLocker locker(&_imp->computingPreviewMutex);
-        computingPreview = _imp->computingPreview;
-    }
-    if (computingPreview) {
-        QMutexLocker l(&_imp->mustQuitProcessingMutex);
-        _imp->mustQuitProcessing = true;
-        while (_imp->mustQuitProcessing) {
-            _imp->mustQuitProcessingCond.wait(&_imp->mustQuitProcessingMutex);
-        }
-    }
-    
+    _imp->abortPreview();
     
 }
 
@@ -1323,7 +1340,10 @@ void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& output
     
     
     ///kill any thread it could have started (e.g: VideoEngine or preview)
-    quitAnyProcessing();
+    ///Commented-out: If we were to undo the deactivate we don't want all threads to be
+    ///exited, just exit them when the effect is really deleted instead
+    //quitAnyProcessing();
+    abortAnyProcessing();
     
     ///Free all memory used by the plug-in.
     _imp->liveInstance->clearPluginMemoryChunks();
@@ -1482,10 +1502,10 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
 {
 
     {
-        QMutexLocker locker(&_imp->mustQuitProcessingMutex);
-        if (_imp->mustQuitProcessing) {
-            _imp->mustQuitProcessing = false;
-            _imp->mustQuitProcessingCond.wakeOne();
+        QMutexLocker locker(&_imp->mustQuitPreviewMutex);
+        if (_imp->mustQuitPreview) {
+            _imp->mustQuitPreview = false;
+            _imp->mustQuitPreviewCond.wakeOne();
             return;
         }
     }

@@ -87,8 +87,15 @@ public:
     void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes,
                            std::list<Double_Knob*>* trackKnobsRestored);
     
-    /*Quit all processing done by all render instances of this node */
+    /*@brief Quit all processing done by all render instances of this node
+     This is called when the effect is about to be deleted permanantly
+     */
     void quitAnyProcessing();
+    
+    /*@brief Similar to quitAnyProcessing except that the threads aren't destroyed
+     
+     */
+    void abortAnyProcessing();
     
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      *is set earlier.
