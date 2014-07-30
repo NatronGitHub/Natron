@@ -87,13 +87,14 @@ VideoEngine::~VideoEngine() {
     _threadStarted = false;
 }
 
-void VideoEngine::quitEngineThread(){
+void VideoEngine::quitEngineThread()
+{
     bool isThreadStarted = false;
     {
         QMutexLocker quitLocker(&_mustQuitMutex);
         isThreadStarted = _threadStarted;
     }
-    if(isThreadStarted){
+    if (isThreadStarted && isWorking()) {
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
@@ -166,6 +167,9 @@ void VideoEngine::render(int frameCount,
         
         /*Starting or waking-up the thread*/
         QMutexLocker quitLocker(&_mustQuitMutex);
+        if (_hasQuit) {
+            return;
+        }
         if (!_threadStarted && !_mustQuit) {
             start(HighestPriority);
             _threadStarted = true;
@@ -327,6 +331,7 @@ bool VideoEngine::stopEngine() {
         QMutexLocker locker(&_mustQuitMutex);
         if (_mustQuit) {
             _mustQuit = false;
+            _hasQuit = true;
             _mustQuitCondition.wakeAll();
             _threadStarted = false;
             return true;
@@ -347,6 +352,7 @@ void VideoEngine::run()
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
                 _mustQuit = false;
+                _hasQuit = true;
                 Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
                 if(appPTR->isBackground()){
                     outputEffect->notifyRenderFinished();
@@ -412,6 +418,7 @@ void VideoEngine::runSameThread() {
 
         if (_mustQuit) {
             _mustQuit = false;
+            _hasQuit = true;
             _doingARenderSingleThreaded = false;
             return;
         }
@@ -421,6 +428,7 @@ void VideoEngine::runSameThread() {
 
         if (_mustQuit) {
             _mustQuit = false;
+            _hasQuit = true;
             _doingARenderSingleThreaded = false;
             return;
         }

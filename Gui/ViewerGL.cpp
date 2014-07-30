@@ -910,7 +910,8 @@ void ViewerGL::resizeGL(int width, int height)
     if (!zoomSinceLastFit) {
         fitImageToFormat();
     }
-    if (viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
+    if (viewer->getUiContext() && _imp->viewerTab->getGui() &&
+        !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
         viewer->refreshAndContinueRender(false,true);
         updateGL();
     }

@@ -410,6 +410,7 @@ private:
     QWaitCondition _mustQuitCondition;
     mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
+    bool _hasQuit; /*!< Unlike mustQuit it remains true after the quit was performed, this is to make sure the engine isn't restarted.*/
 
     mutable QMutex _loopModeMutex;///protects _loopMode
     bool _loopMode; /*!< on if the player will loop*/

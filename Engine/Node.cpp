@@ -498,8 +498,9 @@ bool Node::isRenderingPreview() const {
 }
 
 void Node::quitAnyProcessing() {
-    if (isOutputNode()) {
-        dynamic_cast<Natron::OutputEffectInstance*>(this->getLiveInstance())->getVideoEngine()->quitEngineThread();
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(getLiveInstance());
+    if (isOutput) {
+        isOutput->getVideoEngine()->quitEngineThread();
     }
     bool computingPreview;
     {
