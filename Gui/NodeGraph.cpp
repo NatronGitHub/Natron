@@ -763,9 +763,19 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     if (selected) {
         didSomething = true;
         if (event->button() == Qt::LeftButton) {
+            _imp->_magnifiedNode = selected;
             if (!selected->isSelected()) {
-                _imp->_magnifiedNode = selected;
                 selectNode(selected,event->modifiers().testFlag(Qt::ShiftModifier));
+            } else {
+                if (event->modifiers().testFlag(Qt::ShiftModifier)) {
+                    std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_selection.nodes.begin(),
+                                                                                    _imp->_selection.nodes.end(),selected);
+                    if (it != _imp->_selection.nodes.end()) {
+                        (*it)->setSelected(false);
+                    }
+                } else {
+                    selectNode(selected, false);
+                }
             }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();

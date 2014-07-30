@@ -1482,6 +1482,9 @@ QSize NodeGui::getSize() const
 
 
 void NodeGui::onDisabledKnobToggled(bool disabled) {
+    if (!_nameItem) {
+        return;
+    }
     if (disabled) {
         _nameItem->setDefaultTextColor(QColor(120,120,120));
     } else {
