@@ -625,10 +625,10 @@ ViewerGL::Implementation::WipePolygonType ViewerGL::Implementation::getWipePolyg
     ///extrapolate the line to the maximum size of the RoD so we're sure the line
     ///intersection algorithm works
     double maxSize = std::max(texRectClipped.x2 - texRectClipped.x1,texRectClipped.y2 - texRectClipped.y1) * 10000.;
-    double xmax = std::cos(angle + mpi2) * maxSize;
-    double ymax = std::sin(angle + mpi2) * maxSize;
-    xmax = std::max(1e-4, xmax);
-    ymax = std::max(1e-4, ymax);
+    double xmax,ymax;
+    
+    xmax = std::cos(angle + mpi2) * maxSize;
+    ymax = std::sin(angle + mpi2) * maxSize;
     
     firstPoint.setX(center.x() - xmax);
     firstPoint.setY(center.y() - ymax);
