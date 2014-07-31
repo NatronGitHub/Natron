@@ -1810,6 +1810,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& select
                                                   bool linked,
                                                   bool useTransformRefFrame)
 {
+#pragma message WARN("export to cornerpin should also work with 1, 2 or 3 points - just disable the unused corners in CornerPin")
     if (selection.size() != 4) {
         Natron::errorDialog(QObject::tr("Export").toStdString(), QObject::tr("Export to corner pin needs exactly 4 tracks selected.").toStdString());
         return;
