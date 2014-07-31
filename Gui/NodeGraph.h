@@ -224,6 +224,7 @@ private:
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 private:
     
     boost::scoped_ptr<NodeGraphPrivate> _imp;

@@ -1810,9 +1810,9 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& select
                                                   bool linked,
                                                   bool useTransformRefFrame)
 {
-#pragma message WARN("export to cornerpin should also work with 1, 2 or 3 points - just disable the unused corners in CornerPin")
-    if (selection.size() != 4) {
-        Natron::errorDialog(QObject::tr("Export").toStdString(), QObject::tr("Export to corner pin needs exactly 4 tracks selected.").toStdString());
+    if (selection.size() > 4 || selection.empty()) {
+        Natron::errorDialog(QObject::tr("Export").toStdString(),
+                            QObject::tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString());
         return;
     }
     
@@ -1821,8 +1821,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& select
                                                                                         "available in Natron hence we can't "
                                                                                         "make a link. Instead a node with a copy "
                                                                                         "of the values will be created.").toStdString());
-        linked = false;
-#pragma message WARN("value stored to linked is never read")
+        //linked = false;
     }
     
     Double_Knob* centers[4] = { NULL, NULL, NULL, NULL};
@@ -1854,19 +1853,27 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& select
     
     int timeForFromPoints = useTransformRefFrame ? referenceFrame->getValue() : app->getTimeLine()->currentFrame();
     
-    for (int i = 0; i < 4; ++i) {
+    for (unsigned int i = 0; i < selection.size(); ++i) {
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
-        assert(fromPoints[i]);
-        if (fromPoints[i] && centers[i]) {
-            for (int j = 0; j < fromPoints[i]->getDimension();++j) {
-                fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), j);
-            }
+        assert(fromPoints[i] && centers[i]);
+        for (int j = 0; j < fromPoints[i]->getDimension();++j) {
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), j);
         }
+        
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
         assert(toPoints[i]);
-        if (toPoints[i] && centers[i]) {
-            toPoints[i]->cloneAndUpdateGui(centers[i]);
-        }
+        toPoints[i]->cloneAndUpdateGui(centers[i]);
+
+    }
+    
+    ///Disable all non used points
+    for (unsigned int i = selection.size(); i < 4; ++i) {
+        QString enableName = QString("enable%1").arg(i);
+        boost::shared_ptr<KnobI> knob = cornerPin->getKnobByName(enableName.toStdString());
+        assert(knob);
+        Bool_Knob* enableKnob = dynamic_cast<Bool_Knob*>(knob.get());
+        assert(enableKnob);
+        enableKnob->setValue(false, 0);
     }
     
     

@@ -2971,3 +2971,11 @@ void NodeGraph::focusInEvent(QFocusEvent* e)
     QGraphicsView::focusInEvent(e);
     _imp->_undoStack->setActive();
 }
+
+void NodeGraph::focusOutEvent(QFocusEvent* e)
+{
+    if (_imp->_bendPointsVisible) {
+        _imp->setNodesBendPointsVisible(false);
+    }
+    QGraphicsView::focusOutEvent(e);
+}
