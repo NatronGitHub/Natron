@@ -812,25 +812,41 @@ void Choice_KnobGui::onEntriesPopulated()
     _comboBox->clear();
     _entries = _knob->getEntries();
     const std::vector<std::string> &help =  _knob->getEntriesHelp();
+    bool gothelp = false;
     for (U32 i = 0; i < _entries.size(); ++i) {
-        std::string helpStr = help.empty() ? "" : help[i];
+        std::string helpStr;
+        if (!help.empty() && !help[i].empty()) {
+            gothelp = true;
+            helpStr = help[i];
+        }
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
-    
-    QString tt(getKnob()->getHintToolTip().c_str());
-    tt.append(QChar('\n'));
-    tt.append(QChar('\n'));
-    for (U32 i = 0; i < help.size(); ++i) {
-        tt.append(_entries[i].c_str());
-        tt.append(": ");
-        tt.append(help[i].c_str());
-        tt.append(QChar('\n'));
-    }
-    tt = Qt::convertFromPlainText(tt,Qt::WhiteSpaceNormal);
+
+    QString tt;
     if (hasToolTip()) {
+        tt = QString(getKnob()->getHintToolTip().c_str()).trimmed();
+        if (gothelp) {
+            // if there are per-option help strings, separate them from main hint
+            tt.append(QChar('\n'));
+            tt.append(QChar('\n'));
+        }
+    }
+    // param may have no hint but still have per-option help
+    if (gothelp) {
+        for (U32 i = 0; i < help.size(); ++i) {
+            if (!help[i].empty()) { // no help line is needed if help is unavailable for this option
+                tt.append(QString(_entries[i].c_str()).trimmed());
+                tt.append(": ");
+                tt.append(QString(help[i].c_str()).trimmed());
+                tt.append(QChar('\n'));
+            }
+        }
+    }
+    if (!tt.isEmpty()) {
+        tt = Qt::convertFromPlainText(tt.trimmed(),Qt::WhiteSpaceNormal);
         _comboBox->setToolTip(tt);
     }
 
