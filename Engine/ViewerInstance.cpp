@@ -153,7 +153,8 @@ ViewerInstance::~ViewerInstance()
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     if (getVideoEngine()) {
-        getVideoEngine()->quitEngineThread();
+        ///Thread must have been killed before.
+        assert(!getVideoEngine()->isThreadRunning());
     }
     
     // If _imp->updateViewerRunning is true, that means that the next updateViewer call was

@@ -31,7 +31,7 @@ Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension,b
     , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)
     , _defaultValues(dimension)
-    , _setValueRecursionLevel(false)
+    , _setValueRecursionLevel(0)
     , _setValueRecursionLevelMutex(QMutex::Recursive)
 {
     
@@ -248,6 +248,10 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                         ++_setValueRecursionLevel;
                     }
                     _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false,triggerKnobChanged);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        --_setValueRecursionLevel;
+                    }
                     return ret;
                 }
             }     break;
@@ -261,6 +265,10 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                         ++_setValueRecursionLevel;
                     }
                     _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false,triggerKnobChanged);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        --_setValueRecursionLevel;
+                    }
                     return ret;
                 }
             }   break;
@@ -314,8 +322,8 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
         
     }
     
-    if (ret == NO_KEYFRAME_ADDED && triggerKnobChanged) { //the other cases already called this in setValueAtTime()
-        evaluateValueChange(dimension,reason);
+    if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
+        evaluateValueChange(dimension,reason,triggerKnobChanged);
     }
     {
         QMutexLocker l(&_setValueRecursionLevelMutex);
@@ -730,7 +738,7 @@ void Knob<T>::evaluateAnimationChange()
         }
     }
     if (!hasEvaluatedOnce) {
-        evaluateValueChange(0, Natron::PLUGIN_EDITED);
+        evaluateValueChange(0, Natron::PLUGIN_EDITED,true);
     }
 
     endValueChange();

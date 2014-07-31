@@ -86,7 +86,7 @@ public:
     /**
      * @brief Called by setValue to indicate that an evaluation is needed. This could be private.
      **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) = 0;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason,bool triggerKnobChanged) = 0;
     
     /**
      * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
@@ -533,7 +533,8 @@ public:
     
     boost::shared_ptr<KnobI> getKnob() const { return k; }
     
-    void s_evaluateValueChangedInMainThread(int dimension,int reason) { emit evaluateValueChangedInMainThread(dimension,reason); }
+    void s_evaluateValueChangedInMainThread(int dimension,int reason,bool triggerKnobChanged)
+    { emit evaluateValueChangedInMainThread(dimension,reason,triggerKnobChanged); }
     void s_animationLevelChanged(int level) { emit animationLevelChanged(level); }
     void s_deleted() { emit deleted(); }
     void s_valueChanged(int dimension,int reason) { emit valueChanged(dimension,reason); }
@@ -580,13 +581,13 @@ public slots:
     /**
      * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
      **/
-    void onEvaluateValueChangedInOtherThread(int dimension, int reason);
+    void onEvaluateValueChangedInOtherThread(int dimension, int reason,bool triggerOnKnobChanged);
 
     
 signals:
     
     ///emitted whenever evaluateValueChanged is called in another thread than the main thread
-    void evaluateValueChangedInMainThread(int dimension,int reason);
+    void evaluateValueChangedInMainThread(int dimension,int reason,bool triggerOnKnobChanged);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
@@ -686,7 +687,7 @@ public:
     
     virtual void beginValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason,bool triggerKnobChanged) OVERRIDE FINAL;
     
     virtual void endValueChange() OVERRIDE FINAL;
     

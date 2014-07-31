@@ -31,9 +31,9 @@ public:
     
     QString getNodeName() const;
     
-    
 private:
-        
+
+    
     virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
     
     boost::scoped_ptr<NodeCreationDialogPrivate> _imp;

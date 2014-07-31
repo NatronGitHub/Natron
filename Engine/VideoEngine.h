@@ -329,6 +329,11 @@ public:
     
     bool hasBeenAborted() const {return _abortRequested;}
     
+    /**
+     * @brief Tells whether the thread is active or not. Note that this function can return true whilst isWorking() returns false.
+     **/
+    bool isThreadRunning() const;
+    
 private:
 
     /*The function doing all the processing in a separate thread, called by render()*/

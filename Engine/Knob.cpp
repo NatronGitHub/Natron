@@ -42,7 +42,8 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
 : QObject()
 , k(knob)
 {
-    QObject::connect(this, SIGNAL(evaluateValueChangedInMainThread(int,int)), this, SLOT(onEvaluateValueChangedInOtherThread(int,int)));
+    QObject::connect(this, SIGNAL(evaluateValueChangedInMainThread(int,int,bool)), this,
+                     SLOT(onEvaluateValueChangedInOtherThread(int,int,bool)));
 }
 
 void KnobSignalSlotHandler::onKeyFrameSet(SequenceTime time,int dimension)
@@ -67,13 +68,13 @@ void KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 
 void KnobSignalSlotHandler::onMasterChanged(int dimension)
 {
-    k->evaluateValueChange(dimension, Natron::SLAVE_REFRESH);
+    k->evaluateValueChange(dimension, Natron::SLAVE_REFRESH,true);
 }
 
-void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, int reason)
+void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, int reason,bool triggerOnKnobChanged)
 {
     assert(QThread::currentThread() == qApp->thread());
-    k->evaluateValueChange(dimension,(Natron::ValueChangedReason)reason);
+    k->evaluateValueChange(dimension,(Natron::ValueChangedReason)reason,triggerOnKnobChanged);
 }
 
 /***************** KNOBI**********************/
@@ -163,6 +164,7 @@ struct KnobHelper::KnobHelperPrivate {
     mutable QMutex betweenBeginEndMutex;
     int betweenBeginEndCount; //< between begin/end value change count
     Natron::ValueChangedReason beginEndReason;
+    bool mustTriggerKnobChanged;
     std::vector<int> dimensionChanged; //< all the dimension changed during the begin end
     
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
@@ -203,6 +205,7 @@ struct KnobHelper::KnobHelperPrivate {
     , betweenBeginEndMutex(QMutex::Recursive)
     , betweenBeginEndCount(0)
     , beginEndReason(Natron::PROJECT_LOADING)
+    , mustTriggerKnobChanged(false)
     , dimensionChanged()
     , declaredByPlugin(declaredByPlugin_)
     , customInteract()
@@ -414,16 +417,17 @@ void KnobHelper::endValueChange()
             _imp->dimensionChanged.clear();
         }
     }
-    if (getHolder()) {
+    if (getHolder() && _imp->mustTriggerKnobChanged) {
         _imp->holder->notifyProjectEndKnobsValuesChanged();
     }
+    _imp->mustTriggerKnobChanged = false;
 }
 
 
-void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
+void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason reason,bool triggerKnobChanged)
 {
     if (QThread::currentThread() != qApp->thread()) {
-        _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason);
+        _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason,triggerKnobChanged);
         return;
     }
     
@@ -439,6 +443,9 @@ void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason re
                                                                      _imp->dimensionChanged.end(), dimension);
         if (foundDimensionChanged == _imp->dimensionChanged.end()) {
             _imp->dimensionChanged.push_back(dimension);
+        }
+        if (!_imp->mustTriggerKnobChanged && triggerKnobChanged) {
+            _imp->mustTriggerKnobChanged = true;
         }
         
     }

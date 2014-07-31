@@ -2497,8 +2497,10 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 }
 
 OutputEffectInstance::~OutputEffectInstance(){
-    if(_videoEngine){
-        _videoEngine->quitEngineThread();
+    
+    if (_videoEngine) {
+        ///Thread must have been killed before.
+        assert(!_videoEngine->isThreadRunning());
     }
     delete _outputEffectDataLock;
 }

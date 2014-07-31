@@ -544,6 +544,10 @@ Node::~Node()
 
 void Node::removeReferences()
 {
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
+    if (isOutput && isOutput->getVideoEngine()->isThreadRunning()) {
+        isOutput->getVideoEngine()->quitEngineThread();
+    }
     delete _imp->liveInstance;
     _imp->liveInstance = 0;
 }

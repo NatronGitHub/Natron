@@ -418,13 +418,13 @@ DockablePanel::~DockablePanel(){
     
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it){
-        if(it->second){
-            KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
-            QObject::disconnect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
-            delete it->second;
-        }
-    }
+//    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it){
+//        if(it->second){
+//            KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
+//            QObject::disconnect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
+//            delete it->second;
+//        }
+//    }
 }
 
 KnobHolder* DockablePanel::getHolder() const

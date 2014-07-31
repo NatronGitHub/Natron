@@ -94,12 +94,14 @@ void VideoEngine::quitEngineThread()
         QMutexLocker quitLocker(&_mustQuitMutex);
         isThreadStarted = _threadStarted;
     }
-    if (isThreadStarted && isWorking()) {
+    if (isThreadStarted) {
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
         }
-        abortRendering(true);
+        if (isWorking()) {
+            abortRendering(true);
+        }
 
         {
             QMutexLocker locker(&_startMutex);
@@ -911,6 +913,12 @@ void VideoEngine::setDesiredFPS(double d){
 bool VideoEngine::isWorking() const {
     QMutexLocker workingLocker(&_workingMutex);
     return _working;
+}
+
+bool VideoEngine::isThreadRunning() const
+{
+    QMutexLocker quitLocker(&_mustQuitMutex);
+    return _threadStarted;
 }
 
 bool VideoEngine::mustQuit() const{

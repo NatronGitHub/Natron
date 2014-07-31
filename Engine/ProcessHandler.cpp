@@ -46,6 +46,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 		QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(randomNumber));
         tmpf.open();
         serverName = tmpf.fileName();
+        tmpf.remove();
     }
     _ipcServer->listen(serverName);
     
@@ -297,6 +298,7 @@ void ProcessInputChannel::initialize() {
                             + QString::number(QCoreApplication::applicationPid()));
         tmpf.open();
         serverName = tmpf.fileName();
+        tmpf.remove();
     }
     _backgroundIPCServer->listen(serverName);
     

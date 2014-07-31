@@ -15,10 +15,45 @@
 #include <QTimer>
 #include <QStyledItemDelegate>
 #include <QApplication>
+#include <QListView>
 
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
+
+class ListView : public QListView
+{
+    /*NodeCreationDialog* dialog;*/
+public:
+    
+    ListView(NodeCreationDialog* parent) : QListView(parent) /*, dialog(parent)*/ {}
+    
+private:
+    
+};
+
+
+class CustomLineEdit : public LineEdit
+{
+    NodeCreationDialog* dialog;
+public:
+    
+    CustomLineEdit(NodeCreationDialog* parent) : LineEdit(parent), dialog(parent) {}
+    
+    virtual void keyPressEvent(QKeyEvent* e) {
+        if (e->key() == Qt::Key_Escape) {
+            dialog->close();
+            e->accept();
+        } else {
+            LineEdit::keyPressEvent(e);
+        }
+    }
+    
+    virtual void mousePressEvent(QMouseEvent* e) {
+        LineEdit::mousePressEvent(e);
+    }
+    
+};
 
 struct NodeCreationDialogPrivate
 {
@@ -48,7 +83,7 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     _imp->layout->setContentsMargins(0, 0, 0, 0);
 
     
-    _imp->textEdit = new LineEdit(this);
+    _imp->textEdit = new CustomLineEdit(this);
     
     QStringList strings;
     for (unsigned int i = 0; i < _imp->items.size(); ++i) {
@@ -57,18 +92,21 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     strings.sort();
     QCompleter* completer = new QCompleter(strings,this);
     completer->setModelSorting(QCompleter::CaseInsensitivelySortedModel);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
     
+    ListView* customView = new ListView(this);
+    completer->setPopup(customView);
     ///QCompleter sets a custom QAbstractItemDelegate on it's model and unfortunately this
     ///custom item delegate does not inherit QStyledItemDelegate but simply QItemDelegate
     ///(and then overrides the paintmethod to show the selected state).
     
     ///EDIT : It doesnt seem to work here anyway...
-    QStyledItemDelegate* itemDelegate = new QStyledItemDelegate();
-    completer->popup()->setItemDelegate(itemDelegate);
-    
+    QStyledItemDelegate* itemDelegate = new QStyledItemDelegate(customView);
+    customView->setItemDelegate(itemDelegate);
+
     _imp->textEdit->setCompleter(completer);
     _imp->layout->addWidget(_imp->textEdit);
-    _imp->textEdit->setFocus(Qt::TabFocusReason);
+    _imp->textEdit->setFocus(Qt::PopupFocusReason);
     QTimer::singleShot(25, _imp->textEdit->completer(), SLOT(complete()));
 }
 
