@@ -50,7 +50,7 @@ public:
      * @brief Given the region of definition of an image, must return the portion of that image which is
      * actually displayed on the viewport. (It cannot be bigger than the rod)
     **/
-    virtual RectI getImageRectangleDisplayed(const RectI& rod) = 0;
+    virtual RectI getImageRectangleDisplayed(const RectI& rod,unsigned int mipMapLevel) = 0;
 
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
@@ -87,6 +87,12 @@ public:
     **/
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) = 0;
 
+    /**
+     * @brief Must use OpenGL to query the texture color at the given image coordinates
+     * X and Y are in canonical coordinates
+     **/
+    virtual void getTextureColorAt(int x,int y,double* r,double *g,double *b,double *a) = 0;
+    
     /**
      * @brief Make the OpenGL context current to the thread.
     **/

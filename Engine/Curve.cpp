@@ -316,7 +316,7 @@ std::pair<KeyFrameSet::iterator,bool> Curve::addKeyFrameNoUpdate(const KeyFrame&
         return std::make_pair(newKey.first,addedKey);
     } else {
         bool addedKey = true;
-        double paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
+        double paramEps = NATRON_CURVE_X_SPACING_EPSILON * std::abs(_imp->xMax - _imp->xMin);
         for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!= _imp->keyFrames.end(); ++it) {
             if (std::abs(it->getTime() - cp.getTime()) < paramEps) {
                 _imp->keyFrames.erase(it);
@@ -433,6 +433,66 @@ bool Curve::getNearestKeyFrameWithTime(double time,KeyFrame* k) const
         *k = *lower;
     }
     return true;
+}
+
+bool Curve::getPreviousKeyframeTime(double time,KeyFrame* k) const
+{
+    assert(k);
+    QReadLocker l(&_imp->_lock);
+    if (_imp->keyFrames.empty()) {
+        return false;
+    }
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if (it->getTime() > time) {
+            upper = it;
+            break;
+        } else if (it->getTime() == time) {
+            if (it == _imp->keyFrames.begin()) {
+                return false;
+            } else {
+                --it;
+                *k = *it;
+                return true;
+            }
+        }
+    }
+    if (upper == _imp->keyFrames.end()) {
+        *k = *_imp->keyFrames.rbegin();
+        return true;
+    } else if (upper == _imp->keyFrames.begin()) {
+        return false;
+    } else {
+        ///If we reach here the previous keyframe is exactly the previous to upper because we already checked
+        ///in the for loop that the previous key wasn't equal to the given time
+        --upper;
+        assert(upper->getTime() < time);
+        *k = *upper;
+        return true;
+    }
+
+}
+
+bool Curve::getNextKeyframeTime(double time,KeyFrame* k) const
+{
+    assert(k);
+    QReadLocker l(&_imp->_lock);
+    if (_imp->keyFrames.empty()) {
+        return false;
+    }
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
+        if (it->getTime() > time) {
+            upper = it;
+            break;
+        }
+    }
+    if (upper == _imp->keyFrames.end()) {
+        return false;
+    } else {
+        *k = *upper;
+        return true;
+    }
 }
 
 bool Curve::getKeyFrameWithTime(double time, KeyFrame* k) const
@@ -1141,9 +1201,9 @@ int Curve::keyFrameIndex(double time) const
     int i = 0;
     double paramEps;
     if (_imp->xMax != INT_MAX && _imp->xMin != INT_MIN) {
-        paramEps = 1e-4 * std::abs(_imp->xMax - _imp->xMin);
+        paramEps = NATRON_CURVE_X_SPACING_EPSILON * std::abs(_imp->xMax - _imp->xMin);
     } else {
-        paramEps = 1e-4;
+        paramEps = NATRON_CURVE_X_SPACING_EPSILON;
     }
     for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
          it!=_imp->keyFrames.end() && (it->getTime() < time+paramEps);

@@ -61,7 +61,7 @@ public slots:
     
     void onButtonClicked();
     
-    void open_file(bool);
+    void open_file();
 
 private:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;

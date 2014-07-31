@@ -48,11 +48,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , currentNodes()
     , project(project)
     , lastTimelineSeekCaller()
-    , beginEndBracketsCount(0)
-    , evaluationsCount(0)
-    , holdersWhoseBeginWasCalled()
-    , isSignificantChange(false)
-    , lastKnobChanged(NULL)
     , isLoadingProjectMutex()
     , isLoadingProject(false)
     , isSavingProjectMutex()
@@ -66,7 +61,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    project->beginProjectWideValueChanges(Natron::PROJECT_LOADING,project);
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -127,18 +121,19 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         }
 
         ///this code may throw an exception which will be caught above
-        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(it->getPluginID().c_str()
-                                                                        ,true
+        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(LoadNodeArgs(it->getPluginID().c_str()
+                                                                        ,it->isMultiInstanceChild()
                                                                         ,it->getPluginMajorVersion()
-                                                                        ,it->getPluginMinorVersion(),*it,false);
+                                                                        ,it->getPluginMinorVersion(),&(*it),false));
         if (!n) {
             project->clearNodes();
-            QString text("Failed to restore the graph! \n The node ");
+            QString text(QObject::tr("Failed to restore the graph! \n The node "));
             text.append(it->getPluginID().c_str());
-            text.append(" was found in the script but doesn't seem \n"
-                        "to exist in the currently loaded plug-ins.");
+            text.append(QObject::tr(" was found in the script but doesn't seem \n"
+                        "to exist in the currently loaded plug-ins."));
             qDebug() << text;
             Natron::errorDialog("", text.toStdString());
+            continue;
         }
         if (n->isOutputNode()) {
             hasProjectAWriter = true;
@@ -147,10 +142,18 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     }
 
 
+
     if(!hasProjectAWriter && appPTR->isBackground()){
         project->clearNodes();
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
+    
+    ////For all tacks that have slaved roto points, we remember them in here, and once all track links
+    ////have been restore, we restore the relative feather for each control point slaved.
+    ////we cannot do this while restoring the link because the feather might be also linked to another
+    ///track, so we have to wait for a final pass to be able to determine whether the feather must be set
+    ///as relative or not.
+    std::list<Double_Knob*> trackLinksRestored;
     
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for(std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it!=serializedNodes.end();++it) {
@@ -168,7 +171,15 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
                 break;
             }
         }
-        assert(thisNode);
+        if (!thisNode) {
+            continue;
+        }
+        
+        ///for all nodes that are part of a multi-instance, fetch the main instance node pointer
+        const std::string& parentName = it->isMultiInstanceChild();
+        if (!parentName.empty()) {
+            thisNode->fetchParentMultiInstancePointer();
+        }
         
         ///restore slave/master link if any
         const std::string& masterNodeName = it->getMasterNodeName();
@@ -186,7 +197,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
             thisNode->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
         } else {
-            thisNode->restoreKnobsLinks(*it,currentNodes);
+            thisNode->restoreKnobsLinks(*it,currentNodes,&trackLinksRestored);
         }
         
         const std::vector<std::string>& inputs = it->getInputs();
@@ -200,8 +211,10 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
-    project->endProjectWideValueChanges(project);
-    
+    for (std::list<Double_Knob*>::iterator it = trackLinksRestored.begin();it!=trackLinksRestored.end();++it) {
+        (*it)->restoreFeatherRelatives();
+    }
+        
     nodeCounters = obj.getNodeCounters();
     
 

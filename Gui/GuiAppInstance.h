@@ -37,11 +37,11 @@ public:
     Gui* getGui() const WARN_UNUSED_RETURN;
     
     //////////
-    boost::shared_ptr<NodeGui> getNodeGui(boost::shared_ptr<Natron::Node> n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<NodeGui> getNodeGui(const boost::shared_ptr<Natron::Node>& n) const WARN_UNUSED_RETURN;
     
     boost::shared_ptr<NodeGui> getNodeGui(const std::string& nodeName) const WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<Natron::Node> getNode(boost::shared_ptr<NodeGui> n) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<Natron::Node> getNode(const boost::shared_ptr<NodeGui>& n) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Remove the node n from the mapping in GuiAppInstance and from the project so the pointer is no longer
@@ -92,18 +92,25 @@ public:
     
     virtual void registerVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
     virtual void unregisterVideoEngineBeingAborted(VideoEngine* engine) OVERRIDE FINAL;
+    
+    virtual void connectViewersToViewerCache() OVERRIDE FINAL;
+    
+    virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
 
+    virtual void clearNodeGuiMapping() OVERRIDE FINAL;
 public slots:
-    
-    void onProjectNodesCleared();
-    
+        
     void onProcessFinished();
     
 private:
     
     virtual void createBackDrop() OVERRIDE FINAL;
     
-    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,bool createGui,bool loadRequest,bool openImageFileDialog) OVERRIDE FINAL;
+    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,
+                               const std::string& multiInstanceParentName,
+                               bool loadRequest,
+                               bool openImageFileDialog,
+                               bool autoConnect) OVERRIDE FINAL;
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
     

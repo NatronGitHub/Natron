@@ -39,8 +39,17 @@ class QSplitter;
 class KnobGui;
 class KeyFrame;
 class Variant;
+class Gui;
 class QAction;
 class TimeLine;
+
+/**
+ * All nodes are tracked in the CurveEditor and they all have a NodeCurveEditorContext.
+ * Each node context owns a list of NodeCurveEditorElement which corresponds to the animation
+ * for one parameter (knob). You can show/hide the parameter's animation by calling
+ * checkVisibleState() which will automatically show/hide the curve from the tree if it has (or hasn't) an animation.
+ **/
+
 class NodeCurveEditorElement : public QObject
 {
     
@@ -67,6 +76,10 @@ public:
     
 public slots:
     
+    /**
+     * @brief This is invoked everytimes the knob has a keyframe set or removed, to determine whether we need
+     * to keep this element in the tree or not.
+     **/
     void checkVisibleState();
         
 private:
@@ -123,13 +136,16 @@ class CurveEditor  : public QWidget
 
 public:
 
-    CurveEditor(boost::shared_ptr<TimeLine> timeline,QWidget* parent = 0);
+    CurveEditor(Gui* gui,boost::shared_ptr<TimeLine> timeline,QWidget* parent = 0);
 
     virtual ~CurveEditor() OVERRIDE;
 
+    /**
+     * @brief Creates a new NodeCurveEditorContext and stores it until the CurveEditor is destroyed.
+     **/
     void addNode(boost::shared_ptr<NodeGui> node);
 
-    void removeNode(boost::shared_ptr<NodeGui> node);
+    void removeNode(NodeGui* node);
     
     void centerOn(const std::vector<boost::shared_ptr<Curve> >& curves);
     

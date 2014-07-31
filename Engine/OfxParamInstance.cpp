@@ -158,7 +158,8 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 {
     _knob = Natron::createKnob<Button_Knob>(node, getParamLabel(this));
-    
+    const std::string& iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
+    _knob->setIconFilePath(iconFilePath);
 }
 
 
@@ -1166,17 +1167,36 @@ OfxDouble2DInstance::get(OfxTime time, double& x1, double& x2)
 OfxStatus
 OfxDouble2DInstance::set(double x1,double x2)
 {
-
-    _knob->setValue(x1,0);
-    _knob->setValue(x2,1);
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x2,1,false);
+    if (doEditEnd) {
+        _node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxDouble2DInstance::set(OfxTime time,double x1,double x2)
 {
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
     _knob->setValueAtTime(time,x1,0);
+    _knob->unblockEvaluation();
     _knob->setValueAtTime(time,x2,1);
+    if (doEditEnd) {
+        _node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
@@ -1297,6 +1317,7 @@ OfxDouble2DInstance::onKnobAnimationLevelChanged(int lvl)
 
 OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
+, _node(node)
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
@@ -1352,16 +1373,39 @@ OfxInteger2DInstance::get(OfxTime time, int& x1, int& x2)
 OfxStatus
 OfxInteger2DInstance::set(int x1,int x2)
 {
-    _knob->setValue(x1,0);
-    _knob->setValue(x2,1);
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x2,1,false);
+    
+    if (doEditEnd) {
+        (void)_node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger2DInstance::set(OfxTime time, int x1, int x2)
 {
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
     _knob->setValueAtTime(time,x1,0);
+    _knob->unblockEvaluation();
     _knob->setValueAtTime(time,x2,1);
+    
+    if (doEditEnd) {
+        (void)_node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
@@ -1444,6 +1488,7 @@ OfxInteger2DInstance::onKnobAnimationLevelChanged(int lvl)
 
 OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double3DInstance(descriptor,node->effectInstance())
+, _node(node)
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
@@ -1510,18 +1555,38 @@ OfxDouble3DInstance::get(OfxTime time, double& x1, double& x2, double& x3)
 OfxStatus
 OfxDouble3DInstance::set(double x1,double x2,double x3)
 {
-    _knob->setValue(x1,0);
-    _knob->setValue(x2,1);
-    _knob->setValue(x3,2);
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->setValue(x2,1,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x3,2,false);
+    if (doEditEnd) {
+        (void)_node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3)
 {
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
     _knob->setValueAtTime(time,x1,0);
     _knob->setValueAtTime(time,x2,1);
+    _knob->unblockEvaluation();
     _knob->setValueAtTime(time,x3,2);
+    if (doEditEnd) {
+        (void)_node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
@@ -1631,6 +1696,7 @@ OfxDouble3DInstance::onKnobAnimationLevelChanged(int lvl)
 
 OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer3DInstance(descriptor,node->effectInstance())
+, _node(node)
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
@@ -1691,18 +1757,38 @@ OfxInteger3DInstance::get(OfxTime time, int& x1, int& x2, int& x3)
 OfxStatus
 OfxInteger3DInstance::set(int x1, int x2, int x3)
 {
-    _knob->setValue(x1,0);
-    _knob->setValue(x2,1);
-    _knob->setValue(x3,2);
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->setValue(x2,1,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x3,2,false);
+    if (doEditEnd) {
+        (void)_node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
 OfxStatus
 OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3)
 {
+    bool doEditEnd = false;
+    if (_node->isDoingInteractAction()) {
+        (void)_node->effectInstance()->editBegin(getName());
+        doEditEnd = true;
+    }
+    _knob->blockEvaluation();
     _knob->setValueAtTime(time,x1,0);
     _knob->setValueAtTime(time,x2,1);
+    _knob->unblockEvaluation();
     _knob->setValueAtTime(time,x3,2);
+    if (doEditEnd) {
+        (void)_node->effectInstance()->editEnd();
+    }
 	return kOfxStatOK;
 }
 
@@ -1932,7 +2018,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     int currentFrame = _node->getCurrentFrameRecursive();
     if(_fileKnob){
-        str = _fileKnob->getValueAtTimeConditionally(currentFrame,true);
+        str = _fileKnob->getFileName(currentFrame,/*view*/0);
     }else if(_outputFileKnob){
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
     }else if(_stringKnob){
@@ -1946,7 +2032,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        str = _fileKnob->getValueAtTimeConditionally(time,true);
+        str = _fileKnob->getFileName(std::floor(time + 0.5),/*view*/0);
     }else if(_outputFileKnob){
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
     }else if(_stringKnob){
@@ -2089,13 +2175,6 @@ OfxStringInstance::setEvaluateOnChange()
     }
 }
 
-const std::string
-OfxStringInstance::getRandomFrameName(int f) const
-{
-    return _fileKnob ? _fileKnob->getValueAtTimeConditionally(f,true) : "";
-}
-
-
 OfxStatus
 OfxStringInstance::getNumKeys(unsigned int &nKeys) const
 {
@@ -2177,7 +2256,9 @@ void
 OfxStringInstance::onKnobAnimationLevelChanged(int lvl)
 {
     Natron::AnimationLevel l = (Natron::AnimationLevel)lvl;
-    assert(l == Natron::NO_ANIMATION || getCanAnimate());
+    ///This assert might crash Natron when reading a project made with a version
+    ///of Natron prior to 0.96 when file params still had keyframes.
+    //assert(l == Natron::NO_ANIMATION || getCanAnimate());
     getProperties().setIntProperty(kOfxParamPropIsAnimating, l != Natron::NO_ANIMATION);
     getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == Natron::INTERPOLATED_VALUE);
 }

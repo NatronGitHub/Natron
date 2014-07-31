@@ -11,12 +11,7 @@
 #ifndef NATRON_ENGINE_OFXHOST_H_
 #define NATRON_ENGINE_OFXHOST_H_
 
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QStringList>
-#include <QtCore/QObject>
-CLANG_DIAG_ON(deprecated)
-#include <QtCore/QString>
+
 #include <boost/shared_ptr.hpp>
 
 #include <ofxhPluginCache.h>
@@ -31,9 +26,7 @@ class NodeSerialization;
 namespace Natron {
 class Node;
 class Plugin;
-class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
-    
-    Q_OBJECT
+class OfxHost : public OFX::Host::ImageEffect::Host {
     
 public:
     
@@ -116,14 +109,11 @@ public:
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/
-    void loadOFXPlugins(std::vector<Natron::Plugin *> *plugins,
-                        std::map<std::string,std::vector<std::string> >* readersMap,
+    void loadOFXPlugins(std::map<std::string,std::vector<std::string> >* readersMap,
                         std::map<std::string,std::vector<std::string> >* writersMap);
 
     void clearPluginsLoadedCache();
-        
-signals:
-    void toolButtonAdded(QStringList,QString,QString,QString,QString);
+
     
 private:
 

@@ -105,6 +105,7 @@ bool StringAnimationManager::customInterpolation(double time,std::string* ret) c
     } else if(upper == _imp->keyframes.begin()) {
         ///if the time is lesser than the time of all keyframes, return the first
         * ret = upper->value;
+        return true;
     } else {
         ///general case, we're in-between 2 keyframes
         lower = upper;

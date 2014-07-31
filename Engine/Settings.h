@@ -49,7 +49,7 @@ public:
         
     virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL {}
     
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
     
     int getViewersBitDepth() const;
     
@@ -144,11 +144,14 @@ public:
     bool getRenderOnEditingFinishedOnly() const;
     void setRenderOnEditingFinishedOnly(bool render);
     
+    bool getIconsBlackAndWhite() const;
+    
     std::string getHostName() const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
 
+    void setCachingLabels();
     void setDefaultValues();
         
     bool tryLoadOpenColorIOConfig();
@@ -173,7 +176,11 @@ private:
     
     boost::shared_ptr<Page_Knob> _cachingTab;
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
+    boost::shared_ptr<String_Knob> _maxPlaybackLabel;
+    
     boost::shared_ptr<Int_Knob> _maxRAMPercent;
+    boost::shared_ptr<String_Knob> _maxRAMLabel;
+    
     boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
     
     boost::shared_ptr<Page_Knob> _viewersTab;
@@ -183,6 +190,7 @@ private:
     boost::shared_ptr<Page_Knob> _nodegraphTab;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
     boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
+    boost::shared_ptr<Bool_Knob> _useBWIcons;
     boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
@@ -211,6 +219,7 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     
     bool _wereChangesMadeSinceLastSave;
+    bool _restoringSettings;
     
 };
 

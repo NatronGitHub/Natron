@@ -79,20 +79,6 @@ public:
      **/
     void forceFullComputationOnNextFrame();
 
-    /**
-     * @brief Activates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache()
-     * by connecting them to the ViewerCache emitted signals. They in turn are used by the GUI to refresh the "cached line" on
-     * the timeline.
-     **/
-    void connectSlotsToViewerCache();
-
-    /**
-     * @brief Deactivates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache().
-     * This is used when the user has several main windows. Since the ViewerCache is global to the application, we don't want
-     * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
-     **/
-    void disconnectSlotsToViewerCache();
-
     void disconnectViewer();
 
     /**
@@ -110,6 +96,9 @@ public:
     double getGain() const WARN_UNUSED_RETURN ;
     
     int getMipMapLevel() const WARN_UNUSED_RETURN;
+    
+    ///same as getMipMapLevel but with the zoomFactor taken into account
+    int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannels getChannels() const WARN_UNUSED_RETURN;
 
@@ -125,9 +114,10 @@ public:
 
     /**
      * @brief Get the color of the currently displayed image at position x,y. 
-     * If forceLinear is true, then it will not use the viewer current colorspace
+     * @param forceLinear If true, then it will not use the viewer current colorspace
      * to get r,g and b values, otherwise the color returned will be in the same color-space
      * than the one chosen by the user on the gui.
+     * X and Y are in CANONICAL COORDINATES
      * @return true if the point is inside the image and colors were set
     **/
     bool getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex) WARN_UNUSED_RETURN;
@@ -157,7 +147,6 @@ public:
 
 public slots:
 
-    void onViewerCacheFrameAdded();
     
     void onMipMapLevelChanged(int level);
 
@@ -186,12 +175,6 @@ signals:
     void rodChanged(RectI,int);
     
     void viewerDisconnected();
-
-    void addedCachedFrame(SequenceTime);
-
-    void removedLRUCachedFrame();
-
-    void clearedViewerCache();
     
     void activeInputsChanged();
     

@@ -46,6 +46,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
 		QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_OUTPUT_PIPE_" + QString::number(randomNumber));
         tmpf.open();
         serverName = tmpf.fileName();
+        tmpf.remove();
     }
     _ipcServer->listen(serverName);
     
@@ -176,7 +177,7 @@ void ProcessHandler::onProcessCanceled(){
 
 void ProcessHandler::onProcessError(QProcess::ProcessError err){
     if(err == QProcess::FailedToStart){
-        Natron::errorDialog(_writer->getName(),"The render process failed to start");
+        Natron::errorDialog(_writer->getName(),QObject::tr("The render process failed to start").toStdString());
     }else if(err == QProcess::Crashed){
         //@TODO: find out a way to get the backtrace
     }
@@ -297,6 +298,7 @@ void ProcessInputChannel::initialize() {
                             + QString::number(QCoreApplication::applicationPid()));
         tmpf.open();
         serverName = tmpf.fileName();
+        tmpf.remove();
     }
     _backgroundIPCServer->listen(serverName);
     

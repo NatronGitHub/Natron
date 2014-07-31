@@ -31,7 +31,7 @@ Knob<T>::Knob(KnobHolder*  holder,const std::string& description,int dimension,b
     , _valueMutex(QReadWriteLock::Recursive)
     , _values(dimension)
     , _defaultValues(dimension)
-    , _setValueRecursionLevel(false)
+    , _setValueRecursionLevel(0)
     , _setValueRecursionLevelMutex(QMutex::Recursive)
 {
     
@@ -221,7 +221,8 @@ void Knob<std::string>::valueToVariant(const std::string& v,Variant* vari)
 }
 
 template <typename T>
-KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
+KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Natron::ValueChangedReason reason,
+                                                     KeyFrame* newKey)
 {
     if (0 > dimension || dimension > (int)_values.size()) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
@@ -230,16 +231,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     KnobHelper::ValueChangedReturnCode  ret = NO_KEYFRAME_ADDED;
     
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && reason == Natron::PLUGIN_EDITED) {
-        if (holder->isDoingInteractAction()) {
-            if (!get_SetValueRecursionLevel()) {
-                Variant vari;
-                valueToVariant(v, &vari);
-                _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
-                return ret;
-                
-            }
-        }
+    if (holder && reason == Natron::PLUGIN_EDITED && getKnobGuiPointer()) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:
@@ -251,7 +243,15 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        ++_setValueRecursionLevel;
+                    }
                     _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        --_setValueRecursionLevel;
+                    }
                     return ret;
                 }
             }     break;
@@ -260,10 +260,31 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        ++_setValueRecursionLevel;
+                    }
                     _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false);
+                    {
+                        QMutexLocker l(&_setValueRecursionLevelMutex);
+                        --_setValueRecursionLevel;
+                    }
                     return ret;
                 }
             }   break;
+        }
+        
+        ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
+        ///the caller should have tested this prior to calling this function and correctly called editBegin() editEnd()
+        ///to bracket the setValue()  calls within the same undo/redo command.
+        if (holder->isDoingInteractAction()) {
+            if (!get_SetValueRecursionLevel()) {
+                Variant vari;
+                valueToVariant(v, &vari);
+                _signalSlotHandler->s_setValueWithUndoStack(vari, dimension);
+                return ret;
+                
+            }
         }
     }
     
@@ -271,40 +292,36 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
         QMutexLocker l(&_setValueRecursionLevelMutex);
         ++_setValueRecursionLevel;
     }
-
-    ///if the knob is slaved to another knob,return, because we don't want the
-    ///gui to be unsynchronized with what lies internally.
-    if (!isSlave(dimension)) {
-
-        {
-            QWriteLocker l(&_valueMutex);
-            _values[dimension] = v;
-        }
-
-        ///Add automatically a new keyframe
-        if (getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
-            getHolder() &&
-                getHolder()->getApp() && //< the app pointer is not NULL
-                !getHolder()->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
-                (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
-                newKey != NULL) { //< the keyframe to set is not null
-
-            SequenceTime time;
-            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
-            if (isEffect) {
-                time = isEffect->getCurrentFrameRecursive();
-            } else {
-                time = getHolder()->getApp()->getTimeLine()->currentFrame();
-            }
-            bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
-            if (addedKeyFrame) {
-                ret = KEYFRAME_ADDED;
-            } else {
-                ret = KEYFRAME_MODIFIED;
-            }
-
-        }
+    
+    {
+        QWriteLocker l(&_valueMutex);
+        _values[dimension] = v;
     }
+    
+    ///Add automatically a new keyframe
+    if (getAnimationLevel(dimension) != Natron::NO_ANIMATION && //< if the knob is animated
+        getHolder() && //< the knob is part of a KnobHolder
+        getHolder()->getApp() && //< the app pointer is not NULL
+        !getHolder()->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
+        (reason == Natron::USER_EDITED || reason == Natron::PLUGIN_EDITED) && //< the change was made by the user or plugin
+        newKey != NULL) { //< the keyframe to set is not null
+        
+        SequenceTime time;
+        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(getHolder());
+        if (isEffect) {
+            time = isEffect->getCurrentFrameRecursive();
+        } else {
+            time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        }
+        bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
+        if (addedKeyFrame) {
+            ret = KEYFRAME_ADDED;
+        } else {
+            ret = KEYFRAME_MODIFIED;
+        }
+        
+    }
+    
     if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason);
     }
@@ -327,7 +344,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && reason == Natron::PLUGIN_EDITED) {
+    if (holder && reason == Natron::PLUGIN_EDITED && getKnobGuiPointer()) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:
@@ -377,16 +394,16 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
+        (void)setValue(v, dimension,reason,NULL);
     }
 
     if (_signalSlotHandler && ret) {
         if (reason != Natron::USER_EDITED) {
-            _signalSlotHandler->s_keyFrameSet(time,dimension);
+            _signalSlotHandler->s_keyFrameSet(time,dimension,ret);
         }
         _signalSlotHandler->s_updateSlaves(dimension);
     }
-   
+    checkAnimationLevel(dimension);
     return ret;
 
 }
@@ -399,7 +416,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>(getHolder());
-    if (holder && reason == Natron::PLUGIN_EDITED) {
+    if (holder && reason == Natron::PLUGIN_EDITED && getKnobGuiPointer()) {
         KnobHolder::MultipleParamsEditLevel paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
             case KnobHolder::PARAM_EDIT_OFF:
@@ -445,11 +462,11 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,Natron::PROJECT_LOADING,NULL);
+        (void)setValue(v, dimension,reason,NULL);
     }
 
-    if (reason != Natron::USER_EDITED && ret) {
-        _signalSlotHandler->s_keyFrameSet(time,dimension);
+    if (reason != Natron::USER_EDITED) {
+        _signalSlotHandler->s_keyFrameSet(time,dimension,ret);
     }
 
     _signalSlotHandler->s_updateSlaves(dimension);
@@ -463,26 +480,6 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
     assert(isSlave(dimension));
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
 
-    if (copyState) {
-        ///clone the master
-        {
-            Knob<int>* isInt = dynamic_cast<Knob<int>* >(master.second.get());
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master.second.get());
-            Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master.second.get());
-            assert(isInt || isBool || isDouble); //< other data types aren't supported
-            QWriteLocker l1(&_valueMutex);
-            if (isInt) {
-                _values[dimension] =  isInt->getValue(master.first);
-            } else if (isBool) {
-                _values[dimension] =  isBool->getValue(master.first);
-            } else if (isDouble) {
-                _values[dimension] =  isDouble->getValue(master.first);
-            }
-        }
-        getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
-        
-        cloneExtraData(master.second);
-    }
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
     
     if (helper->getSignalSlotHandler() && _signalSlotHandler) {
@@ -491,11 +488,15 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
     }
     
     resetMaster(dimension);
-    
+    if (copyState) {
+        ///clone the master
+        clone(master.second.get());
+    }
+
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
+            checkAnimationLevel(dimension);
         }
     }
     
@@ -519,27 +520,27 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
         }
         getCurve(dimension)->clone(*(master.second->getCurve(master.first)));
         
-        cloneExtraData(master.second);
+        cloneExtraData(master.second.get());
     }
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
     QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
                         SLOT(onMasterChanged(int)));
     resetMaster(dimension);
     
-    _signalSlotHandler->s_valueChanged(dimension);
+    _signalSlotHandler->s_valueChanged(dimension,reason);
     if (reason == Natron::PLUGIN_EDITED) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
 }
 
 template<typename T>
-void Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying)
+KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying)
 {
     if (turnOffAutoKeying) {
-        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,NULL);
+        return setValue(value,dimension,Natron::PLUGIN_EDITED,NULL);
     } else {
         KeyFrame k;
-        (void)setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
+        return setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
     }
 }
 
@@ -699,13 +700,18 @@ template<typename T>
 void Knob<T>::onTimeChanged(SequenceTime time)
 {
     //setValue's calls compression is taken care of above.
-    for (int i = 0; i < getDimension(); ++i) {
+    int dims = getDimension();
+    blockEvaluation();
+    for (int i = 0; i < dims; ++i) {
         boost::shared_ptr<Curve> c = getCurve(i);
         if (c->getKeyFramesCount() > 0 && !getIsSecret()) {
             T v = getValueAtTime(time,i);
             (void)setValue(v,i,Natron::TIME_CHANGED,NULL);
         }
+        checkAnimationLevel(i);
     }
+    unblockEvaluation();
+
 }
 
 template<typename T>
@@ -724,9 +730,13 @@ void Knob<T>::evaluateAnimationChange()
         time = 0;
     }
 
-    beginValueChange(Natron::PLUGIN_EDITED);
+    blockEvaluation();
+    int dims = getDimension();
     bool hasEvaluatedOnce = false;
-    for (int i = 0; i < getDimension();++i) {
+    for (int i = 0; i < dims;++i) {
+        if (i == dims - 1) {
+            unblockEvaluation();
+        }
         if (isAnimated(i)) {
             T v = getValueAtTime(time,i);
             (void)setValue(v,i,Natron::PLUGIN_EDITED,NULL);
@@ -736,8 +746,6 @@ void Knob<T>::evaluateAnimationChange()
     if (!hasEvaluatedOnce) {
         evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
-
-    endValueChange();
 }
 
 template<typename T>
@@ -803,70 +811,99 @@ template<typename T>
 void Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
-    (void)setValue(_defaultValues[dimension], dimension,Natron::PROJECT_LOADING,NULL);
+    (void)setValue(_defaultValues[dimension], dimension,Natron::RESTORE_DEFAULT,NULL);
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::RESTORE_DEFAULT);
     }
 }
 
 
 template<>
-void Knob<int>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<int>::cloneValues(KnobI* other)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other.get());
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     assert(isInt);
     _values = isInt->_values;
 }
 template<>
-void Knob<bool>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<bool>::cloneValues(KnobI* other)
 {
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other.get());
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     assert(isBool),
     _values = isBool->_values;
 }
 template<>
-void Knob<double>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<double>::cloneValues(KnobI* other)
 {
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other.get());
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     assert(isDouble);
     _values = isDouble->_values;
 }
 template<>
-void Knob<std::string>::cloneValues(const boost::shared_ptr<KnobI>& other)
+void Knob<std::string>::cloneValues(KnobI* other)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other.get());
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
     assert(isString);
     _values = isString->_values;
 }
 
 template<typename T>
-void Knob<T>::clone(const boost::shared_ptr<KnobI>& other)
+void Knob<T>::clone(KnobI* other)
 {
     int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
     for (int i = 0; i < dimMin;++i) {
         getCurve(i)->clone(*other->getCurve(i));
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(i);
+            _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }
-        setEnabled(i, other->isEnabled(i));
     }
     cloneExtraData(other);
-    setSecret(other->getIsSecret());
 }
 
 template<typename T>
-void Knob<T>::clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
+void Knob<T>::clone(KnobI* other, SequenceTime offset, const RangeD* range)
 {
     cloneValues(other);
     int dimMin = std::min(getDimension() , other->getDimension());
     for (int i = 0; i < dimMin; ++i) {
         getCurve(i)->clone(*other->getCurve(i), offset, range);
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(i);
+            _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }
     }
     cloneExtraData(other,offset,range);
 }
 
+template<typename T>
+void Knob<T>::cloneAndUpdateGui(KnobI* other)
+{
+    int dimMin = std::min(getDimension() , other->getDimension());
+    cloneValues(other);
+    for (int i = 0; i < dimMin;++i) {
+        if (_signalSlotHandler) {
+            int nKeys = getKeyFramesCount(i);
+            for (int k = 0; k < nKeys;++k) {
+                double time;
+                bool ok = getKeyFrameTime(k, i, &time);
+                assert(ok);
+                _signalSlotHandler->s_keyFrameRemoved(time, i);
+            }
+        }
+        getCurve(i)->clone(*other->getCurve(i));
+        if (_signalSlotHandler) {
+            int nKeys = getKeyFramesCount(i);
+            for (int k = 0; k < nKeys;++k) {
+                double time;
+                bool ok = getKeyFrameTime(k, i, &time);
+                assert(ok);
+                _signalSlotHandler->s_keyFrameSet(time, i,true);
+            }
+            _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
+        }
+        checkAnimationLevel(i);
+        
+    }
+    cloneExtraData(other);
+}
 #endif // KNOBIMPL_H

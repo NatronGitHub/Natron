@@ -7,6 +7,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Node.h"
 #include "Gui/GuiApplicationManager.h"
 
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,int targetDimension,
@@ -84,19 +85,25 @@ void PasteUndoCommand::undo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     
-    internalKnob->beginValueChange(Natron::PLUGIN_EDITED);
     
     int i = 0;
-    for (std::list<Variant>::iterator it = oldValues.begin(); it!=oldValues.end();++it) {
+    std::list<Variant>::iterator next = oldValues.begin();
+    ++next;
+    internalKnob->blockEvaluation();
+    for (std::list<Variant>::iterator it = oldValues.begin(); it!=oldValues.end();++it,++next) {
         if ((i == _targetDimension && !_copyAnimation) || _copyAnimation) {
+            bool isLast = next == oldValues.end();
+            if (isLast) {
+                internalKnob->unblockEvaluation();
+            }
             if (isInt) {
-                isInt->setValue(it->toInt(), i);
+                isInt->setValue(it->toInt(), i,false);
             } else if (isBool) {
-                isBool->setValue(it->toBool(), i);
+                isBool->setValue(it->toBool(), i,false);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(), i);
+                isDouble->setValue(it->toDouble(), i,false);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(), i);
+                isString->setValue(it->toString().toStdString(), i,false);
             }
         }
         ++i;
@@ -109,7 +116,7 @@ void PasteUndoCommand::undo()
             ++i;
         }
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0);
+        _knob->onInternalKeySet(0, 0,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
     
@@ -127,7 +134,6 @@ void PasteUndoCommand::undo()
         isParametric->loadParametricCurves(tmpCurves);
     }
     
-    internalKnob->endValueChange();
 
     if (!_copyAnimation) {
         setText(QObject::tr("Paste value of %1")
@@ -151,19 +157,24 @@ void PasteUndoCommand::redo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     
-    internalKnob->beginValueChange(Natron::PLUGIN_EDITED);
-    
     int i = 0;
-    for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it) {
+    std::list<Variant>::iterator next = newValues.begin();
+    ++next;
+    internalKnob->blockEvaluation();
+    for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it,++next) {
         if ((i == _dimensionToFetch && !_copyAnimation) || _copyAnimation) {
+            bool isLast = next == newValues.end();
+            if (isLast) {
+                internalKnob->unblockEvaluation();
+            }
             if (isInt) {
-                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             } else if (isBool) {
-                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i);
+                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             }
         }
         ++i;
@@ -185,7 +196,7 @@ void PasteUndoCommand::redo()
     }
     if (_copyAnimation && hasKeyframeData && !newCurves.empty()) {
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0);
+        _knob->onInternalKeySet(0, 0,false);
     }
     
     if (isAnimatingString) {
@@ -202,8 +213,6 @@ void PasteUndoCommand::redo()
         isParametric->loadParametricCurves(tmpCurves);
     }
     
-    internalKnob->endValueChange();
-    
     if (!_copyAnimation) {
         setText(QObject::tr("Paste value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
@@ -216,7 +225,7 @@ void PasteUndoCommand::redo()
 
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,
-                                                           const std::list<Variant>& values,int time)
+                                                           const Variant& value,int dimension,int time)
 : QUndoCommand()
 , knobs()
 , createNew(createNew)
@@ -227,7 +236,8 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,bool cr
     boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
     
     ValueToSet v;
-    v.newValues = values;
+    v.newValue = value;
+    v.dimension = dimension;
     v.time = time;
     v.copy = copy;
     v.setKeyFrame = setKeyFrame;
@@ -278,24 +288,41 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
 
 void MultipleKnobEditsUndoCommand::undo()
 {
-    ///clone the copy for all knobs
+    
+    
+    ///keep track of all different knobs and call instance changed action only once for all of them
+    std::set <KnobI*> knobsUnique;
     for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        ///clone the copy for all knobs
         boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
         boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
         
         ///clone the original knob back to its old state
-        it->first->getKnob()->clone(it->second.copy);
+        originalKnob->clone(it->second.copy);
         
         ///clone the copy to the new values
         it->second.copy->clone(copyWithNewValues);
+        
+        knobsUnique.insert(originalKnob.get());
     }
+    
     
     assert(!knobs.empty());
     KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
     QString holderName;
+
+    
     if (holder) {
+        int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
+        for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
+        }
+
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
+            
+            effect->evaluate_public(NULL, true, Natron::USER_EDITED);
+            
             holderName = effect->getName().c_str();
         }
     }
@@ -307,45 +334,54 @@ void MultipleKnobEditsUndoCommand::redo()
 {
     if (firstRedoCalled) {
         ///just clone
+        std::set <KnobI*> knobsUnique;
         for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
             boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
             boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
             
             ///clone the original knob back to its old state
-            it->first->getKnob()->clone(it->second.copy);
+            originalKnob->clone(it->second.copy);
             
             ///clone the copy to the old values
             it->second.copy->clone(copyWithOldValues);
+            
+            knobsUnique.insert(originalKnob.get());
+            
+            
+            for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+                int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
+                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
+            }
         }
 
     } else {
         ///this is the first redo command, set values
         for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
-            int i = 0;
             boost::shared_ptr<KnobI> knob = it->first->getKnob();
-            for (std::list<Variant>::iterator it2 = it->second.newValues.begin(); it2!=it->second.newValues.end(); ++it2,++i) {
-                KeyFrame k;
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
-                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
-                if (isInt) {
-                    it->first->setValue<int>(i, it2->toInt(), &k,true);
-                } else if (isBool) {
-                    it->first->setValue<bool>(i, it2->toBool(), &k,true);
-                } else if (isDouble) {
-                    it->first->setValue<double>(i, it2->toDouble(), &k,true);
-                } else if (isString) {
-                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true);
-                } else {
-                    assert(false);
-                }
-                if (it->second.setKeyFrame) {
-                    it->first->setKeyframe(it->second.time, i);
-                }
+            
+            
+            KeyFrame k;
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+            Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            if (isInt) {
+                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::PLUGIN_EDITED);
+            } else if (isBool) {
+                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,Natron::PLUGIN_EDITED);
+            } else if (isDouble) {
+                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,Natron::PLUGIN_EDITED);
+            } else if (isString) {
+                it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
+                                                 &k,true,Natron::PLUGIN_EDITED);
+            } else {
+                assert(false);
             }
+            if (it->second.setKeyFrame) {
+                it->first->setKeyframe(it->second.time, it->second.dimension);
+            }
+            
         }
-        firstRedoCalled = true;
     }
     
     assert(!knobs.empty());
@@ -354,9 +390,14 @@ void MultipleKnobEditsUndoCommand::redo()
     if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
+            if (firstRedoCalled) {
+                effect->evaluate_public(NULL, true, Natron::USER_EDITED);
+            }
             holderName = effect->getName().c_str();
         }
     }
+    firstRedoCalled = true;
+
     setText(QObject::tr("Multiple edits for %1").arg(holderName));
 
 }
@@ -373,7 +414,24 @@ bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
     
-    if (!createNew) {
+    ///if all knobs are the same between the old and new command, ignore the createNew flag and merge them anyway
+    bool ignoreCreateNew = false;
+    if (knobs.size() == knobCommand->knobs.size()) {
+        ParamsMap::const_iterator thisIt = knobs.begin();
+        ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
+        bool oneDifferent = false;
+        for (; thisIt != knobs.end(); ++thisIt,++otherIt) {
+            if (thisIt->first != otherIt->first) {
+                oneDifferent = true;
+                break;
+            }
+        }
+        if (!oneDifferent) {
+            ignoreCreateNew = true;
+        }
+    }
+    
+    if (!ignoreCreateNew && knobCommand->createNew) {
         return false;
     }
     

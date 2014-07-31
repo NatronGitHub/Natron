@@ -22,6 +22,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QGraphicsItem>
 #include <QGradient>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -41,6 +42,7 @@ class KnobI;
 class NodeGuiSerialization;
 class KnobGui;
 class QUndoStack;
+class MultiInstancePanel;
 class QMenu;
 namespace Natron {
 class ChannelSet;
@@ -142,7 +144,7 @@ public:
     
   
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
-    virtual bool contains(const QPointF &point) const OVERRIDE;
+    virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
     
     /*Returns true if the bounding box of the node intersects the given rectangle in scene coordinates.*/
     bool intersects(const QRectF& rect) const;
@@ -183,10 +185,11 @@ public:
     
         
        
-    /*toggles selected on/off*/
+    /* @brief toggles selected on/off. MT-Safe*/
     void setSelected(bool b);
     
-    bool isSelected(){return _selected;}
+    /* @brief Is the node selected ? MT-Safe */
+    bool isSelected() ;
     
     /*Returns a pointer to the first available input. Otherwise returns NULL*/
     Edge* firstAvailableEdge();
@@ -205,7 +208,6 @@ public:
 
         
     QSize getSize() const;
-    
         
     /*Returns an edge if the node has an edge close to the
      point pt. pt is in scene coord.*/
@@ -213,7 +215,9 @@ public:
     
     Edge* hasEdgeNearbyRect(const QRectF& rect);
     
-    void refreshPosition(double x,double y,bool skipMagnet = false);
+    Edge* hasBendPointNearbyPoint(const QPointF& pt);
+    
+    void refreshPosition(double x,double y,bool skipMagnet = false,const QPointF& mouseScenePos = QPointF());
     
     void changePosition(double dx,double dy);
     
@@ -257,6 +261,14 @@ public:
     void setCurrentColor(const QColor& c);
     
     void refreshKnobsAfterTimeChange(SequenceTime time);
+    
+    boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
+    
+    bool shouldDrawOverlay() const;
+    
+    void setParentMultiInstance(const boost::shared_ptr<NodeGui>& parent);
+    
+    
     
 public slots:
     
@@ -303,13 +315,14 @@ public slots:
     
     void deactivate();
     
+    void hideGui();
+    
+    void showGui();
+    
     /*Use NULL for src to disconnect.*/
     bool connectEdge(int edgeNumber);
     
     void setVisibleSettingsPanel(bool b);
-    
-    /*pos is in global coordinates*/
-    void showMenu(const QPoint& pos);
     
     void onRenderingStarted();
     
@@ -329,16 +342,6 @@ public slots:
     
     void refreshSlaveMasterLinkPosition();
     
-    void copyNode();
-    
-    void cutNode();
-    
-    void cloneNode();
-    
-    void decloneNode();
-    
-    void duplicateNode();
-    
     void refreshOutputEdgeVisibility();
     
     void toggleBitDepthIndicator(bool on,const QString& tooltip);
@@ -357,7 +360,21 @@ signals:
     
     void settingsPanelClosed(bool b);
     
+protected:
+    
+    virtual void createGui();
+    
+    virtual void initializeShape();
+    
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,const boost::shared_ptr<NodeGui>& thisAsShared);
+    
+    virtual bool canMakePreview() { return true; }
+    
+    virtual void applyBrush(const QBrush& brush);
+    
 private:
+    
+    void refreshPositionEnd(double x,double y);
     
     void setNameItemHtml(const QString& name,const QString& label);
     
@@ -379,6 +396,7 @@ private:
     
     /*true if the node is selected by the user*/
     bool _selected;
+    mutable QMutex _selectedMutex;
 
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;
@@ -404,18 +422,19 @@ private:
     std::map<int,Edge*> _inputEdges;
     
     Edge* _outputEdge;
-    
-    /*settings panel related*/
-    bool _panelDisplayed;
+  
     NodeSettingsPanel* _settingsPanel;
+    
+    ///This is valid only if the node is a multi-instance and this is the main instance.
+    ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
+    ///another panel for the main-instance (hidden) knobs to function properly
+    NodeSettingsPanel* _mainInstancePanel;
     
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
     QGradient* _clonedGradient;
     QGradient* _disabledGradient;
-    
-    QMenu* _menu;
-    
+        
     timeval _lastRenderStartedSlotCallTime;
     timeval _lastInputNRenderStartedSlotCallTime;
     bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted
@@ -427,11 +446,45 @@ private:
     QGraphicsLineItem* _slaveMasterLink;
     boost::shared_ptr<NodeGui> _masterNodeGui;
     
-    bool _magnecEnabled;
-    QPoint _magnecStartingPos;
+    QPoint _magnecEnabled; //<enabled in X or/and Y
+    QPointF _magnecDistance; //for x and for  y
+    QPoint _updateDistanceSinceLastMagnec; //for x and for y
+    QPointF _distanceSinceLastMagnec; //for x and for y
+    QPointF _magnecStartingPos; //for x and for y
     
     QString _nodeLabel;
+    
+    boost::shared_ptr<NodeGui> _parentMultiInstance;
+};
 
+
+class DotGui : public NodeGui
+{
+public:
+    
+    DotGui(QGraphicsItem *parent = 0);
+    
+private:
+    
+    
+    virtual void createGui() OVERRIDE FINAL;
+    
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,
+                                           const boost::shared_ptr<NodeGui>& thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+
+    virtual void applyBrush(const QBrush& brush) OVERRIDE FINAL;
+    
+    ///Doesn't do anything, preview cannot be activated
+    virtual void initializeShape() OVERRIDE FINAL {}
+    
+    virtual QRectF boundingRect() const OVERRIDE FINAL;
+    
+    virtual QPainterPath shape() const OVERRIDE FINAL;
+    
+    QGraphicsEllipseItem* diskShape;
+    
 };
 
 #endif // NATRON_GUI_NODEGUI_H_

@@ -26,12 +26,14 @@ PluginMemory::PluginMemory(Natron::EffectInstance* effect)
 , _mutex(new QMutex)
 , _effect(effect)
 {
+    _effect->addPluginMemoryPointer(this);
 }
 
 
 PluginMemory::~PluginMemory() {
     delete _mutex;
     delete [] _ptr;
+    _effect->removePluginMemoryPointer(this);
 }
 
 bool PluginMemory::alloc(size_t nBytes) {

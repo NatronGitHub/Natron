@@ -14,7 +14,7 @@
 using namespace Natron;
 
 
-NonKeyParams::NonKeyParams()
+NonKeyParams::NonKeyParams() 
 : _cost(0)
 , _elementsCount(0)
 {

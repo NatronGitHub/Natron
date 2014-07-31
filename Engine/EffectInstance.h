@@ -94,7 +94,6 @@ public:
     
 public:
     
-    enum CachePolicy { ALWAYS_CACHE = 0 , NEVER_CACHE };
     
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -102,14 +101,14 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(boost::shared_ptr<Node> node);
+    explicit EffectInstance(boost::shared_ptr<Natron::Node> node);
     
     virtual ~EffectInstance();
     
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    boost::shared_ptr<Node> getNode() const WARN_UNUSED_RETURN { return _node; }
+    boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN { return _node; }
     
     /**
      * @brief Returns the "real" hash of the node synchronized with the gui state
@@ -352,7 +351,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
 
 protected:
     /**
@@ -433,6 +432,9 @@ public:
                                       bool dontUpscale) WARN_UNUSED_RETURN;
     
 protected:
+    
+    virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
+
     
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
@@ -543,14 +545,7 @@ public:
     virtual void purgeCaches(){};
     
     void clearLastRenderedImage();
-    
-    /**
-     * @brief Can be overloaded to indicate whether a plug-in wants to cache
-     * a frame rendered or not.
-     **/
-    virtual CachePolicy getCachePolicy(SequenceTime /*time*/) const { return ALWAYS_CACHE; }
-
-    
+     
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
      * a dialog. The message can be of 4 types...
@@ -590,13 +585,6 @@ public:
     virtual bool supportsRenderScale() const { return false; }
     
     /**
-     * @brief If this effect is a reader then the file path corresponding to the input images path will be fed
-     * with the content of files. Note that an exception is thrown if the file knob does not support image sequences
-     * but you attempt to feed-in several files.
-     **/
-    void setInputFilesForReader(const std::vector<std::string>& files);
-    
-    /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
      * with the content of pattern.
      **/
@@ -611,6 +599,11 @@ public:
     /// Don't call these, they're called by PluginMemory automatically
     void registerPluginMemory(size_t nBytes);
     void unregisterPluginMemory(size_t nBytes);
+    
+    void addPluginMemoryPointer(PluginMemory* mem);
+    void removePluginMemoryPointer(PluginMemory* mem);
+    
+    void clearPluginMemoryChunks();
     
     /**
      * @brief Called right away when the user first opens the settings panel of the node.
@@ -641,6 +634,16 @@ public:
     int getCurrentFrameRecursive() const;
     
     /**
+     * @brief Same as getCurrentFrameRecursive() but for the view index
+     **/
+    int getCurrentViewRecursive() const;
+    
+    /**
+     * @brief Same as getCurrentFrameRecursive() but for the mipmap level
+     **/
+    int getCurrentMipMapLevelRecursive() const;
+    
+    /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
      * then all the knobs will retrieve the current time as being the one in the last render args thread-storage.
      * This function is here to update the last render args thread storage.
@@ -655,7 +658,7 @@ protected:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/) {}
+    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/) {}
     
     
     virtual Natron::Status beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
@@ -669,7 +672,8 @@ protected:
                                              int /*view*/) { return Natron::StatOK;}
 public:
     
-    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    ///Doesn't do anything, instead we overriden onKnobValueChanged_public
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
     
     
     Natron::Status beginSequenceRender_public(SequenceTime first,SequenceTime last,
@@ -764,7 +768,7 @@ protected:
      * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
      * viewer and the rod of the output.
      **/
-    void getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD) ;
+    void getClipThreadStorageData(SequenceTime time, int *view, unsigned int *mipMapLevel, RectI *outputRoD);
     
     boost::shared_ptr<Node> _node; //< the node holding this effect
 

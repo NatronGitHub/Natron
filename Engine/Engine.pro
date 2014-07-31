@@ -65,6 +65,7 @@ SOURCES += \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
+    NoOp.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -131,6 +132,7 @@ HEADERS += \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
+    NoOp.h \
     OfxClipInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \

@@ -63,7 +63,7 @@ void CurveEditor::recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *c
 
 
 
-CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
+CurveEditor::CurveEditor(Gui* gui,boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     : QWidget(parent)
     , _nodes()
     , _mainLayout(NULL)
@@ -87,7 +87,7 @@ CurveEditor::CurveEditor(boost::shared_ptr<TimeLine> timeline, QWidget *parent)
     _splitter = new QSplitter(Qt::Horizontal,this);
     _splitter->setObjectName("CurveEditorSplitter");
 
-    _curveWidget = new CurveWidget(timeline,_splitter);
+    _curveWidget = new CurveWidget(gui,timeline,_splitter);
     _curveWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     
     _tree = new QTreeWidget(_splitter);
@@ -143,9 +143,9 @@ void CurveEditor::addNode(boost::shared_ptr<NodeGui> node){
 
 }
 
-void CurveEditor::removeNode(boost::shared_ptr<NodeGui> node){
+void CurveEditor::removeNode(NodeGui* node) {
     for(std::list<NodeCurveEditorContext*>::iterator it = _nodes.begin();it!=_nodes.end();++it){
-        if((*it)->getNode() == node){
+        if((*it)->getNode().get() == node){
             delete (*it);
             _nodes.erase(it);
             break;
@@ -339,7 +339,9 @@ void NodeCurveEditorElement::checkVisibleState()
             _curve->setVisibleAndRefresh(false);
         }
     }
-    _knob->onInternalValueChanged(_dimension);//< also update the gui of the knob to indicate the animation is gone
+    // also update the gui of the knob to indicate the animation is gone
+    // the reason doesn't matter here
+    _knob->onInternalValueChanged(_dimension,Natron::PLUGIN_EDITED);
 
 }
 

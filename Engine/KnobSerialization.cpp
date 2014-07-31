@@ -29,7 +29,7 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI>& knob,int 
 {
     if (save) {
         std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
-        if (m.second) {
+        if (m.second && !knob->isMastersPersistenceIgnored()) {
             _master.masterDimension = m.first;
             NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>(m.second->getHolder());
             
@@ -115,14 +115,15 @@ void KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI>& knob,co
     }
 }
 
-void KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
+bool KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
 {
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>(knob.get());
     if (!isDouble) {
-        return;
+        return false;
     }
     if (isDouble->getName() != "center" || isDouble->getDimension() != 2) {
-        return;
+        return false;
     }
     isDouble->restoreTracks(slavedTracks,allNodes);
+    return !slavedTracks.empty();
 }

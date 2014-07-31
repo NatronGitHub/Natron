@@ -56,27 +56,9 @@
         <file>Resources/Images/checkbox_animation2_unchecked.png</file>
         <file>Resources/Images/checkbox_animation2_unchecked_hovered.png</file>
         <file>Resources/Images/color_picker.png</file>
-        <file>Resources/Images/color_low.png</file>
-        <file>Resources/Images/color.png</file>
-        <file>Resources/Images/deep_low.png</file>
-        <file>Resources/Images/deep.png</file>
-        <file>Resources/Images/filter_low.png</file>
-        <file>Resources/Images/filter.png</file>
-        <file>Resources/Images/io_low.png</file>
-        <file>Resources/Images/io.png</file>
-        <file>Resources/Images/misc_low.png</file>
-        <file>Resources/Images/misc.png</file>
-        <file>Resources/Images/multiview_low.png</file>
-        <file>Resources/Images/multiview.png</file>
-        <file>Resources/Images/transform_low.png</file>
-        <file>Resources/Images/transform.png</file>
         <file alias="CONTRIBUTORS.txt">../CONTRIBUTORS.txt</file>
         <file alias="LICENSE.txt">../LICENSE.txt</file>
         <file>Resources/Images/natronIcon256_linux.png</file>
-        <file>Resources/Images/paint_low.png</file>
-        <file>Resources/Images/paint.png</file>
-        <file>Resources/Images/time_low.png</file>
-        <file>Resources/Images/time.png</file>
         <file>Resources/Images/viewer_roi.png</file>
         <file>Resources/Images/restoreDefaults.png</file>
         <file>Resources/Images/checkbox_checked_readonly.png</file>
@@ -121,8 +103,6 @@
         <file>Resources/Images/stickySelectionEnabled.png</file>
         <file>Resources/Images/addPoints.png</file>
         <file>Resources/Images/rectangle.png</file>
-        <file>Resources/Images/Keyer_low.png</file>
-        <file>Resources/Images/Keyer.png</file>
         <file>Resources/Images/closePanel.png</file>
         <file>Resources/Images/bold_checked.png</file>
         <file>Resources/Images/italic_checked.png</file>
@@ -130,5 +110,48 @@
         <file>Resources/Images/bold_unchecked.png</file>
         <file>Resources/Images/featherDisabled.png</file>
         <file>Resources/Images/featherEnabled.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/color_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/deep_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/filter_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/image_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/keyer_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/misc_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/multiview_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/paint_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/time_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set1/transform_grouping_1.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/3D_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/channel_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/color_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/deep_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/filter_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/image_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/keyer_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/merge_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/misc_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/multiview_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/paint_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/time_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/toolsets_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/transform_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/3D_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/channel_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/color_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/deep_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/image_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/keyer_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/merge_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/multiview_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/paint_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/toolsets_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/transform_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/misc_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/time_grouping_3.png</file>
+        <file>Resources/Images/clearAnimation.png</file>
+        <file>Resources/Images/clearAnimationBw.png</file>
+        <file>Resources/Images/clearAnimationFw.png</file>
+        <file>Resources/Images/updateViewerDisabled.png</file>
+        <file>Resources/Images/updateViewerEnabled.png</file>
     </qresource>
 </RCC>

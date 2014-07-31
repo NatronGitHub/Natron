@@ -159,11 +159,15 @@ namespace Natron{
         NATRON_PIXMAP_COLOR_PICKER,
 
         NATRON_PIXMAP_IO_GROUPING,
+        NATRON_PIXMAP_3D_GROUPING,
+        NATRON_PIXMAP_CHANNEL_GROUPING,
+        NATRON_PIXMAP_MERGE_GROUPING,
         NATRON_PIXMAP_COLOR_GROUPING,
         NATRON_PIXMAP_TRANSFORM_GROUPING,
         NATRON_PIXMAP_DEEP_GROUPING,
         NATRON_PIXMAP_FILTER_GROUPING,
         NATRON_PIXMAP_MULTIVIEW_GROUPING,
+        NATRON_PIXMAP_TOOLSETS_GROUPING,
         NATRON_PIXMAP_MISC_GROUPING,
         NATRON_PIXMAP_OPEN_EFFECTS_GROUPING,
         NATRON_PIXMAP_TIME_GROUPING,
@@ -217,10 +221,25 @@ namespace Natron{
         NATRON_PIXMAP_ITALIC_CHECKED,
         NATRON_PIXMAP_ITALIC_UNCHECKED,
         
+        NATRON_PIXMAP_CLEAR_ALL_ANIMATION,
+        NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION,
+        NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION,
+        NATRON_PIXMAP_UPDATE_VIEWER_ENABLED,
+        NATRON_PIXMAP_UPDATE_VIEWER_DISABLED,
+        
         NATRON_PIXMAP_APP_ICON
     };
 
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,TIME_CHANGED = 2,PROJECT_LOADING =3};
+    ///This enum is used when dealing with parameters which have their value edited
+    enum ValueChangedReason {
+        
+        USER_EDITED = 0, //< a user change triggered the call
+        PLUGIN_EDITED = 1, //< a plugin change triggered the call
+        TIME_CHANGED = 2, //< a time-line seek changed the call
+        PROJECT_LOADING = 3, //< the project loader triggered the call
+        SLAVE_REFRESH = 4, //< a master parameter ordered the slave to refresh its value
+        RESTORE_DEFAULT = 5, //< the knob value has been restored to its defaults
+    };
     
     enum AnimationLevel {
         NO_ANIMATION = 0,
@@ -267,6 +286,11 @@ namespace Natron{
         EFFECT_NOT_SEQUENTIAL = 0,
         EFFECT_ONLY_SEQUENTIAL,
         EFFECT_PREFER_SEQUENTIAL
+    };
+    
+    enum StorageMode {
+        RAM = 0,
+        DISK
     };
     
 }

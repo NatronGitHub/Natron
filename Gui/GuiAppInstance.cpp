@@ -18,6 +18,7 @@
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/MultiInstancePanel.h"
 
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -78,7 +79,10 @@ GuiAppInstance::~GuiAppInstance() {
     ///clear nodes prematurely so that any thread running is stopped
     ///process events before closing gui
     QCoreApplication::processEvents();
+
     getProject()->clearNodes(false);
+    
+    _imp->_nodeMapping.clear();
     QCoreApplication::processEvents();
 //#ifndef __NATRON_WIN32__
     _imp->_gui->getNodeGraph()->discardGuiPointer();
@@ -96,13 +100,10 @@ bool GuiAppInstance::isClosing() const
 }
 
 void GuiAppInstance::load(const QString& projectName,const QStringList& /*writers*/) {
-    appPTR->setLoadingStatus("Creating user interface...");
+    appPTR->setLoadingStatus(tr("Creating user interface..."));
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 
-    /// clear the nodes mapping (node<-->nodegui) when the project's node are cleared.
-    /// This should go away when we remove that mapping.
-    QObject::connect(getProject().get(), SIGNAL(nodesCleared()), this, SLOT(onProjectNodesCleared()));
     
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
     const std::vector<PluginGroupNode*>& _toolButtons = appPTR->getPluginsToolButtons();
@@ -117,7 +118,7 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
     
     if (getAppID() == 0 && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled()) {
-        appPTR->setLoadingStatus("Checking if updates are available...");
+        appPTR->setLoadingStatus(tr("Checking if updates are available..."));
         ///Before loading autosave check for a new version
         checkForNewVersion();
     }
@@ -137,14 +138,14 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
     if (projectName.isEmpty()) {
         ///if the user didn't specify a projects name in the launch args just create a viewer node.
-        createNode("Viewer");
+        createNode(CreateNodeArgs("Viewer"));
     } else {
         ///Otherwise just load the project specified.
         QFileInfo infos(projectName);
         QString name = infos.fileName();
         QString path = infos.path();
         path += QDir::separator();
-        appPTR->setLoadingStatus("Loading project: " + path + name);
+        appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
         getProject()->loadProject(path,name);
         ///remove any file open event that might have occured
         appPTR->setFileToOpen("");
@@ -154,9 +155,19 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
     
 }
 
-void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool createGui,bool loadRequest,bool openImageFileDialog) {
+void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const std::string& multiInstanceParentName,
+                                   bool loadRequest,bool openImageFileDialog,bool autoConnect) {
+    
+    
     boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
     assert(nodegui);
+    if (!multiInstanceParentName.empty()) {
+        nodegui->hideGui();
+        
+        
+        boost::shared_ptr<NodeGui> parentNodeGui = getNodeGui(multiInstanceParentName);
+        nodegui->setParentMultiInstance(parentNodeGui);
+    }
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));
     
     ///It needs to be here because we rely on the _nodeMapping member
@@ -170,8 +181,15 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool cre
         _imp->_gui->createNewRotoInterface(nodegui.get());
     }
     
+    if (node->isTrackerNode() && multiInstanceParentName.empty()) {
+        _imp->_gui->createNewTrackerInterface(nodegui.get());
+    }
     
-    nodegui->initializeInputs();
+    ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
+    if (multiInstanceParentName.empty()) {
+        nodegui->initializeInputs();
+    }
+    
     nodegui->initializeKnobs();
     
     if (!loadRequest) {
@@ -182,9 +200,10 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool cre
     _imp->_gui->addNodeGuiToCurveEditor(nodegui);
 
     
-    if (!loadRequest) {
-        if(_imp->_gui->getSelectedNode()){
-            boost::shared_ptr<Node> selected = _imp->_gui->getSelectedNode()->getNode();
+    if (!loadRequest && multiInstanceParentName.empty()) {
+        const std::list<boost::shared_ptr<NodeGui> >& selectedNodes = _imp->_gui->getSelectedNodes();
+        if (selectedNodes.size() == 1 && autoConnect) {
+            const boost::shared_ptr<Node>& selected = selectedNodes.front()->getNode();
             getProject()->autoConnectNodes(selected, node);
         }
         _imp->_gui->selectNode(nodegui);
@@ -197,7 +216,7 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,bool cre
 
         }
     }
-    if (!loadRequest && !isViewer) {
+    if (!loadRequest && !isViewer) { 
         triggerAutoSave();
     }
 
@@ -211,7 +230,7 @@ bool GuiAppInstance::shouldRefreshPreview() const {
 }
 
 
-boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(boost::shared_ptr<Node> n) const {
+boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const boost::shared_ptr<Node>& n) const {
     std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.find(n);
     if (it == _imp->_nodeMapping.end()) {
         return boost::shared_ptr<NodeGui>();
@@ -232,7 +251,7 @@ boost::shared_ptr<NodeGui> GuiAppInstance::getNodeGui(const std::string& nodeNam
     return boost::shared_ptr<NodeGui>();
 }
 
-boost::shared_ptr<Node> GuiAppInstance::getNode(boost::shared_ptr<NodeGui> n) const{
+boost::shared_ptr<Node> GuiAppInstance::getNode(const boost::shared_ptr<NodeGui>& n) const{
     for (std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodeMapping.begin(); it!= _imp->_nodeMapping.end(); ++it) {
         if(it->second == n){
             return it->first;
@@ -352,7 +371,7 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
         lastFrame = getTimeLine()->lastFrame();
     }
     if(firstFrame > lastFrame) {
-        Natron::errorDialog(writer->getNode()->getName_mt_safe() ,"First frame in the sequence is greater than the last frame");
+        Natron::errorDialog(writer->getNode()->getName_mt_safe() ,tr("First frame in the sequence is greater than the last frame").toStdString());
         return;
     }
     ///get the output file knob to get the same of the sequence
@@ -379,9 +398,9 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
                 _imp->_activeBgProcesses.push_back(process);
             }
         } catch (const std::exception& e) {
-            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering") + ": " + e.what());
+            Natron::errorDialog(writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what());
         } catch (...) {
-            Natron::errorDialog(writer->getName(), std::string("Error while starting rendering"));
+            Natron::errorDialog(writer->getName(), tr("Error while starting rendering").toStdString());
         }
     } else {
         writer->renderFullSequence(NULL);
@@ -402,9 +421,12 @@ void GuiAppInstance::onProcessFinished() {
     }
 }
 
-void GuiAppInstance::onProjectNodesCleared() {
+void GuiAppInstance::clearNodeGuiMapping()
+{
     _imp->_nodeMapping.clear();
+
 }
+
 
 void GuiAppInstance::notifyRenderProcessHandlerStarted(const QString& sequenceName,
                                        int firstFrame,int lastFrame,
@@ -470,4 +492,14 @@ void GuiAppInstance::registerVideoEngineBeingAborted(VideoEngine* engine)
 void GuiAppInstance::unregisterVideoEngineBeingAborted(VideoEngine* engine)
 {
     _imp->_gui->unregisterVideoEngineBeingAborted(engine);
+}
+
+void GuiAppInstance::connectViewersToViewerCache()
+{
+    _imp->_gui->connectViewersToViewerCache();
+}
+
+void GuiAppInstance::disconnectViewersFromViewerCache()
+{
+    _imp->_gui->disconnectViewersFromViewerCache();
 }

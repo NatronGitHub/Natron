@@ -84,13 +84,19 @@ public:
     
 public slots:
     
-    virtual void addPluginToolButtons(const QStringList& groups,
-                                      const QString& pluginID,
-                                      const QString& pluginLabel,
-                                      const QString& pluginIconPath,
-                                      const QString& groupIconPath) OVERRIDE FINAL;
+    
+    ///Closes the application, asking the user to save each opened project that has unsaved changes
+    virtual void exitApp() OVERRIDE FINAL;
+    
     
 private:
+    
+    virtual void onPluginLoaded(const QStringList& groups,
+                                const QString& pluginID,
+                                const QString& pluginLabel,
+                                const QString& pluginIconPath,
+                                const QString& groupIconPath) OVERRIDE FINAL;
+
     
     
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,

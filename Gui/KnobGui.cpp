@@ -125,17 +125,20 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     KnobHelper* helper = dynamic_cast<KnobHelper*>(knob.get());
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
     
-    QObject::connect(handler,SIGNAL(valueChanged(int)),this,SLOT(onInternalValueChanged(int)));
-    QObject::connect(handler,SIGNAL(keyFrameSet(SequenceTime,int)),this,SLOT(onInternalKeySet(SequenceTime,int)));
+    QObject::connect(handler,SIGNAL(valueChanged(int,int)),this,SLOT(onInternalValueChanged(int,int)));
+    QObject::connect(handler,SIGNAL(keyFrameSet(SequenceTime,int,bool)),this,SLOT(onInternalKeySet(SequenceTime,int,bool)));
     QObject::connect(this,SIGNAL(keyFrameSetByUser(SequenceTime,int)),handler,SLOT(onKeyFrameSet(SequenceTime,int)));
     QObject::connect(handler,SIGNAL(keyFrameRemoved(SequenceTime,int)),this,SLOT(onInternalKeyRemoved(SequenceTime,int)));
     QObject::connect(this,SIGNAL(keyFrameRemovedByUser(SequenceTime,int)),handler,SLOT(onKeyFrameRemoved(SequenceTime,int)));
     QObject::connect(handler,SIGNAL(secretChanged()),this,SLOT(setSecret()));
     QObject::connect(handler,SIGNAL(enabledChanged()),this,SLOT(setEnabledSlot()));
     QObject::connect(handler,SIGNAL(knobSlaved(int,bool)),this,SLOT(onKnobSlavedChanged(int,bool)));
-    QObject::connect(handler,SIGNAL(animationRemoved(int)),this,SLOT(onInternalAnimationRemoved()));
+    QObject::connect(handler,SIGNAL(animationAboutToBeRemoved(int)),this,SLOT(onInternalAnimationRemoved()));
     QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
     QObject::connect(handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)));
+    QObject::connect(handler,SIGNAL(animationLevelChanged(int)),this,SLOT(onAnimationLevelChanged(int)));
+    QObject::connect(handler,SIGNAL(appendParamEditChange(Variant,int,int,bool,bool)),this,
+                     SLOT(onAppendParamEditChanged(Variant,int,int,bool,bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -195,15 +198,15 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
     } else {
         createWidget(layout);
     }
-    if(knob->isAnimationEnabled() && knob->typeName() != File_Knob::typeNameStatic()){
+    if(knob->isAnimationEnabled()){
         createAnimationButton(layout);
     }
     _imp->widgetCreated = true;
     
-    for(int i = 0; i < knob->getDimension();++i) {
+    for (int i = 0; i < knob->getDimension();++i) {
         updateGuiInternal(i);
-        checkAnimationLevel(i);
     }
+    onAnimationLevelChanged(knob->getAnimationLevel(0));
     
     setEnabledSlot();
     if (isOnNewLine) {
@@ -229,7 +232,7 @@ void KnobGui::createAnimationButton(QHBoxLayout* layout) {
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton(this,QIcon(pix),"",layout->parentWidget());
     _imp->animationButton->setFixedSize(20, 20);
-    _imp->animationButton->setToolTip(Qt::convertFromPlainText("Animation menu", Qt::WhiteSpaceNormal));
+    _imp->animationButton->setToolTip(Qt::convertFromPlainText(tr("Animation menu"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->animationButton,SIGNAL(animationMenuRequested()),this,SLOT(showAnimationMenu()));
     layout->addWidget(_imp->animationButton);
     
@@ -380,109 +383,109 @@ void KnobGui::createAnimationMenu(QMenu* menu) {
             isEnabled = false;
         }
     }
-    
-    if(!isSlave) {
-        if (!isOnKeyFrame) {
-            QAction* setKeyAction = new QAction(tr("Set Key"),menu);
-            QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
-            menu->addAction(setKeyAction);
-            if (!isEnabled) {
-                setKeyAction->setEnabled(false);
+    if (knob->isAnimationEnabled()) {
+        if(!isSlave) {
+            if (!isOnKeyFrame) {
+                QAction* setKeyAction = new QAction(tr("Set Key"),menu);
+                QObject::connect(setKeyAction,SIGNAL(triggered()),this,SLOT(onSetKeyActionTriggered()));
+                menu->addAction(setKeyAction);
+                if (!isEnabled) {
+                    setKeyAction->setEnabled(false);
+                }
+            } else {
+                QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
+                QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
+                menu->addAction(removeKeyAction);
+                if (!isEnabled) {
+                    removeKeyAction->setEnabled(false);
+                }
             }
-        } else {
-            QAction* removeKeyAction = new QAction(tr("Remove Key"),menu);
-            QObject::connect(removeKeyAction,SIGNAL(triggered()),this,SLOT(onRemoveKeyActionTriggered()));
-            menu->addAction(removeKeyAction);
+            
+            QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
+            QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
+            menu->addAction(removeAnyAnimationAction);
+            if (!hasAnimation || !isEnabled) {
+                removeAnyAnimationAction->setEnabled(false);
+            }
+            
+            
+            
+            
+        }
+        
+        
+        if(!isSlave) {
+            
+            QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
+            QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
+            menu->addAction(showInCurveEditorAction);
+            if (!hasAnimation || !isEnabled) {
+                showInCurveEditorAction->setEnabled(false);
+            }
+            
+            QMenu* interpolationMenu = new QMenu(menu);
+            interpolationMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+            interpolationMenu->setTitle("Interpolation");
+            menu->addAction(interpolationMenu->menuAction());
             if (!isEnabled) {
-                removeKeyAction->setEnabled(false);
+                interpolationMenu->menuAction()->setEnabled(false);
+            }
+            
+            QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
+            QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
+            interpolationMenu->addAction(constantInterpAction);
+            
+            QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
+            QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
+            interpolationMenu->addAction(linearInterpAction);
+            
+            QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
+            QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
+            interpolationMenu->addAction(smoothInterpAction);
+            
+            QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
+            QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
+            interpolationMenu->addAction(catmullRomInterpAction);
+            
+            QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
+            QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
+            interpolationMenu->addAction(cubicInterpAction);
+            
+            QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
+            QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
+            interpolationMenu->addAction(horizInterpAction);
+            
+        }
+        
+        QAction* copyAnimationAction = new QAction(tr("Copy animation"),menu);
+        QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
+        menu->addAction(copyAnimationAction);
+        if (!hasAnimation) {
+            copyAnimationAction->setEnabled(false);
+        }
+        
+        if(!isSlave) {
+            
+            bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
+            
+            std::list<Variant> values;
+            std::list<boost::shared_ptr<Curve> > curves;
+            std::list<boost::shared_ptr<Curve> > parametricCurves;
+            std::map<int,std::string> stringAnimation;
+            
+            bool copyAnimation;
+            int dimension;
+            
+            appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
+            
+            QAction* pasteAction = new QAction(tr("Paste animation"),menu);
+            QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
+            menu->addAction(pasteAction);
+            if (!copyAnimation || isClipBoardEmpty || !isEnabled) {
+                pasteAction->setEnabled(false);
             }
         }
-        
-        QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"),menu);
-        QObject::connect(removeAnyAnimationAction,SIGNAL(triggered()),this,SLOT(onRemoveAnyAnimationActionTriggered()));
-        menu->addAction(removeAnyAnimationAction);
-        if (!hasAnimation || !isEnabled) {
-            removeAnyAnimationAction->setEnabled(false);
-        }
-        
-        
-        
-        
     }
-    
-    
-    if(!isSlave) {
-        
-        QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
-        QObject::connect(showInCurveEditorAction,SIGNAL(triggered()),this,SLOT(onShowInCurveEditorActionTriggered()));
-        menu->addAction(showInCurveEditorAction);
-        if (!hasAnimation || !isEnabled) {
-            showInCurveEditorAction->setEnabled(false);
-        }
-        
-        QMenu* interpolationMenu = new QMenu(menu);
-        interpolationMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
-        interpolationMenu->setTitle("Interpolation");
-        menu->addAction(interpolationMenu->menuAction());
-        if (!isEnabled) {
-            interpolationMenu->menuAction()->setEnabled(false);
-        }
-        
-        QAction* constantInterpAction = new QAction(tr("Constant"),interpolationMenu);
-        QObject::connect(constantInterpAction,SIGNAL(triggered()),this,SLOT(onConstantInterpActionTriggered()));
-        interpolationMenu->addAction(constantInterpAction);
-        
-        QAction* linearInterpAction = new QAction(tr("Linear"),interpolationMenu);
-        QObject::connect(linearInterpAction,SIGNAL(triggered()),this,SLOT(onLinearInterpActionTriggered()));
-        interpolationMenu->addAction(linearInterpAction);
-        
-        QAction* smoothInterpAction = new QAction(tr("Smooth"),interpolationMenu);
-        QObject::connect(smoothInterpAction,SIGNAL(triggered()),this,SLOT(onSmoothInterpActionTriggered()));
-        interpolationMenu->addAction(smoothInterpAction);
-        
-        QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"),interpolationMenu);
-        QObject::connect(catmullRomInterpAction,SIGNAL(triggered()),this,SLOT(onCatmullromInterpActionTriggered()));
-        interpolationMenu->addAction(catmullRomInterpAction);
-        
-        QAction* cubicInterpAction = new QAction(tr("Cubic"),interpolationMenu);
-        QObject::connect(cubicInterpAction,SIGNAL(triggered()),this,SLOT(onCubicInterpActionTriggered()));
-        interpolationMenu->addAction(cubicInterpAction);
-        
-        QAction* horizInterpAction = new QAction(tr("Horizontal"),interpolationMenu);
-        QObject::connect(horizInterpAction,SIGNAL(triggered()),this,SLOT(onHorizontalInterpActionTriggered()));
-        interpolationMenu->addAction(horizInterpAction);
-        
-    }
-
-    QAction* copyAnimationAction = new QAction(tr("Copy animation"),menu);
-    QObject::connect(copyAnimationAction,SIGNAL(triggered()),this,SLOT(onCopyAnimationActionTriggered()));
-    menu->addAction(copyAnimationAction);
-    if (!hasAnimation) {
-        copyAnimationAction->setEnabled(false);
-    }
-    
-    if(!isSlave) {
-        
-        bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
-        
-        std::list<Variant> values;
-        std::list<boost::shared_ptr<Curve> > curves;
-        std::list<boost::shared_ptr<Curve> > parametricCurves;
-        std::map<int,std::string> stringAnimation;
-        
-        bool copyAnimation;
-        int dimension;
-        
-        appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
-        
-        QAction* pasteAction = new QAction(tr("Paste animation"),menu);
-        QObject::connect(pasteAction,SIGNAL(triggered()),this,SLOT(onPasteAnimationActionTriggered()));
-        menu->addAction(pasteAction);
-        if (!copyAnimation || isClipBoardEmpty || !isEnabled) {
-            pasteAction->setEnabled(false);
-        }
-    }
-    
     
 }
 
@@ -623,9 +626,6 @@ void KnobGui::onHorizontalInterpActionTriggered(){
 void KnobGui::setKeyframe(double time,int dimension) {
     boost::shared_ptr<KnobI> knob = getKnob();
     assert(knob->getHolder()->getApp());
-//    if (!knob->getIsSecret()) {
-//        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
-//    }
     emit keyFrameSetByUser(time,dimension);
     emit keyFrameSet();
 }
@@ -641,7 +641,9 @@ void KnobGui::onSetKeyActionTriggered(){
     }
     for(int i = 0; i < knob->getDimension();++i){
         CurveGui* curve = getGui()->getCurveEditor()->findCurve(this, i);
-        assert(curve);
+        if (!curve) {
+            return;
+        }
         std::vector<KeyFrame> kVec;
         KeyFrame kf;
         kf.setTime(time);
@@ -679,7 +681,6 @@ void KnobGui::removeKeyFrame(double time,int dimension){
         knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
     }
     updateGUI(dimension);
-    checkAnimationLevel(dimension);
 }
 
 QString KnobGui::toolTip() const
@@ -784,7 +785,8 @@ void KnobGui::show(int index){
         QLayoutItem* item = _imp->containerLayout->itemAt(_imp->row, QFormLayout::FieldRole);
         if ((item && item->widget() != _imp->field) || !item) {
             int indexToUse = index != -1 ? index : _imp->row;
-            _imp->containerLayout->insertRow(indexToUse, _imp->descriptionLabel, _imp->field);
+            _imp->containerLayout->setWidget(indexToUse, QFormLayout::LabelRole,_imp->descriptionLabel);
+            _imp->containerLayout->setWidget(indexToUse, QFormLayout::FieldRole, _imp->field);
         }
         _imp->field->setParent(_imp->containerLayout->parentWidget());
         _imp->field->show();
@@ -840,19 +842,19 @@ QWidget* KnobGui::getFieldContainer() const {
     return _imp->field;
 }
 
-void KnobGui::onInternalValueChanged(int dimension) {
+void KnobGui::onInternalValueChanged(int dimension,int /*reason*/) {
     if(_imp->widgetCreated){
         updateGuiInternal(dimension);
-        checkAnimationLevel(dimension);
     }
 }
 
-void KnobGui::onInternalKeySet(SequenceTime time,int ){
-    boost::shared_ptr<KnobI> knob = getKnob();
+void KnobGui::onInternalKeySet(SequenceTime time,int,bool added ){
     
-    ///For file knobs do not add keys
-    if (!dynamic_cast<File_Knob*>(knob.get()) && !knob->getIsSecret()) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+    if (added) {
+        boost::shared_ptr<KnobI> knob = getKnob();
+        if (!knob->getIsSecret()) {
+            knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+        }
     }
     
     emit keyFrameSet();
@@ -960,7 +962,7 @@ void KnobGui::pasteClipBoard(int targetDimension)
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
 
     if (copyAnimation && !curves.empty() && ((int)curves.size() != knob->getDimension())) {
-        Natron::errorDialog("Paste animation", "You cannot copy/paste animation from/to parameters with different dimensions.");
+        Natron::errorDialog(tr("Paste animation").toStdString(), tr("You cannot copy/paste animation from/to parameters with different dimensions.").toStdString());
     }
     
     int i = 0;
@@ -968,26 +970,26 @@ void KnobGui::pasteClipBoard(int targetDimension)
         if (i == dimension) {
             if (isInt) {
                 if (!it->canConvert(QVariant::Int)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             } else if (isBool) {
                 if (!it->canConvert(QVariant::Bool)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             } else if (isDouble) {
                 if (!it->canConvert(QVariant::Double)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             } else if (isString) {
                 if (!it->canConvert(QVariant::String)) {
-                    QString err = QString("Cannot paste values from a parameter of type %1 to a parameter of type String").arg(it->typeName());
-                    Natron::errorDialog("Paste",err.toStdString());
+                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg(it->typeName());
+                    Natron::errorDialog(tr("Paste").toStdString(),err.toStdString());
                     break;
                 }
             }
@@ -1037,7 +1039,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     
     _mainLayout->addWidget(_buttonsWidget);
     
-    _selectKnobLabel = new QLabel("Target:",_firstLine);
+    _selectKnobLabel = new QLabel(tr("Target:"),_firstLine);
     _firstLineLayout->addWidget(_selectKnobLabel);
     
     _selectionCombo = new ComboBox(_firstLine);
@@ -1075,10 +1077,10 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     }
     _selectionCombo->setFocus();
     
-    _cancelButton = new Button("Cancel",_buttonsWidget);
+    _cancelButton = new Button(tr("Cancel"),_buttonsWidget);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _buttonsLayout->addWidget(_cancelButton);
-    _okButton = new Button("Ok",_buttonsWidget);
+    _okButton = new Button(tr("Ok"),_buttonsWidget);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _buttonsLayout->QLayout::addWidget(_okButton);
 }
@@ -1094,7 +1096,7 @@ std::pair<int,boost::shared_ptr<KnobI> > LinkToKnobDialog::getSelectedKnobs() co
 }
 
 void KnobGui::onKnobSlavedChanged(int dimension,bool b) {
-    checkAnimationLevel(dimension);
+
     if (b) {
         emit keyFrameRemoved();
     } else {
@@ -1112,7 +1114,7 @@ void KnobGui::linkTo(int dimension) {
         if(otherKnob.second){
             
             if (!thisKnob->isTypeCompatible(otherKnob.second)) {
-                errorDialog("Knob Link", "Types incompatibles!");
+                errorDialog(tr("Knob Link").toStdString(), tr("Types incompatibles!").toStdString());
                 return;
             }
             
@@ -1120,11 +1122,11 @@ void KnobGui::linkTo(int dimension) {
             
             std::pair<int,boost::shared_ptr<KnobI> > existingLink = thisKnob->getMaster(otherKnob.first);
             if(existingLink.second){
-                std::string err("Cannot link ");
+                std::string err(tr("Cannot link ").toStdString());
                 err.append(thisKnob->getDescription());
-                err.append(" \n because the knob is already linked to ");
+                err.append(" \n " + tr("because the knob is already linked to ").toStdString());
                 err.append(existingLink.second->getDescription());
-                errorDialog("Knob Link", err);
+                errorDialog(tr("Knob Link").toStdString(), err);
                 return;
             }
             
@@ -1161,33 +1163,6 @@ void KnobGui::onUnlinkActionTriggered() {
     }
 }
 
-void KnobGui::checkAnimationLevel(int dimension)
-{
-    boost::shared_ptr<KnobI> knob = getKnob();
-    AnimationLevel level = Natron::NO_ANIMATION;
-    if (knob->getHolder()->getApp()) {
-        
-        boost::shared_ptr<Curve> c = getKnob()->getCurve(dimension);
-        SequenceTime time = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        if (c->getKeyFramesCount() > 0) {
-            KeyFrame kf;
-            bool found = c->getKeyFrameWithTime(time, &kf);;
-            if (found) {
-                level = Natron::ON_KEYFRAME;
-            } else {
-                level = Natron::INTERPOLATED_VALUE;
-            }
-        } else {
-            level = Natron::NO_ANIMATION;
-        }
-    }
-    if (level != knob->getAnimationLevel(dimension)) {
-        knob->setAnimationLevel(dimension,level);
-        if (!_imp->customInteract) {
-            reflectAnimationLevel(dimension, level);
-        }
-    }
-}
 
 
 void KnobGui::onResetDefaultValuesActionTriggered() {
@@ -1327,7 +1302,7 @@ void KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                 times.push_back(it->getTime());
             }
         }
-        timeline->removeMultipleKeyframeIndicator(times);
+        timeline->removeMultipleKeyframeIndicator(times,true);
     }
 }
 
@@ -1350,7 +1325,7 @@ void KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
             times.push_back(it->getTime());
         }
     }
-    timeline->addMultipleKeyframeIndicatorsAdded(times);
+    timeline->addMultipleKeyframeIndicatorsAdded(times,true);
 }
 
 void KnobGui::setKeyframeMarkerOnTimeline(int time)
@@ -1359,3 +1334,33 @@ void KnobGui::setKeyframeMarkerOnTimeline(int time)
     knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
     
 }
+
+void KnobGui::onKeyFrameMoved(int oldTime,int newTime)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    
+    if (!knob->isAnimationEnabled() || !knob->canAnimate()) {
+        return;
+    }
+    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+    timeline->removeKeyFrameIndicator(oldTime);
+    timeline->addKeyframeIndicator(newTime);
+    
+}
+
+void KnobGui::onAnimationLevelChanged(int level)
+{
+    if (!_imp->customInteract) {
+        int dim = getKnob()->getDimension();
+        for (int i = 0; i < dim; ++i) {
+            reflectAnimationLevel(i, (Natron::AnimationLevel)level);
+        }
+    }
+}
+
+void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame)
+{
+    pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,v,dim,time));
+}
+
+

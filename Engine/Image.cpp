@@ -276,10 +276,12 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     }
 
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
+#ifdef NATRON_DEBUG
     qDebug() << "render " << ret.size() << " rectangles";
     for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
         qDebug() << "rect: " << "x1= "<<  it->x1 << " , x2= "<< it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
     }
+#endif
     return ret;
 }
 
@@ -318,8 +320,8 @@ char* Natron::Bitmap::getBitmapAt(int x,int y)
     }
 }
 
-Image::Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,bool restore,const std::string& path):
-CacheEntryHelper<unsigned char,ImageKey>(key,params,restore,path)
+Image::Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,const Natron::CacheAPI* cache):
+CacheEntryHelper<unsigned char,ImageKey>(key,params,cache)
 {
     const ImageParams* p = dynamic_cast<const ImageParams*>(params.get());
     _components = p->getComponents();
@@ -328,10 +330,6 @@ CacheEntryHelper<unsigned char,ImageKey>(key,params,restore,path)
     _rod = p->getRoD();
     _pixelRod = p->getPixelRoD();
     
-#ifdef NATRON_DEBUG
-    ///fill with red, to recognize unrendered pixels
-    fill(_pixelRod,1.,0.,0.,1.);
-#endif
 }
 
 /*This constructor can be used to allocate a local Image. The deallocation should
@@ -347,8 +345,7 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
                                                 components,
                                                 -1,
                                                 0,
-                                                std::map<int,std::vector<RangeD> >())),
-                                            false,"")
+                                                std::map<int,std::vector<RangeD> >())),NULL)
 {
     // NOTE: before removing the following assert, please explain why an empty image may happen
     assert(!regionOfDefinition.isNull());
@@ -359,7 +356,16 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
     _bitmap.initialize(p->getPixelRoD());
     _rod = regionOfDefinition;
     _pixelRod = p->getPixelRoD();
+    allocateMemory(false, "");
 }
+
+#ifdef NATRON_DEBUG
+void Image::onMemoryAllocated()
+{
+    ///fill with red, to recognize unrendered pixels
+    fill(_pixelRod,1.,0.,0.,1.);
+}
+#endif
 
 ImageKey Image::makeKey(U64 nodeHashKey,
                         SequenceTime time,
@@ -513,7 +519,37 @@ unsigned int Image::getComponentsCount() const
 
 bool Image::hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to)
 {
-    return getElementsCountForComponents(from) >= getElementsCountForComponents(to);
+    switch (from) {
+        case ImageComponentRGBA:
+            return true;
+        case ImageComponentRGB: {
+            switch (to) {
+                case ImageComponentRGBA:
+                    return false;
+                case ImageComponentRGB:
+                    return true;
+                case ImageComponentAlpha:
+                    return false;
+                default:
+                    return false;
+            }
+        } break;
+        case ImageComponentAlpha: {
+            switch (to) {
+                case ImageComponentRGBA:
+                    return false;
+                case ImageComponentRGB:
+                    return false;
+                case ImageComponentAlpha:
+                    return true;
+                default:
+                    return false;
+            }
+        } break;
+        default:
+            return false;
+            break;
+    }
 }
 
 std::string Image::getFormatString(Natron::ImageComponents comps,Natron::ImageBitDepth depth)

@@ -34,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/LibraryBinary.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
+#include "Engine/Settings.h"
 #include <SequenceParsing.h>
 
 //gui
@@ -101,6 +102,8 @@ GuiApplicationManager::~GuiApplicationManager() {
 
 
 void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
+    int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
+    QString iconSetStr = QString::number(iconSet);
     if(!QPixmapCache::find(QString::number(e),pix)){
         QImage img;
         switch(e){
@@ -260,48 +263,68 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"color_picker.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+                
+                
             case NATRON_PIXMAP_IO_GROUPING:
-                img.load(NATRON_IMAGES_PATH"io_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/image_grouping_" + iconSetStr + ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_3D_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/3D_grouping_" + iconSetStr + ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_CHANNEL_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/channel_grouping_" + iconSetStr + ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/merge_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_COLOR_GROUPING:
-                img.load(NATRON_IMAGES_PATH"color_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/color_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_TRANSFORM_GROUPING:
-                img.load(NATRON_IMAGES_PATH"transform_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/transform_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_DEEP_GROUPING:
-                img.load(NATRON_IMAGES_PATH"deep_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/deep_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_FILTER_GROUPING:
-                img.load(NATRON_IMAGES_PATH"filter_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/filter_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_MULTIVIEW_GROUPING:
-                img.load(NATRON_IMAGES_PATH"multiview_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/multiview_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_MISC_GROUPING:
-                img.load(NATRON_IMAGES_PATH"misc_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/misc_grouping_" + iconSetStr + ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_TOOLSETS_GROUPING:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/toolsets_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_KEYER_GROUPING:
-                img.load(NATRON_IMAGES_PATH"Keyer_low.png");
-                *pix = QPixmap::fromImage(img);
-                break;
-            case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
-                img.load(NATRON_IMAGES_PATH"openeffects.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/keyer_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_TIME_GROUPING:
-                img.load(NATRON_IMAGES_PATH"time_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/time_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_PAINT_GROUPING:
-                img.load(NATRON_IMAGES_PATH"paint_low.png");
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/paint_grouping_" + iconSetStr + ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
+                
+               
+            case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
+                img.load(NATRON_IMAGES_PATH"openeffects.png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_COMBOBOX:
@@ -469,6 +492,26 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"italic_checked.png");
                 *pix = QPixmap::fromImage(img).scaled(15, 15);
                 break;
+            case NATRON_PIXMAP_CLEAR_ALL_ANIMATION:
+                img.load(NATRON_IMAGES_PATH"clearAnimation.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION:
+                img.load(NATRON_IMAGES_PATH"clearAnimationBw.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION:
+                img.load(NATRON_IMAGES_PATH"clearAnimationFw.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_UPDATE_VIEWER_ENABLED:
+                img.load(NATRON_IMAGES_PATH"updateViewerEnabled.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
+            case NATRON_PIXMAP_UPDATE_VIEWER_DISABLED:
+                img.load(NATRON_IMAGES_PATH"updateViewerDisabled.png");
+                *pix = QPixmap::fromImage(img).scaled(20, 20);
+                break;
             default:
                 assert(!"Missing image.");
         }
@@ -514,7 +557,7 @@ void GuiApplicationManager::initGui() {
     
 }
 
-void GuiApplicationManager::addPluginToolButtons(const QStringList& groups,
+void GuiApplicationManager::onPluginLoaded(const QStringList& groups,
                           const QString& pluginID,
                           const QString& pluginLabel,
                           const QString& pluginIconPath,
@@ -614,7 +657,9 @@ void GuiApplicationManager::setLoadingStatus(const QString& str) {
     if (isLoaded()) {
         return;
     }
-    _imp->_splashScreen->updateText(str);
+    if (_imp->_splashScreen) {
+        _imp->_splashScreen->updateText(str);
+    }
 
 }
 
@@ -636,9 +681,9 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(readerPlugin,reader->pluginID().c_str(),reader->pluginLabel().c_str(),
-                                                    (QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
+                                                    "",(QMutex*)NULL,reader->majorVersion(),reader->minorVersion());
         plugins->push_back(plugin);
-        addPluginToolButtons(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "","");
+        onPluginLoaded(grouping,reader->pluginID().c_str(),reader->pluginLabel().c_str(), "","");
         
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for(U32 k = 0; k < extensions.size();++k){
@@ -663,9 +708,9 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(writerPlugin,writer->pluginID().c_str(),writer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
+                                                    "",(QMutex*)NULL,writer->majorVersion(),writer->minorVersion());
         plugins->push_back(plugin);
-        addPluginToolButtons(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "","");
+        onPluginLoaded(grouping,writer->pluginID().c_str(),writer->pluginLabel().c_str(), "","");
         
         std::vector<std::string> extensions = writer->supportedFileFormats();
         for(U32 k = 0; k < extensions.size();++k){
@@ -695,18 +740,21 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         Natron::Plugin* plugin = new Natron::Plugin(viewerPlugin,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(),
-                                                    (QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
+                                                    "",(QMutex*)NULL,viewer->majorVersion(),viewer->minorVersion());
         plugins->push_back(plugin);
-        addPluginToolButtons(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
+        onPluginLoaded(grouping,viewer->pluginID().c_str(),viewer->pluginLabel().c_str(), "","");
     }
     
     {
         QString label(NATRON_BACKDROP_NODE_NAME);
-        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,NULL,1,0);
+        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,"",NULL,1,0);
         plugins->push_back(plugin);
-        QStringList backdropGrouping(PLUGIN_GROUP_DEFAULT);
-        addPluginToolButtons(backdropGrouping, label, label, "", "");
+        QStringList backdropGrouping(PLUGIN_GROUP_TOOLSETS);
+        onPluginLoaded(backdropGrouping, label, label, "", "");
     }
+    
+    ///Also load the plug-ins of the AppManager
+    AppManager::loadBuiltinNodePlugins(plugins, readersMap, writersMap);
 }
 
 AppInstance* GuiApplicationManager::makeNewInstance(int appID) const {
@@ -816,3 +864,14 @@ void GuiApplicationManager::onLoadCompleted()
     }
 }
 
+void GuiApplicationManager::exitApp()
+{
+    ///make a copy of the map because it will be modified when closing projects
+    std::map<int,AppInstanceRef> instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+        GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (!app->getGui()->closeInstance()) {
+            return;
+        }
+    }
+}

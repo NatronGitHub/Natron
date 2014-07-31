@@ -95,6 +95,8 @@ public:
      **/
     std::vector< boost::shared_ptr<Natron::Node> > getCurrentNodes() const;
     
+    bool hasNodes() const;
+    
     bool connectNodes(int inputNumber,const std::string& inputName,boost::shared_ptr<Natron::Node> output);
     
     /**
@@ -120,6 +122,8 @@ public:
     QString getProjectName() const WARN_UNUSED_RETURN ;
     
     QString getLastAutoSaveFilePath() const;
+    
+    bool hasEverAutoSaved() const;
     
     QString getProjectPath() const WARN_UNUSED_RETURN;
     
@@ -177,11 +181,6 @@ public:
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
     Natron::OutputEffectInstance* getLastTimelineSeekCaller() const;
     
-    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
-
-    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, KnobI *k, bool isSignificant);
-
-    void endProjectWideValueChanges(KnobHolder* caller);
 
     /**
      * @brief Returns true if the project is considered as irrelevant and shouldn't be autosaved anyway.
@@ -219,9 +218,15 @@ public:
      * @brief Remove all the autosave files from the disk.
      **/
     static void removeAutoSaves();
+    
+    virtual bool isProject() const { return true; }
+    
 public slots:
 
     void onAutoSaveTimerTriggered();
+    
+    ///Closes the project, clearing all nodes and reseting the project name
+    void closeProject() { reset(); }
 signals:
     
     void mustCreateFormat();
@@ -252,7 +257,7 @@ private:
  
     
     /**
-     * @brief Resets the project state.
+     * @brief Resets the project state clearing all nodes and the project name.
      **/
     void reset();
     
@@ -289,7 +294,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason)  OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;
     

@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 namespace Natron {
 class OutputEffectInstance;
 class Project;
+class Node;
 }
 
 class TimeLine: public QObject {
@@ -62,14 +63,37 @@ public:
     
     void addKeyframeIndicator(SequenceTime time);
     
-    void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys) ;
+    void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys,bool emitSignal) ;
     
     void removeKeyFrameIndicator(SequenceTime time);
      
-    void removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys);
+    void removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys,bool emitSignal);
+    
+    /**
+     * @brief Show keyframe markers for the given nodes on the timeline. The signal to refresh the gui
+     * will be emitted only once.
+     **/
+    void addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes);
+    
+    /**
+     * @brief Provided for convenience for a single node
+     **/
+    void addNodeKeyframesToTimeline(Natron::Node* node);
+    
+    /**
+     * @brief Hide keyframe markers for the given nodes on the timeline. The signal to refresh the gui
+     * will be emitted only once.
+     **/
+    void removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& nodes);
+    
+    /**
+     * @brief Provided for convenience for a single node
+     **/
+    void removeNodeKeyframesFromTimeline(Natron::Node* node);
     
     void getKeyframes(std::list<SequenceTime>* keys) const;
 
+  
 public slots:
     void onFrameChanged(SequenceTime frame);
 

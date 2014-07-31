@@ -52,91 +52,6 @@ const std::string& File_Knob::typeName() const
 }
 
 
-void File_Knob::setFiles(const std::vector<std::string>& files) {
-
-    SequenceParsing::SequenceFromFiles sequence(false);
-    for (U32 i = 0; i < files.size(); ++i) {
-        sequence.tryInsertFile(SequenceParsing::FileNameContent(files.at(i)));
-    }
-    setFiles(sequence);
-}
-
-void File_Knob::setFilesInternal(const SequenceParsing::SequenceFromFiles& fileSequence) {
-    KnobI::removeAnimation(0);
-    if (!fileSequence.empty()) {
-        if (isAnimationEnabled()) {
-            const std::map<int, std::string>& filesMap  = fileSequence.getFrameIndexes();
-            if (!filesMap.empty()) {
-                for (std::map<int, std::string>::const_iterator it = filesMap.begin(); it!=filesMap.end(); ++it) {
-                    setValueAtTime(it->first, it->second,0);
-                }
-            } else {
-                ///the sequence has no indexes,if it has one file set a keyframe at time 0 for the single file
-                if (fileSequence.isSingleFile()) {
-                    setValueAtTime(0, fileSequence.getFilesList().at(0),0);
-                }
-            }
-            
-        }
-    }
-
-}
-
-void File_Knob::setFiles(const SequenceParsing::SequenceFromFiles& fileSequence) {
-    
-    
-    beginValueChange(Natron::PLUGIN_EDITED);
-    setFilesInternal(fileSequence);
-    _pattern = fileSequence.generateValidSequencePattern().c_str();
-    
-    ///necessary for the changedParam call!
-    setValue(_pattern.toStdString(),0,true);
-    endValueChange();
-}
-
-///called when a value changes, just update the pattern
-void File_Knob::processNewValue(Natron::ValueChangedReason reason) {
-    if (reason != Natron::TIME_CHANGED && reason != Natron::PROJECT_LOADING) {
-        if (isSlave(0)) {
-            std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(0);
-            assert(master.second);
-            boost::shared_ptr< Knob<std::string> > isString = boost::dynamic_pointer_cast<Knob<std::string > >(master.second);
-            assert(isString);
-            
-            _pattern = isString->getValueForEachDimension()[master.first].c_str();
-        } else {
-            _pattern = dynamic_cast< Knob<std::string>* >(this)->getValueForEachDimension()[0].c_str();
-        }
- 
-    } else if (reason == Natron::PROJECT_LOADING) {
-        ///when the project is loading, build the pattern
-        if (isAnimated(0)) {
-            SequenceParsing::SequenceFromFiles sequence;
-            getFiles(&sequence);
-            _pattern = sequence.generateValidSequencePattern().c_str();
-        } else {
-            _pattern = dynamic_cast< Knob<std::string>* >(this)->getValueForEachDimension()[0].c_str();
-        }
-    }
-}
-
-void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
-{
-    File_Knob* isFile = dynamic_cast<File_Knob*>(other.get());
-    if (isFile) {
-        _pattern = isFile->getPattern();
-    }
-    AnimatingString_KnobHelper::cloneExtraData(other);
-}
-
-void File_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
-{
-    File_Knob* isFile = dynamic_cast<File_Knob*>(other.get());
-    if (isFile) {
-        _pattern = isFile->getPattern();
-    }
-    AnimatingString_KnobHelper::cloneExtraData(other,offset,range);
-}
 
 int File_Knob::firstFrame() const
 {
@@ -157,42 +72,16 @@ int File_Knob::frameCount() const {
     return getKeyFramesCount(0);
 }
 
-std::string File_Knob::getValueAtTimeConditionally(int f, bool loadNearestIfNotFound) const
+std::string File_Knob::getFileName(int time,int view) const
 {
-    if (!isAnimationEnabled()) {
+    if (!_isInputImage) {
         return getValue();
     } else {
-        
-        if (!loadNearestIfNotFound) {
-            int ksIndex = getKeyFrameIndex(0, f);
-            if (ksIndex == -1) {
-                return getValue();
-            }
-        }
-        if (getKeyFramesCount(0) == 0) {
-            return getValue();
-        } else {
-            return getValueAtTime(f, 0);
-        }
+        ///try to interpret the pattern and generate a filename if indexes are found
+        return SequenceParsing::generateFileNameFromPattern(getValue(), time, view);
     }
 }
 
-
-
-void File_Knob::getFiles(SequenceParsing::SequenceFromFiles* files) {
-    int kfCount = getKeyFramesCount(0);
-    for (int i = 0; i < kfCount; ++i) {
-        bool success;
-        std::string v = getKeyFrameValueByIndex(0, i, &success);
-        assert(success);
-        files->tryInsertFile(SequenceParsing::FileNameContent(v.c_str()));
-    }
-}
-
-void File_Knob::animationRemoved_virtual(int dimension) {
-    AnimatingString_KnobHelper::animationRemoved_virtual(dimension);
-    _pattern.clear();
-}
 
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 

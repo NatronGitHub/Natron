@@ -59,14 +59,18 @@ AppInstance::AppInstance(int appID)
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
     
+    
     ///initialize the knobs of the project before loading anything else.
     _imp->_currentProject->initializeKnobsPublic();
 }
 
 AppInstance::~AppInstance(){
-    
     appPTR->removeInstance(_imp->_appID);
     QThreadPool::globalInstance()->waitForDone();
+    
+    ///Clear nodes now, not in the destructor of the project as
+    ///deleting nodes might reference the project.
+    _imp->_currentProject->clearNodes(false);
 }
 
 void AppInstance::checkForNewVersion() const
@@ -109,10 +113,10 @@ void AppInstance::newVersionCheckDownloaded()
     
     int versionEncoded = NATRON_VERSION_ENCODE(major, minor, revision);
     if (versionEncoded > NATRON_VERSION_ENCODED) {
-        QString text(QString("Updates for " NATRON_APPLICATION_NAME " are now available for download. "
-                        "You are currently using " NATRON_APPLICATION_NAME " version " NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS
-                        ". The latest version of " NATRON_APPLICATION_NAME " is version ") + data +
-                     QString(". You can download it from <a href='http://sourceforge.net/projects/natron/'>"
+        QString text(QObject::tr("Updates for %1 are now available for download. "
+                        "You are currently using %1 version %2 - %3"
+                        ". The latest version of %1 is version ").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(NATRON_DEVELOPMENT_STATUS) + data +
+                     QObject::tr(". You can download it from") + QString("<a href='http://sourceforge.net/projects/natron/'>"
                              "<font color=\"orange\">Sourceforge</a>."));
         Natron::informationDialog("New version",text.toStdString());
     }
@@ -177,8 +181,11 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
     
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,bool createGui,int majorVersion,int minorVersion,
-                                 bool requestedByLoad,bool openImageFileDialog,const NodeSerialization& serialization,bool dontLoadName)
+boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,const std::string& multiInstanceParentName,
+                                                                int majorVersion,int minorVersion,
+                                                                bool requestedByLoad,bool openImageFileDialog,
+                                                                const NodeSerialization& serialization,bool dontLoadName,
+                                                                int childIndex,bool autoConnect)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -186,9 +193,6 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
         pluginBinary = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
     } catch (const std::exception& e) {
         Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable") + ": " + e.what());
-        return node;
-    } catch (...) {
-        Natron::errorDialog("Plugin error", std::string("Cannot load plugin executable"));
         return node;
     }
     
@@ -200,7 +204,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     
     try{
-        node->load(pluginID.toStdString(),node, serialization,dontLoadName);
+        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -214,30 +218,33 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
         errorDialog(title, message);
         return boost::shared_ptr<Natron::Node>();
     }
-    
+    if (!requestedByLoad && !multiInstanceParentName.empty()) {
+        node->fetchParentMultiInstancePointer();
+    }
     
     _imp->_currentProject->addNodeToProject(node);
-    
-    createNodeGui(node,createGui,requestedByLoad,openImageFileDialog);
+    createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog,autoConnect);
     return node;
 
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNode(const QString& name,bool createGui,int majorVersion,int minorVersion,bool openImageFileDialog)
+boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& args)
 {    
     ///use the same entry point to create backdrops.
     ///Since they are purely GUI we don't actually return a node.
-    if (name == NATRON_BACKDROP_NODE_NAME) {
+    if (args.pluginID == QString(NATRON_BACKDROP_NODE_NAME)) {
         createBackDrop();
         return boost::shared_ptr<Natron::Node>();
     }
-    return createNodeInternal(name,createGui, majorVersion, minorVersion, false,
-                              openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false);
+    return createNodeInternal(args.pluginID,args.multiInstanceParentName, args.majorV, args.minorV, false,
+                              args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false,args.childIndex,
+                              args.autoConnect);
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::loadNode(const QString& name,bool createGui,int majorVersion,int minorVersion,const NodeSerialization& serialization,bool dontLoadName)
+boost::shared_ptr<Natron::Node> AppInstance::loadNode(const LoadNodeArgs& args)
 {
-    return createNodeInternal(name,createGui ,majorVersion, minorVersion, true, false, serialization,dontLoadName);
+    return createNodeInternal(args.pluginID,args.multiInstanceParentName ,args.majorV, args.minorV,
+                              true, false, *args.serialization,args.dontLoadName,-1,false);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }
@@ -253,35 +260,11 @@ void AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* 
 }
 
 boost::shared_ptr<Natron::Project> AppInstance::getProject() const {
-    if (!_imp) {
-        return boost::shared_ptr<Natron::Project>();
-    }
     return _imp->_currentProject;
 }
 
 boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  { return _imp->_currentProject->getTimeLine(); }
 
-
-
-void AppInstance::connectViewersToViewerCache(){
-    std::vector<boost::shared_ptr<Natron::Node> > currentNodes = _imp->_currentProject->getCurrentNodes();
-    for (U32 i = 0; i < currentNodes.size(); ++i) {
-        assert(currentNodes[i]);
-        if(currentNodes[i]->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->connectSlotsToViewerCache();
-        }
-    }
-}
-
-void AppInstance::disconnectViewersFromViewerCache(){
-    std::vector<boost::shared_ptr<Natron::Node> > currentNodes = _imp->_currentProject->getCurrentNodes();
-    for (U32 i = 0; i < currentNodes.size(); ++i) {
-        assert(currentNodes[i]);
-        if(currentNodes[i]->pluginID() == "Viewer"){
-            dynamic_cast<ViewerInstance*>(currentNodes[i]->getLiveInstance())->disconnectSlotsToViewerCache();
-        }
-    }
-}
 
 void AppInstance::errorDialog(const std::string& title,const std::string& message) const {
     std::cout << "ERROR: " << title + ": " << message << std::endl;
@@ -406,7 +389,7 @@ void AppInstance::clearAllLastRenderedImages()
 {
     const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
-        activeNodes[i]->getLiveInstance()->clearLastRenderedImage();
+        activeNodes[i]->clearLastRenderedImage();
     }
 }
 

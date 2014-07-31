@@ -38,7 +38,7 @@ File_KnobGui::File_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *contain
 {
     _knob = boost::dynamic_pointer_cast<File_Knob>(knob);
     assert(_knob);
-    QObject::connect(_knob.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)));
+    QObject::connect(_knob.get(), SIGNAL(openFile()), this, SLOT(open_file()));
 }
 
 File_KnobGui::~File_KnobGui()
@@ -53,7 +53,7 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
 
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    _lineEdit->setPlaceholderText("File path...");
+    _lineEdit->setPlaceholderText(tr("File path..."));
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     
     ///set the copy/link actions in the right click menu
@@ -85,51 +85,11 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void File_KnobGui::onButtonClicked() {
-    open_file(_knob->isAnimationEnabled());
+    open_file();
 }
 
-class File_Knob_UndoCommand : public QUndoCommand {
-    
-    File_KnobGui* _knob;
-    SequenceParsing::SequenceFromFiles _oldFiles;
-    SequenceParsing::SequenceFromFiles _newFiles;
-    
-public:
-    
-    File_Knob_UndoCommand(File_KnobGui *knob,
-                          const SequenceParsing::SequenceFromFiles& oldFiles,
-                          const SequenceParsing::SequenceFromFiles& newFiles,
-                          QUndoCommand *parent = 0)
-    : QUndoCommand(parent)
-    , _knob(knob)
-    , _oldFiles(oldFiles)
-    , _newFiles(newFiles)
-    {
-        
-    }
-    
-private:
-    
-    virtual void undo() OVERRIDE FINAL {
-        boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
-        fk->setFiles(_oldFiles);
-        if (fk->getHolder()->getApp()) {
-            fk->getHolder()->getApp()->getProject()->triggerAutoSave();
-        }
-    }
-    
-    virtual void redo() OVERRIDE FINAL {
-        boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(_knob->getKnob());
-        fk->setFiles(_newFiles);
-        if (fk->getHolder()->getApp()) {
-            fk->getHolder()->getApp()->getProject()->triggerAutoSave();
-        }
-    }
-    
-};
 
-
-void File_KnobGui::open_file(bool openSequence)
+void File_KnobGui::open_file()
 {
     
     std::vector<std::string> filters;
@@ -142,21 +102,23 @@ void File_KnobGui::open_file(bool openSequence)
             filters = effect->supportedFileFormats();
         }
     }
-    SequenceParsing::SequenceFromFiles currentFiles(false);
-    _knob->getFiles(&currentFiles);
+    std::string currentPattern = _knob->getValue();
+    std::string path = SequenceParsing::removePath(currentPattern);
     QString pathWhereToOpen;
-    if (currentFiles.empty()) {
+    if (path.empty()) {
         pathWhereToOpen = _lastOpened;
     } else {
-        pathWhereToOpen = currentFiles.getPath().c_str();
+        pathWhereToOpen = path.c_str();
     }
     
-    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString());
-    SequenceParsing::SequenceFromFiles selectedFiles(false);
+    SequenceFileDialog dialog(_lineEdit->parentWidget(), filters, _knob->isInputImageFile(),
+                              SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString());
     if (dialog.exec()) {
-        selectedFiles = dialog.getSelectedFilesAsSequence();
-        updateLastOpened(selectedFiles.getPath().c_str());
-        pushUndoCommand(new File_Knob_UndoCommand(this,currentFiles,selectedFiles));
+        std::string selectedFile = dialog.selectedFiles();
+        std::string originalSelectedFile = selectedFile;
+        path = SequenceParsing::removePath(selectedFile);
+        updateLastOpened(path.c_str());
+        pushUndoCommand(new KnobUndoCommand<std::string>(this,currentPattern,originalSelectedFile));
     }
     
 }
@@ -171,41 +133,20 @@ void File_KnobGui::updateLastOpened(const QString &str)
 
 void File_KnobGui::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
-    _lineEdit->setText(fk->getPattern());
+    _lineEdit->setText(_knob->getValue().c_str());
 }
 
 void File_KnobGui::onReturnPressed()
 {
-    boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(getKnob());
 
     QString str = _lineEdit->text();
     
     ///don't do antyhing if the pattern is the same
-    if (str == fk->getPattern()) {
+    std::string oldValue = _knob->getValue();
+    if (str == oldValue.c_str()) {
         return;
     }
-    
-    SequenceParsing::SequenceFromPattern sequence;
-    SequenceParsing::filesListFromPattern(str.toStdString(), &sequence);
-    ///Even though the user might have passed to the file knob a view variable (%v or %V)
-    ///we just keep the files corresponding to the view 0 because the file knob doesn't support multiviews.
-    StringList newList = SequenceParsing::sequenceFromPatternToFilesList(sequence,0);
-    SequenceParsing::SequenceFromFiles sequenceFromFiles(false);
-    for (U32 i = 0; i < newList.size(); ++i) {
-        sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(newList.at(i)));
-    }
-
-    ///even though the algorithm didnt recognize a file with the pattern given by the user, insert it to the sequence
-    ///so the knob displays something.
-    if (sequenceFromFiles.empty()) {
-        sequenceFromFiles.tryInsertFile(SequenceParsing::FileNameContent(str.toStdString()));
-    }
-    
-    SequenceParsing::SequenceFromFiles oldFiles(false);
-    fk->getFiles(&oldFiles);
-    fk->setPattern(str);
-    pushUndoCommand(new File_Knob_UndoCommand(this,oldFiles,sequenceFromFiles));
+    pushUndoCommand(new KnobUndoCommand<std::string>(this,oldValue,str.toStdString()));
 }
 
 
@@ -261,7 +202,7 @@ void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()));
-    _lineEdit->setPlaceholderText(QString("File path..."));
+    _lineEdit->setPlaceholderText(tr("File path..."));
     if(hasToolTip()) {
         _lineEdit->setToolTip(toolTip());
     }
@@ -403,7 +344,7 @@ void Path_KnobGui::createWidget(QHBoxLayout* layout)
     enableRightClickMenu(_lineEdit, 0);
     
     _openFileButton = new Button(layout->parentWidget());
-    _openFileButton->setToolTip("Click to select a path to append to/replace this variable.");
+    _openFileButton->setToolTip(tr("Click to select a path to append to/replace this variable."));
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));

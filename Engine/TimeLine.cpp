@@ -7,8 +7,10 @@
 //
 
 #include "TimeLine.h"
-#include "Engine/Project.h"
+
 #include <cassert>
+#include "Engine/Project.h"
+#include "Engine/Node.h"
 
 TimeLine::TimeLine(Natron::Project* project):
 _firstFrame(0)
@@ -20,23 +22,29 @@ _firstFrame(0)
 , _project(project)
 {}
 
-void TimeLine::setFrameRange(SequenceTime first,SequenceTime last){
-    QMutexLocker l(&_lock);
-    SequenceTime oldFirst = _firstFrame;
-    SequenceTime oldLast = _lastFrame;
-    _firstFrame = first;
-    _lastFrame = last;
+void TimeLine::setFrameRange(SequenceTime first,SequenceTime last) {
+    SequenceTime oldFirst,oldLast;
+    {
+        
+        QMutexLocker l(&_lock);
+        oldFirst = _firstFrame;
+        oldLast = _lastFrame;
+        _firstFrame = first;
+        _lastFrame = last;
+    }
     if(first != oldFirst || last != oldLast){
         emit frameRangeChanged(first, last);
         setBoundaries(first,last);
     }
-
+    
 }
 
 void TimeLine::seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller){
-    QMutexLocker l(&_lock);
-    _currentFrame = frame;
-    _project->setLastTimelineSeekCaller(caller);
+    {
+        QMutexLocker l(&_lock);
+        _currentFrame = frame;
+        _project->setLastTimelineSeekCaller(caller);
+    }
     emit frameChanged(_currentFrame,(int)Natron::PLAYBACK_SEEK);
 }
 
@@ -79,9 +87,9 @@ void TimeLine::addKeyframeIndicator(SequenceTime time) {
     emit keyframeIndicatorsChanged();
 }
 
-void TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys) {
+void TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys,bool emitSignal) {
     _keyframes.insert(_keyframes.begin(),keys.begin(),keys.end());
-    if (!keys.empty()) {
+    if (!keys.empty() && emitSignal) {
         emit keyframeIndicatorsChanged();
     }
 }
@@ -95,22 +103,53 @@ void TimeLine::removeKeyFrameIndicator(SequenceTime time) {
     
 }
 
-void TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys) {
+void TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys,bool emitSignal) {
     for (std::list<SequenceTime>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
         std::list<SequenceTime>::iterator it2 = std::find(_keyframes.begin(), _keyframes.end(), *it);
         if (it2 != _keyframes.end()) {
             _keyframes.erase(it2);
         }
     }
-    if (!keys.empty()) {
+    if (!keys.empty() && emitSignal) {
         emit keyframeIndicatorsChanged();
     }
+}
+
+void TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes)
+{
+    std::list<Natron::Node*>::const_iterator next = nodes.begin();
+    ++next;
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it,++next) {
+        (*it)->showKeyframesOnTimeline(next == nodes.end());
+    }
+}
+
+void TimeLine::addNodeKeyframesToTimeline(Natron::Node* node)
+{
+    node->showKeyframesOnTimeline(true);
+}
+
+void TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& nodes)
+{
+    std::list<Natron::Node*>::const_iterator next = nodes.begin();
+    ++next;
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it,++next) {
+        (*it)->hideKeyframesFromTimeline(next == nodes.end());
+    }
+
+}
+
+void TimeLine::removeNodeKeyframesFromTimeline(Natron::Node* node)
+{
+    node->hideKeyframesFromTimeline(true);
 }
 
 void TimeLine::getKeyframes(std::list<SequenceTime>* keys) const
 {
     *keys = _keyframes;
 }
+
+
 
 void TimeLine::goToPreviousKeyframe()
 {

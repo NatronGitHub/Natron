@@ -16,6 +16,7 @@
 #include <QtConcurrentRun>
 #include <QCoreApplication>
 #include <QTimer>
+#include <QThreadPool>
 #include <QTemporaryFile>
 
 #include "Engine/AppManager.h"
@@ -34,18 +35,19 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
-namespace Natron{
+namespace Natron {
 
 
 Project::Project(AppInstance* appInstance)
-    : KnobHolder(appInstance)
+    : QObject()
+    , KnobHolder(appInstance)
     , _imp(new ProjectPrivate(this))
 {
     QObject::connect(_imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()));
 }
 
 Project::~Project() {
-    clearNodes(false);
+    
     
     ///Don't clear autosaves if the program is shutting down by user request.
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
@@ -68,9 +70,9 @@ bool Project::loadProject(const QString& path,const QString& name){
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
         }
-        Natron::errorDialog("Project loader", std::string("Error while loading project") + ": " + e.what());
+        Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what());
         if(!appPTR->isBackground()) {
-            getApp()->createNode("Viewer");
+            getApp()->createNode(CreateNodeArgs("Viewer"));
         }
         return false;
     } catch (...) {
@@ -78,9 +80,9 @@ bool Project::loadProject(const QString& path,const QString& name){
             QMutexLocker l(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProject = false;
         }
-        Natron::errorDialog("Project loader", std::string("Unkown error while loading project"));
+        Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString());
         if(!appPTR->isBackground()) {
-            getApp()->createNode("Viewer");
+            getApp()->createNode(CreateNodeArgs("Viewer"));
         }
         return false;
     }
@@ -200,16 +202,15 @@ void Project::saveProject(const QString& path,const QString& name,bool autoS){
 
             //}
         } else {
-            if (!isGraphWorthLess()) {
-
-                removeAutoSaves();
-                saveProjectInternal(path,name,true);
-            }
+            
+            removeAutoSaves();
+            saveProjectInternal(path,name,true);
+            
         }
     } catch (const std::exception& e) {
         
         if(!autoS) {
-            Natron::errorDialog("Save", e.what());
+            Natron::errorDialog(QObject::tr("Save").toStdString(), e.what());
         } else {
             qDebug() << "Save failure: " << e.what();
         }
@@ -423,9 +424,9 @@ bool Project::findAndTryLoadAutoSave() {
             QString text;
 
             if (exists) {
-                text = QString(tr("A recent auto-save of %1 was found.\n"
+                text = tr("A recent auto-save of %1 was found.\n"
                                   "Would you like to restore it entirely? "
-                                  "Clicking No will remove this auto-save.")).arg(filename);;
+                                  "Clicking No will remove this auto-save.").arg(filename);;
             } else {
                 text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
                           "Would you like to restore it ? Clicking No will remove this auto-save forever.");
@@ -449,11 +450,11 @@ bool Project::findAndTryLoadAutoSave() {
                 try {
                     loadProjectInternal(savesDir.path()+QDir::separator(), entry);
                 } catch (const std::exception& e) {
-                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project") + ": " + e.what());
-                    getApp()->createNode("Viewer");
+                    Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what());
+                    getApp()->createNode(CreateNodeArgs("Viewer"));
                 } catch (...) {
-                    Natron::errorDialog("Project loader", std::string("Error while loading auto-saved project"));
-                    getApp()->createNode("Viewer");
+                    Natron::errorDialog(QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString());
+                    getApp()->createNode(CreateNodeArgs("Viewer"));
                 }
                 
                 ///Process all events before flagging that we're no longer loading the project
@@ -539,7 +540,7 @@ void Project::initializeKnobs(){
     page->addKnob(_imp->mainView);
     
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
-    _imp->previewMode->setHintToolTip("When true, preview images on the node graph will be"
+    _imp->previewMode->setHintToolTip("When checked, preview images on the node graph will be "
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
     _imp->previewMode->setAnimationEnabled(false);
@@ -595,12 +596,18 @@ void Project::initNodeCountersAndSetName(Node* n) {
     assert(n);
     QMutexLocker l(&_imp->nodesLock);
     std::map<std::string,int>::iterator it = _imp->nodeCounters.find(n->pluginID());
+    QString pluginLabel = n->pluginLabel().c_str();
+    int foundOFX = pluginLabel.lastIndexOf("OFX");
+    if (foundOFX != -1) {
+        pluginLabel = pluginLabel.remove(foundOFX, 3);
+    }
     if(it != _imp->nodeCounters.end()){
         it->second++;
-        n->setName(QString(QString(n->pluginLabel().c_str()) + QString::number(it->second)));
+
+        n->setName(pluginLabel + QString::number(it->second));
     }else{
         _imp->nodeCounters.insert(make_pair(n->pluginID(), 1));
-        n->setName(QString(QString(n->pluginLabel().c_str()) + QString::number(1)));
+        n->setName(pluginLabel + QString::number(1));
     }
 }
     
@@ -634,14 +641,33 @@ void Project::clearNodes(bool emitSignal) {
     {
         QMutexLocker l(&_imp->nodesLock);
         nodesToDelete = _imp->currentNodes;
-        _imp->currentNodes.clear();
     }
+    
+    ///First quit any processing
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->quitAnyProcessing();
+    }
+    ///Kill thread pool so threads are killed before killing thread storage
+    QThreadPool::globalInstance()->waitForDone();
+
+
+    ///Kill effects
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false);
+    }
+    
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->removeReferences();
     }
-    nodesToDelete.clear();
     
+    
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        _imp->currentNodes.clear();
+    }
+
+    nodesToDelete.clear();
+
     if (emitSignal) {
         emit nodesCleared();
     }
@@ -735,6 +761,12 @@ std::vector<boost::shared_ptr<Natron::Node> > Project::getCurrentNodes() const {
     return _imp->currentNodes;
 }
 
+bool Project::hasNodes() const
+{
+    QMutexLocker l(&_imp->nodesLock);
+    return !_imp->currentNodes.empty();
+}
+    
 QString Project::getProjectName() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->projectName;
@@ -746,6 +778,11 @@ QString Project::getLastAutoSaveFilePath() const {
     return _imp->lastAutoSaveFilePath;
 }
 
+bool Project::hasEverAutoSaved() const
+{
+    return !getLastAutoSaveFilePath().isEmpty();
+}
+    
 QString Project::getProjectPath() const {
     QMutexLocker l(&_imp->projectLock);
     return _imp->projectPath;
@@ -821,145 +858,6 @@ void Project::load(const ProjectSerialization& obj)
     emit formatChanged(f);
 }
 
-void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    
-    ///increase the begin calls count
-    ++_imp->beginEndBracketsCount;
-    
-    ///If begin was already called on this caller, increase the calls count for this caller, otherwise
-    ///insert a new entry in the holdersWhoseBeginWasCalled map with a call count of 1 and the reason.
-    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-
-    if(found == _imp->holdersWhoseBeginWasCalled.end()){
-        
-        //getApp()->unlockProject();
-        caller->beginKnobsValuesChanged_public(reason);
-        //getApp()->lockProject();
-        
-        ///insert the caller in the map
-        _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
-    }else{
-        
-        ///increase the begin calls count of 1
-        ++found->second.first;
-    }
-
-
-}
-
-void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,KnobI* k,bool isSignificant)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    ///This function may be called outside of a begin/end bracket call, in which case we call them ourselves.
-    
-    bool mustEndBracket = false;
-
-    ///if begin was not called for this caller, call it ourselves
-    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-    if (found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0) {
-        beginProjectWideValueChanges(reason,caller);
-        ///flag that we called begin
-        mustEndBracket = true;
-    } else {
-        ///THIS IS WRONG AND COMMENTED OUT : THIS LEADS TO INFINITE RECURSION.
-        ///if we found a call made to begin already for this caller, adjust the reason to the reason of the
-        /// outermost begin call
-        //   reason = found->second.second;
-    }
-
-    ///if the evaluation is significant , set the flag isSignificantChange to true
-    _imp->isSignificantChange |= isSignificant;
-
-    ///increase the count of evaluation requests
-    ++_imp->evaluationsCount;
-    
-    ///remember the last caller, this is the one on which we will call evaluate
-    _imp->lastKnobChanged = k;
-
-    ///if the reason of the outermost begin call is OTHER_REASON then we don't call
-    ///the onKnobValueChanged. This way the plugin can avoid infinite recursions by doing so:
-    /// beginValueChange(PROJECT_LOADING)
-    /// ...
-    /// endValueChange()
-    if (reason != Natron::PROJECT_LOADING) {
-        caller->onKnobValueChanged_public(k,reason);
-    }
-    
-    ////if begin was not call prior to calling this function, call the end bracket oruselves
-    if (mustEndBracket) {
-        endProjectWideValueChanges(caller);
-    }
-}
-
-void Project::endProjectWideValueChanges(KnobHolder* caller){
-
-    assert(QThread::currentThread() == qApp->thread());
-    
-    ///decrease the beginEndBracket count
-    --_imp->beginEndBracketsCount;
-    
-    ///Get the count of begin calls made to this caller.
-    ///It must absolutely be present in holdersWhoseBeginWasCalled because we either added it by
-    ///calling stackEvaluateRequest or beginProjectWideValueChanges
-    ///This means that calling endProjectWideValueChanges twice in a row will crash in the assertion below.
-    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-    assert(found != _imp->holdersWhoseBeginWasCalled.end());
-    
-    Natron::ValueChangedReason outerMostReason = found->second.second;
-    
-    ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
-    if(found->second.first == 1){
-        
-        ///remove the caller from the holdersWhoseBeginWasCalled map
-        _imp->holdersWhoseBeginWasCalled.erase(found);
-        
-        caller->endKnobsValuesChanged_public(outerMostReason);
-
-        
-    }else{
-        ///we're not on the last begin/end bracket for this caller, just decrease the begin calls count
-        --found->second.first;
-    }
-    
-    ///if we're not in the last begin/end bracket (globally to all callers) then return
-    if(_imp->beginEndBracketsCount != 0){
-        return;
-    }
-    
-    ///If we reach here that means that we're closing the last global bracket.
-    ///If the bracket was empty of evaluation we don't have to do anything.
-    if(_imp->evaluationsCount != 0){
-        
-        ///reset the evaluation count to 0
-        _imp->evaluationsCount = 0;
-        
-        ///if the outermost bracket reason was USER_EDITED and the knob was not a button, trigger an auto-save.
-        if(outerMostReason == Natron::USER_EDITED && !dynamic_cast<Button_Knob*>(_imp->lastKnobChanged)){
-            getApp()->triggerAutoSave();
-        }
-        
-        ///if the outermost bracket reason was not PROJECT_LOADING or TIME_CHANGED, then call evaluate
-        ///on the last caller with
-        ///the significant param recorded in the stackEvaluateRequest function.
-        if(outerMostReason != Natron::PROJECT_LOADING && outerMostReason != Natron::TIME_CHANGED){
-            
-            caller->evaluate_public(_imp->lastKnobChanged,_imp->isSignificantChange,outerMostReason);
-            
-        }
-    }
-    
-    ////reset back the isSignificantChange flag to false, otherwise next insignificant evaluations
-    ////would be evaluated.
-    _imp->isSignificantChange = false;
-    
-    ///the stack must be empty, i.e: crash if the user didn't correctly end the brackets
-    assert(_imp->holdersWhoseBeginWasCalled.empty());
-    
-}
-
 void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){}
 
 void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
@@ -967,7 +865,7 @@ void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
 
 
 ///this function is only called on the main thread
-void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason*/) {
+void Project::onKnobValueChanged(KnobI* knob,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/) {
     if (knob == _imp->viewsCount.get()) {
         int viewsCount = _imp->viewsCount->getValue();
         getApp()->setupViewersForViews(viewsCount);
@@ -1000,6 +898,7 @@ bool Project::isLoadingProject() const {
 }
 
 bool Project::isGraphWorthLess() const {
+    /*
     bool worthLess = true;
     for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
         if (!_imp->currentNodes[i]->isOutputNode() && _imp->currentNodes[i]->isActivated()) {
@@ -1008,6 +907,10 @@ bool Project::isGraphWorthLess() const {
         }
     }
     return worthLess;
+     */
+    
+    ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
+    return !hasEverAutoSaved() && !hasProjectBeenSavedByUser();
 }
 
 void Project::removeAutoSaves() {
@@ -1038,7 +941,18 @@ void Project::reset() {
         _imp->projectCreationTime = QDateTime::currentDateTime();
         _imp->projectName = NATRON_PROJECT_UNTITLED;
         _imp->projectPath.clear();
+        _imp->autoSaveTimer->stop();
+        _imp->additionalFormats.clear();
     }
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        knobs[i]->blockEvaluation();
+        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+            knobs[i]->resetToDefaultValue(j);
+        }
+        knobs[i]->unblockEvaluation();
+    }
+    
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
 }

@@ -20,6 +20,7 @@
 #include <QUndoCommand>
 #include <QDebug>
 #include <QToolTip>
+#include <QMutex>
 #include <QColorDialog>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -51,6 +52,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TabWidget.h"
 #include "Gui/RotoPanel.h"
 #include "Gui/NodeBackDrop.h"
+#include "Gui/MultiInstancePanel.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -124,7 +126,8 @@ struct DockablePanelPrivate
     
     DockablePanel::HeaderMode _mode;
     
-    bool _isClosed;
+    mutable QMutex _isClosedMutex;
+    bool _isClosed; //< accessed by serialization thread too
     
     DockablePanelPrivate(DockablePanel* publicI
                          ,Gui* gui
@@ -161,6 +164,7 @@ struct DockablePanelPrivate
     ,_defaultPageName(defaultPageName)
     ,_useScrollAreasForTabs(useScrollAreasForTabs)
     ,_mode(headerMode)
+    ,_isClosedMutex()
     ,_isClosed(false)
     {
         
@@ -269,6 +273,11 @@ DockablePanel::DockablePanel(Gui* gui
             float r,g,b;
             Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
             NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
+            MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
+            if (isMultiInstance) {
+                iseffect = isMultiInstance->getMainInstance()->getLiveInstance();
+                assert(iseffect);
+            }
             if (iseffect) {
                 std::list<std::string> grouping;
                 iseffect->pluginGrouping(&grouping);
@@ -310,12 +319,18 @@ DockablePanel::DockablePanel(Gui* gui
             }
             _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
             _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
-            _imp->_colorButton->setToolTip(Qt::convertFromPlainText("Set here the color of the node in the nodegraph. "
+            _imp->_colorButton->setToolTip(Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                     "By default the color of the node is the one set in the "
-                                                                    "preferences of " NATRON_APPLICATION_NAME
+                                                                    "preferences of %1").arg(NATRON_APPLICATION_NAME)
                                                                     ,Qt::WhiteSpaceNormal));
             QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
             _imp->_colorButton->setFixedSize(15,15);
+            
+            if (iseffect && !iseffect->getNode()->isMultiInstance()) {
+                ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
+                iseffect->getNode()->showKeyframesOnTimeline(true);
+            }
+            
         }
         QPixmap pixUndo ;
         appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
@@ -325,7 +340,7 @@ DockablePanel::DockablePanel(Gui* gui
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
-        _imp->_undoButton->setToolTip(Qt::convertFromPlainText("Undo the last change made to this operator", Qt::WhiteSpaceNormal));
+        _imp->_undoButton->setToolTip(Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal));
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFixedSize(20, 20);
         
@@ -337,7 +352,7 @@ DockablePanel::DockablePanel(Gui* gui
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
-        _imp->_redoButton->setToolTip(Qt::convertFromPlainText("Redo the last change undone to this operator", Qt::WhiteSpaceNormal));
+        _imp->_redoButton->setToolTip(Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal));
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFixedSize(20, 20);
         
@@ -346,8 +361,8 @@ DockablePanel::DockablePanel(Gui* gui
         QIcon icRestore;
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
-        _imp->_restoreDefaultsButton->setToolTip(Qt::convertFromPlainText("Restore default values for this operator."
-                                                                    " This cannot be undone!",Qt::WhiteSpaceNormal));
+        _imp->_restoreDefaultsButton->setToolTip(Qt::convertFromPlainText(tr("Restore default values for this operator."
+                                                                    " This cannot be undone!"),Qt::WhiteSpaceNormal));
         _imp->_restoreDefaultsButton->setFixedSize(20, 20);
         QObject::connect(_imp->_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
     
@@ -403,13 +418,18 @@ DockablePanel::~DockablePanel(){
     
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it){
-        if(it->second){
-            KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
-            QObject::disconnect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
-            delete it->second;
-        }
-    }
+//    for(std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it){
+//        if(it->second){
+//            KnobHelper* helper = dynamic_cast<KnobHelper*>(it->first.get());
+//            QObject::disconnect(helper->getSignalSlotHandler().get(),SIGNAL(deleted()),this,SLOT(onKnobDeletion()));
+//            delete it->second;
+//        }
+//    }
+}
+
+KnobHolder* DockablePanel::getHolder() const
+{
+    return _imp->_holder;
 }
 
 DockablePanelTabWidget::DockablePanelTabWidget(QWidget* parent)
@@ -429,39 +449,31 @@ QSize DockablePanelTabWidget::minimumSizeHint() const
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
     
-    Natron::StandardButton reply = Natron::questionDialog("Reset", "Are you sure you want to restore default settings for this operator ? "
-                                                          "This cannot be undone.",Natron::StandardButtons(Natron::Yes | Natron::No),
+    Natron::StandardButton reply = Natron::questionDialog(tr("Reset").toStdString(), tr("Are you sure you want to restore default settings for this operator ? "
+                                                          "This cannot be undone.").toStdString(),Natron::StandardButtons(Natron::Yes | Natron::No),
                                                           Natron::Yes);
     if (reply != Natron::Yes) {
         return;
     }
-    
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
-    if (isEffect) {
-        std::list <SequenceTime> keys;
-        isEffect->getNode()->getAllKnobsKeyframes(&keys);
-        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys);
+    boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
+    if (multiPanel) {
+        multiPanel->resetAllInstances();
+        return;
     }
-    _imp->_holder->notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin();it!=_imp->_knobs.end();++it) {
-        for (int i = 0; i < it->first->getDimension(); ++i) {
-            Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->first.get());
-            if (!isBtn && it->first->getName() != "label_natron") {
-                it->first->resetToDefaultValue(i);
-            }
-        }
-    }
-    _imp->_holder->notifyProjectEndKnobsValuesChanged();
+    _imp->_holder->restoreDefaultValues();
    
 }
 
 void DockablePanel::onLineEditNameEditingFinished() {
     
+    if (_imp->_gui->getApp()->isClosing()) {
+        return;
+    }
     NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
     if (bd) {
         QString newName = _imp->_nameLineEdit->text();
         if (_imp->_gui->getNodeGraph()->checkIfBackDropNameExists(newName,bd)) {
-            Natron::errorDialog("Backdrop name", "A backdrop node with the same name already exists in the project.");
+            Natron::errorDialog(tr("Backdrop name").toStdString(), tr("A backdrop node with the same name already exists in the project.").toStdString());
             _imp->_nameLineEdit->setText(bd->getName());
             return;
         }
@@ -474,7 +486,7 @@ void DockablePanel::onLineEditNameEditingFinished() {
         std::string newName = _imp->_nameLineEdit->text().toStdString();
         if (newName.empty()) {
             _imp->_nameLineEdit->blockSignals(true);
-            Natron::errorDialog("Node name", "A node must have a unique name.");
+            Natron::errorDialog(tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString());
             _imp->_nameLineEdit->setText(effect->getName().c_str());
             _imp->_nameLineEdit->blockSignals(false);
             return;
@@ -485,15 +497,14 @@ void DockablePanel::onLineEditNameEditingFinished() {
             return;
         }
         
-        std::vector<boost::shared_ptr<Natron::Node> > allNodes = _imp->_holder->getApp()->getProject()->getCurrentNodes();
-        for (U32 i = 0;  i < allNodes.size(); ++i) {
-            if (allNodes[i]->getName() == newName) {
-                _imp->_nameLineEdit->blockSignals(true);
-                Natron::errorDialog("Node name", "A node with the same name already exists in the project.");
-                _imp->_nameLineEdit->setText(effect->getName().c_str());
-                _imp->_nameLineEdit->blockSignals(false);
-                return;
-            }
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+        assert(nodePanel);
+        if (_imp->_gui->getNodeGraph()->checkIfNodeNameExists(newName, nodePanel->getNode().get())) {
+            _imp->_nameLineEdit->blockSignals(true);
+            Natron::errorDialog(tr("Node name").toStdString(), tr("A node with the same name already exists in the project.").toStdString());
+            _imp->_nameLineEdit->setText(effect->getName().c_str());
+            _imp->_nameLineEdit->blockSignals(false);
+            return;
         }
     }
     emit nameChanged(_imp->_nameLineEdit->text());
@@ -542,16 +553,12 @@ void DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared
     }
 }
 
-void DockablePanel::initializeKnobs() {
-    
-    /// function called to create the gui for each knob. It can be called several times in a row
-    /// without any damage
-    const std::vector< boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
-    
+void DockablePanel::initializeKnobsInternal( const std::vector< boost::shared_ptr<KnobI> >& knobs)
+{
     _imp->initializeKnobVector(knobs,NULL, false);
     
     ///add all knobs left  to the default page
-        
+    
     RotoPanel* roto = initializeRotoPanel();
     if (roto) {
         PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
@@ -579,7 +586,7 @@ void DockablePanel::initializeKnobs() {
                 parentTab = _imp->addPage(_imp->_defaultPageName);
             }
         }
-
+        
         assert(parentTab != _imp->_pages.end());
         QFormLayout* layout;
         if (_imp->_useScrollAreasForTabs) {
@@ -590,6 +597,16 @@ void DockablePanel::initializeKnobs() {
         assert(layout);
         layout->addRow(roto);
     }
+    
+    initializeExtraGui(_imp->_mainLayout);
+}
+
+void DockablePanel::initializeKnobs() {
+    
+    /// function called to create the gui for each knob. It can be called several times in a row
+    /// without any damage
+    const std::vector< boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
+    initializeKnobsInternal(knobs);
 }
 
 
@@ -932,17 +949,43 @@ void DockablePanel::setClosed(bool c)
         floatPanel();
     }
     setVisible(!c);
-    _imp->_isClosed = c;
+    {
+        QMutexLocker l(&_imp->_isClosedMutex);
+        if (c == _imp->_isClosed) {
+            return;
+        }
+        _imp->_isClosed = c;
+    }
     emit closeChanged(c);
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        std::list<SequenceTime> nodeKeyframes;
-        nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
-        if (c) {
-            _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(nodeKeyframes);
+        boost::shared_ptr<Natron::Node> internalNode = nodePanel->getNode()->getNode();
+        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        
+        if (panel) {
+            ///show all selected instances
+            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+            
+            std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            ++next;
+            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+                 it!=childrenInstances.end(); ++it,++next) {
+                if (c) {
+                    it->first->hideKeyframesFromTimeline(next == childrenInstances.end());
+                } else if (!c && it->second) {
+                    it->first->showKeyframesOnTimeline(next == childrenInstances.end());
+                }
+                
+            }
         } else {
-            _imp->_gui->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(nodeKeyframes);
+            ///Regular show/hide
+            if (c) {
+                internalNode->hideKeyframesFromTimeline(true);
+            } else {
+                internalNode->showKeyframesOnTimeline(true);
+            }
         }
+
     }
     if (!c) {
         _imp->_gui->addVisibleDockablePanel(this);
@@ -956,16 +999,33 @@ void DockablePanel::closePanel() {
         floatPanel();
     }
     close();
-    _imp->_isClosed = true;
+    {
+        QMutexLocker l(&_imp->_isClosedMutex);
+        _imp->_isClosed = true;
+    }
     emit closeChanged(true);
     _imp->_gui->removeVisibleDockablePanel(this);
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        std::list<SequenceTime> nodeKeyframes;
-        nodePanel->getNode()->getNode()->getAllKnobsKeyframes(&nodeKeyframes);
-        _imp->_gui->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(nodeKeyframes);
+        boost::shared_ptr<Natron::Node> internalNode = nodePanel->getNode()->getNode();
+        internalNode->hideKeyframesFromTimeline(true);
+        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        if (panel) {
+            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& childrenInstances = panel->getInstances();
+            
+            std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            ++next;
+            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+                 it!=childrenInstances.end(); ++it,++next) {
+                if (it->second && it->first != internalNode) {
+                    it->first->hideKeyframesFromTimeline(next == childrenInstances.end());
+                }
+            }
+        }
     }
+    
+    
     getGui()->getApp()->redrawAllViewers();
     
 }
@@ -1071,7 +1131,7 @@ QVBoxLayout* DockablePanel::getContainer() const {return _imp->_container;}
 
 QUndoStack* DockablePanel::getUndoStack() const { return _imp->_undoStack; }
 
-bool DockablePanel::isClosed() const { return _imp->_isClosed; }
+bool DockablePanel::isClosed() const { QMutexLocker l(&_imp->_isClosedMutex); return _imp->_isClosed; }
 
 bool DockablePanel::isFloating() const { return _imp->_floating; }
 
@@ -1118,9 +1178,16 @@ void DockablePanel::setCurrentColor(const QColor& c)
     onColorDialogColorChanged(c);
 }
 
+void DockablePanel::focusInEvent(QFocusEvent* e)
+{
+    QFrame::focusInEvent(e);
+    _imp->_undoStack->setActive();
+}
+
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>& multiPanel,
                                      Gui* gui,boost::shared_ptr<NodeGui> NodeUi ,QVBoxLayout* container,QWidget *parent)
-:DockablePanel(gui,NodeUi->getNode()->getLiveInstance(),
+: DockablePanel(gui,
+                multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>(multiPanel.get()) : NodeUi->getNode()->getLiveInstance(),
                container,
                DockablePanel::FULLY_FEATURED,
                false,
@@ -1129,12 +1196,17 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                false,
                "Settings",
                parent)
-,_nodeGUI(NodeUi)
+, _nodeGUI(NodeUi)
+, _multiPanel(multiPanel)
 {
+    if (multiPanel) {
+        multiPanel->initializeKnobsPublic();
+    }
+    
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
     _centerNodeButton = new Button(QIcon(pixC),"",getHeaderWidget());
-    _centerNodeButton->setToolTip("Centers the node graph on this node.");
+    _centerNodeButton->setToolTip(tr("Centers the node graph on this node."));
     _centerNodeButton->setFixedSize(15, 15);
     QObject::connect(_centerNodeButton,SIGNAL(clicked()),this,SLOT(centerNode()));
     insertHeaderWidget(0, _centerNodeButton);
@@ -1162,5 +1234,12 @@ RotoPanel* NodeSettingsPanel::initializeRotoPanel()
         return new RotoPanel(_nodeGUI.get(),this);
     } else {
         return NULL;
+    }
+}
+
+void NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
+{
+    if (_multiPanel && !_multiPanel->isGuiCreated()) {
+        _multiPanel->createMultiInstanceGui(layout);
     }
 }

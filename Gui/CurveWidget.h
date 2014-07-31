@@ -39,6 +39,7 @@ class CurveWidget;
 class Button;
 class LineEdit;
 class SpinBox;
+class Gui;
 class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
@@ -120,41 +121,6 @@ private:
 
 };
 
-struct SelectedKey {
-    CurveGui* curve;
-    KeyFrame key;
-    std::pair<double,double> leftTan, rightTan;
-    
-    SelectedKey() : curve(NULL), key(){}
-
-    SelectedKey(CurveGui* c,const KeyFrame& k)
-    : curve(c)
-    , key(k)
-    {
-        
-    }
-    
-    SelectedKey(const SelectedKey& o)
-    : curve(o.curve)
-    , key(o.key)
-    , leftTan(o.leftTan)
-    , rightTan(o.rightTan)
-    {
-        
-    }
-    
-};
-
-struct SelectedKey_compare_time{
-    bool operator() (const SelectedKey& lhs, const SelectedKey& rhs) const {
-        return lhs.key.getTime() < rhs.key.getTime();
-    }
-};
-
-
-
-
-typedef std::set< SelectedKey,SelectedKey_compare_time > SelectedKeys;
 
 class QMenu;
 class CurveWidgetPrivate;
@@ -169,7 +135,7 @@ class CurveWidget : public QGLWidget , public OverlaySupport
 public:
     
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
-    CurveWidget(boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,
+    CurveWidget(Gui* gui,boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>() ,
                 QWidget* parent = NULL, const QGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget() OVERRIDE;
@@ -287,6 +253,8 @@ private:
     virtual void keyPressEvent(QKeyEvent *event) OVERRIDE FINAL;
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
     void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
 
@@ -309,6 +277,8 @@ private:
     bool isSupportingOpenGLVAO() const ;
 
 private:
+    
+    bool isTabVisible() const;
 
     boost::scoped_ptr<CurveWidgetPrivate> _imp;
         

@@ -133,8 +133,7 @@ public:
 
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
 
-    /*Return a list of the name of all nodes available currently in the software*/
-    QStringList getNodeNameList() const WARN_UNUSED_RETURN;
+    const std::vector<Natron::Plugin*>& getPluginsList() const WARN_UNUSED_RETURN;
 
     QMutex* getMutexForPlugin(const QString& pluginId) const WARN_UNUSED_RETURN;
 
@@ -240,7 +239,19 @@ public:
     
     virtual void debugImage(const Natron::Image* /*image*/,const QString& /*filename = QString()*/) const {}
 
+    void registerPlugin(const QStringList& groups,
+                        const QString& pluginID,
+                        const QString& pluginLabel,
+                        const QString& pluginIconPath,
+                        const QString& groupIconPath,
+                        Natron::LibraryBinary* binary,
+                        bool mustCreateMutex,
+                        int major,
+                        int minor);
 public slots:
+
+    ///Closes the application not saving any projects.
+    virtual void exitApp();
 
     void clearPlaybackCache();
 
@@ -253,12 +264,6 @@ public slots:
     void clearPluginsLoadedCache();
 
     void clearAllCaches();
-
-    virtual void addPluginToolButtons(const QStringList& /*groups*/,
-                              const QString& /*pluginID*/,
-                              const QString& /*pluginLabel*/,
-                              const QString& /*pluginIconPath*/,
-                                      const QString& /*groupIconPath*/) {}
     
     void onNodeMemoryRegistered(qint64 mem);
     
@@ -290,6 +295,12 @@ protected:
     virtual void initializeQApp(int &argc,char** argv);
     
     virtual void onLoadCompleted() {}
+    
+    virtual void onPluginLoaded(const QStringList& /*groups*/,
+                                      const QString& /*pluginID*/,
+                                      const QString& /*pluginLabel*/,
+                                      const QString& /*pluginIconPath*/,
+                                      const QString& /*groupIconPath*/) {}
 
 private:
     
@@ -300,12 +311,7 @@ private:
     void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
-
-    ///called by loadAllPlugins
-    void loadNodePlugins(std::map<std::string,std::vector<std::string> >* readersMap,
-                         std::map<std::string,std::vector<std::string> >* writersMap);
-
-
+    
     static AppManager *_instance;
 
     boost::scoped_ptr<AppManagerPrivate> _imp;

@@ -569,6 +569,21 @@ void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const 
     }
 }
 
+void Double_Knob::restoreFeatherRelatives()
+{
+    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
+        if ((*it)->isFeatherPoint()) {
+            continue;
+        }
+        int indexInCurve = (*it)->getCurve()->getControlPointIndex(it->get());
+        assert(indexInCurve != -1);
+        boost::shared_ptr<BezierCP> fp = (*it)->getCurve()->getFeatherPointAtIndex(indexInCurve);
+        if (!fp->isSlaved()) {
+            fp->setRelativeTo(it->get());
+        }
+    }
+}
+
 Double_Knob::~Double_Knob()
 {
     for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
@@ -576,9 +591,9 @@ Double_Knob::~Double_Knob()
     }
 }
 
-void Double_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+void Double_Knob::cloneExtraData(KnobI* other)
 {
-    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other.get());
+    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other);
     if (!isDouble) {
         return;
     }
@@ -670,6 +685,7 @@ const std::string &Choice_Knob::getActiveEntryText() const
     assert(activeIndex < (int)_entries.size());
     return _entries[activeIndex];
 }
+
 
 /******************************SEPARATOR_KNOB**************************************/
 
@@ -891,6 +907,30 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, cons
     for (U32 i = 0; i < maxis.size(); ++i) {
         emit displayMinMaxChanged(_minimums[i], _maximums[i], i);
     }
+}
+
+
+void
+Color_Knob::setValues(double r,double g,double b)
+{
+    assert(getDimension() == 3);
+    blockEvaluation();
+    setValue(r, 0);
+    setValue(g, 1);
+    unblockEvaluation();
+    setValue(b, 2);
+}
+
+void
+Color_Knob::setValues(double r,double g,double b,double a)
+{
+    assert(getDimension() == 4);
+    blockEvaluation();
+    setValue(r, 0);
+    setValue(g, 1);
+    setValue(b, 2);
+    unblockEvaluation();
+    setValue(a, 3);
 }
 
 /******************************STRING_KNOB**************************************/
@@ -1217,10 +1257,10 @@ Natron::Status  Parametric_Knob::deleteAllControlPoints(int dimension)
 }
 
 
-void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
+void Parametric_Knob::cloneExtraData(KnobI* other)
 {
     ///Mt-safe as Curve is MT-safe
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
     if (isParametric && isParametric->getDimension() == getDimension()) {
         for (int i = 0; i < getDimension(); ++i) {
             _curves[i]->clone(*isParametric->getParametricCurve(i));
@@ -1228,9 +1268,9 @@ void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other)
     }
 }
 
-void Parametric_Knob::cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range)
+void Parametric_Knob::cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range)
 {
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other.get());
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
     if (isParametric) {
         int dimMin = std::min(getDimension(), isParametric->getDimension());
         for (int i = 0; i < dimMin; ++i) {

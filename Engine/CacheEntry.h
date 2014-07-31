@@ -94,6 +94,7 @@ private:
 
 
 
+
 /** @brief Buffer represents  an internal buffer that can be allocated on different devices.
  * For now the class is simple and can only be either on disk using mmap or in RAM using malloc.
  * The cost parameter given to the allocate() function is a hint that the Buffer classes uses
@@ -113,7 +114,6 @@ class Buffer {
     
 public:
     
-    enum StorageMode{RAM=0,DISK};
     
     Buffer():_path(),_size(0),_buffer(NULL),_backingFile(NULL),_storageMode(RAM){}
     
@@ -152,12 +152,37 @@ public:
             }
         } else if(cost == 0) {
             _storageMode = RAM;
-            _buffer = new DataType[count];
+            _buffer =  (DataType*)malloc(count * sizeof(DataType));
             if (!_buffer) {
                 throw std::bad_alloc();
             }
         }
         _size = count * sizeof(DataType);
+    }
+    
+    /**
+     * @brief Reallocates the internal buffer so that it countains "count" elements of the DataType.
+     * Content defined in the previous portions of the buffer will be kept.
+     * 
+     * Pre-condition: allocate(..) must have been called already.
+     **/
+    void reallocate(U64 count)
+    {
+        _size = count * sizeof(DataType);
+        if (_storageMode == RAM) {
+            assert(_buffer);
+            _buffer = (DataType*)realloc((void*)_buffer,_size);
+            if (!_buffer) {
+                throw std::bad_alloc();
+            }
+
+        } else if (_storageMode == DISK) {
+            assert(_backingFile);
+            _backingFile->resize(_size);
+            if (!_backingFile->data()) {
+                throw std::bad_alloc();
+            }
+        }
     }
     
     void reOpenFileMapping() const {
@@ -188,15 +213,18 @@ public:
     void deallocate() {
         
         if (_storageMode == RAM) {
-            delete [] _buffer;
-            _buffer = NULL;
+            if (_buffer) {
+                free(_buffer);
+                _buffer = NULL;
+            }
+            
         } else {
             delete _backingFile;
             _backingFile = NULL;
         }
     }
     
-    void removeAnyBackingFile() const{
+    void removeAnyBackingFile() const {
         if(_storageMode == DISK){
             if(QFile::exists(_path.c_str())){
                 QFile::remove(_path.c_str());
@@ -205,7 +233,14 @@ public:
         
     }
     
+    /**
+     * @brief Returns the size of the buffer in bytes.
+     **/
     size_t size() const {return _size;}
+    
+    bool isAllocated() const {
+        return _buffer || (_backingFile && _backingFile->data()) ;
+    }
     
     DataType* writable() const {
         if (_storageMode == DISK) {
@@ -227,25 +262,53 @@ public:
         }
     }
     
-    StorageMode getStorageMode() const {return _storageMode;}
+    Natron::StorageMode getStorageMode() const {return _storageMode;}
     
 private:
     
     std::string _path;
-    size_t _size;
+    size_t _size; //< in bytes!
     DataType* _buffer;
     
     /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
      change the underlying data*/
     mutable MemoryFile* _backingFile;
     
-    StorageMode _storageMode;
+    Natron::StorageMode _storageMode;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////CACHE ENTRY////////////////////////////////////////////////////
-
-
+    /**
+     * @brief Defines the API of the Cache as seen by the cache entries
+     **/
+    class CacheAPI {
+        
+    public:
+        
+        /**
+         * @brief To be called by a CacheEntry whenever it's size is changed.
+         * This way the cache can keep track of the real memory footprint.
+         **/
+        virtual void notifyEntrySizeChanged(size_t oldSize,size_t newSize) const = 0;
+        
+        /**
+         * @brief To be called by a CacheEntry on allocation.
+         **/
+        virtual void notifyEntryAllocated(int time,size_t size) const = 0;
+        
+        /**
+         * @brief To be called by a CacheEntry on destruction.
+         **/
+        virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const = 0;
+        /**
+         * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
+         * it is reallocated in the RAM.
+         **/
+        virtual void notifyEntryStorageChanged(Natron::StorageMode oldStorage,Natron::StorageMode newStorage,
+                                               int time,size_t size) const = 0;
+    };
+    
 
 /** @brief Abstract interface for cache entries.
  * KeyType must inherit KeyHelper
@@ -267,6 +330,8 @@ public:
     virtual hash_type getHashKey() const = 0;
     
     virtual size_t size() const = 0;
+    
+    virtual SequenceTime getTime() const = 0;
 };
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
@@ -282,32 +347,56 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
     /**
-     * @brief Allocates a new cache entry. It allocates enough memory to contain at least the
-     * memory specified by the key.
+     * @brief Allocates a new cache entry. This function does not allocate the memory required by the entry,
+     * the storage will not be available until allocateMemory(...) has been called.
      * @param params The key associated to this cache entry, this is the object containing all the parameters.
+     * @param cache The cache managing this entry. Can be NULL when the entry has been allocated outside the cache
+     **/
+    CacheEntryHelper(const KeyType& key,
+                     const boost::shared_ptr<const NonKeyParams>& params,
+                     const CacheAPI* cache)
+    : _key(key)
+    , _params(params)
+    , _data()
+    , _cache(cache)
+    {
+    }
+    
+    virtual ~CacheEntryHelper() { deallocate(); }
+    
+    /**
+     * @brief Allocates the memory required by the cache entry. It allocates enough memory to contain at least the
+     * memory specified by the key.
      * @param restore If true then the entry will try to restore its buffer from a file pointed to
      * by path.
      * @param path The path of the file where to save/restore the buffer. If empty then it assumes
      * the buffer will be in RAM, hence volatile.
+     *
+     * WARNING: This function throws a std::bad_alloc if the allocation fails.
      **/
-    CacheEntryHelper(const KeyType& key,const boost::shared_ptr<const NonKeyParams>& params,bool restore,const std::string& path)
-    : _key(key)
-    , _params(params)
-    , _data()
+    void allocateMemory(bool restore,const std::string& path)
     {
-        try {
-            if (restore) {
-                restoreBufferFromFile(path);
-            } else {
-                allocate(params->getElementsCount(),params->getCost(),path);
-            }
-        } catch(const std::bad_alloc& e)
-        {
-            throw e;
+        
+        if (restore) {
+            restoreBufferFromFile(path);
+        } else {
+            allocate(_params->getElementsCount(),_params->getCost(),path);
         }
+        if (_cache) {
+            _cache->notifyEntryAllocated(getTime(),size());
+        }
+#ifdef NATRON_DEBUG
+        onMemoryAllocated();
+#endif
     }
     
-    virtual ~CacheEntryHelper() { }
+#ifdef NATRON_DEBUG
+    /**
+     * @brief Called right away once the buffer is allocated. Used in debug mode to initialize image with a default color.
+     **/
+    virtual void onMemoryAllocated() {}
+#endif
+
     
     const KeyType& getKey() const OVERRIDE FINAL {return _key;}
     
@@ -342,23 +431,69 @@ public:
      **/
     void reOpenFileMapping() const {
         _data.reOpenFileMapping();
+        if (_cache) {
+            _cache->notifyEntryStorageChanged(Natron::DISK, Natron::RAM,getTime(), size());
+        }
+    }
+  
+    /**
+     * @brief Can be called several times without harm
+     **/
+    void deallocate() {
+        if (_cache) {
+            if (isStoredOnDisk()) {
+                if (_data.isAllocated()) {
+                    _cache->notifyEntryStorageChanged(Natron::RAM, Natron::DISK,getTime(), size());
+                }
+            } else {
+                _cache->notifyEntryDestroyed(getTime(),size(),Natron::RAM);
+            }
+        }
+        _data.deallocate();
     }
     
-    
-    void deallocate() {_data.deallocate();}
-    
+    /**
+     * @brief Returns the size of the cache entry in bytes. This is made virtual
+     * so derived class could add any extra size related to a buffer it may have (@see Natron::Image::size())
+     *
+     * WARNING: When overloading this, make sure you call then the deallocate() function in your destructor right prior
+     * anything else is destroyed, to make sure the good amount of memory to be destroyed is notified to the cache.
+     **/
     virtual size_t size() const OVERRIDE { return dataSize(); }
 
+    /**
+     * @brief Returns the size of the buffer in bytes.
+     **/
     size_t dataSize() const {return _data.size();}
     
-    bool isStoredOnDisk() const {return _data.getStorageMode() == Buffer<DataType>::DISK;}
+    bool isStoredOnDisk() const {return _data.getStorageMode() == Natron::DISK;}
     
-    void removeAnyBackingFile() const {_data.removeAnyBackingFile();}
+    /**
+     * @brief An entry stored on disk is effectively destroyed when its backing file is removed.
+     **/
+    void removeAnyBackingFile() const {
+        assert(!_data.isAllocated());
+        _data.removeAnyBackingFile();
+        _cache->notifyEntryDestroyed(getTime(), size(),Natron::DISK);
+    }
+    
+    virtual SequenceTime getTime() const OVERRIDE FINAL { return _key.getTime(); }
+    
+protected:
+    
+    
+    void reallocate(U64 elemCount) {
+        _data.reallocate(elemCount);
+        if (_cache) {
+            size_t oldSize = size();
+            _cache->notifyEntrySizeChanged(oldSize,size(),_data.getStorageMode());
+        }
+    }
     
 private:
-    /** @brief This function is called upon the constructor and before the object is exposed
+    /** @brief This function is called in allocateMeory(...) and before the object is exposed
      * to other threads. Hence this function doesn't need locking mechanism at all.
-     * We must ensure that this function is called ONLY by the constructor, that's why
+     * We must ensure that this function is called ONLY by allocateMemory(), that's why
      * it is private.
      **/
     void allocate(U64 count, int cost, std::string path = std::string()) {
@@ -371,23 +506,24 @@ private:
             }
         }
         _data.allocate(count, cost, fileName);
+        
     }
     
-    /** @brief This function is called upon the constructor and before the object is exposed
+    /** @brief This function is called in allocateMeory() and before the object is exposed
      * to other threads. Hence this function doesn't need locking mechanism at all.
-     * We must ensure that this function is called ONLY by the constructor, that's why
+     * We must ensure that this function is called ONLY by allocateMemory(), that's why
      * it is private.
      **/
     void restoreBufferFromFile(const std::string& path) {
         std::string fileName;
-        try{
+        try {
             fileName = generateStringFromHash(path);
-        }catch(const std::invalid_argument& e){
+        } catch(const std::invalid_argument& e) {
             std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
         }
-        try{
+        try {
             _data.restoreBufferFromFile(fileName);
-        }catch(const std::bad_alloc& e){
+        } catch(const std::bad_alloc& e) {
             throw e;
         }
     }
@@ -398,6 +534,7 @@ protected:
     KeyType _key;
     boost::shared_ptr<const NonKeyParams> _params;
     Buffer<DataType> _data;
+    const CacheAPI* _cache;
 };
 
 }

@@ -86,7 +86,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 
 
-#define NAMED_PLUGIN_GROUP_NO 12
+#define NAMED_PLUGIN_GROUP_NO 14
 
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
@@ -100,13 +100,51 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_KEYER,
     PLUGIN_GROUP_MULTIVIEW,
     PLUGIN_GROUP_DEEP,
+    PLUGIN_GROUP_3D,
+    PLUGIN_GROUP_TOOLSETS,
     PLUGIN_GROUP_DEFAULT
 };
 
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"misc_low.png"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
 
 using namespace Natron;
 
+namespace {
+static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
+    if (grouping == PLUGIN_GROUP_COLOR) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_FILTER) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_IMAGE) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_DEEP) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TIME) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_PAINT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_KEYER) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_TOOLSETS) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TOOLSETS_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_3D) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_3D_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_CHANNEL) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_CHANNEL_GROUPING, pixmap);
+    } else if (grouping == PLUGIN_GROUP_MERGE) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GROUPING, pixmap);
+    } else {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+    }
+}
+}
 
 struct GuiPrivate {
     
@@ -138,12 +176,14 @@ struct GuiPrivate {
     ///all the menu actions
     QAction *actionNew_project;
     QAction *actionOpen_project;
+    QAction *actionClose_project;
     QAction *actionSave_project;
     QAction *actionSaveAs_project;
     QAction *actionPreferences;
     QAction *actionExit;
     QAction *actionProject_settings;
     QAction *actionShowOfxLog;
+    QAction *actionNewViewer;
     QAction *actionFullScreen;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
@@ -301,12 +341,14 @@ struct GuiPrivate {
     , _splitters()
     , actionNew_project(0)
     , actionOpen_project(0)
+    , actionClose_project(0)
     , actionSave_project(0)
     , actionSaveAs_project(0)
     , actionPreferences(0)
     , actionExit(0)
     , actionProject_settings(0)
     , actionShowOfxLog(0)
+    , actionNewViewer(0)
     , actionFullScreen(0)
     , actionClearDiskCache(0)
     , actionClearPlayBackCache(0)
@@ -414,6 +456,7 @@ Gui::Gui(GuiAppInstance* app,QWidget* parent)
 
 Gui::~Gui()
 {
+    _imp->_nodeGraphArea->invalidateAllNodesParenting();
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
     _imp->_viewerTabs.clear();
@@ -422,36 +465,67 @@ Gui::~Gui()
     }
 }
 
-bool Gui::exitGui()
+bool Gui::closeInstance()
 {
-    int ret = saveWarning();
-    if (ret == 0) {
-        if (!saveProject()) {
+    if (getApp()->getProject()->hasNodes()) {
+        int ret = saveWarning();
+        if (ret == 0) {
+            if (!saveProject()) {
+                return false;
+            }
+        } else if (ret == 2) {
             return false;
         }
-    } else if (ret == 2) {
-        return false;
     }
     removeEventFilter(this);
     _imp->saveGuiGeometry();
-    quit();
+    abortProject(true);
     return true;
 }
- 
-#pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
-void Gui::quit()
-{
-    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-    {
-        QMutexLocker l(&_imp->aboutToCloseMutex);
-        _imp->_aboutToClose = true;
-    }
 
-    assert(_imp->_appInstance);
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
-        (*it)->notifyAppClosing();
+void Gui::closeProject()
+{
+    if (getApp()->getProject()->hasNodes()) {
+        int ret = saveWarning();
+        if (ret == 0) {
+            if (!saveProject()) {
+                return;
+            }
+        } else if (ret == 2) {
+            return;
+        }
     }
-    _imp->_appInstance->quit();
+    ///When closing a project we can remove the ViewerCache from memory and put it on disk
+    ///since we're not sure it will be used right away
+    appPTR->clearPlaybackCache();
+    abortProject(false);
+}
+
+#pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
+void Gui::abortProject(bool quitApp)
+{
+    if (quitApp) {
+        ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+        {
+            QMutexLocker l(&_imp->aboutToCloseMutex);
+            _imp->_aboutToClose = true;
+        }
+        
+        assert(_imp->_appInstance);
+        
+        ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
+        ///cause bad pointer dereference to the Gui object since we're destroying it.
+        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+            (*it)->notifyAppClosing();
+        }
+        _imp->_appInstance->quit();
+    } else {
+        _imp->_appInstance->getProject()->closeProject();
+    }
+    
+    ///Reset current undo/reso actions
+    _imp->_currentUndoAction = 0;
+    _imp->_currentRedoAction = 0;
 }
 
 void Gui::toggleFullScreen()
@@ -463,12 +537,14 @@ void Gui::toggleFullScreen()
     }
 }
 
-void Gui::closeEvent(QCloseEvent *e) {
+void
+Gui::closeEvent(QCloseEvent *e)
+{
     assert(e);
 	if (_imp->_appInstance->isClosing()) {
 		e->ignore();
 	} else {
-		if (!exitGui()) {
+		if (!closeInstance()) {
 			e->ignore();
 			return;
 		}
@@ -503,9 +579,9 @@ void Gui::createViewerGui(boost::shared_ptr<Node> viewer){
 }
 
 
-boost::shared_ptr<NodeGui> Gui::getSelectedNode() const {
+const std::list<boost::shared_ptr<NodeGui> >& Gui::getSelectedNodes() const {
     assert(_imp->_nodeGraphArea);
-    return _imp->_nodeGraphArea->getSelectedNode();
+    return _imp->_nodeGraphArea->getSelectedNodes();
 }
 
 
@@ -538,82 +614,86 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     Q_UNUSED(MainWindow);
     _gui->setWindowTitle(QCoreApplication::applicationName());
     assert(actionNew_project);
-    actionNew_project->setText(_gui->tr("&New Project"));
+    actionNew_project->setText(QObject::tr("&New Project"));
     assert(actionOpen_project);
-    actionOpen_project->setText(_gui->tr("&Open Project..."));
+    actionOpen_project->setText(QObject::tr("&Open Project..."));
+    assert(actionClose_project);
+    actionClose_project->setText(QObject::tr("Close Project"));
     assert(actionSave_project);
-    actionSave_project->setText(_gui->tr("&Save Project"));
+    actionSave_project->setText(QObject::tr("&Save Project"));
     assert(actionSaveAs_project);
-    actionSaveAs_project->setText(_gui->tr("Save Project As..."));
+    actionSaveAs_project->setText(QObject::tr("Save Project As..."));
     assert(actionPreferences);
-    actionPreferences->setText(_gui->tr("Preferences"));
+    actionPreferences->setText(QObject::tr("Preferences"));
     assert(actionExit);
-    actionExit->setText(_gui->tr("E&xit"));
+    actionExit->setText(QObject::tr("E&xit"));
     assert(actionProject_settings);
-    actionProject_settings->setText(_gui->tr("Project Settings..."));
+    actionProject_settings->setText(QObject::tr("Project Settings..."));
     assert(actionShowOfxLog);
-    actionShowOfxLog->setText(_gui->tr("Show OpenFX log"));
+    actionShowOfxLog->setText(QObject::tr("Show OpenFX log"));
+    assert(actionNewViewer);
+    actionNewViewer->setText(QObject::tr("New Viewer"));
     assert(actionFullScreen);
-    actionFullScreen->setText(_gui->tr("Toggle Full Screen"));
+    actionFullScreen->setText(QObject::tr("Toggle Full Screen"));
     assert(actionClearDiskCache);
-    actionClearDiskCache->setText(_gui->tr("Clear Playback Disk Cache"));
+    actionClearDiskCache->setText(QObject::tr("Clear Playback Disk Cache"));
     assert(actionClearPlayBackCache);
-    actionClearPlayBackCache->setText(_gui->tr("Clear Playback Memory Cache"));
+    actionClearPlayBackCache->setText(QObject::tr("Clear Playback Memory Cache"));
     assert(actionClearNodeCache);
-    actionClearNodeCache->setText(_gui->tr("Clear Per-Node Memory Cache"));
+    actionClearNodeCache->setText(QObject::tr("Clear Per-Node Memory Cache"));
     assert(actionClearAllCaches);
-    actionClearAllCaches->setText(_gui->tr("Clear All Memory and Disk Caches"));
+    actionClearAllCaches->setText(QObject::tr("Clear All Memory and Disk Caches"));
     assert(actionClearPluginsLoadingCache);
-    actionClearPluginsLoadingCache->setText(_gui->tr("Clear OpenFX Plugin Cache"));
+    actionClearPluginsLoadingCache->setText(QObject::tr("Clear OpenFX Plugin Cache"));
     assert(actionShowAboutWindow);
-    actionShowAboutWindow->setText(_gui->tr("About"));
+    actionShowAboutWindow->setText(QObject::tr("About"));
     assert(renderAllWriters);
-    renderAllWriters->setText(_gui->tr("Render all writers"));
+    renderAllWriters->setText(QObject::tr("Render all writers"));
     assert(renderSelectedNode);
-    renderSelectedNode->setText(_gui->tr("Render selected node"));
+    renderSelectedNode->setText(QObject::tr("Render selected node"));
     
     assert(actionConnectInput1);
-    actionConnectInput1->setText(_gui->tr("Connect to input 1"));
+    actionConnectInput1->setText(QObject::tr("Connect to input 1"));
     assert(actionConnectInput2);
-    actionConnectInput2 ->setText(_gui->tr("Connect to input 2"));
+    actionConnectInput2 ->setText(QObject::tr("Connect to input 2"));
     assert(actionConnectInput3);
-    actionConnectInput3 ->setText(_gui->tr("Connect to input 3"));
+    actionConnectInput3 ->setText(QObject::tr("Connect to input 3"));
     assert(actionConnectInput4);
-    actionConnectInput4 ->setText(_gui->tr("Connect to input 4"));
+    actionConnectInput4 ->setText(QObject::tr("Connect to input 4"));
     assert(actionConnectInput5);
-    actionConnectInput5 ->setText(_gui->tr("Connect to input 5"));
+    actionConnectInput5 ->setText(QObject::tr("Connect to input 5"));
     assert(actionConnectInput6);
-    actionConnectInput6 ->setText(_gui->tr("Connect to input 6"));
+    actionConnectInput6 ->setText(QObject::tr("Connect to input 6"));
     assert(actionConnectInput7);
-    actionConnectInput7 ->setText(_gui->tr("Connect to input 7"));
+    actionConnectInput7 ->setText(QObject::tr("Connect to input 7"));
     assert(actionConnectInput8);
-    actionConnectInput8 ->setText(_gui->tr("Connect to input 8"));
+    actionConnectInput8 ->setText(QObject::tr("Connect to input 8"));
     assert(actionConnectInput9);
-    actionConnectInput9 ->setText(_gui->tr("Connect to input 9"));
+    actionConnectInput9 ->setText(QObject::tr("Connect to input 9"));
     assert(actionConnectInput10);
-    actionConnectInput10 ->setText(_gui->tr("Connect to input 10"));
+    actionConnectInput10 ->setText(QObject::tr("Connect to input 10"));
     
     
     assert(menuFile);
-    menuFile->setTitle(_gui->tr("File"));
+    menuFile->setTitle(QObject::tr("File"));
     assert(menuRecentFiles);
-    menuRecentFiles->setTitle(_gui->tr("Open recent"));
+    menuRecentFiles->setTitle(QObject::tr("Open recent"));
     assert(menuEdit);
-    menuEdit->setTitle(_gui->tr("Edit"));
+    menuEdit->setTitle(QObject::tr("Edit"));
     assert(menuDisplay);
-    menuDisplay->setTitle(_gui->tr("Display"));
+    menuDisplay->setTitle(QObject::tr("Display"));
     assert(menuOptions);
-    menuOptions->setTitle(_gui->tr("Options"));
+    menuOptions->setTitle(QObject::tr("Options"));
     assert(menuRender);
-    menuRender->setTitle(_gui->tr("Render"));
+    menuRender->setTitle(QObject::tr("Render"));
     assert(viewersMenu);
-    viewersMenu->setTitle(_gui->tr("Viewer(s)"));
+    viewersMenu->setTitle(QObject::tr("Viewer(s)"));
     assert(cacheMenu);
-    cacheMenu->setTitle(_gui->tr("Cache"));
+    cacheMenu->setTitle(QObject::tr("Cache"));
     assert(viewerInputsMenu);
-    viewerInputsMenu->setTitle(_gui->tr("Connect Current Viewer"));
+    viewerInputsMenu->setTitle(QObject::tr("Connect Current Viewer"));
     assert(viewersViewMenu);
-    viewersViewMenu->setTitle(_gui->tr("Display view number"));
+    viewersViewMenu->setTitle(QObject::tr("Display view number"));
 }
 void Gui::setupUi()
 {
@@ -661,6 +741,12 @@ void Gui::setupUi()
     _imp->actionOpen_project->setIcon(get_icon("document-open"));
     _imp->actionOpen_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect(_imp->actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
+    _imp->actionClose_project = new QAction(this);
+    _imp->actionClose_project->setObjectName(QString::fromUtf8("actionClose_project"));
+    _imp->actionClose_project->setShortcut(QKeySequence::Close);
+    _imp->actionClose_project->setShortcutContext(Qt::WindowShortcut);
+    _imp->actionClose_project->setIcon(get_icon("document-close"));
+    QObject::connect(_imp->actionClose_project, SIGNAL(triggered()), this, SLOT(closeProject()));
     _imp->actionSave_project = new QAction(this);
     _imp->actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
     _imp->actionSave_project->setShortcut(QKeySequence::Save);
@@ -675,9 +761,11 @@ void Gui::setupUi()
     _imp->actionPreferences = new QAction(this);
     _imp->actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
+    _imp->actionPreferences->setShortcut(QKeySequence::Preferences);
     _imp->actionExit = new QAction(this);
     _imp->actionExit->setObjectName(QString::fromUtf8("actionExit"));
     _imp->actionExit->setMenuRole(QAction::QuitRole);
+    _imp->actionExit->setShortcut(QKeySequence::Quit);
     _imp->actionExit->setShortcutContext(Qt::WindowShortcut);
     _imp->actionExit->setIcon(get_icon("application-exit"));
     _imp->actionProject_settings = new QAction(this);
@@ -686,6 +774,10 @@ void Gui::setupUi()
     _imp->actionProject_settings->setShortcut(QKeySequence(Qt::Key_S));
     _imp->actionShowOfxLog = new QAction(this);
     _imp->actionShowOfxLog->setObjectName(QString::fromUtf8("actionShowOfxLog"));
+    _imp->actionNewViewer = new QAction(this);
+    _imp->actionNewViewer->setObjectName(QString::fromUtf8("actionNewViewer"));
+    _imp->actionNewViewer->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_I));
+    _imp->actionNewViewer->setShortcutContext(Qt::WindowShortcut);
     _imp->actionFullScreen = new QAction(this);
     _imp->actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
     _imp->actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
@@ -709,6 +801,7 @@ void Gui::setupUi()
     _imp->actionClearAllCaches->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
     _imp->actionShowAboutWindow = new QAction(this);
     _imp->actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
+    _imp->actionShowAboutWindow->setMenuRole(QAction::AboutRole);
     _imp->actionShowAboutWindow->setCheckable(false);
     
     _imp->renderAllWriters = new QAction(this);
@@ -826,7 +919,7 @@ void Gui::setupUi()
     _imp->_nodeGraphArea->setObjectName(kNodeGraphObjectName);
     _imp->_workshopPane->appendTab(_imp->_nodeGraphArea);
     
-    _imp->_curveEditor = new CurveEditor(_imp->_appInstance->getTimeLine(),this);
+    _imp->_curveEditor = new CurveEditor(this,_imp->_appInstance->getTimeLine(),this);
 
     _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
     _imp->_workshopPane->appendTab(_imp->_curveEditor);
@@ -878,7 +971,7 @@ void Gui::setupUi()
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
     _imp->_clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
     _imp->_clearAllPanelsButton->setMaximumSize(15, 15);
-    _imp->_clearAllPanelsButton->setToolTip(Qt::convertFromPlainText("Clears all the panels in the properties bin pane.",
+    _imp->_clearAllPanelsButton->setToolTip(Qt::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
                                                                      Qt::WhiteSpaceNormal));
     QObject::connect(_imp->_clearAllPanelsButton,SIGNAL(clicked(bool)),this,SLOT(clearAllVisiblePanels()));
     
@@ -887,9 +980,9 @@ void Gui::setupUi()
     _imp->_maxPanelsOpenedSpinBox->setMaximumSize(15,15);
     _imp->_maxPanelsOpenedSpinBox->setMinimum(0);
     _imp->_maxPanelsOpenedSpinBox->setMaximum(100);
-    _imp->_maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText("Set the maximum of panels that can be opened at the same time "
+    _imp->_maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
                                                                        "in the properties bin pane. The special value of 0 indicates "
-                                                                       "that an unlimited number of panels can be opened.",
+                                                                       "that an unlimited number of panels can be opened."),
                                                                        Qt::WhiteSpaceNormal));
     _imp->_maxPanelsOpenedSpinBox->setValue(appPTR->getCurrentSettings()->getMaxPanelsOpened());
     QObject::connect(_imp->_maxPanelsOpenedSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onMaxPanelsSpinBoxValueChanged(double)));
@@ -945,6 +1038,8 @@ void Gui::setupUi()
         _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
     }
 
+    _imp->menuFile->addSeparator();
+    _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
     _imp->menuFile->addSeparator();
@@ -954,6 +1049,7 @@ void Gui::setupUi()
 
     _imp->menuOptions->addAction(_imp->actionProject_settings);
     _imp->menuOptions->addAction(_imp->actionShowOfxLog);
+    _imp->menuDisplay->addAction(_imp->actionNewViewer);
     _imp->menuDisplay->addAction(_imp->viewersMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewerInputsMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewersViewMenu->menuAction());
@@ -984,6 +1080,7 @@ void Gui::setupUi()
     QObject::connect(_imp->renderAllWriters,SIGNAL(triggered()),this,SLOT(renderAllWriters()));
     QObject::connect(_imp->renderSelectedNode,SIGNAL(triggered()),this,SLOT(renderSelectedNode()));
     QObject::connect(_imp->actionShowAboutWindow,SIGNAL(triggered()),this,SLOT(showAbout()));
+    QObject::connect(_imp->actionNewViewer,SIGNAL(triggered()),this,SLOT(createNewViewer()));
     QObject::connect(_imp->actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(_imp->actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(_imp->actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
@@ -994,7 +1091,7 @@ void Gui::setupUi()
     
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     QObject::connect(_imp->actionClearNodeCache, SIGNAL(triggered()),_imp->_appInstance,SLOT(clearOpenFXPluginsCaches()));
-    QObject::connect(_imp->actionExit,SIGNAL(triggered()),this,SLOT(exitGui()));
+    QObject::connect(_imp->actionExit,SIGNAL(triggered()),appPTR,SLOT(exitApp()));
     QObject::connect(_imp->actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     QObject::connect(_imp->actionShowOfxLog,SIGNAL(triggered()),this,SLOT(showOfxLog()));
     
@@ -1107,14 +1204,14 @@ void Gui::updateViewsActions(int viewsCount){
         left->setCheckable(false);
         left->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_1));
         _imp->viewersViewMenu->addAction(left);
-        left->setText("Display left view");
+        left->setText(tr("Display left view"));
         QObject::connect(left,SIGNAL(triggered()),this,SLOT(showView0()));
         
         QAction* right = new QAction(this);
         right->setCheckable(false);
         right->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_2));
         _imp->viewersViewMenu->addAction(right);
-        right->setText("Display right view");
+        right->setText(tr("Display right view"));
         QObject::connect(right,SIGNAL(triggered()),this,SLOT(showView1()));
         
         _imp->viewersMenu->addAction(_imp->viewersViewMenu->menuAction());
@@ -1130,7 +1227,7 @@ void Gui::updateViewsActions(int viewsCount){
             }
             _imp->viewersViewMenu->addAction(viewI);
             const char* slot = slotForView(i);
-            viewI->setText(QString("Display view ")+QString::number(i+1));
+            viewI->setText(QString(tr("Display view "))+QString::number(i+1));
             if(slot){
                 QObject::connect(viewI,SIGNAL(triggered()),this,slot);
             }
@@ -1205,14 +1302,39 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     std::map<NodeGui*,RotoGui*> rotoNodes;
     std::list<NodeGui*> rotoNodesList;
     std::pair<NodeGui*,RotoGui*> currentRoto;
+    
+    std::map<NodeGui*,TrackerGui*> trackerNodes;
+    std::list<NodeGui*> trackerNodesList;
+    std::pair<NodeGui*,TrackerGui*> currentTracker;
+    
     if (!_imp->_viewerTabs.empty()) {
         (*_imp->_viewerTabs.begin())->getRotoContext(&rotoNodes, &currentRoto);
+        (*_imp->_viewerTabs.begin())->getTrackerContext(&trackerNodes, &currentTracker);
+    } else {
+        const std::list<boost::shared_ptr<NodeGui> >& allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+            if ((*it)->getNode()->getRotoContext()) {
+                rotoNodesList.push_back(it->get());
+                if (!currentRoto.first) {
+                    currentRoto.first = it->get();
+                }
+            } else if ((*it)->getNode()->isTrackerNode()) {
+                trackerNodesList.push_back(it->get());
+                if (!currentTracker.first) {
+                    currentTracker.first = it->get();
+                }
+            }
+        }
     }
     for (std::map<NodeGui*,RotoGui*>::iterator it = rotoNodes.begin() ;it!=rotoNodes.end();++it) {
         rotoNodesList.push_back(it->first);
     }
     
-    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,this,viewer,_imp->_viewersPane);
+    for (std::map<NodeGui*,TrackerGui*>::iterator it = trackerNodes.begin() ;it!=trackerNodes.end();++it) {
+        trackerNodesList.push_back(it->first);
+    }
+    
+    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,trackerNodesList,currentTracker.first,this,viewer,_imp->_viewersPane);
     QObject::connect(tab->getViewer(),SIGNAL(imageChanged(int)),this,SLOT(onViewerImageChanged(int)));
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -1269,7 +1391,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
-        _imp->_nodeGraphArea->deleteNode(_imp->_appInstance->getNodeGui(tab->getInternalNode()->getNode()));
+        _imp->_nodeGraphArea->removeNode(_imp->_appInstance->getNodeGui(tab->getInternalNode()->getNode()));
     } else {
         
         tab->hide();
@@ -1372,31 +1494,6 @@ ToolButton* Gui::findExistingToolButton(const QString& label) const{
     return NULL;
 }
 
-static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
-    if (grouping == PLUGIN_GROUP_COLOR) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_FILTER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_IMAGE) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_DEEP) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_TIME) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_PAINT) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_KEYER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
-    } else {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
-    }
-}
 
 ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     for(U32 i = 0; i < _imp->_toolButtons.size();++i){
@@ -1441,14 +1538,21 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance,plugin,plugin->getID(),plugin->getLabel(),icon);
     
     
-    if(isLeaf){
+   
+
+    if (isLeaf) {
+        QString label = pluginsToolButton->getLabel();
+        int foundOFX = label.lastIndexOf("OFX");
+        if (foundOFX != -1) {
+            label = label.remove(foundOFX, 3);
+        }
         assert(parentToolButton);
         QAction* action = new QAction(this);
-        action->setText(pluginsToolButton->getLabel());
+        action->setText(label);
         action->setIcon(pluginsToolButton->getIcon());
         QObject::connect(action , SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()));
         pluginsToolButton->setAction(action);
-    }else{
+    } else {
         QMenu* menu = new QMenu(this);
         menu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
         menu->setTitle(pluginsToolButton->getLabel());
@@ -1621,10 +1725,10 @@ void Gui::newProject() {
 void Gui::openProject() {
     std::vector<std::string> filters;
     filters.push_back(NATRON_PROJECT_FILE_EXT);
-    std::vector<std::string> selectedFiles =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
+    std::string selectedFile =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
     
-    if (selectedFiles.size() > 0) {
-        openProjectInternal(selectedFiles.at(0));
+    if (!selectedFile.empty()) {
+        openProjectInternal(selectedFile);
     }
     
 }
@@ -1704,6 +1808,11 @@ bool Gui::saveProjectAs(){
     return false;
 }
 
+void Gui::createNewViewer()
+{
+    (void)_imp->_appInstance->createNode(CreateNodeArgs("Viewer"));
+}
+
 boost::shared_ptr<Natron::Node> Gui::createReader(){
     boost::shared_ptr<Natron::Node> ret;
     std::map<std::string,std::string> readersForFormat;
@@ -1712,16 +1821,16 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
     for (std::map<std::string,std::string>::const_iterator it = readersForFormat.begin(); it!=readersForFormat.end(); ++it) {
         filters.push_back(it->first);
     }
-    std::vector<std::string> files = popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString());
-    if(!files.empty()){
-        QString first = files.at(0).c_str();
-        std::string ext = Natron::removeFileExtension(first).toLower().toStdString();
+    std::string pattern = popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString());
+    if(!pattern.empty()){
+        QString qpattern(pattern.c_str());
+        std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
 
         std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
         if (found == readersForFormat.end()) {
-            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
+            errorDialog(tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString());
         } else {
-            ret = _imp->_appInstance->createNode(found->second.c_str(),true,-1,-1,false);
+            ret = _imp->_appInstance->createNode(CreateNodeArgs(found->second.c_str(),"",-1,-1,false));
             
             if (!ret) {
                 return ret;
@@ -1732,19 +1841,12 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
                     boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
                     assert(fk);
                     
-                    if(!fk->isAnimationEnabled() && files.size() > 1){
-                        errorDialog("Reader", "This plug-in doesn't support image sequences, please select only 1 file.");
-                        break;
-                    } else {
-                        fk->setFiles(files);
-                        
-                        if (ret->isPreviewEnabled()) {
-                            ret->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());
-                        }
-                        
-                        break;
+                    fk->setValue(pattern,0);
+                    if (ret->isPreviewEnabled()) {
+                        ret->computePreviewImage(_imp->_appInstance->getTimeLine()->currentFrame());
                     }
-                
+                    
+                    break;
                 }
             }
         }
@@ -1767,7 +1869,7 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
         
         std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
         if(found != writersForFormat.end()){
-            ret = _imp->_appInstance->createNode(found->second.c_str(),true,-1,-1,false);
+            ret = _imp->_appInstance->createNode(CreateNodeArgs(found->second.c_str(),"",-1,-1,false));
             if (!ret) {
                 return ret;
             }
@@ -1784,20 +1886,20 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
                 }
             }
         }else{
-            errorDialog("Writer", "No plugin capable of encoding " + ext + " was found.");
+            errorDialog(tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString());
         }
         
     }
     return ret;
 }
 
-std::vector<std::string> Gui::popOpenFileDialog(bool sequenceDialog,
+std::string Gui::popOpenFileDialog(bool sequenceDialog,
                                                 const std::vector<std::string>& initialfilters,const std::string& initialDir) {
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir);
     if (dialog.exec()) {
         return dialog.selectedFiles();
     }else{
-        return std::vector<std::string>();
+        return std::string();
     }
 }
 
@@ -1817,8 +1919,8 @@ void Gui::autoSave(){
 
 int Gui::saveWarning(){
     
-    if(!_imp->_appInstance->getProject()->isGraphWorthLess() && !_imp->_appInstance->getProject()->isSaveUpToDate()){
-        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,"Save changes to " +
+    if (!_imp->_appInstance->getProject()->isSaveUpToDate()) {
+        Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
                                Natron::StandardButtons(Natron::Save | Natron::Discard | Natron::Cancel),Natron::Save);
         if(ret == Natron::Escape || ret == Natron::Cancel){
@@ -2005,8 +2107,9 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
 }
 
 
-void Gui::selectNode(boost::shared_ptr<NodeGui> node){
-    _imp->_nodeGraphArea->selectNode(node);
+void Gui::selectNode(boost::shared_ptr<NodeGui> node)
+{
+    _imp->_nodeGraphArea->selectNode(node,false); //< wipe current selection
 }
 
 void Gui::connectInput1(){
@@ -2527,8 +2630,13 @@ void Gui::renderAllWriters()
 
 void Gui::renderSelectedNode()
 {
-    boost::shared_ptr<NodeGui> selectedNode = _imp->_nodeGraphArea->getSelectedNode();
-    if (selectedNode) {
+    const std::list<boost::shared_ptr<NodeGui> >& selectedNodes = _imp->_nodeGraphArea->getSelectedNodes();
+    if (selectedNodes.size() > 1) {
+        Natron::warningDialog(tr("Render").toStdString(), tr("Please select only a single node").toStdString());
+    } else if (selectedNodes.empty()) {
+        Natron::warningDialog(tr("Render").toStdString(), tr("You must select a node to render first!").toStdString());
+    } else {
+        const boost::shared_ptr<NodeGui>& selectedNode = selectedNodes.front();
         if (selectedNode->getNode()->getLiveInstance()->isWriter()) {
             ///if the node is a writer, just use it to render!
             _imp->_appInstance->startWritersRendering(QStringList(selectedNode->getNode()->getName().c_str()));
@@ -2538,10 +2646,8 @@ void Gui::renderSelectedNode()
             if (writer) {
                 _imp->_appInstance->startWritersRendering(QStringList(writer->getName().c_str()));
             }
-
+            
         }
-    } else {
-        Natron::warningDialog("Render", "You must select a node to render first!");
     }
 }
 
@@ -2555,6 +2661,22 @@ void Gui::showOfxLog()
     LogWindow lw(log,this);
     lw.setWindowTitle(tr("OpenFX messages log"));
     lw.exec();
+}
+
+void Gui::createNewTrackerInterface(NodeGui* n)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->createTrackerInterface(n);
+    }
+}
+
+void Gui::removeTrackerInterface(NodeGui* n,bool permanantly)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
+        (*it)->removeTrackerInterface(n, permanantly,false);
+    }
 }
 
 void Gui::onRotoSelectedToolChanged(int tool)
@@ -2607,6 +2729,10 @@ void Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 
 void Gui::startProgress(Natron::EffectInstance* effect,const std::string& message)
 {
+    
+    if (!effect) {
+        return;
+    }
     if (QThread::currentThread() != qApp->thread()) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
         return;
@@ -2745,4 +2871,20 @@ void Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
     std::list<VideoEngine*>::iterator it = std::find(_imp->abortedEngines.begin(),_imp->abortedEngines.end(),engine);
     assert(it != _imp->abortedEngines.end());
     _imp->abortedEngines.erase(it);
+}
+
+void Gui::connectViewersToViewerCache()
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        (*it)->connectToViewerCache();
+    }
+}
+
+void Gui::disconnectViewersFromViewerCache()
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        (*it)->disconnectFromViewerCache();
+    }
 }

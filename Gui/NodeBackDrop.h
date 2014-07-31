@@ -56,6 +56,8 @@ public:
     void resize(int w,int h);
     void getSize(int& w,int& h) const;
     
+    double getHeaderHeight() const;
+    
     bool isNearbyHeader(const QPointF& scenePos);
     bool isNearbyResizeHandle(const QPointF& scenePos);
     
@@ -75,6 +77,9 @@ public:
     void deactivate();
     void activate();
     
+    ///MT-Safe
+    bool getIsSelected() const;
+    
 signals:
     
     void positionChanged();
@@ -88,24 +93,11 @@ public slots:
     
     void setSelected(bool selected);
     
-    void cut();
-    
-    void copy();
-    
-    void duplicate();
-    
-    void clone();
-    
-    void declone();
-    
-    void remove();
-    
     void refreshSlaveMasterLinkPosition();
     
-    void showMenu(const QPoint& pos);
 private:
     
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
     
     virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL {}
     

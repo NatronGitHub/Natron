@@ -12,25 +12,16 @@
 #ifndef NATRON_GUI_NODEGRAPH_H_
 #define NATRON_GUI_NODEGRAPH_H_
 
-#include <vector>
-#include <map>
-
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
-#include <QtCore/QRectF>
-#include <QtCore/QTimer>
-#include <QDialog>
-#include <QLabel>
-#include <QUndoCommand>
-#include <QMutex>
-#include <QAction>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
@@ -38,48 +29,25 @@ CLANG_DIAG_ON(uninitialized)
 
 class QVBoxLayout;
 class QScrollArea;
-class QGraphicsProxyWidget;
-class QUndoStack;
-class QGraphicsTextItem;
-class QComboBox;
 class QEvent;
 class QKeyEvent;
 class Gui;
-class NodeSettingsPanel;
 class NodeGui;
-class AppInstance;
-class Edge;
-class QMenu;
-class SmartInputDialog;
 class QDropEvent;
 class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
 class NodeBackDrop;
+struct NodeGraphPrivate;
 namespace Natron{
     class Node;
 }
 
-
-class NodeGraph: public QGraphicsView , public boost::noncopyable{
-    
-    enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING,BACKDROP_DRAGGING,BACKDROP_RESIZING};
-    
+class NodeGraph: public QGraphicsView , public boost::noncopyable
+{
+        
     Q_OBJECT
-    
-    class NodeGraphNavigator : public QLabel{
-        int _w,_h;
-    public:
-        
-        explicit NodeGraphNavigator(QWidget* parent = 0);
-        
-        void setImage(const QImage& img);
-        
-        virtual QSize sizeHint() const OVERRIDE FINAL {return QSize(_w,_h);};
-        
-        virtual ~NodeGraphNavigator(){}
-    };
 
 public:
 
@@ -87,15 +55,15 @@ public:
 
     virtual ~NodeGraph() OVERRIDE;
  
-    void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
+    void setPropertyBinPtr(QScrollArea* propertyBin);
+    
+    const std::list< boost::shared_ptr<NodeGui> >& getSelectedNodes() const;
     
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad);
     
-    boost::shared_ptr<NodeGui> getSelectedNode() const {return _nodeSelected;}
+    void selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection);
     
-    void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
-    
-    void selectNode(const boost::shared_ptr<NodeGui>& n);
+    void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
     
     ///The visible portion of the graph, in scene coordinates.
     QRectF visibleRect();
@@ -108,8 +76,6 @@ public:
     
     void updateNavigator();
     
-    QGraphicsItem* getRootItem() const {return _root;}
-    
     const std::list<boost::shared_ptr<NodeGui> >& getAllActiveNodes() const;
     
     std::list<boost::shared_ptr<NodeGui> > getAllActiveNodes_mt_safe() const;
@@ -117,33 +83,21 @@ public:
     void moveToTrash(NodeGui* node);
     
     void restoreFromTrash(NodeGui* node);
+    
+    QGraphicsItem* getRootItem() const;
+    
+    Gui* getGui() const;
+    
+    void discardGuiPointer();
         
-    Gui* getGui() const {return _gui;}
-    
-    void discardGuiPointer() { _gui = 0; }
-    
     void refreshAllEdges();
-
-    bool areAllPreviewTurnedOff() const {
-        QMutexLocker l(&_previewsTurnedOffMutex);
-        return _previewsTurnedOff;
-    }
     
+    /**
+     * @brief Removes the given node from the nodegraph, using the undo/redo stack.
+     **/
+    void removeNode(const boost::shared_ptr<NodeGui>& node);
     
     void centerOnNode(const boost::shared_ptr<NodeGui>& n);
-    void deleteNode(const boost::shared_ptr<NodeGui>& n);
-    void copyNode(const boost::shared_ptr<NodeGui>& n);
-    void cutNode(const boost::shared_ptr<NodeGui>& n);
-    boost::shared_ptr<NodeGui> duplicateNode(const boost::shared_ptr<NodeGui>& n);
-    boost::shared_ptr<NodeGui> cloneNode(const boost::shared_ptr<NodeGui>& n);
-    void decloneNode(const boost::shared_ptr<NodeGui>& n);
-    
-    void deleteBackdrop(NodeBackDrop* n);
-    void copyBackdrop(NodeBackDrop* n);
-    void cutBackdrop(NodeBackDrop* n);
-    void duplicateBackdrop(NodeBackDrop* n);
-    void cloneBackdrop(NodeBackDrop* n);
-    void decloneBackdrop(NodeBackDrop* n);
     
     boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
     
@@ -155,6 +109,8 @@ public:
     
     ///Returns true if it already exists
     bool checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const;
+    
+    bool checkIfNodeNameExists(const std::string& n,const NodeGui* node) const;
     
     std::list<NodeBackDrop*> getBackDrops() const;
     std::list<NodeBackDrop*> getActiveBackDrops() const;
@@ -168,18 +124,20 @@ public:
      * @brief This function just removes the given backdrop from the list, it does not delete it or anything.
      **/
     void removeBackDrop(NodeBackDrop* bd);
-    
-    void pushRemoveBackDropCommand(NodeBackDrop* bd);
-    
+        
     std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
     
+    void selectAllNodes(bool onlyInVisiblePortion);
+    
+    /**
+     * @brief Calls setParentItem(NULL) on all items of the scene to avoid Qt to double delete the nodes.
+     **/
+    void invalidateAllNodesParenting();
     
 public slots:
     
-    void deleteSelectedNode();
-    
-    void deleteSelectedBackdrop();
-    
+    void deleteSelection();
+        
     void connectCurrentViewerToSelection(int inputNB);
 
     void updateCacheSizeText();
@@ -190,7 +148,7 @@ public slots:
     
     void toggleCacheInfos();
     
-    void turnOffPreviewForAllNodes();
+    void togglePreviewsForSelectedNodes();
     
     void toggleAutoPreview();
     
@@ -198,22 +156,30 @@ public slots:
 
     void onProjectNodesCleared();
     
+    void switchInputs1and2ForSelectedNodes();
+    
     ///All these actions also work for backdrops
-    void copySelectedNode();
-    void cutSelectedNode();
-    void pasteNodeClipBoard();
-    void duplicateSelectedNode();
-    void cloneSelectedNode();
-    void decloneSelectedNode();
+    /////////////////////////////////////////////
+    ///Copy selected nodes to the clipboard, wiping previous clipboard
+    void copySelectedNodes();
+    
+    void cutSelectedNodes();
+    void pasteNodeClipBoards();
+    void duplicateSelectedNodes();
+    void cloneSelectedNodes();
+    void decloneSelectedNodes();
+    /////////////////////////////////////////////
     
     void centerOnAllNodes();
     
     void toggleConnectionHints();
     
+    ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     
 
 private:
+    
     
     /**
      * @brief Given the node, it tries to move it to the ideal position
@@ -223,11 +189,6 @@ private:
      * so they do not overlap.
      **/
     void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
-    
-    boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization& internalSerialization,const NodeGuiSerialization& guiSerialization);
-    
-    NodeBackDrop* pasteBackdrop(const NodeBackDropSerialization& serialization,bool offset = true);
-  
 
     virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
 
@@ -239,133 +200,37 @@ private:
 
     virtual bool event(QEvent* event) OVERRIDE FINAL;
 
-    void mousePressEvent(QMouseEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void mouseReleaseEvent(QMouseEvent *event);
+    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void mouseMoveEvent(QMouseEvent *event);
+    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void mouseDoubleClickEvent(QMouseEvent *event);
+    virtual void mouseDoubleClickEvent(QMouseEvent *event) OVERRIDE FINAL;
     
-    void resizeEvent(QResizeEvent* event);
+    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
     
-    void paintEvent(QPaintEvent* event);
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
 
-    void wheelEvent(QWheelEvent *event);
+    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
 
-    void dropEvent(QDropEvent* event);
+    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
     
-    void dragEnterEvent(QDragEnterEvent *ev);
+    virtual void dragEnterEvent(QDragEnterEvent *ev) OVERRIDE FINAL;
     
-    void dragMoveEvent(QDragMoveEvent* e);
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     
-    void dragLeaveEvent(QDragLeaveEvent* e);
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 private:
     
-    void resetAllClipboards();
+    boost::scoped_ptr<NodeGraphPrivate> _imp;
     
-    // FIXME: PIMPL
-    QRectF calcNodesBoundingRect();
-    
-    bool smartNodeCreationEnabled;
-    
-    Gui* _gui;
-    
-    QPointF _lastScenePosClick;
-    
-    QPointF _lastNodeDragStartPoint;
-
-    EVENT_STATE _evtState;
-    
-    boost::shared_ptr<NodeGui> _nodeSelected;
-    double _nodeSelectedScaleBeforeMagnif;
-    bool _magnifOn;
-    
-    Edge* _arrowSelected;
-    
-    mutable QMutex _nodesMutex;
-    
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    std::list<boost::shared_ptr<NodeGui> > _nodesTrash;
-    
-    bool _nodeCreationShortcutEnabled;
-        
-    QGraphicsItem* _root; ///< this is the parent of all items in the graph
-    QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
-    
-    QScrollArea* _propertyBin;
-
-    QGraphicsTextItem* _cacheSizeText;
-    
-    QTimer _refreshCacheTextTimer;
-    
-    NodeGraphNavigator* _navigator;
-    
-    QGraphicsLineItem* _navLeftEdge;
-    QGraphicsLineItem* _navBottomEdge;
-    QGraphicsLineItem* _navRightEdge;
-    QGraphicsLineItem* _navTopEdge;
-    
-    QGraphicsProxyWidget* _navigatorProxy;
-    
-    QUndoStack* _undoStack;
-
-        
-    QMenu* _menu;
-    
-    QGraphicsItem *_tL,*_tR,*_bR,*_bL;
-    
-    bool _refreshOverlays;
-    
-    mutable QMutex _previewsTurnedOffMutex;
-    bool _previewsTurnedOff;
-    
-    struct NodeClipBoard {
-        boost::shared_ptr<NodeSerialization> _internal;
-        boost::shared_ptr<NodeGuiSerialization> _gui;
-        
-        NodeClipBoard()
-        : _internal()
-        , _gui()
-        {
-        }
-        
-        bool isEmpty() const { return !_internal || !_gui; }
-    };
-    
-    NodeClipBoard _nodeClipBoard;
-    
-    Edge* _highLightedEdge;
-    
-    ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
-    Edge* _hintInputEdge;
-    Edge* _hintOutputEdge;
-    
-    std::list<NodeBackDrop*> _backdrops;
-    boost::shared_ptr<NodeBackDropSerialization> _backdropClipboard;
-
-    NodeBackDrop* _selectedBackDrop;
-    std::list<boost::shared_ptr<NodeGui> > _nodesToMoveWithBackDrop;
-    bool _firstMove;
 };
 
 
 
-class SmartInputDialog:public QDialog
-{
-Q_OBJECT
-
-public:
-    explicit SmartInputDialog(NodeGraph* graph);
-    virtual ~SmartInputDialog() OVERRIDE {}
-    void keyPressEvent(QKeyEvent *e);
-    bool eventFilter(QObject * obj, QEvent * e);
-private:
-    NodeGraph* graph;
-    QVBoxLayout* layout;
-    QLabel* textLabel;
-    QComboBox* textEdit;
-    
-};
 #endif // NATRON_GUI_NODEGRAPH_H_

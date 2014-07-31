@@ -22,7 +22,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/version.hpp>
 
 #define NODE_GUI_INTRODUCES_COLOR 2
-#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_COLOR
+#define NODE_GUI_INTRODUCES_SELECTED 3
+#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_SELECTED
 
 class NodeGui;
 class NodeGuiSerialization
@@ -30,7 +31,7 @@ class NodeGuiSerialization
     
 public:
     
-    NodeGuiSerialization() : _colorWasFound(false) {}
+    NodeGuiSerialization() : _colorWasFound(false), _selected(false) {}
     
     void initialize(const boost::shared_ptr<NodeGui>& n);
 
@@ -51,6 +52,7 @@ public:
     
     bool colorWasFound() const { return _colorWasFound; }
     
+    bool isSelected() const { return _selected; }
 private:
 
     std::string _nodeName;
@@ -58,6 +60,7 @@ private:
     bool _previewEnabled;
     float _r,_g,_b; //< color
     bool _colorWasFound;
+    bool _selected;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -73,6 +76,9 @@ private:
             ar & boost::serialization::make_nvp("g",_g);
             ar & boost::serialization::make_nvp("b",_b);
             _colorWasFound = true;
+        }
+        if (version >= NODE_GUI_INTRODUCES_SELECTED) {
+            ar & boost::serialization::make_nvp("Selected",_selected);
         }
     }
 

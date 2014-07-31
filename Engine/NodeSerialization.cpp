@@ -76,6 +76,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
             _hasRotoContext = false;
         }
         
+        _multiInstanceParentName = n->getParentMultiInstanceName();
+        
         _isNull = false;
     }
 }

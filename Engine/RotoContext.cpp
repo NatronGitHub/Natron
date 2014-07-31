@@ -57,20 +57,21 @@ BezierCP::~BezierCP()
     
 }
 
-bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterTracker ) const
+bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterOrRelative) const
 {
-    if (!skipMasterTracker) {
+    if (!skipMasterOrRelative) {
         Double_Knob* masterTrack ;
+        BezierCP* relative;
         {
             QReadLocker l(&_imp->masterMutex);
             masterTrack = _imp->masterTrack;
+            relative = _imp->relativePoint;
         }
         if (masterTrack) {
-            bool ok;
             KeyFrame k;
             if (masterTrack->getCurve(0)->getKeyFrameWithTime(time, &k)) {
                 *x = k.getValue();
-                ok = masterTrack->getCurve(1)->getKeyFrameWithTime(time, &k);
+                (void)masterTrack->getCurve(1)->getKeyFrameWithTime(time, &k);
                 *y = k.getValue();
                 return true;
             } else {
@@ -79,6 +80,24 @@ bool BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterTra
                 return false;
             }
             
+        } else if (relative) {
+            assert(!masterTrack);
+            
+            ///get the position of the relative point and the position of this point absolute
+            ///then compute the distance between the 2 positions then apply it as an offset to the positino
+            ///of the relative with the master track
+            double xRelative,yRelative;
+            _imp->relativePoint->getPositionAtTime(time, &xRelative, &yRelative,true);
+            double thisX,thisY;
+            bool onKey = getPositionAtTime(time, &thisX, &thisY,true);
+            double xOffset = thisX - xRelative;
+            double yOffset = thisY - yRelative;
+            
+            //get the position of the relative with track applied
+            _imp->relativePoint->getPositionAtTime(time, &xRelative, &yRelative,false);
+            *x = xRelative + xOffset;
+            *y = yRelative + yOffset;
+            return onKey;
         }
     }
     KeyFrame k;
@@ -105,6 +124,20 @@ void BezierCP::setPositionAtTime(int time,double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
+    
     {
         KeyFrame k(time,x);
         k.setInterpolation(Natron::KEYFRAME_LINEAR);
@@ -130,6 +163,18 @@ void BezierCP::setLeftBezierStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     _imp->leftX = x;
     _imp->leftY = y;
 }
@@ -138,12 +183,32 @@ void BezierCP::setRightBezierStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     _imp->rightX = x;
     _imp->rightY = y;
 }
 
 bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
 {
+    
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
     KeyFrame k;
     bool ret;
     if (_imp->curveLeftBezierX.getKeyFrameWithTime(time, &k)) {
@@ -164,27 +229,43 @@ bool BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y) const
         ret =  false;
     }
     
-    {
-        QReadLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            double xCenter,yCenter;
-            ret = getPositionAtTime(time, &xCenter, &yCenter,true);
-            
-            ///make it an offset relative to the center
-            *x -= xCenter;
-            *y -= yCenter;
-            
-            ///apply the offset to the track center
-            *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
-            *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
-        }
+    
+    if (masterTrack) {
+        double xCenter,yCenter;
+        ret = getPositionAtTime(time, &xCenter, &yCenter,true);
+        
+        ///make it an offset relative to the center
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        ///apply the offset to the track center
+        *x = masterTrack->getValueAtTime(time,0) + *x;
+        *y = masterTrack->getValueAtTime(time,1) + *y;
+    } else if (relativePoint) {
+        assert(!masterTrack);
+        double xCenter,yCenter;
+        getPositionAtTime(time, &xCenter, &yCenter,true);
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        double xRelative,yRelative;
+        ret = getPositionAtTime(time, &xRelative, &yRelative);
+        *x += xRelative;
+        *y += yRelative;
     }
+    
     return ret;
 }
 
 bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
 {
-   
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
     KeyFrame k;
     bool ret;
     if (_imp->curveRightBezierX.getKeyFrameWithTime(time, &k)) {
@@ -205,21 +286,31 @@ bool BezierCP::getRightBezierPointAtTime(int time,double *x,double *y) const
         ret =  false;
     }
     
-    {
-        QReadLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            double xCenter,yCenter;
-            ret = getPositionAtTime(time, &xCenter, &yCenter,true);
-            
-            ///make it an offset relative to the center
-            *x -= xCenter;
-            *y -= yCenter;
-            
-            ///apply the offset to the track center
-            *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
-            *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
-        }
+    
+    if (masterTrack) {
+        double xCenter,yCenter;
+        ret = getPositionAtTime(time, &xCenter, &yCenter,true);
+        
+        ///make it an offset relative to the center
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        ///apply the offset to the track center
+        *x = _imp->masterTrack->getValueAtTime(time,0) + *x;
+        *y = _imp->masterTrack->getValueAtTime(time,1) + *y;
+    } else if (relativePoint) {
+        assert(!masterTrack);
+        double xCenter,yCenter;
+        getPositionAtTime(time, &xCenter, &yCenter,true);
+        *x -= xCenter;
+        *y -= yCenter;
+        
+        double xRelative,yRelative;
+        ret = getPositionAtTime(time, &xRelative, &yRelative);
+        *x += xRelative;
+        *y += yRelative;
     }
+    
     return ret;
 }
 
@@ -227,6 +318,18 @@ void BezierCP::setLeftBezierPointAtTime(int time,double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     {
         KeyFrame k(time,x);
         k.setInterpolation(Natron::KEYFRAME_LINEAR);
@@ -243,6 +346,18 @@ void BezierCP::setRightBezierPointAtTime(int time,double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return;
+    }
     {
         KeyFrame k(time,x);
         k.setInterpolation(Natron::KEYFRAME_LINEAR);
@@ -448,6 +563,18 @@ bool BezierCP::cuspPoint(int time,bool autoKeying,bool rippleEdit)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return false;
+    }
     
     double x,y,leftX,leftY,rightX,rightY;
     getPositionAtTime(time, &x, &y);
@@ -482,6 +609,18 @@ bool BezierCP::smoothPoint(int time,bool autoKeying,bool rippleEdit)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    ///If linked to a track or a feather of a point that is linked to a point, don't do anything
+    Double_Knob* masterTrack;
+    BezierCP* relativePoint;
+    {
+        QReadLocker l(&_imp->masterMutex);
+        masterTrack = _imp->masterTrack;
+        relativePoint = _imp->relativePoint;
+    }
+    if (masterTrack || relativePoint)
+    {
+        return false;
+    }
     
     double x,y,leftX,leftY,rightX,rightY;
     getPositionAtTime(time, &x, &y);
@@ -529,6 +668,7 @@ void BezierCP::clone(const BezierCP& other)
     _imp->rightY = other._imp->rightY;
     
     _imp->masterTrack = other._imp->masterTrack;
+    _imp->relativePoint = other._imp->relativePoint;
 }
 
 bool BezierCP::equalsAtTime(int time,const BezierCP& other) const
@@ -554,6 +694,7 @@ void BezierCP::slaveTo(Double_Knob* track)
     assert(QThread::currentThread() == qApp->thread());
     assert(!_imp->masterTrack);
     QWriteLocker l(&_imp->masterMutex);
+    assert(!_imp->relativePoint);
     _imp->masterTrack = track;
     
 }
@@ -571,6 +712,27 @@ Double_Knob* BezierCP::isSlaved() const
 {
     QReadLocker l(&_imp->masterMutex);
     return _imp->masterTrack;
+}
+
+void BezierCP::setRelativeTo(BezierCP* other)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QWriteLocker l(&_imp->masterMutex);
+    assert(!_imp->masterTrack);
+    _imp->relativePoint = other;
+}
+
+BezierCP* BezierCP::hasRelative() const
+{
+    QReadLocker l(&_imp->masterMutex);
+    return _imp->relativePoint;
+}
+
+void BezierCP::removeRelative()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QWriteLocker l(&_imp->masterMutex);
+    _imp->relativePoint = NULL;
 }
 
 ////////////////////////////////////RotoItem////////////////////////////////////
@@ -835,8 +997,11 @@ RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,
 : RotoItem(context,name,parent)
 , _imp(new RotoDrawableItemPrivate())
 {
-    QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int)), this, SIGNAL(inversionChanged()));
+    QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(inversionChanged()));
     QObject::connect(this, SIGNAL(overlayColorChanged()), context, SIGNAL(refreshViewerOverlays()));
+    QObject::connect(_imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(shapeColorChanged()));
+    QObject::connect(_imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this,
+                     SIGNAL(compositingOperatorChanged()));
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -848,11 +1013,11 @@ void RotoDrawableItem::clone(const RotoDrawableItem& other)
 {
     {
         QMutexLocker l(&itemMutex);
-        _imp->activated->clone(other._imp->activated);
-        _imp->feather->clone(other._imp->feather);
-        _imp->featherFallOff->clone(other._imp->featherFallOff);
-        _imp->opacity->clone(other._imp->opacity);
-        _imp->inverted->clone(other._imp->inverted);
+        _imp->activated->clone(other._imp->activated.get());
+        _imp->feather->clone(other._imp->feather.get());
+        _imp->featherFallOff->clone(other._imp->featherFallOff.get());
+        _imp->opacity->clone(other._imp->opacity.get());
+        _imp->inverted->clone(other._imp->inverted.get());
         memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double)*4);
     }
     RotoItem::clone(other);
@@ -886,6 +1051,8 @@ void RotoDrawableItem::save(RotoItemSerialization *obj) const
         serializeRotoKnob(_imp->opacity, &s->_opacity);
         serializeRotoKnob(_imp->featherFallOff, &s->_featherFallOff);
         serializeRotoKnob(_imp->inverted, &s->_inverted);
+        serializeRotoKnob(_imp->color, &s->_color);
+        serializeRotoKnob(_imp->compOperator, &s->_compOp);
         memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
         
         
@@ -899,11 +1066,15 @@ void RotoDrawableItem::load(const RotoItemSerialization &obj)
     
     
     {
-        _imp->activated->clone(s._activated.getKnob());
-        _imp->opacity->clone(s._opacity.getKnob());
-        _imp->feather->clone(s._feather.getKnob());
-        _imp->featherFallOff->clone(s._featherFallOff.getKnob());
-        _imp->inverted->clone(s._inverted.getKnob());
+        _imp->activated->clone(s._activated.getKnob().get());
+        _imp->opacity->clone(s._opacity.getKnob().get());
+        _imp->feather->clone(s._feather.getKnob().get());
+        _imp->featherFallOff->clone(s._featherFallOff.getKnob().get());
+        _imp->inverted->clone(s._inverted.getKnob().get());
+        if (s._hasColorAndCompOp) {
+            _imp->color->clone(s._color.getKnob().get());
+            _imp->compOperator->clone(s._compOp.getKnob().get());
+        }
         QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
     }
@@ -947,6 +1118,17 @@ bool RotoDrawableItem::getInverted(int time) const
     return _imp->inverted->getValueAtTime(time);
 }
 
+void RotoDrawableItem::getColor(int time,double* color) const
+{
+    color[0] = _imp->color->getValueAtTime(time,0);
+    color[1] = _imp->color->getValueAtTime(time,1);
+    color[2] = _imp->color->getValueAtTime(time,2);
+}
+
+int RotoDrawableItem::getCompositingOperator(int time) const
+{
+    return _imp->compOperator->getValueAtTime(time);
+}
 
 void RotoDrawableItem::getOverlayColor(double* color) const
 {
@@ -972,7 +1154,8 @@ boost::shared_ptr<Int_Knob> RotoDrawableItem::getFeatherKnob() const { return _i
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getOpacityKnob() const { return _imp->opacity; }
 boost::shared_ptr<Bool_Knob> RotoDrawableItem::getInvertedKnob() const { return _imp->inverted; }
-
+boost::shared_ptr<Choice_Knob> RotoDrawableItem::getOperatorKnob() const { return _imp->compOperator; }
+boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const { return _imp->color; }
 ////////////////////////////////////Layer////////////////////////////////////
 
 RotoLayer::RotoLayer(RotoContext* context,const std::string& n,RotoLayer* parent)
@@ -2526,6 +2709,11 @@ Bezier::isNearbyControlPoint(double x,double y,double acceptance,ControlPointSel
 
 int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
 {
+    return getControlPointIndex(cp.get());
+}
+
+int Bezier::getControlPointIndex(const BezierCP* cp) const
+{
     ///only called on the main-thread
     assert(cp);
     QMutexLocker l(&itemMutex);
@@ -2533,7 +2721,7 @@ int Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const
     int i = 0;
     for (BezierCPs::const_iterator it = _imp->points.begin();it!=_imp->points.end();++it,++i)
     {
-        if (*it == cp) {
+        if (it->get() == cp) {
             return i;
         }
     }
@@ -3052,6 +3240,15 @@ boost::shared_ptr<Bool_Knob> RotoContext::getInvertedKnob() const
     return _imp->inverted;
 }
 
+boost::shared_ptr<Color_Knob> RotoContext::getColorKnob() const
+{
+    return _imp->colorKnob;
+}
+
+boost::shared_ptr<Choice_Knob> RotoContext::getOperatorKnob() const
+{
+    return _imp->compOperator;
+}
 
 void RotoContext::setAutoKeyingEnabled(bool enabled)
 {
@@ -3519,12 +3716,16 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
+        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
+        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
-        _imp->activated->clone(activated);
-        _imp->feather->clone(feather);
-        _imp->featherFallOff->clone(featherFallOff);
-        _imp->opacity->clone(opacity);
-        _imp->inverted->clone(inverted);
+        _imp->activated->clone(activated.get());
+        _imp->feather->clone(feather.get());
+        _imp->featherFallOff->clone(featherFallOff.get());
+        _imp->opacity->clone(opacity.get());
+        _imp->inverted->clone(inverted.get());
+        _imp->colorKnob->clone(colorknob.get());
+        _imp->compOperator->clone(compOp.get());
         
         ///link this bezier knobs to the context
         activated->slaveTo(0, _imp->activated, 0);
@@ -3532,6 +3733,10 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
         opacity->slaveTo(0, _imp->opacity, 0);
         inverted->slaveTo(0, _imp->inverted, 0);
+        for (int i = 0; i < colorknob->getDimension();++i) {
+            colorknob->slaveTo(i, _imp->colorKnob, i);
+        }
+        compOp->slaveTo(0, _imp->compOperator, 0);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -3547,6 +3752,8 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->featherFallOff->setAllDimensionsEnabled(true);
         _imp->feather->setAllDimensionsEnabled(true);
         _imp->inverted->setAllDimensionsEnabled(true);
+        _imp->colorKnob->setAllDimensionsEnabled(true);
+        _imp->compOperator->setAllDimensionsEnabled(true);
     }
     
     ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
@@ -3557,6 +3764,8 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->feather->setDirty(true);
         _imp->featherFallOff->setDirty(true);
         _imp->inverted->setDirty(true);
+        _imp->colorKnob->setDirty(true);
+        _imp->compOperator->setDirty(true);
     }
     
     
@@ -3601,12 +3810,18 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
+        boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
+        boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
         activated->unSlave(0,notDirty);
         feather->unSlave(0,notDirty);
         featherFallOff->unSlave(0,notDirty);
         opacity->unSlave(0,notDirty);
         inverted->unSlave(0,notDirty);
+        for (int i = 0;i < colorknob->getDimension();++i) {
+            colorknob->unSlave(i, notDirty);
+        }
+        compOp->unSlave(0, notDirty);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -3621,6 +3836,8 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->feather->setDirty(false);
         _imp->featherFallOff->setDirty(false);
         _imp->inverted->setDirty(false);
+        _imp->compOperator->setDirty(false);
+        _imp->colorKnob->setDirty(false);
     }
     
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
@@ -3630,6 +3847,8 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->featherFallOff->setAllDimensionsEnabled(false);
         _imp->feather->setAllDimensionsEnabled(false);
         _imp->inverted->setAllDimensionsEnabled(false);
+        _imp->compOperator->setAllDimensionsEnabled(false);
+        _imp->colorKnob->setAllDimensionsEnabled(false);
     }
     
     
@@ -4022,16 +4241,23 @@ void convertCairoImageToNatronImage(cairo_surface_t* cairoImg,Natron::Image* ima
         
         for (int x = 0; x < pixelRod.width(); ++x) {
             if (comps == 1) {
-                dstPix[x] = PIX((float)srcPix[x] / 255.f) * maxValue;
+                dstPix[x] = PIX((float)srcPix[x] / 255.f) * maxValue;;
             } else {
-                assert(comps == 4);
-                dstPix[x * 4 + 3] = PIX((float)srcPix[x] / 255.f) * maxValue;
+                int offset = 0;
+                if (comps == 4) {
+                    offset = 1; //< cairo's format is ARGB (that is BGRA when interpreted as bytes)
+                    dstPix[x * 4 + 3] = PIX((float)srcPix[x * 4 + 3] / 255.f) * maxValue;
+                }
+                dstPix[x * comps + 0] = PIX((float)srcPix[x * comps + 2] / 255.f) * maxValue;
+                dstPix[x * comps + 1] = PIX((float)srcPix[x * comps + 1] / 255.f) * maxValue;
+                dstPix[x * comps + 2] = PIX((float)srcPix[x * comps + 0] / 255.f) * maxValue;
             }
         }
     }
 }
 
-boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
+boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,Natron::ImageComponents components,
+                                                         U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
                                             Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache)
 {
     
@@ -4058,7 +4284,8 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         
     }
     
-    if (lastRenderedImage && lastRenderHash != hash.value()) {
+    if (lastRenderedImage &&
+        (lastRenderHash != hash.value())) {
         ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
         Natron::OutputImageLocker imgLocker(_imp->node,lastRenderedImage);
         ///once we got it remove it from the cache
@@ -4076,7 +4303,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     
     bool cached = Natron::getImageFromCache(key, &params, &image);
    
-    if (cached && image->getBitDepth() != depth) {
+    if (cached && (image->getBitDepth() != depth || image->getComponents() != components)) {
         cached = false;
         image.reset();
         params.reset();
@@ -4093,10 +4320,9 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
         }
         
     } else {
-        Natron::ImageComponents maskComps = Natron::ImageComponentAlpha;
         
         params = Natron::Image::makeParams(0, nodeRoD,mipmapLevel,false,
-                                           maskComps,
+                                           components,
                                            depth,
                                            -1, time,
                                            std::map<int, std::vector<RangeD> >());
@@ -4106,7 +4332,7 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM(params->getElementsCount() * sizeof(Natron::Image::data_t)).toStdString();
-            Natron::errorDialog("Out of memory",ss.str());
+            Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
             return image;
         }
 
@@ -4120,15 +4346,31 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
  
+    cairo_format_t cairoImgFormat;
+    switch (components) {
+        case Natron::ImageComponentAlpha:
+            cairoImgFormat = CAIRO_FORMAT_A8;
+            break;
+        case Natron::ImageComponentRGB:
+            cairoImgFormat = CAIRO_FORMAT_RGB24;
+            break;
+        case Natron::ImageComponentRGBA:
+            cairoImgFormat = CAIRO_FORMAT_ARGB32;
+            break;
+        default:
+            cairoImgFormat = CAIRO_FORMAT_A8;
+            break;
+    }
     
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height());
+    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, pixelRod.width(), pixelRod.height());
     cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
         appPTR->removeFromNodeCache(image);
         return image;
     }
     cairo_t* cr = cairo_create(cairoImg);
+    cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
     
     ///We could also propose the user to render a mask to SVG
     _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
@@ -4173,9 +4415,8 @@ boost::shared_ptr<Natron::Image> RotoContext::renderMask(const RectI& roi,U64 no
 void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> >& splines,
                                          unsigned int mipmapLevel,int time)
 {
-    ///Maybe all beziers could have a specific blending mode ?
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     
+
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         
         ///render the bezier only if finished (closed) and activated
@@ -4187,10 +4428,14 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             double featherDist = (double)(*it2)->getFeatherDistance(time);
             double opacity = (*it2)->getOpacity(time);
             bool inverted = (*it2)->getInverted(time);
+            int operatorIndex = (*it2)->getCompositingOperator(time);
+            double shapeColor[3];
+            (*it2)->getColor(time, shapeColor);
             
-        
-            BezierCPs cps = (*it2)->getControlPoints_mt_safe();
-            BezierCPs fps = (*it2)->getFeatherPoints_mt_safe();
+            cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
+            
+            BezierCPs cps = inverted ? (*it2)->getFeatherPoints_mt_safe() : (*it2)->getControlPoints_mt_safe();
+            BezierCPs fps = inverted ? (*it2)->getControlPoints_mt_safe() : (*it2)->getFeatherPoints_mt_safe();
             
             assert(cps.size() == fps.size());
             
@@ -4198,73 +4443,36 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 continue;
             }
             
-            
-            if (inverted) {
-                cairo_set_source_rgba(cr, 1.,1.,1., opacity);
-                cairo_paint(cr);
-            }
-            
-            
-            BezierCPs::iterator point = cps.begin();
-            BezierCPs::iterator fpoint = fps.begin();
-
-            BezierCPs::iterator nextPoint = point;
-            ++nextPoint;
-            BezierCPs::iterator nextFPoint = fpoint;
-            ++nextFPoint;
-
-            
-            
-            
-            ////1st pass, fill the internal bezier
-            Point initCp;
-            
-            (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
-            adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
-            
-            cairo_set_source_rgba(cr, 1.,1.,1., inverted ? 1. - opacity : opacity);
             cairo_new_path(cr);
-            cairo_move_to(cr, initCp.x,initCp.y);
-            
-            while (point != cps.end()) {
-                if (nextPoint == cps.end()) {
-                    nextPoint = cps.begin();
-                }
+            ///If inverted, draw an inverted rectangle on all the image first
+            if (inverted) {
+                double xOffset,yOffset;
+                cairo_surface_get_device_offset(cairoImg, &xOffset, &yOffset);
+                int width = cairo_image_surface_get_width(cairoImg);
+                int height = cairo_image_surface_get_height(cairoImg);
                 
-                double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
-                (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
-                (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-                (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
+                cairo_move_to(cr, xOffset, yOffset);
+                cairo_line_to(cr, xOffset + width, yOffset);
+                cairo_line_to(cr, xOffset + width, yOffset + height);
+                cairo_line_to(cr, xOffset, yOffset + height);
+                cairo_line_to(cr, xOffset, yOffset);
                 
-                adjustToPointToScale(mipmapLevel,rightX,rightY);
-                adjustToPointToScale(mipmapLevel,nextX,nextY);
-                adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
-                cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
-                
-                ++point;
-                ++nextPoint;
             }
             
-            cairo_fill(cr);
-            
-            ///reset iterators
-            point = cps.begin();
-            nextPoint = point;
-            ++nextPoint;
-            
-            ////2nd pass, define the feather edge pattern
+            ////Define the feather edge pattern
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
             if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
                 cairo_pattern_destroy(mesh);
                 continue;
             }
             
-            if (mipmapLevel != 0) {
-                featherDist /= (1 << mipmapLevel);
-            }
-            
             if (featherDist != 0) {
                 
+                ///Adjust the feather distance so it takes the mipmap level into account
+                if (mipmapLevel != 0) {
+                    featherDist /= (1 << mipmapLevel);
+                }
+
                 ///here is the polygon of the feather bezier
                 ///This is used only if the feather distance is different of 0 and the feather points equal
                 ///the control points in order to still be able to apply the feather distance.
@@ -4275,6 +4483,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 
                 (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time,mipmapLevel, 50, &featherPolygon,true,&featherPolyBBox);
                 (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
+
+            
                 assert(!featherPolygon.empty());
                 
                 multiples.resize(featherPolygon.size());
@@ -4301,6 +4511,7 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 double dy = ((next->x - prev->x) / norm);
                 p1.x = cur->x + dx;
                 p1.y = cur->y + dy;
+                
                 
                 bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
@@ -4384,12 +4595,16 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
                     ///Set the 4 corners color
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. - opacity : opacity);
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. : 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. : 0.);
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1],shapeColor[2],
+                                                             inverted ? 1. - opacity : opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);
@@ -4401,24 +4616,49 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     p1 = p2;
                 }
                 
-                cairo_new_path(cr);
-                std::list<Point>::iterator featherContourIT = featherContour.begin();
-                
-                cairo_move_to(cr, featherContourIT->x, featherContourIT->y);
-                ++featherContourIT;
-                while (featherContourIT != featherContour.end()) {
-                    cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
-                    ++featherContourIT;
+                int loopCount;
+                if (!inverted) {
+                    cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
+                    renderInternalShape(time,mipmapLevel,cr,cps);
+                    loopCount = 1;
+                } else {
+                    loopCount = 2;
                 }
+                for (int i = 0; i < loopCount ;++i) {
+                    std::list<Point>::iterator featherContourIT = featherContour.begin();
+                    cairo_move_to(cr, featherContourIT->x, featherContourIT->y);
+                    ++featherContourIT;
+                    while (featherContourIT != featherContour.end()) {
+                        cairo_line_to(cr, featherContourIT->x, featherContourIT->y);
+                        ++featherContourIT;
+                    }
+                    if (i == 0 && inverted) {
+                        cairo_fill(cr);
+                    }
+                }
+                applyAndDestroyMask(cr, mesh);
                 
-           
+                
             } else {
+                ////1st pass, fill the internal bezier
+                ////When inverted it will be drawn using the invert of the opacity because we're in EVEN/ODD polygon fill mode
+                cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
+                renderInternalShape(time,mipmapLevel,cr,cps);
                 ///This is a vector of feather points that we compute during
                 ///the first pass to avoid recompute them when we do the actual
                 ///path rendering.
                 ///The points are interpreted as a triplet <prev right point,cur left point,cur>
                 std::vector<Point> preComputedFeatherPoints(cps.size() * 3);
                 std::vector<Point>::iterator preFillIt = preComputedFeatherPoints.begin();
+                
+                BezierCPs::iterator point = cps.begin();
+                BezierCPs::iterator nextPoint = point;
+                ++nextPoint;
+                
+                BezierCPs::iterator fpoint = fps.begin();
+                BezierCPs::iterator nextFPoint = fpoint;
+                ++nextFPoint;
+
                 
                 while (point != cps.end()) {
                     
@@ -4490,14 +4730,14 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     ///Set the 4 corners color
                     
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
                     
                     ///outter is faded
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, 1., 1., 1., inverted ? 1. :  0.);
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, 1., 1., 1., inverted ? 1. :  0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1],shapeColor[2], 0.);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1],shapeColor[2], 0.);
                     
                     ///inner is full color
-                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, 1., 1., 1., inverted ? 1. - opacity : opacity);
+                    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1],shapeColor[2], opacity);
                     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
                     
                     cairo_mesh_pattern_end_patch(mesh);
@@ -4531,20 +4771,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                     cairo_curve_to(cr,right.x,right.y,nextLeft.x,nextLeft.y,next.x,next.y);
                     
                 }
-                
-
+                applyAndDestroyMask(cr,mesh);
             }
-            
-            
-            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-            cairo_set_source(cr, mesh);
-    
-                       ///paint with the feather with the pattern as a mask
-            cairo_mask(cr, mesh);
-            
-            cairo_pattern_destroy(mesh);
-
-            
         }
         
     }
@@ -4553,4 +4781,51 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
     ///A call to cairo_surface_flush() is required before accessing the pixel data
     ///to ensure that all pending drawing operations are finished.
     cairo_surface_flush(cairoImg);
+}
+
+void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,const BezierCPs& cps)
+{
+    
+    BezierCPs::const_iterator point = cps.begin();
+    BezierCPs::const_iterator nextPoint = point;
+    ++nextPoint;
+    
+    Point initCp;
+    (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
+    adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
+    
+    cairo_move_to(cr, initCp.x,initCp.y);
+    
+    while (point != cps.end()) {
+        if (nextPoint == cps.end()) {
+            nextPoint = cps.begin();
+        }
+        
+        double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
+        (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
+        (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
+        (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
+        
+        adjustToPointToScale(mipmapLevel,rightX,rightY);
+        adjustToPointToScale(mipmapLevel,nextX,nextY);
+        adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
+        cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+        
+        ++point;
+        ++nextPoint;
+    }
+    cairo_fill(cr);
+}
+
+void RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh)
+{
+    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+    cairo_set_source(cr, mesh);
+    
+    ///paint with the feather with the pattern as a mask
+    cairo_mask(cr, mesh);
+    
+    cairo_pattern_destroy(mesh);
+    
+
 }

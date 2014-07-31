@@ -27,7 +27,7 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
 , _gui(gui)
 {
     
-    setWindowTitle("About " NATRON_APPLICATION_NAME);
+    setWindowTitle(QObject::tr("About ") + NATRON_APPLICATION_NAME);
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
     
@@ -42,7 +42,7 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
     _buttonLayout = new QHBoxLayout(_buttonContainer);
     _buttonLayout->addStretch();
     
-    _closeButton = new Button("Close",_buttonContainer);
+    _closeButton = new Button(QObject::tr("Close"),_buttonContainer);
     QObject::connect(_closeButton, SIGNAL(clicked()), this, SLOT(accept()));
     _buttonLayout->addWidget(_closeButton);
     
@@ -84,13 +84,13 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
 #endif
                                 ;
     _aboutText->setText(aboutText);
-    _tabWidget->addTab(_aboutText, "About");
+    _tabWidget->addTab(_aboutText, QObject::tr("About"));
     
     _libsText = new QTextBrowser(_tabWidget);
     _libsText->setOpenExternalLinks(true);
     QString libsText = QString("<p> Qt %1 </p>"
                                "<p> Boost %2 </p>"
-                               "<p> Glew %3 </p>"
+                               "<p> GLEW %3 </p>"
                                "<p> OpenGL %4 </p>"
                                "<p> Cairo %5 </p>")
     .arg(gui->getQtVersion())
@@ -99,7 +99,7 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
     .arg(gui->getOpenGLVersion())
     .arg(gui->getCairoVersion());
     _libsText->setText(libsText);
-    _tabWidget->addTab(_libsText, "Libraries");
+    _tabWidget->addTab(_libsText, QObject::tr("Libraries"));
     
     _teamText = new QTextBrowser(_tabWidget);
     _teamText->setOpenExternalLinks(false);
@@ -107,7 +107,7 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
         QFile team_file(":CONTRIBUTORS.txt");
         team_file.open(QIODevice::ReadOnly | QIODevice::Text);
         _teamText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(team_file.readAll()));
-        _tabWidget->addTab(_teamText, "Contributors");
+        _tabWidget->addTab(_teamText, QObject::tr("Contributors"));
 
         _licenseText = new QTextBrowser(_tabWidget);
         _licenseText->setOpenExternalLinks(false);
@@ -116,7 +116,7 @@ AboutWindow::AboutWindow(Gui* gui,QWidget* parent)
         QFile license(":LICENSE.txt");
         license.open(QIODevice::ReadOnly | QIODevice::Text);
         _licenseText->setText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()));
-        _tabWidget->addTab(_licenseText, "License");
+        _tabWidget->addTab(_licenseText, QObject::tr("License"));
     }
     
 }

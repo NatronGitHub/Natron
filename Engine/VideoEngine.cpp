@@ -58,6 +58,7 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
     , _mustQuitCondition()
     , _mustQuitMutex()
     , _mustQuit(false)
+    , _hasQuit(false)
     , _loopModeMutex()
     , _loopMode(true)
     , _restart(true)
@@ -87,18 +88,21 @@ VideoEngine::~VideoEngine() {
     _threadStarted = false;
 }
 
-void VideoEngine::quitEngineThread(){
+void VideoEngine::quitEngineThread()
+{
     bool isThreadStarted = false;
     {
         QMutexLocker quitLocker(&_mustQuitMutex);
         isThreadStarted = _threadStarted;
     }
-    if(isThreadStarted){
+    if (isThreadStarted) {
         {
             QMutexLocker locker(&_mustQuitMutex);
             _mustQuit = true;
         }
-        abortRendering(true);
+        if (isWorking()) {
+            abortRendering(true);
+        }
 
         {
             QMutexLocker locker(&_startMutex);
@@ -166,6 +170,9 @@ void VideoEngine::render(int frameCount,
         
         /*Starting or waking-up the thread*/
         QMutexLocker quitLocker(&_mustQuitMutex);
+        if (_hasQuit) {
+            return;
+        }
         if (!_threadStarted && !_mustQuit) {
             start(HighestPriority);
             _threadStarted = true;
@@ -327,6 +334,7 @@ bool VideoEngine::stopEngine() {
         QMutexLocker locker(&_mustQuitMutex);
         if (_mustQuit) {
             _mustQuit = false;
+            _hasQuit = true;
             _mustQuitCondition.wakeAll();
             _threadStarted = false;
             return true;
@@ -347,6 +355,7 @@ void VideoEngine::run()
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
                 _mustQuit = false;
+                _hasQuit = true;
                 Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
                 if(appPTR->isBackground()){
                     outputEffect->notifyRenderFinished();
@@ -412,6 +421,7 @@ void VideoEngine::runSameThread() {
 
         if (_mustQuit) {
             _mustQuit = false;
+            _hasQuit = true;
             _doingARenderSingleThreaded = false;
             return;
         }
@@ -421,6 +431,7 @@ void VideoEngine::runSameThread() {
 
         if (_mustQuit) {
             _mustQuit = false;
+            _hasQuit = true;
             _doingARenderSingleThreaded = false;
             return;
         }
@@ -635,15 +646,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
 }
 
 Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
-    /*pre process frame*/
-    
-//    Status stat = _tree.preProcessFrame();
-//    if (stat == StatFailed) {
-//        return stat;
-//        //don't throw an exception here, this is regular behaviour when a mandatory input is not connected.
-//        // We don't want to popup a dialog everytime it occurs
-//        //      throw std::runtime_error("PreProcessFrame failed, mandatory inputs are probably not connected.");
-//    }
+
     bool isSequentialRender = _currentRunArgs._frameRequestsCount > 1 || _currentRunArgs._frameRequestsCount == -1 ||
     _currentRunArgs._forceSequential;
     Status stat = StatOK;
@@ -718,15 +721,6 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
     return stat;
 
 }
-
-void VideoEngine::onProgressUpdate(int /*i*/){
-    // cout << "progress: index = " << i ;
-    //    if(i < (int)_currentFrameInfos._rows.size()){
-    //        //  cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
-    //        checkAndDisplayProgress(_currentFrameInfos._rows[i],i);
-    //    }
-}
-
 
 void VideoEngine::abortRendering(bool blocking) {
     {
@@ -905,38 +899,6 @@ void RenderTree::debug() const{
     }
 }
 
-Natron::Status RenderTree::preProcessFrame(){
-    /*Validating the Tree in topological order*/
-    for (TreeIterator it = begin(); it != end(); ++it) {
-        for (int i = 0; i < (*it)->maximumInputs(); ++i) {
-            if (!(*it)->input_other_thread(i) && !(*it)->getLiveInstance()->isInputOptional(i)) {
-                return StatFailed;
-            }
-        }
-    }
-    return Natron::StatOK;
-}
-
-
-bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
-    //    timeval now;
-    //    gettimeofday(&now, 0);
-    //    double t =  now.tv_sec  - _startRenderFrameTime.tv_sec +
-    //    (now.tv_usec - _startRenderFrameTime.tv_usec) * 1e-6f;
-    //    if(t >= 0.5){
-    //        if(_tree.isOutputAViewer()){
-    //            _tree.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_currentFrameInfos._textureRect, y,zoomedY);
-    //        }else{
-    //            emit progressChanged(floor(((double)y/(double)_currentFrameInfos._rows.size())*100));
-    //            std::cout << kProgressChangedString << floor(((double)y/(double)_currentFrameInfos._rows.size())*100) << std::endl;
-    //        }
-    //        return true;
-    //    }else{
-    //        return false;
-    //    }
-    return false;
-}
-
 void VideoEngine::toggleLoopMode(bool b){
     _loopMode = b;
 }
@@ -952,6 +914,12 @@ void VideoEngine::setDesiredFPS(double d){
 bool VideoEngine::isWorking() const {
     QMutexLocker workingLocker(&_workingMutex);
     return _working;
+}
+
+bool VideoEngine::isThreadRunning() const
+{
+    QMutexLocker quitLocker(&_mustQuitMutex);
+    return _threadStarted;
 }
 
 bool VideoEngine::mustQuit() const{

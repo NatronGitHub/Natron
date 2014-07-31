@@ -53,9 +53,9 @@ void AnimationButton::mouseMoveEvent(QMouseEvent* event){
         drag->setMimeData(mimeData);
         
         QFontMetrics fmetrics = fontMetrics();
-        QString textFirstLine("Copying animation from:");
+        QString textFirstLine(tr("Copying animation from:"));
         QString textSecondLine(_knob->getKnob()->getDescription().c_str());
-        QString textThirdLine("Drag it to another animation button.");
+        QString textThirdLine(tr("Drag it to another animation button."));
         
         int textWidth = std::max(std::max(fmetrics.width(textFirstLine), fmetrics.width(textSecondLine)),fmetrics.width(textThirdLine));
         

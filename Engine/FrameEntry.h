@@ -87,11 +87,8 @@ namespace Natron{
     class FrameEntry : public CacheEntryHelper<U8,FrameKey>
     {
     public:
-        FrameEntry(const FrameKey& key,
-                   const boost::shared_ptr<const NonKeyParams>&  params,
-                   bool restore,
-                   const std::string& path)
-        : CacheEntryHelper<U8,FrameKey>(key,params,restore,path)
+        FrameEntry(const FrameKey& key,const boost::shared_ptr<const NonKeyParams>&  params,const Natron::CacheAPI* cache)
+        : CacheEntryHelper<U8,FrameKey>(key,params,cache)
         {
         }
       

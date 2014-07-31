@@ -75,6 +75,9 @@ struct EffectInstance::RenderArgs {
     U64 _nodeHash;
     U64 _rotoAge;
     int _channelForAlpha;
+    bool _isIdentity;
+    SequenceTime _identityTime;
+    int _identityInputNb;
     
     RenderArgs()
     : _roi()
@@ -90,6 +93,9 @@ struct EffectInstance::RenderArgs {
     , _nodeHash(0)
     , _rotoAge(0)
     , _channelForAlpha(3)
+    , _isIdentity(false)
+    , _identityTime(0)
+    , _identityInputNb(-1)
     {}
 };
 
@@ -99,11 +105,14 @@ struct EffectInstance::Implementation {
     , renderAborted(false)
     , renderArgs()
     , beginEndRenderCount()
+    , inputImages()
     , lastRenderArgsMutex()
     , lastRenderHash(0)
     , lastImage()
     , duringInteractActionMutex()
     , duringInteractAction(false)
+    , pluginMemoryChunksMutex()
+    , pluginMemoryChunks()
     {
     }
 
@@ -113,6 +122,9 @@ struct EffectInstance::Implementation {
     ThreadStorage<RenderArgs> renderArgs;
     ThreadStorage<int> beginEndRenderCount;
     
+    ///Whenever a render thread is running, it stores here a temp copy used in getImage
+    ///to make sure these images aren't cleared from the cache.
+    ThreadStorage< std::list< boost::shared_ptr<Natron::Image> > > inputImages;
     
     QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastImageKey
     U64  lastRenderHash; //< the last hash given to render
@@ -121,6 +133,9 @@ struct EffectInstance::Implementation {
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
+    mutable QMutex pluginMemoryChunksMutex;
+    std::list<PluginMemory*> pluginMemoryChunks;
+    
     void setDuringInteractAction(bool b) {
         QWriteLocker l(&duringInteractActionMutex);
         duringInteractAction = b;
@@ -141,7 +156,10 @@ struct EffectInstance::Implementation {
                                   bool isSequential,
                                   bool byPassCache,
                                   U64 nodeHash,
-                                  U64 rotoAge)
+                                  U64 rotoAge,
+                                  bool isIdentity,
+                                  SequenceTime identityTime,
+                                  int inputNbIdentity)
         : args()
         , _dst(dst)
         {
@@ -159,6 +177,9 @@ struct EffectInstance::Implementation {
             args._nodeHash = nodeHash;
             args._rotoAge = rotoAge;
             args._channelForAlpha = 3;
+            args._isIdentity = isIdentity;
+            args._identityTime = identityTime;
+            args._identityInputNb = inputNbIdentity;
             args._validArgs = true;
             _dst->setLocalData(args);
         }
@@ -196,7 +217,10 @@ struct EffectInstance::Implementation {
                          bool bypassCache,
                          U64 nodeHash,
                          U64 rotoAge,
-                         int channelForAlpha)
+                         int channelForAlpha,
+                         bool isIdentity,
+                         SequenceTime identityTime,
+                         int inputNbIdentity)
         : args()
         , _dst(dst)
         {
@@ -213,6 +237,9 @@ struct EffectInstance::Implementation {
             args._nodeHash = nodeHash;
             args._rotoAge = rotoAge;
             args._channelForAlpha = channelForAlpha;
+            args._isIdentity = isIdentity;
+            args._identityTime = identityTime;
+            args._identityInputNb = inputNbIdentity;
             args._validArgs = true;
             _dst->setLocalData(args);
         }
@@ -238,6 +265,23 @@ struct EffectInstance::Implementation {
         const RenderArgs& getArgs() const { return args; }
     };
     
+    void addInputImageTempPointer(const boost::shared_ptr<Natron::Image>& img) {
+        if (inputImages.hasLocalData()) {
+            inputImages.localData().push_back(img);
+        } else {
+            std::list< boost::shared_ptr<Natron::Image> > newList;
+            newList.push_back(img);
+            inputImages.localData() = newList;
+        }
+    }
+    
+    void clearInputImagePointers() {
+        if (inputImages.hasLocalData()) {
+            inputImages.localData().clear();
+        }
+    }
+    
+    
 };
 
 EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
@@ -249,11 +293,32 @@ EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
 
 EffectInstance::~EffectInstance()
 {
+    if (_node) {
+        appPTR->removeAllImagesFromCacheWithMatchingKey(hash());
+    }
+    clearPluginMemoryChunks();
+}
+
+void EffectInstance::clearPluginMemoryChunks() {
+    int toRemove;
+    {
+        QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+        toRemove = (int)_imp->pluginMemoryChunks.size();
+    }
+    while (toRemove > 0) {
+        PluginMemory* mem;
+        {
+            QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+            mem = (*_imp->pluginMemoryChunks.begin());
+        }
+        delete mem;
+        --toRemove;
+    }
 }
 
 U64 EffectInstance::hash() const
 {
-    return getNode()->getHashValue();
+    return _node->getHashValue();
 }
 
 bool EffectInstance::getRenderHash(U64* hash) const
@@ -351,6 +416,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     
     bool isMask = isInputMask(inputNb);
     
+    
     if (isMask && !isMaskEnabled(inputNb)) {
         ///This is last resort, the plug-in should've checked getConnected() before which would have returned false.
         return boost::shared_ptr<Natron::Image>();
@@ -383,6 +449,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     bool isSequentialRender,isRenderUserInteraction,byPassCache;
     unsigned int mipMapLevel;
     RoIMap inputsRoI;
+    bool isIdentity;
+    SequenceTime identityTime;
+    int inputNbIdentity;
     ///The caller thread MUST be a thread owned by Natron. It cannot be a thread from the multi-thread suite.
     ///A call to getImage is forbidden outside an action running in a thread launched by Natron.
     
@@ -436,7 +505,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
             ///// should never happen.
             inputsRoI = getRegionOfInterest(time, scale, optionalBoundsI, optionalBoundsI, 0);
         }
-
+        isIdentity = isIdentity_public(time,scale,optionalBoundsI,view,&identityTime,&inputNbIdentity);
         
     } else {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
@@ -444,6 +513,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         byPassCache = _imp->renderArgs.localData()._byPassCache;
         mipMapLevel = _imp->renderArgs.localData()._mipMapLevel;
         inputsRoI = _imp->renderArgs.localData()._regionOfInterestResults;
+        isIdentity = _imp->renderArgs.localData()._isIdentity;
+        identityTime = _imp->renderArgs.localData()._identityTime;
+        inputNbIdentity = _imp->renderArgs.localData()._identityInputNb;
     }
     
     RectI roi;
@@ -457,19 +529,30 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     }
     
     
+    ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
+    ///return a null image
+    if (isIdentity && inputNbIdentity != inputNb) {
+        return boost::shared_ptr<Image>();
+    }
+    
     ///Both the result of getRegionOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates (FIXME: take the par into account)/
     if (mipMapLevel != 0) {
         roi = roi.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
     
-    
     int channelForAlpha = !isMask ? 3 : getMaskChannel(inputNb);
     
     if (useRotoInput) {
         U64 nodeHash = _imp->renderArgs.localData()._nodeHash;
         U64 rotoAge = _imp->renderArgs.localData()._rotoAge;
-        return roto->renderMask(roi, nodeHash,rotoAge,RectI(), time,depth, view, mipMapLevel, byPassCache);
+        Natron::ImageComponents outputComps;
+        Natron::ImageBitDepth outputDepth;
+        getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
+        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(roi,outputComps, nodeHash,rotoAge,
+                                                                 RectI(), time,depth, view, mipMapLevel, byPassCache);
+        _imp->addInputImageTempPointer(mask);
+        return mask;
     }
     
     
@@ -483,8 +566,19 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     QThreadPool::globalInstance()->reserveThread();
     U64 inputNodeHash;
     QFuture< boost::shared_ptr<Image > > future = QtConcurrent::run(n,&Natron::EffectInstance::renderRoI,
-                RenderRoIArgs(time,scale,mipMapLevel,view,roi,isSequentialRender,isRenderUserInteraction,
-                              byPassCache, NULL,comp,depth,channelForAlpha),&inputNodeHash);
+                                                                    RenderRoIArgs(time,
+                                                                                  scale,
+                                                                                  mipMapLevel,
+                                                                                  view,
+                                                                                  roi,
+                                                                                  isSequentialRender,
+                                                                                  isRenderUserInteraction,
+                                                                                  byPassCache,
+                                                                                  NULL,
+                                                                                  comp,
+                                                                                  depth,
+                                                                                  channelForAlpha)
+                                                                    ,&inputNodeHash);
     future.waitForFinished();
     QThreadPool::globalInstance()->releaseThread();
     boost::shared_ptr<Natron::Image> inputImg = future.result();
@@ -503,19 +597,23 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         inputImg->upscale_mipmap(inputImg->getPixelRoD(), upscaledImg.get(), inputImgMipMapLevel);
         return upscaledImg;
     } else {
+        _imp->addInputImageTempPointer(inputImg);
         return inputImg;
     }
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) {
-    
-   
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,
+                                                     const RenderScale& scale,
+                                                     int view,
+                                                     RectI* rod)
+{
     for (int i = 0; i < maximumInputs(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectI inputRod;
             bool isProjectFormat;
-            Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
+            Status st = input->getRegionOfDefinition_public(time, scale, view, &inputRod, &isProjectFormat);
+            assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == StatFailed) {
                 return st;
             }
@@ -525,13 +623,17 @@ Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,const Ren
             } else {
                 rod->merge(inputRod);
             }
-
+            assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
         }
     }
     return StatReplyDefault;
 }
 
-bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScale& scale, int view,RectI* rod) const {
+bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
+                                              const RenderScale& scale,
+                                              int view,
+                                              RectI* rod) const
+{
     /*If the rod is infinite clip it to the project's default*/
     
     Format projectDefault;
@@ -539,29 +641,34 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
     /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
     assert(!projectDefault.isNull());
     
-    bool x1Infinite = rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity();
-    bool y1Infinite = rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity();
-    bool x2Infinite = rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity();
-    bool y2Infinite = rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity();
+    assert(rod);
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+    bool x1Infinite = rod->x1 <= kOfxFlagInfiniteMin;
+    bool y1Infinite = rod->y1 <= kOfxFlagInfiniteMin;
+    bool x2Infinite = rod->x2 >= kOfxFlagInfiniteMax;
+    bool y2Infinite = rod->y2 >= kOfxFlagInfiniteMax;
     
     ///Get the union of the inputs.
     RectI inputsUnion;
-    for (int i = 0; i < maximumInputs(); ++i) {
-        Natron::EffectInstance* input = input_other_thread(i);
-        if (input) {
-            RectI inputRod;
-            bool isProjectFormat;
-            Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
-            if (st != StatFailed) {
-                if (i == 0) {
-                    inputsUnion = inputRod;
-                } else {
-                    inputsUnion.merge(inputRod);
+    
+    ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
+    if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
+        for (int i = 0; i < maximumInputs(); ++i) {
+            Natron::EffectInstance* input = input_other_thread(i);
+            if (input) {
+                RectI inputRod;
+                bool isProjectFormat;
+                Status st = input->getRegionOfDefinition_public(time,scale,view, &inputRod,&isProjectFormat);
+                if (st != StatFailed) {
+                    if (i == 0) {
+                        inputsUnion = inputRod;
+                    } else {
+                        inputsUnion.merge(inputRod);
+                    }
                 }
             }
         }
     }
-    
     ///If infinite : clip to inputsUnion if not null, otherwise to project default
     
     // BE CAREFUL:
@@ -602,6 +709,7 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,const RenderScal
     if (isProjectFormat && !isGenerator()) {
         isProjectFormat = false;
     }
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
     return isProjectFormat;
 }
 
@@ -675,10 +783,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                         + " ymax= " + QString::number(renderWindow.top())).toStdString());
 #endif
     
-    ///The effect caching policy might forbid caching (Readers could use this when going out of the original frame range.)
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
-    if (getCachePolicy(args.time) == NEVER_CACHE || isWriter()) {
+    if (isWriter()) {
         byPassCache = true;
     }
     
@@ -697,6 +804,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
+        ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
+        ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
+        ///in the cache since the ViewerCache already has it ready.
         boost::shared_ptr<Image> lastRenderedImage;
         U64 lastRenderHash;
         {
@@ -704,7 +814,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             lastRenderedImage = _imp->lastImage;
             lastRenderHash = _imp->lastRenderHash;
         }
-        if (lastRenderedImage && lastRenderHash != nodeHash) {
+        if (lastRenderedImage &&
+            (lastRenderHash != nodeHash)) {
             ///try to obtain the lock for the last rendered image as another thread might still rely on it in the cache
             OutputImageLocker imgLocker(_node.get(),lastRenderedImage);
             ///once we got it remove it from the cache
@@ -742,7 +853,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             }
         }
         
-        if (image) {
+        //Do the following only if we're not an identity
+        if (image && cachedImgParams->getInputNbIdentity() == -1) {
             ///If components are different but convertible without damage, or bit depth is different, keep this image, convert it
             ///and continue render on it. This is in theory still faster than ignoring the image and doing a full render again.
             if ((image->getComponents() != args.components && Image::hasEnoughDataToConvert(image->getComponents(),args.components)) ||
@@ -791,8 +903,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         
         
         bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
-        
-        
+    
         if (identity) {
             
             ///The effect is an identity but it has no inputs
@@ -820,7 +931,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                             byPassCache,
                                                             nodeHash,
                                                             0,
-                                                            args.channelForAlpha);
+                                                            args.channelForAlpha,
+                                                            identity,
+                                                            inputTimeIdentity,
+                                                            inputNbIdentity);
                 Natron::ImageComponents inputPrefComps;
                 Natron::ImageBitDepth inputPrefDepth;
                 Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
@@ -828,6 +942,8 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                     inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                     ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                     image = getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                    ///Clear input images pointer because getImage has stored the image .
+                    _imp->clearInputImagePointers();
                 } else {
                     return image;
                 }
@@ -890,7 +1006,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM(cachedImgParams->getElementsCount() * sizeof(Image::data_t)).toStdString();
-            Natron::errorDialog("Out of memory",ss.str());
+            Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
             return newImage;
         }
         assert(newImage);
@@ -948,13 +1064,20 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                                                         byPassCache,
                                                         nodeHash,
                                                         0,
-                                                        args.channelForAlpha);
+                                                        args.channelForAlpha,
+                                                        true,
+                                                        inputTimeIdentity,
+                                                        inputNbIdentity);
             Natron::ImageComponents inputPrefComps;
             Natron::ImageBitDepth inputPrefDepth;
             Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-                return getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                boost::shared_ptr<Image> ret =  getImage(inputNbIdentity, inputTimeIdentity,
+                                                         args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                ///Clear input images pointer because getImage has stored ret .
+                _imp->clearInputImagePointers();
+                return ret;
             } else {
                 return boost::shared_ptr<Image>();
             }
@@ -1080,7 +1203,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project
     ///hence ask for a new render... which can be expensive!
     ///Any solution how to work around this ?
-    if (mipMapLevel == 0 && isReader()) {
+    if (isReader()) {
         Format frmt;
         frmt.set(cachedImgParams->getRoD());
         ///FIXME: what about the pixel aspect ratio ?
@@ -1195,7 +1318,10 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                                                     byPassCache,
                                                     nodeHash,
                                                     rotoAge,
-                                                    channelForAlpha );
+                                                    channelForAlpha,
+                                                    false, //< if we reached here the node is not an identity!
+                                                    0.,
+                                                    -1);
         const RenderArgs& args = scopedArgs.getArgs();
     
        
@@ -1274,7 +1400,8 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         ///if the node has a roto context, pre-render the roto mask too
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
-            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender, nodeHash,rotoAge,
+
+            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender,image->getComponents(), nodeHash,rotoAge,
                                                                         cachedImgParams->getRoD() ,time,getBitDepth(),
                                                                         view, mipMapLevel, byPassCache);
             assert(mask);
@@ -1617,14 +1744,14 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant,Natron::ValueChang
                 std::string sequentialNode;
                 if (_node->hasSequentialOnlyNodeUpstream(sequentialNode)) {
                     if (_node->getApp()->getProject()->getProjectViewsCount() > 1) {
-                        Natron::StandardButton answer = Natron::questionDialog("Render", sequentialNode + " can only "
+                        Natron::StandardButton answer = Natron::questionDialog(QObject::tr("Render").toStdString(), sequentialNode + QObject::tr(" can only "
                                                                                "render in sequential mode. Due to limitations in the "
-                                                                               "OpenFX standard that means that " NATRON_APPLICATION_NAME
+                                                                               "OpenFX standard that means that %1"
                                                                                " will not be able "
                                                                                "to render all the views of the project. "
                                                                                "Only the main view of the project will be rendered, you can "
                                                                                "change the main view in the project settings. Would you like "
-                                                                               "to continue ?");
+                                                                               "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString());
                         if (answer != Natron::Yes) {
                             return;
                         }
@@ -1647,10 +1774,21 @@ void EffectInstance::evaluate(KnobI* knob, bool isSignificant,Natron::ValueChang
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
         if (isSignificant) {
-            (*it)->refreshAndContinueRender(forcePreview,reason == Natron::USER_EDITED);
+            if (button) {
+                ///if the parameter is a button, force an update of the tree since it could be an analysis
+                (*it)->updateTreeAndRender();
+            } else {
+                (*it)->refreshAndContinueRender(forcePreview,reason == Natron::USER_EDITED);
+            }
+            
         } else {
             (*it)->redrawViewer();
         }
+    }
+    
+    ///if the parameter is a button, force an update of the tree since it could be an analysis
+    if (button && viewers.empty()) {
+        _node->updateRenderInputsRecursive();
     }
     
     getNode()->refreshPreviewsRecursively();
@@ -1675,29 +1813,6 @@ int EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const {
         }
     }
     return -1;
-}
-
-
-void EffectInstance::setInputFilesForReader(const std::vector<std::string>& files) {
-    
-    if (!isReader()) {
-        return;
-    }
-    
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == File_Knob::typeNameStatic()) {
-            boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
-            assert(fk);
-            if (fk->isInputImageFile()) {
-                if (files.size() > 1 && ! fk->isAnimationEnabled()) {
-                    throw std::invalid_argument("This reader does not support image sequences. Please provide a single file.");
-                }
-                fk->setFiles(files);
-                break;
-            }
-        }
-    }
 }
 
 void EffectInstance::setOutputFilesForWriter(const std::string& pattern) {
@@ -1727,6 +1842,21 @@ PluginMemory* EffectInstance::newMemoryInstance(size_t nBytes) {
     return ret;
 }
 
+void EffectInstance::addPluginMemoryPointer(PluginMemory* mem)
+{
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    _imp->pluginMemoryChunks.push_back(mem);
+}
+
+void EffectInstance::removePluginMemoryPointer(PluginMemory* mem)
+{
+    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    std::list<PluginMemory*>::iterator it = std::find(_imp->pluginMemoryChunks.begin(),_imp->pluginMemoryChunks.end(),mem);
+    if (it != _imp->pluginMemoryChunks.end()) {
+        _imp->pluginMemoryChunks.erase(it);
+    }
+}
+
 
 void EffectInstance::registerPluginMemory(size_t nBytes) {
     _node->registerPluginMemory(nBytes);
@@ -1748,7 +1878,7 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     if (!hasOverlay()) {
         return;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -1759,7 +1889,7 @@ void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
@@ -1776,11 +1906,11 @@ bool EffectInstance::onOverlayPenDown_public(double scaleX,double scaleY,const Q
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -1800,7 +1930,7 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -1811,7 +1941,7 @@ bool EffectInstance::onOverlayPenMotion_public(double scaleX,double scaleY,const
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
     assertActionIsNotRecursive();
@@ -1832,14 +1962,15 @@ bool EffectInstance::onOverlayPenUp_public(double scaleX,double scaleY,const QPo
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     assertActionIsNotRecursive();
     incrementRecursionLevel();
+    _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
     decrementRecursionLevel();
@@ -1854,11 +1985,11 @@ bool EffectInstance::onOverlayKeyDown_public(double scaleX,double scaleY,Natron:
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -1878,11 +2009,11 @@ bool EffectInstance::onOverlayKeyUp_public(double scaleX,double scaleY,Natron::K
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -1903,11 +2034,11 @@ bool EffectInstance::onOverlayKeyRepeat_public(double scaleX,double scaleY,Natro
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
-    getClipThreadStorageData(time, view, mipMapLevel, rod);
+    getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
     
     assertActionIsNotRecursive();
@@ -1928,7 +2059,7 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -1939,7 +2070,7 @@ bool EffectInstance::onOverlayFocusGained_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
     
@@ -1961,7 +2092,7 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     if (!hasOverlay()) {
         return false;
     }
-    SequenceTime time ;
+    SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
     RectI rod;
@@ -1971,7 +2102,7 @@ bool EffectInstance::onOverlayFocusLost_public(double scaleX,double scaleY)
     ///The same applies to when a plug-in set a persistent message, the viewer will repaint overlays as
     ///a result of this action.
     if (getRecursionLevel() == 0) {
-        getClipThreadStorageData(time, view, mipMapLevel, rod);
+        getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
     
@@ -1998,9 +2129,26 @@ Natron::Status EffectInstance::render_public(SequenceTime time, RenderScale scal
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    Natron::Status ret = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+    
+    ///Clear any previous input image which may be left
+    _imp->clearInputImagePointers();
+    
+    Natron::Status stat;
+    
+    try {
+        stat = render(time, scale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, output);
+    } catch (const std::exception & e) {
+        ///Also clear images when catching an exception
+        _imp->clearInputImagePointers();
+        decrementRecursionLevel();
+        throw e;
+    }
+    
+    ///Clear any previous input image which may be left
+    _imp->clearInputImagePointers();
+
     decrementRecursionLevel();
-    return ret;
+    return stat;
 }
 
 bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
@@ -2039,24 +2187,47 @@ bool EffectInstance::isIdentity_public(SequenceTime time,RenderScale scale,const
     return ret;
 }
 
-Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
-                                            RectI* rod,bool* isProjectFormat)
+Natron::Status EffectInstance::getRegionOfDefinition_public(SequenceTime time,
+                                                            const RenderScale& scale,
+                                                            int view,
+                                                            RectI* rod,
+                                                            bool* isProjectFormat)
 {
     assertActionIsNotRecursive();
     incrementRecursionLevel();
-    Natron::Status ret = getRegionOfDefinition(time, scale,view ,rod);
+    Natron::Status ret;
+    
+    try {
+        ret = getRegionOfDefinition(time, scale, view, rod);
+        
+    } catch (const std::exception& e) {
+        decrementRecursionLevel();
+        throw e;
+    }
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+    
     decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
+    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
     return ret;
 }
 
 EffectInstance::RoIMap EffectInstance::getRegionOfInterest_public(SequenceTime time,RenderScale scale,
                                                                   const RectI& outputRoD,
-                                                                  const RectI& renderWindow,int view)
+                                                                  const RectI& renderWindow,
+                                                                  int view)
 {
     assertActionIsNotRecursive();
+    assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
     incrementRecursionLevel();
-    EffectInstance::RoIMap ret = getRegionOfInterest(time, scale, outputRoD,renderWindow, view);
+    EffectInstance::RoIMap ret;
+    try {
+        ret = getRegionOfInterest(time, scale, outputRoD, renderWindow, view);
+    } catch (const std::exception& e) {
+        decrementRecursionLevel();
+        throw e;
+    }
     decrementRecursionLevel();
     return ret;
 }
@@ -2157,7 +2328,7 @@ bool EffectInstance::isMaskEnabled(int inputNb) const
 }
 
 
-void EffectInstance::onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/) {
+void EffectInstance::onKnobValueChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/) {
     
 }
 
@@ -2169,6 +2340,31 @@ int EffectInstance::getCurrentFrameRecursive() const
     return getApp()->getTimeLine()->currentFrame();
 }
 
+
+int EffectInstance::getCurrentViewRecursive() const
+{
+    if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+        return _imp->renderArgs.localData()._view;
+    }
+    ///If we reach here, that's means this is not during a call to renderRoI
+    ///hence this is probably asked but doesn't matter so just return 0
+    return 0;
+
+}
+
+
+int EffectInstance::getCurrentMipMapLevelRecursive() const
+{
+    if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
+        return _imp->renderArgs.localData()._mipMapLevel;
+    }
+    
+    ///If we reach here, that's means this is not during a call to renderRoI
+    ///hence this is probably asked but doesn't matter so just return 0
+    return 0;
+
+}
+
 void EffectInstance::updateCurrentFrameRecursive(int time)
 {
     if (_imp->renderArgs.hasLocalData() && _imp->renderArgs.localData()._validArgs) {
@@ -2176,32 +2372,35 @@ void EffectInstance::updateCurrentFrameRecursive(int time)
     }
 }
 
-void EffectInstance::getClipThreadStorageData(SequenceTime& time,int &view,unsigned int& mipMapLevel,RectI& outputRoD)
+void EffectInstance::getClipThreadStorageData(SequenceTime time,
+                                              int *view,
+                                              unsigned int *mipMapLevel,
+                                              RectI *outputRoD)
 {
-    time = getApp()->getTimeLine()->currentFrame();
-    view = 0;
-    mipMapLevel = 0;
-    std::list<ViewerInstance*> connectedViewers;
-    _node->hasViewersConnected(&connectedViewers);
-    if (!connectedViewers.empty()) {
-        view = (*connectedViewers.begin())->getCurrentView();
-        mipMapLevel = (*connectedViewers.begin())->getMipMapLevel();
-    }
+    assert(view && mipMapLevel && outputRoD);
+    *view = getCurrentViewRecursive();
+    *mipMapLevel = getCurrentMipMapLevelRecursive();
+
     RenderScale scale;
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.x = Image::getScaleFromMipMapLevel(*mipMapLevel);
     scale.y = scale.x;
     bool isProjectFormat;
     
     ///we don't care if it fails
-    (void)getRegionOfDefinition_public(time, scale, view, &outputRoD,&isProjectFormat);
-    
-
+    (void)getRegionOfDefinition_public(time, scale, *view, outputRoD, &isProjectFormat);
+    assert(outputRoD->x2 >= outputRoD->x1 && outputRoD->y2 >= outputRoD->y1);
 }
 
-void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason)
+void EffectInstance::onKnobValueChanged_public(KnobI* k,
+                                               Natron::ValueChangedReason reason,SequenceTime time)
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
+    
+    
+    if (isEvaluationBlocked()) {
+        return;
+    }
     
     _node->onEffectKnobValueChanged(k, reason);
     if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
@@ -2211,10 +2410,10 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
         
         RectI rod;
         if (getRecursionLevel() == 0) {
-            SequenceTime time ;
             int view ;
             unsigned int mipMapLevel;
-            getClipThreadStorageData(time, view, mipMapLevel, rod);
+            getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
+            assert(rod.x2 >= rod.x1 && rod.y2 >= rod.y1);
             RenderScale scale;
             scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
             scale.y = scale.x;
@@ -2228,6 +2427,10 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
                 rotoAge = roto->getAge();
             }
             
+            SequenceTime identityTime;
+            int identityNb;
+            bool isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);
+            
             ///These args remain valid on the thread storage 'til it gets out of scope
             Implementation::ScopedInstanceChangedArgs args(&_imp->renderArgs,
                                                            time,
@@ -2238,19 +2441,28 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReas
                                                            false,
                                                            false,
                                                            nodeHash,
-                                                           rotoAge);
+                                                           rotoAge,
+                                                           isIdentity,
+                                                           identityTime,
+                                                           identityNb);
             ///Recursive action, must not call assertActionIsNotRecursive()
             incrementRecursionLevel();
-            knobChanged(k, reason,rod);
+            knobChanged(k, reason,rod,view,time);
             decrementRecursionLevel();
         
         } else {
+            int view = getCurrentViewRecursive();
             ///Recursive action, must not call assertActionIsNotRecursive()
             incrementRecursionLevel();
-            knobChanged(k, reason,rod);
+            knobChanged(k, reason,rod,view,time);
             decrementRecursionLevel();
         }
         
+        ///Clear input images pointers that were stored in getImage() for the main-thread.
+        ///This is safe to do so because if this is called while in render() it won't clear the input images
+        ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
+        ///and whose render() function is never called.
+        _imp->clearInputImagePointers();
         
     }
     
@@ -2263,6 +2475,18 @@ void EffectInstance::clearLastRenderedImage()
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         _imp->lastImage.reset();
     }
+}
+
+
+void EffectInstance::aboutToRestoreDefaultValues()
+{
+    ///Invalidate the cache by incrementing the age
+    _node->incrementKnobsAge();
+    
+    if (_node->areKeyframesVisibleOnTimeline()) {
+        _node->hideKeyframesFromTimeline(true);
+    }
+    
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
@@ -2278,8 +2502,10 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
 }
 
 OutputEffectInstance::~OutputEffectInstance(){
-    if(_videoEngine){
-        _videoEngine->quitEngineThread();
+    
+    if (_videoEngine) {
+        ///Thread must have been killed before.
+        assert(!_videoEngine->isThreadRunning());
     }
     delete _outputEffectDataLock;
 }
@@ -2303,19 +2529,19 @@ bool OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()
     bool isRodProjctFormat = false;
-    if (rod->left() == kOfxFlagInfiniteMin || rod->left() == std::numeric_limits<int>::min()) {
+    if (rod->left() <= kOfxFlagInfiniteMin) {
         rod->set_left(projectDefault.left());
         isRodProjctFormat = true;
     }
-    if (rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == std::numeric_limits<int>::min()) {
+    if (rod->bottom() <= kOfxFlagInfiniteMin) {
         rod->set_bottom(projectDefault.bottom());
         isRodProjctFormat = true;
     }
-    if (rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<int>::max()) {
+    if (rod->right() >= kOfxFlagInfiniteMax) {
         rod->set_right(projectDefault.right());
         isRodProjctFormat = true;
     }
-    if (rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<int>::max()) {
+    if (rod->top() >= kOfxFlagInfiniteMax) {
         rod->set_top(projectDefault.top());
         isRodProjctFormat = true;
     }

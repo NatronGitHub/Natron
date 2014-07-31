@@ -17,7 +17,7 @@
 #include <map>
 #include <utility>
 #include <set>
-
+#include <list>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QUrl>
+#include <QtCore/QRegExp>
 #include <QtCore/QLatin1Char>
 #include <QComboBox>
 #include <QListView>
@@ -199,7 +200,7 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
     mutable std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > _frameSequences;
     SequenceFileDialog* _fd;
     QString _filter;
-
+    std::list<QRegExp> _regexps;
 public:
 
     explicit SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
@@ -215,7 +216,7 @@ public:
     void clear(){_frameSequences.clear();}
     
     
-    inline void setFilter(QString filter){ _filter = filter;}
+    void setFilter(const QString& filter);
     
 private:
     
@@ -278,12 +279,10 @@ public:
     ///Returns the same as SequenceParsing::removePath excepts that str is left untouched.
     static QString getFilePath(const QString& str);
     
-    ///Returns the selected sequence.
+    ///Returns the selected pattern sequence or file name.
     ///Works only in OPEN_DIALOG mode.
-    std::vector<std::string> selectedFiles();
+    std::string selectedFiles();
     
-    ///Same as selectedFiles() but more convenient when the dialog is in sequence mode.
-    SequenceParsing::SequenceFromFiles getSelectedFilesAsSequence();
     
     ///Returns  the content of the selection line edit.
     ///Works only in SAVE_DIALOG mode.

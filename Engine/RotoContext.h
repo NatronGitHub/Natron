@@ -48,6 +48,7 @@ class Bool_Knob;
 class Double_Knob;
 class Int_Knob;
 class Choice_Knob;
+class Color_Knob;
 
 class Bezier;
 class RotoItemSerialization;
@@ -124,7 +125,7 @@ public:
 
     bool equalsAtTime(int time,const BezierCP& other) const;
     
-    bool getPositionAtTime(int time,double* x,double* y,bool skipMasterTracker = false) const;
+    bool getPositionAtTime(int time,double* x,double* y,bool skipMasterOrRelative = false) const;
     
     bool getLeftBezierPointAtTime(int time,double* x,double* y) const;
     
@@ -150,9 +151,25 @@ public:
      **/
     int isNearbyTangent(int time,double x,double y,double acceptance) const;
     
+    /**
+     * The functions below are to slave/unslave a control point to a track
+     **/
     void slaveTo(Double_Knob* track);
     Double_Knob* isSlaved() const;
     void unslave();
+    
+    /**
+     * The functions below are used to set the coordinates mode of the point to be relative
+     * to the position of another point. In this mode the X,Y position are an offset.
+     *
+     * This is to addressthe issue where a feather point should still follow its control point
+     * counter part even when linked to a track.
+     * 
+     * A point cannot have a relative and a master track at the same time!
+     **/
+    void setRelativeTo(BezierCP* other);
+    BezierCP* hasRelative() const;
+    void removeRelative();
     
 private:
     
@@ -266,6 +283,7 @@ private:
 
 Q_DECLARE_METATYPE(RotoItem*);
 
+
 /**
  * @brief Base class for all drawable items
  **/
@@ -329,17 +347,27 @@ public:
     
     bool getInverted(int time) const;
     
+    void getColor(int time,double* color) const;
+    
+    int getCompositingOperator(int time) const;
+    
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
     boost::shared_ptr<Int_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
+    boost::shared_ptr<Color_Knob> getColorKnob() const;
     
 signals:
     
     void inversionChanged();
     
     void overlayColorChanged();
+    
+    void shapeColorChanged();
+    
+    void compositingOperatorChanged();
     
 private:
     
@@ -634,6 +662,7 @@ public:
      * If no such control point could be found, -1 is returned.
      **/
     int getControlPointIndex(const boost::shared_ptr<BezierCP>& cp) const;
+    int getControlPointIndex(const BezierCP* cp) const;
     
     /**
      * @brief Given the feather point in parameter, return its index in the curve's feather points list.
@@ -839,8 +868,9 @@ public:
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
      **/
-    boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
-                                                Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache );
+    boost::shared_ptr<Natron::Image> renderMask(const RectI& roi,Natron::ImageComponents components,
+                                                U64 nodeHash,U64 ageToRender,const RectI& nodeRoD,SequenceTime time,
+                                                Natron::ImageBitDepth depth,int view,unsigned int mipmapLevel,bool byPassCache);
     
     /**
      * @brief To be called when a change was made to trigger a new render.
@@ -917,6 +947,9 @@ public:
     
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
     
+    boost::shared_ptr<Color_Knob> getColorKnob() const;
+    
+    boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     
     void setLastItemLocked(const boost::shared_ptr<RotoItem>& item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;

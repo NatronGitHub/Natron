@@ -40,14 +40,14 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *par
     _mainLayout->addWidget(_panel);
 
     _buttonBox = new QDialogButtonBox(Qt::Horizontal);
-    _applyB = new Button("Apply");
-    _applyB->setToolTip(Qt::convertFromPlainText("Apply changes without closing the window.",Qt::WhiteSpaceNormal));
-    _restoreDefaultsB = new Button("Restore defaults");
-    _restoreDefaultsB->setToolTip(Qt::convertFromPlainText("Restore default values for all preferences.",Qt::WhiteSpaceNormal));
-    _cancelB = new Button("Cancel");
-    _cancelB->setToolTip(Qt::convertFromPlainText("Cancel changes that were not applied and close the window.",Qt::WhiteSpaceNormal));
-    _okB = new Button("OK");
-    _okB->setToolTip(Qt::convertFromPlainText("Apply changes and close the window.",Qt::WhiteSpaceNormal));
+    _applyB = new Button(tr("Apply"));
+    _applyB->setToolTip(Qt::convertFromPlainText(tr("Apply changes without closing the window."),Qt::WhiteSpaceNormal));
+    _restoreDefaultsB = new Button(tr("Restore defaults"));
+    _restoreDefaultsB->setToolTip(Qt::convertFromPlainText(tr("Restore default values for all preferences."),Qt::WhiteSpaceNormal));
+    _cancelB = new Button(tr("Cancel"));
+    _cancelB->setToolTip(Qt::convertFromPlainText(tr("Cancel changes that were not applied and close the window."),Qt::WhiteSpaceNormal));
+    _okB = new Button(tr("OK"));
+    _okB->setToolTip(Qt::convertFromPlainText(tr("Apply changes and close the window."),Qt::WhiteSpaceNormal));
     _buttonBox->addButton(_applyB, QDialogButtonBox::ApplyRole);
     _buttonBox->addButton(_restoreDefaultsB, QDialogButtonBox::ResetRole);
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
@@ -68,8 +68,8 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,Gui *par
 }
 
 void PreferencesPanel::restoreDefaults() {
-    Natron::StandardButton reply = Natron::questionDialog("Preferences",
-                                        "Restoring the settings will delete any custom configuration, are you sure you want to do this?");
+    Natron::StandardButton reply = Natron::questionDialog(tr("Preferences").toStdString(),
+                                        tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString());
     if (reply == Natron::Yes) {
         _settings->restoreDefault();
     }

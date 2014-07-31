@@ -129,19 +129,25 @@ public:
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
     template<typename T>
-    int setValue(int dimension,const T& v,KeyFrame* newKey,bool refreshGui)
+    int setValue(int dimension,const T& v,KeyFrame* newKey,bool refreshGui,Natron::ValueChangedReason reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>(getKnob().get());
-        KnobHelper::ValueChangedReturnCode ret = knob->onValueChanged(dimension, v, newKey);
+        KnobHelper::ValueChangedReturnCode ret;
+        if (reason == Natron::USER_EDITED) {
+            ret = knob->onValueChanged(dimension, v, newKey);
+        } else {
+            ret = knob->setValue(v,dimension,false);
+        }
         if(ret > 0){
             assert(newKey);
-            setKeyframeMarkerOnTimeline(newKey->getTime());
+            if (ret == KnobHelper::KEYFRAME_ADDED) {
+                setKeyframeMarkerOnTimeline(newKey->getTime());
+            }
             emit keyFrameSet();
         }
         if (refreshGui) {
             updateGUI(dimension);
         }
-        checkAnimationLevel(dimension);
         return (int)ret;
     }
     
@@ -154,16 +160,17 @@ public:
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
 
-    
+    ///Handler when a keyframe is moved in the curve editor/dope sheet
+    void onKeyFrameMoved(int oldTime,int newTime);
 public slots:
     
     
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(int dimension);
+    void onInternalValueChanged(int dimension,int reason);
     
-    void onInternalKeySet(SequenceTime time,int dimension);
+    void onInternalKeySet(SequenceTime time,int dimension,bool added);
 
     void onInternalKeyRemoved(SequenceTime time,int dimension);
     
@@ -230,6 +237,11 @@ public slots:
     void onSetValueUsingUndoStack(const Variant& v,int dim);
     
     void onSetDirty(bool d);
+    
+    void onAnimationLevelChanged(int level);
+    
+    void onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    
 signals:
     
     void knobUndoneChange();
@@ -258,6 +270,7 @@ signals:
     ///emitted when the description label is clicked
     void labelClicked(bool);
 
+    
    
 protected:
     
@@ -298,8 +311,6 @@ private:
      */
     virtual void reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevel /*level*/) {}
 
-    /*Calls reflectAnimationLevel with good parameters. Called right away after updateGUI() */
-    void checkAnimationLevel(int dimension);
     
     void createAnimationMenu(QMenu* menu);
     

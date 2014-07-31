@@ -12,7 +12,7 @@
 #ifndef MULTIINSTANCEPANEL_H
 #define MULTIINSTANCEPANEL_H
 
-#include <QObject>
+
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include "Engine/Knob.h"
@@ -21,28 +21,65 @@ namespace Natron
 {
     class Node;
 }
-
+class NodeGui;
 class QVBoxLayout;
 class QHBoxLayout;
-class QTableWidgetItem;
-
+class QItemSelection;
+class TableItem;
+class Button_Knob;
+class Gui;
 /**
 * @brief This class represents a multi-instance settings panel.
 **/
 struct MultiInstancePanelPrivate;
-class MultiInstancePanel : public QObject, public KnobHolder
+class MultiInstancePanel : public QObject, public NamedKnobHolder
 {
     
     Q_OBJECT
     
 public:
     
-    MultiInstancePanel(const boost::shared_ptr<Natron::Node>& node);
+    MultiInstancePanel(const boost::shared_ptr<NodeGui>& node);
     
     virtual ~MultiInstancePanel();
     
     void createMultiInstanceGui(QVBoxLayout* layout);
+    
+    bool isGuiCreated() const;
 
+    void addRow(const boost::shared_ptr<Natron::Node>& node);
+    
+    void removeRow(int index);
+    
+    int getNodeIndex(const boost::shared_ptr<Natron::Node>& node) const;
+    
+    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& getInstances() const;
+    
+    virtual std::string getName_mt_safe() const OVERRIDE FINAL;
+    
+    boost::shared_ptr<Natron::Node> getMainInstance() const;
+    
+    void getSelectedInstances(std::list<Natron::Node*>* instances) const;
+
+    void resetAllInstances();
+    
+    boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
+    
+    Gui* getGui() const;
+    
+    virtual void setIconForButton(Button_Knob* /*knob*/) {}
+
+    boost::shared_ptr<Natron::Node> createNewInstance();
+    
+    void selectNode(const boost::shared_ptr<Natron::Node>& node,bool addToSelection);
+    
+    void selectNodes(const std::list<Natron::Node*>& nodes,bool addToSelection);
+    
+    void removeNodeFromSelection(const boost::shared_ptr<Natron::Node>& node);
+    
+    void clearSelection();
+    
+    
 public slots:
 
     void onAddButtonClicked();
@@ -51,37 +88,87 @@ public slots:
     
     void onSelectAllButtonClicked();
     
-    void onItemDataChanged(QTableWidgetItem* item);
+    void onSelectionChanged(const QItemSelection& oldSelection,const QItemSelection& newSelection);
+    
+    void onItemDataChanged(TableItem* item);
+    
+    void onCheckBoxChecked(bool checked);
+    
+    void onDeleteKeyPressed();
+    
+    void onInstanceKnobValueChanged(int dim,int reason);
+    
+    void resetSelectedInstances();
+    
     
 protected:
     
     virtual void appendExtraGui(QVBoxLayout* /*layout*/) {}
-    virtual void appendButton(QHBoxLayout* /*buttonLayout*/) {}
+    virtual void appendButtons(QHBoxLayout* /*buttonLayout*/) {}
     
+    boost::shared_ptr<Natron::Node> addInstanceInternal();
+    
+    virtual void initializeExtraKnobs() {}
+
 private:
     
-    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReason /*reason*/) OVERRIDE FINAL {}
+    virtual void onButtonTriggered(Button_Knob* button);
+    
+    void resetInstances(const std::list<Natron::Node*>& instances);
+    
+    void removeInstancesInternal();
+    
+    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) OVERRIDE;
     
     virtual void initializeKnobs() OVERRIDE FINAL;
     
-    
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE;
     
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
     
 };
 
+struct TrackerPanelPrivate;
 class TrackerPanel : public MultiInstancePanel
 {
+    Q_OBJECT
+    
 public:
     
-    TrackerPanel(const boost::shared_ptr<Natron::Node>& node);
+    TrackerPanel(const boost::shared_ptr<NodeGui>& node);
     
     virtual ~TrackerPanel();
+   
+    ///Each function below returns true if there is a selection, false otherwise
+    bool trackBackward();
+    bool trackForward();
+    bool trackPrevious();
+    bool trackNext();
     
+    void clearAllAnimationForSelection();
+    
+    void clearBackwardAnimationForSelection();
+    
+    void clearForwardAnimationForSelection();
+    
+    void setUpdateViewerOnTracking(bool update);
+    
+public slots:
+    
+    void onAverageTracksButtonClicked();
+    void onExportButtonClicked();
 private:
     
+    virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
-    virtual void appendButton(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
+    virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
+    virtual void setIconForButton(Button_Knob* knob) OVERRIDE FINAL;
+    
+    virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
+    
+    void handleTrackNextAndPrevious(const std::list<Button_Knob*>& selectedInstances,SequenceTime currentFrame);
+
+    boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
 
 

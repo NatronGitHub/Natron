@@ -439,6 +439,7 @@ public slots:
     void onKnobAnimationLevelChanged(int lvl);
 
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Int_Knob> _knob;
 };
 
@@ -481,6 +482,7 @@ public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Double_Knob> _knob;
 };
 
@@ -517,6 +519,7 @@ public slots:
     
     void onKnobAnimationLevelChanged(int lvl);
 private:
+    OfxEffectInstance* _node;
     boost::shared_ptr<Int_Knob> _knob;
 };
 
@@ -595,15 +598,6 @@ public:
     
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
-
-
-    /**
-     * @brief getRandomFrameName Valid only for OfxStringInstance's of type kOfxParamStringIsFilePath with
-     * an OfxImageEffectInstance of type kOfxImageEffectContextGenerator
-     * @param f The index of the frame.
-     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
-     */
-    const std::string getRandomFrameName(int f) const;
     
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;

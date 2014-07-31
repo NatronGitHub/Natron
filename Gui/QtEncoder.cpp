@@ -53,7 +53,7 @@ void QtWriter::pluginGrouping(std::list<std::string>* grouping) const
 }
 
 std::string QtWriter::description() const {
-    return "The QtWriter node can render on disk the output of a node graph using the QImage (Qt) library.";
+    return QObject::tr("The QtWriter node can render on disk the output of a node graph using the QImage (Qt) library.").toStdString();
 }
 
 
@@ -96,39 +96,39 @@ void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 void QtWriter::initializeKnobs(){
     
-    Natron::warningDialog(getName(), "This plugin exists only to help the developpers team to test " NATRON_APPLICATION_NAME
-                          ". You cannot use it to render a project.");
+    Natron::warningDialog(getName(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+                          ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString());
     
     
-    _premultKnob = getNode()->createKnob<Bool_Knob>("Premultiply by alpha");
+    _premultKnob = getNode()->createKnob<Bool_Knob>(QObject::tr("Premultiply by alpha").toStdString());
     _premultKnob->setAnimationEnabled(false);
     _premultKnob->setDefaultValue(false,0);
     
     _fileKnob = getNode()->createKnob<OutputFile_Knob>("File");
     _fileKnob->setAsOutputImageFile();
     
-    _frameRangeChoosal = getNode()->createKnob<Choice_Knob>("Frame range");
+    _frameRangeChoosal = getNode()->createKnob<Choice_Knob>(QObject::tr("Frame range").toStdString());
     _frameRangeChoosal->setAnimationEnabled(false);
     std::vector<std::string> frameRangeChoosalEntries;
-    frameRangeChoosalEntries.push_back("Union of input ranges");
-    frameRangeChoosalEntries.push_back("Timeline bounds");
-    frameRangeChoosalEntries.push_back("Manual");
+    frameRangeChoosalEntries.push_back(QObject::tr("Union of input ranges").toStdString());
+    frameRangeChoosalEntries.push_back(QObject::tr("Timeline bounds").toStdString());
+    frameRangeChoosalEntries.push_back(QObject::tr("Manual").toStdString());
     _frameRangeChoosal->populateChoices(frameRangeChoosalEntries);
     _frameRangeChoosal->setDefaultValue(1,0);
     
-    _firstFrameKnob = getNode()->createKnob<Int_Knob>("First frame");
+    _firstFrameKnob = getNode()->createKnob<Int_Knob>(QObject::tr("First frame").toStdString());
     _firstFrameKnob->setAnimationEnabled(false);
     _firstFrameKnob->setSecret(true);
     
-    _lastFrameKnob = getNode()->createKnob<Int_Knob>("Last frame");
+    _lastFrameKnob = getNode()->createKnob<Int_Knob>(QObject::tr("Last frame").toStdString());
     _lastFrameKnob->setAnimationEnabled(false);
     _lastFrameKnob->setSecret(true);
     
-    _renderKnob = getNode()->createKnob<Button_Knob>("Render");
+    _renderKnob = getNode()->createKnob<Button_Knob>(QObject::tr("Render").toStdString());
     _renderKnob->setAsRenderButton();
 }
 
-void QtWriter::knobChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/){
+void QtWriter::knobChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/){
     if(k == _frameRangeChoosal.get()){
         int index = _frameRangeChoosal->getValue();
         if(index != 2){

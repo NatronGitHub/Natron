@@ -45,6 +45,7 @@
 #include "Gui/Splitter.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeBackDrop.h"
+#include "Gui/MultiInstancePanel.h"
 
 ProjectGui::ProjectGui(Gui* gui)
 : _gui(gui)
@@ -81,10 +82,10 @@ void ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,QVBox
                                container,
                                DockablePanel::READ_ONLY_NAME,
                                false,
-                               "Project Settings",
-                               "The settings of the current project.",
+                               tr("Project Settings"),
+                               tr("The settings of the current project."),
                                false,
-                               "Settings",
+                               tr("Settings"),
                                parent);
     
     
@@ -116,7 +117,7 @@ _project(project)
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(5, 5, 0, 0);
     setLayout(_mainLayout);
-    setWindowTitle("New Format");
+    setWindowTitle(tr("New Format"));
     
     _fromViewerLine = new QWidget(this);
     _fromViewerLineLayout = new QHBoxLayout(_fromViewerLine);
@@ -132,11 +133,11 @@ _project(project)
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
     
-    _copyFromViewerButton = new Button("Copy from",_fromViewerLine);
+    _copyFromViewerButton = new Button(tr("Copy from"),_fromViewerLine);
     _copyFromViewerButton->setToolTip(Qt::convertFromPlainText(
-                                      "Fill the new format with the currently"
+                                      tr("Fill the new format with the currently"
                                       " displayed region of definition of the viewer"
-                                      " indicated on the left.", Qt::WhiteSpaceNormal));
+                                      " indicated on the left."), Qt::WhiteSpaceNormal));
     QObject::connect(_copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()));
     _mainLayout->addWidget(_fromViewerLine);
     
@@ -163,7 +164,7 @@ _project(project)
     _parametersLineLayout->addWidget(_heightSpinBox);
     
     
-    _pixelAspectLabel = new QLabel("pixel aspect:",_parametersLine);
+    _pixelAspectLabel = new QLabel(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this,SpinBox::DOUBLE_SPINBOX);
     _pixelAspectSpinBox->setMinimum(0.);
@@ -177,7 +178,7 @@ _project(project)
     _mainLayout->addWidget(_formatNameLine);
     
     
-    _nameLabel = new QLabel("Name:",_formatNameLine);
+    _nameLabel = new QLabel(tr("Name:"),_formatNameLine);
     _formatNameLayout->addWidget(_nameLabel);
     _nameLineEdit = new LineEdit(_formatNameLine);
     _formatNameLayout->addWidget(_nameLineEdit);
@@ -188,11 +189,11 @@ _project(project)
     _mainLayout->addWidget(_buttonsLine);
     
     
-    _cancelButton = new Button("Cancel",_buttonsLine);
+    _cancelButton = new Button(tr("Cancel"),_buttonsLine);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _buttonsLineLayout->addWidget(_cancelButton);
     
-    _okButton = new Button("Ok",_buttonsLine);
+    _okButton = new Button(tr("Ok"),_buttonsLine);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _buttonsLineLayout->addWidget(_okButton);
     
@@ -254,17 +255,19 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
             ///find all the tabs and move them to this widget
             for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
                 std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
-                assert(foundTab != registeredTabs.end());
-                TabWidget::moveTab(foundTab->second, *it);
+                if (foundTab != registeredTabs.end()) {
+                    TabWidget::moveTab(foundTab->second, *it);
+                }
             }
             
             ///now call this recursively on the freshly new splits
             for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
                 //find in the guiLayout map the PaneLayout corresponding to the split
                 std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
-                assert(splitIt != guiLayout.end());
+                if (splitIt != guiLayout.end()) {
                 
-                restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+                    restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+                }
             }
             
             break;
@@ -277,12 +280,57 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
     ProjectGuiSerialization obj;
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
+ 
+    const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
     
-    if (obj.arePreviewsTurnedOffGlobally()) {
-        _gui->getNodeGraph()->turnOffPreviewForAllNodes();
+    
+    ///now restore the backdrops
+    const std::list<NodeBackDropSerialization>& backdrops = obj.getBackdrops();
+    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+        NodeBackDrop* bd = _gui->createBackDrop(true);
+        QPointF pos;
+        it->getPos(pos.rx(), pos.ry());
+        bd->setPos_mt_safe(pos);
+        
+        int w,h;
+        it->getSize(w, h);
+        bd->resize(w, h);
+        float r,g,b;
+        it->getColor(r, g, b);
+        QColor color;
+        color.setRgbF(r, g, b);
+        bd->setCurrentColor(color);
+        bd->setName(it->getName().c_str());
+        bd->getLabelKnob()->clone(it->getLabelSerialization().get());
+        bd->refreshTextLabelFromKnob();
+        
+        if (it->isSelected()) {
+            _gui->getNodeGraph()->selectBackDrop(bd, true);
+        }
     }
     
-    const std::map<std::string, ViewerData >& viewersProjections = obj.getViewersProjections();
+    ///now restore backdrops slave/master links
+    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
+    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it!=newBDs.end(); ++it) {
+        ///find its serialization
+        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
+            if (it2->getName() == (*it)->getName_mt_safe()) {
+                
+                std::string masterName = it2->getMasterBackdropName();
+                if (!masterName.empty()) {
+                    ///search the master backdrop by name
+                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3!=newBDs.end(); ++it3) {
+                        if ((*it3)->getName_mt_safe() == masterName) {
+                            (*it)->slaveTo(*it3);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
     
     ///default color for nodes
     float defR,defG,defB;
@@ -291,20 +339,16 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin();it!=nodesGuiSerialization.end();++it) {
         const std::string& name = it->getName();
         boost::shared_ptr<NodeGui> nGui = _gui->getApp()->getNodeGui(name);
-        assert(nGui);
-        nGui->setPos(it->getX(),it->getY());
-        _gui->deselectAllNodes();
-        
-        if (obj.arePreviewsTurnedOffGlobally()) {
-            if (nGui->getNode()->isPreviewEnabled()) {
-                nGui->togglePreview();
-            }
-        } else {
-            if((it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
-               (!it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())){
-                nGui->togglePreview();
-            }
+        if (!nGui) {
+            continue;
         }
+        nGui->setPos(it->getX(),it->getY());
+        
+        if ((it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled()) ||
+           (!it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled())) {
+            nGui->togglePreview();
+        }
+        
         Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
         
         if (it->colorWasFound()) {
@@ -371,7 +415,12 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
                 tab->setMipMapLevel(found->second.mipMapLevel);
                 tab->setCompositingOperator((Natron::ViewerCompositingOperator)found->second.wipeCompositingOp);
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
+                tab->setFrameRangeLocked(found->second.frameRangeLocked);
             }
+        }
+        
+        if (it->isSelected()) {
+            _gui->getNodeGraph()->selectNode(nGui, true);
         }
         
     }
@@ -381,6 +430,27 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodesGui.begin();it!=nodesGui.end();++it) {
         (*it)->refreshEdges();
         (*it)->refreshSlaveMasterLinkPosition();
+        
+        ///restore the multi-instance panels now that all nodes are restored
+        std::string parentName = (*it)->getNode()->getParentMultiInstanceName();
+        
+        if (!parentName.empty()) {
+            boost::shared_ptr<NodeGui> parent;
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin();it2!=nodesGui.end();++it2) {
+                if ((*it2)->getNode()->getName() == parentName) {
+                    parent = *it2;
+                    break;
+                }
+            }
+            
+            ///The parent must have been restored already.
+            assert(parent);
+            
+            boost::shared_ptr<MultiInstancePanel> panel = parent->getMultiInstancePanel();
+            ///the main instance must have a panel!
+            assert(panel);
+            panel->addRow((*it)->getNode());
+        }
     }
     
     ///restore the histograms
@@ -426,45 +496,23 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         
     }
     
-    ///now restore the backdrops
-    const std::list<NodeBackDropSerialization>& backdrops = obj.getBackdrops();
-    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDrop* bd = _gui->createBackDrop(true);
-        QPointF pos;
-        it->getPos(pos.rx(), pos.ry());
-        bd->setPos_mt_safe(pos);
-        
-        int w,h;
-        it->getSize(w, h);
-        bd->resize(w, h);
-        float r,g,b;
-        it->getColor(r, g, b);
-        QColor color;
-        color.setRgbF(r, g, b);
-        bd->setCurrentColor(color);
-        bd->setName(it->getName().c_str());
-        bd->getLabelKnob()->clone(it->getLabelSerialization());
-        bd->refreshTextLabelFromKnob();
-    }
+
     
-    ///now restore backdrops slave/master links
-    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
-    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it!=newBDs.end(); ++it) {
-        ///find its serialization
-        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
-            if (it2->getName() == (*it)->getName_mt_safe()) {
-                
-                std::string masterName = it2->getMasterBackdropName();
-                if (!masterName.empty()) {
-                    ///search the master backdrop by name
-                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3!=newBDs.end(); ++it3) {
-                        if ((*it3)->getName_mt_safe() == masterName) {
-                            (*it)->slaveTo(*it3);
-                            break;
-                        }
+    ///now restore opened settings panels
+    const std::list<std::string>& openedPanels = obj.getOpenedPanels();
+    //reverse the iterator to fill the layout bottom up
+    for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it!=openedPanels.rend(); ++it) {
+        if (*it == "Natron_Project_Settings_Panel") {
+            _gui->setVisibleProjectSettingsPanel();
+        } else {
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin(); it2 != nodesGui.end();++it2) {
+                if ((*it2)->getNode()->getName() == *it) {
+                    NodeSettingsPanel* panel = (*it2)->getSettingPanel();
+                    if (panel) {
+                        (*it2)->setVisibleSettingsPanel(true);
+                        _gui->putSettingsPanelFirst(panel);
                     }
                 }
-                break;
             }
         }
     }
@@ -496,9 +544,7 @@ void ProjectGui::setPickersColor(const QColor& color){
         return;
     }
     boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
-    first->beginValueChange(Natron::USER_EDITED);
     for(U32 i = 0; i < _colorPickersEnabled.size();++i){
-        _colorPickersEnabled[i]->beginValueChange(Natron::PLUGIN_EDITED);
         double r,g,b,a;
         r = color.redF();
         g = color.greenF();
@@ -507,15 +553,10 @@ void ProjectGui::setPickersColor(const QColor& color){
         if (!_colorPickersEnabled[i]->areAllDimensionsEnabled()) {
             _colorPickersEnabled[i]->activateAllDimensions();
         }
-        _colorPickersEnabled[i]->setValue(r, 0);
-        if(_colorPickersEnabled[i]->getDimension() >= 3){
-            _colorPickersEnabled[i]->setValue(g, 1);
-            _colorPickersEnabled[i]->setValue(b, 2);
+        if (_colorPickersEnabled[i]->getDimension() == 3) {
+            _colorPickersEnabled[i]->setValues(r, g, b);
+        } else {
+            _colorPickersEnabled[i]->setValues(r, g, b,a);
         }
-        if(_colorPickersEnabled[i]->getDimension() >= 4){
-            _colorPickersEnabled[i]->setValue(a, 3);
-        }
-        _colorPickersEnabled[i]->endValueChange();
     }
-    first->endValueChange();
 }

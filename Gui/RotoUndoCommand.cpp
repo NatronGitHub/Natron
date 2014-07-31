@@ -80,7 +80,7 @@ void MoveControlPointsUndoCommand::undo()
     _roto->evaluate(true);
     _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool,true);
     _roto->setSelection(_selectedCurves, _selectedPoints);
-    setText(QString("Move points of %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Move points of %1").arg(_roto->getNodeName()));
 }
 
 void MoveControlPointsUndoCommand::redo()
@@ -114,7 +114,7 @@ void MoveControlPointsUndoCommand::redo()
     }
     
     _firstRedoCalled = true;
-    setText(QString("Move points of %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Move points of %1").arg(_roto->getNodeName()));
 }
 
 int MoveControlPointsUndoCommand::id() const
@@ -194,7 +194,7 @@ void TransformUndoCommand::undo()
     _roto->evaluate(true);
     _roto->setCurrentTool((RotoGui::Roto_Tool)_selectedTool,true);
     _roto->setSelection(_selectedCurves, _selectedPoints);
-    setText(QString("Transform points of %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Transform points of %1").arg(_roto->getNodeName()));
 }
 
 void TransformUndoCommand::transformPoint(const boost::shared_ptr<BezierCP>& point)
@@ -218,7 +218,7 @@ void TransformUndoCommand::redo()
     }
 
     _firstRedoCalled = true;
-    setText(QString("Transform points of %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Transform points of %1").arg(_roto->getNodeName()));
 
 }
 
@@ -278,7 +278,7 @@ void AddPointUndoCommand::undo()
     _curve->clone(*_oldCurve);
     _roto->setSelection(_curve, std::make_pair(CpPtr(),CpPtr()));
      _roto->evaluate(true);
-    setText(QString("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 void AddPointUndoCommand::redo()
@@ -293,7 +293,7 @@ void AddPointUndoCommand::redo()
     }
 
     _firstRedoCalled = true;
-    setText(QString("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Add point to %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 ////////////////////////
@@ -388,7 +388,7 @@ void RemovePointUndoCommand::undo()
     _roto->setSelection(selection,cpSelection);
     _roto->evaluate(true);
     
-    setText(QString("Remove points to %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Remove points to %1").arg(_roto->getNodeName()));
 }
 
 void RemovePointUndoCommand::redo()
@@ -428,7 +428,7 @@ void RemovePointUndoCommand::redo()
     _roto->evaluate(_firstRedoCalled);
     _firstRedoCalled = true;
 
-    setText(QString("Remove points to %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Remove points to %1").arg(_roto->getNodeName()));
 }
 
 //////////////////////////
@@ -467,7 +467,7 @@ void RemoveCurveUndoCommand::undo()
     _roto->setSelection(selection, cpList);
     _roto->evaluate(true);
     
-    setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Remove curves to %1").arg(_roto->getNodeName()));
 }
 
 void RemoveCurveUndoCommand::redo()
@@ -478,7 +478,7 @@ void RemoveCurveUndoCommand::redo()
     _roto->evaluate(_firstRedoCalled);
     _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
     _firstRedoCalled = true;
-    setText(QString("Remove curves to %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Remove curves to %1").arg(_roto->getNodeName()));
 }
 
 ////////////////////////////////
@@ -580,7 +580,7 @@ void MoveTangentUndoCommand::undo()
 
     _roto->evaluate(true);
     
-    setText(QString("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 
 
 }
@@ -615,7 +615,7 @@ void MoveTangentUndoCommand::redo()
     
     _firstRedoCalled = true;
     
-    setText(QString("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
     
 }
 
@@ -673,7 +673,7 @@ void MoveFeatherBarUndoCommand::undo()
 
     _roto->evaluate(true);
     _roto->setSelection(_curve, _newPoint);
-    setText(QString("Move feather bar of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Move feather bar of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
     
 }
     
@@ -769,7 +769,7 @@ void MoveFeatherBarUndoCommand::redo()
     _roto->setSelection(_curve, _newPoint);
     
     _firstRedoCalled = true;
-    setText(QString("Move feather bar of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Move feather bar of %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
     
     
 }
@@ -827,7 +827,7 @@ void RemoveFeatherUndoCommand::undo()
     }
     _roto->evaluate(true);
 
-    setText(QString("Remove feather of %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Remove feather of %1").arg(_roto->getNodeName()));
 }
 
 void RemoveFeatherUndoCommand::redo()
@@ -854,7 +854,7 @@ void RemoveFeatherUndoCommand::redo()
     
     _firstRedocalled = true;
     
-    setText(QString("Remove feather of %1").arg(_roto->getNodeName()));
+    setText(QObject::tr("Remove feather of %1").arg(_roto->getNodeName()));
 }
 
 ////////////////////////////
@@ -886,7 +886,7 @@ void OpenCloseUndoCommand::undo()
     _curve->setCurveFinished(!_curve->isCurveFinished());
     _roto->evaluate(true);
     _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
-    setText(QString("Open/Close %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Open/Close %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 void OpenCloseUndoCommand::redo()
@@ -898,7 +898,7 @@ void OpenCloseUndoCommand::redo()
     _roto->evaluate(_firstRedoCalled);
     _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
     _firstRedoCalled = true;
-    setText(QString("Open/Close %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Open/Close %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 ////////////////////////////
@@ -941,9 +941,9 @@ void SmoothCuspUndoCommand::undo()
     
     _roto->evaluate(true);
     if (_cusp) {
-        setText(QString("Cusp points of %1").arg(_roto->getNodeName()));
+        setText(QObject::tr("Cusp points of %1").arg(_roto->getNodeName()));
     } else {
-        setText(QString("Smooth points of %1").arg(_roto->getNodeName()));
+        setText(QObject::tr("Smooth points of %1").arg(_roto->getNodeName()));
     }
 }
 
@@ -974,9 +974,9 @@ void SmoothCuspUndoCommand::redo()
     
     _firstRedoCalled = true;
     if (_cusp) {
-        setText(QString("Cusp points of %1").arg(_roto->getNodeName()));
+        setText(QObject::tr("Cusp points of %1").arg(_roto->getNodeName()));
     } else {
-        setText(QString("Smooth points of %1").arg(_roto->getNodeName()));
+        setText(QObject::tr("Smooth points of %1").arg(_roto->getNodeName()));
     }
     
 }
@@ -1065,7 +1065,7 @@ void MakeBezierUndoCommand::undo()
         _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
     }
     _roto->evaluate(true);
-    setText(QString("Build bezier %1 of %2").arg(_newCurve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Build bezier %1 of %2").arg(_newCurve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
     
 }
 
@@ -1120,7 +1120,7 @@ void MakeBezierUndoCommand::redo()
     
     
     
-    setText(QString("Build bezier %1 of %2").arg(_newCurve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Build bezier %1 of %2").arg(_newCurve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 int MakeBezierUndoCommand::id() const
@@ -1179,7 +1179,7 @@ void MakeEllipseUndoCommand::undo() {
     _roto->removeCurve(_curve.get());
     _roto->evaluate(true);
     _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
-    setText(QString("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 void MakeEllipseUndoCommand::redo()
@@ -1277,7 +1277,7 @@ void MakeEllipseUndoCommand::redo()
     _roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
     _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
-    setText(QString("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 int MakeEllipseUndoCommand::id() const
@@ -1334,7 +1334,7 @@ void MakeRectangleUndoCommand::undo()
     _roto->removeCurve(_curve.get());
     _roto->evaluate(true);
     _roto->setSelection(BezierPtr(), std::make_pair(CpPtr(), CpPtr()));
-    setText(QString("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Build Ellipse %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 void MakeRectangleUndoCommand::redo()
@@ -1366,7 +1366,7 @@ void MakeRectangleUndoCommand::redo()
     _roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
     _roto->setSelection(_curve, std::make_pair(CpPtr(), CpPtr()));
-    setText(QString("Build Rectangle %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Build Rectangle %1 of %2").arg(_curve->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 }
 
 int MakeRectangleUndoCommand::id() const
@@ -1423,14 +1423,15 @@ RemoveItemsUndoCommand::~RemoveItemsUndoCommand()
 void RemoveItemsUndoCommand::undo()
 {
     for (std::list<RemovedItem>::iterator it = _items.begin(); it!= _items.end(); ++it) {
-        _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->item,RotoContext::SETTINGS_PANEL);
         if (it->parentTreeItem) {
             it->parentTreeItem->addChild(it->treeItem);
         }
+        _roto->getContext()->addItem(it->parentLayer.get(), it->indexInLayer, it->item,RotoContext::SETTINGS_PANEL);
+
         it->treeItem->setHidden(false);
     }
     _roto->getContext()->evaluateChange();
-    setText(QString("Remove items of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Remove items of %2").arg(_roto->getNodeName().c_str()));
 }
 
 void RemoveItemsUndoCommand::redo()
@@ -1447,7 +1448,7 @@ void RemoveItemsUndoCommand::redo()
     }
     _roto->clearSelection();
     _roto->getContext()->evaluateChange();
-    setText(QString("Remove items of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Remove items of %2").arg(_roto->getNodeName().c_str()));
 }
 
 
@@ -1481,7 +1482,7 @@ void AddLayerUndoCommand::undo()
     _roto->getContext()->removeItem(_layer.get(),RotoContext::SETTINGS_PANEL);
     _roto->clearSelection();
     _roto->getContext()->evaluateChange();
-    setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Add layer to %2").arg(_roto->getNodeName().c_str()));
 }
 
 void AddLayerUndoCommand::redo()
@@ -1505,7 +1506,7 @@ void AddLayerUndoCommand::redo()
     _roto->clearSelection();
     _roto->getContext()->select(_layer, RotoContext::OTHER);
     _roto->getContext()->evaluateChange();
-    setText(QString("Add layer to %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Add layer to %2").arg(_roto->getNodeName().c_str()));
     _firstRedoCalled = true;
 }
 
@@ -1554,7 +1555,7 @@ void DragItemsUndoCommand::undo()
         
     }
     _roto->getContext()->evaluateChange();
-    setText(QString("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
 }
 
 void DragItemsUndoCommand::redo()
@@ -1571,7 +1572,7 @@ void DragItemsUndoCommand::redo()
         it->dropped->droppedRotoItem->setParentLayer(it->dropped->newParentLayer);
     }
     _roto->getContext()->evaluateChange();
-    setText(QString("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
 }
 
 //////////////////////
@@ -1673,7 +1674,7 @@ void PasteItemUndoCommand::undo()
         }
     }
     _roto->getContext()->evaluateChange();
-    setText(QString("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
 
 }
 
@@ -1706,7 +1707,7 @@ void PasteItemUndoCommand::redo()
     }
     
     _roto->getContext()->evaluateChange();
-    setText(QString("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Paste item(s) of %2").arg(_roto->getNodeName().c_str()));
 
 }
 
@@ -1742,7 +1743,7 @@ void DuplicateItemUndoCommand::undo()
 {
     _roto->getContext()->removeItem(_item.duplicatedItem.get(),RotoContext::OTHER);
     _roto->getContext()->evaluateChange();
-    setText(QString("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
 }
 
 void DuplicateItemUndoCommand::redo()
@@ -1752,5 +1753,5 @@ void DuplicateItemUndoCommand::redo()
                                  _item.item->getParentLayer()->getItems().size(), _item.duplicatedItem, RotoContext::OTHER);
     
     _roto->getContext()->evaluateChange();
-    setText(QString("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
+    setText(QObject::tr("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
 }

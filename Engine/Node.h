@@ -39,6 +39,7 @@ class RenderTree;
 class Format;
 class NodeSerialization;
 class KnobHolder;
+class Double_Knob;
 class RotoContext;
 namespace Natron{
 
@@ -58,11 +59,15 @@ public:
     
     virtual ~Node();
     
-    void load(const std::string& pluginID,const boost::shared_ptr<Natron::Node>& thisShared,
+    void load(const std::string& pluginID,const std::string& parentMultiInstanceName,int childIndex ,const boost::shared_ptr<Natron::Node>& thisShared,
               const NodeSerialization& serialization,bool dontLoadName);
     
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization& serialization);
+    
+    ///to be called once all nodes have been loaded from the project or right away after the load() function.
+    ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
+    void fetchParentMultiInstancePointer();
     
     
     ///If the node can have a roto context, create it
@@ -76,13 +81,21 @@ public:
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1,bool declaredByPlugin = true){
         return appPTR->getKnobFactory().createKnob<K>(getLiveInstance(),description,dimension,declaredByPlugin);
     }
-    
+
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
+    void restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes,
+                           std::list<Double_Knob*>* trackKnobsRestored);
     
-    /*Quit all processing done by all render instances of this node */
+    /*@brief Quit all processing done by all render instances of this node
+     This is called when the effect is about to be deleted permanantly
+     */
     void quitAnyProcessing();
+    
+    /*@brief Similar to quitAnyProcessing except that the threads aren't destroyed
+     
+     */
+    void abortAnyProcessing();
     
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      *is set earlier.
@@ -94,6 +107,9 @@ public:
     bool hasEffect() const;
     
     bool isMultiInstance() const;
+        
+    ///Accessed by the serialization thread, but mt safe since never changed
+    std::string getParentMultiInstanceName() const;
     
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
@@ -222,6 +238,12 @@ public:
      **/
     void updateRenderInputs();
     
+    
+    /**
+     * @brief Same as updateRenderInputs() but recursive on the inputs
+     **/
+    void updateRenderInputsRecursive();
+    
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
      **/
@@ -347,20 +369,31 @@ public:
     
     AppInstance* getApp() const;
     
-    /*Make this node inactive. It will appear
+    /* @brief Make this node inactive. It will appear
      as if it was removed from the graph editor
      but the object still lives to allow
-     undo/redo operations.*/
-    void deactivate();
+     undo/redo operations.
+     @param outputsToDisconnect A list of the outputs whose inputs must be disconnected
+     @param disconnectAll If set to true the parameter outputsToDisconnect is ignored and all outputs' inputs are disconnected
+     @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
+     @param hideGui When true, the node gui will be notified so it gets hidden
+     */
+    void deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect = std::list< boost::shared_ptr<Natron::Node> >()
+                    , bool disconnectAll = true
+                    , bool reconnect = true
+                    , bool hideGui = true);
     
-    /*Make this node active. It will appear
+    /* @brief Make this node active. It will appear
      again on the node graph.
      WARNING: this function can only be called
      after a call to deactivate() has been made.
-     Calling activate() on a node whose already
-     been activated will not do anything.
+     *
+     * @param outputsToRestore Only the outputs specified that were previously connected to the node prior to the call to
+     * deactivate() will be reconnected as output to this node.
+     * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
-    void activate();
+    void activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore = std::list< boost::shared_ptr<Natron::Node> >(),
+                  bool restoreAll = true);
     
     /**
      * @brief Forwarded to the live effect instance
@@ -454,12 +487,6 @@ public:
     
     void notifyRenderingEnded();
     
-    
-    /**
-     * @brief forwarded to the live instance
-     **/
-    void setInputFilesForReader(const std::vector<std::string>& files);
-    
     /**
      * @brief forwarded to the live instance
      **/
@@ -513,12 +540,6 @@ public:
     
     bool isNodeDisabled() const;
     
-    /**
-     * @brief Fills keyframes with all different keyframes time that all parameters of this
-     * node have. Some keyframes might appear several times.
-     **/
-    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
-    
     Natron::ImageBitDepth getBitDepth() const;
     
     bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;
@@ -526,6 +547,22 @@ public:
     void toggleBitDepthWarning(bool on,const QString& tooltip) { emit bitDepthWarningToggled(on, tooltip); }
     
     std::string getNodeExtraLabel() const;
+    
+    /**
+     * @brief Show keyframe markers on the timeline. The signal to refresh the timeline's gui
+     * will be emitted only if emitSignal is set to true.
+     * Calling this function without calling hideKeyframesFromTimeline() has no effect.
+     **/
+    void showKeyframesOnTimeline(bool emitSignal);
+    
+    /**
+     * @brief Hide keyframe markers on the timeline. The signal to refresh the timeline's gui
+     * will be emitted only if emitSignal is set to true.
+     * Calling this function without calling showKeyframesOnTimeline() has no effect.
+     **/
+    void hideKeyframesFromTimeline(bool emitSignal);
+    
+    bool areKeyframesVisibleOnTimeline() const;
     
     /**
      * @brief The given label is appended in the node's label but will not be editable
@@ -543,6 +580,23 @@ public:
      *
      **/
     bool hasSequentialOnlyNodeUpstream(std::string& nodeName) const;
+    
+    
+    /**
+     * @brief Updates the sub label knob: e.g for the Merge node it corresponds to the
+     * operation name currently used and visible on the node
+     **/
+    void updateEffectLabelKnob(const QString& name);
+    
+    /**
+     * @brief Returns true if an effect should be able to connect this node.
+     **/
+    bool canOthersConnectToThisNode() const;
+    
+    /**
+     * @brief Clears any pointer refering to the last rendered image
+     **/
+    void clearLastRenderedImage();
     
 public slots:
     
@@ -653,6 +707,13 @@ protected:
 
 private:
     
+    
+    /**
+     * @brief Fills keyframes with all different keyframes time that all parameters of this
+     * node have. Some keyframes might appear several times.
+     **/
+    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
+    
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -660,7 +721,6 @@ private:
     
     void loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization);
     
-    void updateEffectLabelKnob(const QString& name);
     
     /**
      * @brief If the node is an input of this node, set ok to true, otherwise

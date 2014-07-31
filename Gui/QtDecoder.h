@@ -83,12 +83,10 @@ public:
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
 
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason,const RectI& rod) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time) OVERRIDE FINAL;
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
-        
-    virtual Natron::EffectInstance::CachePolicy getCachePolicy(SequenceTime time) const OVERRIDE;
-    
+            
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
 
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;

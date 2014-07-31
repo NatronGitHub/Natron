@@ -27,6 +27,43 @@ class KnobGui;
 class CurveWidget;
 class NodeCurveEditorElement;
 
+struct SelectedKey {
+    CurveGui* curve;
+    KeyFrame key;
+    std::pair<double,double> leftTan, rightTan;
+    
+    SelectedKey() : curve(NULL), key(){}
+    
+    SelectedKey(CurveGui* c,const KeyFrame& k)
+    : curve(c)
+    , key(k)
+    {
+        
+    }
+    
+    SelectedKey(const SelectedKey& o)
+    : curve(o.curve)
+    , key(o.key)
+    , leftTan(o.leftTan)
+    , rightTan(o.rightTan)
+    {
+        
+    }
+    
+};
+
+struct SelectedKey_compare_time{
+    bool operator() (const SelectedKey& lhs, const SelectedKey& rhs) const {
+        return lhs.key.getTime() < rhs.key.getTime();
+    }
+};
+
+
+
+typedef boost::shared_ptr<SelectedKey> KeyPtr;
+typedef std::list< KeyPtr > SelectedKeys;
+
+
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 
 class AddKeysCommand : public QUndoCommand {
@@ -70,26 +107,14 @@ private:
 };
 
 //////////////////////////////MOVE KEY COMMAND//////////////////////////////////////////////
-struct KeyMove{
-    CurveGui* curve;
-    KeyFrame key;
-    
-    KeyMove(CurveGui* c,const KeyFrame& k)
-    : curve(c)
-    , key(k)
-    {
-        
-    }
-};
 
-
-typedef std::vector< KeyMove > KeyMoveV;
 
 class MoveKeysCommand : public QUndoCommand
 {
 public:
 
-    MoveKeysCommand(CurveWidget* editor,const KeyMoveV& keys,double dt,double dv,bool updateOnFirstRedo,QUndoCommand *parent = 0);
+    MoveKeysCommand(CurveWidget* widget,const SelectedKeys& keys,
+                    double dt,double dv,bool updateOnFirstRedo,QUndoCommand *parent = 0);
     virtual ~MoveKeysCommand() OVERRIDE {}
 
 private:
@@ -98,16 +123,15 @@ private:
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
 
-    void move(double dt, double dv, bool isundo);
+    void move(double dt, double dv);
 
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
-    bool _merge;
     double _dt;
     double _dv;
-    KeyMoveV _keys;
-    CurveWidget* _curveWidget;
+    SelectedKeys _keys;
+    CurveWidget* _widget;
 };
 
 
@@ -116,13 +140,13 @@ private:
 struct KeyInterpolationChange{
     Natron::KeyframeType oldInterp;
     Natron::KeyframeType newInterp;
-    CurveGui* curve;
-    KeyFrame key;
+    KeyPtr key;
     
-    KeyInterpolationChange(Natron::KeyframeType oldType,Natron::KeyframeType newType,CurveGui* c,const KeyFrame& k)
+    
+    
+    KeyInterpolationChange(Natron::KeyframeType oldType,Natron::KeyframeType newType,const KeyPtr& k)
     : oldInterp(oldType)
     , newInterp(newType)
-    , curve(c)
     , key(k)
     {
         
@@ -135,7 +159,7 @@ class SetKeysInterpolationCommand : public QUndoCommand{
 
 public:
 
-    SetKeysInterpolationCommand(CurveWidget* editor,const std::vector< KeyInterpolationChange >& keys,QUndoCommand *parent = 0);
+    SetKeysInterpolationCommand(CurveWidget* widget,const std::list< KeyInterpolationChange >& keys,QUndoCommand *parent = 0);
     virtual ~SetKeysInterpolationCommand() OVERRIDE {}
 private:
     virtual void undo() OVERRIDE FINAL;
@@ -145,8 +169,8 @@ private:
     void setNewInterpolation(bool undo);
     
 private:
-    std::vector< KeyInterpolationChange > _oldInterp;
-    CurveWidget* _curveWidget;
+    std::list< KeyInterpolationChange > _keys;
+    CurveWidget* _widget;
 };
 
 #endif // CURVEEDITORUNDOREDO_H

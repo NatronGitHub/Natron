@@ -80,15 +80,21 @@ public:
 private:
     virtual void undo() OVERRIDE FINAL
     {
-        _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
         bool modifiedKeyFrame = false;
         
         int i = 0;
-        for (typename std::list<T>::iterator it = _oldValue.begin(); it!=_oldValue.end();++it) {
+        typename std::list<T>::iterator next = _oldValue.begin();
+        ++next;
+        _knob->getKnob()->blockEvaluation();
+        for (typename std::list<T>::iterator it = _oldValue.begin(); it!=_oldValue.end();++it,++next) {
             
             int dimension = _dimension == -1 ? i : _dimension;
+            bool isLast = next == _oldValue.end();
+            if (isLast) {
+                _knob->getKnob()->unblockEvaluation();
+            }
             
-            _knob->setValue(dimension,*it,NULL,true);
+            _knob->setValue(dimension,*it,NULL,true,Natron::USER_EDITED);
             if (_knob->getKnob()->getHolder()->getApp()) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                     _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
@@ -106,9 +112,7 @@ private:
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
         }
         
-        
-        _knob->getKnob()->endValueChange();
-        setText(QObject::tr("Set value of %1")
+            setText(QObject::tr("Set value of %1")
                 .arg(_knob->getKnob()->getDescription().c_str()));
     }
 
@@ -119,13 +123,19 @@ private:
             time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
         }
         
-        _knob->getKnob()->beginValueChange(Natron::USER_EDITED);
         bool modifiedKeyFrames = false;
         
+        _knob->getKnob()->blockEvaluation();
         int i = 0;
-        for (typename std::list<T>::iterator it = _newValue.begin(); it!=_newValue.end();++it) {
+        typename std::list<T>::iterator next = _newValue.begin();
+        ++next;
+        for (typename std::list<T>::iterator it = _newValue.begin(); it!=_newValue.end();++it,++next) {
             
             int dimension = _dimension == -1 ? i : _dimension;
+            bool isLast = next == _newValue.end();
+            if (isLast) {
+                _knob->getKnob()->unblockEvaluation();
+            }
             
             boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
@@ -138,7 +148,7 @@ private:
             } else {
                 refreshGui = _refreshGuiFirstTime;
             }
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui);
+            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,Natron::USER_EDITED);
             if(_valueChangedReturnCode[i] != KnobHelper::NO_KEYFRAME_ADDED){
                 modifiedKeyFrames = true;
             }
@@ -154,7 +164,6 @@ private:
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
         }
         
-        _knob->getKnob()->endValueChange();
         setText(QObject::tr("Set value of %1")
                 .arg(_knob->getKnob()->getDescription().c_str()));
 
@@ -200,11 +209,16 @@ private:
 };
 
 
+/**
+ * @brief This class is used by the internal knob when it wants to group multiple edits into a single undo/redo action.
+ * It is not used by the GUI 
+ **/
 class MultipleKnobEditsUndoCommand : public QUndoCommand
 {
     struct ValueToSet {
         boost::shared_ptr<KnobI> copy;
-        std::list<Variant> newValues;
+        Variant newValue;
+        int dimension;
         int time;
         bool setKeyFrame;
     };
@@ -221,7 +235,8 @@ public:
      * @param createNew If true this command will not merge with a previous same command
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
-    MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,const std::list<Variant>& values,int time);
+    MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,
+                                 const Variant& value,int dimension,int time);
     
     virtual ~MultipleKnobEditsUndoCommand();
   

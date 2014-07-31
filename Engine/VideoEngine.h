@@ -47,15 +47,12 @@ class Timer;
 
 
 /**
- *@class Tree
+ *@class RenderTree
  *@brief This class represents the tree upstream of the output node as seen internally by the video engine.
- *It provides means to sort the tree and access to the nodes in topological order. It also
- *provides access to the input nodes and the output node of the tree.
- *An input node is a node that does not depend on any upstream node,i.e :
- *it can generate data.
+ *It provides means to sort the tree and access to the nodes in topological order.
  *An output node is a node whose output cannot be connected to any other node and whose
- *sole purpose is to visulize the data flowing through the graph in a given configuration.
- *A Tree is represented by 1 output node, connected to its input, and so on recursively.
+ *sole purpose is to output the data flowing through the graph in a given configuration.
+ *A RenderTree is represented by 1 output node, connected to its input, and so on and so forth recursively.
  *
  **/
 class RenderTree {
@@ -129,12 +126,7 @@ public:
      *@brief Returns true if the output node is an OpenFX node.
      */
     bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
-    
-    /**
-     *@brief Checks whether the render tree can produce a valid result.
-     */
-    Natron::Status preProcessFrame();
-    
+
     SequenceTime firstFrame() const {return _firstFrame;}
     
     SequenceTime lastFrame() const {return _lastFrame;}
@@ -193,11 +185,7 @@ public slots:
     
     ///convenience function for signal/slots
     void abortRenderingNonBlocking() { abortRendering(false); }
-    
-    /*
-     *@brief Slot called internally by the render() function when it reports progress for the current frame.
-     *Do not call this yourself.
-     */
+  
     void toggleLoopMode(bool b);
     
     
@@ -213,11 +201,6 @@ public slots:
      **************************************PRIVATE SLOTS*********************************************************
      *************************************DO NO CALL THEM********************************************************
      ***********************************************************************************************************/
-    /*
-     *@brief Slot called internally by the render() function when it reports progress for the current frame.
-     *Do not call this yourself.
-     */
-    void onProgressUpdate(int i);
     
     
     /*
@@ -346,6 +329,11 @@ public:
     
     bool hasBeenAborted() const {return _abortRequested;}
     
+    /**
+     * @brief Tells whether the thread is active or not. Note that this function can return true whilst isWorking() returns false.
+     **/
+    bool isThreadRunning() const;
+    
 private:
 
     /*The function doing all the processing in a separate thread, called by render()*/
@@ -362,13 +350,7 @@ private:
      *of the graph.
      **/
     void computeTreeVersionAndLockKnobs();
-    
-    
-    /**
-     *@brief displays progress if the time to compute the current frame exeeded
-     * 0.5 sec.
-     **/
-    bool checkAndDisplayProgress(int y,int zoomedY);
+ 
 
     /**
      *@brief Resets the video engine state and ensures that all worker threads are stopped. It is called
@@ -433,6 +415,7 @@ private:
     QWaitCondition _mustQuitCondition;
     mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
+    bool _hasQuit; /*!< Unlike mustQuit it remains true after the quit was performed, this is to make sure the engine isn't restarted.*/
 
     mutable QMutex _loopModeMutex;///protects _loopMode
     bool _loopMode; /*!< on if the player will loop*/

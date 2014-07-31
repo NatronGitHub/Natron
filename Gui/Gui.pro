@@ -66,7 +66,9 @@ SOURCES += \
     MultiInstancePanel.cpp \
     NodeBackDrop.cpp \
     NodeBackDropSerialization.cpp \
+    NodeCreationDialog.cpp \
     NodeGraph.cpp \
+    NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
     PreferencesPanel.cpp \
@@ -84,12 +86,14 @@ SOURCES += \
     SpinBox.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
+    TableModelView.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
     Texture.cpp \
     ticks.cpp \
     ToolButton.cpp \
     TimeLineGui.cpp \
+    TrackerGui.cpp \
     ViewerGL.cpp \
     ViewerTab.cpp
 
@@ -123,7 +127,9 @@ HEADERS += \
     MultiInstancePanel.h \
     NodeBackDrop.h \
     NodeBackDropSerialization.h \
+    NodeCreationDialog.h \
     NodeGraph.h \
+    NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeGuiSerialization.h \
     PreferencesPanel.h \
@@ -141,15 +147,17 @@ HEADERS += \
     SpinBox.h \
     SplashScreen.h \
     Splitter.h \
+    TableModelView.h \
     TabWidget.h \
     TextRenderer.h \
     Texture.h \
     ticks.h \
     TimeLineGui.h \
     ToolButton.h \
+    TrackerGui.h \
     ViewerGL.h \
     ViewerTab.h \
-    ZoomContext.h \
+    ZoomContext.h
 
 
 RESOURCES += \

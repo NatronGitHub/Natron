@@ -36,21 +36,26 @@ using namespace Natron;
 Settings::Settings(AppInstance* appInstance)
 : KnobHolder(appInstance)
 , _wereChangesMadeSinceLastSave(false)
+, _restoringSettings(false)
 {
     
 }
 
-static QString getDefaultOcioConfigPath() {
+static QStringList getDefaultOcioConfigPaths() {
     QString binaryPath = appPTR->getApplicationBinaryPath();
     if (!binaryPath.isEmpty()) {
         binaryPath += QDir::separator();
     }
 #ifdef __NATRON_LINUX__
-    return binaryPath + "/usr/share/OpenColorIO-Configs";
+    QStringList ret;
+    ret.push_back(QString("/usr/share/OpenColorIO-Configs"));
+    ret.push_back(QString(binaryPath + "../share/OpenColorIO-Configs"));
+    ret.push_back(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
+    return ret;
 #elif defined(__NATRON_WIN32__)
-    return binaryPath + "../Resources/OpenColorIO-Configs";
+    return QStringList(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
 #elif defined(__NATRON_OSX__)
-    return binaryPath + "../Resources/OpenColorIO-Configs";
+    return QStringList(QString(binaryPath + "../Resources/OpenColorIO-Configs"));
 #endif
 }
 
@@ -204,17 +209,22 @@ void Settings::initializeKnobs(){
     _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
     _ocioConfigKnob->setAnimationEnabled(false);
     
-    QString defaultOcioConfigsPath = getDefaultOcioConfigPath();
-    QDir ocioConfigsDir(defaultOcioConfigsPath);
     std::vector<std::string> configs;
     int defaultIndex = 0;
-    if (ocioConfigsDir.exists()) {
-        QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-        for (int i = 0; i < entries.size(); ++i) {
-            if (entries[i].contains("nuke-default")) {
-                defaultIndex = i;
+    
+    QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
+    for (int i = 0; i < defaultOcioConfigsPaths.size(); ++i) {
+        QDir ocioConfigsDir(defaultOcioConfigsPaths[i]);
+        if (ocioConfigsDir.exists()) {
+            QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+            for (int j = 0; j < entries.size(); ++j) {
+                if (entries[j].contains("nuke-default")) {
+                    defaultIndex = j;
+                }
+                configs.push_back(entries[j].toStdString());
             }
-            configs.push_back(entries[i].toStdString());
+            
+            break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
@@ -276,6 +286,12 @@ void Settings::initializeKnobs(){
                                             "with the inputs and output nodes.");
     _snapNodesToConnections->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_snapNodesToConnections);
+    
+    _useBWIcons = Natron::createKnob<Bool_Knob>(this, "Use black & white toolbutton icons");
+    _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar will be in black and white. Changing this takes "
+                                "effect upon the next launch of the application.");
+    _useBWIcons->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_useBWIcons);
     
     _useNodeGraphHints = Natron::createKnob<Bool_Knob>(this, "Use connection hints");
     _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
@@ -391,7 +407,7 @@ void Settings::initializeKnobs(){
     /////////// Caching tab
     _cachingTab = Natron::createKnob<Page_Knob>(this, "Caching");
     
-    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching");
+    _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum system's RAM for caching (% system total RAM)");
     _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
     _maxRAMPercent->setMaximum(100);
@@ -406,9 +422,17 @@ void Settings::initializeKnobs(){
     }
     
     _maxRAMPercent->setHintToolTip(ramHint);
+    _maxRAMPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxRAMPercent);
     
-    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage");
+    _maxRAMLabel = Natron::createKnob<String_Knob>(this, "which represents");
+    _maxRAMLabel->setName("maxRamLabel");
+    _maxRAMLabel->setIsPersistant(false);
+    _maxRAMLabel->setAsLabel();
+    _maxRAMLabel->setAnimationEnabled(false);
+    _cachingTab->addKnob(_maxRAMLabel);
+    
+    _maxPlayBackPercent = Natron::createKnob<Int_Knob>(this, "Playback cache RAM percentage (% maximum RAM for caching");
     _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
     _maxPlayBackPercent->setMaximum(100);
@@ -416,14 +440,26 @@ void Settings::initializeKnobs(){
                                         " dedicated for the playback cache. Normally you shouldn't change this value"
                                         " as it is tuned automatically by the Maximum system's RAM for caching, but"
                                         " this is made possible for convenience.");
+    _maxPlayBackPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxPlayBackPercent);
     
-    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size");
+    _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, "which represents");
+    _maxPlaybackLabel->setName("maxPlaybackLabel");
+    _maxPlaybackLabel->setIsPersistant(false);
+    _maxPlaybackLabel->setAsLabel();
+    _maxPlaybackLabel->setAnimationEnabled(false);
+    _cachingTab->addKnob(_maxPlaybackLabel);
+
+    
+    _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GB)");
     _maxDiskCacheGB->setAnimationEnabled(false);
     _maxDiskCacheGB->setMinimum(0);
     _maxDiskCacheGB->setMaximum(100);
     _maxDiskCacheGB->setHintToolTip("The maximum disk space the caches can use. (in GB)");
     _cachingTab->addKnob(_maxDiskCacheGB);
+    
+ 
+
     
     
     ///readers & writers settings are created in a postponed manner because we don't know
@@ -439,6 +475,16 @@ void Settings::initializeKnobs(){
 }
 
 
+void Settings::setCachingLabels()
+{
+    int maxPlaybackPercent = _maxPlayBackPercent->getValue();
+    int maxTotalRam = _maxRAMPercent->getValue();
+    
+    U64 maxRAM = (U64)(((double)maxTotalRam / 100.) * getSystemTotalRAM());
+    _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString(), 0);
+    _maxPlaybackLabel->setValue(printAsRAM((U64)(maxRAM * ((double)maxPlaybackPercent / 100.))).toStdString(), 0);
+}
+
 void Settings::setDefaultValues() {
     
     beginKnobsValuesChanged(Natron::PLUGIN_EDITED);
@@ -448,6 +494,7 @@ void Settings::setDefaultValues() {
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
     _snapNodesToConnections->setDefaultValue(true);
+    _useBWIcons->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
     _renderInSeparateProcess->setDefaultValue(true,0);
@@ -462,6 +509,7 @@ void Settings::setDefaultValues() {
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
     _maxDiskCacheGB->setDefaultValue(10,0);
+    setCachingLabels();
     _defaultNodeColor->setDefaultValue(0.6,0);
     _defaultNodeColor->setDefaultValue(0.6,1);
     _defaultNodeColor->setDefaultValue(0.6,2);
@@ -589,6 +637,7 @@ void Settings::saveSettings(){
     
     settings.beginGroup("Nodegraph");
     settings.setValue("SnapToNode",_snapNodesToConnections->getValue());
+    settings.setValue("UseBWIcons", _useBWIcons->getValue());
     settings.setValue("ConnectionHints",_useNodeGraphHints->getValue());
     settings.setValue("MaximumUndoRedoNodeGraph", _maxUndoRedoNodeGraph->getValue());
     settings.setValue("DisconnectedArrowLength", _disconnectedArrowLength->getValue());
@@ -673,10 +722,9 @@ void Settings::saveSettings(){
 }
 
 void Settings::restoreSettings(){
-    
+    _restoringSettings = true;
     _wereChangesMadeSinceLastSave = false;
     
-    notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     if (settings.contains("CheckUpdates")) {
@@ -755,6 +803,9 @@ void Settings::restoreSettings(){
     settings.beginGroup("Nodegraph");
     if (settings.contains("SnapToNode")) {
         _snapNodesToConnections->setValue(settings.value("SnapToNode").toBool(), 0);
+    }
+    if (settings.contains("UseBWIcons")) {
+        _useBWIcons->setValue(settings.value("UseBWIcons").toBool(), 0);
     }
     if (settings.contains("ConnectionHints")) {
         _useNodeGraphHints->setValue(settings.value("ConnectionHints").toBool(), 0);
@@ -950,8 +1001,7 @@ void Settings::restoreSettings(){
         }
     }
     settings.endGroup();
-    notifyProjectEndKnobsValuesChanged();
-
+    _restoringSettings = false;
 }
 
 bool Settings::tryLoadOpenColorIOConfig()
@@ -964,7 +1014,7 @@ bool Settings::tryLoadOpenColorIOConfig()
             return false;
         }
         if (!QFile::exists(file.c_str())) {
-            Natron::errorDialog("OpenColorIO", file + ": No such file.");
+            Natron::errorDialog("OpenColorIO", file + QObject::tr(": No such file.").toStdString());
             return false;
         }
         configFile = file.c_str();
@@ -972,39 +1022,46 @@ bool Settings::tryLoadOpenColorIOConfig()
         ///try to load from the combobox
         QString activeEntryText(_ocioConfigKnob->getActiveEntryText().c_str());
         QString configFileName = QString(activeEntryText + ".ocio");
-        QString defaultConfigsPath = getDefaultOcioConfigPath();
-        QDir defaultConfigsDir(defaultConfigsPath);
-        if (!defaultConfigsDir.exists()) {
-            qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+        QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
+        for (int i = 0; i < defaultConfigsPaths.size();++i) {
+            QDir defaultConfigsDir(defaultConfigsPaths[i]);
+            if (!defaultConfigsDir.exists()) {
+                qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+                continue;
+            }
+            ///try to open the .ocio config file first in the defaultConfigsDir
+            ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
+            if (!defaultConfigsDir.exists(configFileName)) {
+                QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
+                if (!subDir.exists()) {
+                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString());
+                    return false;
+                }
+                if (!subDir.exists("config.ocio")) {
+                    Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString());
+                    return false;
+                }
+                configFile = subDir.absoluteFilePath("config.ocio");
+            } else {
+                configFile = defaultConfigsDir.absoluteFilePath(configFileName);
+            }
+        }
+        if (configFile.isEmpty()) {
             return false;
         }
-        ///try to open the .ocio config file first in the defaultConfigsDir
-        ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
-        if (!defaultConfigsDir.exists(configFileName)) {
-            QDir subDir(defaultConfigsPath + QDir::separator() + activeEntryText);
-            if (!subDir.exists()) {
-                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
-                return false;
-            }
-            if (!subDir.exists("config.ocio")) {
-                Natron::errorDialog("OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + ": No such file or directory.");
-                return false;
-            }
-            configFile = subDir.absoluteFilePath("config.ocio");
-        } else {
-            configFile = defaultConfigsDir.absoluteFilePath(configFileName);
-        }
+        
     }
     qDebug() << "setting OCIO=" << configFile;
     qputenv("OCIO", configFile.toUtf8());
     return true;
 }
 
-void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/){
+void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/){
 
     _wereChangesMadeSinceLastSave = true;
-
-    
+    if (_restoringSettings && (k == _maxDiskCacheGB.get() || k == _maxRAMPercent.get() || k == _maxPlayBackPercent.get())) {
+        return; 
+    }
     if (k == _texturesMode.get()) {
         std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
@@ -1017,8 +1074,8 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
                     assert(n);
                     if(isFirstViewer){
                         if(!n->supportsGLSL() && _texturesMode->getValue() != 0){
-                            Natron::errorDialog("Viewer", "You need OpenGL GLSL in order to use 32 bit fp texutres.\n"
-                                                "Reverting to 8bits textures.");
+                            Natron::errorDialog(QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                                                "Reverting to 8bits textures.").toStdString());
                             _texturesMode->setValue(0,0);
                             return;
                         }
@@ -1031,8 +1088,10 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
         appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheSize());
     } else if(k == _maxRAMPercent.get()) {
         appPTR->setApplicationsCachesMaximumMemoryPercent(getRamMaximumPercent());
+        setCachingLabels();
     } else if(k == _maxPlayBackPercent.get()) {
         appPTR->setPlaybackCacheMaximumSize(getRamPlaybackMaximumPercent());
+        setCachingLabels();
     } else if(k == _numberOfThreads.get()) {
         int nbThreads = getNumberOfThreads();
         if (nbThreads == -1) {
@@ -1194,6 +1253,7 @@ void Settings::restoreDefault() {
             knobs[i]->resetToDefaultValue(j);
         }
     }
+    setCachingLabels();
     endKnobsValuesChanged(Natron::PLUGIN_EDITED);
 }
 
@@ -1388,4 +1448,9 @@ bool Settings::getRenderOnEditingFinishedOnly() const
 void Settings::setRenderOnEditingFinishedOnly(bool render)
 {
     _renderOnEditingFinished->setValue(render, 0);
+}
+
+bool Settings::getIconsBlackAndWhite() const
+{
+    return _useBWIcons->getValue();
 }

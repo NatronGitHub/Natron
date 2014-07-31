@@ -26,10 +26,13 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeBackDropSerialization.h"
 
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING
+#define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FRAME_RANGE
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_BACKDROPS
+#define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
+#define PROJECT_GUI_INTRODUCES_PANELS 4
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_PANELS
 
 class ProjectGui;
 
@@ -49,6 +52,7 @@ struct ViewerData {
     std::string channels;
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
+    bool frameRangeLocked;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -68,9 +72,17 @@ struct ViewerData {
         ar & boost::serialization::make_nvp("Channels",channels);
         ar & boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
         ar & boost::serialization::make_nvp("MipMapLevel",mipMapLevel);
-        if (version >= VIEWER_DATA_SERIALIZATION_VERSION) {
+        if (version >= VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING) {
             ar & boost::serialization::make_nvp("ZoomOrPanSinceFit",zoomOrPanSinceLastFit);
             ar & boost::serialization::make_nvp("CompositingOP",wipeCompositingOp);
+        } else {
+            zoomOrPanSinceLastFit = false;
+            wipeCompositingOp = 0;
+        }
+        if (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE) {
+            ar & boost::serialization::make_nvp("FrameRangeLocked",frameRangeLocked);
+        } else {
+            frameRangeLocked = false;
         }
     }
 };
@@ -115,8 +127,8 @@ class ProjectGuiSerialization {
     std::list<std::string> _histograms;
     
     std::list<NodeBackDropSerialization> _backdrops;
-
-    bool _arePreviewTurnedOffGlobally;
+    
+    std::list<std::string> _openedPanelsOrdered;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -127,10 +139,16 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
-        ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",_arePreviewTurnedOffGlobally);
+        if (version < PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED) {
+            bool tmp = false;
+            ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",tmp);
+        }
         ar & boost::serialization::make_nvp("Histograms",_histograms);
         if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS) {
             ar & boost::serialization::make_nvp("Backdrops",_backdrops);
+        }
+        if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
+            ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
         }
     }
     
@@ -149,12 +167,12 @@ public:
     const std::map<std::string,std::string>& getSplittersStates() const { return _splittersStates; }
     
     const std::map<std::string, ViewerData >& getViewersProjections() const { return _viewersData; }
-    
-    bool arePreviewsTurnedOffGlobally() const { return _arePreviewTurnedOffGlobally; }
-    
+        
     const std::list<std::string>& getHistograms() const { return _histograms; }
     
     const std::list<NodeBackDropSerialization>& getBackdrops() const { return _backdrops; }
+    
+    const std::list<std::string>& getOpenedPanels() const { return _openedPanelsOrdered; }
     
 private:
     

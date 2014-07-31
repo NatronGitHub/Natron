@@ -74,6 +74,20 @@ public:
      **/
     QPointF toWidgetCoordinates(double x, double y) const;
 
+    /**
+     * @brief Activates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache()
+     * by connecting them to the ViewerCache emitted signals. They in turn are used by the GUI to refresh the "cached line" on
+     * the timeline.
+     **/
+    void connectSlotsToViewerCache();
+    
+    /**
+     * @brief Since the ViewerCache is global to the application, we don't want
+     * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
+     **/
+    void disconnectSlotsFromViewerCache();
+    
+    
 public slots:
 
     void centerOn(SequenceTime left,SequenceTime right);
@@ -81,11 +95,15 @@ public slots:
     void onFrameChanged(SequenceTime,int);
     void onFrameRangeChanged(SequenceTime first, SequenceTime last);
     void onBoundariesChanged(SequenceTime, SequenceTime, int);
+    
     void onCachedFrameAdded(SequenceTime time);
-    void onCachedFrameRemoved(SequenceTime time);
-    void onLRUCachedFrameRemoved();
-    void onCachedFramesCleared();
+    void onCachedFrameRemoved(SequenceTime time,int storage);
+    void onCachedFrameStorageChanged(SequenceTime time,int oldStorage,int newStorage);
+    void onMemoryCacheCleared();
+    void onDiskCacheCleared();
 
+    void clearCachedFrames();
+    
     void onKeyframesIndicatorsChanged();
 private:
 

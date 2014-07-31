@@ -41,6 +41,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Image.h"
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 using namespace Natron;
 using std::make_pair;
 using boost::shared_ptr;
@@ -135,7 +139,6 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    connectSlotsToViewerCache();
     if(node) {
         connect(node.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     }
@@ -150,7 +153,8 @@ ViewerInstance::~ViewerInstance()
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     if (getVideoEngine()) {
-        getVideoEngine()->quitEngineThread();
+        ///Thread must have been killed before.
+        assert(!getVideoEngine()->isThreadRunning());
     }
     
     // If _imp->updateViewerRunning is true, that means that the next updateViewer call was
@@ -210,30 +214,6 @@ ViewerInstance::forceFullComputationOnNextFrame()
 
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
     _imp->forceRender = true;
-}
-
-void
-ViewerInstance::connectSlotsToViewerCache()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
-    QObject::connect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
-    QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
-}
-
-void
-ViewerInstance::disconnectSlotsToViewerCache()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onViewerCacheFrameAdded()));
-    QObject::disconnect(emitter, SIGNAL(removedLRUEntry()), this, SIGNAL(removedLRUCachedFrame()));
-    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SIGNAL(clearedViewerCache()));
 }
 
 void
@@ -324,13 +304,18 @@ ViewerInstance::getFrameRange(SequenceTime *first,
 void ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 {
     assert(QThread::currentThread() == qApp->thread());
-    _imp->uiContext->disconnectInputTexture(index);
+    if (_imp->uiContext) {
+        _imp->uiContext->disconnectInputTexture(index);
+    }
 }
 
 Natron::Status
 ViewerInstance::renderViewer(SequenceTime time,
                              bool singleThreaded,bool isSequentialRender)
 {
+    if (!_imp->uiContext) {
+        return StatReplyDefault;
+    }
     Natron::Status ret[2] = { StatOK,StatOK };
     for (int i = 0; i < 2; ++i) {
         if (i == 1 && _imp->uiContext->getCompositingOperator() == Natron::OPERATOR_NONE) {
@@ -367,12 +352,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         return StatOK;
     }
     
-    double zoomFactor = _imp->uiContext->getZoomFactor();
 
     Format dispW;
     getRenderFormat(&dispW);
     int viewsCount = getRenderViewsCount();
-    int view = viewsCount > 0 ? _imp->uiContext->getCurrentView() : 0;
+    int view = (viewsCount > 0  && _imp->uiContext) ? _imp->uiContext->getCurrentView() : 0;
 
     int activeInputIndex;
     if (textureIndex == 0) {
@@ -435,6 +419,16 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         scale.y = scale.x;
         mipMapLevel = _imp->viewerMipMapLevel;
     }
+     
+    assert(_imp->uiContext);
+    double zoomFactor = _imp->uiContext->getZoomFactor();
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / M_LN2));
+    mipMapLevel = std::max((double)mipMapLevel,std::log(closestPowerOf2) / M_LN2);
+  
+    
+    scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+    scale.y = scale.x;
+    closestPowerOf2 = 1 << mipMapLevel;
     
     ImageComponents components;
     ImageBitDepth imageDepth;
@@ -498,7 +492,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     
     
     ////While the inputs are identity get the RoD of the first non identity input
-    while (!forceRender && inputIdentityNumber != -1 && isInputImgCached) {
+    while (inputIdentityNumber != -1 && isInputImgCached) {
         EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
             inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, mipMapLevel,view);
@@ -569,20 +563,18 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
     emit rodChanged(rod,textureIndex);
 
+    assert(_imp->uiContext);
     bool isClippingToProjectWindow = _imp->uiContext->isClippingImageToProjectWindow();
     if (!isClippingToProjectWindow) {
         dispW.set(rod);
     }
     
     /*computing the RoI*/
-    
-    // scale the zoomFactor by the inverse of the current render scale
-    zoomFactor /= scale.x;
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / std::log(2.)));
 
     ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
-    RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD);
+    assert(_imp->uiContext);
+    RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD,mipMapLevel);
     
     
     ///Clip the roi  the project window (in pixel coordinates)
@@ -599,24 +591,20 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     ////factor taken into account.
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
-    texRect.x1 = std::floor(((double)roi.x1 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.y1 = std::floor(((double)roi.y1 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.x2 = std::ceil(((double)roi.x2 / closestPowerOf2) / tileSize) * tileSize;
-    texRect.y2 = std::ceil(((double)roi.y2 / closestPowerOf2) / tileSize) * tileSize;
+    texRect.x1 = std::floor(((double)roi.x1) / tileSize) * tileSize;
+    texRect.y1 = std::floor(((double)roi.y1) / tileSize) * tileSize;
+    texRect.x2 = std::ceil(((double)roi.x2) / tileSize) * tileSize;
+    texRect.y2 = std::ceil(((double)roi.y2) / tileSize) * tileSize;
     
     if (texRect.width() == 0 || texRect.height() == 0) {
         return StatOK;
     }
     
     ///TexRectClipped is the same as texRect but without the zoom factor taken into account (in pixel coords)
-    RectI texRectClipped = texRect;
-    texRectClipped.x1 *= closestPowerOf2;
-    texRectClipped.x2 *= closestPowerOf2;
-    texRectClipped.y1 *= closestPowerOf2;
-    texRectClipped.y2 *= closestPowerOf2;
+    RectI texRectClipped ;
     
     ///Make sure the bounds of the area to render in the texture lies in the pixelRoD
-    texRectClipped.intersect(pixelRoD, &texRectClipped);
+    texRect.intersect(pixelRoD, &texRectClipped);
     ///Clip again against the project window
     if (isClippingToProjectWindow) {
         ///it has already been computed in the previous clip above
@@ -625,21 +613,19 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     }
     
     ///The width and height of the texture must at least contain the roi
-    RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing(std::log(closestPowerOf2) / std::log(2.));
+    // RectI texRectClippedDownscaled = texRectClipped.downscalePowerOfTwoSmallestEnclosing(std::log(closestPowerOf2) / M_LN2);
     
     
-    ///Texture rect contains coordinates in the image to be rendered without the scaling of the viewer applied
+    ///Texture rect contains the pixel coordinates in the image to be rendered
     TextureRect textureRect(texRectClipped.x1,texRectClipped.y1,texRectClipped.x2,
-                            texRectClipped.y2,texRectClippedDownscaled.width(),texRectClippedDownscaled.height(),closestPowerOf2);
-    
-    //  std::cout << "ViewerInstance: x1: " << textureRect.x1 << " x2: " << textureRect.x2 << " y1: " << textureRect.y1 <<
-    //" y2: " << textureRect.y2 << " w: " << textureRect.w << " h: " << textureRect.h << " po2: " << textureRect.closestPo2 << std::endl;
-    
+                            texRectClipped.y2,texRectClipped.width(),texRectClipped.height(),closestPowerOf2);
 
-    
-    
     size_t bytesCount = textureRect.w * textureRect.h * 4;
+    if (bytesCount == 0) {
+        return StatOK;
+    }
     
+    assert(_imp->uiContext);
     OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
     
     //half float is not supported yet so it is the same as float
@@ -685,6 +671,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     if (!forceRender) {
         ///we never use the texture cache when the user RoI is enabled, otherwise we would have
         ///zillions of textures in the cache, each a few pixels different.
+        assert(_imp->uiContext);
         if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams;
             isCached = Natron::getTextureFromCache(key, &cachedFrameParams, &params->cachedFrame);
@@ -728,6 +715,12 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         ///The viewer is actually done with it.
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
         ramBuffer = params->cachedFrame->data();
+
+        {
+            QMutexLocker l(&_imp->lastRenderedTextureMutex);
+            _imp->lastRenderedTexture = params->cachedFrame;
+            _imp->lastRenderHash = nodeHash;
+        }
 #ifdef NATRON_LOG
         Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                    QString::number(key.getHash())).toStdString());
@@ -739,6 +732,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
         ///is very low, we better render again (and let the NodeCache do the work) rather than just
         ///overload the ViewerCache which may become slowe
+        assert(_imp->uiContext);
         if (byPassCache || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
             assert(!params->cachedFrame);
             // don't reallocate if we need less memory (avoid fragmentation)
@@ -765,7 +759,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 std::stringstream ss;
                 ss << "Failed to allocate a texture of ";
                 ss << printAsRAM(cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t)).toStdString();
-                Natron::errorDialog("Out of memory",ss.str());
+                Natron::errorDialog(QObject::tr("Out of memory").toStdString(),ss.str());
                 return StatFailed;
             }
             ///note that unlike  getImageFromCacheOrCreate in EffectInstance::renderRoI, we
@@ -928,7 +922,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             const RenderViewerArgs args(lastRenderedImage,
                                         textureRect,
                                         channels,
-                                        closestPowerOf2,
+                                        1,
                                         bitDepth,
                                         gain,
                                         offset,
@@ -993,7 +987,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             const RenderViewerArgs args(lastRenderedImage,
                                         textureRect,
                                         channels,
-                                        closestPowerOf2,
+                                        1,
                                         bitDepth,
                                         gain,
                                         offset,
@@ -1190,18 +1184,18 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                             r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
                             g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
                             b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.) ;
-                            a = Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]);
+                            a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
                             break;
                         case Natron::ImageComponentRGB:
                             r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
                             g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
                             b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
-                            a = 255;
+                            a = (src_pixels ? 255 : 0);
                             break;
                         case Natron::ImageComponentAlpha:
                             r = src_pixels ? src_pixels[srcIndex] : 0.;
                             g = b = r;
-                            a = 255;
+                            a = src_pixels ? 255 : 0;
                             break;
                         default:
                             assert(false);
@@ -1583,7 +1577,8 @@ ViewerInstance::onGainChanged(double exp)
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsGain = exp;
     }
-    if((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
+    assert(_imp->uiContext);
+    if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false,true);
     } else {
@@ -1642,21 +1637,12 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
     
     _imp->viewerParamsLut = colorspace;
 
+    assert(_imp->uiContext);
     if ((_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE  || !_imp->uiContext->supportsGLSL())
        && input(activeInput()) != NULL && !getApp()->getProject()->isLoadingProject()) {
         refreshAndContinueRender(false,true);
     } else {
         _imp->uiContext->redraw();
-    }
-}
-
-void
-ViewerInstance::onViewerCacheFrameAdded()
-{
-    // always running in the main thread
-    assert(qApp && qApp->thread() == QThread::currentThread());
-    if (getApp()->getTimeLine()) {
-        emit addedCachedFrame(getApp()->getTimeLine()->currentFrame());
     }
 }
 
@@ -1752,13 +1738,25 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
 bool
 ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex)
 {
+    
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
-    QMutexLocker l(&_imp->lastRenderedImageMutex);
-    if (!_imp->lastRenderedImage[textureIndex]) {
-        return false;
+    
+    ///Convert to pixel coords
+    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
+    int xPixel = x,yPixel = y;
+    if (mipMapLevel != 0) {
+        xPixel /= (1 << mipMapLevel);
+        yPixel /= (1 << mipMapLevel);
+    }
+    
+    
+    boost::shared_ptr<Image> img;
+    {
+        QMutexLocker l(&_imp->lastRenderedImageMutex);
+        img = _imp->lastRenderedImage[textureIndex];
     }
     
     ViewerColorSpace lut;
@@ -1766,9 +1764,30 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
         QMutexLocker l(&_imp->viewerParamsMutex);
         lut = _imp->viewerParamsLut;
     }
+    
+    if (!img || img->getMipMapLevel() != mipMapLevel) {
+        double colorGPU[4];
+        _imp->uiContext->getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
+        *a = colorGPU[3];
+        if (forceLinear && lut != Linear) {
+            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(lut);
+
+            *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
+            *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
+            *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
+            
+        } else {
+            *r = colorGPU[0];
+            *g = colorGPU[1];
+            *b = colorGPU[2];
+        }
+        return true;
+    }
+    
+    
     const Natron::Color::Lut* dstColorSpace = lutFromColorspace(lut);
     
-    Natron::ImageBitDepth depth = _imp->lastRenderedImage[textureIndex]->getBitDepth();
+    Natron::ImageBitDepth depth = img->getBitDepth();
     bool queried = true;
     switch (depth) {
         case IMAGE_BYTE: {
@@ -1778,7 +1797,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
                 srcColorSpace = 0;
                 dstColorSpace = 0;
             }
-            queried = getColorAtInternal<unsigned char, 255>(_imp->lastRenderedImage[textureIndex].get(), x, y,forceLinear,
+            queried = getColorAtInternal<unsigned char, 255>(img.get(), xPixel, yPixel,forceLinear,
                                                              srcColorSpace,
                                                              dstColorSpace,r, g, b, a);
         }   break;
@@ -1790,7 +1809,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
                 dstColorSpace = 0;
             }
 
-            queried = getColorAtInternal<unsigned short, 65535>(_imp->lastRenderedImage[textureIndex].get(), x, y, forceLinear,
+            queried = getColorAtInternal<unsigned short, 65535>(img.get(), xPixel, yPixel, forceLinear,
                                                                 srcColorSpace,
                                                                 dstColorSpace,r, g, b, a);
         }   break;
@@ -1801,7 +1820,7 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
                 srcColorSpace = 0;
                 dstColorSpace = 0;
             }
-            queried = getColorAtInternal<float, 1>(_imp->lastRenderedImage[textureIndex].get(), x, y,forceLinear,
+            queried = getColorAtInternal<float, 1>(img.get(), xPixel, yPixel,forceLinear,
                                                    srcColorSpace,
                                                    dstColorSpace, r, g, b, a);
         }   break;
@@ -1826,6 +1845,7 @@ ViewerInstance::supportsGLSL() const
     ///This is a short-cut, this is primarily used when the user switch the
     /// texture mode in the preferences menu. If the hardware doesn't support GLSL
     /// it returns false, true otherwise. @see Settings::onKnobValueChanged
+    assert(_imp->uiContext);
     return _imp->uiContext->supportsGLSL();
 }
 
@@ -1834,6 +1854,7 @@ ViewerInstance::redrawViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(_imp->uiContext);
     _imp->uiContext->redraw();
 }
 
@@ -1877,7 +1898,19 @@ ViewerInstance::getMipMapLevel() const
     return _imp->viewerMipMapLevel;
 
 }
-  
+
+int
+ViewerInstance::getMipMapLevelCombinedToZoomFactor() const
+{
+    int mmLvl = getMipMapLevel();
+    assert(_imp->uiContext);
+    double factor = _imp->uiContext->getZoomFactor();
+    if (factor > 1) {
+        factor = 1;
+    }
+    mmLvl = std::max((double)mmLvl,-std::ceil(std::log(factor)/M_LN2));
+    return mmLvl;
+}
 
 ViewerInstance::DisplayChannels
 ViewerInstance::getChannels() const
@@ -1896,6 +1929,7 @@ void ViewerInstance::addAcceptedComponents(int /*inputNb*/,std::list<Natron::Ima
 
 int ViewerInstance::getCurrentView() const
 {
+    assert(_imp->uiContext);
     return _imp->uiContext->getCurrentView();
 }
 
@@ -1953,11 +1987,18 @@ void ViewerInstance::setInputB(int inputNb)
 
 bool ViewerInstance::isFrameRangeLocked() const
 {
-    return _imp->uiContext->isFrameRangeLocked();
+    return _imp->uiContext ? _imp->uiContext->isFrameRangeLocked() : true;
 }
 
 void ViewerInstance::clearLastRenderedTexture()
 {
-    QMutexLocker l(&_imp->lastRenderedTextureMutex);
-    _imp->lastRenderedTexture.reset();
+    {
+        QMutexLocker l(&_imp->lastRenderedTextureMutex);
+        _imp->lastRenderedTexture.reset();
+    }
+    {
+        QMutexLocker l(&_imp->lastRenderedImageMutex);
+        _imp->lastRenderedImage[0].reset();
+        _imp->lastRenderedImage[1].reset();
+    }
 }

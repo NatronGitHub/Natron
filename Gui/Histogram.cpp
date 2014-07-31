@@ -256,20 +256,20 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     _imp->rightClickMenu = new QMenu(this);
     _imp->rightClickMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     
-    _imp->histogramSelectionMenu = new QMenu("Viewer target",_imp->rightClickMenu);
+    _imp->histogramSelectionMenu = new QMenu(tr("Viewer target"),_imp->rightClickMenu);
     _imp->histogramSelectionMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->histogramSelectionMenu->menuAction());
     
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
     
-    _imp->viewerCurrentInputMenu = new QMenu("Viewer input",_imp->rightClickMenu);
+    _imp->viewerCurrentInputMenu = new QMenu(tr("Viewer input"),_imp->rightClickMenu);
     _imp->viewerCurrentInputMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->viewerCurrentInputMenu->menuAction());
     
     _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
     
     QAction* inputAAction = new QAction(_imp->viewerCurrentInputMenu);
-    inputAAction->setText("Input A");
+    inputAAction->setText(tr("Input A"));
     inputAAction->setData(0);
     inputAAction->setCheckable(true);
     inputAAction->setChecked(true);
@@ -278,7 +278,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     _imp->viewerCurrentInputMenu->addAction(inputAAction);
     
     QAction* inputBAction = new QAction(_imp->viewerCurrentInputMenu);
-    inputBAction->setText("Input B");
+    inputBAction->setText(tr("Input B"));
     inputBAction->setData(1);
     inputBAction->setCheckable(true);
     inputBAction->setChecked(false);
@@ -286,7 +286,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
     
-    _imp->modeMenu = new QMenu("Display mode",_imp->rightClickMenu);
+    _imp->modeMenu = new QMenu(tr("Display mode"),_imp->rightClickMenu);
     _imp->modeMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->modeMenu->menuAction());
     
@@ -297,7 +297,7 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     QObject::connect(_imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()));
     _imp->rightClickMenu->addAction(_imp->fullImage);
     
-    _imp->filterMenu = new QMenu("Smoothing",_imp->rightClickMenu);
+    _imp->filterMenu = new QMenu(tr("Smoothing"),_imp->rightClickMenu);
     _imp->filterMenu->setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
     _imp->rightClickMenu->addAction(_imp->filterMenu->menuAction());
     
@@ -342,21 +342,21 @@ Histogram::Histogram(Gui* gui, const QGLWidget* shareWidget)
     
     _imp->filterActions = new QActionGroup(_imp->filterMenu);
     QAction* noSmoothAction = new QAction(_imp->filterActions);
-    noSmoothAction->setText("Small");
+    noSmoothAction->setText(tr("Small"));
     noSmoothAction->setData(1);
     noSmoothAction->setCheckable(true);
     noSmoothAction->setChecked(true);
     _imp->filterActions->addAction(noSmoothAction);
     
     QAction* size3Action = new QAction(_imp->filterActions);
-    size3Action->setText("Medium");
+    size3Action->setText(tr("Medium"));
     size3Action->setData(3);
     size3Action->setCheckable(true);
     size3Action->setChecked(false);
     _imp->filterActions->addAction(size3Action);
     
     QAction* size5Action = new QAction(_imp->filterActions);
-    size5Action->setText("High");
+    size5Action->setText(tr("High"));
     size5Action->setData(5);
     size5Action->setCheckable(true);
     size5Action->setChecked(false);
@@ -435,7 +435,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         if (ret) {
             if (!useImageRoD) {
                 if (lastSelectedViewer) {
-                    *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD());
+                    *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD(),ret->getMipMapLevel());
                 }
             } else {
                 *imagePortion = ret->getPixelRoD();
@@ -450,7 +450,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
                 ret = (*it)->getInternalNode()->getLastRenderedImage(textureIndex);
                 if (ret) {
                     if (!useImageRoD) {
-                        *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD());
+                        *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getPixelRoD(),ret->getMipMapLevel());
                     } else {
                         *imagePortion = ret->getPixelRoD();
                     }
@@ -496,7 +496,7 @@ void Histogram::populateViewersChoices()
     _imp->histogramSelectionMenu->addAction(noneAction);
     
     QAction* currentAction = new QAction(_imp->histogramSelectionGroup);
-    currentAction->setText("Current Viewer");
+    currentAction->setText(tr("Current Viewer"));
     currentAction->setData(1);
     currentAction->setCheckable(true);
     currentAction->setChecked(false);
@@ -613,7 +613,7 @@ void Histogram::initializeGL()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Natron::errorDialog("OpenGL/GLEW error",
+        Natron::errorDialog(tr("OpenGL/GLEW error").toStdString(),
                             (const char*)glewGetErrorString(err));
     }
     

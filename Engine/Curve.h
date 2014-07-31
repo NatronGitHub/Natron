@@ -27,6 +27,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+#define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
@@ -112,10 +113,7 @@ struct KeyFrame_compare_time {
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
-/**
-  * @brief A CurvePath is a list of chained curves. Each curve is a set of 2 keyFrames and has its
-  * own interpolation method (that can differ from other curves).
-**/
+
 class KnobI;
 struct CurvePrivate;
 class RectD;
@@ -187,6 +185,16 @@ public:
     void removeKeyFrameWithIndex(int index);
     
     bool getNearestKeyFrameWithTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the previous keyframe to the given time, which doesn't have to be a keyframe time
+     **/
+    bool getPreviousKeyframeTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Returns the next keyframe to the given time, which doesn't have to be a keyframe time
+     **/
+    bool getNextKeyframeTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
 

@@ -277,18 +277,7 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
             context = kOfxImageEffectContextWriter;
             return;
         }
-        
-        ////Special case for the "Draw" nodes: default to paint context.
-        ////We don't want to do this for other nodes that support the paint context.
-        ////For example we don't want to instantiate the transform node in the paint context
-        ////Maybe we should just always instantiate in paint context and deal with it with
-        ////the GUI
-        found = contexts.find(kOfxImageEffectContextPaint);
-        bool paint = found != contexts.end();
-        if (paint && QString(pluginID.c_str()).contains("RotoOFX",Qt::CaseInsensitive)) {
-            context = kOfxImageEffectContextPaint;
-            return;
-        }
+     
         
         found = contexts.find(kOfxImageEffectContextGeneral);
         bool general = found != contexts.end();
@@ -296,11 +285,18 @@ void Natron::OfxHost::getPluginAndContextByID(const std::string& pluginID,  OFX:
             context = kOfxImageEffectContextGeneral;
             return;
         }
-        
+                
         found = contexts.find(kOfxImageEffectContextFilter);
         bool filter = found != contexts.end();
         if (filter) {
             context = kOfxImageEffectContextFilter;
+            return;
+        }
+        
+        found = contexts.find(kOfxImageEffectContextPaint);
+        bool paint = found != contexts.end();
+        if (paint) {
+            context = kOfxImageEffectContextPaint;
             return;
         }
         
@@ -348,8 +344,7 @@ void Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path) {
 const TCHAR *getStdOFXPluginPath(const std::string &hostId);
 #endif
 
-void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
-                                     std::map<std::string,std::vector<std::string> >* readersMap,
+void Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::string> >* readersMap,
                                      std::map<std::string,std::vector<std::string> >* writersMap)
 {
     
@@ -450,17 +445,16 @@ void Natron::OfxHost::loadOFXPlugins(std::vector<Natron::Plugin*>* plugins,
         }
         
         _ofxPlugins[pluginId] = OFXPluginEntry(openfxId.toStdString(), grouping);
-
-        emit toolButtonAdded(groups,pluginId.c_str(), pluginLabel.c_str(), iconFilename, groupIconFilename);
-        QMutex* pluginMutex = NULL;
-        if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
-            pluginMutex = new QMutex(QMutex::Recursive);
-        }
-        Natron::Plugin* plugin = new Natron::Plugin(new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
-                                                    pluginId.c_str(),pluginLabel.c_str(),pluginMutex,p->getVersionMajor(),
-                                                    p->getVersionMinor());
-        plugins->push_back(plugin);
         
+        appPTR->registerPlugin(groups,
+                               pluginId.c_str(),
+                               pluginLabel.c_str(),
+                               iconFilename,
+                               groupIconFilename,
+                               new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
+                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
+                               p->getVersionMajor(), p->getVersionMinor());
+       
         
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,
         ///use it to fill the readersMap and writersMap

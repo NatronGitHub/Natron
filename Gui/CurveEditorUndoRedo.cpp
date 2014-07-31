@@ -38,8 +38,12 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor, CurveGui* curve,
 void AddKeysCommand::addOrRemoveKeyframe(bool add) {
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(_curve->getKnob()->getKnob());
     
+    _curve->getKnob()->getKnob()->blockEvaluation();
+    assert(!_keys.empty());
     for(U32 i = 0 ; i < _keys.size();++i){
-        _curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
+        if (i == _keys.size() - 1) {
+            _curve->getKnob()->getKnob()->unblockEvaluation();
+        }
         if(add){
             if (isParametric) {
                 Natron::Status st = isParametric->addControlPoint(_curve->getDimension(), _keys[i].getTime(),_keys[i].getValue());
@@ -57,10 +61,7 @@ void AddKeysCommand::addOrRemoveKeyframe(bool add) {
             }
         }
     }
-    for(U32 i = 0 ; i < _keys.size();++i){
-        _curve->getKnob()->getKnob()->endValueChange();
-    }
-    
+   
     _curveWidget->update();
     
     setText(QObject::tr("Add multiple keyframes"));
@@ -85,9 +86,16 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,const std::vector<std::
 void RemoveKeysCommand::addOrRemoveKeyframe(bool add){
     ///this can be called either by a parametric curve widget or by the global curve editor, so we need to handle the different
     ///cases here. Maybe this is bad design, i don't know how we could change it otherwise.
+    std::list<KnobI*> differentKnobs;
+    for(U32 i = 0 ; i < _keys.size();++i){
+        KnobI* k = _keys[i].first->getKnob()->getKnob().get();
+        if (std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end()) {
+            differentKnobs.push_back(k);
+            k->blockEvaluation();
+        }
+    }
     
     for(U32 i = 0 ; i < _keys.size();++i){
-        _keys[i].first->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
         if(add){
             if (_keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic()) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>(_keys[i].first->getKnob()->getKnob());
@@ -107,8 +115,9 @@ void RemoveKeysCommand::addOrRemoveKeyframe(bool add){
             }
         }
     }
-    for(U32 i = 0 ; i < _keys.size();++i){
-        _keys[i].first->getKnob()->getKnob()->endValueChange();
+    for(std::list<KnobI*>::iterator it = differentKnobs.begin();it!=differentKnobs.end();++it) {
+        (*it)->unblockEvaluation();
+        (*it)->getHolder()->evaluate_public(*it, true, Natron::USER_EDITED);
     }
     
     _curveWidget->update();
@@ -122,115 +131,106 @@ void RemoveKeysCommand::redo(){
     addOrRemoveKeyframe(false);
 }
 
+namespace  {
+    static bool selectedKeyLessFunctor(const KeyPtr& lhs,const KeyPtr& rhs)
+    {
+        return lhs->key.getTime() < rhs->key.getTime();
+    }
+}
+
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-MoveKeysCommand::MoveKeysCommand(CurveWidget* editor, const KeyMoveV &keys, double dt, double dv,bool updateOnFirstRedo,
+MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,const SelectedKeys &keys, double dt, double dv,bool updateOnFirstRedo,
                                  QUndoCommand *parent )
 : QUndoCommand(parent)
 , _firstRedoCalled(false)
 , _updateOnFirstRedo(updateOnFirstRedo)
-, _merge(!keys.empty())
 , _dt(dt)
 , _dv(dv)
 , _keys(keys)
-, _curveWidget(editor)
+, _widget(widget)
 {
+    ///sort keys by increasing time
+    _keys.sort(selectedKeyLessFunctor);
 }
 
 static void
-moveKey(const KeyMove&k, double dt, double dv, bool isundo, std::vector<int>& newKeyIndexes)
-{
-    k.curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
+moveKey(KeyPtr&k, double dt, double dv)
+{    
+    std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
     
-    std::pair<double,double> curveYRange = k.curve->getInternalCurve()->getCurveYRange();
-    
-    double newX = k.key.getTime() + dt;
-    double newY = k.key.getValue() + dv;
-    
-    if (newY > curveYRange.second) {
-        newY = k.key.getValue();
-    } else if (newY < curveYRange.first) {
-        newY = k.key.getValue();
+    double newX = k->key.getTime() + dt;
+    double newY = k->key.getValue() + dv;
+    boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
+    if (curve->areKeyFramesValuesClampedToIntegers()) {
+        newY = std::floor(newY + 0.5);
+    } else if (curve->areKeyFramesValuesClampedToBooleans()) {
+        newY = newY < 0.5 ? 0 : 1;
     }
     
-    int keyframeIndex = k.curve->getInternalCurve()->keyFrameIndex(isundo ? newX : k.key.getTime());
+    if (newY > curveYRange.second) {
+        newY = k->key.getValue();
+    } else if (newY < curveYRange.first) {
+        newY = k->key.getValue();
+    }
+    
+    double oldTime = k->key.getTime();
+    int keyframeIndex = curve->keyFrameIndex(oldTime);
     int newIndex;
     
-    k.curve->getInternalCurve()->setKeyFrameValueAndTime(isundo ? k.key.getTime() : newX,
-                                                         isundo ? k.key.getValue() : newY,
-                                                         keyframeIndex, &newIndex);
-    newKeyIndexes.push_back(newIndex);
+    k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
+    k->curve->getKnob()->onKeyFrameMoved(oldTime, k->key.getTime());
 }
 
-void MoveKeysCommand::move(double dt, double dv, bool isundo)
+void MoveKeysCommand::move(double dt, double dv)
 {
+    
+    std::list<KnobI*> differentKnobs;
+    for (SelectedKeys::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
+        KnobI* k = (*it)->curve->getKnob()->getKnob().get();
+        if (std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end()) {
+            differentKnobs.push_back(k);
+            k->blockEvaluation();
+        }
+    }
+
     SelectedKeys newSelectedKeys;
-    std::vector<int> newKeyIndexes;
     try {
-        if(dt < 0) {
-            for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
-                moveKey(*it, dt, dv, isundo, newKeyIndexes);
+        if(dt <= 0) {
+            for (SelectedKeys::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
+                moveKey(*it, dt, dv);
             }
         } else {
-            for(KeyMoveV::reverse_iterator it = _keys.rbegin(); it!= _keys.rend(); ++it){
-                moveKey(*it, dt, dv, isundo, newKeyIndexes);
+            for(SelectedKeys::reverse_iterator it = _keys.rbegin(); it!= _keys.rend(); ++it){
+                moveKey(*it, dt, dv);
             }
         }
     } catch (const std::exception& e) {
         qDebug() << "The keyframe set has changed since this action. This is probably because another user interaction is not "
         "linked to undo/redo stack.";
-        return;
     }
     
     
-    //copy back the modified keyframes to the selectd keys
-    assert(newKeyIndexes.size() == _keys.size());
-    int i = 0;
-    for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it, ++i) {
-        ///we must find the keyframe that has just been inserted into the curve
-        const Curve& c = *(it->curve->getInternalCurve());
-        KeyFrame foundKey;
-        bool found = c.getKeyFrameWithIndex(newKeyIndexes[i], &foundKey);
-        if (found) {
-            newSelectedKeys.insert(SelectedKey(it->curve, foundKey));
+    for(std::list<KnobI*>::iterator it = differentKnobs.begin();it!=differentKnobs.end();++it) {
+        (*it)->unblockEvaluation();
+        if (_firstRedoCalled || _updateOnFirstRedo) {
+            (*it)->getHolder()->evaluate_public(*it, true, Natron::USER_EDITED);
         }
-        it->curve->getKnob()->getKnob()->endValueChange();
     }
-    if (!_keys.empty()) {
-        _curveWidget->setSelectedKeys(newSelectedKeys);
-    }
+        
+    _widget->refreshSelectedKeys();
+
 }
 
 void MoveKeysCommand::undo()
 {
-    move(_dt,_dv,true);
+    move(-_dt,-_dv);
     setText(QObject::tr("Move multiple keys"));
 }
 
 void MoveKeysCommand::redo()
 {
-    ///For each knob, the old value of "evaluateOnChange" that we remember to set it back after the move.
-    std::map<KnobGui*, bool> oldEvaluateOnChange;
-    if (!_firstRedoCalled && !_updateOnFirstRedo) {
-        ///set all the knobs to setEvaluateOnChange(false) so that the node doesn't get to render.
-        ///remember to set it back afterwards
-        for (KeyMoveV::iterator it = _keys.begin(); it!= _keys.end(); ++it) {
-            KnobGui* knob = it->curve->getKnob();
-            assert(knob);
-            oldEvaluateOnChange.insert(std::make_pair(knob, knob->getKnob()->getEvaluateOnChange()));
-        }
-        
-        ///now set to false the evaluateOnChange
-        for (std::map<KnobGui*, bool>::iterator it = oldEvaluateOnChange.begin(); it!=oldEvaluateOnChange.end(); ++it) {
-            it->first->getKnob()->setEvaluateOnChange(false);
-        }
-    }
-    move(_dt,_dv,false);
-    if (!_firstRedoCalled && !_updateOnFirstRedo) {
-        for (std::map<KnobGui*, bool>::iterator it = oldEvaluateOnChange.begin(); it!=oldEvaluateOnChange.end(); ++it) {
-            it->first->getKnob()->setEvaluateOnChange(it->second);
-        }
-
-    }
+   
+    move(_dt,_dv);
     _firstRedoCalled = true;
     setText(QObject::tr("Move multiple keys"));
     
@@ -241,15 +241,15 @@ bool MoveKeysCommand::mergeWith(const QUndoCommand * command)
     const MoveKeysCommand* cmd = dynamic_cast<const MoveKeysCommand*>(command);
     if (cmd && cmd->id() == id()) {
         
-        //both commands are placeholders to tell we should stop merging, we merge them into one
-        if (!_merge && !cmd->_merge) {
-            return true;
-        } else if (!_merge && cmd->_merge) {
-            //the new cmd is not a placeholder, we break merging.
+        if (cmd->_keys.size() != _keys.size()) {
             return false;
-        } else if (!cmd->_merge) {
-            _merge = false;
-            //notify that we don't want to merge after this
+        }
+        
+        SelectedKeys::const_iterator itother = cmd->_keys.begin();
+        for (SelectedKeys::const_iterator it = _keys.begin(); it != _keys.end(); ++it,++itother) {
+            if (*itother != *it) {
+                return false;
+            }
         }
         
         _dt += cmd->_dt;
@@ -267,31 +267,42 @@ int  MoveKeysCommand::id() const
 
 
 //////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
-SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* editor,const std::vector< KeyInterpolationChange >& keys,
+SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* widget,const std::list< KeyInterpolationChange >& keys,
                                                          QUndoCommand *parent)
 : QUndoCommand(parent)
-, _oldInterp(keys)
-, _curveWidget(editor)
+, _keys(keys)
+, _widget(widget)
 {
 }
 
 void SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 {
-    SelectedKeys newSelectedKeys;
-    for (U32 i = 0; i < _oldInterp.size();++i) {
-        _oldInterp[i].curve->getKnob()->getKnob()->beginValueChange(Natron::USER_EDITED);
-        int keyframeIndex = _oldInterp[i].curve->getInternalCurve()->keyFrameIndex(_oldInterp[i].key.getTime());
-        if (undo) {
-            _oldInterp[i].key =  _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(_oldInterp[i].oldInterp, keyframeIndex);
-        } else {
-            _oldInterp[i].key = _oldInterp[i].curve->getInternalCurve()->setKeyFrameInterpolation(_oldInterp[i].newInterp, keyframeIndex);
+    
+    std::list<KnobI*> differentKnobs;
+    for (std::list< KeyInterpolationChange >::iterator it = _keys.begin();it!=_keys.end();++it) {
+        KnobI* k = it->key->curve->getKnob()->getKnob().get();
+        if (std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end()) {
+            differentKnobs.push_back(k);
+            k->blockEvaluation();
         }
-        newSelectedKeys.insert(SelectedKey(_oldInterp[i].curve,_oldInterp[i].key));
     }
-    for (U32 i = 0; i < _oldInterp.size();++i) {
-        _oldInterp[i].curve->getKnob()->getKnob()->endValueChange();
+
+    
+    for (std::list< KeyInterpolationChange >::iterator it = _keys.begin();it!=_keys.end();++it) {
+        int keyframeIndex = it->key->curve->getInternalCurve()->keyFrameIndex(it->key->key.getTime());
+        if (undo) {
+            it->key->key =  it->key->curve->getInternalCurve()->setKeyFrameInterpolation(it->oldInterp, keyframeIndex);
+        } else {
+            it->key->key = it->key->curve->getInternalCurve()->setKeyFrameInterpolation(it->newInterp, keyframeIndex);
+        }
     }
-    _curveWidget->setSelectedKeys(newSelectedKeys);
+    
+    for(std::list<KnobI*>::iterator it = differentKnobs.begin();it!=differentKnobs.end();++it) {
+        (*it)->unblockEvaluation();
+        (*it)->getHolder()->evaluate_public(*it, true, Natron::USER_EDITED);
+    }
+    
+    _widget->refreshSelectedKeys();
     setText(QObject::tr("Set multiple keys interpolation"));
 }
 

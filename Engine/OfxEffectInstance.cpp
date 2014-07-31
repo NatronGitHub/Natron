@@ -66,6 +66,87 @@ ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
 }
 #endif
 
+namespace  {
+    
+    /**
+     * @class This class is helpful to set thread-storage data on the clips of an effect
+     * When destroyed, it is removed from the clips, ensuring they are removed.
+     * It is to be instantiated right before calling the action that will need the per thread-storage
+     * This way even if exceptions are thrown, clip thread-storage will be purged.
+     **/
+    class ClipsThreadStorageSetter
+    {
+        OfxImageEffectInstance* effect;
+        bool skipDiscarding;
+        
+        bool mipmaplvlSet;
+        bool renderedImageSet;
+        bool viewSet;
+        bool outputRoDSet;
+        bool frameRangeSet;
+        
+    public:
+        
+        ClipsThreadStorageSetter(OfxImageEffectInstance* effect,
+                                 bool skipDiscarding, //< this is in case a recursive action is called
+                                 bool setMipMapLevel,
+                                 unsigned int mipMapLevel,
+                                 bool setRenderedImage,
+                                 const boost::shared_ptr<Natron::Image>& renderedImage,
+                                 bool setView,
+                                 int view,
+                                 bool setOutputRoD,
+                                 const RectI& rod,
+                                 bool setFrameRange,
+                                 double first,double last)
+        : effect(effect)
+        , skipDiscarding(skipDiscarding)
+        , mipmaplvlSet(setMipMapLevel)
+        , renderedImageSet(setRenderedImage)
+        , viewSet(setView)
+        , outputRoDSet(setOutputRoD)
+        , frameRangeSet(setFrameRange)
+        {
+            if (setMipMapLevel) {
+                effect->setClipsMipMapLevel(mipMapLevel);
+            }
+            if (setRenderedImage) {
+                effect->setClipsRenderedImage(renderedImage);
+            }
+            if (setView) {
+                effect->setClipsView(view);
+            }
+            if (setOutputRoD) {
+                effect->setClipsOutputRoD(rod);
+            }
+            if (setFrameRange) {
+                effect->setClipsFrameRange(first, last);
+            }
+        }
+        
+        ~ClipsThreadStorageSetter()
+        {
+            if (!skipDiscarding) {
+                if (mipmaplvlSet) {
+                    effect->discardClipsMipMapLevel();
+                }
+                if (renderedImageSet) {
+                    effect->discardClipsImage();
+                }
+                if (viewSet) {
+                    effect->discardClipsView();
+                }
+                if (outputRoDSet) {
+                    effect->discardClipsOutputRoD();
+                }
+                if (frameRangeSet) {
+                    effect->discardClipsFrameRange();
+                }
+            }
+        }
+    };
+}
+
 OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     : AbstractOfxEffectInstance(node)
     , effect_()
@@ -114,13 +195,14 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
         effect_->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
-        notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
+        
+        blockEvaluation();
+
         OfxStatus stat = effect_->populate();
         
         initializeContextDependentParams();
         
         effect_->addParamsToTheirParents();
-        notifyProjectEndKnobsValuesChanged();
 
         if (stat != kOfxStatOK) {
             throw std::runtime_error("Error while populating the Ofx image effect");
@@ -137,7 +219,11 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             getNode()->loadKnobs(*serialization);
         }
         
+        
+            
         stat = effect_->createInstanceAction();
+        unblockEvaluation();
+        
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");
         }
@@ -146,7 +232,12 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         if (!effect_->getClipPreferences()) {
            qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
-        
+#pragma message WARN("FIXME: Check here that bitdepth and components given by getClipPreferences are supported by the effect")
+        // FIXME: Check here that bitdepth and components given by getClipPreferences are supported by the effect.
+        // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
+        // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
+        // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
+
         // check that the plugin supports kOfxImageComponentRGBA for all the clips
         const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
         for (U32 i = 0; i < clips.size(); ++i) {
@@ -206,11 +297,25 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
         _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
         RenderScale s;
         effectInstance()->getRenderScaleRecursive(s.x, s.y);
-        effectInstance()->setClipsMipMapLevel(Natron::Image::getLevelFromScale(s.x));
-        effectInstance()->setClipsView(0);
-        _overlayInteract->createInstanceAction();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsView();
+        
+        {
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                     false,
+                                     true, //< setMipMapLevel ?
+                                     Image::getLevelFromScale(s.x),
+                                     false, //< setRenderedImage ?
+                                     boost::shared_ptr<Image>(),
+                                     true, //< setView ?
+                                     0,
+                                     false, //< setOutputRoD ?
+                                     RectI(),
+                                     false,
+                                     0,0);
+            
+            
+            _overlayInteract->createInstanceAction();
+            
+        }
         getApp()->redrawAllViewers();
     }
     ///for each param, if it has a valid custom interact, create it
@@ -428,7 +533,7 @@ bool OfxEffectInstance::isInputRotoBrush(int inputNb) const
     assert(inputNb < (int)inputs.size());
     
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
-    return inputs[inputs.size()-1-inputNb]->getName() == "Brush" && getNode()->isRotoNode();
+    return inputs[inputs.size()-1-inputNb]->getName() == "Roto" && getNode()->isRotoNode();
 }
 
 /// the smallest RectI enclosing the given RectD
@@ -576,22 +681,36 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     assert(effect_);
     
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    effectInstance()->setClipsMipMapLevel(mipMapLevel);
-    effectInstance()->setClipsView(view);
-
+    
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     
     bool useScaleOne = !supportsRenderScale();
-    
     OfxRectD ofxRod;
-    OfxStatus stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
+    OfxStatus stat;
     
-    if (getRecursionLevel() <= 1) {
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsView();
-    } else {
-        qDebug() << "getRegionOfDefinition cannot be called recursively as an action. Please check this.";
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "getRegionOfDefinition cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 skipDiscarding,
+                                 true, //< setMipMapLevel ?
+                                 mipMapLevel,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 false, //< setOutputRoD ?
+                                 RectI(),
+                                 false, //< setFrameRange ?
+                                 0,0);
+        
+        
+        
+        stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
     }
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
@@ -632,36 +751,52 @@ OfxRectD rectToOfxRect2D(const RectI b){
 
 EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,
                                                               const RectI& outputRoD,
-                                                              const RectI& renderWindow,int view) {
-    
+                                                              const RectI& renderWindow,
+                                                              int view)
+{
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
-    if(!_initialized){
+    if (!_initialized) {
         return ret;
     }
-    
+    assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
+
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    ///before calling getRoIaction set the relevant infos on the clips
-    effectInstance()->setClipsMipMapLevel(mipMapLevel);
-    effectInstance()->setClipsView(view);
-    effectInstance()->setClipsOutputRoD(outputRoD);
-    
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     
     bool useScaleOne = !supportsRenderScale();
+    OfxStatus stat;
     
-    OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, useScaleOne ? scaleOne : scale,
-                                                        rectToOfxRect2D(renderWindow), inputRois);
+    ///before calling getRoIaction set the relevant infos on the clips
+  
     
-    if (getRecursionLevel() <= 1) {
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsView();  
-        effectInstance()->discardClipsOutputRoD();
-    } else {
-        qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 skipDiscarding,
+                                 true, //< setMipMapLevel ?
+                                 mipMapLevel,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 outputRoD,
+                                 false,
+                                 0,0); //< setFrameRange ?
+        
+        stat = effect_->getRegionOfInterestAction((OfxTime)time, useScaleOne ? scaleOne : scale,
+                                                  rectToOfxRect2D(renderWindow), inputRois);
+        
     }
     
+
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         appPTR->writeToOfxLog_mt_safe(QString(getNode()->getName_mt_safe().c_str()) + "Failed to specify the region of interest from inputs.");
     }
@@ -695,7 +830,7 @@ Natron::EffectInstance::FramesNeededMap OfxEffectInstance::getFramesNeeded(Seque
     
     OfxStatus stat = effect_->getFrameNeededAction((OfxTime)time, inputRanges);
     if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        Natron::errorDialog(getName(), "Failed to specify the frame ranges needed from inputs.");
+        Natron::errorDialog(getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString());
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it!=inputRanges.end(); ++it) {
             int inputNb = dynamic_cast<OfxClipInstance*>(it->first)->getInputNb();
@@ -734,18 +869,25 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
             //infinite if there are no non optional input clips.
             *first = INT_MIN;
             *last = INT_MAX;
-        }else{
+        } else {
             //the union of all the frame ranges of the non optional input clips.
-            bool firstValidClip = true;
+            bool firstValidInput = true;
             *first = INT_MIN;
             *last = INT_MAX;
-            for (int i = 0; i < nthClip ; ++i) {
-                OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
-                assert(clip);
-                if (!clip->isOutput() && !clip->isOptional() && (clip->getName() != "Brush" || !getNode()->isRotoNode())) {
-                    double f,l;
-                    clip->getFrameRange(f, l);
-                    if (!firstValidClip) {
+            
+            int inputsCount = maximumInputs();
+            
+            ///Uncommented the isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
+            ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
+            ///not taking optional inputs into accounts messes it up.
+            for (int i = 0; i< inputsCount; ++i) {
+                
+                //if (!isInputOptional(i)) {
+                EffectInstance* inputEffect = input_other_thread(i);
+                if (inputEffect) {
+                    SequenceTime f,l;
+                    inputEffect->getFrameRange_public(&f, &l);
+                    if (!firstValidInput) {
                         if (f < *first && f != INT_MIN) {
                             *first = f;
                         }
@@ -753,14 +895,17 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
                             *last = l;
                         }
                     } else {
-                        firstValidClip = false;
+                        firstValidInput = false;
                         *first = f;
                         *last = l;
                     }
                 }
+                // }
+                
             }
         }
     }
+    
 }
 
 bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
@@ -780,13 +925,34 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
     bool useScaleOne = !supportsRenderScale();
     
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
-    effectInstance()->setClipsMipMapLevel(mipmapLevel);
-    effectInstance()->setClipsView(view);
+    OfxStatus stat ;
     
-    OfxStatus stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,useScaleOne ? scaleOne : scale,inputclip);
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "isIdenity cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 skipDiscarding,
+                                 true, //< setMipMapLevel ?
+                                 mipmapLevel,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 false, //< setOutputRoD ?
+                                 RectI(),
+                                 false,
+                                 0,0); //< setFrameRange ?
+        
+        stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,useScaleOne ? scaleOne : scale,inputclip);
+        
+    }
     
-    effectInstance()->discardClipsView();
-    effectInstance()->discardClipsMipMapLevel();
+    
+    
+
     
     if(stat == kOfxStatOK){
         OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
@@ -819,14 +985,32 @@ Natron::Status OfxEffectInstance::beginSequenceRender(SequenceTime first,Sequenc
     bool useScaleOne = !supportsRenderScale();
     
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
-    effectInstance()->setClipsMipMapLevel(mipmapLevel);
-    effectInstance()->setClipsView(view);
-
     
-    OfxStatus stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+    OfxStatus stat ;
     
-    effectInstance()->discardClipsView();
-    effectInstance()->discardClipsMipMapLevel();
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "beginRenderAction cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 skipDiscarding,
+                                 true, //< setMipMapLevel ?
+                                 mipmapLevel,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 false, //< setOutputRoD ?
+                                 RectI(),
+                                 false,
+                                 0,0); //< setFrameRange ?
+        
+        stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+        
+    }
+    
 
     
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
@@ -843,16 +1027,34 @@ Natron::Status OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceT
     bool useScaleOne = !supportsRenderScale();
     
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
-    effectInstance()->setClipsMipMapLevel(mipmapLevel);
-    effectInstance()->setClipsView(view);
+    
+    OfxStatus stat ;
+    
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "endRenderAction cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 skipDiscarding,
+                                 true, //< setMipMapLevel ?
+                                 mipmapLevel,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 false, //< setOutputRoD ?
+                                 RectI(),
+                                 false,
+                                 0,0); //< setFrameRange ?
+        
+        stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+        
+    }
+    
+    
 
-    
-    OfxStatus stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
-    
-    effectInstance()->discardClipsView();
-    effectInstance()->discardClipsMipMapLevel();
-
-    
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
@@ -876,21 +1078,38 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     ///before calling render, set the render scale thread storage for each clip
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    effectInstance()->setClipsMipMapLevel(mipMapLevel);
-    effectInstance()->setClipsRenderedImage(output);
-    
     ///This is passed to the render action to plug-ins that don't support render scale
     RenderScale scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     
     bool useScaleOne = !supportsRenderScale();
     
-    stat = effect_->renderAction((OfxTime)time, field, ofxRoI,useScaleOne ? scaleOne : scale,
-                                 isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
     
-    effectInstance()->discardClipsMipMapLevel();
-    effectInstance()->discardClipsView();
-    effectInstance()->discardClipsImage();
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            qDebug() << "renderAction cannot be called recursively as an action. Please check this.";
+            skipDiscarding = true;
+        }
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 skipDiscarding,
+                                 true, //< setMipMapLevel ?
+                                 mipMapLevel,
+                                 true, //< setRenderedImage ?
+                                 output,
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 output->getRoD(),
+                                 false, //< setFrameRange ?
+                                 0,0);
+        
+        stat = effect_->renderAction((OfxTime)time, field, ofxRoI,useScaleOne ? scaleOne : scale,
+                                     isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
+        
+        
+    }
+    
     
     if (stat != kOfxStatOK) {
         return StatFailed;
@@ -950,20 +1169,40 @@ void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/,const Re
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
-        int view;
+        
+        
+        
         if (getRecursionLevel() == 1) {
-            effectInstance()->getViewRecursive(view);
-            effectInstance()->setClipsView(view);
-            effectInstance()->setClipsMipMapLevel(0);
-            effectInstance()->setClipsOutputRoD(rod);
-        }
-        _overlayInteract->drawAction(time, rs);
-        if (getRecursionLevel() == 1) {
-            effectInstance()->discardClipsView();
-            effectInstance()->discardClipsMipMapLevel();
+            int view = getCurrentViewRecursive();
+
+            bool skipDiscarding = false;
+            if (getRecursionLevel() > 1) {
+                
+                ///This happens sometimes because of dialogs popping from the request of a plug-in (inside an action)
+                ///and making the mainwindow loose focus, hence forcing a new paint event
+                //qDebug() << "drawAction cannot be called recursively as an action. Please check this.";
+                skipDiscarding = true;
+            }
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                     skipDiscarding,
+                                     true, //< setMipMapLevel ?
+                                     0,
+                                     false, //< setRenderedImage ?
+                                     boost::shared_ptr<Image>(),
+                                     true, //< setView ?
+                                     view,
+                                     true, //< setOutputRoD ?
+                                     rod,
+                                     false,
+                                     0,0); //< setFrameRange ?
             
-            effectInstance()->discardClipsOutputRoD();
+            _overlayInteract->drawAction(time, rs);
+            
+            
+        } else {
+            _overlayInteract->drawAction(time, rs);
         }
+        
     }
 }
 
@@ -988,18 +1227,26 @@ bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,con
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         
-        OfxTime time = effect_->getFrameRecursive();
+        OfxTime time = getCurrentFrameRecursive();
         
-        int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+       int view = getCurrentViewRecursive();
+        
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 false,
+                                 true, //< setMipMapLevel ?
+                                 0,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 rod,
+                                 false,
+                                 0,0); //< setFrameRange ?
+        
+
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
-        
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+ 
         
         if (stat == kOfxStatOK) {
             _penDown = true;
@@ -1023,21 +1270,29 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        OfxTime time = effect_->getFrameRecursive();
-        int view;
+        OfxTime time = getCurrentFrameRecursive();
+        OfxStatus stat;
         if (getRecursionLevel() == 1) {
-            effectInstance()->getViewRecursive(view);
-            effectInstance()->setClipsView(view);
-            effectInstance()->setClipsMipMapLevel(0);
-            effectInstance()->setClipsOutputRoD(rod);
+            int view = getCurrentViewRecursive();
+
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                     false,
+                                     true, //< setMipMapLevel ?
+                                     0,
+                                     false, //< setRenderedImage ?
+                                     boost::shared_ptr<Image>(),
+                                     true, //< setView ?
+                                     view,
+                                     true, //< setOutputRoD ?
+                                     rod,
+                                     false,
+                                     0,0); //< setFrameRange ?
+            stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
+
+        } else {
+            stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         }
-        OfxStatus stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
-        
-        if (getRecursionLevel() == 1) {
-            effectInstance()->discardClipsView();
-            effectInstance()->discardClipsMipMapLevel();
-            effectInstance()->discardClipsOutputRoD();
-        }
+    
         
         if (stat == kOfxStatOK) {
             return true;
@@ -1061,18 +1316,24 @@ bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        OfxTime time = effect_->getFrameRecursive();
+        OfxTime time = getCurrentFrameRecursive();
         
-        int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        int view = getCurrentViewRecursive();
+        
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 false,
+                                 true, //< setMipMapLevel ?
+                                 0,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 rod,
+                                 false,
+                                 0,0); //< setFrameRange ?
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
         
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
         if (stat == kOfxStatOK) {
             _penDown = false;
             return true;
@@ -1090,19 +1351,24 @@ bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Nat
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
-        OfxTime time = effect_->getFrameRecursive();
+        OfxTime time = getCurrentFrameRecursive();
         QByteArray keyStr;
         
-        int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        int view = getCurrentViewRecursive();
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 false,
+                                 true, //< setMipMapLevel ?
+                                 0,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 rod,
+                                 false,
+                                 0,0); //< setFrameRange ?
         OfxStatus stat = _overlayInteract->keyDownAction(time, rs, (int)key, keyStr.data());
-        
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1119,19 +1385,24 @@ bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natro
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
-        OfxTime time = effect_->getFrameRecursive();
+        OfxTime time = getCurrentFrameRecursive();
         QByteArray keyStr;
         
-        int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        int view = getCurrentViewRecursive();
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 false,
+                                 true, //< setMipMapLevel ?
+                                 0,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 rod,
+                                 false,
+                                 0,0); //< setFrameRange ?
         OfxStatus stat = _overlayInteract->keyUpAction(time, rs, (int)key, keyStr.data());
-        
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+      
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1149,19 +1420,24 @@ bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,N
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
-        OfxTime time = effect_->getFrameRecursive();
+        OfxTime time = getCurrentFrameRecursive();
         QByteArray keyStr;
         
-        int view;
-        effectInstance()->getViewRecursive(view);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsMipMapLevel(0);
-        effectInstance()->setClipsOutputRoD(rod);
+        int view = getCurrentViewRecursive();
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 false,
+                                 true, //< setMipMapLevel ?
+                                 0,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 rod,
+                                 false,
+                                 0,0); //< setFrameRange ?
         OfxStatus stat = _overlayInteract->keyRepeatAction(time, rs, (int)key, keyStr.data());
-        
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsOutputRoD();
+      
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1177,20 +1453,26 @@ bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
-        OfxTime time = effect_->getFrameRecursive();
+        OfxTime time = getCurrentFrameRecursive();
+        OfxStatus stat;
         
-        int view;
         if (getRecursionLevel() == 1) {
-            effectInstance()->getViewRecursive(view);
-            effectInstance()->setClipsView(view);
-            effectInstance()->setClipsMipMapLevel(0);
-            effectInstance()->setClipsOutputRoD(rod);
-        }
-        OfxStatus stat = _overlayInteract->gainFocusAction(time, rs);
-        if (getRecursionLevel() == 1) {
-            effectInstance()->discardClipsView();
-            effectInstance()->discardClipsMipMapLevel();
-            effectInstance()->discardClipsOutputRoD();
+            int view = getCurrentViewRecursive();
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                     false,
+                                     true, //< setMipMapLevel ?
+                                     0,
+                                     false, //< setRenderedImage ?
+                                     boost::shared_ptr<Image>(),
+                                     true, //< setView ?
+                                     view,
+                                     true, //< setOutputRoD ?
+                                     rod,
+                                     false,
+                                     0,0); //< setFrameRange ?
+            stat = _overlayInteract->gainFocusAction(time, rs);
+        } else {
+            stat = _overlayInteract->gainFocusAction(time, rs);
         }
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
@@ -1208,21 +1490,28 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,c
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
-        OfxTime time = effect_->getFrameRecursive();
-        
-        int view;
+        OfxTime time = getCurrentFrameRecursive();
+        OfxStatus stat;
         if (getRecursionLevel() == 1) {
-            effectInstance()->getViewRecursive(view);
-            effectInstance()->setClipsView(view);
-            effectInstance()->setClipsMipMapLevel(0);
-            effectInstance()->setClipsOutputRoD(rod);
+            int view = getCurrentViewRecursive();
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                     false,
+                                     true, //< setMipMapLevel ?
+                                     0,
+                                     false, //< setRenderedImage ?
+                                     boost::shared_ptr<Image>(),
+                                     true, //< setView ?
+                                     view,
+                                     true, //< setOutputRoD ?
+                                     rod,
+                                     false,
+                                     0,0); //< setFrameRange ?
+            
+            stat = _overlayInteract->loseFocusAction(time, rs);
+        } else {
+            stat = _overlayInteract->loseFocusAction(time, rs);
         }
-        OfxStatus stat = _overlayInteract->loseFocusAction(time, rs);
-        if (getRecursionLevel() == 1) {
-            effectInstance()->discardClipsView();
-            effectInstance()->discardClipsMipMapLevel();
-            effectInstance()->discardClipsOutputRoD();
-         }
+        
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
@@ -1250,8 +1539,15 @@ static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::Value
     }
 }
 
-void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod){
+void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time)
+{
     if(!_initialized){
+        return;
+    }
+    
+    ///If the param changed is a button and the node is disabled don't do anything which might
+    ///trigger an analysis
+    if (reason == USER_EDITED && dynamic_cast<Button_Knob*>(k) && _node->isNodeDisabled()) {
         return;
     }
       
@@ -1261,31 +1557,34 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         return;
     }
     
+    if (reason == SLAVE_REFRESH) {
+        reason = PLUGIN_EDITED;
+    }
+    std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
+    assert(!ofxReason.empty());
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
-    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(renderScale.x);
-    int view;
-    effectInstance()->getViewRecursive(view);
-    
-    if (getRecursionLevel() == 1) {
-        effectInstance()->setClipsMipMapLevel(mipMapLevel);
-        effectInstance()->setClipsView(view);
-        effectInstance()->setClipsOutputRoD(rod);
-    }
-    
-    OfxTime time = effect_->getFrameRecursive();
     OfxStatus stat = kOfxStatOK;
-    std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
-    if (!ofxReason.empty()) {
-        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,time,renderScale);
-    }
 
     if (getRecursionLevel() == 1) {
-        effectInstance()->discardClipsMipMapLevel();
-        effectInstance()->discardClipsView();
-        effectInstance()->discardClipsOutputRoD();
+        
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                 false,
+                                 true, //< setMipMapLevel ?
+                                 0,
+                                 false, //< setRenderedImage ?
+                                 boost::shared_ptr<Image>(),
+                                 true, //< setView ?
+                                 view,
+                                 true, //< setOutputRoD ?
+                                 rod,
+                                 false,
+                                 0,0); //< setFrameRange ?
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+    } else {
+        stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
     }
-    
+      
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         QString err(QString(getNode()->getName_mt_safe().c_str()) + ": An error occured while changing parameter " +
                     k->getDescription().c_str());
@@ -1299,11 +1598,11 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         effect_->runGetClipPrefsConditionally();
         decrementRecursionLevel();
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         std::vector<std::string> params;
         _overlayInteract->getSlaveToParam(params);
         for (U32 i = 0; i < params.size(); ++i) {
-            if(params[i] == k->getDescription()){
+            if(params[i] == k->getName()){
                 stat = _overlayInteract->redraw();
                 assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
@@ -1410,7 +1709,11 @@ void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::Imag
         assert(clip);
         const std::vector<std::string>& supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
-            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            try {
+                comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            } catch (const std::runtime_error &e) {
+                // ignore unsupported components
+            }
         }
     } else {
         assert(inputNb == -1);
@@ -1418,21 +1721,14 @@ void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::Imag
         assert(clip);
         const std::vector<std::string>& supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
-            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            try {
+                comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]));
+            } catch (const std::runtime_error &e) {
+                // ignore unsupported components
+            }
         }
     }
 
-}
-
-static Natron::ImageBitDepth ofxBitDepthToNatron(const std::string& bitDepth)
-{
-    if (bitDepth == kOfxBitDepthFloat) {
-        return Natron::IMAGE_FLOAT;
-    } else if (bitDepth == kOfxBitDepthByte) {
-        return Natron::IMAGE_BYTE;
-    } else {
-        return Natron::IMAGE_SHORT;
-    }
 }
 
 void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
@@ -1440,7 +1736,12 @@ void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* d
     const OFX::Host::Property::Set& prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
     int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
     for (int i = 0; i < dim ; ++i) {
-        depths->push_back(ofxBitDepthToNatron(prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths,i)));
+        const std::string& depth = prop.getStringProperty(kOfxImageEffectPropSupportedPixelDepths,i);
+        try {
+            depths->push_back(OfxClipInstance::ofxDepthToNatronDepth(depth));
+        } catch (const std::runtime_error &e) {
+            // ignore unsupported bitdepth
+        }
     }
 }
 

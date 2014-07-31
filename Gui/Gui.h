@@ -86,7 +86,7 @@ public:
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
         
-    boost::shared_ptr<NodeGui> getSelectedNode() const;
+    const std::list<boost::shared_ptr<NodeGui> >& getSelectedNodes() const;
     
     void setLastSelectedViewer(ViewerTab* tab);
     
@@ -148,6 +148,9 @@ public:
                                            Natron::StandardButtons(Natron::Yes | Natron::No),
                                            Natron::StandardButton defaultButton = Natron::NoButton);
     
+    /**
+     * @brief Selects the given node on the node graph, wiping any previous selection.
+     **/
     void selectNode(boost::shared_ptr<NodeGui> node);
     
     GuiAppInstance* getApp() const;
@@ -182,7 +185,7 @@ public:
     
     void registerSplitter(Splitter* s);
 
-    std::vector<std::string> popOpenFileDialog(bool sequenceDialog,
+    std::string popOpenFileDialog(bool sequenceDialog,
                                                const std::vector<std::string>& initialfilters,const std::string& initialDir);
     
     std::string popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir);
@@ -296,6 +299,14 @@ public:
     
     void onViewerRotoEvaluated(ViewerTab* viewer);
     
+    /**
+     * @brief Make a new tracker interface for the given node.
+     * This will create new widgets and enrich the interface of the viewer tab.
+     **/
+    void createNewTrackerInterface(NodeGui* n);
+    
+    void removeTrackerInterface(NodeGui* n,bool permanantly);
+    
     void startProgress(Natron::EffectInstance* effect,const std::string& message);
     
     void endProgress(Natron::EffectInstance* effect);
@@ -319,6 +330,12 @@ public:
     void registerVideoEngineBeingAborted(VideoEngine* engine);
     void unregisterVideoEngineBeingAborted(VideoEngine* engine);
     
+    void connectViewersToViewerCache();
+    
+    void disconnectViewersFromViewerCache();
+    
+    ///Close the application instance, asking questions to the user
+    bool closeInstance();
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
@@ -328,8 +345,8 @@ signals:
     
 public slots:
 
-    bool exitGui(); //< exit, asking questions to the user
-    void quit(); //< exit right away, without any user interaction
+   ///Close the project instance, asking questions to the user and leaving the main window intact
+    void closeProject();
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
     void newProject();
@@ -337,6 +354,8 @@ public slots:
     bool saveProject();
     bool saveProjectAs();
     void autoSave();
+    
+    void createNewViewer();
     
     void connectInput1();
     void connectInput2();
@@ -410,6 +429,12 @@ public slots:
 
     
 private:
+    
+    /**
+     * @brief Close project right away, without any user interaction. 
+     * @param quitApp If true, the application will exit, otherwise the main window will stay active.
+     **/
+    void abortProject(bool quitApp);
     
     void openProjectInternal(const std::string& absoluteFileName);
 

@@ -128,6 +128,7 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString(_knob->getDimensionName(i).c_str())+':', boxContainer);
+            subDesc->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
@@ -142,24 +143,23 @@ void Int_KnobGui::createWidget(QHBoxLayout* layout)
         box->setMaximum(max);
         box->setMinimum(min);
         box->setIncrement(increments[i]);
-        if(hasToolTip()) {
+        if (hasToolTip()) {
             box->setToolTip(toolTip());
         }
         boxContainerLayout->addWidget(box);
         if (getKnob()->getDimension() == 1 && !_knob->isSliderDisabled()) {
             int dispmin = displayMins[i];
             int dispmax = displayMaxs[i];
-            double sliderMin = dispmin,sliderMax = dispmax;
-            if ((dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
-                ///use min max for slider if dispmin/dispmax was not set
-                if ((max - min) < SLIDER_MAX_RANGE) {
-                    sliderMin = min;
-                    sliderMax = max;
-                }
+            double sliderMin = dispmin;
+            double sliderMax = dispmax;
+            if ((sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
+                // use min max for slider if dispmin/dispmax was not set
+                sliderMin = min;
+                sliderMax = max;
             }
             if ((sliderMax > sliderMin) && (sliderMax - sliderMin) < SLIDER_MAX_RANGE && sliderMax < INT_MAX && sliderMin > INT_MIN) {
                 _slider = new ScaleSliderQWidget(sliderMin, sliderMax,_knob->getValue(), Natron::LINEAR_SCALE, layout->parentWidget());
-                if(hasToolTip()) {
+                if (hasToolTip()) {
                     _slider->setToolTip(toolTip());
                 }
                 QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
@@ -253,6 +253,9 @@ void Int_KnobGui::onSpinBoxValueChanged()
     std::list<int> newValues;
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         newValues.push_back(_spinBoxes[i].first->value());
+    }
+    if (_slider) {
+        _slider->seekScalePosition(newValues.front());
     }
     pushUndoCommand(new KnobUndoCommand<int>(this,_knob->getValueForEachDimension_mt_safe(),newValues,false));
 }
@@ -505,6 +508,7 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         QLabel *subDesc = 0;
         if (dim != 1) {
             subDesc = new QLabel(QString(getKnob()->getDimensionName(i).c_str())+':', boxContainer);
+            subDesc->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
@@ -532,6 +536,8 @@ void Double_KnobGui::createWidget(QHBoxLayout* layout)
         if (_knob->getDimension() == 1 && !_knob->isSliderDisabled()) {
             double dispmin = displayMins[i];
             double dispmax = displayMaxs[i];
+            valueAccordingToType(false, i, &dispmin);
+            valueAccordingToType(false, i, &dispmax);
             double sliderMin = dispmin,sliderMax = dispmax;
             if ((dispmax - dispmin) >= SLIDER_MAX_RANGE ) {
                 ///use min max for slider if dispmin/dispmax was not set
@@ -647,6 +653,9 @@ void Double_KnobGui::onSpinBoxValueChanged()
         valueAccordingToType(true, 0, &v);
         newValues.push_back(v);
     }
+    if (_slider) {
+        _slider->seekScalePosition(newValues.front());
+    }
     pushUndoCommand(new KnobUndoCommand<double>(this,_knob->getValueForEachDimension_mt_safe(),newValues,false));
 }
 void Double_KnobGui::_hide()
@@ -719,7 +728,14 @@ Button_KnobGui::Button_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *con
 
 void Button_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    _button = new Button(QString(QString(getKnob()->getDescription().c_str())), layout->parentWidget());
+    QString label(_knob->getDescription().c_str());
+    const std::string& iconFilePath = _knob->getIconFilePath();
+    QPixmap pix;
+    if (pix.load(iconFilePath.c_str())) {
+        _button = new Button(QIcon(pix),"",layout->parentWidget());
+    } else {
+        _button = new Button(label,layout->parentWidget());
+    }
     QObject::connect(_button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if(hasToolTip()) {
         _button->setToolTip(toolTip());
@@ -776,9 +792,7 @@ void Choice_KnobGui::createWidget(QHBoxLayout* layout)
   
     _comboBox = new ComboBox(layout->parentWidget());
     onEntriesPopulated();
-    if (hasToolTip()) {
-        _comboBox->setToolTip(toolTip());
-    }
+    
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     
     ///set the copy/link actions in the right click menu
@@ -796,15 +810,45 @@ void Choice_KnobGui::onEntriesPopulated()
 {
     int activeIndex = _comboBox->activeIndex();
     _comboBox->clear();
-    _entries = boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntries();
-    const std::vector<std::string> &help =  boost::dynamic_pointer_cast<Choice_Knob>(getKnob())->getEntriesHelp();
+    _entries = _knob->getEntries();
+    const std::vector<std::string> &help =  _knob->getEntriesHelp();
+    bool gothelp = false;
     for (U32 i = 0; i < _entries.size(); ++i) {
-        std::string helpStr = help.empty() ? "" : help[i];
+        std::string helpStr;
+        if (!help.empty() && !help[i].empty()) {
+            gothelp = true;
+            helpStr = help[i];
+        }
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
+    QString tt;
+    if (hasToolTip()) {
+        tt = QString(getKnob()->getHintToolTip().c_str()).trimmed();
+        if (gothelp) {
+            // if there are per-option help strings, separate them from main hint
+            tt.append(QChar('\n'));
+            tt.append(QChar('\n'));
+        }
+    }
+    // param may have no hint but still have per-option help
+    if (gothelp) {
+        for (U32 i = 0; i < help.size(); ++i) {
+            if (!help[i].empty()) { // no help line is needed if help is unavailable for this option
+                tt.append(QString(_entries[i].c_str()).trimmed());
+                tt.append(": ");
+                tt.append(QString(help[i].c_str()).trimmed());
+                tt.append(QChar('\n'));
+            }
+        }
+    }
+    if (!tt.isEmpty()) {
+        tt = Qt::convertFromPlainText(tt.trimmed(),Qt::WhiteSpaceNormal);
+        _comboBox->setToolTip(tt);
+    }
+
 }
 
 void Choice_KnobGui::updateGUI(int /*dimension*/)
@@ -1152,6 +1196,7 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *conta
 , _dimensionSwitchButton(NULL)
 , _slider(NULL)
 , _dimension(knob->getDimension())
+, _lastColor(_dimension)
 {
     _knob = boost::dynamic_pointer_cast<Color_Knob>(knob);
     assert(_knob);
@@ -1364,54 +1409,66 @@ void Color_KnobGui::onSliderValueChanged(double v)
     onColorChanged();
 }
 
+void Color_KnobGui::expandAllDimensions()
+{
+    ///show all the dimensions
+    _dimensionSwitchButton->setChecked(true);
+    _dimensionSwitchButton->setDown(true);
+    _slider->hide();
+    if (_dimension > 1) {
+        _rLabel->show();
+        _gLabel->show();
+        _gBox->show();
+        _bLabel->show();
+        _bBox->show();
+        if (_dimension > 3) {
+            _aLabel->show();
+            _aBox->show();
+        }
+    }
+    emit dimensionSwitchToggled(true);
+
+}
+
+void Color_KnobGui::foldAllDimensions()
+{
+    ///hide all the dimensions except red
+    _dimensionSwitchButton->setChecked(false);
+    _dimensionSwitchButton->setDown(false);
+    _slider->show();
+    if (_dimension > 1) {
+        _rLabel->hide();
+        _gLabel->hide();
+        _gBox->hide();
+        _bLabel->hide();
+        _bBox->hide();
+        if (_dimension > 3) {
+            _aLabel->hide();
+            _aBox->hide();
+        }
+    }
+    emit dimensionSwitchToggled(false);
+
+}
+
 void Color_KnobGui::onDimensionSwitchClicked()
 {
     if (_dimensionSwitchButton->isChecked()) {
-        ///show all the dimensions
-        _dimensionSwitchButton->setDown(true);
-        _slider->hide();
-        if (_dimension > 1) {
-            _rLabel->show();
-            _gLabel->show();
-            _gBox->show();
-            _bLabel->show();
-            _bBox->show();
-            if (_dimension > 3) {
-                _aLabel->show();
-                _aBox->show();
-            }
-        }
-        
+        expandAllDimensions();
     } else {
-        ///hide all the dimensions except red
-        _dimensionSwitchButton->setDown(false);
-        _slider->show();
-        if (_dimension > 1) {
-            _rLabel->hide();
-            _gLabel->hide();
-            _gBox->hide();
-            _bLabel->hide();
-            _bBox->hide();
-            if (_dimension > 3) {
-                _aLabel->hide();
-                _aBox->hide();
-            }
-        }
+        foldAllDimensions();
         if (_dimension > 1) {
             boost::shared_ptr<Color_Knob> k = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
             double value(_rBox->value());
-            k->beginValueChange(Natron::PLUGIN_EDITED);
-            k->setValue(value, 1);
-            k->setValue(value, 2);
-            if (_dimension > 3) {
-                k->setValue(value, 3);
+            if (_dimension == 3) {
+                k->setValues(value, value, value);
+            } else {
+                k->setValues(value, value, value,value);
             }
-            k->endValueChange();
         }
 
     }
     
-    emit dimensionSwitchToggled(_dimensionSwitchButton->isChecked());
 }
 
 void
@@ -1513,7 +1570,6 @@ Color_KnobGui::updateGUI(int dimension)
             throw std::logic_error("wrong dimension");
     }
     
-    
     uchar r = Color::floatToInt<256>(Natron::Color::to_func_srgb(_rBox->value()));
     uchar g = r;
     uchar b = r;
@@ -1527,6 +1583,18 @@ Color_KnobGui::updateGUI(int dimension)
     }
     QColor color(r, g, b, a);
     updateLabel(color);
+    
+    bool colorsEqual;
+    if (_dimension == 3) {
+        colorsEqual = (r == g && r == b);
+    } else {
+        colorsEqual = (r == g && r == b && r == a);
+    }
+    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
+        expandAllDimensions();
+    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
+        foldAllDimensions();
+    }
 }
 
 void
@@ -1606,13 +1674,22 @@ Color_KnobGui::showColorDialog()
         curG = _gBox->value();
         curB = _bBox->value();
     }
+    
+    for (int i = 0; i < _dimension; ++i) {
+        _lastColor[i] = _knob->getValue(i);
+    }
+    
     QColor curColor;
     curColor.setRedF(curR);
     curColor.setGreenF(curG);
     curColor.setBlueF(curB);
     dialog.setCurrentColor(curColor);
-    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(updateLabel(QColor)));
+    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onDialogCurrentColorChanged(QColor)));
     if (dialog.exec()) {
+        ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
+        for (int i = 0; i < _dimension; ++i) {
+            _knob->setValue(_lastColor[i],i);
+        }
         
         ///if only the first dimension is displayed, switch back to all dimensions
         if (!_dimensionSwitchButton->isChecked()) {
@@ -1654,10 +1731,26 @@ Color_KnobGui::showColorDialog()
         
         onColorChanged();
     } else {
+        for (int i = 0; i < _dimension; ++i) {
+            _knob->setValue(_lastColor[i],i);
+        }
         updateLabel(curColor);
     }
 }
 
+void
+Color_KnobGui::onDialogCurrentColorChanged(const QColor& color)
+{
+    updateLabel(color);
+    _knob->setValue(color.redF(), 0);
+    if (_dimension > 1) {
+        _knob->setValue(color.greenF(), 1);
+        _knob->setValue(color.blueF(), 2);
+        if (_dimension > 3) {
+            _knob->setValue(color.alphaF(), 3);
+        }
+    }
+}
 
 void
 Color_KnobGui::onColorChanged()
@@ -1762,12 +1855,12 @@ ColorPickerLabel::ColorPickerLabel(QWidget* parent)
 , _pickingEnabled(false)
 {
     
-    setToolTip(Qt::convertFromPlainText("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+    setToolTip(Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                         "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
                                         "To deselect the picker left click anywhere."
-                                        "Note that by default " NATRON_APPLICATION_NAME " converts to linear the color picked\n"
+                                        "Note that by default %1 converts to linear the color picked\n"
                                         "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                        "preference panel.", Qt::WhiteSpaceNormal));
+                                        "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal));
     setMouseTracking(true);
 }
 
@@ -1963,8 +2056,8 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
         if (hasToolTip()) {
             QString tt = toolTip();
             if (useRichText) {
-                tt += " This text area supports html encoding. "
-                "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ";
+                tt += tr(" This text area supports html encoding. "
+                "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
             }
             _textEdit->setAcceptRichText(useRichText);
             _textEdit->setToolTip(tt);
@@ -1989,8 +2082,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontCombo = new QFontComboBox(_richTextOptions);
             QFont font("Verdana",NATRON_FONT_SIZE_12);
             _fontCombo->setCurrentFont(font);
-            _fontCombo->setToolTip("Font");
-            QObject::connect(_fontCombo,SIGNAL(currentFontChanged(QFont)),this,SLOT(onCurrentFontChanged(QFont)));
+            _fontCombo->setToolTip(tr("Font"));
             _richTextOptionsLayout->addWidget(_fontCombo);
             
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -1998,7 +2090,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
             QObject::connect(_fontSizeSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onFontSizeChanged(double)));
-            _fontSizeSpinBox->setToolTip("Font size");
+            _fontSizeSpinBox->setToolTip(tr("Font size"));
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
             
             QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
@@ -2011,7 +2103,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
             _setBoldButton->setCheckable(true);
-            _setBoldButton->setToolTip("Bold");
+            _setBoldButton->setToolTip(tr("Bold"));
             _setBoldButton->setMaximumSize(18, 18);
             QObject::connect(_setBoldButton,SIGNAL(clicked(bool)),this,SLOT(boldChanged(bool)));
             _richTextOptionsLayout->addWidget(_setBoldButton);
@@ -2022,7 +2114,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
-            _setItalicButton->setToolTip("Italic");
+            _setItalicButton->setToolTip(tr("Italic"));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect(_setItalicButton,SIGNAL(clicked(bool)),this,SLOT(italicChanged(bool)));
             _richTextOptionsLayout->addWidget(_setItalicButton);
@@ -2031,7 +2123,7 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             pixBlack.fill(Qt::black);
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
-            _fontColorButton->setToolTip("Font color");
+            _fontColorButton->setToolTip(tr("Font color"));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect(_fontColorButton, SIGNAL(clicked(bool)), this, SLOT(colorFontButtonClicked()));
             _richTextOptionsLayout->addWidget(_fontColorButton);
@@ -2041,6 +2133,9 @@ void String_KnobGui::createWidget(QHBoxLayout* layout)
             _mainLayout->addWidget(_richTextOptions);
             
             restoreTextInfosFromString();
+            
+            ///Connect the slot after restoring
+            QObject::connect(_fontCombo,SIGNAL(currentFontChanged(QFont)),this,SLOT(onCurrentFontChanged(QFont)));
         }
         
         layout->addWidget(_container);
@@ -2232,7 +2327,9 @@ void String_KnobGui::restoreTextInfosFromString()
         QString fontColorString;
         toFind = QString(kFontSizeTag);
         i = text.indexOf(toFind);
+        bool foundFontTag = false;
         if (i != -1) {
+            foundFontTag = true;
             i += toFind.size();
             while (i < text.size() && text.at(i).isDigit()) {
                 fontSizeString.append(text.at(i));
@@ -2241,6 +2338,7 @@ void String_KnobGui::restoreTextInfosFromString()
         }
         toFind = QString(kFontColorTag);
         i = text.indexOf(toFind,i);
+        assert((!foundFontTag && i == -1) || (foundFontTag && i != -1));
         if (i != -1) {
             i += toFind.size();
             while (i < text.size() && text.at(i) != QChar('"')) {
@@ -2250,6 +2348,7 @@ void String_KnobGui::restoreTextInfosFromString()
         }
         toFind = QString(kFontFaceTag);
         i = text.indexOf(toFind,i);
+        assert((!foundFontTag && i == -1) || (foundFontTag && i != -1));
         if (i != -1) {
             i += toFind.size();
             while (i < text.size() && text.at(i) != QChar('"')) {
@@ -2258,13 +2357,30 @@ void String_KnobGui::restoreTextInfosFromString()
             }
         }
         
-        _fontCombo->setCurrentFont(QFont(_fontFamily));
+        if (!foundFontTag) {
+            _fontSize = _fontSizeSpinBox->value();
+            _fontColor = Qt::black;
+            _fontFamily = _fontCombo->currentFont().family();
+            _boldActivated = false;
+            _italicActivated = false;
+            QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+            .arg(_fontSize)
+            .arg(_fontColor.name())
+            .arg(_fontFamily);
+            text.prepend(fontTag);
+            text.append(kFontEndTag);
+            _knob->setValue(text.toStdString(), 0);
+        } else {
+            _fontCombo->setCurrentFont(QFont(_fontFamily));
+            
+            _fontSize = fontSizeString.toInt();
+            
+            _fontSizeSpinBox->setValue(_fontSize);
+            
+            _fontColor = QColor(fontColorString);
+        }
         
-        _fontSize = fontSizeString.toInt();
-        
-        _fontSizeSpinBox->setValue(_fontSize);
-        
-        _fontColor = QColor(fontColorString);
+       
         updateFontColorIcon(_fontColor);
         
     }
@@ -2274,7 +2390,8 @@ void String_KnobGui::restoreTextInfosFromString()
 
 void String_KnobGui::parseFont(const QString& label,QFont& f)
 {
-    QString toFind = QString("<font size=\"");
+
+    QString toFind = QString(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
     assert(startFontTag != -1);
     startFontTag += toFind.size();
@@ -2286,10 +2403,10 @@ void String_KnobGui::parseFont(const QString& label,QFont& f)
         ++j;
     }
     
-    toFind = QString("face=\"");
+    toFind = QString(kFontFaceTag);
     startFontTag = label.indexOf(toFind,startFontTag);
     assert(startFontTag != -1);
-    
+    startFontTag += toFind.size();
     j = startFontTag;
     QString faceStr;
     while (j < label.size() && label.at(j) != QChar('"')) {
@@ -2315,6 +2432,7 @@ void String_KnobGui::onCurrentFontChanged(const QFont& font)
     //find the first font tag
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
+    _fontFamily = font.family();
     if (i != -1) {
         toFind = QString(kFontFaceTag);
         i = text.indexOf(toFind,i);
@@ -2328,9 +2446,16 @@ void String_KnobGui::onCurrentFontChanged(const QFont& font)
             ++j;
         }
         text.remove(i, currentFontFace.size());
+        text.insert(i != - 1 ? i : 0, font.family());
+
+    } else {
+        QString fontTag = QString(kFontSizeTag "%1\" " kFontColorTag "%2\" " kFontFaceTag "%3\">")
+        .arg(_fontSize)
+        .arg(_fontColor.name())
+        .arg(_fontFamily);
+        text.prepend(fontTag);
+        text.append(kFontEndTag);
     }
-    text.insert(i != - 1 ? i : 0, font.family());
-    _fontFamily = font.family();
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
     
 }
@@ -2470,15 +2595,25 @@ void String_KnobGui::italicChanged(bool toggled)
     pushUndoCommand(new KnobUndoCommand<std::string>(this,_knob->getValue(),text.toStdString()));
 }
 
+QString String_KnobGui::removeNatronHtmlTag(QString text)
+{
+    ///we also remove any custom data added by natron so the user doesn't see it
+    int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);
+    if (startCustomData != -1) {
+        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = text.indexOf(endTag,startCustomData);
+        assert(endCustomData != -1);
+        endCustomData += endTag.size();
+        text.remove(startCustomData, endCustomData - startCustomData);
+    }
+    return text;
+}
+
 QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
 {
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
-    
-    if (i == -1) {
-        ///the plugin probably edited the text, don't bother parsing html
-        return text;
-    }
+    bool foundFontStart = i != -1;
     
     QString boldStr(kBoldStartTag);
     int foundBold = text.lastIndexOf(boldStr,i);
@@ -2516,28 +2651,21 @@ QString String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     
     QString endTag("\">");
     int foundEndTag = text.indexOf(endTag,i);
-    assert(foundEndTag != -1);
     foundEndTag += endTag.size();
-    
-    ///remove the whole font tag
-    text.remove(i,foundEndTag - i);
+    if (foundFontStart) {
+        ///remove the whole font tag
+        text.remove(i,foundEndTag - i);
+    }
     
     endTag = QString(kFontEndTag);
     foundEndTag = text.lastIndexOf(endTag);
-    assert(foundEndTag != -1);
-    text.remove(foundEndTag, endTag.size());
-    
-    ///we also remove any custom data added by natron so the user doesn't see it
-    int startCustomData = text.indexOf(NATRON_CUSTOM_HTML_TAG_START);
-    if (startCustomData != -1) {
-        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
-        int endCustomData = text.indexOf(endTag,startCustomData);
-        assert(endCustomData != -1);
-        endCustomData += endTag.size();
-        text.remove(startCustomData, endCustomData - startCustomData);
+    assert((foundEndTag != -1 && foundFontStart) || !foundFontStart);
+    if (foundEndTag != -1) {
+        text.remove(foundEndTag, endTag.size());
     }
     
-    return text;
+    ///we also remove any custom data added by natron so the user doesn't see it
+    return removeNatronHtmlTag(text);
 }
 
 void String_KnobGui::updateGUI(int /*dimension*/)
@@ -2899,13 +3027,13 @@ void Parametric_KnobGui::createWidget(QHBoxLayout* layout) {
     treeColumnLayout->addWidget(_tree);
     
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip(Qt::convertFromPlainText("Reset the selected curves in the tree to their default shape", Qt::WhiteSpaceNormal));
+    _resetButton->setToolTip(Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape"), Qt::WhiteSpaceNormal));
     QObject::connect(_resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()));
     treeColumnLayout->addWidget(_resetButton);
     
     layout->addWidget(treeColumn);
     
-    _curveWidget = new CurveWidget(boost::shared_ptr<TimeLine>(),layout->parentWidget());
+    _curveWidget = new CurveWidget(getGui(),boost::shared_ptr<TimeLine>(),layout->parentWidget());
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if(hasToolTip()) {
         _curveWidget->setToolTip(toolTip());

@@ -32,7 +32,7 @@
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
 #define NATRON_VERSION_MAJOR 0
 #define NATRON_VERSION_MINOR 9
-#define NATRON_VERSION_REVISION 5
+#define NATRON_VERSION_REVISION 6
 
 #define NATRON_VERSION_ENCODE(major,minor,revision) ( \
     ((major) * 10000) \
@@ -67,6 +67,14 @@
 #define NATRON_ROOT "/"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH"natronIcon256_linux.png"
+
+///Natron will load all icons that are associated to a group toolbutton with the following icon set number, i.e:
+///if it is 2, then it will load color_grouping_2.png , filter_grouping_2.png , etc... this way you can compile
+///with different icons set easily.
+#define NATRON_ICON_SET_BLACK_AND_WHITE "2"
+#define NATRON_ICON_SET_FADED_COLOURS "3"
+#define NATRON_ICON_SET_NUMBER NATRON_ICON_SET_FADED_COLOURS
+
 #define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
 #define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
 #define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"
@@ -84,6 +92,8 @@
 #define PLUGIN_GROUP_MERGE "Merge"
 #define PLUGIN_GROUP_MULTIVIEW "Views"
 #define PLUGIN_GROUP_DEEP "Deep"
+#define PLUGIN_GROUP_TOOLSETS "ToolSets"
+#define PLUGIN_GROUP_3D "3D"
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_OFX "OFX"
 

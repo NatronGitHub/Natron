@@ -53,6 +53,12 @@ public:
     virtual KnobGuiI* getKnobGuiPointer() const = 0;
     
     /**
+     * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
+     **/
+    virtual bool isDeclaredByPlugin() const = 0;
+
+    
+    /**
      * @brief Must return the type name of the knob. This name will be used by the KnobFactory
      * to create an instance of this knob.
      **/
@@ -69,25 +75,23 @@ public:
      * for a dimension.
      **/
     virtual std::string getDimensionName(int dimension) const = 0;
-    
+
     /**
-     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
+     * @brief When set to true the instanceChanged action on the plugin and evaluate (render) will not be called
+     * when issuing value changes. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
-    virtual void beginValueChange(Natron::ValueChangedReason reason) = 0;
+    virtual void blockEvaluation() = 0;
     
     /**
-     * @brief Called by setValue to indicate that an evaluation is needed. This could be private.
+     * @brief To be called to reactivate evaluation. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
+     **/
+    virtual void unblockEvaluation() = 0;
+    
+    /**
+     * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and 
+     * evaluate the new value (cause a render).
      **/
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) = 0;
-    
-    /**
-     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
-     **/
-    virtual void endValueChange() = 0;
     
     /**
      * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
@@ -98,11 +102,19 @@ public:
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
      * to this knob. This function calls cloneExtraData.
+     * The evaluateValueChange function will not be called as a result of the clone.
+     * However a valueChanged signal will be emitted by the KnobSignalSlotHandler if there's any.
      *
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
-    virtual void clone(const boost::shared_ptr<KnobI>& other) = 0;
+    virtual void clone(KnobI* other) = 0;
+    virtual void clone(const boost::shared_ptr<KnobI>& other) { clone(other.get()); }
     
+    /**
+     * @brief Performs the same as clone but also refresh any gui it has
+     **/
+    virtual void cloneAndUpdateGui(KnobI* other) = 0;
+
     /**
      * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
      * on the keyframes time and only the keyframes withing the given range are copied.
@@ -112,7 +124,10 @@ public:
      * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
      * The restriction on types still apply.
      **/
-    virtual void clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) = 0;
+    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range) = 0;
+    virtual void clone(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) {
+        clone(other.get(),offset,range);
+    }
     
 protected:
     
@@ -132,6 +147,18 @@ public:
      * @brief Calls deleteValueAtTime with a reason of Natron::PLUGIN_EDITED.
      **/
     void deleteValueAtTime(int time,int dimension);
+    
+    /**
+     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
+     * a signal will be emitted
+     **/
+    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
+    
+    /**
+     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::USER_EDITED
+     * a signal will be emitted
+     **/
+    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) = 0;
     
     /**
      * @brief Calls removeAnimation with a reason of Natron::PLUGIN_EDITED.
@@ -417,7 +444,8 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) = 0;
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason,
+                         bool ignoreMasterPersistence) = 0;
     
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
@@ -429,8 +457,10 @@ public:
     
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::PLUGIN_EDITED.
+     * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
-    bool slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension);
+    bool slaveTo(int dimension,const boost::shared_ptr<KnobI>& other,int otherDimension,bool ignoreMasterPersistence = false);
+    virtual bool isMastersPersistenceIgnored() const = 0;
     
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::USER_EDITED.
@@ -501,15 +531,16 @@ public:
     
     boost::shared_ptr<KnobI> getKnob() const { return k; }
     
-    void s_evaluateValueChangedInMainThread(int dimension,int reason) { emit evaluateValueChangedInMainThread(dimension,reason); }
+    void s_evaluateValueChangedInMainThread(int dimension,int reason)
+    { emit evaluateValueChangedInMainThread(dimension,reason); }
     void s_animationLevelChanged(int level) { emit animationLevelChanged(level); }
     void s_deleted() { emit deleted(); }
-    void s_valueChanged(int dimension) { emit valueChanged(dimension); }
+    void s_valueChanged(int dimension,int reason) { emit valueChanged(dimension,reason); }
     void s_secretChanged() { emit secretChanged(); }
     void s_enabledChanged() { emit enabledChanged(); }
-    void s_keyFrameSet(SequenceTime time,int dimension) { emit keyFrameSet(time,dimension); }
+    void s_keyFrameSet(SequenceTime time,int dimension,bool added) { emit keyFrameSet(time,dimension,added); }
     void s_keyFrameRemoved(SequenceTime time ,int dimension) { emit keyFrameRemoved(time,dimension); }
-    void s_animationRemoved(int dimension) { emit animationRemoved(dimension); }
+    void s_animationAboutToBeRemoved(int dimension) { emit animationAboutToBeRemoved(dimension); }
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
     void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
@@ -563,8 +594,10 @@ signals:
     ///emitted when the destructor is entered
     void deleted();
     
-    ///Emitted when the value is changed by the plugin by a call to setValue
-    void valueChanged(int dimension);
+    ///Emitted when the value is changed with a reason different than USER_EDITED
+    ///This can happen as the result of a setValue() call from the plug-in or by
+    ///a slaved knob whose master's value changed. The reason is passed in parameter.
+    void valueChanged(int dimension,int reason);
     
     ///Emitted when the secret state of the knob changed
     void secretChanged();
@@ -573,13 +606,14 @@ signals:
     void enabledChanged();
     
     ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
-    void keyFrameSet(SequenceTime,int);
+    ///@param added True if this is the first time that the keyframe was set
+    void keyFrameSet(SequenceTime time,int dimension,bool added);
     
     ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
     void keyFrameRemoved(SequenceTime,int);
     
     ///Emitted whenever all keyframes of a dimension are removed with a reason different of USER_EDITED
-    void animationRemoved(int);
+    void animationAboutToBeRemoved(int);
     
     ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
     ///of the changes that occured in this knob, letting them a chance to update their interface.
@@ -628,7 +662,7 @@ public:
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
-    bool isDeclaredByPlugin() const;
+    virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
     
     virtual void setAsInstanceSpecific() OVERRIDE FINAL;
     virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -649,11 +683,11 @@ public:
     ///Populates for each dimension: the enabled state, the curve and the animation level
     virtual void populate() OVERRIDE;
     
-    virtual void beginValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void blockEvaluation() OVERRIDE FINAL;
+    
+    virtual void unblockEvaluation() OVERRIDE FINAL;
     
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
-    
-    virtual void endValueChange() OVERRIDE FINAL;
     
 private:
     
@@ -662,6 +696,11 @@ private:
     virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
 public:
+    
+    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    
+    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
+
     
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -752,9 +791,11 @@ public:
     
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:
     
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI>&  other,int otherDimension,Natron::ValueChangedReason reason
+                         ,bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
 protected:
     
@@ -762,7 +803,7 @@ protected:
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
     void resetMaster(int dimension);
-    
+        
 public:
     
     virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -783,8 +824,8 @@ protected:
      * @brief Called when you must copy any extra data you maintain from the other knob.
      * The other knob is guaranteed to be of the same type.
      **/
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/) {}
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& /*other*/, SequenceTime /*offset*/, const RangeD* /*range*/) {}
+    virtual void cloneExtraData(KnobI* /*other*/) {}
+    virtual void cloneExtraData(KnobI* /*other*/, SequenceTime /*offset*/, const RangeD* /*range*/) {}
     
     /**
      * @brief Called when a keyframe is removed.
@@ -805,6 +846,9 @@ protected:
      **/
     virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
 
+    void checkAnimationLevel(int dimension);
+
+    
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
     
 private:
@@ -859,7 +903,8 @@ private:
      * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
      * then a new keyframe will be set at the current time.
      **/
-    ValueChangedReturnCode setValue(const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    ValueChangedReturnCode setValue(const T& v,int dimension,Natron::ValueChangedReason reason,
+                                    KeyFrame* newKey) WARN_UNUSED_RETURN;
     /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
      * @param newKey[out] The keyframe that was added if the return value is true.
@@ -876,7 +921,7 @@ public:
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
-    void setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
+    ValueChangedReturnCode setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
     
     /**
      * @brief Calls setValue with a reason of Natron::USER_EDITED.
@@ -956,13 +1001,14 @@ public:
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
     
-    virtual void clone(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    virtual void clone(KnobI* other)  OVERRIDE FINAL;
     
-    virtual void clone(const boost::shared_ptr<KnobI>& other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
+    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     
+    virtual void cloneAndUpdateGui(KnobI* other) OVERRIDE FINAL;
 private:
     
-    void cloneValues(const boost::shared_ptr<KnobI>& other);
+    void cloneValues(KnobI* other);
     
     T getValueFromMaster(int dimension);
     
@@ -1025,9 +1071,9 @@ public:
     
 protected:
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other) OVERRIDE;
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE;
     
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE ;
     
@@ -1084,11 +1130,25 @@ public:
     
     void refreshAfterTimeChange(SequenceTime time);
     
+    void refreshInstanceSpecificKnobsOnly(SequenceTime time);
+    
     KnobHolder::MultipleParamsEditLevel getMultipleParamsEditLevel() const;
     
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level);
     
+    virtual bool isProject() const { return false; }
+    
+    /**
+     * @brief Restore all knobs to their default values
+     **/
+    void restoreDefaultValues();
+    
 protected:
+    
+    bool isEvaluationBlocked() const;
+    
+    virtual void aboutToRestoreDefaultValues() {}
+    
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
      * In release mode an exception is thrown instead.
@@ -1113,31 +1173,18 @@ protected:
      **/
     void decrementRecursionLevel();
     
-    int getRecursionLevel() const;
     
 public:
     
-    /**
-     * @brief Used to bracket a series of calls to setValue(...) in case many complex changes are done
-     * at once. If not called, notifyProjectEvaluationRequested() will  automatically bracket its call by a begin/end
-     * but this can lead to worse performance.
-     **/
-    void notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason);
+    int getRecursionLevel() const;
     
     /**
-     * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
-     * not done already and requests an evaluation (i.e: probably a render).
+     * @brief When set to true any change which would trigger an instanceChanged action or cause a new
+     * evaluation will not cause them to be called. Internally maintains a counter, when 0 evaluation
+     * is enabled.
      **/
-    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,KnobI* k,bool significant);
-
-    
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    void notifyProjectEndKnobsValuesChanged();
-    
+    void blockEvaluation();
+    void unblockEvaluation();
     
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project
@@ -1160,7 +1207,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason);
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time);
 
 
     /**
@@ -1220,7 +1267,7 @@ protected:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason){(void)k;(void)reason;}
+    virtual void onKnobValueChanged(KnobI* /*k*/,Natron::ValueChangedReason /*reason*/,SequenceTime /*time*/){}
 
     /**
      * @brief Must be implemented to evaluate a value change

@@ -247,6 +247,14 @@ public:
 
     void restoreTracks(const std::list <SerializedTrack>& tracks,const std::vector<boost::shared_ptr<Natron::Node> >& activeNodes);
     
+    
+    ////For all tacks that have slaved roto points, we remember them in here, and once all track links
+    ////have been restore, we restore the relative feather for each control point slaved.
+    ////we cannot do this while restoring the link because the feather might be also linked to another
+    ///track, so we have to wait for a final pass to be able to determine whether the feather must be set
+    ///as relative or not.
+    void restoreFeatherRelatives();
+    
 public slots:
     
     void onNodeDeactivated();
@@ -263,7 +271,7 @@ signals:
     
 private:
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -305,6 +313,9 @@ public:
     
     bool isRenderButton() const { return _renderButton; }
     
+    void setIconFilePath(const std::string& filePath) { _iconFilePath = filePath; }
+    const std::string& getIconFilePath() const { return _iconFilePath; }
+    
 private:
     
     
@@ -315,6 +326,7 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _renderButton;
+    std::string _iconFilePath;
 };
 
 /******************************CHOICE_KNOB**************************************/
@@ -353,6 +365,7 @@ signals:
     void populated();
     
 private:
+    
     
     virtual bool canAnimate() const OVERRIDE FINAL;
     
@@ -443,6 +456,18 @@ public:
     void activateAllDimensions() { emit mustActivateAllDimensions(); }
     
     void setPickingEnabled(bool enabled) { emit pickingEnabled(enabled); }
+    
+    /**
+     * @brief Convenience function for RGB color params
+     **/
+    void setValues(double r,double g,double b);
+    
+    
+    /**
+     * @brief Convenience function for RGBA color params
+     **/
+    void setValues(double r,double g,double b,double a);
+
     
 public slots:
     
@@ -700,9 +725,9 @@ private:
     
     virtual const std::string& typeName() const OVERRIDE FINAL;
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
     
-    virtual void cloneExtraData(const boost::shared_ptr<KnobI>& other, SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
     
     static const std::string _typeNameStr;
 };
