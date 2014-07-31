@@ -1172,8 +1172,10 @@ OfxDouble2DInstance::set(double x1,double x2)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-    _knob->setValue(x1,0,false,false);
-    _knob->setValue(x2,1,false,true);
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x2,1,false);
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1188,8 +1190,10 @@ OfxDouble2DInstance::set(OfxTime time,double x1,double x2)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-    _knob->setValueAtTime(time,x1,0,false);
-    _knob->setValueAtTime(time,x2,1,true);
+    _knob->blockEvaluation();
+    _knob->setValueAtTime(time,x1,0);
+    _knob->unblockEvaluation();
+    _knob->setValueAtTime(time,x2,1);
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1375,8 +1379,11 @@ OfxInteger2DInstance::set(int x1,int x2)
         doEditEnd = true;
     }
 
-    _knob->setValue(x1,0,false,false);
-    _knob->setValue(x2,1,false,true);
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x2,1,false);
+    
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -1391,9 +1398,10 @@ OfxInteger2DInstance::set(OfxTime time, int x1, int x2)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-
-    _knob->setValueAtTime(time,x1,0,false);
-    _knob->setValueAtTime(time,x2,1,true);
+    _knob->blockEvaluation();
+    _knob->setValueAtTime(time,x1,0);
+    _knob->unblockEvaluation();
+    _knob->setValueAtTime(time,x2,1);
     
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
@@ -1552,9 +1560,11 @@ OfxDouble3DInstance::set(double x1,double x2,double x3)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-    _knob->setValue(x1,0,false,false);
-    _knob->setValue(x2,1,false,false);
-    _knob->setValue(x3,2,false,true);
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->setValue(x2,1,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x3,2,false);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -1569,9 +1579,11 @@ OfxDouble3DInstance::set(OfxTime time, double x1, double x2, double x3)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-    _knob->setValueAtTime(time,x1,0,false);
-    _knob->setValueAtTime(time,x2,1,false);
-    _knob->setValueAtTime(time,x3,2,true);
+    _knob->blockEvaluation();
+    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTime(time,x2,1);
+    _knob->unblockEvaluation();
+    _knob->setValueAtTime(time,x3,2);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -1750,9 +1762,11 @@ OfxInteger3DInstance::set(int x1, int x2, int x3)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-    _knob->setValue(x1,0,false,false);
-    _knob->setValue(x2,1,false,false);
-    _knob->setValue(x3,2,false,true);
+    _knob->blockEvaluation();
+    _knob->setValue(x1,0,false);
+    _knob->setValue(x2,1,false);
+    _knob->unblockEvaluation();
+    _knob->setValue(x3,2,false);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }
@@ -1767,9 +1781,11 @@ OfxInteger3DInstance::set(OfxTime time, int x1, int x2, int x3)
         (void)_node->effectInstance()->editBegin(getName());
         doEditEnd = true;
     }
-    _knob->setValueAtTime(time,x1,0,false);
-    _knob->setValueAtTime(time,x2,1,false);
-    _knob->setValueAtTime(time,x3,2,true);
+    _knob->blockEvaluation();
+    _knob->setValueAtTime(time,x1,0);
+    _knob->setValueAtTime(time,x2,1);
+    _knob->unblockEvaluation();
+    _knob->setValueAtTime(time,x3,2);
     if (doEditEnd) {
         (void)_node->effectInstance()->editEnd();
     }

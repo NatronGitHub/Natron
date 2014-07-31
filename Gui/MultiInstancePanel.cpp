@@ -1205,17 +1205,19 @@ void MultiInstancePanel::resetInstances(const std::list<Natron::Node*>& instance
         if ((*it)->areKeyframesVisibleOnTimeline()) {
             (*it)->hideKeyframesFromTimeline(next == instances.end());
         }
-        notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
         const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size();++i) {
             Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knobs[i].get());
-            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-                if (!isBtn && knobs[i]->getName() != "label_natron" && knobs[i]->getName() != kOfxParamStringSublabelName) {
+            
+            if (!isBtn && knobs[i]->getName() != "label_natron" && knobs[i]->getName() != kOfxParamStringSublabelName) {
+                knobs[i]->blockEvaluation();
+                int dims = knobs[i]->getDimension();
+                for (int j = 0; j < dims; ++j) {
                     knobs[i]->resetToDefaultValue(j);
                 }
+                knobs[i]->unblockEvaluation();
             }
         }
-        notifyProjectEndKnobsValuesChanged();
     }
     instances.front()->getLiveInstance()->evaluate_public(NULL, true, Natron::USER_EDITED);
     
@@ -1496,7 +1498,7 @@ void TrackerPanel::onAverageTracksButtonClicked()
         keyframesRange.max = 0;
     }
     
-    newInstanceCenter->beginValueChange(Natron::PLUGIN_EDITED);
+    newInstanceCenter->blockEvaluation();
     for (double t = keyframesRange.min; t <= keyframesRange.max; ++t) {
         std::pair<double,double> average;
         average.first = 0;
@@ -1510,11 +1512,11 @@ void TrackerPanel::onAverageTracksButtonClicked()
         average.first /= (double)centers.size();
         average.second /= (double)centers.size();
         newInstanceCenter->setValueAtTime(t, average.first, 0);
+        if (t == keyframesRange.max) {
+            newInstanceCenter->unblockEvaluation();
+        }
         newInstanceCenter->setValueAtTime(t, average.second, 1);
     }
-    newInstanceCenter->endValueChange();
-    
-    
 }
 
 void TrackerPanel::onButtonTriggered(Button_Knob* button)

@@ -2397,6 +2397,11 @@ void EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
     
+    
+    if (isEvaluationBlocked()) {
+        return;
+    }
+    
     _node->onEffectKnobValueChanged(k, reason);
     if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
 

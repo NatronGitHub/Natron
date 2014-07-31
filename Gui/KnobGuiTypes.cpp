@@ -750,7 +750,7 @@ Button_KnobGui::~Button_KnobGui()
 
 void Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>(getKnob().get())->onValueChanged(0,true, NULL,true);
+    dynamic_cast<Button_Knob*>(getKnob().get())->onValueChanged(0,true, NULL);
 }
 void Button_KnobGui::_hide()
 {
@@ -820,17 +820,21 @@ void Choice_KnobGui::onEntriesPopulated()
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
     
-    QString tt(getKnob()->getHintToolTip().c_str());
-    tt.append(QChar('\n'));
-    tt.append(QChar('\n'));
+    QString tt(_knob->getHintToolTip().c_str());
+    if (!tt.isEmpty()) {
+        tt.append(QChar('\n'));
+        tt.append(QChar('\n'));
+    }
     for (U32 i = 0; i < help.size(); ++i) {
         tt.append(_entries[i].c_str());
         tt.append(": ");
         tt.append(help[i].c_str());
-        tt.append(QChar('\n'));
+        if (i != help.size() -1) {
+            tt.append(QChar('\n'));
+        }
     }
     tt = Qt::convertFromPlainText(tt,Qt::WhiteSpaceNormal);
-    if (hasToolTip()) {
+    if (!tt.isEmpty()) {
         _comboBox->setToolTip(tt);
     }
 
@@ -1445,13 +1449,11 @@ void Color_KnobGui::onDimensionSwitchClicked()
         if (_dimension > 1) {
             boost::shared_ptr<Color_Knob> k = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
             double value(_rBox->value());
-            k->beginValueChange(Natron::PLUGIN_EDITED);
-            k->setValue(value, 1);
-            k->setValue(value, 2);
-            if (_dimension > 3) {
-                k->setValue(value, 3);
+            if (_dimension == 3) {
+                k->setValues(value, value, value);
+            } else {
+                k->setValues(value, value, value,value);
             }
-            k->endValueChange();
         }
 
     }

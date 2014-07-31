@@ -457,6 +457,18 @@ public:
     
     void setPickingEnabled(bool enabled) { emit pickingEnabled(enabled); }
     
+    /**
+     * @brief Convenience function for RGB color params
+     **/
+    void setValues(double r,double g,double b);
+    
+    
+    /**
+     * @brief Convenience function for RGBA color params
+     **/
+    void setValues(double r,double g,double b,double a);
+
+    
 public slots:
     
     void onDimensionSwitchToggled(bool b);

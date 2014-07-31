@@ -42,8 +42,8 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
 : QObject()
 , k(knob)
 {
-    QObject::connect(this, SIGNAL(evaluateValueChangedInMainThread(int,int,bool)), this,
-                     SLOT(onEvaluateValueChangedInOtherThread(int,int,bool)));
+    QObject::connect(this, SIGNAL(evaluateValueChangedInMainThread(int,int)), this,
+                     SLOT(onEvaluateValueChangedInOtherThread(int,int)));
 }
 
 void KnobSignalSlotHandler::onKeyFrameSet(SequenceTime time,int dimension)
@@ -68,13 +68,13 @@ void KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 
 void KnobSignalSlotHandler::onMasterChanged(int dimension)
 {
-    k->evaluateValueChange(dimension, Natron::SLAVE_REFRESH,true);
+    k->evaluateValueChange(dimension, Natron::SLAVE_REFRESH);
 }
 
-void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, int reason,bool triggerOnKnobChanged)
+void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, int reason)
 {
     assert(QThread::currentThread() == qApp->thread());
-    k->evaluateValueChange(dimension,(Natron::ValueChangedReason)reason,triggerOnKnobChanged);
+    k->evaluateValueChange(dimension,(Natron::ValueChangedReason)reason);
 }
 
 /***************** KNOBI**********************/
@@ -160,13 +160,6 @@ struct KnobHelper::KnobHelperPrivate {
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevel> animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
-    
-    mutable QMutex betweenBeginEndMutex;
-    int betweenBeginEndCount; //< between begin/end value change count
-    Natron::ValueChangedReason beginEndReason;
-    bool mustTriggerKnobChanged;
-    std::vector<int> dimensionChanged; //< all the dimension changed during the begin end
-    
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
     
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
@@ -202,11 +195,6 @@ struct KnobHelper::KnobHelperPrivate {
     , ignoreMasterPersistence(false)
     , animationLevelMutex()
     , animationLevel(dimension_)
-    , betweenBeginEndMutex(QMutex::Recursive)
-    , betweenBeginEndCount(0)
-    , beginEndReason(Natron::PROJECT_LOADING)
-    , mustTriggerKnobChanged(false)
-    , dimensionChanged()
     , declaredByPlugin(declaredByPlugin_)
     , customInteract()
     , gui(0)
@@ -379,86 +367,50 @@ int KnobHelper::getDimension() const
     return _imp->dimension;
 }
 
-void KnobHelper::beginValueChange(Natron::ValueChangedReason reason)
+void KnobHelper::blockEvaluation()
 {
-    {
-        QMutexLocker l(&_imp->betweenBeginEndMutex);
-        _imp->beginEndReason = reason;
-        ++_imp->betweenBeginEndCount;
-    }
-    if (getHolder()) {
-        _imp->holder->notifyProjectBeginKnobsValuesChanged(reason);
+    if (_imp->holder) {
+        _imp->holder->blockEvaluation();
     }
 }
 
-void KnobHelper::endValueChange()
+void KnobHelper::unblockEvaluation()
 {
-    {
-        QMutexLocker l(&_imp->betweenBeginEndMutex);
-        assert(_imp->betweenBeginEndCount > 0);
-        --_imp->betweenBeginEndCount;
-        
-        if (_imp->betweenBeginEndCount == 0) {
-            
-            processNewValue(_imp->beginEndReason);
-            
-            if (_signalSlotHandler) {
-                if ((_imp->beginEndReason != Natron::USER_EDITED)) {
-                    for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
-                        _signalSlotHandler->s_valueChanged(_imp->dimensionChanged[i],(int)_imp->beginEndReason);
-                    }
-                }
-                for (U32 i = 0; i < _imp->dimensionChanged.size(); ++i) {
-                    _signalSlotHandler->s_updateSlaves(_imp->dimensionChanged[i]);
-                    checkAnimationLevel(i);
-                }
+    if (_imp->holder) {
+        _imp->holder->unblockEvaluation();
+    }
 
-            }
-            _imp->dimensionChanged.clear();
-        }
-    }
-    if (getHolder() && _imp->mustTriggerKnobChanged) {
-        _imp->holder->notifyProjectEndKnobsValuesChanged();
-    }
-    _imp->mustTriggerKnobChanged = false;
 }
 
-
-void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason reason,bool triggerKnobChanged)
-{
-    if (QThread::currentThread() != qApp->thread()) {
-        _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason,triggerKnobChanged);
+void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason reason)
+{    if (QThread::currentThread() != qApp->thread()) {
+        _signalSlotHandler->s_evaluateValueChangedInMainThread(dimension, reason);
         return;
     }
     
-    bool beginCalled = false;
-    {
-        QMutexLocker l(&_imp->betweenBeginEndMutex);
-        if (_imp->betweenBeginEndCount == 0) {
-            beginValueChange(reason);
-            beginCalled = true;
-        }
+    if (_imp->holder) {
         
-        std::vector<int>::iterator foundDimensionChanged = std::find(_imp->dimensionChanged.begin(),
-                                                                     _imp->dimensionChanged.end(), dimension);
-        if (foundDimensionChanged == _imp->dimensionChanged.end()) {
-            _imp->dimensionChanged.push_back(dimension);
+        int time;
+        AppInstance* app = _imp->holder->getApp();
+        if (app) {
+            time = app->getTimeLine()->currentFrame();
+        } else {
+            time = 0;
         }
-        if (!_imp->mustTriggerKnobChanged && triggerKnobChanged) {
-            _imp->mustTriggerKnobChanged = true;
+        if ((app && !app->getProject()->isLoadingProject()) || !app) {
+            _imp->holder->onKnobValueChanged_public(this, reason, time);
+            
+            bool significant = (reason != Natron::TIME_CHANGED) && _imp->EvaluateOnChange;
+            _imp->holder->evaluate_public(this, significant, reason);
         }
-        
     }
     
-    if (getHolder()) {
-        ///Basically just call onKnobChange on the plugin
-        bool significant = (reason != Natron::TIME_CHANGED) && _imp->EvaluateOnChange;
-        _imp->holder->notifyProjectEvaluationRequested(reason, this, significant);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_valueChanged(dimension,(int)reason);
+        _signalSlotHandler->s_updateSlaves(dimension);
+        checkAnimationLevel(dimension);
     }
     
-    if (beginCalled) {
-        endValueChange();
-    }
 }
 
 void KnobHelper::turnOffNewLine()
@@ -966,6 +918,8 @@ struct KnobHolder::KnobHolderPrivate
     
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditLevel paramsEditLevel;
+    mutable QMutex evaluationBlockedMutex;
+    int evaluationBlocked;
     
     KnobHolderPrivate(AppInstance* appInstance_)
     : app(appInstance_)
@@ -975,6 +929,8 @@ struct KnobHolder::KnobHolderPrivate
     , actionsRecursionLevel()
     , evaluateQueue()
     , paramsEditLevel(PARAM_EDIT_OFF)
+    , evaluationBlockedMutex(QMutex::Recursive)
+    , evaluationBlocked(0)
     {
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
@@ -995,6 +951,24 @@ KnobHolder::~KnobHolder()
         KnobHelper* helper = dynamic_cast<KnobHelper*>(_imp->knobs[i].get());
         helper->_imp->holder = 0;
     }
+}
+void KnobHolder::unblockEvaluation()
+{
+    QMutexLocker l(&_imp->evaluationBlockedMutex);
+    --_imp->evaluationBlocked;
+    assert(_imp->evaluationBlocked >= 0);
+}
+
+void KnobHolder::blockEvaluation()
+{
+    QMutexLocker l(&_imp->evaluationBlockedMutex);
+    ++_imp->evaluationBlocked;
+}
+
+bool KnobHolder::isEvaluationBlocked() const
+{
+     QMutexLocker l(&_imp->evaluationBlockedMutex);
+    return _imp->evaluationBlocked > 0;
 }
 
 KnobHolder::MultipleParamsEditLevel KnobHolder::getMultipleParamsEditLevel() const
@@ -1044,44 +1018,6 @@ void KnobHolder::refreshInstanceSpecificKnobsOnly(SequenceTime time)
         }
     }
 }
-
-void KnobHolder::notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason)
-{
-    if (!_imp->knobsInitialized) {
-        return;
-    }
-    
-    if (_imp->app) {
-        getApp()->getProject()->beginProjectWideValueChanges(reason, this);
-    }
-}
-
-void KnobHolder::notifyProjectEndKnobsValuesChanged()
-{
-    if (!_imp->knobsInitialized) {
-        return;
-    }
-    
-    if (_imp->app) {
-        getApp()->getProject()->endProjectWideValueChanges(this);
-    }
-}
-
-void KnobHolder::notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,KnobI* k,bool significant)
-{
-    if (!_imp->knobsInitialized) {
-        return;
-    }
-    
-    if (_imp->app) {
-        getApp()->getProject()->stackEvaluateRequest(reason,this,k,significant);
-    } else {
-        ///Time is irrelevant since it doesn't have a timeline
-        onKnobValueChanged(k, reason,0);
-    }
-}
-
-
 
 boost::shared_ptr<KnobI> KnobHolder::getKnobByName(const std::string& name) const
 {
@@ -1172,7 +1108,12 @@ void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason r
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    
+    {
+        QMutexLocker l(&_imp->evaluationBlockedMutex);
+        if (_imp->evaluationBlocked) {
+            return;
+        }
+    }
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
     onKnobValueChanged(k, reason,time);
@@ -1183,6 +1124,12 @@ void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueCha
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker l(&_imp->evaluationBlockedMutex);
+        if (_imp->evaluationBlocked) {
+            return;
+        }
+    }
     _imp->evaluateQueue.isSignificant |= isSignificant;
     _imp->evaluateQueue.requester = knob;
     if (getRecursionLevel() == 0) {
@@ -1246,19 +1193,19 @@ int KnobHolder::getRecursionLevel() const
 void KnobHolder::restoreDefaultValues()
 {
     aboutToRestoreDefaultValues();
-    notifyProjectBeginKnobsValuesChanged(Natron::USER_EDITED);
-    
+
     for (U32 i = 0; i < _imp->knobs.size() ;++i) {
         Button_Knob* isBtn = dynamic_cast<Button_Knob*>(_imp->knobs[i].get());
         
         ///Don't restore buttons and the node label
         if (!isBtn && _imp->knobs[i]->getName() != "label_natron") {
+            _imp->knobs[i]->blockEvaluation();
             for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
                 _imp->knobs[i]->resetToDefaultValue(d);
             }
+            _imp->knobs[i]->unblockEvaluation();
         }
     }
-    notifyProjectEndKnobsValuesChanged();
     evaluate_public(NULL, true, Natron::USER_EDITED);
     
 

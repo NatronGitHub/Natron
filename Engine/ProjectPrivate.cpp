@@ -48,11 +48,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , currentNodes()
     , project(project)
     , lastTimelineSeekCaller()
-    , beginEndBracketsCount(0)
-    , evaluationsCount(0)
-    , holdersWhoseBeginWasCalled()
-    , isSignificantChange(false)
-    , lastKnobChanged(NULL)
     , isLoadingProjectMutex()
     , isLoadingProject(false)
     , isSavingProjectMutex()
@@ -66,7 +61,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 
 void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     
-    project->beginProjectWideValueChanges(Natron::PROJECT_LOADING,project);
 
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     
@@ -220,9 +214,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
     for (std::list<Double_Knob*>::iterator it = trackLinksRestored.begin();it!=trackLinksRestored.end();++it) {
         (*it)->restoreFeatherRelatives();
     }
-    
-    project->endProjectWideValueChanges(project);
-    
+        
     nodeCounters = obj.getNodeCounters();
     
 

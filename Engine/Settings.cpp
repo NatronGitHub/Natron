@@ -725,7 +725,6 @@ void Settings::restoreSettings(){
     _restoringSettings = true;
     _wereChangesMadeSinceLastSave = false;
     
-    notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("General");
     if (settings.contains("CheckUpdates")) {
@@ -1002,7 +1001,6 @@ void Settings::restoreSettings(){
         }
     }
     settings.endGroup();
-    notifyProjectEndKnobsValuesChanged();
     _restoringSettings = false;
 }
 

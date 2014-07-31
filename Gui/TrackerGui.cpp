@@ -346,10 +346,10 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>(newInstanceKnob.get());
         assert(dblKnob);
-        dblKnob->beginValueChange(Natron::PLUGIN_EDITED);
-        dblKnob->setValue(pos.x(), 0,false);
+        dblKnob->blockEvaluation();
+        dblKnob->setValue(pos.x(), 0);
+        dblKnob->unblockEvaluation();
         dblKnob->setValue(pos.y(), 1);
-        dblKnob->endValueChange();
         didSomething = true;
     }
     

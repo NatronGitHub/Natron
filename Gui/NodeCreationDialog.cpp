@@ -44,6 +44,12 @@ public:
         if (e->key() == Qt::Key_Escape) {
             dialog->close();
             e->accept();
+        } else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+            if (dialog->determineIfAcceptNeeded()) {
+                e->accept();
+            } else {
+                LineEdit::keyPressEvent(e);
+            }
         } else {
             LineEdit::keyPressEvent(e);
         }
@@ -115,6 +121,33 @@ NodeCreationDialog::~NodeCreationDialog()
     
 }
 
+bool NodeCreationDialog::determineIfAcceptNeeded()
+{
+    QCompleter* completer =  _imp->textEdit->completer();
+    int count = completer->completionCount();
+    const QItemSelection selection = completer->popup()->selectionModel()->selection();
+    QModelIndexList indexes = selection.indexes();
+    
+    if (count == 1) {
+        completer->setCurrentRow(0);
+        _imp->textEdit->blockSignals(true);
+        _imp->textEdit->setText(completer->currentCompletion());
+        _imp->textEdit->blockSignals(false);
+        accept();
+        return true;
+    } else if (indexes.size() == 1) {
+        completer->setCurrentRow(indexes[0].row());
+        _imp->textEdit->blockSignals(true);
+        _imp->textEdit->setText(completer->currentCompletion());
+        _imp->textEdit->blockSignals(false);
+        accept();
+        return true;
+        
+    } else {
+        return false;
+    }
+
+}
 
 QString NodeCreationDialog::getNodeName() const
 {

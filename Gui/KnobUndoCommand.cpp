@@ -85,22 +85,25 @@ void PasteUndoCommand::undo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     
-    internalKnob->beginValueChange(Natron::PLUGIN_EDITED);
     
     int i = 0;
     std::list<Variant>::iterator next = oldValues.begin();
     ++next;
+    internalKnob->blockEvaluation();
     for (std::list<Variant>::iterator it = oldValues.begin(); it!=oldValues.end();++it,++next) {
         if ((i == _targetDimension && !_copyAnimation) || _copyAnimation) {
-            bool triggerOnKnobChanged = next == oldValues.end();
+            bool isLast = next == oldValues.end();
+            if (isLast) {
+                internalKnob->unblockEvaluation();
+            }
             if (isInt) {
-                isInt->setValue(it->toInt(), i,false,triggerOnKnobChanged);
+                isInt->setValue(it->toInt(), i,false);
             } else if (isBool) {
-                isBool->setValue(it->toBool(), i,false,triggerOnKnobChanged);
+                isBool->setValue(it->toBool(), i,false);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(), i,false,triggerOnKnobChanged);
+                isDouble->setValue(it->toDouble(), i,false);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(), i,false,triggerOnKnobChanged);
+                isString->setValue(it->toString().toStdString(), i,false);
             }
         }
         ++i;
@@ -131,7 +134,6 @@ void PasteUndoCommand::undo()
         isParametric->loadParametricCurves(tmpCurves);
     }
     
-    internalKnob->endValueChange();
 
     if (!_copyAnimation) {
         setText(QObject::tr("Paste value of %1")
@@ -155,25 +157,24 @@ void PasteUndoCommand::redo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     
-    internalKnob->beginValueChange(Natron::PLUGIN_EDITED);
-    
     int i = 0;
     std::list<Variant>::iterator next = newValues.begin();
     ++next;
+    internalKnob->blockEvaluation();
     for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it,++next) {
         if ((i == _dimensionToFetch && !_copyAnimation) || _copyAnimation) {
-            bool triggerOnKnobChanged = next == newValues.end();
+            bool isLast = next == newValues.end();
+            if (isLast) {
+                internalKnob->unblockEvaluation();
+            }
             if (isInt) {
-                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,
-                                triggerOnKnobChanged);
+                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             } else if (isBool) {
-                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,
-                                 triggerOnKnobChanged);
+                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             } else if (isDouble) {
-                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,
-                                   triggerOnKnobChanged);
+                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             } else if (isString) {
-                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false,triggerOnKnobChanged);
+                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
             }
         }
         ++i;
@@ -212,8 +213,6 @@ void PasteUndoCommand::redo()
         isParametric->loadParametricCurves(tmpCurves);
     }
     
-    internalKnob->endValueChange();
-    
     if (!_copyAnimation) {
         setText(QObject::tr("Paste value of %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
@@ -226,20 +225,19 @@ void PasteUndoCommand::redo()
 
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,
-                                                           bool triggerOnKnobChanged,
-                                                           const std::list<Variant>& values,int time)
+                                                           const Variant& value,int dimension,int time)
 : QUndoCommand()
 , knobs()
 , createNew(createNew)
 , firstRedoCalled(false)
-, triggerOnKnobChanged(triggerOnKnobChanged)
 {
     assert(knob);
     boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
     boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
     
     ValueToSet v;
-    v.newValues = values;
+    v.newValue = value;
+    v.dimension = dimension;
     v.time = time;
     v.copy = copy;
     v.setKeyFrame = setKeyFrame;
@@ -359,33 +357,30 @@ void MultipleKnobEditsUndoCommand::redo()
     } else {
         ///this is the first redo command, set values
         for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
-            int i = 0;
             boost::shared_ptr<KnobI> knob = it->first->getKnob();
             
-            std::list<Variant>::iterator next = it->second.newValues.begin();
-            ++next;
-            for (std::list<Variant>::iterator it2 = it->second.newValues.begin(); it2!=it->second.newValues.end(); ++it2,++i,++next) {
-                KeyFrame k;
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
-                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
-                bool doKnobChanged = next == it->second.newValues.end() && triggerOnKnobChanged;
-                if (isInt) {
-                    it->first->setValue<int>(i, it2->toInt(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
-                } else if (isBool) {
-                    it->first->setValue<bool>(i, it2->toBool(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
-                } else if (isDouble) {
-                    it->first->setValue<double>(i, it2->toDouble(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
-                } else if (isString) {
-                    it->first->setValue<std::string>(i, it2->toString().toStdString(), &k,true,doKnobChanged,Natron::PLUGIN_EDITED);
-                } else {
-                    assert(false);
-                }
-                if (it->second.setKeyFrame) {
-                    it->first->setKeyframe(it->second.time, i);
-                }
+            
+            KeyFrame k;
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+            Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            if (isInt) {
+                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::PLUGIN_EDITED);
+            } else if (isBool) {
+                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,Natron::PLUGIN_EDITED);
+            } else if (isDouble) {
+                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,Natron::PLUGIN_EDITED);
+            } else if (isString) {
+                it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
+                                                 &k,true,Natron::PLUGIN_EDITED);
+            } else {
+                assert(false);
             }
+            if (it->second.setKeyFrame) {
+                it->first->setKeyframe(it->second.time, it->second.dimension);
+            }
+            
         }
     }
     

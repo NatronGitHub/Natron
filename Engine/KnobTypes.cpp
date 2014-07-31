@@ -909,6 +909,30 @@ Color_Knob::setDisplayMinimumsAndMaximums(const std::vector<double> &minis, cons
     }
 }
 
+
+void
+Color_Knob::setValues(double r,double g,double b)
+{
+    assert(getDimension() == 3);
+    blockEvaluation();
+    setValue(r, 0);
+    setValue(g, 1);
+    unblockEvaluation();
+    setValue(b, 2);
+}
+
+void
+Color_Knob::setValues(double r,double g,double b,double a)
+{
+    assert(getDimension() == 4);
+    blockEvaluation();
+    setValue(r, 0);
+    setValue(g, 1);
+    setValue(b, 2);
+    unblockEvaluation();
+    setValue(a, 3);
+}
+
 /******************************STRING_KNOB**************************************/
 
 

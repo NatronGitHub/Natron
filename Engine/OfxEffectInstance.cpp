@@ -195,13 +195,14 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
         effect_->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
-        notifyProjectBeginKnobsValuesChanged(Natron::PROJECT_LOADING);
+        
+        blockEvaluation();
+
         OfxStatus stat = effect_->populate();
         
         initializeContextDependentParams();
         
         effect_->addParamsToTheirParents();
-        notifyProjectEndKnobsValuesChanged();
 
         if (stat != kOfxStatOK) {
             throw std::runtime_error("Error while populating the Ofx image effect");
@@ -221,7 +222,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         
             
         stat = effect_->createInstanceAction();
-            
+        unblockEvaluation();
         
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
             throw std::runtime_error("Could not create effect instance for plugin");

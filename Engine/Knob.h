@@ -75,25 +75,23 @@ public:
      * for a dimension.
      **/
     virtual std::string getDimensionName(int dimension) const = 0;
+
+    /**
+     * @brief When set to true the instanceChanged action on the plugin and evaluate (render) will not be called
+     * when issuing value changes. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
+     **/
+    virtual void blockEvaluation() = 0;
     
     /**
-     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
+     * @brief To be called to reactivate evaluation. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
-    virtual void beginValueChange(Natron::ValueChangedReason reason) = 0;
+    virtual void unblockEvaluation() = 0;
     
     /**
-     * @brief Called by setValue to indicate that an evaluation is needed. This could be private.
+     * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and 
+     * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason,bool triggerKnobChanged) = 0;
-    
-    /**
-     * @brief Used to bracket calls to setValue. This indicates than a series of calls will be made, and
-     * the derived class can attempt to concatenate evaluations into a single one. For example to avoid multiple calls
-     * to render.
-     **/
-    virtual void endValueChange() = 0;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) = 0;
     
     /**
      * @brief Called when a keyframe/derivative is modified, indicating that the curve has changed and we must
@@ -533,8 +531,8 @@ public:
     
     boost::shared_ptr<KnobI> getKnob() const { return k; }
     
-    void s_evaluateValueChangedInMainThread(int dimension,int reason,bool triggerKnobChanged)
-    { emit evaluateValueChangedInMainThread(dimension,reason,triggerKnobChanged); }
+    void s_evaluateValueChangedInMainThread(int dimension,int reason)
+    { emit evaluateValueChangedInMainThread(dimension,reason); }
     void s_animationLevelChanged(int level) { emit animationLevelChanged(level); }
     void s_deleted() { emit deleted(); }
     void s_valueChanged(int dimension,int reason) { emit valueChanged(dimension,reason); }
@@ -546,8 +544,8 @@ public:
     void s_updateSlaves(int dimension) { emit updateSlaves(dimension); }
     void s_knobSlaved(int dim,bool slaved) { emit knobSlaved(dim,slaved); }
     void s_setValueWithUndoStack(Variant v,int dim) { emit setValueWithUndoStack(v, dim); }
-    void s_appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged) {
-        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame,triggerOnKnobChanged);
+    void s_appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame) {
+        emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
     }
     void s_setDirty(bool b) { emit dirty(b); }
     
@@ -581,13 +579,13 @@ public slots:
     /**
      * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
      **/
-    void onEvaluateValueChangedInOtherThread(int dimension, int reason,bool triggerOnKnobChanged);
+    void onEvaluateValueChangedInOtherThread(int dimension, int reason);
 
     
 signals:
     
     ///emitted whenever evaluateValueChanged is called in another thread than the main thread
-    void evaluateValueChangedInMainThread(int dimension,int reason,bool triggerOnKnobChanged);
+    void evaluateValueChangedInMainThread(int dimension,int reason);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
@@ -630,7 +628,7 @@ signals:
     
     ///Same as setValueWithUndoStack except that the value change will be compressed
     ///in a multiple edit undo/redo action
-    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged);
+    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -685,11 +683,11 @@ public:
     ///Populates for each dimension: the enabled state, the curve and the animation level
     virtual void populate() OVERRIDE;
     
-    virtual void beginValueChange(Natron::ValueChangedReason reason) OVERRIDE FINAL;
+    virtual void blockEvaluation() OVERRIDE FINAL;
     
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason,bool triggerKnobChanged) OVERRIDE FINAL;
+    virtual void unblockEvaluation() OVERRIDE FINAL;
     
-    virtual void endValueChange() OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
 private:
     
@@ -904,17 +902,15 @@ private:
      * @brief Set the value of the knob in the given dimension with the given reason. 
      * @param newKey If not NULL and the animation level of the knob is Natron::INTERPOLATED_VALUE
      * then a new keyframe will be set at the current time.
-     * @param triggerKnobChanged When true the knob will call onKnobValueChanged on the KnobHolder.
      **/
     ValueChangedReturnCode setValue(const T& v,int dimension,Natron::ValueChangedReason reason,
-                                    KeyFrame* newKey,bool triggerKnobChanged) WARN_UNUSED_RETURN;
+                                    KeyFrame* newKey) WARN_UNUSED_RETURN;
     /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey,
-                        bool triggerOnKnobChanged) WARN_UNUSED_RETURN;
+    bool setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
     
     virtual void unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState) OVERRIDE FINAL;
     
@@ -924,9 +920,8 @@ public:
      * @brief Calls setValue with a reason of Natron::PLUGIN_EDITED.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
-     * @param triggerOnKnobChanged When true (default) : onKnobValueChanged will be called on the KnobHolder.
      **/
-    ValueChangedReturnCode setValue(const T& value,int dimension,bool turnOffAutoKeying = false,bool triggerOnKnobChanged = true);
+    ValueChangedReturnCode setValue(const T& value,int dimension,bool turnOffAutoKeying = false);
     
     /**
      * @brief Calls setValue with a reason of Natron::USER_EDITED.
@@ -934,7 +929,7 @@ public:
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCode
      **/
-    ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey,bool triggerKnobChanged);
+    ValueChangedReturnCode onValueChanged(int dimension,const T& v,KeyFrame* newKey);
     
     /**
      * @brief This is called by the plugin when a set value call would happen during  an interact action.
@@ -944,7 +939,7 @@ public:
     /**
      * @brief Calls setValueAtTime with a reason of Natron::PLUGIN_EDITED.
      **/
-    void setValueAtTime(int time,const T& v,int dimension,bool triggerOnKnobChanged = true);
+    void setValueAtTime(int time,const T& v,int dimension);
     
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.
@@ -1150,6 +1145,8 @@ public:
     
 protected:
     
+    bool isEvaluationBlocked() const;
+    
     virtual void aboutToRestoreDefaultValues() {}
     
     /**
@@ -1180,29 +1177,14 @@ protected:
 public:
     
     int getRecursionLevel() const;
-
     
     /**
-     * @brief Used to bracket a series of calls to setValue(...) in case many complex changes are done
-     * at once. If not called, notifyProjectEvaluationRequested() will  automatically bracket its call by a begin/end
-     * but this can lead to worse performance.
+     * @brief When set to true any change which would trigger an instanceChanged action or cause a new
+     * evaluation will not cause them to be called. Internally maintains a counter, when 0 evaluation
+     * is enabled.
      **/
-    void notifyProjectBeginKnobsValuesChanged(Natron::ValueChangedReason reason);
-    
-    /**
-     * @brief Called whenever a value changes. It brakcets the call by a begin/end if it was
-     * not done already and requests an evaluation (i.e: probably a render).
-     **/
-    void notifyProjectEvaluationRequested(Natron::ValueChangedReason reason,KnobI* k,bool significant);
-
-    
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    void notifyProjectEndKnobsValuesChanged();
-    
+    void blockEvaluation();
+    void unblockEvaluation();
     
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

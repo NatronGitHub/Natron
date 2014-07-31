@@ -31,6 +31,7 @@ public:
     
     QString getNodeName() const;
     
+    bool determineIfAcceptNeeded();
 private:
 
     

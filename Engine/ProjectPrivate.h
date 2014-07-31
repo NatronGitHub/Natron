@@ -92,17 +92,7 @@ struct ProjectPrivate {
     Natron::Project* project;
     
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
-
-    int beginEndBracketsCount;
-    int evaluationsCount;
-    
-    ///for each knob holder, how many times begin was called, and what was the reason of the outtermost begin bracket.
-    typedef std::map<KnobHolder*, std::pair<int,Natron::ValueChangedReason> > KnobsValueChangedMap;
-    KnobsValueChangedMap holdersWhoseBeginWasCalled;
-    
-    bool isSignificantChange;
-    KnobI* lastKnobChanged;
-    
+        
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     

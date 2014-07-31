@@ -222,7 +222,7 @@ void Knob<std::string>::valueToVariant(const std::string& v,Variant* vari)
 
 template <typename T>
 KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Natron::ValueChangedReason reason,
-                                                     KeyFrame* newKey,bool triggerKnobChanged)
+                                                     KeyFrame* newKey)
 {
     if (0 > dimension || dimension > (int)_values.size()) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
@@ -247,7 +247,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                         QMutexLocker l(&_setValueRecursionLevelMutex);
                         ++_setValueRecursionLevel;
                     }
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false,triggerKnobChanged);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false);
                     {
                         QMutexLocker l(&_setValueRecursionLevelMutex);
                         --_setValueRecursionLevel;
@@ -264,7 +264,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
                         QMutexLocker l(&_setValueRecursionLevelMutex);
                         ++_setValueRecursionLevel;
                     }
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false,triggerKnobChanged);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false);
                     {
                         QMutexLocker l(&_setValueRecursionLevelMutex);
                         --_setValueRecursionLevel;
@@ -313,7 +313,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
         } else {
             time = getHolder()->getApp()->getTimeLine()->currentFrame();
         }
-        bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey,triggerKnobChanged);
+        bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
         if (addedKeyFrame) {
             ret = KEYFRAME_ADDED;
         } else {
@@ -323,7 +323,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
     }
     
     if (ret == NO_KEYFRAME_ADDED) { //the other cases already called this in setValueAtTime()
-        evaluateValueChange(dimension,reason,triggerKnobChanged);
+        evaluateValueChange(dimension,reason);
     }
     {
         QMutexLocker l(&_setValueRecursionLevelMutex);
@@ -337,8 +337,7 @@ KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& v,int dimension,Na
 }
 
 template<typename T>
-bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey,
-                             bool triggerOnKnobChanged)
+bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
 {
     if (dimension > getDimension() || dimension < 0) {
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -357,7 +356,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true,triggerOnKnobChanged);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
                     return true;
                 }
             }     break;
@@ -366,7 +365,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true,triggerOnKnobChanged);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
                     return true;
                 }
             }   break;
@@ -395,7 +394,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,reason,NULL,true);
+        (void)setValue(v, dimension,reason,NULL);
     }
 
     if (_signalSlotHandler && ret) {
@@ -410,8 +409,7 @@ bool Knob<T>::setValueAtTime(int time,const T& v,int dimension,Natron::ValueChan
 }
 
 template<>
-bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey,
-                                       bool triggerOnKnobChanged)
+bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimension,Natron::ValueChangedReason reason,KeyFrame* newKey)
 {
     if (dimension > getDimension() || dimension < 0) {
         throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
@@ -430,7 +428,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
                     Variant vari;
                     valueToVariant(v, &vari);
                     holder->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true,triggerOnKnobChanged);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
                     return true;
                 }
             }     break;
@@ -439,7 +437,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
                 if (!get_SetValueRecursionLevel()) {
                     Variant vari;
                     valueToVariant(v, &vari);
-                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true,triggerOnKnobChanged);
+                    _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
                     return true;
                 }
             }   break;
@@ -464,7 +462,7 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
 
     bool ret = curve->addKeyFrame(*newKey);
     if (reason == Natron::PLUGIN_EDITED) {
-        (void)setValue(v, dimension,reason,NULL,true);
+        (void)setValue(v, dimension,reason,NULL);
     }
 
     if (reason != Natron::USER_EDITED) {
@@ -536,27 +534,27 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
 }
 
 template<typename T>
-KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying,bool triggerOnKnobChanged)
+KnobHelper::ValueChangedReturnCode Knob<T>::setValue(const T& value,int dimension,bool turnOffAutoKeying)
 {
     if (turnOffAutoKeying) {
-        return setValue(value,dimension,Natron::PLUGIN_EDITED,NULL,triggerOnKnobChanged);
+        return setValue(value,dimension,Natron::PLUGIN_EDITED,NULL);
     } else {
         KeyFrame k;
-        return setValue(value,dimension,Natron::PLUGIN_EDITED,&k,triggerOnKnobChanged);
+        return setValue(value,dimension,Natron::PLUGIN_EDITED,&k);
     }
 }
 
 template<typename T>
-KnobHelper::ValueChangedReturnCode Knob<T>::onValueChanged(int dimension,const T& v,KeyFrame* newKey,bool triggerKnobChanged)
+KnobHelper::ValueChangedReturnCode Knob<T>::onValueChanged(int dimension,const T& v,KeyFrame* newKey)
 {
-    return setValue(v, dimension,Natron::USER_EDITED,newKey,triggerKnobChanged);
+    return setValue(v, dimension,Natron::USER_EDITED,newKey);
 }
 
 template<typename T>
-void Knob<T>::setValueAtTime(int time,const T& v,int dimension,bool triggerOnKnobChanged)
+void Knob<T>::setValueAtTime(int time,const T& v,int dimension)
 {
     KeyFrame k;
-    (void)setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED,&k,triggerOnKnobChanged);
+    (void)setValueAtTime(time,v,dimension,Natron::PLUGIN_EDITED,&k);
 }
 
 template<typename T>
@@ -695,21 +693,25 @@ template<typename T>
 void Knob<T>::onKeyFrameSet(SequenceTime time,int dimension)
 {
     KeyFrame k;
-    (void)setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED,&k,true);
+    (void)setValueAtTime(time,getValue(dimension),dimension,Natron::USER_EDITED,&k);
 }
 
 template<typename T>
 void Knob<T>::onTimeChanged(SequenceTime time)
 {
     //setValue's calls compression is taken care of above.
-    for (int i = 0; i < getDimension(); ++i) {
+    int dims = getDimension();
+    blockEvaluation();
+    for (int i = 0; i < dims; ++i) {
         boost::shared_ptr<Curve> c = getCurve(i);
         if (c->getKeyFramesCount() > 0 && !getIsSecret()) {
             T v = getValueAtTime(time,i);
-            (void)setValue(v,i,Natron::TIME_CHANGED,NULL,true);
+            (void)setValue(v,i,Natron::TIME_CHANGED,NULL);
         }
         checkAnimationLevel(i);
     }
+    unblockEvaluation();
+
 }
 
 template<typename T>
@@ -728,20 +730,22 @@ void Knob<T>::evaluateAnimationChange()
         time = 0;
     }
 
-    beginValueChange(Natron::PLUGIN_EDITED);
+    blockEvaluation();
+    int dims = getDimension();
     bool hasEvaluatedOnce = false;
-    for (int i = 0; i < getDimension();++i) {
+    for (int i = 0; i < dims;++i) {
+        if (i == dims - 1) {
+            unblockEvaluation();
+        }
         if (isAnimated(i)) {
             T v = getValueAtTime(time,i);
-            (void)setValue(v,i,Natron::PLUGIN_EDITED,NULL,true);
+            (void)setValue(v,i,Natron::PLUGIN_EDITED,NULL);
             hasEvaluatedOnce = true;
         }
     }
     if (!hasEvaluatedOnce) {
-        evaluateValueChange(0, Natron::PLUGIN_EDITED,true);
+        evaluateValueChange(0, Natron::PLUGIN_EDITED);
     }
-
-    endValueChange();
 }
 
 template<typename T>
@@ -807,7 +811,7 @@ template<typename T>
 void Knob<T>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
-    (void)setValue(_defaultValues[dimension], dimension,Natron::RESTORE_DEFAULT,NULL,false);
+    (void)setValue(_defaultValues[dimension], dimension,Natron::RESTORE_DEFAULT,NULL);
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::RESTORE_DEFAULT);
     }

@@ -181,11 +181,6 @@ public:
     void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
     Natron::OutputEffectInstance* getLastTimelineSeekCaller() const;
     
-    void beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller);
-
-    void stackEvaluateRequest(Natron::ValueChangedReason reason, KnobHolder* caller, KnobI *k, bool isSignificant);
-
-    void endProjectWideValueChanges(KnobHolder* caller);
 
     /**
      * @brief Returns true if the project is considered as irrelevant and shouldn't be autosaved anyway.

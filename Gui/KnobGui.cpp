@@ -137,8 +137,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(setValueWithUndoStack(Variant,int)),this,SLOT(onSetValueUsingUndoStack(Variant,int)));
     QObject::connect(handler,SIGNAL(dirty(bool)),this,SLOT(onSetDirty(bool)));
     QObject::connect(handler,SIGNAL(animationLevelChanged(int)),this,SLOT(onAnimationLevelChanged(int)));
-    QObject::connect(handler,SIGNAL(appendParamEditChange(Variant,int,int,bool,bool,bool)),this,
-                     SLOT(onAppendParamEditChanged(Variant,int,int,bool,bool,bool)));
+    QObject::connect(handler,SIGNAL(appendParamEditChange(Variant,int,int,bool,bool)),this,
+                     SLOT(onAppendParamEditChanged(Variant,int,int,bool,bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -1358,35 +1358,9 @@ void KnobGui::onAnimationLevelChanged(int level)
     }
 }
 
-void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame,bool triggerOnKnobChanged)
+void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
-    int dimension = knob->getDimension();
-    std::list<Variant> values;
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
-    
-    for (int i = 0; i < dimension; ++i) {
-        if (i == dim) {
-            values.push_back(v);
-        } else {
-            Variant vari;
-            if (isInt) {
-                vari.setValue(isInt->getValue(i));
-            } else if (isBool) {
-                vari.setValue(isBool->getValue(i));
-            } else if (isDouble) {
-                vari.setValue(isDouble->getValue(i));
-            } else if (isString) {
-                vari.setValue(isString->getValue(i));
-            }
-            values.push_back(vari);
-        }
-    }
-    
-    pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,triggerOnKnobChanged,values,time));
+    pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,v,dim,time));
 }
 
 

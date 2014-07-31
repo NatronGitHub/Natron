@@ -858,145 +858,6 @@ void Project::load(const ProjectSerialization& obj)
     emit formatChanged(f);
 }
 
-void Project::beginProjectWideValueChanges(Natron::ValueChangedReason reason,KnobHolder* caller)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    
-    ///increase the begin calls count
-    ++_imp->beginEndBracketsCount;
-    
-    ///If begin was already called on this caller, increase the calls count for this caller, otherwise
-    ///insert a new entry in the holdersWhoseBeginWasCalled map with a call count of 1 and the reason.
-    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-
-    if(found == _imp->holdersWhoseBeginWasCalled.end()){
-        
-        //getApp()->unlockProject();
-        caller->beginKnobsValuesChanged_public(reason);
-        //getApp()->lockProject();
-        
-        ///insert the caller in the map
-        _imp->holdersWhoseBeginWasCalled.insert(std::make_pair(caller,std::make_pair(1,reason)));
-    }else{
-        
-        ///increase the begin calls count of 1
-        ++found->second.first;
-    }
-
-
-}
-
-void Project::stackEvaluateRequest(Natron::ValueChangedReason reason,KnobHolder* caller,KnobI* k,bool isSignificant)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    ///This function may be called outside of a begin/end bracket call, in which case we call them ourselves.
-    
-    bool mustEndBracket = false;
-
-    ///if begin was not called for this caller, call it ourselves
-    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-    if (found == _imp->holdersWhoseBeginWasCalled.end() || _imp->beginEndBracketsCount == 0) {
-        beginProjectWideValueChanges(reason,caller);
-        ///flag that we called begin
-        mustEndBracket = true;
-    } else {
-        ///THIS IS WRONG AND COMMENTED OUT : THIS LEADS TO INFINITE RECURSION.
-        ///if we found a call made to begin already for this caller, adjust the reason to the reason of the
-        /// outermost begin call
-        //   reason = found->second.second;
-    }
-
-    ///if the evaluation is significant , set the flag isSignificantChange to true
-    _imp->isSignificantChange |= isSignificant;
-
-    ///increase the count of evaluation requests
-    ++_imp->evaluationsCount;
-    
-    ///remember the last caller, this is the one on which we will call evaluate
-    _imp->lastKnobChanged = k;
-
-    ///if the reason of the outermost begin call is RESTORE_DEFAULT or PROJECT_LOADING then we don't call
-    ///the onKnobValueChanged. This way the plugin can avoid infinite recursions by doing so:
-    /// beginValueChange(PROJECT_LOADING)
-    /// ...
-    /// endValueChange()
-    if (reason != Natron::PROJECT_LOADING && reason != Natron::RESTORE_DEFAULT) {
-        caller->onKnobValueChanged_public(k,reason,_imp->timeline->currentFrame());
-    }
-    
-    ////if begin was not call prior to calling this function, call the end bracket oruselves
-    if (mustEndBracket) {
-        endProjectWideValueChanges(caller);
-    }
-}
-
-void Project::endProjectWideValueChanges(KnobHolder* caller){
-
-    assert(QThread::currentThread() == qApp->thread());
-    
-    ///decrease the beginEndBracket count
-    --_imp->beginEndBracketsCount;
-    
-    ///Get the count of begin calls made to this caller.
-    ///It must absolutely be present in holdersWhoseBeginWasCalled because we either added it by
-    ///calling stackEvaluateRequest or beginProjectWideValueChanges
-    ///This means that calling endProjectWideValueChanges twice in a row will crash in the assertion below.
-    ProjectPrivate::KnobsValueChangedMap::iterator found = _imp->holdersWhoseBeginWasCalled.find(caller);
-    assert(found != _imp->holdersWhoseBeginWasCalled.end());
-    
-    Natron::ValueChangedReason outerMostReason = found->second.second;
-    
-    ///If we're closing the last bracket, call the caller portion of endKnobsValuesChanged
-    if(found->second.first == 1){
-        
-        ///remove the caller from the holdersWhoseBeginWasCalled map
-        _imp->holdersWhoseBeginWasCalled.erase(found);
-        
-        caller->endKnobsValuesChanged_public(outerMostReason);
-
-        
-    }else{
-        ///we're not on the last begin/end bracket for this caller, just decrease the begin calls count
-        --found->second.first;
-    }
-    
-    ///if we're not in the last begin/end bracket (globally to all callers) then return
-    if(_imp->beginEndBracketsCount != 0){
-        return;
-    }
-    
-    ///If we reach here that means that we're closing the last global bracket.
-    ///If the bracket was empty of evaluation we don't have to do anything.
-    if(_imp->evaluationsCount != 0){
-        
-        ///reset the evaluation count to 0
-        _imp->evaluationsCount = 0;
-        
-        ///if the outermost bracket reason was USER_EDITED and the knob was not a button, trigger an auto-save.
-        if(outerMostReason == Natron::USER_EDITED && !dynamic_cast<Button_Knob*>(_imp->lastKnobChanged)){
-            getApp()->triggerAutoSave();
-        }
-        
-        ///if the outermost bracket reason was not PROJECT_LOADING or TIME_CHANGED, then call evaluate
-        ///on the last caller with
-        ///the significant param recorded in the stackEvaluateRequest function.
-        if(outerMostReason != Natron::PROJECT_LOADING && outerMostReason != Natron::TIME_CHANGED) {
-            
-            caller->evaluate_public(_imp->lastKnobChanged,_imp->isSignificantChange,outerMostReason);
-            
-        }
-    }
-    
-    ////reset back the isSignificantChange flag to false, otherwise next insignificant evaluations
-    ////would be evaluated.
-    _imp->isSignificantChange = false;
-    
-    ///the stack must be empty, i.e: crash if the user didn't correctly end the brackets
-    assert(_imp->holdersWhoseBeginWasCalled.empty());
-    
-}
-
 void Project::beginKnobsValuesChanged(Natron::ValueChangedReason /*reason*/){}
 
 void Project::endKnobsValuesChanged(Natron::ValueChangedReason /*reason*/) {}
@@ -1085,9 +946,11 @@ void Project::reset() {
     }
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
+        knobs[i]->blockEvaluation();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
+        knobs[i]->unblockEvaluation();
     }
     
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
