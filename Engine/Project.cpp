@@ -356,6 +356,12 @@ void Project::triggerAutoSave() {
     if (appPTR->isBackground()) {
         return;
     }
+    {
+        QMutexLocker l(&_imp->isLoadingProjectMutex);
+        if(_imp->isLoadingProject){
+            return;
+        }
+    }
     
     _imp->autoSaveTimer->start(appPTR->getCurrentSettings()->getAutoSaveDelayMS());
 }

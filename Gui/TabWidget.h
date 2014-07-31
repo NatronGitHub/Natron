@@ -121,24 +121,23 @@ private:
 class TabWidget : public QFrame {
     
     Q_OBJECT
-    
-public:
-    enum Decorations{
-        NONE=0, // no buttons attached to the tabs
-        NOT_CLOSABLE=1, // the pane cannot be removed, but each tab can be removed
-        CLOSABLE=2 // the pane can be removed as well as tabs.
-    };
 
 public:
     
     static const QString splitHorizontallyTag;
     static const QString splitVerticallyTag;
         
-    explicit TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent = 0);
+    explicit TabWidget(Gui* gui,QWidget* parent = 0);
     
     virtual ~TabWidget();
     
     const Gui* getGui() const {return _gui;}
+    
+    ////To be called when it is going to be deleted
+    void notifyGuiAboutRemoval();
+    
+    ///When not closable a tabwidget cannot float  or be closed
+    void setClosable(bool closable);
     
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
      Returns false if the object's name is empty but the TabWidget needs a decoration*/
@@ -192,10 +191,12 @@ public:
         return _currentWidget;
     }
     
-    std::map<TabWidget*,bool> getUserSplits() const {
+    std::list<std::pair<TabWidget*,bool> > getUserSplits() const {
         QMutexLocker l(&_tabWidgetStateMutex);
         return _userSplits;
     }
+    
+    void dettachTabs();
     
     bool removeSplit(TabWidget* tab,bool* orientation = NULL);
     
@@ -221,6 +222,12 @@ public:
     
     QString objectName_mt_safe() const;
     
+    TabWidget* splitHorizontally(bool autoSave = true);
+    
+    TabWidget* splitVertically(bool autoSave = true);
+    
+    int activeIndex() const;
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
@@ -238,9 +245,9 @@ public slots:
     
     void movePropertiesBinHere();
     
-    void splitHorizontally();
+    void onSplitHorizontally() { splitHorizontally(); }
     
-    void splitVertically();
+    void onSplitVertically() { splitVertically(); }
     
     void closePane();
     
@@ -248,10 +255,10 @@ public slots:
     
     void closeFloatingPane();
     
+    ///If there's 1 tab it floats this pane
+    ///Otherwise it creates a new pane, move the current tab to it and floats it
     void floatCurrentWidget();
-    
-    void floatTab(QWidget* tab);
-    
+        
     void closeCurrentWidget();
     
     void closeTab(int index);
@@ -282,6 +289,7 @@ private:
     QWidget* _header;
 
     QHBoxLayout* _headerLayout;
+    bool _modifyingTabBar;
     TabBar* _tabBar; // the header containing clickable pages
     Button* _leftCornerButton;
 
@@ -290,12 +298,11 @@ private:
 
     QWidget* _currentWidget;
 
-    Decorations _decorations;
     bool _isFloating;
     bool _drawDropRect;
 
     bool _fullScreen;
-    std::map<TabWidget*,bool> _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
+    std::list< std::pair<TabWidget*,bool> > _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
     mutable QMutex _tabWidgetStateMutex;
 
 };

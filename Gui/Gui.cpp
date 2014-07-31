@@ -84,7 +84,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/RotoGui.h"
 
 
-
+#define kViewerPaneName "ViewerPane"
+#define kPropertiesBinName "Properties"
 
 #define NAMED_PLUGIN_GROUP_NO 14
 
@@ -224,20 +225,8 @@ struct GuiPrivate {
     //It tells where to put the viewer when making a new one
     // If null it places it on default tab widget
     TabWidget* _nextViewerTabPlace;
-
-    ///the initial pane where the Curve Editor, Node graph, Dope sheet (etc...) are located.
-    TabWidget* _workshopPane;
     
-    ///The splitter separating the workshop pane of the viewers pane.
-    Splitter* _viewerWorkshopSplitter;
-    
-    ///the initial pane where the properties are layed out.
-    TabWidget* _propertiesPane;
-    
-    ///the splitter separating _viewerWorkshopSplitter and the properties pane.
-    Splitter* _middleRightSplitter;
-    
-    ///the splitter separating _middleRightSplitter and the left toolbar
+    ///the splitter separating the gui and the left toolbar
     Splitter* _leftRightSplitter;
 
     ///a list of ptrs to all the viewer tabs.
@@ -377,10 +366,6 @@ struct GuiPrivate {
     , _lastSaveProjectOpenedDir()
     , _viewersPane(0)
     , _nextViewerTabPlace(0)
-    , _workshopPane(0)
-    , _viewerWorkshopSplitter(0)
-    , _propertiesPane(0)
-    , _middleRightSplitter(0)
     , _leftRightSplitter(0)
     , _viewerTabsMutex()
     , _viewerTabs()
@@ -433,7 +418,16 @@ struct GuiPrivate {
     void retranslateUi(QMainWindow *MainWindow);
     
     void addToolButton(ToolButton* tool);
+    
+    ///Creates the properties bin and appends it as a tab to the propertiesPane TabWidget
+    void createPropertiesBinGui(TabWidget* propertiesPane);
 
+    ///Must be called absolutely before createPropertiesBinGui
+    void createNodeGraphGui(TabWidget* workshopPane);
+    
+    void createCurveEditorGui(TabWidget* workshopPane);
+    
+    void createDefaultLayout();
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -881,7 +875,6 @@ void Gui::setupUi()
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
     _imp->_leftRightSplitter->setObjectName("ToolBar_splitter");
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
-    _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
     
@@ -892,121 +885,14 @@ void Gui::setupUi()
     
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);
     
-    _imp->_viewerWorkshopSplitter = new Splitter(_imp->_centralWidget);
-    _imp->_viewerWorkshopSplitter->setObjectName("Viewers_Workshop_splitter");
-    _imp->_splitters.push_back(_imp->_viewerWorkshopSplitter);
-    _imp->_viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
-    _imp->_viewerWorkshopSplitter->setOrientation(Qt::Vertical);
-    _imp->_viewerWorkshopSplitter->setChildrenCollapsible(false);;
-    
-    /*VIEWERS related*/
-    
-    _imp->_viewersPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_imp->_viewerWorkshopSplitter);
-    _imp->_viewersPane->setObjectName("ViewerPane");
-    _imp->_panes.push_back(_imp->_viewersPane);
-    _imp->_viewersPane->resize(_imp->_viewersPane->width(), this->height()/5);
-    _imp->_viewerWorkshopSplitter->addWidget(_imp->_viewersPane);
-    
-    /*WORKSHOP PANE*/
-    //======================
-    _imp->_workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_imp->_viewerWorkshopSplitter);
-    _imp->_workshopPane->setObjectName("WorkshopPane");
-    _imp->_panes.push_back(_imp->_workshopPane);
-    
-    _imp->_graphScene = new QGraphicsScene(this);
-    _imp->_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _imp->_nodeGraphArea = new NodeGraph(this,_imp->_graphScene,_imp->_workshopPane);
-    _imp->_nodeGraphArea->setObjectName(kNodeGraphObjectName);
-    _imp->_workshopPane->appendTab(_imp->_nodeGraphArea);
-    
-    _imp->_curveEditor = new CurveEditor(this,_imp->_appInstance->getTimeLine(),this);
+    _imp->createDefaultLayout();
 
-    _imp->_curveEditor->setObjectName(kCurveEditorObjectName);
-    _imp->_workshopPane->appendTab(_imp->_curveEditor);
-
-    _imp->_workshopPane->makeCurrentTab(0);
-    
-    _imp->_viewerWorkshopSplitter->addWidget(_imp->_workshopPane);
-    
-    ///if the preferences are not set, give a "basic" shape to the splitter so it doesn't look collapsed
-    QList<int> sizesViewerSplitter;
-    sizesViewerSplitter << 500;
-    sizesViewerSplitter << 500;
-    _imp->_viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
-    
-
-    _imp->_middleRightSplitter = new Splitter(_imp->_centralWidget);
-    _imp->_middleRightSplitter->setObjectName("Center_PropertiesBin_splitter");
-    _imp->_splitters.push_back(_imp->_middleRightSplitter);
-    _imp->_middleRightSplitter->setChildrenCollapsible(false);
-    _imp->_middleRightSplitter->setContentsMargins(0, 0, 0, 0);
-    _imp->_middleRightSplitter->setOrientation(Qt::Horizontal);
-    _imp->_middleRightSplitter->addWidget(_imp->_viewerWorkshopSplitter);
-    
-    /*PROPERTIES DOCK*/
-    //======================
-    _imp->_propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
-    _imp->_propertiesPane->setObjectName("PropertiesPane");
-    _imp->_panes.push_back(_imp->_propertiesPane);
-
-    _imp->_propertiesScrollArea = new QScrollArea(_imp->_propertiesPane);
-    _imp->_nodeGraphArea->setPropertyBinPtr(_imp->_propertiesScrollArea);
-    _imp->_propertiesScrollArea->setObjectName("Properties");
-
-    _imp->_propertiesContainer=new QWidget(_imp->_propertiesScrollArea);
-    _imp->_propertiesContainer->setObjectName("_propertiesContainer");
-    _imp->_layoutPropertiesBin=new QVBoxLayout(_imp->_propertiesContainer);
-    _imp->_layoutPropertiesBin->setSpacing(0);
-    _imp->_layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
-    _imp->_propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
-    _imp->_propertiesContainer->setLayout(_imp->_layoutPropertiesBin);
-    _imp->_propertiesScrollArea->setWidget(_imp->_propertiesContainer);
-    _imp->_propertiesScrollArea->setWidgetResizable(true);
-    
-    QWidget* propertiesAreaButtonsContainer = new QWidget(_imp->_propertiesContainer);
-    QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
-    propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    propertiesAreaButtonsLayout->setSpacing(5);
-    QPixmap closePanelPix;
-    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
-    _imp->_clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
-    _imp->_clearAllPanelsButton->setMaximumSize(15, 15);
-    _imp->_clearAllPanelsButton->setToolTip(Qt::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
-                                                                     Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->_clearAllPanelsButton,SIGNAL(clicked(bool)),this,SLOT(clearAllVisiblePanels()));
-    
-    
-    _imp->_maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
-    _imp->_maxPanelsOpenedSpinBox->setMaximumSize(15,15);
-    _imp->_maxPanelsOpenedSpinBox->setMinimum(0);
-    _imp->_maxPanelsOpenedSpinBox->setMaximum(100);
-    _imp->_maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
-                                                                       "in the properties bin pane. The special value of 0 indicates "
-                                                                       "that an unlimited number of panels can be opened."),
-                                                                       Qt::WhiteSpaceNormal));
-    _imp->_maxPanelsOpenedSpinBox->setValue(appPTR->getCurrentSettings()->getMaxPanelsOpened());
-    QObject::connect(_imp->_maxPanelsOpenedSpinBox,SIGNAL(valueChanged(double)),this,SLOT(onMaxPanelsSpinBoxValueChanged(double)));
-    
-    propertiesAreaButtonsLayout->addWidget(_imp->_maxPanelsOpenedSpinBox);
-    propertiesAreaButtonsLayout->addWidget(_imp->_clearAllPanelsButton);
-    propertiesAreaButtonsLayout->addStretch();
-    
-    _imp->_layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
-    
-    
-    _imp->_propertiesPane->appendTab(_imp->_propertiesScrollArea);
-    
-    _imp->_middleRightSplitter->addWidget(_imp->_propertiesPane);
-    QList<int> sizesMiddleRightSplitter;
-    sizesMiddleRightSplitter << 800;
-    sizesMiddleRightSplitter << 300;
-    _imp->_middleRightSplitter->setSizes(sizesMiddleRightSplitter);
-
-    
-    _imp->_leftRightSplitter->addWidget(_imp->_middleRightSplitter);
+    ///Necessary for the first time Natron launches
+    QList<int> sizes;
+    sizes << 50 << 1000;
+    _imp->_leftRightSplitter->setSizes_mt_safe(sizes);
     
     _imp->_mainLayout->addWidget(_imp->_leftRightSplitter);
-
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(_imp->_appInstance->getProject(),
@@ -1114,6 +1000,121 @@ void Gui::setupUi()
     
     
 } // setupUi
+
+
+void GuiPrivate::createPropertiesBinGui(TabWidget* propertiesPane)
+{
+    _propertiesScrollArea = new QScrollArea(propertiesPane);
+    assert(_nodeGraphArea);
+    _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
+    _propertiesScrollArea->setObjectName(kPropertiesBinName);
+    
+    _propertiesContainer=new QWidget(_propertiesScrollArea);
+    _propertiesContainer->setObjectName("_propertiesContainer");
+    _layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
+    _layoutPropertiesBin->setSpacing(0);
+    _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
+    _propertiesContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
+    _propertiesContainer->setLayout(_layoutPropertiesBin);
+    _propertiesScrollArea->setWidget(_propertiesContainer);
+    _propertiesScrollArea->setWidgetResizable(true);
+    
+    QWidget* propertiesAreaButtonsContainer = new QWidget(_propertiesContainer);
+    QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
+    propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
+    propertiesAreaButtonsLayout->setSpacing(5);
+    QPixmap closePanelPix;
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
+    _clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
+    _clearAllPanelsButton->setMaximumSize(15, 15);
+    _clearAllPanelsButton->setToolTip(Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
+                                                                     Qt::WhiteSpaceNormal));
+    QObject::connect(_clearAllPanelsButton,SIGNAL(clicked(bool)),_gui,SLOT(clearAllVisiblePanels()));
+    
+    
+    _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
+    _maxPanelsOpenedSpinBox->setMaximumSize(15,15);
+    _maxPanelsOpenedSpinBox->setMinimum(0);
+    _maxPanelsOpenedSpinBox->setMaximum(100);
+    _maxPanelsOpenedSpinBox->setToolTip(Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
+                                                                          "in the properties bin pane. The special value of 0 indicates "
+                                                                          "that an unlimited number of panels can be opened."),
+                                                                       Qt::WhiteSpaceNormal));
+    _maxPanelsOpenedSpinBox->setValue(appPTR->getCurrentSettings()->getMaxPanelsOpened());
+    QObject::connect(_maxPanelsOpenedSpinBox,SIGNAL(valueChanged(double)),_gui,SLOT(onMaxPanelsSpinBoxValueChanged(double)));
+    
+    propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
+    propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
+    propertiesAreaButtonsLayout->addStretch();
+    
+    _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
+    
+    
+    propertiesPane->appendTab(_propertiesScrollArea);
+}
+
+void GuiPrivate::createNodeGraphGui(TabWidget* workshopPane)
+{
+    _graphScene = new QGraphicsScene(_gui);
+    _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    _nodeGraphArea = new NodeGraph(_gui,_graphScene,workshopPane);
+    _nodeGraphArea->setObjectName(kNodeGraphObjectName);
+    workshopPane->appendTab(_nodeGraphArea);
+
+}
+
+void GuiPrivate::createCurveEditorGui(TabWidget* workshopPane)
+{
+    _curveEditor = new CurveEditor(_gui,_appInstance->getTimeLine(),_gui);
+    _curveEditor->setObjectName(kCurveEditorObjectName);
+    workshopPane->appendTab(_curveEditor);
+}
+
+void Gui::wipeLayout()
+{
+    {
+        QMutexLocker l(&_imp->_panesMutex);
+        for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it!=_imp->_panes.end(); ++it) {
+            ///Conserve the node graph and the curve editor
+            (*it)->removeTab(_imp->_nodeGraphArea);
+            (*it)->removeTab(_imp->_curveEditor);
+            (*it)->removeTab(_imp->_propertiesScrollArea);
+            (*it)->hide();
+            (*it)->setParent(NULL);
+        }
+        _imp->_panes.clear();
+    }
+    Splitter *newSplitter = new Splitter(_imp->_centralWidget);
+    newSplitter->addWidget(_imp->_toolBox);
+    _imp->_mainLayout->removeWidget(_imp->_leftRightSplitter);
+    removeSplitter(_imp->_leftRightSplitter);
+    _imp->_leftRightSplitter->deleteLater();
+    _imp->_leftRightSplitter = newSplitter;
+    _imp->_mainLayout->addWidget(newSplitter);
+    
+}
+
+void GuiPrivate::createDefaultLayout()
+{
+    ///First tab widget must be created this way
+    _viewersPane = new TabWidget(_gui,_leftRightSplitter);
+    _viewersPane->setObjectName(kViewerPaneName);
+    _panes.push_back(_viewersPane);
+    _viewersPane->resize(_viewersPane->width(), _gui->height()/5);
+    _leftRightSplitter->addWidget(_viewersPane);
+    TabWidget* propertiesPane = _viewersPane->splitHorizontally(false);
+    
+    TabWidget* workshopPane = _viewersPane->splitVertically(false);
+    
+    createNodeGraphGui(workshopPane);
+    createCurveEditorGui(workshopPane);
+    
+    ///Default to NodeGraph displayed
+    workshopPane->makeCurrentTab(0);
+    
+    ///Must be absolutely called once _nodeGraphArea has been initialized.
+    createPropertiesBinGui(propertiesPane);
+}
 
 void Gui::initProjectGuiKnobs() {
     assert(_imp->_projectGui);
@@ -1282,7 +1283,26 @@ void Gui::maximize(TabWidget* what) {
         if (*it != what && !(*it)->isFloating()) {
             
             // also if we want to maximize the workshop pane, don't hide the properties pane
-            if((*it) == _imp->_propertiesPane && what == _imp->_workshopPane){
+            
+            bool hasProperties = false;
+            for (int i = 0; i < (*it)->count();++it) {
+                QString tabName = (*it)->tabAt(i)->objectName();
+                if (tabName == kPropertiesBinName) {
+                    hasProperties = true;
+                    break;
+                }
+            }
+            
+            bool hasNodeGraphOrCurveEditor = false;
+            for (int i = 0; i < what->count();++it) {
+                QString tabName = what->tabAt(i)->objectName();
+                if (tabName == kNodeGraphObjectName || tabName == kCurveEditorObjectName) {
+                    hasNodeGraphOrCurveEditor = true;
+                    break;
+                }
+            }
+
+            if (hasProperties && hasNodeGraphOrCurveEditor) {
                 continue;
             }
             (*it)->hide();
@@ -1445,19 +1465,38 @@ std::list<Histogram*> Gui::getHistograms_mt_safe() const {
     return _imp->_histograms;
 }
 
-void Gui::removePane(TabWidget* pane){
+void Gui::removePane(TabWidget* pane)
+{
+    
     QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     assert(found != _imp->_panes.end());
     _imp->_panes.erase(found);
+    ///When there's only 1 tab left make it unclosable/floatable
+    if (_imp->_panes.size() == 1) {
+        _imp->_panes.front()->setClosable(false);
+    }
+    
+    if (pane == _imp->_viewersPane && !_imp->_panes.empty()) {
+        _imp->_viewersPane = _imp->_panes.front();
+    }
 }
 
 void Gui::registerPane(TabWidget* pane){
     QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     if(found == _imp->_panes.end()){
+        int only1Widget = _imp->_panes.size() == 1;
+        if (_imp->_panes.empty()) {
+            _imp->_leftRightSplitter->addWidget(pane);
+            std::cout << _imp->_leftRightSplitter->count() << std::endl;
+        }
         _imp->_panes.push_back(pane);
+        if (only1Widget) {
+            _imp->_panes.front()->setClosable(false);
+        }
     }
+    
 }
 
 void Gui::registerSplitter(Splitter* s) {
@@ -2162,28 +2201,26 @@ void GuiPrivate::restoreGuiGeometry(){
             _gui->toggleFullScreen();
     }
     
-    if(settings.contains("splitters")){
-        QByteArray splittersData = settings.value("splitters").toByteArray();
-        QDataStream splittersStream(&splittersData, QIODevice::ReadOnly);
-        if (splittersStream.atEnd())
-            return;
-        QByteArray leftRightSplitterState;
-        QByteArray viewerWorkshopSplitterState;
-        QByteArray middleRightSplitterState;
-        
-        splittersStream >> leftRightSplitterState
-                        >> viewerWorkshopSplitterState
-                        >> middleRightSplitterState;
-        
-        if(!_leftRightSplitter->restoreState(leftRightSplitterState))
-            return;
-        if(!_viewerWorkshopSplitter->restoreState(viewerWorkshopSplitterState))
-            return;
-        if(!_middleRightSplitter->restoreState(middleRightSplitterState))
-            return;
+    {
+        QMutexLocker l(&_splittersMutex);
+        for (std::list<Splitter*>::iterator it = _splitters.begin(); it!=_splitters.end(); ++it) {
+            QString name = (*it)->objectName_mt_safe();
+            if (settings.contains(name)) {
+                QByteArray splitterData = settings.value(name).toByteArray();
+                QDataStream splitterStream(&splitterData, QIODevice::ReadOnly);
+                if (splitterStream.atEnd())
+                    return;
+                QByteArray state;
+                
+                splitterStream >> state;
+                (*it)->restoreState(state);
+            }
+        }
     }
     
+    
     settings.endGroup();
+    
     if (settings.contains("LastOpenProjectDialogPath")) {
         _lastLoadSequenceOpenedDir = settings.value("LastOpenProjectDialogPath").toString();
     }
@@ -2206,14 +2243,18 @@ void GuiPrivate::saveGuiGeometry(){
     settings.setValue("size", _gui->size());
     settings.setValue("fullScreen", _gui->isFullScreen());
     
-    QByteArray splittersData;
-    QDataStream splittersStream(&splittersData, QIODevice::WriteOnly);
-    splittersStream << _leftRightSplitter->saveState();
-    splittersStream << _viewerWorkshopSplitter->saveState();
-    splittersStream << _middleRightSplitter->saveState();
-    settings.setValue("splitters", splittersData);
-    
+    {
+        QMutexLocker l(&_splittersMutex);
+        for (std::list<Splitter*>::iterator it = _splitters.begin(); it!=_splitters.end(); ++it) {
+            QString name = (*it)->objectName_mt_safe();
+            QByteArray splitterData;
+            QDataStream splitterStream(&splitterData, QIODevice::WriteOnly);
+            splitterStream << (*it)->saveState_mt_safe();
+            settings.setValue(name,splitterData);
+        }
+    }
     settings.endGroup();
+    
     settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);
     settings.setValue("LastSaveProjectDialogPath", _lastSaveProjectOpenedDir);
     settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
@@ -2537,7 +2578,11 @@ QScrollArea* Gui::getPropertiesScrollArea() const { return _imp->_propertiesScro
 
 QVBoxLayout* Gui::getPropertiesLayout() const { return _imp->_layoutPropertiesBin; }
 
-TabWidget* Gui::getWorkshopPane() const { return _imp->_workshopPane; }
+void Gui::appendTabToDefaultViewerPane(QWidget* tab)
+{
+    assert(_imp->_viewersPane);
+    _imp->_viewersPane->appendTab(tab);
+}
 
 const std::map<std::string,QWidget*>& Gui::getRegisteredTabs() const { return _imp->_registeredTabs; }
 

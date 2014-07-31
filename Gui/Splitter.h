@@ -24,6 +24,7 @@ CLANG_DIAG_ON(uninitialized)
 /**
  * @class A thread-safe wrapper over QSplitter
  **/
+class QString;
 class Splitter : public QSplitter
 {
 public:
@@ -37,6 +38,10 @@ public:
     void addWidget_mt_safe(QWidget * widget);
     
     QByteArray saveState_mt_safe() const;
+    
+    QString serializeNatron() const;
+    
+    void restoreNatron(const QString& serialization);
     
     void setSizes_mt_safe(const QList<int> & list);
     

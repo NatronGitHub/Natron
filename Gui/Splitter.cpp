@@ -11,7 +11,7 @@
 
 
 #include "Splitter.h"
-
+#include <cassert>
 Splitter::Splitter(QWidget* parent)
 : QSplitter(parent)
 , _lock(QMutex::Recursive)
@@ -31,8 +31,28 @@ void Splitter::addWidget_mt_safe(QWidget * widget) {
     addWidget(widget);
 }
 
-QByteArray Splitter::saveState_mt_safe() const {
+QString Splitter::serializeNatron() const
+{
     QMutexLocker l(&_lock);
+    QList<int> list = sizes();
+    if (list.size() == 2) {
+        return QString("%1 %2").arg(list[0]).arg(list[1]);
+    }
+    return "";
+}
+
+void Splitter::restoreNatron(const QString& serialization)
+{
+    QMutexLocker l(&_lock);
+    QStringList list = serialization.split(QChar(' '));
+    assert(list.size() == 2);
+    QList<int> s;
+    s << list[0].toInt() << list[1].toInt();
+    setSizes(s);
+}
+
+QByteArray Splitter::saveState_mt_safe() const {
+     QMutexLocker l(&_lock);
     return saveState();
 }
 

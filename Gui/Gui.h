@@ -162,6 +162,8 @@ public:
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
     
+    void wipeLayout();
+    
     const std::list<TabWidget*>& getPanes() const;
     
     std::list<TabWidget*> getPanes_mt_safe() const;
@@ -178,6 +180,8 @@ public:
      found. Otherwise returns NULL.*/
     QWidget* findExistingTab(const std::string& name) const;
     
+    
+    void appendTabToDefaultViewerPane(QWidget* tab);
 
     std::list<Splitter*> getSplitters() const;
     
@@ -258,8 +262,6 @@ public:
     
     QScrollArea* getPropertiesScrollArea() const;
     
-    TabWidget* getWorkshopPane() const;
-
     const std::map<std::string,QWidget*>& getRegisteredTabs() const;
     
     void updateLastSequenceOpenedPath(const QString& path);

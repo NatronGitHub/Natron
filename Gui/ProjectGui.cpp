@@ -46,6 +46,7 @@
 #include "Gui/Histogram.h"
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/CurveEditor.h"
 
 ProjectGui::ProjectGui(Gui* gui)
 : _gui(gui)
@@ -234,45 +235,66 @@ void ProjectGui::save(boost::archive::xml_oarchive& archive) const {
 
 void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
                                        std::map<std::string,PaneLayout>::const_iterator layout){
-    const std::list<TabWidget*>& initialWidgets = gui->getPanes();
     const std::map<std::string,QWidget*>& registeredTabs = gui->getRegisteredTabs();
-    for(std::list<TabWidget*>::const_iterator it = initialWidgets.begin();it!=initialWidgets.end();++it){
-        
-        if((*it)->objectName().toStdString() == layout->first){
-            //we found the pane, restore it!
-            for (std::list<bool>::const_iterator it2 = layout->second.splits.begin();it2!=layout->second.splits.end();++it2) {
-                if (*it2) {
-                    (*it)->splitVertically();
-                } else {
-                    (*it)->splitHorizontally();
-                }
-            }
-            if(layout->second.floating){
-                (*it)->floatPane();
-                (*it)->move(layout->second.posx, layout->second.posy);
-            }
-            
-            ///find all the tabs and move them to this widget
-            for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
-                std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
-                if (foundTab != registeredTabs.end()) {
-                    TabWidget::moveTab(foundTab->second, *it);
-                }
-            }
-            
-            ///now call this recursively on the freshly new splits
-            for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
-                //find in the guiLayout map the PaneLayout corresponding to the split
-                std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
-                if (splitIt != guiLayout.end()) {
-                
-                    restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
-                }
-            }
-            
-            break;
+    const std::list<TabWidget*>& registeredPanes = gui->getPanes();
+    
+    
+    TabWidget* pane = 0;
+    for (std::list<TabWidget*>::const_iterator it = registeredPanes.begin(); it!=registeredPanes.end(); ++it) {
+        if ((*it)->objectName() == QString(layout->first.c_str())) {
+            ///For splits we should pass by here
+            pane = *it;
         }
     }
+
+    if (!pane) {
+        pane = new TabWidget(gui,gui);
+    }
+    gui->registerPane(pane);
+    pane->setObjectName_mt_safe(layout->first.c_str());
+    
+    
+    //we found the pane, restore it!
+    for (std::list<bool>::const_iterator it2 = layout->second.splits.begin();it2!=layout->second.splits.end();++it2) {
+        if (*it2) {
+            pane->splitVertically();
+        } else {
+            pane->splitHorizontally();
+        }
+    }
+    if(layout->second.floating){
+        pane->floatPane();
+        pane->move(layout->second.posx, layout->second.posy);
+    }
+    
+    ///find all the tabs and move them to this widget
+    for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
+        std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
+        if (foundTab != registeredTabs.end()) {
+            TabWidget::moveTab(foundTab->second,pane);
+        } else if (*it2 == gui->getCurveEditor()->objectName().toStdString()) {
+            TabWidget::moveTab(gui->getCurveEditor(),pane);
+        } else if (*it2 == gui->getPropertiesScrollArea()->objectName().toStdString()) {
+            TabWidget::moveTab(gui->getPropertiesScrollArea(), pane);
+        } else if (*it2 == gui->getNodeGraph()->objectName().toStdString()) {
+            TabWidget::moveTab(gui->getNodeGraph(), pane);
+        }
+    }
+    
+    pane->makeCurrentTab(layout->second.currentIndex);
+    
+    ///now call this recursively on the freshly new splits
+    for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
+        //find in the guiLayout map the PaneLayout corresponding to the split
+        std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
+        if (splitIt != guiLayout.end()) {
+            
+            restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+        }
+    }
+    
+    
+    
     
 }
 
@@ -453,19 +475,13 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         }
     }
     
-    ///restore the histograms
-    const std::list<std::string>& histograms = obj.getHistograms();
-    for (std::list<std::string>::const_iterator it = histograms.begin();it!=histograms.end();++it) {
-        Histogram* h = _gui->addNewHistogram();
-        h->setObjectName((*it).c_str());
-        //move it by default to the workshop pane, before restoring the layout anyway which
-        ///will relocate it correctly
-        _gui->getWorkshopPane()->appendTab(h);
-    }
+    ///Wipe the current layout
+    _gui->wipeLayout();
     
-
+   
+    
     ///now restore the gui layout
-    
+
     const std::map<std::string,PaneLayout>& guiLayout = obj.getGuiLayout();
     for (std::map<std::string,PaneLayout>::const_iterator it = guiLayout.begin(); it!=guiLayout.end(); ++it) {
         
@@ -485,10 +501,9 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
             
             if ((*it2)->objectName().toStdString() == it->first) {
                 //found a matching splitter, restore its state
-                QByteArray splitterGeometry(it->second.c_str());
-                splitterGeometry = QByteArray::fromBase64(splitterGeometry);
-                if(!(*it2)->restoreState(splitterGeometry)){
-                    qDebug() << "Failed to restore " << (*it2)->objectName() << "'s splitter state.";
+                QString splitterGeometry(it->second.c_str());
+                if (!splitterGeometry.isEmpty()) {
+                    (*it2)->restoreNatron(splitterGeometry);
                 }
                 break;
             }
@@ -496,7 +511,16 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         
     }
     
-
+    ///restore the histograms
+    const std::list<std::string>& histograms = obj.getHistograms();
+    for (std::list<std::string>::const_iterator it = histograms.begin();it!=histograms.end();++it) {
+        Histogram* h = _gui->addNewHistogram();
+        h->setObjectName((*it).c_str());
+        //move it by default to the viewer pane, before restoring the layout anyway which
+        ///will relocate it correctly
+        _gui->appendTabToDefaultViewerPane(h);
+    }
+    
     
     ///now restore opened settings panels
     const std::list<std::string>& openedPanels = obj.getOpenedPanels();
@@ -544,9 +568,8 @@ void ProjectGui::setPickersColor(const QColor& color){
         return;
     }
     boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
-    first->beginValueChange(Natron::USER_EDITED);
+
     for(U32 i = 0; i < _colorPickersEnabled.size();++i){
-        _colorPickersEnabled[i]->beginValueChange(Natron::PLUGIN_EDITED);
         double r,g,b,a;
         r = color.redF();
         g = color.greenF();
@@ -555,15 +578,10 @@ void ProjectGui::setPickersColor(const QColor& color){
         if (!_colorPickersEnabled[i]->areAllDimensionsEnabled()) {
             _colorPickersEnabled[i]->activateAllDimensions();
         }
-        _colorPickersEnabled[i]->setValue(r, 0);
-        if(_colorPickersEnabled[i]->getDimension() >= 3){
-            _colorPickersEnabled[i]->setValue(g, 1);
-            _colorPickersEnabled[i]->setValue(b, 2);
+        if (_colorPickersEnabled[i]->getDimension() == 3) {
+            _colorPickersEnabled[i]->setValues(r, g, b);
+        } else {
+            _colorPickersEnabled[i]->setValues(r, g, b,a);
         }
-        if(_colorPickersEnabled[i]->getDimension() >= 4){
-            _colorPickersEnabled[i]->setValue(a, 3);
-        }
-        _colorPickersEnabled[i]->endValueChange();
     }
-    first->endValueChange();
 }

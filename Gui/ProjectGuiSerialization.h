@@ -32,7 +32,11 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
 #define PROJECT_GUI_INTRODUCES_PANELS 4
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_INTRODUCES_PANELS
+#define PROJECT_GUI_CHANGES_SPLITTERS 5
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_CHANGES_SPLITTERS
+
+#define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
+#define PANE_SERIALIZATION_VERSION PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB
 
 class ProjectGui;
 
@@ -98,6 +102,7 @@ struct PaneLayout{
     std::string parentName;
     std::list<std::string> splitsNames;
     std::list<std::string> tabs;
+    int currentIndex;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -109,8 +114,15 @@ struct PaneLayout{
         ar & boost::serialization::make_nvp("ParentName",parentName);
         ar & boost::serialization::make_nvp("SplitsNames",splitsNames);
         ar & boost::serialization::make_nvp("Tabs",tabs);
+        if (version >= PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB) {
+            ar & boost::serialization::make_nvp("Index",currentIndex);
+        }
     }
+    
+    
 };
+
+BOOST_CLASS_VERSION(PaneLayout, PANE_SERIALIZATION_VERSION)
 
 class ProjectGuiSerialization {
     
@@ -138,6 +150,9 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
+        if (version < PROJECT_GUI_CHANGES_SPLITTERS) {
+            _splittersStates.clear();
+        }
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
         if (version < PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED) {
             bool tmp = false;
