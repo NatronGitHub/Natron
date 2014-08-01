@@ -414,6 +414,9 @@ DockablePanel::DockablePanel(Gui* gui
 }
 
 DockablePanel::~DockablePanel(){
+    if (_imp->_nameLineEdit) {
+        QObject::disconnect(_imp->_nameLineEdit,SIGNAL(editingFinished()),this,SLOT(onLineEditNameEditingFinished()));
+    }
     delete _imp->_undoStack;
     
     ///Delete the knob gui if they weren't before
