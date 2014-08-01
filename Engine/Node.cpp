@@ -1522,11 +1522,12 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
     RenderScale scale;
     scale.x = scale.y = 1.;
     Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(time,scale,0, &rod,&isProjectFormat);
-    if (stat == StatFailed) {
+    if (stat == StatFailed || rod.isNull()) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();
         return;
     }
+    assert(!rod.isNull());
     double yZoomFactor = (double)*height/(double)rod.height();
     double xZoomFactor = (double)*width/(double)rod.width();
     
