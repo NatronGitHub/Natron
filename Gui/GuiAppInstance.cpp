@@ -156,10 +156,10 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
 }
 
 void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const std::string& multiInstanceParentName,
-                                   bool loadRequest,bool openImageFileDialog,bool autoConnect) {
+                                   bool loadRequest,bool openImageFileDialog,bool autoConnect,double xPosHint,double yPosHint) {
     
     
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint);
     assert(nodegui);
     if (!multiInstanceParentName.empty()) {
         nodegui->hideGui();

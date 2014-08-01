@@ -553,9 +553,10 @@ Gui::closeEvent(QCloseEvent *e)
 }
 
 
-boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool requestedByLoad){
+boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool requestedByLoad,double xPosHint,double yPosHint){
     assert(_imp->_nodeGraphArea);
-    boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
+    boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
+                                                                             xPosHint,yPosHint);
     QObject::connect(nodeGui.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     assert(nodeGui);
     return nodeGui;

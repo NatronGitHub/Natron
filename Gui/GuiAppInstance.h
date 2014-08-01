@@ -110,7 +110,8 @@ private:
                                const std::string& multiInstanceParentName,
                                bool loadRequest,
                                bool openImageFileDialog,
-                               bool autoConnect) OVERRIDE FINAL;
+                               bool autoConnect,
+                               double xPosHint,double yPosHint) OVERRIDE FINAL;
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
     

@@ -536,7 +536,7 @@ QRectF NodeGraph::visibleRect() {
 }
 
 boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,
-                                                    bool requestedByLoad){
+                                                    bool requestedByLoad,double xPosHint,double yPosHint){
   
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>(node->getLiveInstance());
@@ -549,7 +549,12 @@ boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,c
     
     ///only move main instances
     if (node->getParentMultiInstanceName().empty()) {
-        moveNodesForIdealPosition(node_ui);
+        if (xPosHint != INT_MIN && yPosHint != INT_MIN && _imp->_selection.nodes.size() != 1) {
+            QPointF pos = node_ui->mapToParent(node_ui->mapFromScene(QPointF(xPosHint,yPosHint)));
+            node_ui->refreshPosition(pos.x(),pos.y());
+        } else {
+            moveNodesForIdealPosition(node_ui);
+        }
     }
     
     {
@@ -1372,12 +1377,22 @@ bool NodeGraph::event(QEvent* event){
             global.rx() -= sizeH.width() / 2;
             global.ry() -= sizeH.height() / 2;
             nodeCreation.move(global.x(), global.y());
+            
             if (nodeCreation.exec()) {
                 QString res = nodeCreation.getNodeName();
                 const std::vector<Natron::Plugin*>& allPlugins = appPTR->getPluginsList();
                 for (U32 i = 0; i < allPlugins.size(); ++i) {
                     if (allPlugins[i]->getPluginID() == res) {
-                        getGui()->getApp()->createNode(res);
+                        QPointF posHint = mapToScene(mapFromGlobal(global));
+                        getGui()->getApp()->createNode(CreateNodeArgs(res,
+                                                                      "",
+                                                                      -1,
+                                                                      -1,
+                                                                      true,
+                                                                      -1,
+                                                                      true,
+                                                                      posHint.x(),
+                                                                      posHint.y()));
                         break;
                     }
                 }

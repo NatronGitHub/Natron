@@ -82,7 +82,7 @@ public:
     
     void createGui();
     
-    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,bool requestedByLoad);
+    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,bool requestedByLoad,double xPosHint,double yPosHint);
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
         
