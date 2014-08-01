@@ -1629,7 +1629,7 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
         QRectF r = visibleRect();
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
             QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
-            if (r.intersects(bbox)) {
+            if (r.intersects(bbox) && (*it)->isActive() && (*it)->isVisible()) {
                 (*it)->setSelected(true);
                 _imp->_selection.nodes.push_back(*it);
             }
@@ -1643,8 +1643,10 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
         }
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
-            (*it)->setSelected(true);
-            _imp->_selection.nodes.push_back(*it);
+            if ((*it)->isActive() && (*it)->isVisible()) {
+                (*it)->setSelected(true);
+                _imp->_selection.nodes.push_back(*it);
+            }
         }
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
             (*it)->setSelected(true);
@@ -1801,6 +1803,9 @@ void NodeGraph::deleteSelection()
 
 void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection) {
     
+    if (!n->isActive() || !n->isVisible()) {
+        return;
+    }
     bool alreadyInSelection = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n) != _imp->_selection.nodes.end();
     
     
