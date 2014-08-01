@@ -26,6 +26,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/NodeBackDropSerialization.h"
 
 #define RESIZE_HANDLE_SIZE 20
 
@@ -84,6 +85,8 @@ struct NodeBackDropPrivate
     
     void refreshLabelText(const QString& text);
     
+    void restoreFromSerialization(const NodeBackDropSerialization& serialization);
+    
 };
 
 NodeBackDrop::NodeBackDrop(NodeGraph* dag,QGraphicsItem* parent)
@@ -98,7 +101,8 @@ NodeBackDrop::NodeBackDrop(NodeGraph* dag,QGraphicsItem* parent)
 
 }
 
-void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,QVBoxLayout *dockContainer)
+void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,const NodeBackDropSerialization& serialization,
+                              QVBoxLayout *dockContainer)
 {
         
     QString tooltip(tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
@@ -148,6 +152,10 @@ void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,QVBoxLayo
     _imp->resizeHandle = new QGraphicsPolygonItem(this);
     _imp->resizeHandle->setZValue(-7);
     
+    
+    if (!serialization.isNull()) {
+        _imp->restoreFromSerialization(serialization);
+    }
     
     ///initialize knobs gui now
     _imp->settingsPanel->initializeKnobs();
@@ -472,4 +480,26 @@ void NodeBackDrop::activate()
     }
     setActive(true);
     setVisible(true);
+}
+
+void NodeBackDropPrivate::restoreFromSerialization(const NodeBackDropSerialization &serialization)
+{
+    QPointF pos;
+    serialization.getPos(pos.rx(), pos.ry());
+    _publicInterface->setPos_mt_safe(pos);
+    
+    int w,h;
+    serialization.getSize(w, h);
+    _publicInterface->resize(w, h);
+    float r,g,b;
+    serialization.getColor(r, g, b);
+    QColor color;
+    color.setRgbF(r, g, b);
+    _publicInterface->setCurrentColor(color);
+    _publicInterface->setName(serialization.getName().c_str());
+    boost::shared_ptr<String_Knob> labelKnob = _publicInterface->getLabelKnob();
+    assert(labelKnob);
+    labelKnob->clone(serialization.getLabelSerialization().get());
+    _publicInterface->refreshTextLabelFromKnob();
+
 }

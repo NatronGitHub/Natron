@@ -54,6 +54,7 @@ class DockablePanel;
 class NodeGraph;
 class CurveEditor;
 class Histogram;
+class NodeBackDropSerialization;
 class RotoGui;
 
 //Natron engine
@@ -320,7 +321,7 @@ public:
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
     
-    NodeBackDrop* createBackDrop(bool requestedByLoad) ;
+    NodeBackDrop* createBackDrop(bool requestedByLoad,const NodeBackDropSerialization& serialization) ;
     
     std::list<ToolButton*> getToolButtonsOrdered() const;
     

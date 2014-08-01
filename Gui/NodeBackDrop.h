@@ -21,7 +21,7 @@ class String_Knob;
 
 class NodeGraph;
 class DockablePanel;
-
+class NodeBackDropSerialization;
 struct NodeBackDropPrivate;
 class NodeBackDrop : public QObject, public QGraphicsRectItem, public NamedKnobHolder
 {
@@ -32,7 +32,7 @@ public:
     
     NodeBackDrop(NodeGraph* dag,QGraphicsItem* parent = 0);
     
-    void initialize(const QString& name,bool requestedByLoad,QVBoxLayout *dockContainer);
+    void initialize(const QString& name,bool requestedByLoad,const NodeBackDropSerialization& serialization,QVBoxLayout *dockContainer);
     
     virtual ~NodeBackDrop();
     

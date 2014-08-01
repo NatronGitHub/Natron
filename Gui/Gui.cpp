@@ -433,6 +433,8 @@ struct GuiPrivate {
     void retranslateUi(QMainWindow *MainWindow);
     
     void addToolButton(ToolButton* tool);
+    
+    void notifyGuiClosing();
 
 };
 
@@ -462,6 +464,18 @@ Gui::~Gui()
     _imp->_viewerTabs.clear();
     for(U32 i = 0; i < _imp->_toolButtons.size();++i){
         delete _imp->_toolButtons[i];
+    }
+}
+
+void GuiPrivate::notifyGuiClosing()
+{
+    ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
+    ///cause bad pointer dereference to the Gui object since we're destroying it.
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin(); it!=_viewerTabs.end(); ++it) {
+        (*it)->notifyAppClosing();
+    }
+    for (std::list<DockablePanel*>::iterator it = openedPanels.begin();it!=openedPanels.end(); ++it) {
+        (*it)->onGuiClosing();
     }
 }
 
@@ -513,11 +527,8 @@ void Gui::abortProject(bool quitApp)
         
         assert(_imp->_appInstance);
         
-        ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
-        ///cause bad pointer dereference to the Gui object since we're destroying it.
-        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
-            (*it)->notifyAppClosing();
-        }
+       
+        _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->getProject()->closeProject();
@@ -2854,9 +2865,9 @@ void Gui::clearAllVisiblePanels()
     }
 }
 
-NodeBackDrop* Gui::createBackDrop(bool requestedByLoad)
+NodeBackDrop* Gui::createBackDrop(bool requestedByLoad,const NodeBackDropSerialization& serialization)
 {
-    return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad);
+    return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
 }
 
 

@@ -19,6 +19,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/NodeBackDropSerialization.h"
 
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -481,7 +482,7 @@ void GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
 void GuiAppInstance::createBackDrop()
 {
     ///This function is not used when loading a project, rather we use the one directly in Gui (@see ProjectGui::load)
-    _imp->_gui->createBackDrop(false);
+    _imp->_gui->createBackDrop(false,NodeBackDropSerialization());
 }
 
 void GuiAppInstance::registerVideoEngineBeingAborted(VideoEngine* engine)

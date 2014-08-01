@@ -2543,20 +2543,11 @@ NodeGraphPrivate::pasteBackdrop(const NodeBackDropSerialization& serialization,c
         name.append(QString::number(no));
     }
     
-    bd->initialize(name, true, _gui->getPropertiesLayout());
+    bd->initialize(name, true,serialization ,_gui->getPropertiesLayout());
     _publicInterface->insertNewBackDrop(bd);
-    float r,g,b;
-    serialization.getColor(r,g,b);
-    QColor color;
-    color.setRgbF(r, g, b);
     double x,y;
-    int w,h;
     serialization.getPos(x, y);
-    serialization.getSize(w, h);
-    bd->setCurrentColor(color);
-        //bd->setPos_mt_safe(QPointF(x + w,y));
     bd->setPos_mt_safe(QPointF(x,y) + offset);
-    bd->resize(w, h);
     return bd;
 }
 
@@ -2854,7 +2845,7 @@ NodeGraph::toggleConnectionHints()
     appPTR->getCurrentSettings()->setConnectionHintsEnabled(!appPTR->getCurrentSettings()->isConnectionHintEnabled());
 }
 
-NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad)
+NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization& serialization)
 {
     QString name(NATRON_BACKDROP_NODE_NAME);
     int no = _imp->_backdrops.size() + 1;
@@ -2865,7 +2856,7 @@ NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requeste
         name += QString::number(no);
     }
     NodeBackDrop* bd = new NodeBackDrop(this,_imp->_root);
-    bd->initialize(name, requestedByLoad, dockContainer);
+    bd->initialize(name, requestedByLoad,serialization, dockContainer);
     _imp->_backdrops.push_back(bd);
     _imp->_undoStack->setActive();
     if (!requestedByLoad) {

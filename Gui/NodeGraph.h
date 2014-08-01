@@ -106,7 +106,7 @@ public:
     
     void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
     
-    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad);
+    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization& serialization);
     
     ///Returns true if it already exists
     bool checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const;
