@@ -39,6 +39,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
+#include "Engine/Image.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/Lut.h"
 #include "Engine/MemoryFile.h"
@@ -3310,13 +3311,6 @@ ViewerTab* ViewerGL::getViewerTab() const {
     return _imp->viewerTab;
 }
 
-namespace {
-static float clamp(float v)
-{
-    return std::min(std::max(v,0.f),1.f);
-}
-}
-
 bool ViewerGL::pickColor(double x,double y)
 {
     
@@ -3337,10 +3331,10 @@ bool ViewerGL::pickColor(double x,double y)
             
             if (i == 0) {
                 QColor pickerColor;
-                pickerColor.setRedF(clamp(r));
-                pickerColor.setGreenF(clamp(g));
-                pickerColor.setBlueF(clamp(b));
-                pickerColor.setAlphaF(clamp(a));
+                pickerColor.setRedF(Natron::clamp(r));
+                pickerColor.setGreenF(Natron::clamp(g));
+                pickerColor.setBlueF(Natron::clamp(b));
+                pickerColor.setAlphaF(Natron::clamp(a));
                 _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             }
             if (!_imp->infoViewer[i]->colorAndMouseVisible()) {
