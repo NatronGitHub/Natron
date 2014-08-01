@@ -414,6 +414,7 @@ DockablePanel::DockablePanel(Gui* gui
 }
 
 DockablePanel::~DockablePanel(){
+    
     delete _imp->_undoStack;
     
     ///Delete the knob gui if they weren't before
@@ -425,6 +426,14 @@ DockablePanel::~DockablePanel(){
 //            delete it->second;
 //        }
 //    }
+}
+
+void DockablePanel::onGuiClosing()
+{
+    if (_imp->_nameLineEdit) {
+        QObject::disconnect(_imp->_nameLineEdit,SIGNAL(editingFinished()),this,SLOT(onLineEditNameEditingFinished()));
+    }
+    _imp->_gui = 0;
 }
 
 KnobHolder* DockablePanel::getHolder() const
@@ -945,6 +954,9 @@ void DockablePanel::showHelp(){
 
 void DockablePanel::setClosed(bool c)
 {
+    if (!_imp->_gui){
+        return;
+    }
     if (_imp->_floating) {
         floatPanel();
     }

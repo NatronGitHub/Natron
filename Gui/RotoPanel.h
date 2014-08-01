@@ -26,6 +26,7 @@ class QUndoCommand;
 class RotoItem;
 class RotoContext;
 class RotoLayer;
+class RotoDrawableItem;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
@@ -56,6 +57,8 @@ public:
     void showItemMenu(QTreeWidgetItem* item,const QPoint& globalPos);
     
     void setLastRightClickedItem(QTreeWidgetItem* item);
+    
+    void makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem);
     
 public slots:
     

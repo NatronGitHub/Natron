@@ -287,23 +287,8 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     ///now restore the backdrops
     const std::list<NodeBackDropSerialization>& backdrops = obj.getBackdrops();
     for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDrop* bd = _gui->createBackDrop(true);
-        QPointF pos;
-        it->getPos(pos.rx(), pos.ry());
-        bd->setPos_mt_safe(pos);
-        
-        int w,h;
-        it->getSize(w, h);
-        bd->resize(w, h);
-        float r,g,b;
-        it->getColor(r, g, b);
-        QColor color;
-        color.setRgbF(r, g, b);
-        bd->setCurrentColor(color);
-        bd->setName(it->getName().c_str());
-        bd->getLabelKnob()->clone(it->getLabelSerialization().get());
-        bd->refreshTextLabelFromKnob();
-        
+        NodeBackDrop* bd = _gui->createBackDrop(true,*it);
+                
         if (it->isSelected()) {
             _gui->getNodeGraph()->selectBackDrop(bd, true);
         }

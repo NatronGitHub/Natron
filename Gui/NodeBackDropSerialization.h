@@ -48,6 +48,8 @@ public:
     void getColor(float& red,float &green,float& blue) const { red = r; green = g; blue = b; }
     
     bool isSelected() const { return selected; }
+    
+    bool isNull() const { return _isNull; }
 private:
     
     double posX;
@@ -58,6 +60,7 @@ private:
     float r,g,b;
     std::string masterBackdropName;
     bool selected;
+    bool _isNull;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -95,6 +98,7 @@ private:
         if (version >= NODE_BACKDROP_INTRODUCES_SELECTED) {
             ar & boost::serialization::make_nvp("Selected",selected);
         }
+        _isNull = false;
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()

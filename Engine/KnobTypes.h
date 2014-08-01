@@ -235,6 +235,7 @@ public:
     
     void removeSlavedTrack(const boost::shared_ptr<BezierCP>& cp);
     
+    const std::list< boost::shared_ptr<BezierCP> >& getSlavedTracks() { return _slavedTracks; }
     
     struct SerializedTrack
     {

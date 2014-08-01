@@ -726,15 +726,8 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        ComboBox* cb = new ComboBox;
-        QObject::connect(cb,SIGNAL(currentIndexChanged(int)),publicInterface,SLOT(onCurrentItemCompOperatorChanged(int)));
-        std::vector<std::string> compositingOperators,tooltips;
-        getCompositingOperators(&compositingOperators, &tooltips);
-        for (U32 i = 0; i < compositingOperators.size(); ++i) {
-            cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
-        }
-        cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
-        tree->setItemWidget(treeItem, COL_OPERATOR, cb);
+       
+        publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
         QObject::connect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
         QObject::connect(drawable,SIGNAL(shapeColorChanged()),publicInterface,SLOT(onRotoItemShapeColorChanged()));
         QObject::connect(drawable,SIGNAL(compositingOperatorChanged()),publicInterface,SLOT(onRotoItemCompOperatorChanged()));
@@ -747,6 +740,21 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         }
     }
     expandRecursively(treeItem);
+}
+
+void RotoPanel::makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem)
+{
+    int time = _imp->context->getTimelineCurrentTime();
+    ComboBox* cb = new ComboBox;
+    QObject::connect(cb,SIGNAL(currentIndexChanged(int)),this,SLOT(onCurrentItemCompOperatorChanged(int)));
+    std::vector<std::string> compositingOperators,tooltips;
+    getCompositingOperators(&compositingOperators, &tooltips);
+    for (U32 i = 0; i < compositingOperators.size(); ++i) {
+        cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+    }
+    cb->setCurrentIndex_no_emit(item->getCompositingOperator(time));
+    _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
+
 }
 
 void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
@@ -799,15 +807,7 @@ void RotoPanelPrivate::insertItemInternal(int reason,int time,const boost::share
         TreeItems::iterator found = findItem(item.get());
         if (found != items.end()) {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
-            ComboBox* cb = new ComboBox;
-            QObject::connect(cb,SIGNAL(currentIndexChanged(int)),publicInterface,SLOT(onCurrentItemCompOperatorChanged(int)));
-            std::vector<std::string> compositingOperators,tooltips;
-            getCompositingOperators(&compositingOperators, &tooltips);
-            for (U32 i = 0; i < compositingOperators.size(); ++i) {
-                cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
-            }
-            cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
-            tree->setItemWidget(found->treeItem, COL_OPERATOR, cb);
+            publicInterface->makeCustomWidgetsForItem(drawable, found->treeItem);
         }
         return;
     }
@@ -897,9 +897,10 @@ void RotoPanel::onRotoItemCompOperatorChanged()
         TreeItems::iterator it = _imp->findItem(item);
         if (it != _imp->items.end()) {
             ComboBox* cb = dynamic_cast<ComboBox*>(_imp->tree->itemWidget(it->treeItem, COL_OPERATOR));
-            assert(cb);
-            int compIndex = item->getCompositingOperator(time);
-            cb->setCurrentIndex_no_emit(compIndex);
+            if (cb) {
+                int compIndex = item->getCompositingOperator(time);
+                cb->setCurrentIndex_no_emit(compIndex);
+            }
         }
     }
 }

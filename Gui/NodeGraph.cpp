@@ -536,7 +536,7 @@ QRectF NodeGraph::visibleRect() {
 }
 
 boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,
-                                                    bool requestedByLoad){
+                                                    bool requestedByLoad,double xPosHint,double yPosHint){
   
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>(node->getLiveInstance());
@@ -549,7 +549,12 @@ boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,c
     
     ///only move main instances
     if (node->getParentMultiInstanceName().empty()) {
-        moveNodesForIdealPosition(node_ui);
+        if (xPosHint != INT_MIN && yPosHint != INT_MIN && _imp->_selection.nodes.size() != 1) {
+            QPointF pos = node_ui->mapToParent(node_ui->mapFromScene(QPointF(xPosHint,yPosHint)));
+            node_ui->refreshPosition(pos.x(),pos.y());
+        } else {
+            moveNodesForIdealPosition(node_ui);
+        }
     }
     
     {
@@ -1372,12 +1377,22 @@ bool NodeGraph::event(QEvent* event){
             global.rx() -= sizeH.width() / 2;
             global.ry() -= sizeH.height() / 2;
             nodeCreation.move(global.x(), global.y());
+            
             if (nodeCreation.exec()) {
                 QString res = nodeCreation.getNodeName();
                 const std::vector<Natron::Plugin*>& allPlugins = appPTR->getPluginsList();
                 for (U32 i = 0; i < allPlugins.size(); ++i) {
                     if (allPlugins[i]->getPluginID() == res) {
-                        getGui()->getApp()->createNode(res);
+                        QPointF posHint = mapToScene(mapFromGlobal(global));
+                        getGui()->getApp()->createNode(CreateNodeArgs(res,
+                                                                      "",
+                                                                      -1,
+                                                                      -1,
+                                                                      true,
+                                                                      -1,
+                                                                      true,
+                                                                      posHint.x(),
+                                                                      posHint.y()));
                         break;
                     }
                 }
@@ -1547,23 +1562,28 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     } else if (e->key() == Qt::Key_T && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_O && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_M && !e->modifiers().testFlag(Qt::ShiftModifier)
                 && !e->modifiers().testFlag(Qt::ControlModifier)
                 && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_G && !e->modifiers().testFlag(Qt::ShiftModifier)
                 && !e->modifiers().testFlag(Qt::ControlModifier)
                 && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_C && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
@@ -1609,7 +1629,7 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
         QRectF r = visibleRect();
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
             QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
-            if (r.intersects(bbox)) {
+            if (r.intersects(bbox) && (*it)->isActive() && (*it)->isVisible()) {
                 (*it)->setSelected(true);
                 _imp->_selection.nodes.push_back(*it);
             }
@@ -1623,8 +1643,10 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
         }
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
-            (*it)->setSelected(true);
-            _imp->_selection.nodes.push_back(*it);
+            if ((*it)->isActive() && (*it)->isVisible()) {
+                (*it)->setSelected(true);
+                _imp->_selection.nodes.push_back(*it);
+            }
         }
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
             (*it)->setSelected(true);
@@ -1781,6 +1803,9 @@ void NodeGraph::deleteSelection()
 
 void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection) {
     
+    if (!n->isActive() || !n->isVisible()) {
+        return;
+    }
     bool alreadyInSelection = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n) != _imp->_selection.nodes.end();
     
     
@@ -2518,20 +2543,11 @@ NodeGraphPrivate::pasteBackdrop(const NodeBackDropSerialization& serialization,c
         name.append(QString::number(no));
     }
     
-    bd->initialize(name, true, _gui->getPropertiesLayout());
+    bd->initialize(name, true,serialization ,_gui->getPropertiesLayout());
     _publicInterface->insertNewBackDrop(bd);
-    float r,g,b;
-    serialization.getColor(r,g,b);
-    QColor color;
-    color.setRgbF(r, g, b);
     double x,y;
-    int w,h;
     serialization.getPos(x, y);
-    serialization.getSize(w, h);
-    bd->setCurrentColor(color);
-        //bd->setPos_mt_safe(QPointF(x + w,y));
     bd->setPos_mt_safe(QPointF(x,y) + offset);
-    bd->resize(w, h);
     return bd;
 }
 
@@ -2799,12 +2815,14 @@ NodeGraph::centerOnAllNodes()
     double ymax = INT_MIN;
     
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
-        QSize size = (*it)->getSize();
-        QPointF pos = (*it)->scenePos();
-        xmin = std::min(xmin, pos.x());
-        xmax = std::max(xmax,pos.x() + size.width());
-        ymin = std::min(ymin,pos.y());
-        ymax = std::max(ymax,pos.y() + size.height());
+        if ((*it)->isActive() && (*it)->isVisible()) {
+            QSize size = (*it)->getSize();
+            QPointF pos = (*it)->scenePos();
+            xmin = std::min(xmin, pos.x());
+            xmax = std::max(xmax,pos.x() + size.width());
+            ymin = std::min(ymin,pos.y());
+            ymax = std::max(ymax,pos.y() + size.height());
+        }
     }
     
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it!=_imp->_backdrops.end(); ++it) {
@@ -2827,7 +2845,7 @@ NodeGraph::toggleConnectionHints()
     appPTR->getCurrentSettings()->setConnectionHintsEnabled(!appPTR->getCurrentSettings()->isConnectionHintEnabled());
 }
 
-NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad)
+NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization& serialization)
 {
     QString name(NATRON_BACKDROP_NODE_NAME);
     int no = _imp->_backdrops.size() + 1;
@@ -2838,7 +2856,7 @@ NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requeste
         name += QString::number(no);
     }
     NodeBackDrop* bd = new NodeBackDrop(this,_imp->_root);
-    bd->initialize(name, requestedByLoad, dockContainer);
+    bd->initialize(name, requestedByLoad,serialization, dockContainer);
     _imp->_backdrops.push_back(bd);
     _imp->_undoStack->setActive();
     if (!requestedByLoad) {

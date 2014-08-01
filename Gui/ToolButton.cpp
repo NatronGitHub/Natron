@@ -88,5 +88,5 @@ void ToolButton::setAction(QAction* action) { _imp->_action = action; }
 PluginGroupNode* ToolButton::getPluginToolButton() const { return _imp->_pluginToolButton; }
 
 void ToolButton::onTriggered(){
-    _imp->_app->createNode(_imp->_id);
+    _imp->_app->createNode(CreateNodeArgs(_imp->_id));
 }
