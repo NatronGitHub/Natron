@@ -776,6 +776,9 @@ void Settings::restoreSettings(){
         if (activeIndex < (int)_ocioConfigKnob->getEntries().size()) {
             _ocioConfigKnob->setValue(activeIndex,0);
         }
+    } else {
+        ///Load even though there's no settings!
+        tryLoadOpenColorIOConfig();
     }
     settings.endGroup();
     
