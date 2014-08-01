@@ -1676,7 +1676,8 @@ ViewerInstance::disconnectViewer()
 
 template <typename PIX,int maxValue>
 static
-bool getColorAtInternal(Natron::Image* image,int x,int y,
+bool getColorAtInternal(Natron::Image* image,
+                        int x, int y, // in pixel coordinates
                         bool forceLinear,
                         const Natron::Color::Lut* srcColorSpace,
                         const Natron::Color::Lut* dstColorSpace,
@@ -1736,7 +1737,7 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
 }
 
 bool
-ViewerInstance::getColorAt(int x, int y, // x and y in canonical coordinates
+ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinates
                            bool forceLinear, int textureIndex,
                            float* r, float* g, float* b, float* a) // output values
 {
@@ -1747,13 +1748,9 @@ ViewerInstance::getColorAt(int x, int y, // x and y in canonical coordinates
     
     ///Convert to pixel coords
     unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    int xPixel = x,yPixel = y;
-    if (mipMapLevel != 0) {
-        xPixel /= (1 << mipMapLevel);
-        yPixel /= (1 << mipMapLevel);
-    }
-    
-    
+    int xPixel = int(std::floor(x)) << mipMapLevel;
+    int yPixel = int(std::floor(y)) << mipMapLevel;
+
     boost::shared_ptr<Image> img;
     {
         QMutexLocker l(&_imp->lastRenderedImageMutex);
@@ -1800,7 +1797,8 @@ ViewerInstance::getColorAt(int x, int y, // x and y in canonical coordinates
             }
             queried = getColorAtInternal<unsigned char, 255>(img.get(), xPixel, yPixel,forceLinear,
                                                              srcColorSpace,
-                                                             dstColorSpace,r, g, b, a);
+                                                             dstColorSpace,
+                                                             r, g, b, a);
         }   break;
         case IMAGE_SHORT: {
             ViewerColorSpace shortCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_SHORT);
@@ -1812,7 +1810,8 @@ ViewerInstance::getColorAt(int x, int y, // x and y in canonical coordinates
 
             queried = getColorAtInternal<unsigned short, 65535>(img.get(), xPixel, yPixel, forceLinear,
                                                                 srcColorSpace,
-                                                                dstColorSpace,r, g, b, a);
+                                                                dstColorSpace,
+                                                                r, g, b, a);
         }   break;
         case IMAGE_FLOAT: {
             ViewerColorSpace floatCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_FLOAT);
@@ -1823,7 +1822,8 @@ ViewerInstance::getColorAt(int x, int y, // x and y in canonical coordinates
             }
             queried = getColorAtInternal<float, 1>(img.get(), xPixel, yPixel,forceLinear,
                                                    srcColorSpace,
-                                                   dstColorSpace, r, g, b, a);
+                                                   dstColorSpace,
+                                                   r, g, b, a);
         }   break;
             
         default:

@@ -120,7 +120,7 @@ public:
      * X and Y are in CANONICAL COORDINATES
      * @return true if the point is inside the image and colors were set
     **/
-    bool getColorAt(int x, int y, bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a) WARN_UNUSED_RETURN;
+    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a) WARN_UNUSED_RETURN;
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 

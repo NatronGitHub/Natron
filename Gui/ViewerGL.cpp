@@ -2517,7 +2517,8 @@ void ViewerGL::mouseDoubleClickEvent(QMouseEvent* event)
     QGLWidget::mouseDoubleClickEvent(event);
 }
 
-void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
+// used to update the information bar at the bottom of the viewer (not for the ctrl-click color picker)
+void ViewerGL::updateColorPicker(int textureIndex, int x, int y)
 {
     if (_imp->pickerState != PICKER_INACTIVE) {
         return;
@@ -3311,6 +3312,7 @@ ViewerTab* ViewerGL::getViewerTab() const {
     return _imp->viewerTab;
 }
 
+// used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
 bool ViewerGL::pickColor(double x,double y)
 {
     
