@@ -1562,23 +1562,28 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     } else if (e->key() == Qt::Key_T && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_O && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_M && !e->modifiers().testFlag(Qt::ShiftModifier)
                 && !e->modifiers().testFlag(Qt::ControlModifier)
                 && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_G && !e->modifiers().testFlag(Qt::ShiftModifier)
                 && !e->modifiers().testFlag(Qt::ControlModifier)
                 && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_C && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
-        getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]"));
+        QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
+        getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
     } else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {

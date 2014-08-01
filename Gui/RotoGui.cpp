@@ -3064,6 +3064,17 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
         if (index >= 0 && index < (int)knobs.size()) {
             Double_Knob* knob = knobs[index].second;
             if (knob && knob->getDimension() == 2) {
+                
+                ///Make sure that track doesn't have points of the same curve already linked
+                const std::list< boost::shared_ptr<BezierCP> >& slavedTracks = knob->getSlavedTracks();
+                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = slavedTracks.begin();it!=slavedTracks.end();++it) {
+                    if ((*it)->getCurve() == cp.first->getCurve()) {
+                        Natron::errorDialog(tr("Link").toStdString(),
+                                            tr("You cannot link several points of the same curve to the same track.").toStdString());
+                        return;
+                    }
+                }
+                
                 if (cp.first->hasRelative()) {
                     cp.first->removeRelative();
                 }
