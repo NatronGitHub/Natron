@@ -96,6 +96,22 @@ If you want to build in DEBUG mode change the qmake call to this line:
 Some debug options are available for developers of Natron and you can see them in the
 global.pri file. To enable an option just add CONFIG+=<option> in the qmake call.
 
+### Nodes
+Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
+
+https://github.com/devernay/openfx-misc
+https://github.com/MrKepzie/openfx-io
+
+You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
+
+Plugins must be installed in /usr/OFX/Plugins on Linux
+Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g:
+
+bin/
+	Natron
+Plugins/
+	IO.ofx.bundle
+	
 ### OpenColorIO configs
 Note that if you want Natron to find the OpenColorIO config files you will need to
 place them in the appropriate location. In the repository they are located under
