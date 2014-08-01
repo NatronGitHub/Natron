@@ -1745,11 +1745,6 @@ ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinat
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
-    
-    ///Convert to pixel coords
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    int xPixel = int(std::floor(x)) << mipMapLevel;
-    int yPixel = int(std::floor(y)) << mipMapLevel;
 
     boost::shared_ptr<Image> img;
     {
@@ -1763,6 +1758,7 @@ ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinat
         lut = _imp->viewerParamsLut;
     }
     
+    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
     if (!img || img->getMipMapLevel() != mipMapLevel) {
         double colorGPU[4];
         _imp->uiContext->getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
@@ -1796,22 +1792,33 @@ ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinat
         dstColorSpace = lutFromColorspace(lut);
     }
 
+
+    ///Convert to pixel coords
+    int xPixel = int(std::floor(x)) >> mipMapLevel;
+    int yPixel = int(std::floor(y)) >> mipMapLevel;
+
     bool queried = true;
     switch (depth) {
         case IMAGE_BYTE:
-            queried = getColorAtInternal<unsigned char, 255>(img.get(), xPixel, yPixel,forceLinear,
+            queried = getColorAtInternal<unsigned char, 255>(img.get(),
+                                                             xPixel, yPixel,
+                                                             forceLinear,
                                                              srcColorSpace,
                                                              dstColorSpace,
                                                              r, g, b, a);
             break;
         case IMAGE_SHORT:
-            queried = getColorAtInternal<unsigned short, 65535>(img.get(), xPixel, yPixel, forceLinear,
+            queried = getColorAtInternal<unsigned short, 65535>(img.get(),
+                                                                xPixel, yPixel,
+                                                                forceLinear,
                                                                 srcColorSpace,
                                                                 dstColorSpace,
                                                                 r, g, b, a);
             break;
         case IMAGE_FLOAT:
-            queried = getColorAtInternal<float, 1>(img.get(), xPixel, yPixel,forceLinear,
+            queried = getColorAtInternal<float, 1>(img.get(),
+                                                   xPixel, yPixel,
+                                                   forceLinear,
                                                    srcColorSpace,
                                                    dstColorSpace,
                                                    r, g, b, a);
