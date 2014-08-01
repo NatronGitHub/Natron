@@ -1546,6 +1546,10 @@ void DragItemsUndoCommand::undo()
         it->dropped->newParentLayer->removeItem(it->dropped->droppedRotoItem.get());
         if (it->oldParentItem) {
             it->oldParentItem->insertChild(it->indexInOldLayer, it->dropped->dropped);
+            RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->dropped->droppedRotoItem.get());
+            if (isDrawable) {
+                _roto->makeCustomWidgetsForItem(isDrawable, it->dropped->dropped);
+            }
             assert(it->oldParentLayer);
             it->dropped->droppedRotoItem->setParentLayer(it->oldParentLayer);
             _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoContext::SETTINGS_PANEL);
@@ -1567,6 +1571,10 @@ void DragItemsUndoCommand::redo()
         }
         assert(it->dropped->newParentItem);
         it->dropped->newParentItem->insertChild(it->dropped->insertIndex,it->dropped->dropped);
+        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->dropped->droppedRotoItem.get());
+        if (isDrawable) {
+            _roto->makeCustomWidgetsForItem(isDrawable, it->dropped->dropped);
+        }
         it->dropped->newParentItem->setExpanded(true);
         it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
         it->dropped->droppedRotoItem->setParentLayer(it->dropped->newParentLayer);
