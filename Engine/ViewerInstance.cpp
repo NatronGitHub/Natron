@@ -1783,49 +1783,39 @@ ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinat
     }
     
     
-    const Natron::Color::Lut* dstColorSpace = lutFromColorspace(lut);
-    
     Natron::ImageBitDepth depth = img->getBitDepth();
+    ViewerColorSpace srcCS = getApp()->getDefaultColorSpaceForBitDepth(depth);
+    const Natron::Color::Lut* dstColorSpace;
+    const Natron::Color::Lut* srcColorSpace;
+    if ((srcCS == lut) && (lut == Linear || !forceLinear)) {
+        // identity transform
+        srcColorSpace = 0;
+        dstColorSpace = 0;
+    } else {
+        srcColorSpace = lutFromColorspace(srcCS);
+        dstColorSpace = lutFromColorspace(lut);
+    }
+
     bool queried = true;
     switch (depth) {
-        case IMAGE_BYTE: {
-            ViewerColorSpace bytesCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_BYTE);
-            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(bytesCS);
-            if (srcColorSpace == dstColorSpace) {
-                srcColorSpace = 0;
-                dstColorSpace = 0;
-            }
+        case IMAGE_BYTE:
             queried = getColorAtInternal<unsigned char, 255>(img.get(), xPixel, yPixel,forceLinear,
                                                              srcColorSpace,
                                                              dstColorSpace,
                                                              r, g, b, a);
-        }   break;
-        case IMAGE_SHORT: {
-            ViewerColorSpace shortCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_SHORT);
-            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(shortCS);
-            if (srcColorSpace == dstColorSpace) {
-                srcColorSpace = 0;
-                dstColorSpace = 0;
-            }
-
+            break;
+        case IMAGE_SHORT:
             queried = getColorAtInternal<unsigned short, 65535>(img.get(), xPixel, yPixel, forceLinear,
                                                                 srcColorSpace,
                                                                 dstColorSpace,
                                                                 r, g, b, a);
-        }   break;
-        case IMAGE_FLOAT: {
-            ViewerColorSpace floatCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_FLOAT);
-            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(floatCS);
-            if (srcColorSpace == dstColorSpace) {
-                srcColorSpace = 0;
-                dstColorSpace = 0;
-            }
+            break;
+        case IMAGE_FLOAT:
             queried = getColorAtInternal<float, 1>(img.get(), xPixel, yPixel,forceLinear,
                                                    srcColorSpace,
                                                    dstColorSpace,
                                                    r, g, b, a);
-        }   break;
-            
+            break;
         default:
             break;
     }
