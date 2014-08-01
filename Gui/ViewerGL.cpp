@@ -2568,12 +2568,13 @@ void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
     {
         ///if the clip to project format is enabled, make sure it is in the project format too
         bool clipping = isClippingImageToProjectWindow();
-        if ((clipping &&
-            imgPos.x() >= dispW.left() &&
+        if (!clipping ||
+            (imgPos.x() >= dispW.left() &&
              imgPos.x() < dispW.right() &&
              imgPos.y() >= dispW.bottom() &&
-             imgPos.y() < dispW.top()) || !clipping) {
-            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,textureIndex);
+             imgPos.y() < dispW.top())) {
+            //imgPos must be in canonical coordinates
+            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), linear, textureIndex , &r, &g, &b, &a);
         }
         
     }
@@ -3325,17 +3326,13 @@ bool ViewerGL::pickColor(double x,double y)
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
-    if (mipMapLevel != 0) {
-        imgPos /= (1 << mipMapLevel);
-        
-    }
-    
+
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool ret = false;
-    for (int i = 0; i< 2 ;++i ) {
-        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,i);
+    for (int i = 0; i < 2; ++i) {
+        // imgPos must be in canonical coordinates
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a);
         if (picked) {
             
             if (i == 0) {
@@ -3427,15 +3424,12 @@ void ViewerGL::updateRectangleColorPicker()
     int btm = std::min(topLeft.y(),btmRight.y());
     int right = std::max(topLeft.x(),btmRight.x());
     int top = std::max(topLeft.y(),btmRight.y());
+    // TODO: the following loop should be optimized
     for (int y = btm; y <= top; ++y) {
         for (int x = left; x <= right; ++x) {
-            int rx = x,ry = y;
-            if (mipMapLevel != 0) {
-                rx /= (1 << mipMapLevel);
-                ry /= (1 << mipMapLevel);
-            }
             for (int i = 0; i < 2; ++i) {
-                bool picked = _imp->viewerTab->getInternalNode()->getColorAt(rx,ry, &r, &g, &b, &a, linear,i);
+                // x and y must be in canonical coordinates
+                bool picked = _imp->viewerTab->getInternalNode()->getColorAt(x, y, linear, i, &r, &g, &b, &a);
                 if (picked) {
                     rSum += r;
                     gSum += g;

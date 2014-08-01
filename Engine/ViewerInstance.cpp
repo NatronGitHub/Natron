@@ -1736,9 +1736,10 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
 }
 
 bool
-ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex)
+ViewerInstance::getColorAt(int x, int y, // x and y in canonical coordinates
+                           bool forceLinear, int textureIndex,
+                           float* r, float* g, float* b, float* a) // output values
 {
-    
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(r && g && b && a);
