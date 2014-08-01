@@ -2824,12 +2824,14 @@ NodeGraph::centerOnAllNodes()
     double ymax = INT_MIN;
     
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
-        QSize size = (*it)->getSize();
-        QPointF pos = (*it)->scenePos();
-        xmin = std::min(xmin, pos.x());
-        xmax = std::max(xmax,pos.x() + size.width());
-        ymin = std::min(ymin,pos.y());
-        ymax = std::max(ymax,pos.y() + size.height());
+        if ((*it)->isActive() && (*it)->isVisible()) {
+            QSize size = (*it)->getSize();
+            QPointF pos = (*it)->scenePos();
+            xmin = std::min(xmin, pos.x());
+            xmax = std::max(xmax,pos.x() + size.width());
+            ymin = std::min(ymin,pos.y());
+            ymax = std::max(ymax,pos.y() + size.height());
+        }
     }
     
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it!=_imp->_backdrops.end(); ++it) {
