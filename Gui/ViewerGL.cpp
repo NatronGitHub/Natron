@@ -2074,7 +2074,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     if (!overlaysCaught) {
         bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
         
-        if (hasPickers && _imp->pickerState != PICKER_INACTIVE && event->button() == Qt::LeftButton &&
+        if (_imp->pickerState != PICKER_INACTIVE && event->button() == Qt::LeftButton &&
             !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
             displayingImage()) {
             _imp->pickerState = PICKER_INACTIVE;
@@ -2215,7 +2215,12 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
     
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
-    
+    // if the picker was deselected, this fixes the picer State
+    // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
+    if (!_imp->viewerTab->getGui()->hasPickers()) {
+        _imp->pickerState = PICKER_INACTIVE;
+    }
+
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
