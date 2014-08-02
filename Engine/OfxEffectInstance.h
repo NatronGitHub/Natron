@@ -139,7 +139,10 @@ public:
 
     virtual bool isInputRotoBrush(int inputNb) const WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
+
+    /// calculate the default rod for this effect instance
+    virtual RectD calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale) const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,
                                                                const RectI& outputRoD,

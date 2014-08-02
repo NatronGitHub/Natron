@@ -778,6 +778,17 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
     //double pa = clip->getAspectRatio();
 }
 
+RectD
+OfxEffectInstance::calcDefaultRegionOfDefinition(SequenceTime time,
+                                                 const RenderScale& scale) const
+{
+    if (!_initialized) {
+        throw std::runtime_error("OfxEffectInstance not initialized");
+    }
+    OfxRectD rod = effect_->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+    return RectD(rod.x1, rod.y1, rod.x2, rod.y2);
+}
+
 OfxRectD
 rectToOfxRect2D(const RectI b)
 {
