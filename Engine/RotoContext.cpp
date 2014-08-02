@@ -4450,7 +4450,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                                    unsigned int mipmapLevel,
                                    int time)
 {
-    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
+   for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         ///render the bezier only if finished (closed) and activated
         if (!(*it2)->isCurveFinished() || !(*it2)->isActivated(time)) {
             continue;
@@ -4459,8 +4459,8 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
         double fallOff = (*it2)->getFeatherFallOff(time);
         double fallOffInverse = 1. / fallOff;
-        double featherDist = (double)(*it2)->getFeatherDistance(time);
-        double opacity = (*it2)->getOpacity(time);
+         double featherDist = (double)(*it2)->getFeatherDistance(time);
+       double opacity = (*it2)->getOpacity(time);
 #ifdef NATRON_ROTO_INVERTIBLE
         bool inverted = (*it2)->getInverted(time);
 #else
@@ -4601,8 +4601,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                     continue;
                 }
 
-                Point p2,p0p1,p1p0,p2p3,p3p2;
-
+                 Point p2,p0p1,p1p0,p2p3,p3p2;
                 if (!mustStop) {
                     norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
                     assert(norm != 0);
@@ -4625,28 +4624,31 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                 featherContour.push_back(p2);
 
                 ///linear interpolation
-                p0p1.x = (2. * fallOff * prevBez->x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
+                 p0p1.x = (2. * fallOff * prevBez->x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
                 p0p1.y = (2. * fallOff * prevBez->y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
                 p1p0.x = (prevBez->x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
                 p1p0.y = (prevBez->y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
-
-                p2p3.x = (bezIT->x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                 p2p3.x = (bezIT->x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
                 p2p3.y = (bezIT->y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
                 p3p2.x = (2. * fallOff * bezIT->x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
                 p3p2.y = (2. * fallOff * bezIT->y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
 
-
                 ///move to the initial point
                 cairo_mesh_pattern_begin_patch(mesh);
-                cairo_mesh_pattern_move_to(mesh, prevBez->x,prevBez->y);
+                 cairo_mesh_pattern_move_to(mesh, prevBez->x,prevBez->y);
                 cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
-                cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
-                cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,bezIT->x,bezIT->y);
+               cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+                 cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,bezIT->x,bezIT->y);
                 cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
-                ///Set the 4 corners color
+               ///Set the 4 corners color
                 ///inner is full color
+#pragma message WARN("the two sqrt below are probably due to a cairo bug, please read comments")
+                //the two sqrt below are probably due to a cairo bug.
+                // to check wether the bug is present, make any shape with a very large feather and set
+                // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+                // and approximately equal to 0.5
                 cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                         inverted ? 1. - opacity : opacity);
+                                                         std::sqrt(inverted ? 1. - opacity : opacity));
                 ///outter is faded
                 cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
                                                          inverted ? 1. : 0.);
@@ -4654,7 +4656,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                                                          inverted ? 1. : 0.);
                 ///inner is full color
                 cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                         inverted ? 1. - opacity : opacity);
+                                                         std::sqrt(inverted ? 1. - opacity : opacity));
                 assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
 
                 cairo_mesh_pattern_end_patch(mesh);
@@ -4668,7 +4670,8 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
             int loopCount;
             if (!inverted) {
-                cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1],shapeColor[2],opacity);
+                // strangely, the above-mentioned cairo bug doesn't affect this function
+                cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
                 renderInternalShape(time,mipmapLevel,cr,cps);
                 loopCount = 1;
             } else {
@@ -4683,8 +4686,8 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                     ++featherContourIT;
                 }
                 if (i == 0 && inverted) {
-                    cairo_fill(cr);
-                }
+/                   cairo_fill(cr);
+/               }
             }
             applyAndDestroyMask(cr, mesh);
 #ifdef NATRON_WHY_USE_TWICE_THE_SAME_CODE_COPY_PASTE_IS_UGLY
@@ -4862,8 +4865,8 @@ void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,c
         ++point;
         ++nextPoint;
     }
-    cairo_fill(cr);
-}
+/   cairo_fill(cr);
+/
 
 void RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh)
 {
