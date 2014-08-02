@@ -3510,13 +3510,10 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
                 splineRoDI.y2 = std::ceil(splineRoD.y2);
                 
                 if (first) {
+                    first = false;
                     *rod = splineRoDI;
                 } else {
                     rod->merge(splineRoDI);
-                }
-                
-                if (!first) {
-                    first = false;
                 }
             }
         }
