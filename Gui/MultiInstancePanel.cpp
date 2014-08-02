@@ -1572,8 +1572,11 @@ bool TrackerPanel::trackBackward()
     
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
-        if (!(*it)->getLiveInstance() || (*it)->isNodeDisabled()) {
+        if (!(*it)->getLiveInstance()) {
             return true;
+        }
+        if ((*it)->isNodeDisabled()) {
+            continue;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(prevBtn->getName());
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1614,8 +1617,11 @@ bool TrackerPanel::trackForward()
     
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
-        if (!(*it)->getLiveInstance() || (*it)->isNodeDisabled()) {
+        if (!(*it)->getLiveInstance()) {
             return true;
+        }
+        if ((*it)->isNodeDisabled()) {
+            continue;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackNextButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1652,8 +1658,11 @@ bool TrackerPanel::trackPrevious()
     }
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
-        if (!(*it)->getLiveInstance() || (*it)->isNodeDisabled()) {
+        if (!(*it)->getLiveInstance()) {
             return true;
+        }
+        if ((*it)->isNodeDisabled()) {
+            continue;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackPreviousButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
@@ -1675,8 +1684,11 @@ bool TrackerPanel::trackNext()
     }
     std::list<Button_Knob*> instanceButtons;
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
-        if (!(*it)->getLiveInstance() || (*it)->isNodeDisabled()) {
+        if (!(*it)->getLiveInstance()) {
             return true;
+        }
+        if ((*it)->isNodeDisabled()) {
+            continue;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackNextButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
