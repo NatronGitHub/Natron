@@ -32,12 +32,19 @@
 
 #include "Global/GlobalDefines.h"
 
+#define ROTO_DEFAULT_OPACITY 1.
+#define ROTO_DEFAULT_FEATHER 1.5
+#define ROTO_DEFAULT_FEATHERFALLOFF 1.
+#define ROTO_DEFAULT_COLOR_R 1.
+#define ROTO_DEFAULT_COLOR_G 1.
+#define ROTO_DEFAULT_COLOR_B 1.
+
 class Bezier;
 
 struct BezierCPPrivate
 {
     Bezier* holder;
-    
+
     ///the animation curves for the position in the 2D plane
     Curve curveX,curveY;
     double x,y; //< used when there is no keyframe
@@ -315,7 +322,7 @@ struct RotoDrawableItemPrivate
     
     
     boost::shared_ptr<Double_Knob> opacity; //< opacity of the rendered shape between 0 and 1
-    boost::shared_ptr<Int_Knob> feather;//< number of pixels to add to the feather distance (from the feather point), between -100 and 100
+    boost::shared_ptr<Double_Knob> feather;//< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     boost::shared_ptr<Double_Knob> featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                    //alpha value is half the original value when at half distance from the feather distance
     boost::shared_ptr<Bool_Knob> activated; //< should the curve be visible/rendered ? (animable)
@@ -326,7 +333,7 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<Choice_Knob> compOperator;
     RotoDrawableItemPrivate()
     : opacity(new Double_Knob(NULL,"Opacity",1,false))
-    , feather(new Int_Knob(NULL,"Feather",1,false))
+    , feather(new Double_Knob(NULL,"Feather",1,false))
     , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1,false))
     , activated(new Bool_Knob(NULL,"Activated",1,false))
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -336,21 +343,21 @@ struct RotoDrawableItemPrivate
     , compOperator(new Choice_Knob(NULL,"Operator",1,false))
     {
         opacity->populate();
-        opacity->setDefaultValue(1.);
+        opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(opacity));
             opacity->setSignalSlotHandler(handler);
         }
         
         feather->populate();
-        feather->setDefaultValue(0);
+        feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(feather));
             feather->setSignalSlotHandler(handler);
         }
 
         featherFallOff->populate();
-        featherFallOff->setDefaultValue(1.);
+        featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(featherFallOff));
             featherFallOff->setSignalSlotHandler(handler);
@@ -373,9 +380,9 @@ struct RotoDrawableItemPrivate
 #endif
 
         color->populate();
-        color->setDefaultValue(1,0);
-        color->setDefaultValue(1,1);
-        color->setDefaultValue(1,2);
+        color->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
+        color->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
+        color->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(color));
             color->setSignalSlotHandler(handler);
@@ -417,7 +424,7 @@ struct RotoContextPrivate
     ///These are knobs that take the value of the selected splines infos.
     ///Their value changes when selection changes.
     boost::shared_ptr<Double_Knob> opacity;
-    boost::shared_ptr<Int_Knob> feather;
+    boost::shared_ptr<Double_Knob> feather;
     boost::shared_ptr<Double_Knob> featherFallOff;
     boost::shared_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -460,25 +467,25 @@ struct RotoContextPrivate
         opacity->setMaximum(1.);
         opacity->setDisplayMinimum(0.);
         opacity->setDisplayMaximum(1.);
-        opacity->setDefaultValue(1.);
+        opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         opacity->setAllDimensionsEnabled(false);
         opacity->setIsPersistant(false);
-        feather = Natron::createKnob<Int_Knob>(effect,"Feather",1,false);
+        feather = Natron::createKnob<Double_Knob>(effect,"Feather",1,false);
         feather->setHintToolTip("Controls the distance of feather (in pixels) to add around the selected shape(s)");
         feather->setMinimum(-100);
         feather->setMaximum(100);
         feather->setDisplayMinimum(-100);
         feather->setDisplayMaximum(100);
-        feather->setDefaultValue(0);
+        feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         feather->setAllDimensionsEnabled(false);
         feather->setIsPersistant(false);
         featherFallOff = Natron::createKnob<Double_Knob>(effect, "Feather fall-off",1,false);
         featherFallOff->setHintToolTip("Controls the rate at which the feather is applied on the selected shape(s).");
-        featherFallOff->setMinimum(0.2);
+        featherFallOff->setMinimum(0.001);
         featherFallOff->setMaximum(5.);
         featherFallOff->setDisplayMinimum(0.2);
         featherFallOff->setDisplayMaximum(5.);
-        featherFallOff->setDefaultValue(1.);
+        featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOff->setAllDimensionsEnabled(false);
         featherFallOff->setIsPersistant(false);
         activated = Natron::createKnob<Bool_Knob>(effect,"Activated",1,false);
@@ -500,9 +507,9 @@ struct RotoContextPrivate
 
         colorKnob = Natron::createKnob<Color_Knob>(effect, "Color",3,false);
         colorKnob->setHintToolTip("The color of the shape. This parameter is used when the output components are set to RGBA.");
-        colorKnob->setDefaultValue(1,0);
-        colorKnob->setDefaultValue(1,1);
-        colorKnob->setDefaultValue(1,2);
+        colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
+        colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
+        colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         colorKnob->setAllDimensionsEnabled(false);
         colorKnob->setIsPersistant(false);
         

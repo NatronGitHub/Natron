@@ -331,7 +331,7 @@ public:
      * @brief The distance of the feather is the distance from the control point to the feather point plus
      * the feather distance returned by this function.
      **/
-    int getFeatherDistance(int time) const;
+    double getFeatherDistance(int time) const;
     
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
@@ -352,7 +352,7 @@ public:
     int getCompositingOperator(int time) const;
     
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
-    boost::shared_ptr<Int_Knob> getFeatherKnob() const;
+    boost::shared_ptr<Double_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
 #ifdef NATRON_ROTO_INVERTIBLE

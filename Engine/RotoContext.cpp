@@ -1108,7 +1108,7 @@ double RotoDrawableItem::getOpacity(int time) const
 }
 
 
-int RotoDrawableItem::getFeatherDistance(int time) const
+double RotoDrawableItem::getFeatherDistance(int time) const
 {
     ///MT-safe thanks to Knob
     return _imp->feather->getValueAtTime(time);
@@ -1160,7 +1160,7 @@ void RotoDrawableItem::setOverlayColor(const double *color)
 
 
 boost::shared_ptr<Bool_Knob> RotoDrawableItem::getActivatedKnob() const { return _imp->activated; }
-boost::shared_ptr<Int_Knob> RotoDrawableItem::getFeatherKnob() const { return _imp->feather; }
+boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherKnob() const { return _imp->feather; }
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getOpacityKnob() const { return _imp->opacity; }
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -4450,7 +4450,14 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                                    unsigned int mipmapLevel,
                                    int time)
 {
-   for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         ///render the bezier only if finished (closed) and activated
         if (!(*it2)->isCurveFinished() || !(*it2)->isActivated(time)) {
             continue;
@@ -4459,8 +4466,8 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
         double fallOff = (*it2)->getFeatherFallOff(time);
         double fallOffInverse = 1. / fallOff;
-         double featherDist = (double)(*it2)->getFeatherDistance(time);
-       double opacity = (*it2)->getOpacity(time);
+        double featherDist = (*it2)->getFeatherDistance(time);
+        double opacity = (*it2)->getOpacity(time);
 #ifdef NATRON_ROTO_INVERTIBLE
         bool inverted = (*it2)->getInverted(time);
 #else
@@ -4601,7 +4608,12 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                     continue;
                 }
 
-                 Point p2,p0p1,p1p0,p2p3,p3p2;
+                Point p0, p0p1, p1p0, p2, p2p3, p3p2, p3;
+                p0.x = prevBez->x;
+                p0.y = prevBez->y;
+                p3.x = bezIT->x;
+                p3.y = bezIT->y;
+
                 if (!mustStop) {
                     norm = sqrt((next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y));
                     assert(norm != 0);
@@ -4624,23 +4636,25 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                 featherContour.push_back(p2);
 
                 ///linear interpolation
-                 p0p1.x = (2. * fallOff * prevBez->x + fallOffInverse * p1.x) / (2. * fallOff + fallOffInverse);
-                p0p1.y = (2. * fallOff * prevBez->y + fallOffInverse * p1.y) / (2. * fallOff + fallOffInverse);
-                p1p0.x = (prevBez->x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
-                p1p0.y = (prevBez->y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
-                 p2p3.x = (bezIT->x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
-                p2p3.y = (bezIT->y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
-                p3p2.x = (2. * fallOff * bezIT->x + fallOffInverse * p2.x) / (2. * fallOff + fallOffInverse);
-                p3p2.y = (2. * fallOff * bezIT->y + fallOffInverse * p2.y) / (2. * fallOff + fallOffInverse);
+                p0p1.x = (p0.x * fallOff * 2. + fallOffInverse * p1.x) / (fallOff * 2. + fallOffInverse);
+                p0p1.y = (p0.y * fallOff * 2. + fallOffInverse * p1.y) / (fallOff * 2. + fallOffInverse);
+                p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
+                p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
+
+                p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
+                p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
+                p3p2.x = (p3.x * fallOff * 2. + fallOffInverse * p2.x) / (fallOff * 2. + fallOffInverse);
+                p3p2.y = (p3.y * fallOff * 2. + fallOffInverse * p2.y) / (fallOff * 2. + fallOffInverse);
+
 
                 ///move to the initial point
                 cairo_mesh_pattern_begin_patch(mesh);
-                 cairo_mesh_pattern_move_to(mesh, prevBez->x,prevBez->y);
-                cairo_mesh_pattern_curve_to(mesh, p0p1.x,p0p1.y,p1p0.x,p1p0.y,p1.x,p1.y);
-               cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
-                 cairo_mesh_pattern_curve_to(mesh, p2p3.x,p2p3.y,p3p2.x,p3p2.y,bezIT->x,bezIT->y);
-                cairo_mesh_pattern_line_to(mesh, prevBez->x, prevBez->y);
-               ///Set the 4 corners color
+                cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+                cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+                cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+                cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+                ///Set the 4 corners color
                 ///inner is full color
 #pragma message WARN("the two sqrt below are probably due to a cairo bug, please read comments")
                 //the two sqrt below are probably due to a cairo bug.
@@ -4686,8 +4700,24 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                     ++featherContourIT;
                 }
                 if (i == 0 && inverted) {
-/                   cairo_fill(cr);
-/               }
+//                    if (cairo_get_antialias(cr) != CAIRO_ANTIALIAS_NONE ) {
+//                        cairo_fill_preserve(cr);
+//                        // These line properties make for a nicer looking polygon mesh
+//                        cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+//                        cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+//                        // Comment out the following call to cairo_set_line width
+//                        // since the hard-coded width value of 1.0 is not appropriate
+//                        // for fills of small areas. Instead, use the line width that
+//                        // has already been set by the user via the above call of
+//                        // poly_line which in turn calls set_current_context which in
+//                        // turn calls cairo_set_line_width for the user-specified
+//                        // width.
+//                        // cairo_set_line_width(cr, 1.0);
+//                        cairo_stroke(cr);
+//                    } else {
+                    cairo_fill(cr);
+//                    }
+                }
             }
             applyAndDestroyMask(cr, mesh);
 #ifdef NATRON_WHY_USE_TWICE_THE_SAME_CODE_COPY_PASTE_IS_UGLY
@@ -4865,8 +4895,24 @@ void RotoContextPrivate::renderInternalShape(int time,unsigned int mipmapLevel,c
         ++point;
         ++nextPoint;
     }
-/   cairo_fill(cr);
-/
+//    if (cairo_get_antialias(cr) != CAIRO_ANTIALIAS_NONE ) {
+//        cairo_fill_preserve(cr);
+//        // These line properties make for a nicer looking polygon mesh
+//        cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+//        cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+//        // Comment out the following call to cairo_set_line width
+//        // since the hard-coded width value of 1.0 is not appropriate
+//        // for fills of small areas. Instead, use the line width that
+//        // has already been set by the user via the above call of
+//        // poly_line which in turn calls set_current_context which in
+//        // turn calls cairo_set_line_width for the user-specified
+//        // width.
+//        cairo_set_line_width(cr, 1.0);
+//        cairo_stroke(cr);
+//    } else {
+    cairo_fill(cr);
+//    }
+}
 
 void RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh)
 {
