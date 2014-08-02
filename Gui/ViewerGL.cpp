@@ -1241,12 +1241,11 @@ void ViewerGL::drawUserRoI()
     }
 
     ///base rect
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(userRoI.x1, userRoI.y1); //bottom left
     glVertex2f(userRoI.x1, userRoI.y2); //top left
     glVertex2f(userRoI.x2, userRoI.y2); //top right
     glVertex2f(userRoI.x2, userRoI.y1); //bottom right
-    glVertex2f(userRoI.x1, userRoI.y1); //bottom left
     glEnd();
     
     
@@ -1514,12 +1513,11 @@ void ViewerGL::drawPickerRectangle()
     QPointF topLeft = _imp->pickerRect.topLeft();
     QPointF btmRight = _imp->pickerRect.bottomRight();
     ///base rect
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(), btmRight.y()); //bottom left
     glVertex2f(topLeft.x(), topLeft.y()); //top left
     glVertex2f(btmRight.x(), topLeft.y()); //top right
     glVertex2f(btmRight.x(), btmRight.y()); //bottom right
-    glVertex2f(topLeft.x(), btmRight.y()); //bottom left
     glEnd();
 }
 
@@ -1636,12 +1634,11 @@ void ViewerGL::Implementation::drawSelectionRectangle()
     
     glLineWidth(1.5);
     
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
     
     

@@ -277,12 +277,11 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
                 glColor4d(0., 1., 0.,0.8);
             }
             
-            glBegin(GL_LINE_STRIP);
+            glBegin(GL_LINE_LOOP);
             glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE*2*pixelScaleY);
             glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE*2*pixelScaleY);
             glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE*2*pixelScaleY);
             glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE*2*pixelScaleY);
-            glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE*2*pixelScaleY);
             glEnd();
             
             ///draw a cross at the cursor position

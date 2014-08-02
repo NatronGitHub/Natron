@@ -1103,12 +1103,11 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     } else {
         glColor4f(0.8,0.8,0.8,1.);
     }
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
     
     double midX = (topLeft.x() + btmRight.x()) / 2.;
