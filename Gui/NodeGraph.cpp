@@ -778,7 +778,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
                     if (it != _imp->_selection.nodes.end()) {
                         (*it)->setSelected(false);
                     }
-                } 
+                }  
             }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();

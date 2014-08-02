@@ -31,6 +31,8 @@ CLANG_DIAG_ON(deprecated)
 
 #define NATRON_EXTRA_PARAMETER_PAGE_NAME "Node"
 
+#define kDisableNodeKnobName "disable_natron"
+
 class AppInstance;
 class NodeSettingsPanel;
 class KnobI;

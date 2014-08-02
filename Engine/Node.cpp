@@ -742,7 +742,7 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Disable",1,false);
     _imp->disableNodeKnob->setAnimationEnabled(false);
     _imp->disableNodeKnob->setDefaultValue(false);
-    _imp->disableNodeKnob->setName("disable_natron");
+    _imp->disableNodeKnob->setName(kDisableNodeKnobName);
     _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
     _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
     loadKnob(_imp->disableNodeKnob, serialization);

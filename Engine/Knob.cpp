@@ -507,7 +507,7 @@ void KnobHelper::setName(const std::string& name)
     _imp->name = name;
 }
 
-std::string KnobHelper::getName() const
+const std::string& KnobHelper::getName() const
 {
     return _imp->name;
 }
