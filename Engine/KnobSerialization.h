@@ -254,17 +254,14 @@ class KnobSerialization
     template<class Archive>
     void save(Archive & ar, const unsigned int /*version*/) const
     {
-        
+        assert(_knob);
         AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>(_knob.get());
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
         Double_Knob* isDouble = dynamic_cast<Double_Knob*>(_knob.get());
         std::string name = _knob->getName();
         ar & boost::serialization::make_nvp("Name",name);
-        
         ar & boost::serialization::make_nvp("Type",_typeName);
-        
         ar & boost::serialization::make_nvp("Dimension",_dimension);
-
         bool secret = _knob->getIsSecret();
         ar & boost::serialization::make_nvp("Secret",secret);
         
@@ -278,15 +275,11 @@ class KnobSerialization
             std::list< Curve > curves;
             isParametric->saveParametricCurves(&curves);
             ar & boost::serialization::make_nvp("ParametricCurves",curves);
-        }
-        else if (isString) {
-            
+        } else if (isString) {
             std::map<int,std::string> extraDatas;
             isString->getAnimation().save(&extraDatas);
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
-            
-        }
-        else if (isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
+        } else if (isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
             std::list<Double_Knob::SerializedTrack> tracks;
             isDouble->serializeTracks(&tracks);
             int count = (int)tracks.size();
@@ -305,17 +298,12 @@ class KnobSerialization
     template<class Archive>
     void load(Archive & ar, const unsigned int version)
     {
-        
+        assert(!_knob);
         std::string name;
         ar & boost::serialization::make_nvp("Name",name);
-        
         ar & boost::serialization::make_nvp("Type",_typeName);
-        
         ar & boost::serialization::make_nvp("Dimension",_dimension);
-        
 
-        assert(!_knob);
-        
         boost::shared_ptr<KnobI> created = createKnob(_typeName, _dimension);
         if (!created) {
             return;
@@ -323,7 +311,6 @@ class KnobSerialization
             _knob = created;
         }
         _knob->setName(name);
-        
         
         bool secret;
         ar & boost::serialization::make_nvp("Secret",secret);
@@ -344,8 +331,7 @@ class KnobSerialization
             std::list< Curve > curves;
             ar & boost::serialization::make_nvp("ParametricCurves",curves);
             isParametric->loadParametricCurves(curves);
-        }
-        else if (isStringAnimated) {
+        } else if (isStringAnimated) {
             std::map<int,std::string> extraDatas;
             ar & boost::serialization::make_nvp("StringsAnimation",extraDatas);
             ///Don't load animation for input image files: they no longer hold keyframes
@@ -353,8 +339,7 @@ class KnobSerialization
             if (!isFile || (isFile && isFile->getName() != "filename")) {
                 isStringAnimated->loadAnimation(extraDatas);
             }
-        }
-        else if (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS &&
+        } else if (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS &&
                  isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
             int count ;
             ar & boost::serialization::make_nvp("SlavePtsNo",count);
@@ -368,9 +353,6 @@ class KnobSerialization
                 slavedTracks.push_back(t);
             }
         }
-        
-        
-        
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()
