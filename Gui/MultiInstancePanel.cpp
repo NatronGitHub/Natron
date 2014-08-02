@@ -1868,7 +1868,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*>& select
     
     ///Disable all non used points
     for (unsigned int i = selection.size(); i < 4; ++i) {
-        QString enableName = QString("enable%1").arg(i);
+        QString enableName = QString("enable%1").arg(i+1);
         boost::shared_ptr<KnobI> knob = cornerPin->getKnobByName(enableName.toStdString());
         assert(knob);
         Bool_Knob* enableKnob = dynamic_cast<Bool_Knob*>(knob.get());
