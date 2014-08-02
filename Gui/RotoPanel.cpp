@@ -777,8 +777,8 @@ void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
     if (it == items.end()) {
         return;
     }
-    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
 #ifdef NATRON_ROTO_INVERTIBLE
+    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
     if (drawable) {
         QObject::disconnect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
     }
