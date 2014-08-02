@@ -997,7 +997,9 @@ RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,
 : RotoItem(context,name,parent)
 , _imp(new RotoDrawableItemPrivate())
 {
-    QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(inversionChanged()));
+#ifdef NATRON_ROTO_INVERTIBLE
+    QObject::connect(_imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(invertedStateChanged()));
+#endif
     QObject::connect(this, SIGNAL(overlayColorChanged()), context, SIGNAL(refreshViewerOverlays()));
     QObject::connect(_imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(shapeColorChanged()));
     QObject::connect(_imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this,
@@ -1017,7 +1019,9 @@ void RotoDrawableItem::clone(const RotoDrawableItem& other)
         _imp->feather->clone(other._imp->feather.get());
         _imp->featherFallOff->clone(other._imp->featherFallOff.get());
         _imp->opacity->clone(other._imp->opacity.get());
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->clone(other._imp->inverted.get());
+#endif
         memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double)*4);
     }
     RotoItem::clone(other);
@@ -1050,7 +1054,9 @@ void RotoDrawableItem::save(RotoItemSerialization *obj) const
         serializeRotoKnob(_imp->feather, &s->_feather);
         serializeRotoKnob(_imp->opacity, &s->_opacity);
         serializeRotoKnob(_imp->featherFallOff, &s->_featherFallOff);
+#ifdef NATRON_ROTO_INVERTIBLE
         serializeRotoKnob(_imp->inverted, &s->_inverted);
+#endif
         serializeRotoKnob(_imp->color, &s->_color);
         serializeRotoKnob(_imp->compOperator, &s->_compOp);
         memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
@@ -1070,7 +1076,9 @@ void RotoDrawableItem::load(const RotoItemSerialization &obj)
         _imp->opacity->clone(s._opacity.getKnob().get());
         _imp->feather->clone(s._feather.getKnob().get());
         _imp->featherFallOff->clone(s._featherFallOff.getKnob().get());
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->clone(s._inverted.getKnob().get());
+#endif
         if (s._hasColorAndCompOp) {
             _imp->color->clone(s._color.getKnob().get());
             _imp->compOperator->clone(s._compOp.getKnob().get());
@@ -1112,11 +1120,13 @@ double RotoDrawableItem::getFeatherFallOff(int time) const
     return _imp->featherFallOff->getValueAtTime(time);
 }
 
+#ifdef NATRON_ROTO_INVERTIBLE
 bool RotoDrawableItem::getInverted(int time) const
 {
     ///MT-safe thanks to Knob
     return _imp->inverted->getValueAtTime(time);
 }
+#endif
 
 void RotoDrawableItem::getColor(int time,double* color) const
 {
@@ -1153,7 +1163,9 @@ boost::shared_ptr<Bool_Knob> RotoDrawableItem::getActivatedKnob() const { return
 boost::shared_ptr<Int_Knob> RotoDrawableItem::getFeatherKnob() const { return _imp->feather; }
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherFallOffKnob() const { return _imp->featherFallOff; }
 boost::shared_ptr<Double_Knob> RotoDrawableItem::getOpacityKnob() const { return _imp->opacity; }
+#ifdef NATRON_ROTO_INVERTIBLE
 boost::shared_ptr<Bool_Knob> RotoDrawableItem::getInvertedKnob() const { return _imp->inverted; }
+#endif
 boost::shared_ptr<Choice_Knob> RotoDrawableItem::getOperatorKnob() const { return _imp->compOperator; }
 boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const { return _imp->color; }
 ////////////////////////////////////Layer////////////////////////////////////
@@ -3235,10 +3247,12 @@ boost::shared_ptr<RotoItem> RotoContext::getLastInsertedItem() const
     return _imp->lastInsertedItem;
 }
 
+#ifdef NATRON_ROTO_INVERTIBLE
 boost::shared_ptr<Bool_Knob> RotoContext::getInvertedKnob() const
 {
     return _imp->inverted;
 }
+#endif
 
 boost::shared_ptr<Color_Knob> RotoContext::getColorKnob() const
 {
@@ -3572,8 +3586,10 @@ void RotoContext::load(const RotoContextSerialization& obj)
     _imp->opacity->setAllDimensionsEnabled(false);
     _imp->feather->setAllDimensionsEnabled(false);
     _imp->featherFallOff->setAllDimensionsEnabled(false);
+#ifdef NATRON_ROTO_INVERTIBLE
     _imp->inverted->setAllDimensionsEnabled(false);
-    
+#endif
+
     assert(_imp->layers.size() == 1);
     
     boost::shared_ptr<RotoLayer> baseLayer = _imp->layers.front();
@@ -3712,7 +3728,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
         boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
+#ifdef NATRON_ROTO_INVERTIBLE
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
+#endif
         boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
         boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
@@ -3720,7 +3738,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->feather->clone(feather.get());
         _imp->featherFallOff->clone(featherFallOff.get());
         _imp->opacity->clone(opacity.get());
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->clone(inverted.get());
+#endif
         _imp->colorKnob->clone(colorknob.get());
         _imp->compOperator->clone(compOp.get());
         
@@ -3729,7 +3749,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         feather->slaveTo(0, _imp->feather, 0);
         featherFallOff->slaveTo(0, _imp->featherFallOff, 0);
         opacity->slaveTo(0, _imp->opacity, 0);
+#ifdef NATRON_ROTO_INVERTIBLE
         inverted->slaveTo(0, _imp->inverted, 0);
+#endif
         for (int i = 0; i < colorknob->getDimension();++i) {
             colorknob->slaveTo(i, _imp->colorKnob, i);
         }
@@ -3748,7 +3770,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->opacity->setAllDimensionsEnabled(true);
         _imp->featherFallOff->setAllDimensionsEnabled(true);
         _imp->feather->setAllDimensionsEnabled(true);
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->setAllDimensionsEnabled(true);
+#endif
         _imp->colorKnob->setAllDimensionsEnabled(true);
         _imp->compOperator->setAllDimensionsEnabled(true);
     }
@@ -3760,7 +3784,9 @@ void RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->opacity->setDirty(true);
         _imp->feather->setDirty(true);
         _imp->featherFallOff->setDirty(true);
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->setDirty(true);
+#endif
         _imp->colorKnob->setDirty(true);
         _imp->compOperator->setDirty(true);
     }
@@ -3806,7 +3832,9 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         boost::shared_ptr<KnobI> feather = isBezier->getFeatherKnob();
         boost::shared_ptr<KnobI> featherFallOff = isBezier->getFeatherFallOffKnob();
         boost::shared_ptr<KnobI> opacity = isBezier->getOpacityKnob();
+#ifdef NATRON_ROTO_INVERTIBLE
         boost::shared_ptr<KnobI> inverted = isBezier->getInvertedKnob();
+#endif
         boost::shared_ptr<KnobI> colorknob = isBezier->getColorKnob();
         boost::shared_ptr<KnobI> compOp = isBezier->getOperatorKnob();
         
@@ -3814,7 +3842,9 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         feather->unSlave(0,notDirty);
         featherFallOff->unSlave(0,notDirty);
         opacity->unSlave(0,notDirty);
+#ifdef NATRON_ROTO_INVERTIBLE
         inverted->unSlave(0,notDirty);
+#endif
         for (int i = 0;i < colorknob->getDimension();++i) {
             colorknob->unSlave(i, notDirty);
         }
@@ -3832,7 +3862,9 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->opacity->setDirty(false);
         _imp->feather->setDirty(false);
         _imp->featherFallOff->setDirty(false);
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->setDirty(false);
+#endif
         _imp->compOperator->setDirty(false);
         _imp->colorKnob->setDirty(false);
     }
@@ -3843,7 +3875,9 @@ void RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->opacity->setAllDimensionsEnabled(false);
         _imp->featherFallOff->setAllDimensionsEnabled(false);
         _imp->feather->setAllDimensionsEnabled(false);
+#ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->setAllDimensionsEnabled(false);
+#endif
         _imp->compOperator->setAllDimensionsEnabled(false);
         _imp->colorKnob->setAllDimensionsEnabled(false);
     }
@@ -4177,19 +4211,19 @@ void RotoContext::onItemLockedChanged(RotoItem* item)
     _imp->opacity->setDirty(dirty);
     _imp->feather->setDirty(dirty);
     _imp->featherFallOff->setDirty(dirty);
+#ifdef NATRON_ROTO_INVERTIBLE
     _imp->inverted->setDirty(dirty);
-    
+#endif
+
     _imp->activated->setAllDimensionsEnabled(enabled);
     _imp->opacity->setAllDimensionsEnabled(enabled);
     _imp->featherFallOff->setAllDimensionsEnabled(enabled);
     _imp->feather->setAllDimensionsEnabled(enabled);
+#ifdef NATRON_ROTO_INVERTIBLE
     _imp->inverted->setAllDimensionsEnabled(enabled);
-    
-    
-    
-    
+#endif
+
     emit itemLockedChanged();
-    
 }
 
 std::string RotoContext::getRotoNodeName() const
@@ -4424,7 +4458,11 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             double fallOffInverse = 1. / fallOff;
             double featherDist = (double)(*it2)->getFeatherDistance(time);
             double opacity = (*it2)->getOpacity(time);
+#ifdef NATRON_ROTO_INVERTIBLE
             bool inverted = (*it2)->getInverted(time);
+#else
+            const bool inverted = false;
+#endif
             int operatorIndex = (*it2)->getCompositingOperator(time);
             double shapeColor[3];
             (*it2)->getColor(time, shapeColor);
@@ -4441,6 +4479,15 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
             }
             
             cairo_new_path(cr);
+#ifdef NATRON_ROTO_INVERTIBLE
+#pragma message WARN("doesn't work! the image should be infinite for this to work!")
+            // Doesn't work! the image should be infinite for this to work!
+            // Or at least it should contain the Union of the source RoDs.
+            // Here, it only contains the boinding box of the Bezier.
+            // If there's a transform after the roto node, a black border will appear.
+            // The only solution would be to have a color parameter which specifies how on image is outside of its RoD.
+            // Unfortunately, the OFX definition is: "it is black and transparent"
+
             ///If inverted, draw an inverted rectangle on all the image first
             if (inverted) {
                 double xOffset,yOffset;
@@ -4455,7 +4502,8 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
                 cairo_line_to(cr, xOffset, yOffset);
                 
             }
-            
+#endif
+
             ////Define the feather edge pattern
             cairo_pattern_t* mesh = cairo_pattern_create_mesh();
             if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {

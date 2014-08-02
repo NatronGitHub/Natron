@@ -355,14 +355,18 @@ public:
     boost::shared_ptr<Int_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
+#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+#endif
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     boost::shared_ptr<Color_Knob> getColorKnob() const;
     
 signals:
     
-    void inversionChanged();
-    
+#ifdef NATRON_ROTO_INVERTIBLE
+    void invertedStateChanged();
+#endif
+
     void overlayColorChanged();
     
     void shapeColorChanged();
@@ -945,8 +949,9 @@ public:
     
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
     
+#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
-    
+#endif
     boost::shared_ptr<Color_Knob> getColorKnob() const;
     
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;

@@ -319,7 +319,9 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<Double_Knob> featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                    //alpha value is half the original value when at half distance from the feather distance
     boost::shared_ptr<Bool_Knob> activated; //< should the curve be visible/rendered ? (animable)
+#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> inverted; //< invert the rendering
+#endif
     boost::shared_ptr<Color_Knob> color;
     boost::shared_ptr<Choice_Knob> compOperator;
     RotoDrawableItemPrivate()
@@ -327,7 +329,9 @@ struct RotoDrawableItemPrivate
     , feather(new Int_Knob(NULL,"Feather",1,false))
     , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1,false))
     , activated(new Bool_Knob(NULL,"Activated",1,false))
+#ifdef NATRON_ROTO_INVERTIBLE
     , inverted(new Bool_Knob(NULL,"Inverted",1,false))
+#endif
     , color(new Color_Knob(NULL,"Color",3,false))
     , compOperator(new Choice_Knob(NULL,"Operator",1,false))
     {
@@ -359,13 +363,15 @@ struct RotoDrawableItemPrivate
             activated->setSignalSlotHandler(handler);
         }
 
+#ifdef NATRON_ROTO_INVERTIBLE
         inverted->populate();
         inverted->setDefaultValue(false);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(inverted));
             inverted->setSignalSlotHandler(handler);
         }
-        
+#endif
+
         color->populate();
         color->setDefaultValue(1,0);
         color->setDefaultValue(1,1);
@@ -414,7 +420,9 @@ struct RotoContextPrivate
     boost::shared_ptr<Int_Knob> feather;
     boost::shared_ptr<Double_Knob> featherFallOff;
     boost::shared_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
+#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> inverted;
+#endif
     boost::shared_ptr<Color_Knob> colorKnob;
     boost::shared_ptr<Choice_Knob> compOperator;
     
@@ -481,13 +489,15 @@ struct RotoContextPrivate
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
         activated->setIsPersistant(false);
+#ifdef NATRON_ROTO_INVERTIBLE
         inverted = Natron::createKnob<Bool_Knob>(effect, "Inverted",1,false);
         inverted->setHintToolTip("Controls whether the selected shape(s) should be inverted. When inverted everything "
                                  "outside the shape will be set to 1 and everything inside the shape will be set to 0.");
         inverted->setDefaultValue(false);
         inverted->setAllDimensionsEnabled(false);
         inverted->setIsPersistant(false);
-        
+#endif
+
         colorKnob = Natron::createKnob<Color_Knob>(effect, "Color",3,false);
         colorKnob->setHintToolTip("The color of the shape. This parameter is used when the output components are set to RGBA.");
         colorKnob->setDefaultValue(1,0);

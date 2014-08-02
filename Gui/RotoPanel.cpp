@@ -50,9 +50,13 @@
 #define COL_OVERLAY 3
 #define COL_COLOR 4
 #define COL_OPERATOR 5
-#define COL_INVERTED 6
 
+#ifdef NATRON_ROTO_INVERTIBLE
+#define COL_INVERTED 6
 #define MAX_COLS 7
+#else
+#define MAX_COLS 6
+#endif
 
 using namespace Natron;
 
@@ -368,7 +372,9 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
     _imp->treeHeader->setIcon(COL_OVERLAY, QIcon(pixDefault));
     _imp->treeHeader->setIcon(COL_COLOR, _imp->iconWheel);
+#ifdef NATRON_ROTO_INVERTIBLE
     _imp->treeHeader->setIcon(COL_INVERTED, _imp->iconUninverted);
+#endif
     _imp->treeHeader->setIcon(COL_OPERATOR, QIcon(pixmerge));
     _imp->tree->setHeaderItem(_imp->treeHeader);
     
@@ -606,7 +612,9 @@ void RotoPanel::updateItemGui(QTreeWidgetItem* item)
         QIcon shapeColorIcon;
         makeSolidIcon(shapeColor, shapeColorIcon);
         it->treeItem->setIcon(COL_COLOR, shapeColorIcon);
+#ifdef NATRON_ROTO_INVERTIBLE
         it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? _imp->iconInverted : _imp->iconUninverted);
+#endif
         QWidget* w = _imp->tree->itemWidget(it->treeItem,COL_OPERATOR);
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
@@ -669,7 +677,9 @@ void RotoPanelPrivate::updateSplinesInfosGUI(int time)
             drawable->getColor(time, shapeColor);
             makeSolidIcon(shapeColor, shapeColorIC);
             it->treeItem->setIcon(COL_COLOR, shapeColorIC);
+#ifdef NATRON_ROTO_INVERTIBLE
             it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? iconInverted : iconUninverted);
+#endif
             ComboBox* cb = dynamic_cast<ComboBox*>(tree->itemWidget(it->treeItem, COL_OPERATOR));
             if (cb) {
                 cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
@@ -725,10 +735,14 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
+#ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-       
+#endif
+
         publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
-        QObject::connect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
+#ifdef NATRON_ROTO_INVERTIBLE
+        QObject::connect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
+#endif
         QObject::connect(drawable,SIGNAL(shapeColorChanged()),publicInterface,SLOT(onRotoItemShapeColorChanged()));
         QObject::connect(drawable,SIGNAL(compositingOperatorChanged()),publicInterface,SLOT(onRotoItemCompOperatorChanged()));
     } else {
@@ -764,11 +778,11 @@ void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
         return;
     }
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
+#ifdef NATRON_ROTO_INVERTIBLE
     if (drawable) {
-
-        QObject::disconnect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
-        
+        QObject::disconnect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
     }
+#endif
     
     ///deleting the item will emit a selection change which would lead to a deadlock
     tree->blockSignals(true);
@@ -862,7 +876,8 @@ void RotoPanel::onCurrentItemCompOperatorChanged(int index)
     }
 }
 
-void RotoPanel::onRotoItemInversionChanged()
+#ifdef NATRON_ROTO_INVERTIBLE
+void RotoPanel::onRotoItemInvertedStateChanged()
 {
     RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
     if (item) {
@@ -873,6 +888,8 @@ void RotoPanel::onRotoItemInversionChanged()
         }
     }
 }
+#endif
+
 void RotoPanel::onRotoItemShapeColorChanged()
 {
     RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
@@ -1020,6 +1037,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 }
             }   break;
                
+#ifdef NATRON_ROTO_INVERTIBLE
             case COL_INVERTED:
             {
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
@@ -1049,6 +1067,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 
                 
             }   break;
+#endif
             case 0:
             default:
                 break;
