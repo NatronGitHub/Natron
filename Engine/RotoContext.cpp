@@ -4490,16 +4490,16 @@ void RotoContextPrivate::renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,co
 
             ///If inverted, draw an inverted rectangle on all the image first
             if (inverted) {
-                double xOffset,yOffset;
+                double xOffset, yOffset;
                 cairo_surface_get_device_offset(cairoImg, &xOffset, &yOffset);
                 int width = cairo_image_surface_get_width(cairoImg);
                 int height = cairo_image_surface_get_height(cairoImg);
                 
-                cairo_move_to(cr, xOffset, yOffset);
-                cairo_line_to(cr, xOffset + width, yOffset);
-                cairo_line_to(cr, xOffset + width, yOffset + height);
-                cairo_line_to(cr, xOffset, yOffset + height);
-                cairo_line_to(cr, xOffset, yOffset);
+                cairo_move_to(cr, -xOffset, -yOffset);
+                cairo_line_to(cr, -xOffset + width, -yOffset);
+                cairo_line_to(cr, -xOffset + width, -yOffset + height);
+                cairo_line_to(cr, -xOffset, -yOffset + height);
+                cairo_line_to(cr, -xOffset, -yOffset);
                 
             }
 #endif
