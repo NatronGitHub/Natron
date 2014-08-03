@@ -717,9 +717,12 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
     items.push_back(TreeItem(treeItem,item));
 
     treeItem->setText(COL_NAME, item->getName_mt_safe().c_str());
+    treeItem->setToolTip(COL_NAME, kRotoNameHint);
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
+    treeItem->setToolTip(COL_ACTIVATED, kRotoActivatedHint);
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    
+    treeItem->setToolTip(COL_LOCKED, kRotoLockedHint);
+
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
     RotoLayer* layer = dynamic_cast<RotoLayer*>(item.get());
     
@@ -730,13 +733,16 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         makeSolidIcon(overlayColor, overlayIcon);
         treeItem->setIcon(COL_NAME, iconBezier);
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
+        treeItem->setToolTip(COL_OVERLAY, kRotoOverlayHint);
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
+        treeItem->setToolTip(COL_COLOR, kRotoColorHint);
 #ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
+        treeItem->setTooltip(COL_INVERTED, kRotoInvertedHint);
 #endif
 
         publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
@@ -766,6 +772,9 @@ void RotoPanel::makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem*
     for (U32 i = 0; i < compositingOperators.size(); ++i) {
         cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
     }
+    // set the tooltip
+    const std::string& tt = item->getCompositingOperatorToolTip();
+    cb->setToolTip(tt.c_str());
     cb->setCurrentIndex_no_emit(item->getCompositingOperator(time));
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
 
