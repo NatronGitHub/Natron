@@ -629,7 +629,7 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCasteljau(int time, unsigned int mipMapLevel, int nbPointsPerSegment, bool evaluateIfEqual, std::list<Natron::Point >* points,RectD* bbox = NULL) const;
     
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
