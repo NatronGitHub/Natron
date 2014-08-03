@@ -804,7 +804,9 @@ void NodeGui::applyBrush(const QBrush& brush)
 void NodeGui::refreshCurrentBrush()
 {
     assert(_clonedGradient && _defaultGradient && _disabledGradient && _selectedGradient);
-    if (_internalNode && !_internalNode->isNodeDisabled()) {
+    bool disabled = _internalNode->isNodeDisabled();
+    bool isMultiInstance = !_internalNode->getParentMultiInstanceName().empty() || _internalNode->isMultiInstance();
+    if (_internalNode && ((!disabled && !isMultiInstance) || isMultiInstance)) {
         if (_selected) {
             float selectedR,selectedG,selectedB;
             appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&selectedR, &selectedG, &selectedB);
@@ -1485,6 +1487,12 @@ void NodeGui::onDisabledKnobToggled(bool disabled) {
     if (!_nameItem) {
         return;
     }
+    
+    ///When received whilst the node is under a multi instance, let the MultiInstancePanel call this slot instead.
+    if (sender() == _internalNode.get() && _internalNode->isMultiInstance()) {
+        return;
+    }
+    
     if (disabled) {
         _nameItem->setDefaultTextColor(QColor(120,120,120));
     } else {

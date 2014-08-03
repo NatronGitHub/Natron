@@ -196,21 +196,6 @@ struct MultiInstancePanelPrivate
             ret->turnOffNewLine();
         }
         bool refSecret = ref->getIsSecret();
-        if (declaredByPlugin) {
-            ret->setAllDimensionsEnabled(false);
-        } else if (ret->getName() != "disable_natron") {
-            ///If this is a knob added by Natron (i.e: the knobs in the "Node" page),
-            ///slave the main-instance knob to the GUI knob instead
-            ///An exception is made for the "disable_natron" knob which GUI knob shouldn't be linked
-            for (int i = 0; i < ref->getDimension() ; ++i) {
-                ref->slaveTo(i, ret,i,true);
-            }
-        }
-        
-        ///Don't allow disabling of multi-instances
-        if (ret->getName() == "disable_natron") {
-            ret->setEnabled(false, 0);
-        }
         
         if (refSecret) {
             ret->setSecret(true);
@@ -367,11 +352,15 @@ void MultiInstancePanel::initializeKnobs()
             Page_Knob* otherPage = dynamic_cast<Page_Knob*>(other.get());
             assert(otherPage);
             const std::vector<boost::shared_ptr<KnobI> >& otherChildren = otherPage->getChildren();
+            bool isNodePage = otherPage->getName() == "Node";
             for (U32 j = 0; j < otherChildren.size(); ++j) {
                 if (!otherChildren[j]->isInstanceSpecific()) {
                     boost::shared_ptr<KnobI> thisChild = getKnobByName(otherChildren[j]->getName());
                     assert(thisChild);
                     isPage->addKnob(thisChild);
+                    if (isNodePage && !thisChild->isDeclaredByPlugin()) {
+                        thisChild->setAllDimensionsEnabled(false);
+                    }
                 }
             }
         }
@@ -574,6 +563,7 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
                 
                 instanceSpecificKnobs.push_back(instanceKnobs[i]);
             }
+           
         }
     }
     
@@ -582,7 +572,7 @@ void MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node
     {
         AnimatedCheckBox* checkbox = new AnimatedCheckBox();
         QObject::connect(checkbox,SIGNAL(toggled(bool)),publicInterface,SLOT(onCheckBoxChecked(bool)));
-        checkbox->setChecked(true);
+        checkbox->setChecked(!node->isNodeDisabled());
         view->setCellWidget(newRowIndex, 0, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
@@ -1049,9 +1039,9 @@ void MultiInstancePanel::onItemDataChanged(TableItem* item)
     
 }
 
-///The checkbox interacts directly with the "disable_natron" knob of the node
+///The checkbox interacts directly with the kDisableNodeKnobName knob of the node
 ///It doesn't call deactivate() on the node so calling isActivated() on a node
-///will still return true even if you set the value of "disable_natron" to false.
+///will still return true even if you set the value of kDisableNodeKnobName to false.
 void MultiInstancePanel::onCheckBoxChecked(bool checked)
 {
     AnimatedCheckBox* checkbox = qobject_cast<AnimatedCheckBox*>(sender());
@@ -1066,7 +1056,7 @@ void MultiInstancePanel::onCheckBoxChecked(bool checked)
             assert(i < (int)_imp->instances.size());
             Nodes::iterator it = _imp->instances.begin();
             std::advance(it, i);
-            boost::shared_ptr<KnobI> enabledKnob = it->first->getKnobByName("disable_natron");
+            boost::shared_ptr<KnobI> enabledKnob = it->first->getKnobByName(kDisableNodeKnobName);
             assert(enabledKnob);
             Bool_Knob* bKnob = dynamic_cast<Bool_Knob*>(enabledKnob.get());
             assert(bKnob);
@@ -1074,6 +1064,7 @@ void MultiInstancePanel::onCheckBoxChecked(bool checked)
             break;
         }
     }
+    getApp()->redrawAllViewers();
 }
 
 void MultiInstancePanel::onInstanceKnobValueChanged(int dim,int reason)
@@ -1087,6 +1078,9 @@ void MultiInstancePanel::onInstanceKnobValueChanged(int dim,int reason)
         return;
     }
     boost::shared_ptr<KnobI> knob = signalEmitter->getKnob();
+    if (!knob->isDeclaredByPlugin()) {
+        return;
+    }
     KnobHolder* holder = knob->getHolder();
     assert(holder);
     int rowIndex = 0;
@@ -1250,36 +1244,39 @@ void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time)
 {
     if (!k->isDeclaredByPlugin()) {
-        return;
-    }
-    if (reason == Natron::USER_EDITED) {
-        
-        ///Buttons are already handled in evaluate()
-        Button_Knob* isButton = dynamic_cast<Button_Knob*>(k);
-        if (isButton) {
-            return;
+        if (k->getName() == kDisableNodeKnobName) {
+            _imp->mainInstance->onDisabledKnobToggled(dynamic_cast<Bool_Knob*>(k)->getValue());
         }
-        ///for all selected instances update the same knob because it might not be slaved (see
-        ///onSelectionChanged for an explanation why)
-        for (Nodes::iterator it = _imp->instances.begin();it!=_imp->instances.end();++it) {
-            if (it->second) {
-                boost::shared_ptr<KnobI> sameKnob = it->first->getKnobByName(k->getName());
-                assert(sameKnob);
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>(sameKnob.get());
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(sameKnob.get());
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>(sameKnob.get());
-                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sameKnob.get());
-                if (isInt) {
-                    isInt->clone(k);
-                } else if (isBool) {
-                    isBool->clone(k);
-                } else if (isDouble) {
-                    isDouble->clone(k);
-                } else if (isString) {
-                    isString->clone(k);
+    } else {
+        if (reason == Natron::USER_EDITED) {
+            
+            ///Buttons are already handled in evaluate()
+            Button_Knob* isButton = dynamic_cast<Button_Knob*>(k);
+            if (isButton) {
+                return;
+            }
+            ///for all selected instances update the same knob because it might not be slaved (see
+            ///onSelectionChanged for an explanation why)
+            for (Nodes::iterator it = _imp->instances.begin();it!=_imp->instances.end();++it) {
+                if (it->second) {
+                    boost::shared_ptr<KnobI> sameKnob = it->first->getKnobByName(k->getName());
+                    assert(sameKnob);
+                    Knob<int>* isInt = dynamic_cast<Knob<int>*>(sameKnob.get());
+                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(sameKnob.get());
+                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(sameKnob.get());
+                    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(sameKnob.get());
+                    if (isInt) {
+                        isInt->clone(k);
+                    } else if (isBool) {
+                        isBool->clone(k);
+                    } else if (isDouble) {
+                        isDouble->clone(k);
+                    } else if (isString) {
+                        isString->clone(k);
+                    }
+                    
+                    sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), PLUGIN_EDITED,time);
                 }
-                
-                sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), PLUGIN_EDITED,time);
             }
         }
     }
@@ -1578,6 +1575,9 @@ bool TrackerPanel::trackBackward()
         if (!(*it)->getLiveInstance()) {
             return true;
         }
+        if ((*it)->isNodeDisabled()) {
+            continue;
+        }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(prevBtn->getName());
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
         assert(bKnob);
@@ -1620,6 +1620,9 @@ bool TrackerPanel::trackForward()
         if (!(*it)->getLiveInstance()) {
             return true;
         }
+        if ((*it)->isNodeDisabled()) {
+            continue;
+        }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackNextButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
         assert(bKnob);
@@ -1658,6 +1661,9 @@ bool TrackerPanel::trackPrevious()
         if (!(*it)->getLiveInstance()) {
             return true;
         }
+        if ((*it)->isNodeDisabled()) {
+            continue;
+        }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackPreviousButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
         assert(bKnob);
@@ -1680,6 +1686,9 @@ bool TrackerPanel::trackNext()
     for (std::list<Node*>::const_iterator it = selectedInstances.begin(); it!=selectedInstances.end(); ++it) {
         if (!(*it)->getLiveInstance()) {
             return true;
+        }
+        if ((*it)->isNodeDisabled()) {
+            continue;
         }
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName(kTrackNextButtonName);
         Button_Knob* bKnob = dynamic_cast<Button_Knob*>(k.get());
