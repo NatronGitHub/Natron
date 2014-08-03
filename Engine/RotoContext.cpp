@@ -1140,6 +1140,11 @@ int RotoDrawableItem::getCompositingOperator(int time) const
     return _imp->compOperator->getValueAtTime(time);
 }
 
+std::string RotoDrawableItem::getCompositingOperatorToolTip() const
+{
+    return _imp->compOperator->getHintToolTipFull();
+}
+
 void RotoDrawableItem::getOverlayColor(double* color) const
 {
     QMutexLocker l(&itemMutex);
@@ -2569,6 +2574,7 @@ void Bezier::evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
 void Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,
                                                      std::list< Natron::Point >* points,bool evaluateIfEqual,RectD* bbox) const
 {
+#pragma message WARN("BUG https://github.com/MrKepzie/Natron/issues/145 : if the feather Bezier must be moved by featherdistance before RoD computation!")
     QMutexLocker l(&itemMutex);
 	if (_imp->points.empty()) {
 		return;
@@ -3515,7 +3521,6 @@ void RotoContext::getMaskRegionOfDefinition(int time,int /*view*/,RectI* rod) co
         for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
             Bezier* b = dynamic_cast<Bezier*>(it2->get());
             if (b && b->isActivated(time) && b->isCurveFinished()) {
-                
                 RectD splineRoD = b->getBoundingBox(time);
                 RectI splineRoDI;
                 splineRoDI.x1 = std::floor(splineRoD.x1);

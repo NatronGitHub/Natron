@@ -350,7 +350,9 @@ public:
     void getColor(int time,double* color) const;
     
     int getCompositingOperator(int time) const;
-    
+
+    std::string getCompositingOperatorToolTip() const;
+
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;

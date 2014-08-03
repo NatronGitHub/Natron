@@ -39,6 +39,46 @@
 #define ROTO_DEFAULT_COLOR_G 1.
 #define ROTO_DEFAULT_COLOR_B 1.
 
+#define kRotoNameHint "Name of the layer or curve"
+
+#define kRotoOpacityParamName "Opacity"
+#define kRotoOpacityHint \
+"Controls the opacity of the selected shape(s)."
+
+#define kRotoFeatherParamName "Feather"
+#define kRotoFeatherHint \
+"Controls the distance of feather (in pixels) to add around the selected shape(s)"
+
+#define kRotoFeatherFallOffParamName "Feather fall-off"
+#define kRotoFeatherFallOffHint \
+"Controls the rate at which the feather is applied on the selected shape(s)."
+
+#define kRotoActivatedParamName "Activated"
+#define kRotoActivatedHint \
+"Controls whether the selected shape(s) should be visible and rendered or not." \
+"Note that you can animate this parameter so you can activate/deactive the shape " \
+"throughout the time."
+
+#define kRotoLockedHint \
+"Control whether the layer/curve is editable or locked."
+
+#ifdef NATRON_ROTO_INVERTIBLE
+#define kRotoInvertedParamName "Inverted"
+#define kRotoInvertedHint \
+"Controls whether the selected shape(s) should be inverted. When inverted everything " \
+"outside the shape will be set to 1 and everything inside the shape will be set to 0.
+#endif
+
+#define kRotoOverlayHint "Color of the display overlay for this curve. Doesn't affect output."
+
+#define kRotoColorParamName "Color"
+#define kRotoColorHint \
+"The color of the shape. This parameter is used when the output components are set to RGBA."
+
+#define kRotoCompOperatorParamName "Operator"
+#define kRotoCompOperatorHint \
+"The compositing operator controls how this shape is merged with the shapes that have already been rendered.\nSee http://cairographics.org/operators/ for a full description of available operators."
+
 class Bezier;
 
 struct BezierCPPrivate
@@ -75,9 +115,7 @@ struct BezierCPPrivate
     , masterTrack(NULL)
     , relativePoint(NULL)
     {
-        
     }
-    
 };
 
 class BezierCP;
@@ -222,94 +260,123 @@ struct RotoLayerPrivate
 ///We are not going to create a similar enum just to represent the same thing
 inline void getCompositingOperators(std::vector<std::string>* operators,std::vector<std::string>* toolTips)
 {
+    assert(operators->size() == CAIRO_OPERATOR_CLEAR);
     operators->push_back("clear");
     toolTips->push_back("clear destination layer");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_SOURCE);
     operators->push_back("source");
     toolTips->push_back("replace destination layer");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_OVER);
     operators->push_back("over");
     toolTips->push_back("draw source layer on top of destination layer ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_IN);
     operators->push_back("in");
     toolTips->push_back("draw source where there was destination content");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_OUT);
     operators->push_back("out");
     toolTips->push_back("draw source where there was no destination content");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_ATOP);
     operators->push_back("atop");
     toolTips->push_back("draw source on top of destination content and only there");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_DEST);
     operators->push_back("dest");
     toolTips->push_back("ignore the source");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_DEST_OVER);
     operators->push_back("dest-over");
     toolTips->push_back("draw destination on top of source");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_DEST_IN);
     operators->push_back("dest-in");
     toolTips->push_back("leave destination only where there was source content");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_DEST_OUT);
     operators->push_back("dest-out");
     toolTips->push_back("leave destination only where there was no source content");
 
+    assert(operators->size() == CAIRO_OPERATOR_DEST_ATOP);
     operators->push_back("dest-atop");
     toolTips->push_back("leave destination on top of source content and only there ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_XOR);
     operators->push_back("xor");
     toolTips->push_back("source and destination are shown where there is only one of them");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_ADD);
     operators->push_back("add");
     toolTips->push_back("source and destination layers are accumulated");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_SATURATE);
     operators->push_back("saturate");
     toolTips->push_back("like over, but assuming source and dest are disjoint geometries ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_MULTIPLY);
     operators->push_back("multiply");
     toolTips->push_back("source and destination layers are multiplied. This causes the result to be at least as dark as the darker inputs.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_SCREEN);
     operators->push_back("screen");
     toolTips->push_back("source and destination are complemented and multiplied. This causes the result to be at least as "
                         "light as the lighter inputs.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_OVERLAY);
     operators->push_back("overlay");
     toolTips->push_back("multiplies or screens, depending on the lightness of the destination color. ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_DARKEN);
     operators->push_back("darken");
     toolTips->push_back("replaces the destination with the source if it is darker, otherwise keeps the source");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_LIGHTEN);
     operators->push_back("lighten");
     toolTips->push_back("replaces the destination with the source if it is lighter, otherwise keeps the source.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_COLOR_DODGE);
     operators->push_back("color-dodge");
     toolTips->push_back("brightens the destination color to reflect the source color. ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_COLOR_BURN);
     operators->push_back("color-burn");
     toolTips->push_back("darkens the destination color to reflect the source color.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_HARD_LIGHT);
     operators->push_back("hard-light");
     toolTips->push_back("Multiplies or screens, dependent on source color.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_SOFT_LIGHT);
     operators->push_back("soft-light");
     toolTips->push_back("Darkens or lightens, dependent on source color.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_DIFFERENCE);
     operators->push_back("difference");
     toolTips->push_back("Takes the difference of the source and destination color. ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_EXCLUSION);
     operators->push_back("exclusion");
     toolTips->push_back("Produces an effect similar to difference, but with lower contrast. ");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_HSL_HUE);
     operators->push_back("HSL-hue");
     toolTips->push_back("Creates a color with the hue of the source and the saturation and luminosity of the target.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_HSL_SATURATION);
     operators->push_back("HSL-saturation");
     toolTips->push_back("Creates a color with the saturation of the source and the hue and luminosity of the target."
                         " Painting with this mode onto a gray area produces no change.");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_HSL_COLOR);
     operators->push_back("HSL-color");
     toolTips->push_back("Creates a color with the hue and saturation of the source and the luminosity of the target."
                         " This preserves the gray levels of the target and is useful for coloring monochrome"
                         " images or tinting color images");
-    
+
+    assert(operators->size() == CAIRO_OPERATOR_HSL_LUMINOSITY);
     operators->push_back("HSL-luminosity");
     toolTips->push_back("Creates a color with the luminosity of the source and the hue and saturation of the target."
                         " This produces an inverse effect to HSL-color.");
@@ -332,23 +399,25 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<Color_Knob> color;
     boost::shared_ptr<Choice_Knob> compOperator;
     RotoDrawableItemPrivate()
-    : opacity(new Double_Knob(NULL,"Opacity",1,false))
-    , feather(new Double_Knob(NULL,"Feather",1,false))
-    , featherFallOff(new Double_Knob(NULL,"Feather fall-off",1,false))
-    , activated(new Bool_Knob(NULL,"Activated",1,false))
+    : opacity(new Double_Knob(NULL, kRotoOpacityParamName, 1, false))
+    , feather(new Double_Knob(NULL, kRotoFeatherParamName, 1, false))
+    , featherFallOff(new Double_Knob(NULL, kRotoFeatherFallOffParamName, 1, false))
+    , activated(new Bool_Knob(NULL, kRotoActivatedParamName, 1, false))
 #ifdef NATRON_ROTO_INVERTIBLE
-    , inverted(new Bool_Knob(NULL,"Inverted",1,false))
+    , inverted(new Bool_Knob(NULL, kRotoInvertedParamName, 1, false))
 #endif
-    , color(new Color_Knob(NULL,"Color",3,false))
-    , compOperator(new Choice_Knob(NULL,"Operator",1,false))
+    , color(new Color_Knob(NULL, kRotoColorParamName, 3, false))
+    , compOperator(new Choice_Knob(NULL, kRotoCompOperatorParamName, 1, false))
     {
+        opacity->setHintToolTip(kRotoOpacityHint);
         opacity->populate();
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         {
             boost::shared_ptr<KnobSignalSlotHandler> handler(new KnobSignalSlotHandler(opacity));
             opacity->setSignalSlotHandler(handler);
         }
-        
+
+        feather->setHintToolTip(kRotoFeatherHint);
         feather->populate();
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         {
@@ -356,6 +425,7 @@ struct RotoDrawableItemPrivate
             feather->setSignalSlotHandler(handler);
         }
 
+        featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->populate();
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         {
@@ -363,6 +433,7 @@ struct RotoDrawableItemPrivate
             featherFallOff->setSignalSlotHandler(handler);
         }
         
+        activated->setHintToolTip(kRotoActivatedHint);
         activated->populate();
         activated->setDefaultValue(true);
         {
@@ -371,6 +442,7 @@ struct RotoDrawableItemPrivate
         }
 
 #ifdef NATRON_ROTO_INVERTIBLE
+        inverted->setHintToolTip(kRotoInvertedHint);
         inverted->populate();
         inverted->setDefaultValue(false);
         {
@@ -379,6 +451,7 @@ struct RotoDrawableItemPrivate
         }
 #endif
 
+        color->setHintToolTip(kRotoColorHint);
         color->populate();
         color->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         color->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
@@ -388,6 +461,7 @@ struct RotoDrawableItemPrivate
             color->setSignalSlotHandler(handler);
         }
       
+        compOperator->setHintToolTip(kRotoCompOperatorHint);
         compOperator->populate();
         std::vector<std::string> operators;
         std::vector<std::string> tooltips;
@@ -403,7 +477,6 @@ struct RotoDrawableItemPrivate
         overlayColor[1] = 0.196936;
         overlayColor[2] = 0.196936;
         overlayColor[3] = 1.;
-        
     }
 
     ~RotoDrawableItemPrivate() {}
@@ -461,8 +534,8 @@ struct RotoContextPrivate
         
         assert(n && n->getLiveInstance());
         Natron::EffectInstance* effect = n->getLiveInstance();
-        opacity = Natron::createKnob<Double_Knob>(effect, "Opacity",1,false);
-        opacity->setHintToolTip("Controls the opacity of the selected shape(s).");
+        opacity = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamName, 1, false);
+        opacity->setHintToolTip(kRotoOpacityHint);
         opacity->setMinimum(0.);
         opacity->setMaximum(1.);
         opacity->setDisplayMinimum(0.);
@@ -470,8 +543,8 @@ struct RotoContextPrivate
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         opacity->setAllDimensionsEnabled(false);
         opacity->setIsPersistant(false);
-        feather = Natron::createKnob<Double_Knob>(effect,"Feather",1,false);
-        feather->setHintToolTip("Controls the distance of feather (in pixels) to add around the selected shape(s)");
+        feather = Natron::createKnob<Double_Knob>(effect, kRotoFeatherParamName, 1, false);
+        feather->setHintToolTip(kRotoFeatherHint);
         feather->setMinimum(-100);
         feather->setMaximum(100);
         feather->setDisplayMinimum(-100);
@@ -479,8 +552,8 @@ struct RotoContextPrivate
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         feather->setAllDimensionsEnabled(false);
         feather->setIsPersistant(false);
-        featherFallOff = Natron::createKnob<Double_Knob>(effect, "Feather fall-off",1,false);
-        featherFallOff->setHintToolTip("Controls the rate at which the feather is applied on the selected shape(s).");
+        featherFallOff = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamName, 1, false);
+        featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->setMinimum(0.001);
         featherFallOff->setMaximum(5.);
         featherFallOff->setDisplayMinimum(0.2);
@@ -488,34 +561,30 @@ struct RotoContextPrivate
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOff->setAllDimensionsEnabled(false);
         featherFallOff->setIsPersistant(false);
-        activated = Natron::createKnob<Bool_Knob>(effect,"Activated",1,false);
-        activated->setHintToolTip("Controls whether the selected shape(s) should be visible and rendered or not."
-                                  "Note that you can animate this parameter so you can activate/deactive the shape "
-                                  "throughout the time.");
+        activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamName, 1, false);
+        activated->setHintToolTip(kRotoActivatedHint);
         activated->turnOffNewLine();
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
         activated->setIsPersistant(false);
 #ifdef NATRON_ROTO_INVERTIBLE
-        inverted = Natron::createKnob<Bool_Knob>(effect, "Inverted",1,false);
-        inverted->setHintToolTip("Controls whether the selected shape(s) should be inverted. When inverted everything "
-                                 "outside the shape will be set to 1 and everything inside the shape will be set to 0.");
+        inverted = Natron::createKnob<Bool_Knob>(effect, kRotoInvertedParamName, 1, false);
+        inverted->setHintToolTip(kRotoInvertedHint);
         inverted->setDefaultValue(false);
         inverted->setAllDimensionsEnabled(false);
         inverted->setIsPersistant(false);
 #endif
 
-        colorKnob = Natron::createKnob<Color_Knob>(effect, "Color",3,false);
-        colorKnob->setHintToolTip("The color of the shape. This parameter is used when the output components are set to RGBA.");
+        colorKnob = Natron::createKnob<Color_Knob>(effect, kRotoColorParamName, 3, false);
+        colorKnob->setHintToolTip(kRotoColorHint);
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         colorKnob->setAllDimensionsEnabled(false);
         colorKnob->setIsPersistant(false);
         
-        compOperator = Natron::createKnob<Choice_Knob>(effect, "Operator",1,false);
-        compOperator->setHintToolTip("The compositing operator controls how this shape is merged with the shapes that have already been "
-                                     "rendered.");
+        compOperator = Natron::createKnob<Choice_Knob>(effect, kRotoCompOperatorParamName, 1, false);
+        compOperator->setHintToolTip(kRotoCompOperatorHint);
         compOperator->setAllDimensionsEnabled(false);
         compOperator->setIsPersistant(false);
         std::vector<std::string> operators;
