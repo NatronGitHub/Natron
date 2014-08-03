@@ -77,7 +77,10 @@
 
 #define kRotoCompOperatorParamName "Operator"
 #define kRotoCompOperatorHint \
-"The compositing operator controls how this shape is merged with the shapes that have already been rendered.\nSee http://cairographics.org/operators/ for a full description of available operators."
+"The compositing operator controls how this shape is merged with the shapes that have already been rendered.\n" \
+"The roto mask is initialised as black and transparent, then each shape is drawn in the selected order, with the selected color and operator.\n" \
+"Finally, the mask is composed with the source image, if connected, using the 'over' operator.\n" \
+"See http://cairographics.org/operators/ for a full description of available operators."
 
 class Bezier;
 
