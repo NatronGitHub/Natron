@@ -32,7 +32,7 @@ public:
     
     virtual std::string description() const  WARN_UNUSED_RETURN = 0;
     
-    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL { grouping->push_back(PLUGIN_GROUP_TOOLSETS); }
+    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL { grouping->push_back(PLUGIN_GROUP_OTHER); }
     
     virtual bool isInputOptional(int /*inputNb*/) const { return false; }
     

@@ -86,7 +86,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 
 
-#define NAMED_PLUGIN_GROUP_NO 14
+#define NAMED_PLUGIN_GROUP_NO 15
 
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
@@ -102,6 +102,7 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEEP,
     PLUGIN_GROUP_3D,
     PLUGIN_GROUP_TOOLSETS,
+    PLUGIN_GROUP_OTHER,
     PLUGIN_GROUP_DEFAULT
 };
 
@@ -128,7 +129,8 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_PAINT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
+    } else if (grouping == PLUGIN_GROUP_OTHER) {
+#pragma message WARN ("need another icon for the Other grouping")
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_KEYER) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);

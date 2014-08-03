@@ -94,7 +94,8 @@
 #define PLUGIN_GROUP_DEEP "Deep"
 #define PLUGIN_GROUP_TOOLSETS "ToolSets"
 #define PLUGIN_GROUP_3D "3D"
-#define PLUGIN_GROUP_DEFAULT "Other"
+#define PLUGIN_GROUP_OTHER "Other"
+#define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
 
 #define NATRON_PREVIEW_WIDTH 64
