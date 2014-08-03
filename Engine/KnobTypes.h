@@ -360,6 +360,8 @@ public:
     static bool canAnimateStatic() { return true; }
     
     static const std::string& typeNameStatic();
+
+    std::string getHintToolTipFull() const;
     
 signals:
     
