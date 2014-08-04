@@ -130,11 +130,20 @@ struct BezierPrivate
     
     BezierCPs points; //< the control points of the curve
     BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
+
+#pragma message WARN("Roto: use these new fields, update them where you need them (getBoundingBox, render)")
+    BezierCPs pointsAtDistance; //< same as points, but empty beziers at cusp points with angle <180 are added
+    BezierCPs featherPointsAtDistance; //< the precomputed feather points at featherDistance. may
+    double featherPointsAtDistanceVal; //< the distance value used to compute featherPointsAtDistance. if == 0., use featherPoints. if Bezier::getFeatherDistance() returns a different value, featherPointsAtDistance must be updated.
+
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
     
     BezierPrivate()
     : points()
     , featherPoints()
+    , pointsAtDistance()
+    , featherPointsAtDistance()
+    , featherPointsAtDistanceVal(0.)
     , finished(false)
     {
     }
