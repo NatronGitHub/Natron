@@ -604,7 +604,16 @@ TabWidget* TabWidget::splitHorizontally(bool autoSave)
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,newSplitter);
-    newTab->setObjectName_mt_safe(objectName()+TabWidget::splitHorizontallyTag);
+    
+    ///count the number of horizontal splits that were already made to uniquely identify this split
+    int noHorizSplit = 0;
+    for (std::list< std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it!=_userSplits.end(); ++it) {
+        if (!it->second) {
+            ++noHorizSplit;
+        }
+    }
+    
+    newTab->setObjectName_mt_safe(objectName()+TabWidget::splitHorizontallyTag + QString::number(noHorizSplit));
     _gui->registerPane(newTab);
     newSplitter->addWidget(newTab);
     
@@ -653,7 +662,16 @@ TabWidget* TabWidget::splitVertically(bool autoSave) {
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(_gui,newSplitter);
-    newTab->setObjectName_mt_safe(objectName()+TabWidget::splitVerticallyTag);
+    
+    ///count the number of vertical splits that were already made to uniquely identify this split
+    int noVertiSplit = 0;
+    for (std::list< std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it!=_userSplits.end(); ++it) {
+        if (it->second) {
+            ++noVertiSplit;
+        }
+    }
+    
+    newTab->setObjectName_mt_safe(objectName()+TabWidget::splitVerticallyTag + QString::number(noVertiSplit));
     _gui->registerPane(newTab);
     newSplitter->addWidget(newTab);
     

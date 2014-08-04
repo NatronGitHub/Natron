@@ -164,6 +164,14 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
         ///not a child
         return;
     }
+    
+    ///Remove the index of the split located at the end of the name
+    int identifierIndex = nameCpy.size() - 1;
+    while (identifierIndex >= 0 && nameCpy.at(identifierIndex).isDigit()) {
+        --identifierIndex;
+    }
+    nameCpy = nameCpy.remove(identifierIndex, nameCpy.size() - identifierIndex);  
+    
     if (!horizontalSplit) {
         //this is a vertical split, find the parent widget and insert this widget as child
         
