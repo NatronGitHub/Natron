@@ -1415,25 +1415,33 @@ namespace  {
         CONTROL_POINT_CHANGED = 1
     };
     
-    void
-    lerp(Point& dest, const Point& a, const Point& b, const float t)
+    static inline void
+    lerp(const Point& a, const Point& b, const float t, Point *dest)
     {
-        dest.x = a.x + (b.x - a.x) * t;
-        dest.y = a.y + (b.y - a.y) * t;
+        dest->x = a.x + (b.x - a.x) * t;
+        dest->y = a.y + (b.y - a.y) * t;
     }
     
     static void
-    bezier(Point& dest,const Point& p0,const Point& p1,const Point& p2,const Point& p3,double t)
+    bezierFull(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double t,
+               Point *p0p1, Point *p1p2, Point *p2p3, Point *p0p1_p1p2, Point *p1p2_p2p3,
+               Point *dest)
+    {
+        lerp(p0, p1, t, p0p1);
+        lerp(p1, p2, t, p1p2);
+        lerp(p2, p3, t, p2p3);
+        lerp(*p0p1, *p1p2, t, p0p1_p1p2);
+        lerp(*p1p2, *p2p3, t, p1p2_p2p3);
+        lerp(*p0p1_p1p2, *p1p2_p2p3, t, dest);
+    }
+
+    static void
+    bezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double t, Point *dest)
     {
         Point p0p1,p1p2,p2p3,p0p1_p1p2,p1p2_p2p3;
-        lerp(p0p1, p0,p1,t);
-        lerp(p1p2, p1,p2,t);
-        lerp(p2p3, p2,p3,t);
-        lerp(p0p1_p1p2, p0p1,p1p2,t);
-        lerp(p1p2_p2p3, p1p2,p2p3,t);
-        lerp(dest,p0p1_p1p2,p1p2_p2p3,t);
+        return bezierFull(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, dest);
     }
-    
+
     // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
     // segment from 'first' to 'last' evaluated at 'time'
     static void
@@ -1476,7 +1484,7 @@ namespace  {
         Point cur;
         for (double t = 0.; t <= 1.; t += incr) {
             
-            bezier(cur,p0,p1,p2,p3,t);
+            bezier(p0, p1, p2, p3, t, &cur);
             points->push_back(cur);
             
             if (bbox) {
@@ -1530,7 +1538,7 @@ namespace  {
         double tForMin = -1.;
         for (double t = 0.; t <= 1.; t += incr) {
             Point p;
-            bezier(p,p0,p1,p2,p3,t);
+            bezier(p0, p1, p2, p3, t, &p);
             double dist = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
             if (dist < minDistance) {
                 minDistance = dist;
@@ -1749,14 +1757,9 @@ Bezier::addControlPointAfterIndex(int index,double t)
         (*next)->getLeftBezierPointAtTime(*it, &p2.x, &p2.y);
         
         
-        Point dst;
-        Point p0p1,p1p2,p2p3,p0p1_p1p2,p1p2_p2p3;
-        lerp(p0p1, p0,p1,t);
-        lerp(p1p2, p1,p2,t);
-        lerp(p2p3, p2,p3,t);
-        lerp(p0p1_p1p2, p0p1,p1p2,t);
-        lerp(p1p2_p2p3, p1p2,p2p3,t);
-        lerp(dst,p0p1_p1p2,p1p2_p2p3,t);
+        Point dest;
+        Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
+        bezierFull(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
 
         //update prev and next inner control points
         (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
@@ -1765,13 +1768,13 @@ Bezier::addControlPointAfterIndex(int index,double t)
         (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
         (*nextF)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
         
-        p->setPositionAtTime(*it,dst.x,dst.y);
+        p->setPositionAtTime(*it, dest.x, dest.y);
         ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-        p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x,p0p1_p1p2.y);
+        p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
         p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
 
-        fp->setPositionAtTime(*it, dst.x, dst.y);
-        fp->setLeftBezierPointAtTime(*it,p0p1_p1p2.x,p0p1_p1p2.y);
+        fp->setPositionAtTime(*it, dest.x, dest.y);
+        fp->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
         fp->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
     }
     
@@ -1785,14 +1788,9 @@ Bezier::addControlPointAfterIndex(int index,double t)
         (*next)->getLeftBezierPointAtTime(0, &p2.x, &p2.y);
 
         
-        Point dst;
-        Point p0p1,p1p2,p2p3,p0p1_p1p2,p1p2_p2p3;
-        lerp(p0p1, p0,p1,t);
-        lerp(p1p2, p1,p2,t);
-        lerp(p2p3, p2,p3,t);
-        lerp(p0p1_p1p2, p0p1,p1p2,t);
-        lerp(p1p2_p2p3, p1p2,p2p3,t);
-        lerp(dst,p0p1_p1p2,p1p2_p2p3,t);
+        Point dest;
+        Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
+        bezierFull(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
 
         //update prev and next inner control points
         (*prev)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
@@ -1801,13 +1799,13 @@ Bezier::addControlPointAfterIndex(int index,double t)
         (*next)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
         (*nextF)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
 
-        p->setStaticPosition(dst.x,dst.y);
+        p->setStaticPosition(dest.x, dest.y);
         ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-        p->setLeftBezierStaticPosition(p0p1_p1p2.x,p0p1_p1p2.y);
+        p->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
         p->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
         
-        fp->setStaticPosition(dst.x, dst.y);
-        fp->setLeftBezierStaticPosition(p0p1_p1p2.x,p0p1_p1p2.y);
+        fp->setStaticPosition(dest.x, dest.y);
+        fp->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
         fp->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
     }
     
