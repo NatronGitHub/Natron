@@ -559,40 +559,7 @@ TEST(SequenceFromFiles,ComplexTest) {
         }
         EXPECT_EQ("/Users/Test/00mysequence###.jpg", sequence.generateValidSequencePattern());
     }
-    {
-        FileNameContent file1("/Users/Test/00my000sequence000.jpg");
-        SequenceFromFiles sequence(file1,false);
-        ///now add valid files
-        for (int i = 1; i < 11; ++i) {
-            QString number = QString::number(i);
-            while (number.size() < 3) {
-                number.prepend('0');
-            }
-            bool ok = sequence.tryInsertFile(FileNameContent(QString("/Users/Test/00my"+ number + "sequence" + number + ".jpg")
-                                                             .toStdString()));
-            EXPECT_TRUE(ok);
-        }
-        EXPECT_EQ("/Users/Test/00my###sequence###.jpg", sequence.generateValidSequencePattern());
-    }
-    
-    {
-        FileNameContent file1("/Users/Test/00my0sequence000.jpg");
-        SequenceFromFiles sequence(file1,false);
-        ///now add valid files
-        for (int i = 1; i < 11; ++i) {
-            QString number = QString::number(i);
-            QString originalNumber = number;
-            while (number.size() < 3) {
-                number.prepend('0');
-            }
-            bool ok = sequence.tryInsertFile(FileNameContent(QString("/Users/Test/00my"+ originalNumber + "sequence" + number + ".jpg")
-                                                             .toStdString()));
-            EXPECT_TRUE(ok);
-        }
-        EXPECT_EQ("/Users/Test/00my#sequence###.jpg", sequence.generateValidSequencePattern());
-        EXPECT_NE("/Users/Test/00my##sequence###.jpg", sequence.generateValidSequencePattern());
 
-    }
     
     ///now test only filenames with digits
     {

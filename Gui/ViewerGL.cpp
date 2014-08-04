@@ -39,6 +39,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
+#include "Engine/Image.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/Lut.h"
 #include "Engine/MemoryFile.h"
@@ -1240,12 +1241,11 @@ void ViewerGL::drawUserRoI()
     }
 
     ///base rect
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(userRoI.x1, userRoI.y1); //bottom left
     glVertex2f(userRoI.x1, userRoI.y2); //top left
     glVertex2f(userRoI.x2, userRoI.y2); //top right
     glVertex2f(userRoI.x2, userRoI.y1); //bottom right
-    glVertex2f(userRoI.x1, userRoI.y1); //bottom left
     glEnd();
     
     
@@ -1513,12 +1513,11 @@ void ViewerGL::drawPickerRectangle()
     QPointF topLeft = _imp->pickerRect.topLeft();
     QPointF btmRight = _imp->pickerRect.bottomRight();
     ///base rect
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(), btmRight.y()); //bottom left
     glVertex2f(topLeft.x(), topLeft.y()); //top left
     glVertex2f(btmRight.x(), topLeft.y()); //top right
     glVertex2f(btmRight.x(), btmRight.y()); //bottom right
-    glVertex2f(topLeft.x(), btmRight.y()); //bottom left
     glEnd();
 }
 
@@ -1635,12 +1634,11 @@ void ViewerGL::Implementation::drawSelectionRectangle()
     
     glLineWidth(1.5);
     
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
     
     
@@ -2073,7 +2071,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event)
     if (!overlaysCaught) {
         bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
         
-        if (hasPickers && _imp->pickerState != PICKER_INACTIVE && event->button() == Qt::LeftButton &&
+        if (_imp->pickerState != PICKER_INACTIVE && event->button() == Qt::LeftButton &&
             !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
             displayingImage()) {
             _imp->pickerState = PICKER_INACTIVE;
@@ -2214,7 +2212,12 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event)
     
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
-    
+    // if the picker was deselected, this fixes the picer State
+    // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
+    if (!_imp->viewerTab->getGui()->hasPickers()) {
+        _imp->pickerState = PICKER_INACTIVE;
+    }
+
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
@@ -2516,7 +2519,8 @@ void ViewerGL::mouseDoubleClickEvent(QMouseEvent* event)
     QGLWidget::mouseDoubleClickEvent(event);
 }
 
-void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
+// used to update the information bar at the bottom of the viewer (not for the ctrl-click color picker)
+void ViewerGL::updateColorPicker(int textureIndex, int x, int y)
 {
     if (_imp->pickerState != PICKER_INACTIVE) {
         return;
@@ -2568,12 +2572,13 @@ void ViewerGL::updateColorPicker(int textureIndex,int x,int y)
     {
         ///if the clip to project format is enabled, make sure it is in the project format too
         bool clipping = isClippingImageToProjectWindow();
-        if ((clipping &&
-            imgPos.x() >= dispW.left() &&
+        if (!clipping ||
+            (imgPos.x() >= dispW.left() &&
              imgPos.x() < dispW.right() &&
              imgPos.y() >= dispW.bottom() &&
-             imgPos.y() < dispW.top()) || !clipping) {
-            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,textureIndex);
+             imgPos.y() < dispW.top())) {
+            //imgPos must be in canonical coordinates
+            picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), linear, textureIndex , &r, &g, &b, &a);
         }
         
     }
@@ -3309,13 +3314,7 @@ ViewerTab* ViewerGL::getViewerTab() const {
     return _imp->viewerTab;
 }
 
-namespace {
-static float clamp(float v)
-{
-    return std::min(std::max(v,0.f),1.f);
-}
-}
-
+// used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
 bool ViewerGL::pickColor(double x,double y)
 {
     
@@ -3325,25 +3324,20 @@ bool ViewerGL::pickColor(double x,double y)
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
-    if (mipMapLevel != 0) {
-        imgPos /= (1 << mipMapLevel);
-        
-    }
-    
+
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool ret = false;
-    for (int i = 0; i< 2 ;++i ) {
-        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), &r, &g, &b, &a, linear,i);
+    for (int i = 0; i < 2; ++i) {
+        // imgPos must be in canonical coordinates
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a);
         if (picked) {
-            
             if (i == 0) {
                 QColor pickerColor;
-                pickerColor.setRedF(clamp(r));
-                pickerColor.setGreenF(clamp(g));
-                pickerColor.setBlueF(clamp(b));
-                pickerColor.setAlphaF(clamp(a));
+                pickerColor.setRedF(Natron::clamp(r));
+                pickerColor.setGreenF(Natron::clamp(g));
+                pickerColor.setBlueF(Natron::clamp(b));
+                pickerColor.setAlphaF(Natron::clamp(a));
                 _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             }
             if (!_imp->infoViewer[i]->colorAndMouseVisible()) {
@@ -3413,61 +3407,38 @@ void ViewerGL::updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& w
 
 void ViewerGL::updateRectangleColorPicker()
 {
-    
-    float rSum = 0.,gSum = 0,bSum = 0,aSum = 0;
     float r,g,b,a;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevelCombinedToZoomFactor();
-    
-    int samples = 0;
-    
+
     QPointF topLeft = _imp->pickerRect.topLeft();
     QPointF btmRight = _imp->pickerRect.bottomRight();
-    int left = std::min(topLeft.x(),btmRight.x());
-    int btm = std::min(topLeft.y(),btmRight.y());
-    int right = std::max(topLeft.x(),btmRight.x());
-    int top = std::max(topLeft.y(),btmRight.y());
-    for (int y = btm; y <= top; ++y) {
-        for (int x = left; x <= right; ++x) {
-            int rx = x,ry = y;
-            if (mipMapLevel != 0) {
-                rx /= (1 << mipMapLevel);
-                ry /= (1 << mipMapLevel);
-            }
-            for (int i = 0; i < 2; ++i) {
-                bool picked = _imp->viewerTab->getInternalNode()->getColorAt(rx,ry, &r, &g, &b, &a, linear,i);
-                if (picked) {
-                    rSum += r;
-                    gSum += g;
-                    bSum += b;
-                    aSum += a;
-                    ++samples;
-                }
-            }
-        }
-    }
-    if (samples != 0) {
-        rSum /= (float)samples;
-        gSum /= (float)samples;
-        bSum /= (float)samples;
-        aSum /= (float)samples;
-    }
-    
+    RectD rect;
+    rect.set_left(  std::min(topLeft.x(), btmRight.x()));
+    rect.set_right( std::max(topLeft.x(), btmRight.x()));
+    rect.set_bottom(std::min(topLeft.y(), btmRight.y()));
+    rect.set_top(   std::max(topLeft.y(), btmRight.y()));
     for (int i = 0; i< 2; ++i) {
-        if (!_imp->infoViewer[i]->colorAndMouseVisible()) {
-            _imp->infoViewer[i]->showColorAndMouseInfo();
-            
-        }
-        _imp->infoViewer[i]->setColor(rSum,gSum,bSum,aSum);
-    }
-    
-    QColor pickerColor;
-    pickerColor.setRedF(clamp(rSum));
-    pickerColor.setGreenF(clamp(gSum));
-    pickerColor.setBlueF(clamp(bSum));
-    pickerColor.setAlphaF(clamp(aSum));
-    _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+        bool picked = _imp->viewerTab->getInternalNode()->getColorAtRect(rect, linear, i, &r, &g, &b, &a);
+        if (picked) {
+            if (i == 0) {
+                QColor pickerColor;
+                pickerColor.setRedF(clamp(r));
+                pickerColor.setGreenF(clamp(g));
+                pickerColor.setBlueF(clamp(b));
+                pickerColor.setAlphaF(clamp(a));
+                _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+            }
+            if (!_imp->infoViewer[i]->colorAndMouseVisible()) {
+                _imp->infoViewer[i]->showColorAndMouseInfo();
 
+            }
+            _imp->infoViewer[i]->setColor(r, g, b, a);
+        } else {
+            if (_imp->infoViewer[i]->colorAndMouseVisible()) {
+                _imp->infoViewer[i]->hideColorAndMouseInfo();
+            }
+        }
+    }
 }
 
 void ViewerGL::resetWipeControls()

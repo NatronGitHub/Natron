@@ -723,12 +723,11 @@ void CurveWidgetPrivate::drawSelectionRectangle()
     glLineWidth(1.5);
     
     glColor4f(0.5,0.5,0.5,1.);
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
     
     
@@ -969,12 +968,11 @@ void CurveWidgetPrivate::drawSelectedKeyFramesBbox()
     glLineWidth(1.5);
     
     glColor4f(0.5,0.5,0.5,1.);
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
     
     

@@ -25,6 +25,10 @@
 #include "Gui/ViewerGL.h"
 
 
+#define POINT_SIZE 5
+#define CROSS_SIZE 6
+#define ADDTRACK_SIZE 5
+
 using namespace Natron;
 
 struct TrackerGuiPrivate
@@ -196,8 +200,8 @@ void TrackerGui::onAddTrackClicked(bool clicked)
 
 void TrackerGui::drawOverlays(double scaleX,double scaleY) const
 {
-    std::pair<double,double> pixelScale;
-    _imp->viewer->getViewer()->getPixelScale(pixelScale.first, pixelScale.second);
+    double pixelScaleX, pixelScaleY;
+    _imp->viewer->getViewer()->getPixelScale(pixelScaleX, pixelScaleY);
     
     ///For each instance: <pointer,selected ? >
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
@@ -223,7 +227,7 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
                     // Draw a shadow for the cross hair
                     // shift by (1,1) pixel
                     glPushMatrix();
-                    glTranslated(pixelScale.first, - pixelScale.second, 0);
+                    glTranslated(pixelScaleX, -pixelScaleY, 0);
                     glColor4d(0., 0., 0., 1.);
 
                 } else {
@@ -232,18 +236,17 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
                 
                 double x = dblKnob->getValue(0);
                 double y = dblKnob->getValue(1);
-                glPointSize(5.);
+                glPointSize(POINT_SIZE);
                 glBegin(GL_POINTS);
                 glVertex2d(x,y);
                 glEnd();
                 
-                double crossSize = pixelScale.first * 5;
                 glBegin(GL_LINES);
-                glVertex2d(x - crossSize, y);
-                glVertex2d(x + crossSize, y);
+                glVertex2d(x - CROSS_SIZE*pixelScaleX, y);
+                glVertex2d(x + CROSS_SIZE*pixelScaleX, y);
                 
-                glVertex2d(x, y - crossSize);
-                glVertex2d(x, y + crossSize);
+                glVertex2d(x, y - CROSS_SIZE*pixelScaleY);
+                glVertex2d(x, y + CROSS_SIZE*pixelScaleY);
                 glEnd();
 
                 if (i == 0) {
@@ -268,28 +271,25 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
                 // Draw a shadow for the cross hair
                 // shift by (1,1) pixel
                 glPushMatrix();
-                glTranslated(pixelScale.first, - pixelScale.second, 0);
+                glTranslated(pixelScaleX, -pixelScaleY, 0);
                 glColor4d(0., 0., 0., 0.8);
             } else {
                 glColor4d(0., 1., 0.,0.8);
             }
             
-            double offset = pixelScale.first * 10;
-            glBegin(GL_LINE_STRIP);
-            glVertex2d(_imp->lastMousePos.x() - offset, _imp->lastMousePos.y() - offset);
-            glVertex2d(_imp->lastMousePos.x() - offset, _imp->lastMousePos.y() + offset);
-            glVertex2d(_imp->lastMousePos.x() + offset, _imp->lastMousePos.y() + offset);
-            glVertex2d(_imp->lastMousePos.x() + offset, _imp->lastMousePos.y() - offset);
-            glVertex2d(_imp->lastMousePos.x() - offset, _imp->lastMousePos.y() - offset);
+            glBegin(GL_LINE_LOOP);
+            glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE*2*pixelScaleY);
+            glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE*2*pixelScaleY);
+            glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE*2*pixelScaleY);
+            glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE*2*pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE*2*pixelScaleY);
             glEnd();
             
             ///draw a cross at the cursor position
-            double halfOffset = offset / 2.;
             glBegin(GL_LINES);
-            glVertex2d(_imp->lastMousePos.x() - halfOffset, _imp->lastMousePos.y());
-            glVertex2d(_imp->lastMousePos.x() + halfOffset, _imp->lastMousePos.y());
-            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - halfOffset);
-            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + halfOffset);
+            glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE*pixelScaleX, _imp->lastMousePos.y());
+            glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE*pixelScaleX, _imp->lastMousePos.y());
+            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - ADDTRACK_SIZE*pixelScaleY);
+            glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + ADDTRACK_SIZE*pixelScaleY);
             glEnd();
 
             if (i == 0) {

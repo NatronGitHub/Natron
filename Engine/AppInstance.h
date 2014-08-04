@@ -51,15 +51,18 @@ struct CreateNodeArgs
     std::string multiInstanceParentName;
     int childIndex;
     bool autoConnect;
+    double xPosHint,yPosHint;
     
     ///Constructor used to create a new node
-    CreateNodeArgs(const QString& pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
+    explicit CreateNodeArgs(const QString& pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
                    const std::string& multiInstanceParentName = std::string(), //< no parent by default
                    int majorVersion = -1, //< use greatest version found
                    int minorVersion = -1, //< use greatest version found
                    bool openImageFileDialog = true, //< open a file dialog if the node is a reader/writer
                    int childIndex = -1,
-                   bool autoConnect = true)
+                   bool autoConnect = true,
+                   double xPosHint = INT_MIN,
+                   double yPosHint = INT_MIN)
     : pluginID(pluginID)
     , majorV(majorVersion)
     , minorV(minorVersion)
@@ -67,6 +70,8 @@ struct CreateNodeArgs
     , multiInstanceParentName(multiInstanceParentName)
     , childIndex(childIndex)
     , autoConnect(autoConnect)
+    , xPosHint(xPosHint)
+    , yPosHint(yPosHint)
     {
         
     }
@@ -241,7 +246,8 @@ protected:
                                const std::string& /*multiInstanceParentName*/,
                                bool /*loadRequest*/,
                                bool /*openImageFileDialog*/,
-                               bool /*autoConnect*/) {}
+                               bool /*autoConnect*/,
+                               double /*xPosHint*/,double /*yPosHint*/) {}
     
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
@@ -257,7 +263,7 @@ private:
                                                        int majorVersion,int minorVersion,
                                                        bool requestedByLoad,bool openImageFileDialog,
                                                        const NodeSerialization& serialization,bool dontLoadName,
-                                                       int childIndex,bool autoConnect);
+                                                       int childIndex,bool autoConnect,double xPosHint,double yPosHint);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
     

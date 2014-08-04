@@ -602,6 +602,15 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     }
 }
 
+RectD
+EffectInstance::calcDefaultRegionOfDefinition(SequenceTime /*time*/,
+                                              const RenderScale &/*scale*/) const
+{
+    Format projectDefault;
+    getRenderFormat(&projectDefault);
+    return RectD(projectDefault.left(), projectDefault.bottom(), projectDefault.right(), projectDefault.top());
+}
+
 Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,
                                                      const RenderScale& scale,
                                                      int view,
@@ -650,9 +659,16 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
     
     ///Get the union of the inputs.
     RectI inputsUnion;
-    
+
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
+        // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
+        RectD defaultRoD = calcDefaultRegionOfDefinition(time, scale);
+        inputsUnion.x1 = std::floor(defaultRoD.x1);
+        inputsUnion.y1 = std::floor(defaultRoD.y1);
+        inputsUnion.x2 = std::ceil(defaultRoD.x2);
+        inputsUnion.y2 = std::ceil(defaultRoD.y2);
+        
         for (int i = 0; i < maximumInputs(); ++i) {
             Natron::EffectInstance* input = input_other_thread(i);
             if (input) {
@@ -676,33 +692,33 @@ bool EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
     bool isProjectFormat = false;
     if (x1Infinite) {
         if (!inputsUnion.isNull()) {
-            rod->x1 = inputsUnion.x1;
+            rod->x1 = std::min(inputsUnion.x1, projectDefault.x1);
         } else {
-            rod->x1 = projectDefault.left();
+            rod->x1 = projectDefault.x1;
             isProjectFormat = true;
         }
     }
     if (y1Infinite) {
         if (!inputsUnion.isNull()) {
-            rod->y1 = inputsUnion.y1;
+            rod->y1 = std::min(inputsUnion.y1, projectDefault.y1);
         } else {
-            rod->y1 = projectDefault.bottom();
+            rod->y1 = projectDefault.y1;
             isProjectFormat = true;
         }
     }
     if (x2Infinite) {
         if (!inputsUnion.isNull()) {
-            rod->x2 = inputsUnion.x2;
+            rod->x2 = std::max(inputsUnion.x2, projectDefault.x2);
         } else {
-            rod->x2 = projectDefault.right();
+            rod->x2 = projectDefault.x2;
             isProjectFormat = true;
         }
     }
     if (y2Infinite) {
         if (!inputsUnion.isNull()) {
-            rod->y2 = inputsUnion.y2;
+            rod->y2 = std::max(inputsUnion.y2, projectDefault.y2);
         } else {
-            rod->y2 = projectDefault.top();
+            rod->y2 = projectDefault.y2;
             isProjectFormat = true;
         }
     }

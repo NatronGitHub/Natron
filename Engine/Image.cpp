@@ -1229,18 +1229,6 @@ template <> float convertPixelDepth(float pix)
 {
     return pix;
 }
-    
-template <typename PIX,int maxVal>
-PIX clampInternal(PIX v) {
-    if (v > maxVal) return maxVal;
-    if (v < 0) return 0;
-    return v;
-}
-
-template <> unsigned char clamp(unsigned char v) { return clampInternal<unsigned char, 255>(v); }
-template <> unsigned short clamp(unsigned short v) { return clampInternal<unsigned short, 65535>(v); }
-template <> float clamp(float v) { return clampInternal<float, 1>(v); }
-template <> double clamp(double v) { return clampInternal<double, 1>(v); }
 
 }
 

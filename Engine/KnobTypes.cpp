@@ -11,6 +11,7 @@
 #include "KnobTypes.h"
 
 #include <cfloat>
+#include <sstream>
 
 #include <QDebug>
 #include <QThread>
@@ -686,6 +687,60 @@ const std::string &Choice_Knob::getActiveEntryText() const
     return _entries[activeIndex];
 }
 
+static std::string trim(std::string const& str)
+{
+    const std::string whitespace = " \t\f\v\n\r";
+    std::size_t first = str.find_first_not_of(whitespace);
+
+    // If there is no non-whitespace character, both first and last will be std::string::npos (-1)
+    // There is no point in checking both, since if either doesn't work, the
+    // other won't work, either.
+    if(first == std::string::npos)
+        return "";
+
+    std::size_t last  = str.find_last_not_of(whitespace);
+
+    return str.substr(first, last-first+1);
+}
+
+std::string
+Choice_Knob::getHintToolTipFull() const
+{
+    const std::vector<std::string> &entries = getEntries();
+    const std::vector<std::string> &help =  getEntriesHelp();
+    bool gothelp = false;
+    if (!help.empty()) {
+        assert(help.size() == entries.size());
+        for (U32 i = 0; i < _entries.size(); ++i) {
+            if (!help.empty() && !help[i].empty()) {
+                gothelp = true;
+            }
+        }
+    }
+
+    std::stringstream ss;
+    if (!getHintToolTip().empty()) {
+        ss << trim(getHintToolTip());
+        if (gothelp) {
+            // if there are per-option help strings, separate them from main hint
+            ss << "\n\n";
+        }
+    }
+    // param may have no hint but still have per-option help
+    if (gothelp) {
+        for (U32 i = 0; i < help.size(); ++i) {
+            if (!help[i].empty()) { // no help line is needed if help is unavailable for this option
+                ss << trim(entries[i]);
+                ss << ": ";
+                ss << trim(help[i]);
+                if (i < help.size() -1) {
+                    ss << '\n';
+                }
+            }
+        }
+    }
+    return ss.str();
+}
 
 /******************************SEPARATOR_KNOB**************************************/
 

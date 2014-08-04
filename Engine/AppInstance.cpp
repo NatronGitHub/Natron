@@ -185,7 +185,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
                                                                 int majorVersion,int minorVersion,
                                                                 bool requestedByLoad,bool openImageFileDialog,
                                                                 const NodeSerialization& serialization,bool dontLoadName,
-                                                                int childIndex,bool autoConnect)
+                                                                int childIndex,bool autoConnect,double xPosHint,double yPosHint)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -223,7 +223,7 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     }
     
     _imp->_currentProject->addNodeToProject(node);
-    createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog,autoConnect);
+    createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog,autoConnect,xPosHint,yPosHint);
     return node;
 
 }
@@ -238,13 +238,13 @@ boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& ar
     }
     return createNodeInternal(args.pluginID,args.multiInstanceParentName, args.majorV, args.minorV, false,
                               args.openImageFileDialog, NodeSerialization(boost::shared_ptr<Natron::Node>()),false,args.childIndex,
-                              args.autoConnect);
+                              args.autoConnect,args.xPosHint,args.yPosHint);
 }
 
 boost::shared_ptr<Natron::Node> AppInstance::loadNode(const LoadNodeArgs& args)
 {
     return createNodeInternal(args.pluginID,args.multiInstanceParentName ,args.majorV, args.minorV,
-                              true, false, *args.serialization,args.dontLoadName,-1,false);
+                              true, false, *args.serialization,args.dontLoadName,-1,false,INT_MIN,INT_MIN);
 }
 
 int AppInstance::getAppID() const { return _imp->_appID; }

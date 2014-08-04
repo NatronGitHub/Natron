@@ -782,7 +782,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             
             if (isFeatherVisible()) {
                 ///Draw feather only if visible (button is toggled in the user interface)
-                (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, &featherPoints,true,&featherBBox);
+                (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, true, &featherPoints, &featherBBox);
                 constants.resize(featherPoints.size());
                 multiples.resize(featherPoints.size());
                 Bezier::precomputePointInPolygonTables(featherPoints, &constants, &multiples);
@@ -1103,12 +1103,11 @@ void RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
     } else {
         glColor4f(0.8,0.8,0.8,1.);
     }
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex2f(topLeft.x(),btmRight.y());
     glVertex2f(topLeft.x(),topLeft.y());
     glVertex2f(btmRight.x(),topLeft.y());
     glVertex2f(btmRight.x(),btmRight.y());
-    glVertex2f(topLeft.x(),btmRight.y());
     glEnd();
     
     double midX = (topLeft.x() + btmRight.x()) / 2.;
@@ -2456,7 +2455,9 @@ bool RotoGui::RotoGuiPrivate::isNearbyBBoxMidLeft(const QPointF& p,double tolera
     }
 }
 
-bool RotoGui::RotoGuiPrivate::isNearbySelectedCpsBoundingBox(const QPointF& pos,double tolerance) const
+bool
+RotoGui::RotoGuiPrivate::isNearbySelectedCpsBoundingBox(const QPointF& pos,
+                                                        double tolerance) const
 {
     QPointF topLeft = rotoData->selectedCpsBbox.topLeft();
     QPointF btmRight = rotoData->selectedCpsBbox.bottomRight();
@@ -2491,7 +2492,9 @@ bool RotoGui::RotoGuiPrivate::isNearbySelectedCpsBoundingBox(const QPointF& pos,
 }
 
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,double>& pixelScale,const QPointF& pos) const
+RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
+                                            const std::pair<double,double>& pixelScale,
+                                            const QPointF& pos) const
 {
     double distFeatherX = 20. * pixelScale.first;
 
@@ -2507,7 +2510,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,const std::pair<double,doub
         
         std::list<Point> polygon;
         RectD polygonBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
-        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, &polygon, true, &polygonBBox);
+        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
         std::vector<double> constants(polygon.size()),multipliers(polygon.size());
         Bezier::precomputePointInPolygonTables(polygon, &constants, &multipliers);
     
@@ -3064,6 +3067,17 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
         if (index >= 0 && index < (int)knobs.size()) {
             Double_Knob* knob = knobs[index].second;
             if (knob && knob->getDimension() == 2) {
+                
+                ///Make sure that track doesn't have points of the same curve already linked
+                const std::list< boost::shared_ptr<BezierCP> >& slavedTracks = knob->getSlavedTracks();
+                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = slavedTracks.begin();it!=slavedTracks.end();++it) {
+                    if ((*it)->getCurve() == cp.first->getCurve()) {
+                        Natron::errorDialog(tr("Link").toStdString(),
+                                            tr("You cannot link several points of the same curve to the same track.").toStdString());
+                        return;
+                    }
+                }
+                
                 if (cp.first->hasRelative()) {
                     cp.first->removeRelative();
                 }

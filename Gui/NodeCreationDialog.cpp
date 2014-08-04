@@ -97,7 +97,6 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     }
     strings.sort();
     QCompleter* completer = new QCompleter(strings,this);
-    completer->setModelSorting(QCompleter::CaseInsensitivelySortedModel);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     
     ListView* customView = new ListView(this);

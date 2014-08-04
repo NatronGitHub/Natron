@@ -26,6 +26,7 @@ class QUndoCommand;
 class RotoItem;
 class RotoContext;
 class RotoLayer;
+class RotoDrawableItem;
 struct RotoPanelPrivate;
 class RotoPanel : public QWidget
 {
@@ -56,6 +57,8 @@ public:
     void showItemMenu(QTreeWidgetItem* item,const QPoint& globalPos);
     
     void setLastRightClickedItem(QTreeWidgetItem* item);
+    
+    void makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem);
     
 public slots:
     
@@ -90,8 +93,10 @@ public slots:
     ///An item was removed by the user
     void onItemRemoved(RotoItem* item,int reason);
     
+#ifdef NATRON_ROTO_INVERTIBLE
     ///An item had its inverted state changed
-    void onRotoItemInversionChanged();
+    void onRotoItemInvertedStateChanged();
+#endif
     
     ///An item had its shape color changed
     void onRotoItemShapeColorChanged();

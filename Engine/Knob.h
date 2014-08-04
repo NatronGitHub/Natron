@@ -343,7 +343,7 @@ public:
      * @brief Returns the knob name. By default the
      * name is the same as the description(i.e: the text label).
      */
-    virtual std::string getName() const = 0;
+    virtual const std::string& getName() const = 0;
     
     /**
      * @brief Set the given knob as the parent of this knob. 
@@ -754,7 +754,7 @@ public:
     
     virtual void setName(const std::string& name) OVERRIDE FINAL;
     
-    virtual std::string getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual const std::string& getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void setParentKnob(boost::shared_ptr<KnobI> knob) OVERRIDE FINAL;
     

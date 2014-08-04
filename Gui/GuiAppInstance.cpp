@@ -19,6 +19,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/NodeBackDropSerialization.h"
 
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -156,10 +157,10 @@ void GuiAppInstance::load(const QString& projectName,const QStringList& /*writer
 }
 
 void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const std::string& multiInstanceParentName,
-                                   bool loadRequest,bool openImageFileDialog,bool autoConnect) {
+                                   bool loadRequest,bool openImageFileDialog,bool autoConnect,double xPosHint,double yPosHint) {
     
     
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint);
     assert(nodegui);
     if (!multiInstanceParentName.empty()) {
         nodegui->hideGui();
@@ -481,7 +482,7 @@ void GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
 void GuiAppInstance::createBackDrop()
 {
     ///This function is not used when loading a project, rather we use the one directly in Gui (@see ProjectGui::load)
-    _imp->_gui->createBackDrop(false);
+    _imp->_gui->createBackDrop(false,NodeBackDropSerialization());
 }
 
 void GuiAppInstance::registerVideoEngineBeingAborted(VideoEngine* engine)

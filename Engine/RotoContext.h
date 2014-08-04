@@ -331,7 +331,7 @@ public:
      * @brief The distance of the feather is the distance from the control point to the feather point plus
      * the feather distance returned by this function.
      **/
-    int getFeatherDistance(int time) const;
+    double getFeatherDistance(int time) const;
     
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
@@ -350,19 +350,25 @@ public:
     void getColor(int time,double* color) const;
     
     int getCompositingOperator(int time) const;
-    
+
+    std::string getCompositingOperatorToolTip() const;
+
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
-    boost::shared_ptr<Int_Knob> getFeatherKnob() const;
+    boost::shared_ptr<Double_Knob> getFeatherKnob() const;
     boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
     boost::shared_ptr<Double_Knob> getOpacityKnob() const;
+#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+#endif
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     boost::shared_ptr<Color_Knob> getColorKnob() const;
     
 signals:
     
-    void inversionChanged();
-    
+#ifdef NATRON_ROTO_INVERTIBLE
+    void invertedStateChanged();
+#endif
+
     void overlayColorChanged();
     
     void shapeColorChanged();
@@ -623,7 +629,7 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(int time,unsigned int mipMapLevel,int nbPointsPerSegment,std::list<Natron::Point >* points, bool evaluateIfEqual,RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCasteljau(int time, unsigned int mipMapLevel, int nbPointsPerSegment, bool evaluateIfEqual, std::list<Natron::Point >* points,RectD* bbox = NULL) const;
     
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
@@ -945,8 +951,9 @@ public:
     
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
     
+#ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
-    
+#endif
     boost::shared_ptr<Color_Knob> getColorKnob() const;
     
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;

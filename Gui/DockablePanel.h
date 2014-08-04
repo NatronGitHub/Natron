@@ -125,6 +125,8 @@ public:
     
     KnobHolder* getHolder() const;
     
+    void onGuiClosing();
+    
 public slots:
     
     /*Internal slot, not meant to be called externally.*/

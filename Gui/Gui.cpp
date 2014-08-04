@@ -87,7 +87,7 @@ CLANG_DIAG_ON(unused-private-field)
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
 
-#define NAMED_PLUGIN_GROUP_NO 14
+#define NAMED_PLUGIN_GROUP_NO 15
 
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
@@ -103,6 +103,7 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEEP,
     PLUGIN_GROUP_3D,
     PLUGIN_GROUP_TOOLSETS,
+    PLUGIN_GROUP_OTHER,
     PLUGIN_GROUP_DEFAULT
 };
 
@@ -129,7 +130,8 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_PAINT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
-    } else if (grouping == PLUGIN_GROUP_DEFAULT) {
+    } else if (grouping == PLUGIN_GROUP_OTHER) {
+#pragma message WARN ("need another icon for the Other grouping")
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_KEYER) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
@@ -422,6 +424,8 @@ struct GuiPrivate {
     ///Creates the properties bin and appends it as a tab to the propertiesPane TabWidget
     void createPropertiesBinGui(TabWidget* propertiesPane);
 
+    void notifyGuiClosing();
+
     ///Must be called absolutely before createPropertiesBinGui
     void createNodeGraphGui(TabWidget* workshopPane);
     
@@ -456,6 +460,18 @@ Gui::~Gui()
     _imp->_viewerTabs.clear();
     for(U32 i = 0; i < _imp->_toolButtons.size();++i){
         delete _imp->_toolButtons[i];
+    }
+}
+
+void GuiPrivate::notifyGuiClosing()
+{
+    ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
+    ///cause bad pointer dereference to the Gui object since we're destroying it.
+    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin(); it!=_viewerTabs.end(); ++it) {
+        (*it)->notifyAppClosing();
+    }
+    for (std::list<DockablePanel*>::iterator it = openedPanels.begin();it!=openedPanels.end(); ++it) {
+        (*it)->onGuiClosing();
     }
 }
 
@@ -507,11 +523,8 @@ void Gui::abortProject(bool quitApp)
         
         assert(_imp->_appInstance);
         
-        ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
-        ///cause bad pointer dereference to the Gui object since we're destroying it.
-        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
-            (*it)->notifyAppClosing();
-        }
+       
+        _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->getProject()->closeProject();
@@ -547,9 +560,10 @@ Gui::closeEvent(QCloseEvent *e)
 }
 
 
-boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool requestedByLoad){
+boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool requestedByLoad,double xPosHint,double yPosHint){
     assert(_imp->_nodeGraphArea);
-    boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad);
+    boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
+                                                                             xPosHint,yPosHint);
     QObject::connect(nodeGui.get(),SIGNAL(nameChanged(QString)),this,SLOT(onNodeNameChanged(QString)));
     assert(nodeGui);
     return nodeGui;
@@ -2898,9 +2912,9 @@ void Gui::clearAllVisiblePanels()
     }
 }
 
-NodeBackDrop* Gui::createBackDrop(bool requestedByLoad)
+NodeBackDrop* Gui::createBackDrop(bool requestedByLoad,const NodeBackDropSerialization& serialization)
 {
-    return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad);
+    return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
 }
 
 

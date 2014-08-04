@@ -14,7 +14,7 @@ Jean-Christophe Levet (icons)
 
 #Packaging:
 
-Alexandre Gauthier-Foichat <devernay@github> (Windows & OSX)
+Alexandre Gauthier-Foichat <MrKepzie@github> (Windows & OSX)
 Ole Andre Rodlie <olar@github> (Linux)
 
 #Testing:

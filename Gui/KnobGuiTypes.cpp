@@ -813,29 +813,18 @@ void Choice_KnobGui::onEntriesPopulated()
     _entries = _knob->getEntries();
     const std::vector<std::string> &help =  _knob->getEntriesHelp();
     for (U32 i = 0; i < _entries.size(); ++i) {
-        std::string helpStr = help.empty() ? "" : help[i];
+        std::string helpStr;
+        if (!help.empty() && !help[i].empty()) {
+            helpStr = help[i];
+        }
         _comboBox->addItem(_entries[i].c_str(), QIcon(), QKeySequence(), QString(helpStr.c_str()));
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
-    
-    QString tt(_knob->getHintToolTip().c_str());
+    QString tt = _knob->getHintToolTipFull().c_str();
     if (!tt.isEmpty()) {
-        tt.append(QChar('\n'));
-        tt.append(QChar('\n'));
-    }
-    for (U32 i = 0; i < help.size(); ++i) {
-        tt.append(_entries[i].c_str());
-        tt.append(": ");
-        tt.append(help[i].c_str());
-        if (i != help.size() -1) {
-            tt.append(QChar('\n'));
-        }
-    }
-    tt = Qt::convertFromPlainText(tt,Qt::WhiteSpaceNormal);
-    if (!tt.isEmpty()) {
-        _comboBox->setToolTip(tt);
+        _comboBox->setToolTip(Qt::convertFromPlainText(tt ,Qt::WhiteSpaceNormal));
     }
 
 }

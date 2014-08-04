@@ -1676,11 +1676,12 @@ ViewerInstance::disconnectViewer()
 
 template <typename PIX,int maxValue>
 static
-bool getColorAtInternal(Natron::Image* image,int x,int y,
+bool getColorAtInternal(Natron::Image* image,
+                        int x, int y, // in pixel coordinates
                         bool forceLinear,
                         const Natron::Color::Lut* srcColorSpace,
                         const Natron::Color::Lut* dstColorSpace,
-                        float* r,float* g,float* b,float* a)
+                        float* r, float* g, float* b, float* a)
 {
     const PIX* pix = (const PIX*)image->pixelAt(x, y);
     if (!pix) {
@@ -1690,22 +1691,22 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
     Natron::ImageComponents comps = image->getComponents();
     switch (comps) {
         case Natron::ImageComponentRGBA:
-            *r = *pix / (float)maxValue;
-            *g = (*(pix + 1) / (float)maxValue);
-            *b = (*(pix + 2) / (float)maxValue);
-            *a = (*(pix + 3) / (float)maxValue);
+            *r = pix[0] / (float)maxValue;
+            *g = pix[1] / (float)maxValue;
+            *b = pix[2] / (float)maxValue;
+            *a = pix[3] / (float)maxValue;
             break;
         case Natron::ImageComponentRGB:
-            *r = *pix / (float)maxValue;
-            *g = (*(pix + 1) / (float)maxValue);
-            *b = (*(pix + 2) / (float)maxValue);
+            *r = pix[0] / (float)maxValue;
+            *g = pix[1] / (float)maxValue;
+            *b = pix[2] / (float)maxValue;
             *a = 1.;
             break;
         case Natron::ImageComponentAlpha:
-            *a = (*(pix + 3) / (float)maxValue);
             *r = 0.;
             *g = 0.;
             *b = 0.;
+            *a = pix[3] / (float)maxValue;
             break;
         default:
             assert(false);
@@ -1736,35 +1737,28 @@ bool getColorAtInternal(Natron::Image* image,int x,int y,
 }
 
 bool
-ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool forceLinear,int textureIndex)
+ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinates
+                           bool forceLinear, int textureIndex,
+                           float* r, float* g, float* b, float* a) // output values
 {
-    
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
-    
-    ///Convert to pixel coords
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    int xPixel = x,yPixel = y;
-    if (mipMapLevel != 0) {
-        xPixel /= (1 << mipMapLevel);
-        yPixel /= (1 << mipMapLevel);
-    }
-    
-    
+
     boost::shared_ptr<Image> img;
     {
         QMutexLocker l(&_imp->lastRenderedImageMutex);
         img = _imp->lastRenderedImage[textureIndex];
     }
-    
+
     ViewerColorSpace lut;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         lut = _imp->viewerParamsLut;
     }
-    
+
+    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
     if (!img || img->getMipMapLevel() != mipMapLevel) {
         double colorGPU[4];
         _imp->uiContext->getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
@@ -1783,57 +1777,187 @@ ViewerInstance::getColorAt(int x,int y,float* r,float* g,float* b,float* a,bool 
         }
         return true;
     }
-    
-    
-    const Natron::Color::Lut* dstColorSpace = lutFromColorspace(lut);
-    
-    Natron::ImageBitDepth depth = img->getBitDepth();
-    bool queried = true;
-    switch (depth) {
-        case IMAGE_BYTE: {
-            ViewerColorSpace bytesCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_BYTE);
-            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(bytesCS);
-            if (srcColorSpace == dstColorSpace) {
-                srcColorSpace = 0;
-                dstColorSpace = 0;
-            }
-            queried = getColorAtInternal<unsigned char, 255>(img.get(), xPixel, yPixel,forceLinear,
-                                                             srcColorSpace,
-                                                             dstColorSpace,r, g, b, a);
-        }   break;
-        case IMAGE_SHORT: {
-            ViewerColorSpace shortCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_SHORT);
-            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(shortCS);
-            if (srcColorSpace == dstColorSpace) {
-                srcColorSpace = 0;
-                dstColorSpace = 0;
-            }
 
-            queried = getColorAtInternal<unsigned short, 65535>(img.get(), xPixel, yPixel, forceLinear,
-                                                                srcColorSpace,
-                                                                dstColorSpace,r, g, b, a);
-        }   break;
-        case IMAGE_FLOAT: {
-            ViewerColorSpace floatCS = getApp()->getDefaultColorSpaceForBitDepth(IMAGE_FLOAT);
-            const Natron::Color::Lut* srcColorSpace = lutFromColorspace(floatCS);
-            if (srcColorSpace == dstColorSpace) {
-                srcColorSpace = 0;
-                dstColorSpace = 0;
-            }
-            queried = getColorAtInternal<float, 1>(img.get(), xPixel, yPixel,forceLinear,
-                                                   srcColorSpace,
-                                                   dstColorSpace, r, g, b, a);
-        }   break;
-            
+    Natron::ImageBitDepth depth = img->getBitDepth();
+    ViewerColorSpace srcCS = getApp()->getDefaultColorSpaceForBitDepth(depth);
+    const Natron::Color::Lut* dstColorSpace;
+    const Natron::Color::Lut* srcColorSpace;
+    if ((srcCS == lut) && (lut == Linear || !forceLinear)) {
+        // identity transform
+        srcColorSpace = 0;
+        dstColorSpace = 0;
+    } else {
+        srcColorSpace = lutFromColorspace(srcCS);
+        dstColorSpace = lutFromColorspace(lut);
+    }
+
+    ///Convert to pixel coords
+    int xPixel = int(std::floor(x)) >> mipMapLevel;
+    int yPixel = int(std::floor(y)) >> mipMapLevel;
+
+    bool gotval;
+    switch (depth) {
+        case IMAGE_BYTE:
+            gotval = getColorAtInternal<unsigned char, 255>(img.get(),
+                                                            xPixel, yPixel,
+                                                            forceLinear,
+                                                            srcColorSpace,
+                                                            dstColorSpace,
+                                                            r, g, b, a);
+            break;
+        case IMAGE_SHORT:
+            gotval = getColorAtInternal<unsigned short, 65535>(img.get(),
+                                                               xPixel, yPixel,
+                                                               forceLinear,
+                                                               srcColorSpace,
+                                                               dstColorSpace,
+                                                               r, g, b, a);
+            break;
+        case IMAGE_FLOAT:
+            gotval = getColorAtInternal<float, 1>(img.get(),
+                                                  xPixel, yPixel,
+                                                  forceLinear,
+                                                  srcColorSpace,
+                                                  dstColorSpace,
+                                                  r, g, b, a);
+            break;
         default:
+            gotval = false;
             break;
     }
 
-    if (!queried) {
-        return false;
+    return gotval;
+}
+
+bool
+ViewerInstance::getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
+                               bool forceLinear, int textureIndex,
+                               float* r, float* g, float* b, float* a) // output values
+{
+    // always running in the main thread
+    assert(qApp && qApp->thread() == QThread::currentThread());
+    assert(r && g && b && a);
+    assert(textureIndex == 0 || textureIndex == 1);
+
+    boost::shared_ptr<Image> img;
+    {
+        QMutexLocker l(&_imp->lastRenderedImageMutex);
+        img = _imp->lastRenderedImage[textureIndex];
     }
-   
-    return true;
+
+    ViewerColorSpace lut;
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        lut = _imp->viewerParamsLut;
+    }
+
+    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
+    ///Convert to pixel coords
+    RectI rectPixel;
+    rectPixel.set_left(  int(std::floor(rect.left())  ) >> mipMapLevel);
+    rectPixel.set_right( int(std::floor(rect.right()) ) >> mipMapLevel);
+    rectPixel.set_bottom(int(std::floor(rect.bottom())) >> mipMapLevel);
+    rectPixel.set_top(   int(std::floor(rect.top())   ) >> mipMapLevel);
+    assert(rect.bottom() <= rect.top() && rect.left() <= rect.right());
+    assert(rectPixel.bottom() <= rectPixel.top() && rectPixel.left() <= rectPixel.right());
+    double rSum = 0.;
+    double gSum = 0.;
+    double bSum = 0.;
+    double aSum = 0.;
+    if (!img || img->getMipMapLevel() != mipMapLevel) {
+        double colorGPU[4];
+        for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
+            for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
+                _imp->uiContext->getTextureColorAt(xPixel << mipMapLevel, yPixel << mipMapLevel,
+                                                   &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
+                aSum += colorGPU[3];
+                if (forceLinear && lut != Linear) {
+                    const Natron::Color::Lut* srcColorSpace = lutFromColorspace(lut);
+
+                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
+                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
+                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
+
+                } else {
+                    rSum += colorGPU[0];
+                    gSum += colorGPU[1];
+                    bSum += colorGPU[2];
+                }
+            }
+        }
+        *r = rSum / rectPixel.area();
+        *g = gSum / rectPixel.area();
+        *b = bSum / rectPixel.area();
+        *a = aSum / rectPixel.area();
+        return true;
+    }
+
+
+    Natron::ImageBitDepth depth = img->getBitDepth();
+    ViewerColorSpace srcCS = getApp()->getDefaultColorSpaceForBitDepth(depth);
+    const Natron::Color::Lut* dstColorSpace;
+    const Natron::Color::Lut* srcColorSpace;
+    if ((srcCS == lut) && (lut == Linear || !forceLinear)) {
+        // identity transform
+        srcColorSpace = 0;
+        dstColorSpace = 0;
+    } else {
+        srcColorSpace = lutFromColorspace(srcCS);
+        dstColorSpace = lutFromColorspace(lut);
+    }
+
+    unsigned long area = 0;
+    for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
+        for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
+            float rPix, gPix, bPix, aPix;
+            bool gotval = false;
+            switch (depth) {
+                case IMAGE_BYTE:
+                    gotval = getColorAtInternal<unsigned char, 255>(img.get(),
+                                                                    xPixel, yPixel,
+                                                                    forceLinear,
+                                                                    srcColorSpace,
+                                                                    dstColorSpace,
+                                                                    &rPix, &gPix, &bPix, &aPix);
+                    break;
+                case IMAGE_SHORT:
+                    gotval = getColorAtInternal<unsigned short, 65535>(img.get(),
+                                                                       xPixel, yPixel,
+                                                                       forceLinear,
+                                                                       srcColorSpace,
+                                                                       dstColorSpace,
+                                                                       &rPix, &gPix, &bPix, &aPix);
+                    break;
+                case IMAGE_FLOAT:
+                    gotval = getColorAtInternal<float, 1>(img.get(),
+                                                          xPixel, yPixel,
+                                                          forceLinear,
+                                                          srcColorSpace,
+                                                          dstColorSpace,
+                                                           &rPix, &gPix, &bPix, &aPix);
+                    break;
+                default:
+                    break;
+            }
+            if (gotval) {
+                rSum += rPix;
+                gSum += gPix;
+                bSum += bPix;
+                aSum += aPix;
+                ++area;
+            }
+        }
+    }
+
+    if (area > 0) {
+        *r = rSum / area;
+        *g = gSum / area;
+        *b = bSum / area;
+        *a = aSum / area;
+        return true;
+    }
+    
+    return false;
 }
 
 bool

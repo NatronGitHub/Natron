@@ -25,6 +25,7 @@
 #include <QImage>
 #include <QPainter>
 #include <QByteArray>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
@@ -50,9 +51,13 @@
 #define COL_OVERLAY 3
 #define COL_COLOR 4
 #define COL_OPERATOR 5
-#define COL_INVERTED 6
 
+#ifdef NATRON_ROTO_INVERTIBLE
+#define COL_INVERTED 6
 #define MAX_COLS 7
+#else
+#define MAX_COLS 6
+#endif
 
 using namespace Natron;
 
@@ -368,7 +373,9 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
     _imp->treeHeader->setIcon(COL_OVERLAY, QIcon(pixDefault));
     _imp->treeHeader->setIcon(COL_COLOR, _imp->iconWheel);
+#ifdef NATRON_ROTO_INVERTIBLE
     _imp->treeHeader->setIcon(COL_INVERTED, _imp->iconUninverted);
+#endif
     _imp->treeHeader->setIcon(COL_OPERATOR, QIcon(pixmerge));
     _imp->tree->setHeaderItem(_imp->treeHeader);
     
@@ -606,7 +613,9 @@ void RotoPanel::updateItemGui(QTreeWidgetItem* item)
         QIcon shapeColorIcon;
         makeSolidIcon(shapeColor, shapeColorIcon);
         it->treeItem->setIcon(COL_COLOR, shapeColorIcon);
+#ifdef NATRON_ROTO_INVERTIBLE
         it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? _imp->iconInverted : _imp->iconUninverted);
+#endif
         QWidget* w = _imp->tree->itemWidget(it->treeItem,COL_OPERATOR);
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
@@ -669,7 +678,9 @@ void RotoPanelPrivate::updateSplinesInfosGUI(int time)
             drawable->getColor(time, shapeColor);
             makeSolidIcon(shapeColor, shapeColorIC);
             it->treeItem->setIcon(COL_COLOR, shapeColorIC);
+#ifdef NATRON_ROTO_INVERTIBLE
             it->treeItem->setIcon(COL_INVERTED,drawable->getInverted(time) ? iconInverted : iconUninverted);
+#endif
             ComboBox* cb = dynamic_cast<ComboBox*>(tree->itemWidget(it->treeItem, COL_OPERATOR));
             if (cb) {
                 cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
@@ -707,9 +718,12 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
     items.push_back(TreeItem(treeItem,item));
 
     treeItem->setText(COL_NAME, item->getName_mt_safe().c_str());
+    treeItem->setToolTip(COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal));
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
+    treeItem->setToolTip(COL_ACTIVATED, Qt::convertFromPlainText(kRotoActivatedHint, Qt::WhiteSpaceNormal));
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    
+    treeItem->setToolTip(COL_LOCKED, Qt::convertFromPlainText(kRotoLockedHint, Qt::WhiteSpaceNormal));
+
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
     RotoLayer* layer = dynamic_cast<RotoLayer*>(item.get());
     
@@ -720,22 +734,22 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         makeSolidIcon(overlayColor, overlayIcon);
         treeItem->setIcon(COL_NAME, iconBezier);
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
+        treeItem->setToolTip(COL_OVERLAY, Qt::convertFromPlainText(kRotoOverlayHint, Qt::WhiteSpaceNormal));
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
+        treeItem->setToolTip(COL_COLOR, Qt::convertFromPlainText(kRotoColorHint, Qt::WhiteSpaceNormal));
+#ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        ComboBox* cb = new ComboBox;
-        QObject::connect(cb,SIGNAL(currentIndexChanged(int)),publicInterface,SLOT(onCurrentItemCompOperatorChanged(int)));
-        std::vector<std::string> compositingOperators,tooltips;
-        getCompositingOperators(&compositingOperators, &tooltips);
-        for (U32 i = 0; i < compositingOperators.size(); ++i) {
-            cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
-        }
-        cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
-        tree->setItemWidget(treeItem, COL_OPERATOR, cb);
-        QObject::connect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
+        treeItem->setTooltip(COL_INVERTED, Qt::convertFromPlainText(kRotoInvertedHint, Qt::WhiteSpaceNormal));
+#endif
+
+        publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
+#ifdef NATRON_ROTO_INVERTIBLE
+        QObject::connect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
+#endif
         QObject::connect(drawable,SIGNAL(shapeColorChanged()),publicInterface,SLOT(onRotoItemShapeColorChanged()));
         QObject::connect(drawable,SIGNAL(compositingOperatorChanged()),publicInterface,SLOT(onRotoItemCompOperatorChanged()));
     } else {
@@ -749,18 +763,36 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
     expandRecursively(treeItem);
 }
 
+void RotoPanel::makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem)
+{
+    int time = _imp->context->getTimelineCurrentTime();
+    ComboBox* cb = new ComboBox;
+    QObject::connect(cb,SIGNAL(currentIndexChanged(int)),this,SLOT(onCurrentItemCompOperatorChanged(int)));
+    std::vector<std::string> compositingOperators,tooltips;
+    getCompositingOperators(&compositingOperators, &tooltips);
+    for (U32 i = 0; i < compositingOperators.size(); ++i) {
+        cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+    }
+    // set the tooltip
+    const std::string& tt = item->getCompositingOperatorToolTip();
+    cb->setToolTip(Qt::convertFromPlainText(tt.c_str(), Qt::WhiteSpaceNormal));
+    cb->setCurrentIndex_no_emit(item->getCompositingOperator(time));
+    _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
+
+}
+
 void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
 {
     TreeItems::iterator it = findItem(item);
     if (it == items.end()) {
         return;
     }
+#ifdef NATRON_ROTO_INVERTIBLE
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
     if (drawable) {
-
-        QObject::disconnect(drawable,SIGNAL(inversionChanged()), publicInterface, SLOT(onRotoItemInversionChanged()));
-        
+        QObject::disconnect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
     }
+#endif
     
     ///deleting the item will emit a selection change which would lead to a deadlock
     tree->blockSignals(true);
@@ -799,15 +831,7 @@ void RotoPanelPrivate::insertItemInternal(int reason,int time,const boost::share
         TreeItems::iterator found = findItem(item.get());
         if (found != items.end()) {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
-            ComboBox* cb = new ComboBox;
-            QObject::connect(cb,SIGNAL(currentIndexChanged(int)),publicInterface,SLOT(onCurrentItemCompOperatorChanged(int)));
-            std::vector<std::string> compositingOperators,tooltips;
-            getCompositingOperators(&compositingOperators, &tooltips);
-            for (U32 i = 0; i < compositingOperators.size(); ++i) {
-                cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
-            }
-            cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
-            tree->setItemWidget(found->treeItem, COL_OPERATOR, cb);
+            publicInterface->makeCustomWidgetsForItem(drawable, found->treeItem);
         }
         return;
     }
@@ -862,7 +886,8 @@ void RotoPanel::onCurrentItemCompOperatorChanged(int index)
     }
 }
 
-void RotoPanel::onRotoItemInversionChanged()
+#ifdef NATRON_ROTO_INVERTIBLE
+void RotoPanel::onRotoItemInvertedStateChanged()
 {
     RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
     if (item) {
@@ -873,6 +898,8 @@ void RotoPanel::onRotoItemInversionChanged()
         }
     }
 }
+#endif
+
 void RotoPanel::onRotoItemShapeColorChanged()
 {
     RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
@@ -897,9 +924,10 @@ void RotoPanel::onRotoItemCompOperatorChanged()
         TreeItems::iterator it = _imp->findItem(item);
         if (it != _imp->items.end()) {
             ComboBox* cb = dynamic_cast<ComboBox*>(_imp->tree->itemWidget(it->treeItem, COL_OPERATOR));
-            assert(cb);
-            int compIndex = item->getCompositingOperator(time);
-            cb->setCurrentIndex_no_emit(compIndex);
+            if (cb) {
+                int compIndex = item->getCompositingOperator(time);
+                cb->setCurrentIndex_no_emit(compIndex);
+            }
         }
     }
 }
@@ -1019,6 +1047,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 }
             }   break;
                
+#ifdef NATRON_ROTO_INVERTIBLE
             case COL_INVERTED:
             {
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
@@ -1048,6 +1077,7 @@ void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
                 
                 
             }   break;
+#endif
             case 0:
             default:
                 break;

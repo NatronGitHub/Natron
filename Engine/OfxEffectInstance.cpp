@@ -52,13 +52,13 @@ using std::cout; using std::endl;
 namespace {
 ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
     ChannelSet out;
-    if(comp == kOfxImageComponentAlpha){
+    if (comp == kOfxImageComponentAlpha) {
         out += Channel_alpha;
-    }else if(comp == kOfxImageComponentRGB){
+    } else if (comp == kOfxImageComponentRGB) {
         out += Mask_RGB;
-    }else if(comp == kOfxImageComponentRGBA){
+    } else if (comp == kOfxImageComponentRGBA) {
         out += Mask_RGBA;
-    }else if(comp == kOfxImageComponentYUVA){
+    } else if (comp == kOfxImageComponentYUVA) {
         out += Mask_RGBA;
     }
     return out;
@@ -162,8 +162,10 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     QObject::connect(this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()));
 }
 
-void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                     const std::string& context,const NodeSerialization* serialization){
+void
+OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                const std::string& context,const NodeSerialization* serialization)
+{
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
      We need to pass more parameters to the constructor . That means we cannot
      create it in the virtual function newInstance. Thus we create it before
@@ -224,7 +226,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
         stat = effect_->createInstanceAction();
         unblockEvaluation();
         
-        if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
+        if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
             throw std::runtime_error("Could not create effect instance for plugin");
         }
 
@@ -248,8 +250,6 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
                 throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
             }
         }
-    
-
     } catch (const std::exception& e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
         throw;
@@ -260,9 +260,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     _initialized = true;
 }
 
-OfxEffectInstance::~OfxEffectInstance(){
-    
-    if(_overlayInteract){
+OfxEffectInstance::~OfxEffectInstance()
+{
+    if (_overlayInteract) {
         delete _overlayInteract;
     }
     
@@ -272,28 +272,32 @@ OfxEffectInstance::~OfxEffectInstance(){
 
 
 
-void OfxEffectInstance::initializeContextDependentParams() {
-    
+void
+OfxEffectInstance::initializeContextDependentParams()
+{
     if (isWriter()) {
         _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
         _renderButton->setHintToolTip("Starts rendering the specified frame range.");
         _renderButton->setAsRenderButton();
     }
-    
 }
 
-std::string OfxEffectInstance::description() const {
-    if(effectInstance()){
+std::string
+OfxEffectInstance::description() const
+{
+    if (effectInstance()) {
         return effectInstance()->getProps().getStringProperty(kOfxPropPluginDescription);
-    }else{
+    } else {
         return "";
     }
 }
 
-void OfxEffectInstance::tryInitializeOverlayInteracts(){
+void
+OfxEffectInstance::tryInitializeOverlayInteracts()
+{
     /*create overlay instance if any*/
     OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
-    if(overlayEntryPoint){
+    if (overlayEntryPoint) {
         _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
         RenderScale s;
         effectInstance()->getRenderScaleRecursive(s.x, s.y);
@@ -332,25 +336,30 @@ void OfxEffectInstance::tryInitializeOverlayInteracts(){
             overlay->createInstanceAction();
             knob->setCustomInteract(overlay);
         }
-
     }
 }
 
-bool OfxEffectInstance::isOutput() const {
+bool
+OfxEffectInstance::isOutput() const
+{
     return _isOutput;
 }
 
-bool OfxEffectInstance::isGenerator() const {
+bool
+OfxEffectInstance::isGenerator() const
+{
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
     std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
-    if(foundGenerator != contexts.end() || foundReader!= contexts.end())
+    if (foundGenerator != contexts.end() || foundReader!= contexts.end())
         return true;
     return false;
 }
 
-bool OfxEffectInstance::isReader() const {
+bool
+OfxEffectInstance::isReader() const
+{
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
@@ -360,7 +369,9 @@ bool OfxEffectInstance::isReader() const {
     return false;
 }
 
-bool OfxEffectInstance::isWriter() const {
+bool
+OfxEffectInstance::isWriter() const
+{
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
@@ -370,7 +381,9 @@ bool OfxEffectInstance::isWriter() const {
     return false;
 }
 
-bool OfxEffectInstance::isGeneratorAndFilter() const {
+bool
+OfxEffectInstance::isGeneratorAndFilter() const
+{
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
     std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
@@ -382,52 +395,61 @@ bool OfxEffectInstance::isGeneratorAndFilter() const {
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-QStringList ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str) {
+QStringList
+ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str)
+{
     QStringList out;
     if (str.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
         out.push_back("Sapphire");
-    }else if (str.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
+    } else if (str.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
         out.push_back("Monsters");
     }
     int pos = 0;
-    while(pos < str.size()){
+    while (pos < str.size()) {
         QString newPart;
-        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
+        while (pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')) {
             newPart.append(str.at(pos));
             ++pos;
         }
         ++pos;
-        if(newPart != pluginLabel){
+        if (newPart != pluginLabel) {
             out.push_back(newPart);
         }
     }
     return out;
 }
 
-QStringList AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping){
+QStringList
+AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping)
+{
     return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
 }
-std::string AbstractOfxEffectInstance::getPluginLabel(const std::string& shortLabel,
-                                      const std::string& label,
-                                      const std::string& longLabel) {
+
+std::string
+AbstractOfxEffectInstance::getPluginLabel(const std::string& shortLabel,
+                                          const std::string& label,
+                                          const std::string& longLabel)
+{
     std::string labelToUse = label;
-    if(labelToUse.empty()){
+    if (labelToUse.empty()) {
         labelToUse = shortLabel;
     }
-    if(labelToUse.empty()){
+    if (labelToUse.empty()) {
         labelToUse = longLabel;
     }
     return labelToUse;
 }
 
-std::string AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
-                                                            const std::string& label,
-                                                            const std::string& longLabel,
-                                                            const std::string& grouping){
+std::string
+AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
+                                                        const std::string& label,
+                                                        const std::string& longLabel,
+                                                        const std::string& grouping)
+{
     std::string labelToUse = getPluginLabel(shortLabel,label,longLabel);
     QStringList groups = getPluginGrouping(labelToUse,grouping);
 
-    if(labelToUse == "Viewer"){ // we don't want a plugin to have the same name as our viewer
+    if (labelToUse == "Viewer") { // we don't want a plugin to have the same name as our viewer
         labelToUse =  groups[0].toStdString() + longLabel;
     }
     if (groups.size() >= 1) {
@@ -439,7 +461,9 @@ std::string AbstractOfxEffectInstance::generateImageEffectClassName(const std::s
     return labelToUse;
 }
 
-std::string OfxEffectInstance::pluginID() const {
+std::string
+OfxEffectInstance::pluginID() const
+{
     assert(effect_);
     return generateImageEffectClassName(effect_->getDescriptor().getShortLabel(),
                                         effect_->getDescriptor().getLabel(),
@@ -447,13 +471,16 @@ std::string OfxEffectInstance::pluginID() const {
                                         effect_->getDescriptor().getPluginGrouping());
 }
 
-std::string OfxEffectInstance::pluginLabel() const {
+std::string
+OfxEffectInstance::pluginLabel() const
+{
     assert(effect_);
     return getPluginLabel( effect_->getDescriptor().getShortLabel(),effect_->getDescriptor().getLabel(),effect_->getDescriptor().getLongLabel());
 }
 
 
-void OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
+void
+OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
 {
     std::string groupStr = effectInstance()->getPluginGrouping();
     std::string label = pluginLabel();
@@ -463,22 +490,27 @@ void OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
     }
 }
 
-std::string OfxEffectInstance::inputLabel(int inputNb) const {
+std::string
+OfxEffectInstance::inputLabel(int inputNb) const
+{
     
     MappedInputV copy = inputClipsCopyWithoutOutput();
-    if(inputNb < (int)copy.size()){
+    if (inputNb < (int)copy.size()) {
         return copy[copy.size()-1-inputNb]->getShortLabel();
-    }else{
+    } else {
         return EffectInstance::inputLabel(inputNb);
     }
 }
-OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput() const {
+
+OfxEffectInstance::MappedInputV
+OfxEffectInstance::inputClipsCopyWithoutOutput() const
+{
     assert(effectInstance());
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
     MappedInputV copy;
     for (U32 i = 0; i < clips.size(); ++i) {
         assert(clips[i]);
-        if(clips[i]->getShortLabel() != kOfxImageEffectOutputClipName){
+        if (clips[i]->getShortLabel() != kOfxImageEffectOutputClipName) {
             copy.push_back(clips[i]);
             // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
         }
@@ -486,7 +518,9 @@ OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput()
     return copy;
 }
 
-OfxClipInstance* OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const {
+OfxClipInstance*
+OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
+{
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
     assert(inputNo < (int)clips.size());
     OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(clips[clips.size() - 1 - inputNo]->getName());
@@ -494,10 +528,12 @@ OfxClipInstance* OfxEffectInstance::getClipCorrespondingToInput(int inputNo) con
     return dynamic_cast<OfxClipInstance*>(clip);
 }
 
-int OfxEffectInstance::maximumInputs() const {
+int
+OfxEffectInstance::maximumInputs() const
+{
     const std::string& context = effectInstance()->getContext();
-    if(context == kOfxImageEffectContextReader ||
-       context == kOfxImageEffectContextGenerator){
+    if (context == kOfxImageEffectContextReader ||
+        context == kOfxImageEffectContextGenerator) {
         return 0;
     } else {
         assert(effectInstance());
@@ -507,7 +543,9 @@ int OfxEffectInstance::maximumInputs() const {
     
 }
 
-bool OfxEffectInstance::isInputOptional(int inputNb) const {
+bool
+OfxEffectInstance::isInputOptional(int inputNb) const
+{
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
     if (inputs[inputs.size()-1-inputNb]->isOptional()) {
@@ -520,14 +558,16 @@ bool OfxEffectInstance::isInputOptional(int inputNb) const {
     return false;
 }
 
-bool OfxEffectInstance::isInputMask(int inputNb) const
+bool
+OfxEffectInstance::isInputMask(int inputNb) const
 {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
     return inputs[inputs.size()-1-inputNb]->isMask();
 }
 
-bool OfxEffectInstance::isInputRotoBrush(int inputNb) const
+bool
+OfxEffectInstance::isInputRotoBrush(int inputNb) const
 {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
@@ -537,7 +577,8 @@ bool OfxEffectInstance::isInputRotoBrush(int inputNb) const
 }
 
 /// the smallest RectI enclosing the given RectD
-static void ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
+static void
+ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
 {
     // safely convert to OfxRectI, avoiding overflows
     int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.x1));
@@ -552,7 +593,8 @@ static void ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
 }
 
 /// the largest RectI enclosed in the given RectD
-static void ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
+static void
+ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
 {
     // safely convert to OfxRectI, avoiding overflows
     int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.x1));
@@ -568,7 +610,9 @@ static void ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
 
 
 
-void OfxEffectInstance::onInputChanged(int inputNo) {
+void
+OfxEffectInstance::onInputChanged(int inputNo)
+{
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
     double time = effect_->getFrameRecursive();
@@ -585,7 +629,8 @@ void OfxEffectInstance::onInputChanged(int inputNo) {
     }
 }
 
-void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, const std::string& reason)
+void
+OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, const std::string& reason)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -608,16 +653,12 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, con
         OfxClipInstance* clip = getClipCorrespondingToInput(i);
 
         if (instance) {
-           
-            
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
 
             if (clip->isSupportedComponent(outputComponents)) {
-                
                 ///we only take into account non mask clips for the most components
                 if (!clip->isMask()) {
                     clip->setComponents(outputComponents);
-
                 }
             }
             
@@ -631,21 +672,16 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, con
                 if ((effect_->supportsMultipleClipDepths() && depthsDifferent) || !depthsDifferent) {
                     clip->setPixelDepth(input_outputDepth);
                 }
-            } else {
-                
-                if (Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron)) {
-                    bitDepthWarning.append(instance->getName().c_str());
-                    bitDepthWarning.append(" (" + QString(Image::getDepthString(input_outputNatronDepth).c_str()) + ")");
-                    bitDepthWarning.append(" ----> ");
-                    bitDepthWarning.append(getName().c_str());
-                    bitDepthWarning.append(" (" + QString(Image::getDepthString(outputClipDepthNatron).c_str()) + ")");
-                    bitDepthWarning.append('\n');
-                    setBitDepthWarning = true;
-                }
+            } else if (Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron)) {
+                bitDepthWarning.append(instance->getName().c_str());
+                bitDepthWarning.append(" (" + QString(Image::getDepthString(input_outputNatronDepth).c_str()) + ")");
+                bitDepthWarning.append(" ----> ");
+                bitDepthWarning.append(getName().c_str());
+                bitDepthWarning.append(" (" + QString(Image::getDepthString(outputClipDepthNatron).c_str()) + ")");
+                bitDepthWarning.append('\n');
+                setBitDepthWarning = true;
             }
             effect_->clipInstanceChangedAction(outputClip->getName(), reason, time, scale);
-
-
         }
     }
     effect_->endInstanceChangedAction(reason);
@@ -653,16 +689,18 @@ void OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, con
     getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
 }
 
-void OfxEffectInstance::onMultipleInputsChanged() {
-    
+void
+OfxEffectInstance::onMultipleInputsChanged()
+{
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
     effect_->runGetClipPrefsConditionally();
     decrementRecursionLevel();
 }
 
-std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
-
+std::vector<std::string>
+OfxEffectInstance::supportedFileFormats() const
+{
     int formatsCount = effect_->getDescriptor().getProps().getDimension(kTuttleOfxImageEffectPropSupportedExtensions);
     std::vector<std::string> formats(formatsCount);
     for (int k = 0; k < formatsCount; ++k) {
@@ -672,9 +710,10 @@ std::vector<std::string> OfxEffectInstance::supportedFileFormats() const {
     return formats;
 }
 
-Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) {
-    
-    if(!_initialized){
+Natron::Status
+OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod)
+{
+    if (!_initialized) {
         return Natron::StatFailed;
     }
 
@@ -739,7 +778,20 @@ Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const 
     //double pa = clip->getAspectRatio();
 }
 
-OfxRectD rectToOfxRect2D(const RectI b){
+RectD
+OfxEffectInstance::calcDefaultRegionOfDefinition(SequenceTime time,
+                                                 const RenderScale& scale) const
+{
+    if (!_initialized) {
+        throw std::runtime_error("OfxEffectInstance not initialized");
+    }
+    OfxRectD rod = effect_->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+    return RectD(rod.x1, rod.y1, rod.x2, rod.y2);
+}
+
+OfxRectD
+rectToOfxRect2D(const RectI b)
+{
     OfxRectD out;
     out.x1 = b.left();
     out.x2 = b.right();
@@ -749,10 +801,12 @@ OfxRectD rectToOfxRect2D(const RectI b){
 }
 
 
-EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,
-                                                              const RectI& outputRoD,
-                                                              const RectI& renderWindow,
-                                                              int view)
+EffectInstance::RoIMap
+OfxEffectInstance::getRegionOfInterest(SequenceTime time,
+                                       RenderScale scale,
+                                       const RectI& outputRoD,
+                                       const RectI& renderWindow,
+                                       int view)
 {
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
@@ -797,11 +851,11 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     }
     
 
-    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         appPTR->writeToOfxLog_mt_safe(QString(getNode()->getName_mt_safe().c_str()) + "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
-        for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
+        for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it) {
              EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
             //if (inputNode && inputNode != this) {
                 RectI inputRoi;
@@ -820,16 +874,18 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     return ret;
 }
 
-Natron::EffectInstance::FramesNeededMap OfxEffectInstance::getFramesNeeded(SequenceTime time) {
+Natron::EffectInstance::FramesNeededMap
+OfxEffectInstance::getFramesNeeded(SequenceTime time)
+{
     EffectInstance::FramesNeededMap ret;
-    if(!_initialized){
+    if (!_initialized) {
         return ret;
     }
     OFX::Host::ImageEffect::RangeMap inputRanges;
     assert(effect_);
     
     OfxStatus stat = effect_->getFrameNeededAction((OfxTime)time, inputRanges);
-    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         Natron::errorDialog(getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString());
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it!=inputRanges.end(); ++it) {
@@ -838,14 +894,17 @@ Natron::EffectInstance::FramesNeededMap OfxEffectInstance::getFramesNeeded(Seque
                 ret.insert(std::make_pair(inputNb,it->second));
             }
         }
-    } else if(stat == kOfxStatReplyDefault) {
+    } else if (stat == kOfxStatReplyDefault) {
         return Natron::EffectInstance::getFramesNeeded(time);
     }
     return ret;
 }
 
-void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
-    if(!_initialized){
+void
+OfxEffectInstance::getFrameRange(SequenceTime *first,
+                                 SequenceTime *last)
+{
+    if (!_initialized) {
         return;
     }
     OfxRangeD range;
@@ -862,10 +921,10 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     if (st == kOfxStatOK) {
         *first = (SequenceTime)range.min;
         *last = (SequenceTime)range.max;
-    }else if(st == kOfxStatReplyDefault){
+    } else if (st == kOfxStatReplyDefault) {
         //The default is...
         int nthClip = effect_->getNClips();
-        if(nthClip == 0){
+        if (nthClip == 0) {
             //infinite if there are no non optional input clips.
             *first = INT_MIN;
             *last = INT_MAX;
@@ -908,8 +967,14 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     
 }
 
-bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
-                                int view,SequenceTime* inputTime,int* inputNb) {
+bool
+OfxEffectInstance::isIdentity(SequenceTime time,
+                              RenderScale scale,
+                              const RectI& roi,
+                              int view,
+                              SequenceTime* inputTime,
+                              int* inputNb)
+{
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -947,14 +1012,9 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
                                  0,0); //< setFrameRange ?
         
         stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,useScaleOne ? scaleOne : scale,inputclip);
-        
     }
-    
-    
-    
 
-    
-    if(stat == kOfxStatOK){
+    if (stat == kOfxStatOK) {
         OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(inputclip);
         if (!clip) {
             // this is a plugin-side error, don't crash
@@ -971,15 +1031,22 @@ bool OfxEffectInstance::isIdentity(SequenceTime time,RenderScale scale,const Rec
             *inputNb = natronClip->getInputNb();
         }
         return true;
-    }else{
+    } else {
         return false;
     }
 }
 
 
-Natron::Status OfxEffectInstance::beginSequenceRender(SequenceTime first,SequenceTime last,
-                                            SequenceTime step,bool interactive,RenderScale scale,
-                                            bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
+Natron::Status
+OfxEffectInstance::beginSequenceRender(SequenceTime first,
+                                       SequenceTime last,
+                                       SequenceTime step,
+                                       bool interactive,
+                                       RenderScale scale,
+                                       bool isSequentialRender,
+                                       bool isRenderResponseToUserInteraction,
+                                       int view)
+{
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     bool useScaleOne = !supportsRenderScale();
@@ -1008,20 +1075,24 @@ Natron::Status OfxEffectInstance::beginSequenceRender(SequenceTime first,Sequenc
                                  0,0); //< setFrameRange ?
         
         stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
-        
     }
-    
 
-    
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
     return StatOK;
 }
 
-Natron::Status OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceTime last,
-                                          SequenceTime step,bool interactive,RenderScale scale,
-                                          bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) {
+Natron::Status
+OfxEffectInstance::endSequenceRender(SequenceTime first,
+                                     SequenceTime last,
+                                     SequenceTime step,
+                                     bool interactive,
+                                     RenderScale scale,
+                                     bool isSequentialRender,
+                                     bool isRenderResponseToUserInteraction,
+                                     int view)
+{
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     bool useScaleOne = !supportsRenderScale();
@@ -1050,10 +1121,7 @@ Natron::Status OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceT
                                  0,0); //< setFrameRange ?
         
         stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
-        
     }
-    
-    
 
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
@@ -1061,11 +1129,16 @@ Natron::Status OfxEffectInstance::endSequenceRender(SequenceTime first,SequenceT
     return StatOK;
 }
 
-Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                         const RectI& roi,int view,
-                                         bool isSequentialRender,bool isRenderResponseToUserInteraction,
-                                         boost::shared_ptr<Natron::Image> output){
-    if(!_initialized){
+Natron::Status
+OfxEffectInstance::render(SequenceTime time,
+                          RenderScale scale,
+                          const RectI& roi,
+                          int view,
+                          bool isSequentialRender,
+                          bool isRenderResponseToUserInteraction,
+                          boost::shared_ptr<Natron::Image> output)
+{
+    if (!_initialized) {
         return Natron::StatFailed;
     }
     OfxRectI ofxRoI;
@@ -1083,8 +1156,7 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     scaleOne.x = scaleOne.y = 1.;
     
     bool useScaleOne = !supportsRenderScale();
-    
-    
+
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -1106,11 +1178,8 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
         
         stat = effect_->renderAction((OfxTime)time, field, ofxRoI,useScaleOne ? scaleOne : scale,
                                      isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
-        
-        
     }
-    
-    
+
     if (stat != kOfxStatOK) {
         return StatFailed;
     } else {
@@ -1118,8 +1187,9 @@ Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
     }
 }
 
-EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const {
-    
+EffectInstance::RenderSafety
+OfxEffectInstance::renderThreadSafety() const
+{
     {
         QReadLocker readL(_renderSafetyLock);
         if (_wasRenderSafetySet) {
@@ -1146,38 +1216,46 @@ EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const {
         _wasRenderSafetySet = true;
         return _renderSafety;
     }
-    
 }
 
-bool OfxEffectInstance::makePreviewByDefault() const { return isGenerator();}
+bool
+OfxEffectInstance::makePreviewByDefault() const
+{
+    return isGenerator();
+}
 
-const std::string& OfxEffectInstance::getShortLabel() const {
+const std::string&
+OfxEffectInstance::getShortLabel() const
+{
     return effectInstance()->getShortLabel();
 }
 
-void OfxEffectInstance::initializeOverlayInteract() {
+void
+OfxEffectInstance::initializeOverlayInteract()
+{
     tryInitializeOverlayInteracts();
 }
 
 
-void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/,const RectI& rod){
-    if(!_initialized){
+void
+OfxEffectInstance::drawOverlay(double /*scaleX*/,
+                               double /*scaleY*/,
+                               const RectI& rod)
+{
+    if (!_initialized) {
         return;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
         OfxTime time = effect_->getFrameRecursive();
-        
-        
-        
+
         if (getRecursionLevel() == 1) {
             int view = getCurrentViewRecursive();
 
             bool skipDiscarding = false;
             if (getRecursionLevel() > 1) {
-                
                 ///This happens sometimes because of dialogs popping from the request of a plug-in (inside an action)
                 ///and making the mainwindow loose focus, hence forcing a new paint event
                 //qDebug() << "drawAction cannot be called recursively as an action. Please check this.";
@@ -1197,8 +1275,6 @@ void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/,const Re
                                      0,0); //< setFrameRange ?
             
             _overlayInteract->drawAction(time, rs);
-            
-            
         } else {
             _overlayInteract->drawAction(time, rs);
         }
@@ -1206,17 +1282,25 @@ void OfxEffectInstance::drawOverlay(double /*scaleX*/,double /*scaleY*/,const Re
     }
 }
 
-void OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport) {
+void
+OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
+{
     if (_overlayInteract) {
         _overlayInteract->setCallingViewport(viewport);
     }
 }
 
-bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos,const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
+                                    double /*scaleY*/,
+                                    const QPointF& viewportPos,
+                                    const QPointF& pos,
+                                    const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1256,11 +1340,17 @@ bool OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,con
     return false;
 }
 
-bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos,const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
+                                      double /*scaleY*/,
+                                      const QPointF& viewportPos,
+                                      const QPointF& pos,
+                                      const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1292,8 +1382,7 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
         } else {
             stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         }
-    
-        
+
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1302,11 +1391,17 @@ bool OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,c
 }
 
 
-bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const QPointF& viewportPos,const QPointF& pos,const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
+                                  double /*scaleY*/,
+                                  const QPointF& viewportPos,
+                                  const QPointF& pos,
+                                  const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1342,12 +1437,17 @@ bool OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,const
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/,
-                                         const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
+                                    double /*scaleY*/,
+                                    Natron::Key key,
+                                    Natron::KeyboardModifiers /*modifiers*/,
+                                    const RectI& rod)
+{
+    if (!_initialized) {
         return false;;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1376,12 +1476,17 @@ bool OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,Nat
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /* modifiers*/,
-                                       const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
+                                  double /*scaleY*/,
+                                  Natron::Key key,
+                                  Natron::KeyboardModifiers /* modifiers*/,
+                                  const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1411,12 +1516,17 @@ bool OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,Natro
     return false;
 }
 
-bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/
-,const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
+                                      double /*scaleY*/,
+                                      Natron::Key key,
+                                      Natron::KeyboardModifiers /*modifiers*/,
+                                      const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1445,11 +1555,13 @@ bool OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,N
     return false;
 }
 
-bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/,const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/,const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1482,11 +1594,13 @@ bool OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
     return false;
 }
 
-bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,const RectI& rod){
-    if(!_initialized){
+bool
+OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,const RectI& rod)
+{
+    if (!_initialized) {
         return false;
     }
-    if(_overlayInteract){
+    if (_overlayInteract) {
         OfxPointD rs;
         rs.x = 1.;//scaleX;
         rs.y = 1.;//scaleY;
@@ -1520,12 +1634,14 @@ bool OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,c
     return false;
 }
 
-bool OfxEffectInstance::hasOverlay() const
+bool
+OfxEffectInstance::hasOverlay() const
 {
     return _overlayInteract != NULL;
 }
 
-static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reason)
+static std::string
+natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reason)
 {
     switch (reason) {
         case Natron::USER_EDITED:
@@ -1539,9 +1655,10 @@ static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::Value
     }
 }
 
-void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time)
+void
+OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time)
 {
-    if(!_initialized){
+    if (!_initialized) {
         return;
     }
     
@@ -1602,7 +1719,7 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
         std::vector<std::string> params;
         _overlayInteract->getSlaveToParam(params);
         for (U32 i = 0; i < params.size(); ++i) {
-            if(params[i] == k->getName()){
+            if (params[i] == k->getName()) {
                 stat = _overlayInteract->redraw();
                 assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
@@ -1612,8 +1729,10 @@ void OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,c
 
 }
 
-void OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reason) {
-    if(!_initialized){
+void
+OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reason)
+{
+    if (!_initialized) {
         return;
     }
     OfxStatus stat = kOfxStatOK;
@@ -1635,8 +1754,10 @@ void OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReason reaso
 
 }
 
-void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason){
-    if(!_initialized){
+void
+OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
+{
+    if (!_initialized) {
         return;
     }
     OfxStatus stat = kOfxStatOK;
@@ -1659,7 +1780,9 @@ void OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReason reason)
 }
 
 
-void OfxEffectInstance::purgeCaches(){
+void
+OfxEffectInstance::purgeCaches()
+{
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat =  effect_->purgeCachesAction();
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -1668,15 +1791,21 @@ void OfxEffectInstance::purgeCaches(){
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
 
-int OfxEffectInstance::majorVersion() const {
+int
+OfxEffectInstance::majorVersion() const
+{
     return effectInstance()->getPlugin()->getVersionMajor();
 }
 
-int OfxEffectInstance::minorVersion() const {
+int
+OfxEffectInstance::minorVersion() const
+{
     return effectInstance()->getPlugin()->getVersionMinor();
 }
 
-bool OfxEffectInstance::supportsTiles() const {
+bool
+OfxEffectInstance::supportsTiles() const
+{
     OFX::Host::ImageEffect::ClipInstance* outputClip =  effectInstance()->getClip(kOfxImageEffectOutputClipName);
     if (!outputClip) {
         return false;
@@ -1684,16 +1813,19 @@ bool OfxEffectInstance::supportsTiles() const {
     return effectInstance()->supportsTiles() && outputClip->supportsTiles();
 }
 
-bool OfxEffectInstance::supportsRenderScale() const
+bool
+OfxEffectInstance::supportsRenderScale() const
 {
     return effectInstance()->supportsMultiResolution();
 }
 
-void OfxEffectInstance::beginEditKnobs() {
+void
+OfxEffectInstance::beginEditKnobs() {
     effectInstance()->beginInstanceEditAction();
 }
 
-void OfxEffectInstance::onSyncPrivateDataRequested()
+void
+OfxEffectInstance::onSyncPrivateDataRequested()
 {
     ///Can only be called in the main thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1702,7 +1834,9 @@ void OfxEffectInstance::onSyncPrivateDataRequested()
 
 
 
-void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
+void
+OfxEffectInstance::addAcceptedComponents(int inputNb,
+                                         std::list<Natron::ImageComponents>* comps)
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
@@ -1731,7 +1865,8 @@ void OfxEffectInstance::addAcceptedComponents(int inputNb,std::list<Natron::Imag
 
 }
 
-void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+void
+OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
 {
     const OFX::Host::Property::Set& prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
     int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
@@ -1745,7 +1880,9 @@ void OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* d
     }
 }
 
-void OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const
+void
+OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,
+                                                  Natron::ImageBitDepth* depth) const
 {
     OfxClipInstance* clip;
     if (inputNb == -1) {
@@ -1758,7 +1895,8 @@ void OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,Natron::Image
     *depth = OfxClipInstance::ofxDepthToNatronDepth(clip->getPixelDepth());
 }
 
-Natron::SequentialPreference OfxEffectInstance::getSequentialPreference() const
+Natron::SequentialPreference
+OfxEffectInstance::getSequentialPreference() const
 {
     int sequential = effect_->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
     switch (sequential) {
@@ -1774,7 +1912,8 @@ Natron::SequentialPreference OfxEffectInstance::getSequentialPreference() const
     }
 }
 
-Natron::ImagePremultiplication OfxEffectInstance::ofxPremultToNatronPremult(const std::string& str)
+Natron::ImagePremultiplication
+OfxEffectInstance::ofxPremultToNatronPremult(const std::string& str)
 {
     if (str == kOfxImagePreMultiplied) {
         return Natron::ImagePremultiplied;
@@ -1785,12 +1924,14 @@ Natron::ImagePremultiplication OfxEffectInstance::ofxPremultToNatronPremult(cons
     }
 }
 
-Natron::ImagePremultiplication OfxEffectInstance::getOutputPremultiplication() const
+Natron::ImagePremultiplication
+OfxEffectInstance::getOutputPremultiplication() const
 {
     return ofxPremultToNatronPremult(ofxGetOutputPremultiplication());
 }
 
-const std::string& OfxEffectInstance::ofxGetOutputPremultiplication() const
+const std::string&
+OfxEffectInstance::ofxGetOutputPremultiplication() const
 {
     static const std::string v(kOfxImagePreMultiplied);
     

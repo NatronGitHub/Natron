@@ -127,7 +127,9 @@ private:
         ar & boost::serialization::make_nvp("Opacity",_opacity);
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+#ifdef NATRON_ROTO_INVERTIBLE
         ar & boost::serialization::make_nvp("Inverted",_inverted);
+#endif
         ar & boost::serialization::make_nvp("Color",_color);
         ar & boost::serialization::make_nvp("CompOP",_compOp);
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
@@ -151,7 +153,9 @@ private:
         ar & boost::serialization::make_nvp("Opacity",_opacity);
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+#ifdef NATRON_ROTO_INVERTIBLE
         ar & boost::serialization::make_nvp("Inverted",_inverted);
+#endif
         if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
             _hasColorAndCompOp = true;
             ar & boost::serialization::make_nvp("Color",_color);
@@ -171,8 +175,10 @@ private:
     KnobSerialization _opacity;
     KnobSerialization _feather;
     KnobSerialization _featherFallOff;
+#ifdef NATRON_ROTO_INVERTIBLE
     KnobSerialization _inverted;
-    
+#endif
+
     bool _hasColorAndCompOp;
     KnobSerialization _color;
     KnobSerialization _compOp;

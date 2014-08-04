@@ -59,7 +59,8 @@ public:
     
     const std::list< boost::shared_ptr<NodeGui> >& getSelectedNodes() const;
     
-    boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad);
+    boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad,
+                                             double xPosHint,double yPosHint);
     
     void selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection);
     
@@ -105,7 +106,7 @@ public:
     
     void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
     
-    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad);
+    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization& serialization);
     
     ///Returns true if it already exists
     bool checkIfBackDropNameExists(const QString& n,const NodeBackDrop* bd) const;
@@ -224,6 +225,7 @@ private:
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 private:
     
     boost::scoped_ptr<NodeGraphPrivate> _imp;

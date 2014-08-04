@@ -235,6 +235,7 @@ public:
     
     void removeSlavedTrack(const boost::shared_ptr<BezierCP>& cp);
     
+    const std::list< boost::shared_ptr<BezierCP> >& getSlavedTracks() { return _slavedTracks; }
     
     struct SerializedTrack
     {
@@ -359,6 +360,8 @@ public:
     static bool canAnimateStatic() { return true; }
     
     static const std::string& typeNameStatic();
+
+    std::string getHintToolTipFull() const;
     
 signals:
     

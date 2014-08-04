@@ -444,7 +444,9 @@ protected:
      * In case of failure the plugin should return StatFailed.
      **/
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) WARN_UNUSED_RETURN;
-    
+
+    virtual RectD calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale) const WARN_UNUSED_RETURN;
+
     /**
      * @brief If the rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
