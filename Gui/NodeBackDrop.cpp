@@ -159,17 +159,17 @@ void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,const Nod
     
     ///initialize knobs gui now
     _imp->settingsPanel->initializeKnobs();
-    
-    float r,g,b;
-    appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
-    QColor color;
-    color.setRgbF(r, g, b);
-    _imp->setColorInternal(color);
-    
-    _imp->setNameInternal(name);
-
-
-    
+    if (serialization.isNull()) {
+        float r,g,b;
+        appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
+        QColor color;
+        color.setRgbF(r, g, b);
+        _imp->setColorInternal(color);
+        
+        _imp->setNameInternal(name);
+        
+        
+    }
 }
 
 NodeBackDrop::~NodeBackDrop()
