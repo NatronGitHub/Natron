@@ -1517,6 +1517,7 @@ void Gui::registerPane(TabWidget* pane){
         _imp->_panes.push_back(pane);
         if (only1Widget) {
             _imp->_panes.front()->setClosable(true);
+            _imp->_viewersPane = _imp->_panes.front();
         }
     }
     
