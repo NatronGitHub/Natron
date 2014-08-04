@@ -176,7 +176,16 @@ void TimeLineGui::paintGL()
     glCheckError();
     if(_imp->_firstPaint){
         _imp->_firstPaint = false;
-        centerOn(DEFAULT_TIMELINE_LEFT_BOUND,DEFAULT_TIMELINE_RIGHT_BOUND);
+        SequenceTime left = _imp->_timeline->leftBound();
+        SequenceTime right = _imp->_timeline->rightBound();
+        SequenceTime cur = _imp->_timeline->currentFrame();
+        if ((right - left) > 10000) {
+            centerOn(cur - 100, cur + 100);
+        } else if ((right - left) < 50) {
+            centerOn(cur - DEFAULT_TIMELINE_LEFT_BOUND, cur + DEFAULT_TIMELINE_RIGHT_BOUND);
+        } else {
+            centerOn(left,right);
+        }
     }
 
     double w = (double)width();

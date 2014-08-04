@@ -76,8 +76,8 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
          
          PaneLayout layout;
          layout.parentingCreated = false;
-         std::map<TabWidget*,bool> userSplits = (*it)->getUserSplits();
-         for (std::map<TabWidget*,bool>::const_iterator split = userSplits.begin(); split!=userSplits.end(); ++split) {
+         std::list<std::pair<TabWidget*,bool> > userSplits = (*it)->getUserSplits();
+         for (std::list<std::pair<TabWidget*,bool> >::const_iterator split = userSplits.begin(); split!=userSplits.end(); ++split) {
              layout.splits.push_back(split->second);
          }
          layout.floating = (*it)->isFloating();
@@ -99,6 +99,7 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
              }
              layout.tabs.push_back(tabNames[i].toStdString());
          }
+         layout.currentIndex = (*it)->activeIndex();
          _layout.insert(std::make_pair(widgetName.toStdString(),layout));
      }
      
@@ -112,10 +113,8 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
      ///save application's splitters states
     std::list<Splitter*> splitters = projectGui->getGui()->getSplitters();
      for (std::list<Splitter*>::const_iterator it = splitters.begin(); it!= splitters.end(); ++it) {
-         QByteArray ba = (*it)->saveState();
-         ba = ba.toBase64();
-         QString str(ba);
-         _splittersStates.insert(std::make_pair((*it)->objectName_mt_safe().toStdString(),str.toStdString()));
+         QString ba = (*it)->serializeNatron();
+         _splittersStates.insert(std::make_pair((*it)->objectName_mt_safe().toStdString(),ba.toStdString()));
 
      }
      

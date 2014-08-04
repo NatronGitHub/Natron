@@ -979,7 +979,9 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             } else {
                 ///before allocating it we must fill the RoD of the image we want to render
                 Status stat = getRegionOfDefinition_public(args.time,args.scale,args.view, &rod,&isProjectFormat);
-                if (stat == StatFailed) {
+                
+                ///The rod might be NULL for a roto that has no beziers and no input
+                if (stat == StatFailed || rod.isNull()) {
                     ///if getRoD fails, just return a NULL ptr
                     return boost::shared_ptr<Natron::Image>();
                 }
@@ -1397,9 +1399,6 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                         
                         if (inputImg) {
                             inputImages.push_back(inputImg);
-                        } else {
-                            _node->notifyInputNIsFinishedRendering(it2->first);
-                            return eImageRenderFailed;
                         }
                     }
                 }
