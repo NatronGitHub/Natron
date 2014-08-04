@@ -758,8 +758,13 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
         if ((*it)->isActivated(time)) {
             
             ///draw the bezier
+#pragma message WARN("Roto drawing: please update this algorithm")
+            // Please update this algorithm:
+            // It should first compute the bbox (this is cheap)
+            // then check if the bbox is visible
+            // if the bbox is visible, compute the polygon and draw it.
             std::list< Point > points;
-            (*it)->evaluateAtTime_DeCasteljau(time,0, 100, &points);
+            (*it)->evaluateAtTime_DeCasteljau(time,0, 100, &points, NULL);
             
             double curveColor[4];
             if (!(*it)->isLockedRecursive()) {
@@ -778,10 +783,18 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             ///draw the feather points
             std::list< Point > featherPoints;
             std::vector<double> constants,multiples;
-            RectD featherBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
+            RectD featherBBox(std::numeric_limits<double>::infinity(),
+                              std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity());
             
             if (isFeatherVisible()) {
                 ///Draw feather only if visible (button is toggled in the user interface)
+#pragma message WARN("Roto drawing: please update this algorithm")
+                // Plese update this algorithm:
+                // It should first compute the bbox (this is cheap)
+                // then check if the bbox is visible
+                // if the bbox is visible, compute the polygon and draw it.
                 (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, true, &featherPoints, &featherBBox);
                 constants.resize(featherPoints.size());
                 multiples.resize(featherPoints.size());
@@ -927,7 +940,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                         ///if the feather point is identical to the control point
                         ///draw a small hint line that the user can drag to move the feather point
                         if (_imp->selectedTool == SELECT_ALL || _imp->selectedTool == SELECT_FEATHER_POINTS) {
-                            int cpCount = (*it2)->getCurve()->getControlPointsCount();
+                            int cpCount = (*it2)->getBezier()->getControlPointsCount();
                             if (cpCount > 1) {
                                 
                                 Natron::Point controlPoint;
@@ -1551,7 +1564,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
                     _imp->rotoData->featherBarBeingDragged = featherBarSel;
                     
                     ///Also select the point only if the curve is the same!
-                    if (featherBarSel.first->getCurve() == nearbyBezier.get()) {
+                    if (featherBarSel.first->getBezier() == nearbyBezier.get()) {
                         _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged);
                         _imp->handleBezierSelection(nearbyBezier);
                     }
@@ -1621,7 +1634,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case REMOVE_POINTS:
             if (nearbyCP.first) {
-                Bezier* curve = nearbyCP.first->getCurve();
+                Bezier* curve = nearbyCP.first->getBezier();
                 assert(nearbyBezier && nearbyBezier.get() == curve);
                 if (nearbyCP.first->isFeatherPoint()) {
                     pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second));
@@ -2507,9 +2520,12 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
         if (cpCount <= 1) {
             continue;
         }
-        
+#pragma message WARN("please explain this algorithm: why do you need to evaluate 49 points?")
         std::list<Point> polygon;
-        RectD polygonBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
+        RectD polygonBBox(std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
         (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
         std::vector<double> constants(polygon.size()),multipliers(polygon.size());
         Bezier::precomputePointInPolygonTables(polygon, &constants, &multipliers);
@@ -3071,7 +3087,7 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
                 ///Make sure that track doesn't have points of the same curve already linked
                 const std::list< boost::shared_ptr<BezierCP> >& slavedTracks = knob->getSlavedTracks();
                 for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = slavedTracks.begin();it!=slavedTracks.end();++it) {
-                    if ((*it)->getCurve() == cp.first->getCurve()) {
+                    if ((*it)->getBezier() == cp.first->getBezier()) {
                         Natron::errorDialog(tr("Link").toStdString(),
                                             tr("You cannot link several points of the same curve to the same track.").toStdString());
                         return;

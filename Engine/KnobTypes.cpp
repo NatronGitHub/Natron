@@ -518,10 +518,10 @@ void Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
 {
     for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
         SerializedTrack s;
-        s.bezierName = (*it)->getCurve()->getName_mt_safe();
+        s.bezierName = (*it)->getBezier()->getName_mt_safe();
         s.isFeather = (*it)->isFeatherPoint();
-        s.cpIndex = !s.isFeather ? (*it)->getCurve()->getControlPointIndex(*it) : (*it)->getCurve()->getFeatherPointIndex(*it);
-        s.rotoNodeName = (*it)->getCurve()->getRotoNodeName();
+        s.cpIndex = !s.isFeather ? (*it)->getBezier()->getControlPointIndex(*it) : (*it)->getBezier()->getFeatherPointIndex(*it);
+        s.rotoNodeName = (*it)->getBezier()->getRotoNodeName();
         tracks->push_back(s);
     }
 }
@@ -576,9 +576,9 @@ void Double_Knob::restoreFeatherRelatives()
         if ((*it)->isFeatherPoint()) {
             continue;
         }
-        int indexInCurve = (*it)->getCurve()->getControlPointIndex(it->get());
+        int indexInCurve = (*it)->getBezier()->getControlPointIndex(it->get());
         assert(indexInCurve != -1);
-        boost::shared_ptr<BezierCP> fp = (*it)->getCurve()->getFeatherPointAtIndex(indexInCurve);
+        boost::shared_ptr<BezierCP> fp = (*it)->getBezier()->getFeatherPointAtIndex(indexInCurve);
         if (!fp->isSlaved()) {
             fp->setRelativeTo(it->get());
         }

@@ -56,9 +56,9 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
     
     for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!= _pointsToDrag.end(); ++it) {
         if (!it->first->isFeatherPoint()) {
-            _indexesToMove.push_back(it->first->getCurve()->getControlPointIndex(it->first));
+            _indexesToMove.push_back(it->first->getBezier()->getControlPointIndex(it->first));
         } else {
-            _indexesToMove.push_back(it->second->getCurve()->getControlPointIndex(it->second));
+            _indexesToMove.push_back(it->second->getBezier()->getControlPointIndex(it->second));
         }
     }
 }
@@ -73,8 +73,8 @@ void MoveControlPointsUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
     for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!=_pointsToDrag.end(); ++it,++cpIt) {
-        it->first->getCurve()->clonePoint(*(it->first),*(cpIt->first));
-        it->second->getCurve()->clonePoint(*(it->second),*(cpIt->second));
+        it->first->getBezier()->clonePoint(*(it->first),*(cpIt->first));
+        it->second->getBezier()->clonePoint(*(it->second),*(cpIt->second));
     }
     
     _roto->evaluate(true);
@@ -94,13 +94,13 @@ void MoveControlPointsUndoCommand::redo()
                 if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_FEATHER_POINTS ||
                     (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
                     (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
-                    itPoints->first->getCurve()->moveFeatherByIndex(*it,_time, _dx, _dy);
+                    itPoints->first->getBezier()->moveFeatherByIndex(*it,_time, _dx, _dy);
                 }
             } else {
                 if ((RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_POINTS ||
                     (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ||
                     (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER) {
-                    itPoints->first->getCurve()->movePointByIndex(*it,_time, _dx, _dy);
+                    itPoints->first->getBezier()->movePointByIndex(*it,_time, _dx, _dy);
                 }
             }
         }
@@ -187,8 +187,8 @@ void TransformUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it!=_selectedPoints.end(); ++it,++cpIt) {
-        it->first->getCurve()->clonePoint(*(it->first),*(cpIt->first));
-        it->second->getCurve()->clonePoint(*(it->second),*(cpIt->second));
+        it->first->getBezier()->clonePoint(*(it->first),*(cpIt->first));
+        it->second->getBezier()->clonePoint(*(it->second),*(cpIt->second));
     }
     
     _roto->evaluate(true);
@@ -199,7 +199,7 @@ void TransformUndoCommand::undo()
 
 void TransformUndoCommand::transformPoint(const boost::shared_ptr<BezierCP>& point)
 {
-    point->getCurve()->transformPoint(point, _time, _matrix.get());
+    point->getBezier()->transformPoint(point, _time, _matrix.get());
 }
 
 void TransformUndoCommand::redo()
@@ -333,8 +333,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const SelectedCpLis
             cp = it->first;
             fp = it->second;
         }
-        assert(cp && fp && cp->getCurve() && _roto && _roto->getContext());
-        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(cp->getCurve()->getName_mt_safe()));
+        assert(cp && fp && cp->getBezier() && _roto && _roto->getContext());
+        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(cp->getBezier()->getName_mt_safe()));
         assert(curve);
 
         std::list< CurveDesc >::iterator foundCurve = _curves.end();
@@ -351,7 +351,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,const SelectedCpLis
             CurveDesc curveDesc;
             curveDesc.curveRemoved = false; //set in the redo()
             curveDesc.parentLayer =
-            boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->getItemByName(cp->getCurve()->getParentLayer()->getName_mt_safe()));
+            boost::dynamic_pointer_cast<RotoLayer>(_roto->getContext()->getItemByName(cp->getBezier()->getParentLayer()->getName_mt_safe()));
             assert(curveDesc.parentLayer);
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
@@ -502,11 +502,11 @@ MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,double dx,double dy
     roto->getSelection(&_selectedCurves, &_selectedPoints);
     boost::shared_ptr<BezierCP> counterPart;
     if (cp->isFeatherPoint()) {
-        counterPart = _tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
         _oldCp.reset(new BezierCP(*counterPart));
         _oldFp.reset(new BezierCP(*_tangentBeingDragged));
     } else {
-        counterPart = _tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
         _oldCp.reset(new BezierCP(*_tangentBeingDragged));
         _oldFp.reset(new BezierCP(*counterPart));
     }
@@ -545,14 +545,14 @@ namespace {
             double rightDiffX = breakTangents ? 0 : x + std::cos(alpha) * dist - rightX;
             double rightDiffY = breakTangents ? 0 : y + std::sin(alpha) * dist - rightY;
             if (autoKeying || isOnKeyframe) {
-                p.getCurve()->movePointLeftAndRightIndex(p, time, dx, dy, rightDiffX, rightDiffY);
+                p.getBezier()->movePointLeftAndRightIndex(p, time, dx, dy, rightDiffX, rightDiffY);
             }
             
         } else {
             double leftDiffX = breakTangents ? 0 : x + std::cos(alpha) * dist - leftX;
             double leftDiffY = breakTangents ? 0 : y + std::sin(alpha) * dist - leftY;
             if (autoKeying || isOnKeyframe) {
-                p.getCurve()->movePointLeftAndRightIndex(p, time, leftDiffX , leftDiffY , dx , dy);
+                p.getBezier()->movePointLeftAndRightIndex(p, time, leftDiffX , leftDiffY , dx , dy);
             }
             
         }
@@ -565,13 +565,13 @@ void MoveTangentUndoCommand::undo()
 {
     boost::shared_ptr<BezierCP> counterPart;
     if (_tangentBeingDragged->isFeatherPoint()) {
-        counterPart = _tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_tangentBeingDragged);
-        _oldCp->getCurve()->clonePoint(*counterPart,*_oldCp);
-        _oldFp->getCurve()->clonePoint(*_tangentBeingDragged,*_oldFp);
+        counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        _oldCp->getBezier()->clonePoint(*counterPart,*_oldCp);
+        _oldFp->getBezier()->clonePoint(*_tangentBeingDragged,*_oldFp);
     } else {
-        counterPart = _tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_tangentBeingDragged);
-        _oldCp->getCurve()->clonePoint(*_tangentBeingDragged,*_oldCp);
-        _oldFp->getCurve()->clonePoint(*counterPart,*_oldFp);
+        counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        _oldCp->getBezier()->clonePoint(*_tangentBeingDragged,*_oldCp);
+        _oldFp->getBezier()->clonePoint(*counterPart,*_oldFp);
     }
     
     if (_firstRedoCalled) {
@@ -580,7 +580,7 @@ void MoveTangentUndoCommand::undo()
 
     _roto->evaluate(true);
     
-    setText(QObject::tr("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Move tangent of %1 of %2").arg(_tangentBeingDragged->getBezier()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
 
 
 }
@@ -590,13 +590,13 @@ void MoveTangentUndoCommand::redo()
     
     boost::shared_ptr<BezierCP> counterPart;
     if (_tangentBeingDragged->isFeatherPoint()) {
-        counterPart = _tangentBeingDragged->getCurve()->getControlPointForFeatherPoint(_tangentBeingDragged);
-        _oldCp->getCurve()->clonePoint(*_oldCp, *counterPart);
-        _oldFp->getCurve()->clonePoint(*_oldFp, *_tangentBeingDragged);
+        counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
+        _oldCp->getBezier()->clonePoint(*_oldCp, *counterPart);
+        _oldFp->getBezier()->clonePoint(*_oldFp, *_tangentBeingDragged);
     } else {
-        counterPart = _tangentBeingDragged->getCurve()->getFeatherPointForControlPoint(_tangentBeingDragged);
-        _oldCp->getCurve()->clonePoint(*_oldCp, *_tangentBeingDragged);
-        _oldFp->getCurve()->clonePoint(*_oldFp, *counterPart);
+        counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        _oldCp->getBezier()->clonePoint(*_oldCp, *_tangentBeingDragged);
+        _oldFp->getBezier()->clonePoint(*_oldFp, *counterPart);
     }
     
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
@@ -615,7 +615,7 @@ void MoveTangentUndoCommand::redo()
     
     _firstRedoCalled = true;
     
-    setText(QObject::tr("Move tangent of %1 of %2").arg(_tangentBeingDragged->getCurve()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
+    setText(QObject::tr("Move tangent of %1 of %2").arg(_tangentBeingDragged->getBezier()->getName_mt_safe().c_str()).arg(_roto->getNodeName()));
     
 }
 
@@ -654,7 +654,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(RotoGui* roto,double dx,dou
 , _oldPoint()
 , _newPoint(point)
 {
-    _curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(point.first->getCurve()->getName_mt_safe()));
+    _curve = boost::dynamic_pointer_cast<Bezier>(_roto->getContext()->getItemByName(point.first->getBezier()->getName_mt_safe()));
     assert(_curve);
     _oldPoint.first.reset(new BezierCP(*_newPoint.first));
     _oldPoint.second.reset(new BezierCP(*_newPoint.second));
@@ -710,7 +710,7 @@ void MoveFeatherBarUndoCommand::redo()
     } else {
         
         ///the feather point equals the control point, use derivatives
-        const std::list<boost::shared_ptr<BezierCP> >& cps = p->getCurve()->getFeatherPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& cps = p->getBezier()->getFeatherPoints();
         assert(cps.size() > 1);
         
         std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
@@ -759,8 +759,8 @@ void MoveFeatherBarUndoCommand::redo()
     }
     
     if (_roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
-        int index = fp->getCurve()->getFeatherPointIndex(fp);
-        fp->getCurve()->moveFeatherByIndex(index, _time, delta.x, delta.y);
+        int index = fp->getBezier()->getFeatherPointIndex(fp);
+        fp->getBezier()->moveFeatherByIndex(index, _time, delta.x, delta.y);
     }
     if (_firstRedoCalled) {
         _roto->evaluate(true);
