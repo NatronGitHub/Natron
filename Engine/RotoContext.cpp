@@ -440,8 +440,16 @@ BezierCP::getKeyframesCount() const
     return _imp->curveX.getKeyFramesCount();
 }
 
+int
+BezierCP::getControlPointsCount() const
+{
+    return _imp->holder->getControlPointsCount();
+}
+
+
+#pragma message WARN("Roto: the following function should not exist: return a pointer to a mutex-protected member?")
 Bezier*
-BezierCP::getCurve() const
+BezierCP::getBezier() const
 {
     return _imp->holder;
 }
@@ -496,8 +504,9 @@ static void smoothTangent(int time,bool left,const BezierCP* p,double x,double y
 {
     
     if (x == *tx && y == *ty) {
-        const std::list < boost::shared_ptr<BezierCP> >& cps =
-        p->isFeatherPoint() ? p->getCurve()->getFeatherPoints() : p->getCurve()->getControlPoints();
+        const std::list < boost::shared_ptr<BezierCP> >& cps = (p->isFeatherPoint() ?
+                                                                p->getBezier()->getFeatherPoints() :
+                                                                p->getBezier()->getControlPoints());
         
         if (cps.size() == 1) {
             return;
@@ -1414,185 +1423,383 @@ namespace  {
         DERIVATIVES_CHANGED = 0,
         CONTROL_POINT_CHANGED = 1
     };
-    
-    static inline void
-    lerp(const Point& a, const Point& b, const float t, Point *dest)
-    {
-        dest->x = a.x + (b.x - a.x) * t;
-        dest->y = a.y + (b.y - a.y) * t;
-    }
-    
-    static void
-    bezierFull(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double t,
-               Point *p0p1, Point *p1p2, Point *p2p3, Point *p0p1_p1p2, Point *p1p2_p2p3,
-               Point *dest)
-    {
-        lerp(p0, p1, t, p0p1);
-        lerp(p1, p2, t, p1p2);
-        lerp(p2, p3, t, p2p3);
-        lerp(*p0p1, *p1p2, t, p0p1_p1p2);
-        lerp(*p1p2, *p2p3, t, p1p2_p2p3);
-        lerp(*p0p1_p1p2, *p1p2_p2p3, t, dest);
-    }
+}
 
-    static void
-    bezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double t, Point *dest)
-    {
-        Point p0p1,p1p2,p2p3,p0p1_p1p2,p1p2_p2p3;
-        return bezierFull(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, dest);
-    }
+static inline double
+lerp(double a, double b, double t)
+{
+    return a + (b - a) * t;
+}
 
-    // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
-    // segment from 'first' to 'last' evaluated at 'time'
-    static void
-    evalBezierSegment(const BezierCP& first,
-                      const BezierCP& last,
-                      int time,
-                      unsigned int mipMapLevel,
-                      int nbPointsPerSegment,
-                      std::list< Point >* points, ///< output
-                      RectD* bbox = NULL) ///< input/output (optional)
-    {
-        Point p0,p1,p2,p3;
-        
-        try {
-            first.getPositionAtTime(time, &p0.x, &p0.y);
-            first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
-            last.getPositionAtTime(time, &p3.x, &p3.y);
-            last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
-        } catch (const std::exception& e) {
-            assert(false);
-        }
-        
-        if (mipMapLevel > 0) {
-            int pot = 1 << mipMapLevel;
-            p0.x /= pot;
-            p0.y /= pot;
-            
-            p1.x /= pot;
-            p1.y /= pot;
-            
-            p2.x /= pot;
-            p2.y /= pot;
-            
-            p3.x /= pot;
-            p3.y /= pot;
-        }
-        
-        double incr = 1. / (double)(nbPointsPerSegment - 1);
-        
-        Point cur;
-        for (double t = 0.; t <= 1.; t += incr) {
-            
-            bezier(p0, p1, p2, p3, t, &cur);
-            points->push_back(cur);
-            
-            if (bbox) {
-                if (cur.x < bbox->x1) {
-                    bbox->x1 = cur.x;
-                }
-                if (cur.x >= bbox->x2) {
-                    bbox->x2 = cur.x + 1;
-                }
-                if (cur.y < bbox->y1) {
-                    bbox->y1 = cur.y;
-                }
-                if (cur.y >= bbox->y2) {
-                    bbox->y2 = cur.y;
-                }
-            }
-            
-        }
-        
-    }
+static inline void
+lerpPoint(const Point& a, const Point& b, double t, Point *dest)
+{
+    dest->x = lerp(a.x , b.x, t);
+    dest->y = lerp(a.y , b.y, t);
+}
 
-    
-    /**
-     * @brief Determines if the point (x,y) lies on the bezier curve segment defined by first and last.
-     * @returns True if the point is close (according to the acceptance) to the curve, false otherwise.
-     * @param param[out] It is set to the parametric value at which the subdivision of the bezier segment
-     * yields the closest point to (x,y) on the curve.
-     **/
-    static bool
-    isPointOnBezierSegment(const BezierCP& first,
-                           const BezierCP& last,
-                           int time,
-                           double x,
-                           double y,
-                           double acceptance,
-                           double *param) ///< output
+// compute value using the de Casteljau recursive formula
+static inline double
+bezier(double p0, double p1, double p2, double p3, double t)
+{
+    double p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
+    p0p1 = lerp(p0, p1, t);
+    p1p2 = lerp(p1, p2, t);
+    p2p3 = lerp(p2, p3, t);
+    p0p1_p1p2 = lerp(p0p1, p1p2, t);
+    p1p2_p2p3 = lerp(p1p2, p2p3, t);
+    return lerp(p0p1_p1p2, p1p2_p2p3, t);
+}
+
+// compute point using the de Casteljau recursive formula
+static inline void
+bezierFullPoint(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double t,
+                Point *p0p1, Point *p1p2, Point *p2p3, Point *p0p1_p1p2, Point *p1p2_p2p3,
+                Point *dest)
+{
+    lerpPoint(p0, p1, t, p0p1);
+    lerpPoint(p1, p2, t, p1p2);
+    lerpPoint(p2, p3, t, p2p3);
+    lerpPoint(*p0p1, *p1p2, t, p0p1_p1p2);
+    lerpPoint(*p1p2, *p2p3, t, p1p2_p2p3);
+    lerpPoint(*p0p1_p1p2, *p1p2_p2p3, t, dest);
+}
+
+static inline void
+bezierPoint(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double t, Point *dest)
+{
+    Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
+    return bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, dest);
+}
+
+// compute polynomial coefficients so that
+// P(t) = A*t^3 + B*t^2 + C*t + D
+static inline void
+bezierPolyCoeffs(double p0, double p1, double p2, double p3, double *a, double *b, double *c, double *d)
+{
+    // d = P0
+    *d = p0;
+    // c = 3*P1-3*P0
+    *c = 3*p1 - 3*p0;
+    // b = 3*P2-6*P1+3*P0
+    *b = 3*p2 - 6*p1 + 3*p0;
+    // a = P3-3*P2+3*P1-P0
+    *a = p3 - 3*p2 + 3*p1 - p0;
+}
+
+
+// compute polynomial coefficients so that
+// P'(t) = A*t^2 + B*t + C
+static inline void
+bezierPolyDerivativeCoeffs(double p0, double p1, double p2, double p3, double *a, double *b, double *c)
+{
+    // c = 3*P1-3*P0
+    *c = 3*p1 - 3*p0;
+    // b = 2*(3*P2-6*P1+3*P0)
+    *b = 2*(3*p2 - 6*p1 + 3*p0);
+    // a = 3*(P3-3*P2+3*P1-P0)
+    *a = 3*(p3 - 3*p2 + 3*p1 - p0);
+}
+
+static inline void
+updateRange(double x, double *xmin, double *xmax)
+{
+    if (x < *xmin) {
+        *xmin = x;
+    }
+    if (x > *xmax) {
+        *xmax = x;
+    }
+}
+
+// compute the bounds of the Bezier for t \in [0,1]
+// algorithm:
+// - compute extrema of the cubic, i.e. values of t for
+// which the derivative of the x coordinate of the
+// Bezier is 0. If they are in [0,1] then they take part in
+// range computation (there can be up to two extrema). the
+// Bbox is the Bbox of these points and the
+// extremal points (P0,P3)
+static inline void
+bezierBounds(double p0, double p1, double p2, double p3,
+             double *xmin, double *xmax)
+{
+    // initialize with the range of the endpoints
+    *xmin = std::min(p0, p3);
+    *xmax = std::max(p0, p3);
+    double a, b, c;
+    bezierPolyDerivativeCoeffs(p0, p1, p2, p3, &a, &b, &c);
+    if (a == 0) {
+        //aX^2 + bX + c well then then this is a simple line
+        //x= -c / b
+        double t = -c / b;
+        if (0 < t && t < 1) {
+            updateRange(bezier(p0, p1, p2, p3, t), xmin, xmax);
+        }
+        return;
+    }
+    double disc = b * b - 4 * a * c;
+    if (disc < 0) {
+        // no real solution
+    } else if (disc == 0) {
+        double t = -b / (2 * a);
+        if (0 < t && t < 1) {
+            updateRange(bezier(p0, p1, p2, p3, t), xmin, xmax);
+        }
+    } else {
+        double t;
+        t = (-b - std::sqrt(disc))/ (2 * a);
+        if (0 < t && t < 1) {
+            updateRange(bezier(p0, p1, p2, p3, t), xmin, xmax);
+        }
+        t = (-b + std::sqrt(disc))/ (2 * a);
+        if (0 < t && t < 1) {
+            updateRange(bezier(p0, p1, p2, p3, t), xmin, xmax);
+        }
+    }
+}
+
+// updates param bbox with the bbox of this segment
+static void
+bezierPointBboxUpdate(const Point& p0,
+                      const Point& p1,
+                      const Point& p2,
+                      const Point& p3,
+                      RectD *bbox) ///< input/output
+{
     {
-        Point p0,p1,p2,p3;
+        double x1, x2;
+        bezierBounds(p0.x, p1.x, p2.x, p3.x, &x1, &x2);
+        if (x1 < bbox->x1) {
+            bbox->x1 = x1;
+        }
+        if (x2 > bbox->x2) {
+            bbox->x2 = x2;
+        }
+    }
+    {
+        double y1, y2;
+        bezierBounds(p0.y, p1.y, p2.y, p3.y, &y1, &y2);
+        if (y1 < bbox->y1) {
+            bbox->y1 = y1;
+        }
+        if (y2 > bbox->y2) {
+            bbox->y2 = y2;
+        }
+    }
+}
+
+// compute a bounding box for the bezier segment
+// algorithm:
+// - compute extrema of the cubic, i.e. values of t for
+// which the derivative of the x or y coordinate of the
+// Bezier is 0. If they are in [0,1] then they take part in
+// bbox computation (there can be up to four extrema, 2 for
+// x and 2 for y). the Bbox is the Bbox of these points and the
+// extremal points (P0,P3)
+static void
+bezierSegmentBboxUpdate(const BezierCP& first,
+                        const BezierCP& last,
+                        int time,
+                        unsigned int mipMapLevel,
+                        RectD* bbox) ///< input/output
+{
+    Point p0,p1,p2,p3;
+    assert(bbox);
+
+    try {
         first.getPositionAtTime(time, &p0.x, &p0.y);
         first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
         last.getPositionAtTime(time, &p3.x, &p3.y);
         last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
-        
-        ///Use 100 points to make the segment
-        double incr = 1. / (double)(100 - 1);
-        
-        ///the minimum square distance between a decasteljau point an the given (x,y) point
-        ///we save a sqrt call
-        
-        double minDistance = INT_MAX;
-        double tForMin = -1.;
-        for (double t = 0.; t <= 1.; t += incr) {
-            Point p;
-            bezier(p0, p1, p2, p3, t, &p);
-            double dist = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
-            if (dist < minDistance) {
-                minDistance = dist;
-                tForMin = t;
-            }
-        }
-        
-        if (minDistance <= acceptance) {
-            *param = tForMin;
-            return true;
-        }
-        return false;
-    }
-    
-    static bool
-    isPointCloseTo(int time,const BezierCP& p,double x,double y,double acceptance)
-    {
-        double px,py;
-        p.getPositionAtTime(time, &px, &py);
-        if (px >= (x - acceptance) && px <= (x + acceptance) && py >= (y - acceptance) && py <= (y + acceptance)) {
-            return true;
-        }
-        return false;
+    } catch (const std::exception& e) {
+        assert(false);
     }
 
-    static bool
-    areSegmentDifferents(int time,const BezierCP& p0,const BezierCP& p1,const BezierCP& s0,const BezierCP& s1)
-    {
-        double prevX,prevY,prevXF,prevYF;
-        double nextX,nextY,nextXF,nextYF;
-        p0.getPositionAtTime(time, &prevX, &prevY);
-        p1.getPositionAtTime(time, &nextX, &nextY);
-        s0.getPositionAtTime(time, &prevXF, &prevYF);
-        s1.getPositionAtTime(time, &nextXF, &nextYF);
-        if (prevX != prevXF || prevY != prevYF || nextX != nextXF || nextY != nextYF) {
+    if (mipMapLevel > 0) {
+        int pot = 1 << mipMapLevel;
+        p0.x /= pot;
+        p0.y /= pot;
+
+        p1.x /= pot;
+        p1.y /= pot;
+
+        p2.x /= pot;
+        p2.y /= pot;
+
+        p3.x /= pot;
+        p3.y /= pot;
+    }
+    bezierPointBboxUpdate(p0, p1, p2, p3, bbox);
+}
+
+static void
+bezierSegmentListBboxUpdate(const BezierCPs& points,
+                            bool finished,
+                            int time,
+                            unsigned int mipMapLevel,
+                            RectD* bbox) ///< input/output
+{
+    if (points.empty()) {
+        return;
+	}
+	if (points.size() == 1) {
+        // only one point
+        Point p0;
+        points.front()->getPositionAtTime(time, &p0.x, &p0.y);
+        updateRange(p0.x, &bbox->x1, &bbox->x2);
+        updateRange(p0.y, &bbox->y1, &bbox->y2);
+	}
+    BezierCPs::const_iterator next = points.begin();
+    ++next;
+    for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it,++next) {
+        if (next == points.end()) {
+            if (!finished) {
+                break;
+            }
+            next = points.begin();
+        }
+        bezierSegmentBboxUpdate(*(*it), *(*next), time, mipMapLevel, bbox);
+    }
+}
+
+// compute nbPointsperSegment points and update the bbox bounding box for the Bezier
+// segment from 'first' to 'last' evaluated at 'time'
+static void
+bezierSegmentEval(const BezierCP& first,
+                  const BezierCP& last,
+                  int time,
+                  unsigned int mipMapLevel,
+                  int nbPointsPerSegment,
+                  std::list< Point >* points, ///< output
+                  RectD* bbox = NULL) ///< input/output (optional)
+{
+    Point p0,p1,p2,p3;
+
+    try {
+        first.getPositionAtTime(time, &p0.x, &p0.y);
+        first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
+        last.getPositionAtTime(time, &p3.x, &p3.y);
+        last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+    } catch (const std::exception& e) {
+        assert(false);
+    }
+
+    if (mipMapLevel > 0) {
+        int pot = 1 << mipMapLevel;
+        p0.x /= pot;
+        p0.y /= pot;
+
+        p1.x /= pot;
+        p1.y /= pot;
+
+        p2.x /= pot;
+        p2.y /= pot;
+
+        p3.x /= pot;
+        p3.y /= pot;
+    }
+
+    double incr = 1. / (double)(nbPointsPerSegment - 1);
+
+    Point cur;
+    for (double t = 0.; t <= 1.; t += incr) {
+        bezierPoint(p0, p1, p2, p3, t, &cur);
+        points->push_back(cur);
+    }
+    if (bbox) {
+        bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox);
+    }
+}
+
+/**
+ * @brief Determines if the point (x,y) lies on the bezier curve segment defined by first and last.
+ * @returns True if the point is close (according to the acceptance) to the curve, false otherwise.
+ * @param param[out] It is set to the parametric value at which the subdivision of the bezier segment
+ * yields the closest point to (x,y) on the curve.
+ **/
+static bool
+bezierSegmentMeetsPoint(const BezierCP& first,
+                        const BezierCP& last,
+                        int time,
+                        double x,
+                        double y,
+                        double distance,
+                        double *param) ///< output
+{
+    Point p0,p1,p2,p3;
+    first.getPositionAtTime(time, &p0.x, &p0.y);
+    first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
+    last.getPositionAtTime(time, &p3.x, &p3.y);
+    last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+
+    ///Use the control polygon to approximate segment length
+    double length = (std::sqrt((p1.x-p0.x)*(p1.x-p0.x) + (p1.y-p0.y)*(p1.y-p0.y)) +
+                     std::sqrt((p2.x-p1.x)*(p2.x-p1.x) + (p2.y-p1.y)*(p2.y-p1.y)) +
+                     std::sqrt((p3.x-p2.x)*(p3.x-p2.x) + (p3.y-p2.y)*(p3.y-p2.y)));
+    // increment is the distance divided by the  segment length
+    double incr = length == 0. ? 1. : distance/length;
+
+    ///the minimum square distance between a decasteljau point an the given (x,y) point
+    ///we save a sqrt call
+
+    double sqDistance = distance * distance;
+    double minSqDistance = std::numeric_limits<double>::infinity();
+    double tForMin = -1.;
+    for (double t = 0.; t <= 1.; t += incr) {
+        Point p;
+        bezierPoint(p0, p1, p2, p3, t, &p);
+        double sqdist = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
+        if (sqdist <= sqDistance && sqdist < minSqDistance) {
+            minSqDistance = sqdist;
+            tForMin = t;
+        }
+    }
+
+    if (minSqDistance <= sqDistance) {
+        *param = tForMin;
+        return true;
+    }
+    return false;
+}
+
+static bool
+isPointCloseTo(int time,const BezierCP& p,double x,double y,double acceptance)
+{
+    double px,py;
+    p.getPositionAtTime(time, &px, &py);
+    if (px >= (x - acceptance) && px <= (x + acceptance) && py >= (y - acceptance) && py <= (y + acceptance)) {
+        return true;
+    }
+    return false;
+}
+
+static bool
+bezierSegmenEqual(int time,const BezierCP& p0,const BezierCP& p1,const BezierCP& s0,const BezierCP& s1)
+{
+    double prevX,prevY,prevXF,prevYF;
+    double nextX,nextY,nextXF,nextYF;
+    p0.getPositionAtTime(time, &prevX, &prevY);
+    p1.getPositionAtTime(time, &nextX, &nextY);
+    s0.getPositionAtTime(time, &prevXF, &prevYF);
+    s1.getPositionAtTime(time, &nextXF, &nextYF);
+    if (prevX != prevXF || prevY != prevYF || nextX != nextXF || nextY != nextYF) {
+        return true;
+    } else {
+        ///check derivatives
+        double prevRightX,prevRightY,nextLeftX,nextLeftY;
+        double prevRightXF,prevRightYF,nextLeftXF,nextLeftYF;
+        p0.getRightBezierPointAtTime(time, &prevRightX, &prevRightY);
+        p1.getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
+        s0.getRightBezierPointAtTime(time,&prevRightXF, &prevRightYF);
+        s1.getLeftBezierPointAtTime(time, &nextLeftXF, &nextLeftYF);
+        if (prevRightX != prevRightXF || prevRightY != prevRightYF || nextLeftX != nextLeftXF || nextLeftY != nextLeftYF) {
             return true;
         } else {
-            ///check derivatives
-            double prevRightX,prevRightY,nextLeftX,nextLeftY;
-            double prevRightXF,prevRightYF,nextLeftXF,nextLeftYF;
-            p0.getRightBezierPointAtTime(time, &prevRightX, &prevRightY);
-            p1.getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-            s0.getRightBezierPointAtTime(time,&prevRightXF, &prevRightYF);
-            s1.getLeftBezierPointAtTime(time, &nextLeftXF, &nextLeftYF);
-            if (prevRightX != prevRightXF || prevRightY != prevRightYF || nextLeftX != nextLeftXF || nextLeftY != nextLeftYF) {
-                return true;
-            } else {
-                return false;
-            }
+            return false;
         }
     }
-    
-} //anonymous namespace
-
+}
 
 
 Bezier::Bezier(RotoContext* ctx,const std::string& name,RotoLayer* parent)
@@ -1759,7 +1966,7 @@ Bezier::addControlPointAfterIndex(int index,double t)
         
         Point dest;
         Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
-        bezierFull(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+        bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
 
         //update prev and next inner control points
         (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
@@ -1790,7 +1997,7 @@ Bezier::addControlPointAfterIndex(int index,double t)
         
         Point dest;
         Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
-        bezierFull(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+        bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
 
         //update prev and next inner control points
         (*prev)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
@@ -1847,7 +2054,11 @@ Bezier::getControlPointsCount() const
 
 
 int
-Bezier::isPointOnCurve(double x,double y,double acceptance,double *t,bool* feather) const
+Bezier::isPointOnCurve(double x,
+                       double y,
+                       double distance,
+                       double *t,
+                       bool* feather) const
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1860,13 +2071,13 @@ Bezier::isPointOnCurve(double x,double y,double acceptance,double *t,bool* feath
     ///is nearby that sole control point
     if (_imp->points.size() == 1) {
         const boost::shared_ptr<BezierCP>& cp = _imp->points.front();
-        if (isPointCloseTo(time, *cp, x, y, acceptance)) {
+        if (isPointCloseTo(time, *cp, x, y, distance)) {
             *feather = false;
             return 0;
         } else {
             ///do the same with the feather points
             const boost::shared_ptr<BezierCP>& fp = _imp->featherPoints.front();
-            if (isPointCloseTo(time, *fp, x, y, acceptance)) {
+            if (isPointCloseTo(time, *fp, x, y, distance)) {
                 *feather = true;
                 return 0;
             }
@@ -1876,10 +2087,6 @@ Bezier::isPointOnCurve(double x,double y,double acceptance,double *t,bool* feath
     
     ///For each segment find out if the point lies on the bezier
     int index = 0;
-    
-    ///acceptance square is used by isPointOnBezierSegment because we compare
-    ///square distances to avoid sqrt calls
-    double a2 = acceptance * acceptance;
     
     assert(_imp->featherPoints.size() == _imp->points.size());
     
@@ -1897,11 +2104,11 @@ Bezier::isPointOnCurve(double x,double y,double acceptance,double *t,bool* feath
                 nextFp = _imp->featherPoints.begin();
             }
         }
-        if (isPointOnBezierSegment(*(*it), *(*next), time, x, y, a2,t)) {
+        if (bezierSegmentMeetsPoint(*(*it), *(*next), time, x, y, distance, t)) {
             *feather = false;
             return index;
         }
-        if (isPointOnBezierSegment(**fp, **nextFp, time, x, y, a2, t)) {
+        if (bezierSegmentMeetsPoint(**fp, **nextFp, time, x, y, distance, t)) {
             *feather = true;
             return index;
         }
@@ -1956,8 +2163,12 @@ Bezier::removeControlPointByIndex(int index)
 }
 
 
+#pragma message WARN("Roto: refactor the following!!! too much copy/paste between these move* functions!!!")
 void
-Bezier::movePointByIndex(int index,int time,double dx,double dy)
+Bezier::movePointByIndex(int index,
+                         int time,
+                         double dx,
+                         double dy)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2038,9 +2249,11 @@ Bezier::movePointByIndex(int index,int time,double dx,double dy)
     }
 }
 
-
 void
-Bezier::moveFeatherByIndex(int index,int time,double dx,double dy)
+Bezier::moveFeatherByIndex(int index,
+                           int time,
+                           double dx,
+                           double dy)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2097,7 +2310,9 @@ Bezier::moveFeatherByIndex(int index,int time,double dx,double dy)
 }
 
 void
-Bezier::transformPoint(const boost::shared_ptr<BezierCP>& point,int time,Transform::Matrix3x3* matrix)
+Bezier::transformPoint(const boost::shared_ptr<BezierCP>& point,
+                       int time,
+                       Transform::Matrix3x3* matrix)
 {
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
@@ -2137,7 +2352,10 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP>& point,int time,Transfo
 }
 
 void
-Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
+Bezier::moveLeftBezierPoint(int index,
+                            int time,
+                            double dx,
+                            double dy)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2206,7 +2424,10 @@ Bezier::moveLeftBezierPoint(int index,int time,double dx,double dy)
 }
 
 void
-Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
+Bezier::moveRightBezierPoint(int index,
+                             int time,
+                             double dx,
+                             double dy)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2276,8 +2497,12 @@ Bezier::moveRightBezierPoint(int index,int time,double dx,double dy)
     }
 }
 
+#pragma message WARN("Roto: refactor the following!!! too much copy/paste between these set* functions!!!")
 void
-Bezier::setLeftBezierPoint(int index,int time,double x,double y)
+Bezier::setLeftBezierPoint(int index,
+                           int time,
+                           double x,
+                           double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2324,7 +2549,10 @@ Bezier::setLeftBezierPoint(int index,int time,double x,double y)
 }
 
 void
-Bezier::setRightBezierPoint(int index,int time,double x,double y)
+Bezier::setRightBezierPoint(int index,
+                            int time,
+                            double x,
+                            double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2372,7 +2600,15 @@ Bezier::setRightBezierPoint(int index,int time,double x,double y)
 }
 
 void
-Bezier::setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry)
+Bezier::setPointAtIndex(bool feather,
+                        int index,
+                        int time,
+                        double x,
+                        double y,
+                        double lx,
+                        double ly,
+                        double rx,
+                        double ry)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2422,7 +2658,12 @@ Bezier::setPointAtIndex(bool feather,int index,int time,double x,double y,double
 }
 
 void
-Bezier::movePointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry)
+Bezier::movePointLeftAndRightIndex(BezierCP& p,
+                                   int time,
+                                   double lx,
+                                   double ly,
+                                   double rx,
+                                   double ry)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -2469,8 +2710,10 @@ Bezier::movePointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,doub
     }
 }
 
+#pragma message WARN("crazy function! lock an internal mutex to modify an external object!! every use of this function is a misuse. There MUST be another solution")
 void
-Bezier::clonePoint(BezierCP& p,const BezierCP& to) const
+Bezier::clonePoint(BezierCP& p,
+                   const BezierCP& to) const
 {
     QMutexLocker l(&itemMutex);
     p.clone(to);
@@ -2670,9 +2913,10 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
             }
             next = _imp->points.begin();
         }
-        evalBezierSegment(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
+        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
     }
 }
+
 
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
@@ -2682,7 +2926,6 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
                                                 std::list< Natron::Point >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
-#pragma message WARN("BUG https://github.com/MrKepzie/Natron/issues/145 : the feather Bezier must be moved by featherdistance before RoD computation!")
     QMutexLocker l(&itemMutex);
 	if (_imp->points.empty()) {
 		return;
@@ -2703,12 +2946,12 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
             }
             nextCp = _imp->points.begin();
         }
-        if (!evaluateIfEqual && !areSegmentDifferents(time, **itCp, **nextCp, **it, **next))
+        if (!evaluateIfEqual && bezierSegmenEqual(time, **itCp, **nextCp, **it, **next))
         {
             continue;
         }
 
-        evalBezierSegment(*(*it),*(*next), time, mipMapLevel, nbPointsPerSegment, points, bbox);
+        bezierSegmentEval(*(*it),*(*next), time, mipMapLevel, nbPointsPerSegment, points, bbox);
         
     }
 }
@@ -2717,31 +2960,18 @@ RectD
 Bezier::getBoundingBox(int time) const
 {
     std::list<Point> pts;
-    RectD bbox;
-    bbox.x1 = INT_MAX;
-    bbox.x2 = INT_MIN;
-    bbox.y1 = INT_MAX;
-    bbox.y2 = INT_MIN;
+    RectD bbox; // a very empty bbox
+    bbox.x1 = std::numeric_limits<double>::infinity();
+    bbox.x2 = -std::numeric_limits<double>::infinity();
+    bbox.y1 = std::numeric_limits<double>::infinity();
+    bbox.y2 = -std::numeric_limits<double>::infinity();
 
-    evaluateAtTime_DeCasteljau(time, 0, 50, &pts, &bbox);
-    evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, false, &pts, &bbox);
-    
-    if (bbox.x1 == INT_MAX) {
-        bbox.x1 = 0;
-    }
-    if (bbox.x2 == INT_MIN) {
-        bbox.x2 = 1;
-    }
-    if (bbox.y1 == INT_MAX) {
-        bbox.y1 = 0;
-    }
-    if (bbox.y2 == INT_MIN) {
-        bbox.y2 = 1;
-    }
-    if (bbox.isNull()) {
-        bbox.x2 = bbox.x1 + 1;
-        bbox.y2 = bbox.y1 + 1;
-    }
+    QMutexLocker l(&itemMutex);
+    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, &bbox);
+#pragma message WARN("TODO: use featherPointsAtDistance")
+    // BUG https://github.com/MrKepzie/Natron/issues/145 : the feather Bezier must be moved by featherdistance before RoD computation!
+    bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
+
     return bbox;
 }
 
@@ -3705,8 +3935,11 @@ RotoContext::getMaskRegionOfDefinition(int time,
         RotoItems items = (*it)->getItems_mt_safe();
         for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
             Bezier* b = dynamic_cast<Bezier*>(it2->get());
-            if (b && b->isActivated(time) && b->isCurveFinished()) {
+            if (b && b->isActivated(time) && b->isCurveFinished() && b->getControlPointsCount() > 1) {
                 RectD splineRoD = b->getBoundingBox(time);
+                if (splineRoD.isNull()) {
+                    continue;
+                }
                 RectI splineRoDI;
                 splineRoDI.x1 = std::floor(splineRoD.x1);
                 splineRoDI.y1 = std::floor(splineRoD.y1);
@@ -4699,7 +4932,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it2 = splines.begin(); it2!=splines.end(); ++it2) {
         ///render the bezier only if finished (closed) and activated
-        if (!(*it2)->isCurveFinished() || !(*it2)->isActivated(time)) {
+        if (!(*it2)->isCurveFinished() || !(*it2)->isActivated(time) || (*it2)->getControlPointsCount() <= 1) {
             continue;
         }
 
@@ -4720,6 +4953,8 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
 
         BezierCPs cps = (*it2)->getControlPoints_mt_safe();
+#pragma message WARN("Roto TODO: use featherPointsAtDistance")
+        // BUG https://github.com/MrKepzie/Natron/issues/145 : the feather Bezier must be moved by featherdistance before RoD computation!
         BezierCPs fps = (*it2)->getFeatherPoints_mt_safe();
 
         assert(cps.size() == fps.size());
@@ -4742,16 +4977,22 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
             featherDist /= (1 << mipmapLevel);
         }
 
+#pragma message WARN("the following code very stange. Why evaluate 49 Bezier points when you only need to consider the end points?")
+        // PLEASE EXPLAIN THAT ``ALGORITHM''
+
         ///here is the polygon of the feather bezier
         ///This is used only if the feather distance is different of 0 and the feather points equal
         ///the control points in order to still be able to apply the feather distance.
         std::list<Point> featherPolygon;
         std::list<Point> bezierPolygon;
         std::vector<double> multiples,constants;
-        RectD featherPolyBBox(INT_MAX,INT_MAX,INT_MIN,INT_MIN);
+        RectD featherPolyBBox(std::numeric_limits<double>::infinity(),
+                              std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity());
 
         (*it2)->evaluateFeatherPointsAtTime_DeCasteljau(time, mipmapLevel, 50, true, &featherPolygon, &featherPolyBBox);
-        (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon);
+        (*it2)->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon, NULL);
 
 
         assert(!featherPolygon.empty());

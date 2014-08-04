@@ -138,8 +138,11 @@ public:
     int getKeyframeTime(int index) const;
     
     int getKeyframesCount() const;
-    
-    Bezier* getCurve() const;
+
+    int getControlPointsCount() const;
+
+#pragma message WARN("Error: returning a reference to a mutex-protected member!")
+    Bezier* getBezier() const;
     
     /**
      * @brief Returns whether a tangent handle is nearby the given coordinates.
@@ -270,7 +273,9 @@ public:
 protected:
     
     RotoContext* getContext() const;
-    
+
+#pragma message WARN("what does the following mutex protect? it is used... sometimes...")
+    // and if you want a really strange use of this mutex, check out Bezier::clonePoint()!!!!
     mutable QMutex itemMutex;
     
 private:
@@ -496,7 +501,7 @@ public:
      * @returns The index of the starting control point (P0) of the bezier segment on which the given
      * point lies. If the point doesn't belong to any bezier segment of this curve then it will return -1.
      **/
-    int isPointOnCurve(double x,double y,double acceptance,double *t,bool* feather) const;
+    int isPointOnCurve(double x, double y, double acceptance, double *t, bool* feather) const;
     
     /**
      * @brief Set whether the curve is finished or not. A finished curve will have an arc between the first
@@ -621,15 +626,22 @@ public:
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
-    void evaluateAtTime_DeCasteljau(int time,unsigned int mipMapLevel,
-                                    int nbPointsPerSegment,std::list<Natron::Point>* points,
-                                    RectD* bbox = NULL) const;
+    void evaluateAtTime_DeCasteljau(int time,
+                                    unsigned int mipMapLevel,
+                                    int nbPointsPerSegment,
+                                    std::list<Natron::Point>* points,
+                                    RectD* bbox) const;
     
     /**
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(int time, unsigned int mipMapLevel, int nbPointsPerSegment, bool evaluateIfEqual, std::list<Natron::Point >* points,RectD* bbox = NULL) const;
+    void evaluateFeatherPointsAtTime_DeCasteljau(int time,
+                                                 unsigned int mipMapLevel,
+                                                 int nbPointsPerSegment,
+                                                 bool evaluateIfEqual,
+                                                 std::list<Natron::Point >* points,
+                                                 RectD* bbox) const;
     
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
