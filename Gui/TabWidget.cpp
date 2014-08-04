@@ -303,10 +303,13 @@ static void getOtherTabWidget(Splitter* parentSplitter,TabWidget* thisWidget,QWi
     
 }
 
-static void getTabWidgetRecursively(Splitter* parentSplitter,TabWidget*& tab) {
+static void getTabWidgetRecursively(const TabWidget* caller,Splitter* parentSplitter,TabWidget*& tab) {
     bool found = false;
     for (int i = 0; i < parentSplitter->count(); ++i) {
         QWidget* w = parentSplitter->widget(i);
+        if (w == caller) {
+            continue;
+        }
         TabWidget* isTab = dynamic_cast<TabWidget*>(w);
         Splitter* isSplitter = dynamic_cast<Splitter*>(w);
         if (isTab) {
@@ -314,7 +317,7 @@ static void getTabWidgetRecursively(Splitter* parentSplitter,TabWidget*& tab) {
             found = true;
             break;
         } else if (isSplitter) {
-            getTabWidgetRecursively(isSplitter, tab);
+            getTabWidgetRecursively(caller,isSplitter, tab);
             if (tab) {
                 return;
             }
@@ -323,7 +326,7 @@ static void getTabWidgetRecursively(Splitter* parentSplitter,TabWidget*& tab) {
     if (!found) {
         Splitter* parent = dynamic_cast<Splitter*>(parentSplitter->parentWidget());
         assert(parent);
-        getTabWidgetRecursively(parent, tab);
+        getTabWidgetRecursively(caller,parent, tab);
     }
 }
 
@@ -395,15 +398,23 @@ void TabWidget::closePane() {
     
     ///iterate recursively over parents splitter to find a tabwidget where to move the tabs
     TabWidget* firstParentTabWidget = NULL;
-    getTabWidgetRecursively(parentContainer,firstParentTabWidget);
+    getTabWidgetRecursively(this,parentContainer,firstParentTabWidget);
     assert(firstParentTabWidget);
-    Splitter* firstParentSplitter = dynamic_cast<Splitter*>(firstParentTabWidget->parentWidget());
-    assert(firstParentSplitter);
-
+   
     ///move this tab's splits to the first parent tab widget
     for (std::list<std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it != _userSplits.end();++it) {
-        firstParentTabWidget->_userSplits.push_back(*it);
-        removeTagNameRecursively(it->first,!vertical);
+        removeTagNameRecursively(it->first,!it->second);
+    }
+    
+    for (std::list<std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it != _userSplits.end();++it) {
+        if (firstParentTabWidget != this && it->first != firstParentTabWidget) {
+            if (it->second) {
+                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() + TabWidget::splitVerticallyTag);
+            } else {
+                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() + TabWidget::splitHorizontallyTag);
+            }
+            firstParentTabWidget->_userSplits.push_back(*it);
+        }
     }
     
     

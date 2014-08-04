@@ -1098,13 +1098,22 @@ void Gui::wipeLayout()
         }
         _imp->_panes.clear();
     }
+    for (std::list<Splitter*>::iterator it = _imp->_splitters.begin(); it!=_imp->_splitters.end(); ++it) {
+        if (_imp->_leftRightSplitter != *it) {
+            (*it)->deleteLater();
+        }
+    }
+    _imp->_splitters.clear();
+    
     Splitter *newSplitter = new Splitter(_imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
+    newSplitter->setObjectName_mt_safe(_imp->_leftRightSplitter->objectName_mt_safe()); 
     _imp->_mainLayout->removeWidget(_imp->_leftRightSplitter);
     removeSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
     _imp->_mainLayout->addWidget(newSplitter);
+    _imp->_splitters.push_back(newSplitter);
     
 }
 
@@ -1507,7 +1516,7 @@ void Gui::registerPane(TabWidget* pane){
         }
         _imp->_panes.push_back(pane);
         if (only1Widget) {
-            _imp->_panes.front()->setClosable(false);
+            _imp->_panes.front()->setClosable(true);
         }
     }
     
