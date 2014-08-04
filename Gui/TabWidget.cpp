@@ -337,6 +337,15 @@ void TabWidget::removeTagNameRecursively(TabWidget* widget, bool horizontal)
     int i = name.indexOf(toRemove);
     assert(i != -1);
     name.remove(i, toRemove.size());
+    
+    ///also remove the unique idenfitifer
+    int identifierIndex = name.size() - 1;
+    while (identifierIndex >= 0 && name.at(identifierIndex).isDigit()) {
+        --identifierIndex;
+    }
+    ++identifierIndex;
+    name = name.remove(identifierIndex,name.size() - identifierIndex);
+    
     widget->setObjectName_mt_safe(name);
     for (std::list<std::pair<TabWidget*,bool> >::iterator it = widget->_userSplits.begin();it != widget->_userSplits.end();++it) {
         removeTagNameRecursively(it->first,horizontal);
@@ -408,10 +417,24 @@ void TabWidget::closePane() {
     
     for (std::list<std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it != _userSplits.end();++it) {
         if (firstParentTabWidget != this && it->first != firstParentTabWidget) {
+            int splitsCount = 0;
+            for (std::list<std::pair<TabWidget*,bool> >::iterator it2 = firstParentTabWidget->_userSplits.begin();
+                 it2!=firstParentTabWidget->_userSplits.end(); ++it2) {
+                if (it->second && it2->second) {
+                    ++splitsCount;
+                } else if (!it->second && !it2->second) {
+                    ++splitsCount;
+                }
+            }
+            
             if (it->second) {
-                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() + TabWidget::splitVerticallyTag);
+                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() +
+                                                 TabWidget::splitVerticallyTag +
+                                                 QString::number(splitsCount));
             } else {
-                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() + TabWidget::splitHorizontallyTag);
+                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() +
+                                                 TabWidget::splitHorizontallyTag +
+                                                 QString::number(splitsCount));
             }
             firstParentTabWidget->_userSplits.push_back(*it);
         }
@@ -450,7 +473,7 @@ void TabWidget::closePane() {
     
     /*deleting the subSplitter*/
     _gui->removeSplitter(container);
-    delete container;
+    container->deleteLater();
 }
 
 void TabWidget::floatPane(QPoint* position){

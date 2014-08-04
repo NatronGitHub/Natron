@@ -276,6 +276,11 @@ private:
 
 private:
     
+    /**
+     * @brief This function removes from the object name of the given widget the verticial/horizontal identifier
+     * corresponding to the horizontal parameter.
+     * This is called when closing a pane, hence removing one level of splitting.
+     **/
     static void removeTagNameRecursively(TabWidget* widget, bool horizontal);
         
     // FIXME: PIMPL

@@ -170,6 +170,7 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
     while (identifierIndex >= 0 && nameCpy.at(identifierIndex).isDigit()) {
         --identifierIndex;
     }
+    ++identifierIndex;
     nameCpy = nameCpy.remove(identifierIndex, nameCpy.size() - identifierIndex);  
     
     if (!horizontalSplit) {
