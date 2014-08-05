@@ -311,12 +311,16 @@ BezierCP::removeKeyframe(int time)
         _imp->rightY = _imp->curveRightBezierY.getValueAt(time);
     }
     
-    _imp->curveX.removeKeyFrameWithTime(time);
-    _imp->curveY.removeKeyFrameWithTime(time);
-    _imp->curveLeftBezierX.removeKeyFrameWithTime(time);
-    _imp->curveRightBezierX.removeKeyFrameWithTime(time);
-    _imp->curveLeftBezierY.removeKeyFrameWithTime(time);
-    _imp->curveRightBezierY.removeKeyFrameWithTime(time);
+    try {
+        _imp->curveX.removeKeyFrameWithTime(time);
+        _imp->curveY.removeKeyFrameWithTime(time);
+        _imp->curveLeftBezierX.removeKeyFrameWithTime(time);
+        _imp->curveRightBezierX.removeKeyFrameWithTime(time);
+        _imp->curveLeftBezierY.removeKeyFrameWithTime(time);
+        _imp->curveRightBezierY.removeKeyFrameWithTime(time);
+    } catch (...) {
+        
+    }
     
     
 }
