@@ -305,6 +305,10 @@ void GuiApplicationManager::getIcon(Natron::PixmapEnum e,QPixmap* pix) const {
                 img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/misc_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_OTHER_PLUGINS:
+                img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/other_grouping_" + iconSetStr + ".png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_TOOLSETS_GROUPING:
                 img.load(NATRON_IMAGES_PATH"GroupingIcons/Set" + iconSetStr + "/toolsets_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);

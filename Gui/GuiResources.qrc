@@ -153,5 +153,7 @@
         <file>Resources/Images/clearAnimationFw.png</file>
         <file>Resources/Images/updateViewerDisabled.png</file>
         <file>Resources/Images/updateViewerEnabled.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/other_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/other_grouping_3.png</file>
     </qresource>
 </RCC>

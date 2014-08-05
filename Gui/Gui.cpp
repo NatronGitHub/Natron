@@ -107,7 +107,7 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEFAULT
 };
 
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
 
 
 using namespace Natron;
@@ -131,7 +131,6 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
     } else if (grouping == PLUGIN_GROUP_PAINT) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_OTHER) {
-#pragma message WARN ("need another icon for the Other grouping")
         appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
     } else if (grouping == PLUGIN_GROUP_KEYER) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
@@ -144,7 +143,7 @@ static void getPixmapForGrouping(QPixmap* pixmap,const QString& grouping) {
     } else if (grouping == PLUGIN_GROUP_MERGE) {
         appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GROUPING, pixmap);
     } else {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, pixmap);
     }
 }
 }
