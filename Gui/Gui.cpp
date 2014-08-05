@@ -430,6 +430,7 @@ struct GuiPrivate {
     
     void createCurveEditorGui(TabWidget* workshopPane);
     
+    ///Called whenever the gui is created to make the basic default layout
     void createDefaultLayout();
 };
 
@@ -1114,6 +1115,27 @@ void Gui::wipeLayout()
     _imp->_mainLayout->addWidget(newSplitter);
     _imp->_splitters.push_back(newSplitter);
     
+}
+
+void Gui::createDefaultLayout1()
+{
+    ///First tab widget must be created this way
+    _imp->_viewersPane = new TabWidget(this,_imp->_leftRightSplitter);
+    _imp->_viewersPane->setObjectName(kViewerPaneName);
+    _imp->_panes.push_back(_imp->_viewersPane);
+    _imp->_leftRightSplitter->addWidget(_imp->_viewersPane);
+    
+    TabWidget* propertiesPane = _imp->_viewersPane->splitHorizontally(false);
+    TabWidget* workshopPane = _imp->_viewersPane->splitVertically(false);
+    QList<int> sizes;
+    sizes << _imp->_toolBox->sizeHint().width() << _imp->_viewersPane->parentWidget()->sizeHint().width();
+    _imp->_leftRightSplitter->setSizes_mt_safe(sizes); 
+    
+    TabWidget::moveTab(_imp->_nodeGraphArea, workshopPane);
+    TabWidget::moveTab(_imp->_curveEditor,workshopPane);
+    TabWidget::moveTab(_imp->_propertiesScrollArea,propertiesPane);
+    ///Default to NodeGraph displayed
+    workshopPane->makeCurrentTab(0);
 }
 
 void GuiPrivate::createDefaultLayout()
