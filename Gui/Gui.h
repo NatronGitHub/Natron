@@ -165,6 +165,9 @@ public:
     
     void wipeLayout();
     
+    ///Make the layout of the application as it is the first time Natron is opened
+    void createDefaultLayout1();
+    
     const std::list<TabWidget*>& getPanes() const;
     
     std::list<TabWidget*> getPanes_mt_safe() const;

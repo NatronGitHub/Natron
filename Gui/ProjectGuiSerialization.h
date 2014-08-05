@@ -142,6 +142,8 @@ class ProjectGuiSerialization {
     
     std::list<std::string> _openedPanelsOrdered;
     
+    unsigned int _version;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,const unsigned int version)
@@ -165,6 +167,7 @@ class ProjectGuiSerialization {
         if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
             ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
         }
+        _version = version;
     }
     
 public:
@@ -188,6 +191,8 @@ public:
     const std::list<NodeBackDropSerialization>& getBackdrops() const { return _backdrops; }
     
     const std::list<std::string>& getOpenedPanels() const { return _openedPanelsOrdered; }
+    
+    unsigned int getVersion() const { return _version; }
     
 private:
     

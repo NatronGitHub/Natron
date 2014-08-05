@@ -234,14 +234,24 @@ void ProjectGui::save(boost::archive::xml_oarchive& archive) const {
 }
 
 void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
-                                       std::map<std::string,PaneLayout>::const_iterator layout){
+                                       std::map<std::string,PaneLayout>::const_iterator layout,unsigned int projectVersion)
+{
     const std::map<std::string,QWidget*>& registeredTabs = gui->getRegisteredTabs();
     const std::list<TabWidget*>& registeredPanes = gui->getPanes();
     
+    QString serializedTabName(layout->first.c_str());
+    ///for older projects before the layout change, map the old defaut tab names to new defaultLayout1 tab names
+    if (projectVersion < PROJECT_GUI_CHANGES_SPLITTERS) {
+        if (serializedTabName == "PropertiesPane") {
+            serializedTabName = "ViewerPane" + TabWidget::splitHorizontallyTag + QString::number(0);
+        } else if (serializedTabName == "WorkshopPane") {
+            serializedTabName = "ViewerPane" + TabWidget::splitVerticallyTag + QString::number(0);
+        }
+    }
     
     TabWidget* pane = 0;
     for (std::list<TabWidget*>::const_iterator it = registeredPanes.begin(); it!=registeredPanes.end(); ++it) {
-        if ((*it)->objectName() == QString(layout->first.c_str())) {
+        if ((*it)->objectName() == serializedTabName) {
             ///For splits we should pass by here
             pane = *it;
         }
@@ -249,9 +259,10 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
 
     if (!pane) {
         pane = new TabWidget(gui,gui);
+        gui->registerPane(pane);
+        pane->setObjectName_mt_safe(serializedTabName);
     }
-    gui->registerPane(pane);
-    pane->setObjectName_mt_safe(layout->first.c_str());
+    
     
     
     //we found the pane, restore it!
@@ -289,7 +300,7 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
         std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
         if (splitIt != guiLayout.end()) {
             
-            restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt);
+            restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt,projectVersion);
         }
     }
     
@@ -463,6 +474,11 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     ///Wipe the current layout
     _gui->wipeLayout();
     
+    ///For older projects prior to the layout change, try to load panes
+    if (obj.getVersion() < PROJECT_GUI_CHANGES_SPLITTERS) {
+        _gui->createDefaultLayout1();
+    }
+    
    
     
     ///now restore the gui layout
@@ -473,7 +489,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         ///if it is a top level tab (i.e: the original tabs)
         ///this will recursively restore all their splits
         if(it->second.parentName.empty()){
-            restoreTabWidgetLayoutRecursively(_gui->getApp()->getGui(), guiLayout, it);
+            restoreTabWidgetLayoutRecursively(_gui->getApp()->getGui(), guiLayout, it,obj.getVersion());
         }
     }
     
