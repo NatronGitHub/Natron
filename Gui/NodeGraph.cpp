@@ -323,6 +323,8 @@ struct NodeGraphPrivate
     
     void rearrangeSelectedNodes();
     
+    void toggleSelectedNodesEnabled();
+    
 };
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent)
@@ -1586,6 +1588,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
         _imp->rearrangeSelectedNodes();
+    } else if (e->key() == Qt::Key_D && !e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
+        _imp->toggleSelectedNodesEnabled();
     }
     
 }
@@ -2990,4 +2996,23 @@ void NodeGraph::focusOutEvent(QFocusEvent* e)
         _imp->setNodesBendPointsVisible(false);
     }
     QGraphicsView::focusOutEvent(e);
+}
+
+void NodeGraphPrivate::toggleSelectedNodesEnabled()
+{
+    std::list<boost::shared_ptr<NodeGui> > toProcess;
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.nodes.begin(); it!=_selection.nodes.end(); ++it) {
+        if ((*it)->getNode()->isNodeDisabled()) {
+            toProcess.push_back(*it);
+        }
+    }
+    ///if some nodes are disabled , enable them before
+    
+    if (toProcess.size() == _selection.nodes.size()) {
+        _undoStack->push(new EnableNodesCommand(_selection.nodes));
+    } else if (toProcess.size() > 0) {
+        _undoStack->push(new EnableNodesCommand(toProcess));
+    } else {
+        _undoStack->push(new DisableNodesCommand(_selection.nodes));
+    }
 }

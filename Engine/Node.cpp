@@ -2121,6 +2121,11 @@ bool Node::isNodeDisabled() const
     return _imp->disableNodeKnob->getValue();
 }
 
+void Node::setNodeDisabled(bool disabled)
+{
+    _imp->disableNodeKnob->setValue(disabled, 0);
+}
+
 void Node::showKeyframesOnTimeline(bool emitSignal)
 {
     assert(QThread::currentThread() == qApp->thread());

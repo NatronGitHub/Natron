@@ -541,6 +541,8 @@ public:
     
     bool isNodeDisabled() const;
     
+    void setNodeDisabled(bool disabled);
+    
     Natron::ImageBitDepth getBitDepth() const;
     
     bool isSupportedBitDepth(Natron::ImageBitDepth depth) const;

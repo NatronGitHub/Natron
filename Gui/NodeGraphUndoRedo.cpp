@@ -844,3 +844,52 @@ void RearrangeNodesCommand::redo()
     setText(QObject::tr("Rearrange nodes"));
 }
 
+
+DisableNodesCommand::DisableNodesCommand(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                    QUndoCommand *parent)
+: QUndoCommand(parent)
+, _nodes(nodes)
+{
+    
+}
+
+void DisableNodesCommand::undo()
+{
+    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        (*it)->getNode()->setNodeDisabled(false);
+    }
+    setText(QObject::tr("Disable nodes"));
+}
+
+void DisableNodesCommand::redo()
+{
+    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        (*it)->getNode()->setNodeDisabled(true);
+    }
+    setText(QObject::tr("Disable nodes"));
+}
+
+
+EnableNodesCommand::EnableNodesCommand(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                   QUndoCommand *parent)
+: QUndoCommand(parent)
+, _nodes(nodes)
+{
+    
+}
+
+void EnableNodesCommand::undo()
+{
+    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        (*it)->getNode()->setNodeDisabled(true);
+    }
+    setText(QObject::tr("Enable nodes"));
+}
+
+void EnableNodesCommand::redo()
+{
+    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        (*it)->getNode()->setNodeDisabled(false);
+    }
+    setText(QObject::tr("Enable nodes"));
+}

@@ -230,5 +230,33 @@ private:
     std::list<NodeToRearrange> _nodes;
 };
 
+class DisableNodesCommand : public QUndoCommand
+{
+public:
+
+    DisableNodesCommand(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                          QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    std::list<boost::shared_ptr<NodeGui> >_nodes;
+};
+
+class EnableNodesCommand : public QUndoCommand
+{
+public:
+    
+    EnableNodesCommand(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                        QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    std::list<boost::shared_ptr<NodeGui> >_nodes;
+};
+
 
 #endif // NODEGRAPHUNDOREDO_H
