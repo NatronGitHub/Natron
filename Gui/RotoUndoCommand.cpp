@@ -17,8 +17,11 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
+#include "Engine/KnobTypes.h"
 #include "Gui/RotoGui.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/RotoPanel.h"
+
 
 using namespace Natron;
 
@@ -1763,3 +1766,101 @@ void DuplicateItemUndoCommand::redo()
     _roto->getContext()->evaluateChange();
     setText(QObject::tr("Duplicate item(s) of %2").arg(_roto->getNodeName().c_str()));
 }
+
+
+LinkToTrackUndoCommand::LinkToTrackUndoCommand(RotoGui* roto,const SelectedCpList& points,
+                       const boost::shared_ptr<Double_Knob>& track)
+: QUndoCommand()
+, _roto(roto)
+, _points(points)
+, _track(track)
+{
+    
+}
+
+LinkToTrackUndoCommand::~LinkToTrackUndoCommand()
+{
+    
+}
+
+void LinkToTrackUndoCommand::undo()
+{
+    for (SelectedCpList::iterator it = _points.begin(); it!=_points.end(); ++it) {
+        it->first->unslave();
+        _track->removeSlavedTrack(it->first);
+        if (it->second->isSlaved()) {
+            it->second->unslave();
+            _track->removeSlavedTrack(it->second);
+        }
+    }
+    setText(QObject::tr("Link to track"));
+    _roto->evaluate(true);
+}
+
+void LinkToTrackUndoCommand::redo()
+{
+    SequenceTime time = _roto->getContext()->getTimelineCurrentTime();
+    bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
+    for (SelectedCpList::iterator it = _points.begin(); it!=_points.end(); ++it) {
+        
+        it->first->slaveTo(time,_track);
+        _track->addSlavedTrack(it->first);
+        
+        if (featherLinkEnabled) {
+            it->second->slaveTo(time, _track);
+            _track->addSlavedTrack(it->second);
+        }
+    }
+    setText(QObject::tr("Link to track"));
+    _roto->evaluate(true);
+}
+
+UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(RotoGui* roto,
+                                                       const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points,
+                                                       const boost::shared_ptr<Double_Knob>& track)
+: QUndoCommand()
+, _roto(roto)
+, _points(points)
+, _track(track)
+{
+    
+}
+
+UnLinkFromTrackUndoCommand::~UnLinkFromTrackUndoCommand()
+{
+    
+}
+
+void UnLinkFromTrackUndoCommand::undo()
+{
+    SequenceTime time = _roto->getContext()->getTimelineCurrentTime();
+    bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
+    for (SelectedCpList::iterator it = _points.begin(); it!=_points.end(); ++it) {
+        
+        it->first->slaveTo(time,_track);
+        _track->addSlavedTrack(it->first);
+        
+        if (featherLinkEnabled) {
+            it->second->slaveTo(time, _track);
+            _track->addSlavedTrack(it->second);
+        }
+    }
+    setText(QObject::tr("Unlink from track"));
+    
+    _roto->evaluate(true);
+}
+
+void UnLinkFromTrackUndoCommand::redo()
+{
+    for (SelectedCpList::iterator it = _points.begin(); it!=_points.end(); ++it) {
+        it->first->unslave();
+        _track->removeSlavedTrack(it->first);
+        if (it->second->isSlaved()) {
+            it->second->unslave();
+            _track->removeSlavedTrack(it->second);
+        }
+    }
+    _roto->evaluate(true);
+    setText(QObject::tr("Unlink from track"));
+}
+

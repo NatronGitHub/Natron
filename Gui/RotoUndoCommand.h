@@ -27,6 +27,7 @@ class RotoLayer;
 class RotoPanel;
 class QTreeWidgetItem;
 class RotoItem;
+class Double_Knob;
 namespace Transform {
     struct Matrix3x3;
 }
@@ -631,5 +632,53 @@ private:
     DuplicatedItem _item;
     
 };
+
+class LinkToTrackUndoCommand: public QUndoCommand
+{
+    
+public:
+
+    
+    LinkToTrackUndoCommand(RotoGui* roto,const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points,
+                           const boost::shared_ptr<Double_Knob>& track);
+    
+    virtual ~LinkToTrackUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoGui* _roto;
+    std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _points;
+    boost::shared_ptr<Double_Knob> _track;
+    
+};
+
+class UnLinkFromTrackUndoCommand: public QUndoCommand
+{
+    
+public:
+    
+    
+    UnLinkFromTrackUndoCommand(RotoGui* roto,const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points,
+                           const boost::shared_ptr<Double_Knob>& track);
+    
+    virtual ~UnLinkFromTrackUndoCommand();
+    
+    virtual void undo() OVERRIDE FINAL;
+    
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoGui* _roto;
+    std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _points;
+    boost::shared_ptr<Double_Knob> _track;
+    
+};
+
+
 
 #endif // ROTOUNDOCOMMAND_H

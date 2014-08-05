@@ -97,8 +97,8 @@ struct BezierCPPrivate
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
     
     mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
-    Double_Knob* masterTrack; //< is this point linked to a track ?
-    BezierCP* relativePoint; //< is this point relative (as an offset) to another point ?
+    boost::shared_ptr<Double_Knob> masterTrack; //< is this point linked to a track ?
+    SequenceTime offsetTime; //< the time at which the offset must be computed
     
     BezierCPPrivate(Bezier* curve)
     : holder(curve)
@@ -115,8 +115,8 @@ struct BezierCPPrivate
     , leftY(0)
     , rightY(0)
     , masterMutex()
-    , masterTrack(NULL)
-    , relativePoint(NULL)
+    , masterTrack()
+    , offsetTime(0)
     {
     }
 };

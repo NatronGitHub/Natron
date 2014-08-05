@@ -398,7 +398,7 @@ public:
     
     static boost::shared_ptr<KnobI> createKnob(const std::string& typeName,int dimension);
 
-    bool restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
+    void restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes);
     
 private:
     

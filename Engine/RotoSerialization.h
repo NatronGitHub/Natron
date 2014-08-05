@@ -25,6 +25,9 @@
 #define ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING 2
 #define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING
 
+#define BEZIER_CP_INTRODUCES_OFFSET 2
+#define BEZIER_CP_VERSION BEZIER_CP_INTRODUCES_OFFSET
+
 template<class Archive>
 void BezierCP::serialize(Archive & ar, const unsigned int version)
 {
@@ -41,7 +44,13 @@ void BezierCP::serialize(Archive & ar, const unsigned int version)
     ar & boost::serialization::make_nvp("Right_X_animation",_imp->curveRightBezierX);
     ar & boost::serialization::make_nvp("Right_Y",_imp->rightY);
     ar & boost::serialization::make_nvp("Right_Y_animation",_imp->curveRightBezierY);
+    if (version >= BEZIER_CP_INTRODUCES_OFFSET) {
+        QWriteLocker l(&_imp->masterMutex);
+        ar & boost::serialization::make_nvp("OffsetTime",_imp->offsetTime);
+    }
 }
+
+BOOST_CLASS_VERSION(BezierCP,BEZIER_CP_VERSION)
 
 class RotoItemSerialization
 {

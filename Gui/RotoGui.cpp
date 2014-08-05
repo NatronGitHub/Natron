@@ -39,6 +39,8 @@
 #include "Gui/RotoUndoCommand.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ComboBox.h"
+#include "Gui/Gui.h"
+#include "Gui/NodeGraph.h"
 
 #include "Global/GLIncludes.h"
 
@@ -568,6 +570,11 @@ QWidget* RotoGui::getButtonsBar(RotoGui::Roto_Role role) const
             assert(false);
             break;
     }
+}
+
+GuiAppInstance* RotoGui::getApp() const
+{
+    return _imp->node->getDagGui()->getGui()->getApp();
 }
 
 QWidget* RotoGui::getCurrentButtonsBar() const
@@ -2956,7 +2963,7 @@ void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
 
     menu.addSeparator();
     
-    Double_Knob* isSlaved = cp.first->isSlaved();
+    boost::shared_ptr<Double_Knob> isSlaved = cp.first->isSlaved();
     QAction* linkTo = 0,*unLinkFrom = 0;
     if (!isSlaved) {
         linkTo = new QAction(tr("Link to track..."),&menu);
@@ -3008,13 +3015,9 @@ void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
         linkPointTo(cp);
     }
     else if (ret == unLinkFrom && ret != NULL) {
-        cp.first->unslave();
-        isSlaved->removeSlavedTrack(cp.first);
-        if (cp.second->hasRelative()) {
-            cp.second->removeRelative();
-        }
-        _imp->context->evaluateChange();
-        _imp->node->getNode()->getApp()->triggerAutoSave();
+        SelectedCPs points;
+        points.push_back(cp);
+        pushUndoCommand(new UnLinkFromTrackUndoCommand(this,points,cp.first->isSlaved()));
     }
 
 }
@@ -3024,14 +3027,14 @@ class LinkToTrackDialog : public QDialog
     ComboBox* _choice;
 public:
     
-    LinkToTrackDialog(const std::vector< std::pair<std::string,Double_Knob* > >& knobs, QWidget* parent)
+    LinkToTrackDialog(const std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > >& knobs, QWidget* parent)
     : QDialog(parent)
     {
     
         QVBoxLayout* mainLayout = new QVBoxLayout(this);
         _choice = new ComboBox(this);
     
-        for (std::vector< std::pair<std::string,Double_Knob* > >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        for (std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             _choice->addItem(it->first.c_str());
         }
         
@@ -3054,7 +3057,7 @@ public:
 
 void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp)
 {
-    std::vector< std::pair<std::string,Double_Knob* > > knobs;
+    std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > knobs;
     std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
     _imp->node->getNode()->getApp()->getActiveNodes(&activeNodes);
     for (U32 i = 0; i < activeNodes.size(); ++i) {
@@ -3062,7 +3065,7 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
             boost::shared_ptr<KnobI> k = activeNodes[i]->getKnobByName("center");
             boost::shared_ptr<KnobI> name = activeNodes[i]->getKnobByName(kOfxParamStringSublabelName);
             if (k && name) {
-                Double_Knob* dk = dynamic_cast<Double_Knob*>(k.get());
+                boost::shared_ptr<Double_Knob> dk = boost::dynamic_pointer_cast<Double_Knob>(k);
                 String_Knob* nameKnob = dynamic_cast<String_Knob*>(name.get());
                 if (dk && nameKnob) {
                     std::string trackName = nameKnob->getValue();
@@ -3081,33 +3084,13 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
     if (dialog.exec()) {
         int index = dialog.getSelectedKnob();
         if (index >= 0 && index < (int)knobs.size()) {
-            Double_Knob* knob = knobs[index].second;
+            const boost::shared_ptr<Double_Knob>& knob = knobs[index].second;
             if (knob && knob->getDimension() == 2) {
-                
-                ///Make sure that track doesn't have points of the same curve already linked
-                const std::list< boost::shared_ptr<BezierCP> >& slavedTracks = knob->getSlavedTracks();
-                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = slavedTracks.begin();it!=slavedTracks.end();++it) {
-                    if ((*it)->getBezier() == cp.first->getBezier()) {
-                        Natron::errorDialog(tr("Link").toStdString(),
-                                            tr("You cannot link several points of the same curve to the same track.").toStdString());
-                        return;
-                    }
-                }
-                
-                if (cp.first->hasRelative()) {
-                    cp.first->removeRelative();
-                }
-                cp.first->slaveTo(knob);
-                knob->addSlavedTrack(cp.first);
-                
-                ///if the counter part point is a feather and it's not linked to a track, switch
-                ///it's coordinates to be relative to the track
-                if (cp.second->isFeatherPoint() && !cp.second->isSlaved()) {
-                    cp.second->setRelativeTo(cp.first.get());
-                }
+                        
+                SelectedCPs points;
+                points.push_back(cp);
+                pushUndoCommand(new LinkToTrackUndoCommand(this,points,knob));
             }
         }
     }
-    _imp->context->evaluateChange();
-    _imp->node->getNode()->getApp()->triggerAutoSave();
 }

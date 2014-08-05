@@ -147,13 +147,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         project->clearNodes();
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
-    
-    ////For all tacks that have slaved roto points, we remember them in here, and once all track links
-    ////have been restore, we restore the relative feather for each control point slaved.
-    ////we cannot do this while restoring the link because the feather might be also linked to another
-    ///track, so we have to wait for a final pass to be able to determine whether the feather must be set
-    ///as relative or not.
-    std::list<Double_Knob*> trackLinksRestored;
+  
     
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for(std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it!=serializedNodes.end();++it) {
@@ -197,7 +191,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             }
             thisNode->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
         } else {
-            thisNode->restoreKnobsLinks(*it,currentNodes,&trackLinksRestored);
+            thisNode->restoreKnobsLinks(*it,currentNodes);
         }
         
         const std::vector<std::string>& inputs = it->getInputs();
@@ -211,10 +205,7 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
 
     }
     
-    for (std::list<Double_Knob*>::iterator it = trackLinksRestored.begin();it!=trackLinksRestored.end();++it) {
-        (*it)->restoreFeatherRelatives();
-    }
-        
+
     nodeCounters = obj.getNodeCounters();
     
 

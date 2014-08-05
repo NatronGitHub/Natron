@@ -22,7 +22,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Node.h"
-
+#include "Engine/TimeLine.h"
 using namespace Natron;
 using std::make_pair;
 using std::pair;
@@ -500,9 +500,21 @@ void Double_Knob::onNodeDeactivated()
 
 void Double_Knob::onNodeActivated()
 {
+    ///get a shared_ptr to this
+    assert(getHolder());
+    boost::shared_ptr<Double_Knob> thisShared;
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
+    for (U32 i = 0; i< knobs.size(); ++i) {
+        if (knobs[i].get() == this) {
+            thisShared = boost::dynamic_pointer_cast<Double_Knob>(knobs[i]);
+            break;
+        }
+    }
+    assert(thisShared);
+    SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
     ///reslave all tracks that where slaved
     for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
-        (*it)->slaveTo(this);
+        (*it)->slaveTo(time,thisShared);
     }
 }
 
@@ -528,8 +540,21 @@ void Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
 
 void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const std::vector<boost::shared_ptr<Node> >& activeNodes)
 {
+    ///get a shared_ptr to this
+    assert(getHolder());
+    boost::shared_ptr<Double_Knob> thisShared;
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
+    for (U32 i = 0; i< knobs.size(); ++i) {
+        if (knobs[i].get() == this) {
+            thisShared = boost::dynamic_pointer_cast<Double_Knob>(knobs[i]);
+            break;
+        }
+    }
+    assert(thisShared);
+    
     std::string lastNodeName;
     RotoContext* lastRoto = 0;
+    SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it!=tracks.end(); ++it) {
         RotoContext* roto = 0;
         ///speed-up by remembering the last one
@@ -564,26 +589,12 @@ void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const 
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
                 break;
             }
-            point->slaveTo(this);
+            point->slaveTo(time,thisShared);
             _slavedTracks.push_back(point);
         }
     }
 }
 
-void Double_Knob::restoreFeatherRelatives()
-{
-    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it!=_slavedTracks.end(); ++it) {
-        if ((*it)->isFeatherPoint()) {
-            continue;
-        }
-        int indexInCurve = (*it)->getBezier()->getControlPointIndex(it->get());
-        assert(indexInCurve != -1);
-        boost::shared_ptr<BezierCP> fp = (*it)->getBezier()->getFeatherPointAtIndex(indexInCurve);
-        if (!fp->isSlaved()) {
-            fp->setRelativeTo(it->get());
-        }
-    }
-}
 
 Double_Knob::~Double_Knob()
 {
@@ -598,11 +609,29 @@ void Double_Knob::cloneExtraData(KnobI* other)
     if (!isDouble) {
         return;
     }
-    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = isDouble->_slavedTracks.begin();
-         it!=isDouble->_slavedTracks.end(); ++it) {
-        (*it)->unslave();
-        (*it)->slaveTo(this);
-        _slavedTracks.push_back(*it);
+    
+    
+    boost::shared_ptr<Double_Knob> thisShared;
+    if (!isDouble->_slavedTracks.empty()) {
+        ///get a shared_ptr to this
+        assert(getHolder());
+        const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
+        for (U32 i = 0; i< knobs.size(); ++i) {
+            if (knobs[i].get() == this) {
+                thisShared = boost::dynamic_pointer_cast<Double_Knob>(knobs[i]);
+                break;
+            }
+        }
+        assert(thisShared);
+    }
+    if (getHolder() && getHolder()->getApp()) {
+        SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
+        for (std::list< boost::shared_ptr<BezierCP> >::iterator it = isDouble->_slavedTracks.begin();
+             it!=isDouble->_slavedTracks.end(); ++it) {
+            (*it)->unslave();
+            (*it)->slaveTo(time,thisShared);
+            _slavedTracks.push_back(*it);
+        }
     }
 }
 /******************************BUTTON_KNOB**************************************/

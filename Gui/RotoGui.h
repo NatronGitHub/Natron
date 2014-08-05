@@ -39,6 +39,7 @@ class QUndoCommand;
 class NodeGui;
 class Bezier;
 class BezierCP;
+class GuiAppInstance;
 struct RotoGuiSharedData;
 class RotoContext;
 class RotoToolButton : public QToolButton
@@ -103,6 +104,8 @@ public:
     ~RotoGui();
     
     boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData() const;
+    
+    GuiAppInstance* getApp() const;
     
     /**
      * @brief Return the horizontal buttons bar for the given role

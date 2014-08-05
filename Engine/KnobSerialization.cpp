@@ -115,15 +115,10 @@ void KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI>& knob,co
     }
 }
 
-bool KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
+void KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI>& knob,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
 {
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>(knob.get());
-    if (!isDouble) {
-        return false;
+    if (isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
+        isDouble->restoreTracks(slavedTracks,allNodes);
     }
-    if (isDouble->getName() != "center" || isDouble->getDimension() != 2) {
-        return false;
-    }
-    isDouble->restoreTracks(slavedTracks,allNodes);
-    return !slavedTracks.empty();
 }

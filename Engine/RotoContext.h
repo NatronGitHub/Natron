@@ -127,9 +127,9 @@ public:
     
     bool getPositionAtTime(int time,double* x,double* y,bool skipMasterOrRelative = false) const;
     
-    bool getLeftBezierPointAtTime(int time,double* x,double* y) const;
+    bool getLeftBezierPointAtTime(int time,double* x,double* y,bool skipMasterOrRelative = false) const;
     
-    bool getRightBezierPointAtTime(int time,double *x,double *y) const;
+    bool getRightBezierPointAtTime(int time,double *x,double *y,bool skipMasterOrRelative = false) const;
     
     bool hasKeyFrameAtTime(int time) const;
     
@@ -157,22 +157,9 @@ public:
     /**
      * The functions below are to slave/unslave a control point to a track
      **/
-    void slaveTo(Double_Knob* track);
-    Double_Knob* isSlaved() const;
+    void slaveTo(SequenceTime offsetTime,const boost::shared_ptr<Double_Knob>& track);
+    boost::shared_ptr<Double_Knob> isSlaved() const;
     void unslave();
-    
-    /**
-     * The functions below are used to set the coordinates mode of the point to be relative
-     * to the position of another point. In this mode the X,Y position are an offset.
-     *
-     * This is to addressthe issue where a feather point should still follow its control point
-     * counter part even when linked to a track.
-     * 
-     * A point cannot have a relative and a master track at the same time!
-     **/
-    void setRelativeTo(BezierCP* other);
-    BezierCP* hasRelative() const;
-    void removeRelative();
     
 private:
     

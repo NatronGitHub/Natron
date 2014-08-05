@@ -1512,7 +1512,6 @@ void Gui::registerPane(TabWidget* pane){
         int only1Widget = _imp->_panes.size() == 1;
         if (_imp->_panes.empty()) {
             _imp->_leftRightSplitter->addWidget(pane);
-            std::cout << _imp->_leftRightSplitter->count() << std::endl;
         }
         _imp->_panes.push_back(pane);
         if (only1Widget) {
