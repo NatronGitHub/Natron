@@ -1165,9 +1165,9 @@ void NodeGui::setVisibleSettingsPanel(bool b){
 }
 
 bool NodeGui::isSettingsPanelVisible() const{
-    if(_settingsPanel){
+    if (_settingsPanel) {
         return !_settingsPanel->isClosed();
-    }else{
+    } else {
         return false;
     }
 }
@@ -1836,9 +1836,19 @@ void NodeGui::onSettingsPanelClosedChanged(bool closed)
     if (!_settingsPanel) {
         return;
     }
-    if (!closed) {
-        SequenceTime time = _internalNode->getApp()->getTimeLine()->currentFrame();
-        _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
+    
+    DockablePanel* panel = dynamic_cast<DockablePanel*>(sender());
+    assert(panel);
+    if (panel == _settingsPanel) {
+        ///if it is a multiinstance, notify the multi instance panel
+        if (_mainInstancePanel) {
+            _settingsPanel->getMultiInstancePanel()->onSettingsPanelClosed(closed);
+        } else {
+            if (!closed) {
+                SequenceTime time = _internalNode->getApp()->getTimeLine()->currentFrame();
+                _internalNode->getLiveInstance()->refreshAfterTimeChange(time);
+            }
+        }
     }
 }
 

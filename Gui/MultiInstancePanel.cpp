@@ -810,6 +810,30 @@ void MultiInstancePanel::onSelectAllButtonClicked()
     _imp->view->selectAll();
 }
 
+bool MultiInstancePanel::isSettingsPanelVisible() const
+{
+    NodeSettingsPanel* panel = _imp->mainInstance->getSettingPanel();
+    assert(panel);
+    return !panel->isClosed();
+}
+
+void MultiInstancePanel::onSettingsPanelClosed(bool closed)
+{
+    std::list<Node*> selection;
+    getSelectedInstances(&selection);
+    
+    std::list<Node*>::iterator next = selection.begin();
+    ++next;
+    for (std::list<Node*>::iterator it = selection.begin(); it!=selection.end(); ++it,++next) {
+        if (closed) {
+            (*it)->hideKeyframesFromTimeline(next == selection.end());
+        } else {
+            (*it)->showKeyframesOnTimeline(next == selection.end());
+        }
+    }
+    
+}
+
 void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,const QItemSelection& oldSelection)
 {
     std::list<std::pair<Node*,bool> > previouslySelectedInstances;
@@ -899,8 +923,9 @@ void MultiInstancePanel::onSelectionChanged(const QItemSelection& newSelection,c
             continue;
         }
         
-        it->first->showKeyframesOnTimeline(nextNewlySelected == newlySelectedInstances.end());
-
+        if (isSettingsPanelVisible()) {
+            it->first->showKeyframesOnTimeline(nextNewlySelected == newlySelectedInstances.end());
+        }
         
         ///slave all the knobs that are declared by the plug-in (i.e: not the ones from the "Node" page)
         //and which are not instance specific (not the knob displayed in the table)

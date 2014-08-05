@@ -79,6 +79,7 @@ public:
     
     void clearSelection();
     
+    bool isSettingsPanelVisible() const;
     
 public slots:
 
@@ -100,6 +101,7 @@ public slots:
     
     void resetSelectedInstances();
     
+    void onSettingsPanelClosed(bool closed);
     
 protected:
     
