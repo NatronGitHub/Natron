@@ -591,10 +591,10 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
     if (!dontUpscale && inputImgMipMapLevel > 0 && !supportsRenderScale()) {
-        RectI upscaledRoD = inputImg->getPixelRoD().upscalePowerOfTwo(inputImgMipMapLevel);
+        RectI upscaledRoD = inputImg->getBounds().upscalePowerOfTwo(inputImgMipMapLevel);
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0,bitdepth));
-        inputImg->upscale_mipmap(inputImg->getPixelRoD(), upscaledImg.get(), inputImgMipMapLevel);
+        inputImg->upscale_mipmap(inputImg->getBounds(), upscaledImg.get(), inputImgMipMapLevel);
         return upscaledImg;
     } else {
         _imp->addInputImageTempPointer(inputImg);
@@ -878,7 +878,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 ///Convert the image to the requested components
                 boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
                 if (!byPassCache) {
-                    image->convertToFormat(image->getPixelRoD(), remappedImage.get(),
+                    image->convertToFormat(image->getBounds(), remappedImage.get(),
                                            getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
                                            getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                            args.channelForAlpha,false, true);
@@ -1115,7 +1115,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         if (!supportsRenderScale() && args.mipMapLevel != 0) {
             
             RectI intersection;
-            args.roi.intersect(image->getPixelRoD(), &intersection);
+            args.roi.intersect(image->getBounds(), &intersection);
             std::list<RectI> rectsRendered = image->getRestToRender(intersection);
             if (rectsRendered.empty()) {
                 return image;
@@ -1125,7 +1125,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             
             ///Allocate the upscaled image
             boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(args.components,cachedImgParams->getRoD(),0,args.bitdepth));
-            downscaledImage->scale_box_generic(downscaledImage->getPixelRoD(),upscaledImage.get());
+            downscaledImage->scale_box_generic(downscaledImage->getBounds(),upscaledImage.get());
             image = upscaledImage;
         }
         
@@ -1237,7 +1237,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     
     ///Note that here we use the downscaledImage pointer because in all cases this pixel rod is always good.
     ///See the 2 lines assert above
-    renderWindow.intersect(downscaledImage->getPixelRoD(), &intersection);
+    renderWindow.intersect(downscaledImage->getBounds(), &intersection);
     
     /// If the list is empty then we already rendered it all
     std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
@@ -1248,7 +1248,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     if (!supportsTiles() && !rectsToRender.empty()) {
         ///if the effect doesn't support tiles, just render the whole rod again even though
         rectsToRender.clear();
-        rectsToRender.push_back(downscaledImage->getPixelRoD());
+        rectsToRender.push_back(downscaledImage->getBounds());
     }
 #ifdef NATRON_LOG
     else if (rectsToRender.empty()) {
@@ -1523,7 +1523,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
+                    canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
                 if (!canonicalRectToRender.isNull()) {
@@ -1544,7 +1544,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
+                    canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
                 if (!canonicalRectToRender.isNull()) {
@@ -1565,7 +1565,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    canonicalRectToRender.intersect(image->getPixelRoD(), &canonicalRectToRender);
+                    canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
                 if (!canonicalRectToRender.isNull()) {
@@ -1654,7 +1654,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     RectI upscaledRoi = rectToRender;
     if (useFullResImage) {
         upscaledRoi = rectToRender.upscalePowerOfTwo(args._mipMapLevel);
-        upscaledRoi.intersect(fullScaleOutput->getPixelRoD(), &upscaledRoi);
+        upscaledRoi.intersect(fullScaleOutput->getBounds(), &upscaledRoi);
     }
     
     if (!upscaledRoi.isNull()) {

@@ -439,10 +439,10 @@ std::string OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
     }
 }
 
-OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip):
-OFX::Host::ImageEffect::Image(clip)
-,_bitDepth(OfxImage::eBitDepthFloat)
-,_floatImage(internalImage)
+OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip)
+: OFX::Host::ImageEffect::Image(clip)
+, _bitDepth(OfxImage::eBitDepthFloat)
+, _floatImage(internalImage)
 {
     RenderScale scale;
     scale.x = Natron::Image::getScaleFromMipMapLevel(internalImage->getMipMapLevel());
@@ -450,20 +450,24 @@ OFX::Host::ImageEffect::Image(clip)
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
-    const RectI& pixelrod = internalImage->getPixelRoD();
-    const RectI& rod = internalImage->getRoD();
-    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(pixelrod.left(), pixelrod.bottom()));
+    const RectI& bounds = internalImage->getBounds();
+    const RectI& rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
+    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(bounds.left(), bounds.bottom()));
     // bounds and rod
-    setIntProperty(kOfxImagePropBounds, pixelrod.left(), 0);
-    setIntProperty(kOfxImagePropBounds, pixelrod.bottom(), 1);
-    setIntProperty(kOfxImagePropBounds, pixelrod.right(), 2);
-    setIntProperty(kOfxImagePropBounds, pixelrod.top(), 3);
-    setIntProperty(kOfxImagePropRegionOfDefinition, rod.left(), 0);
-    setIntProperty(kOfxImagePropRegionOfDefinition, rod.bottom(), 1);
-    setIntProperty(kOfxImagePropRegionOfDefinition, rod.right(), 2);
-    setIntProperty(kOfxImagePropRegionOfDefinition, rod.top(), 3);
+    setIntProperty(kOfxImagePropBounds, bounds.left(), 0);
+    setIntProperty(kOfxImagePropBounds, bounds.bottom(), 1);
+    setIntProperty(kOfxImagePropBounds, bounds.right(), 2);
+    setIntProperty(kOfxImagePropBounds, bounds.top(), 3);
+#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
+    // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImagePropRegionOfDefinition
+    // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
+    // Natron::Image::getRoD() is in *CANONICAL* coordinates
+    setIntProperty(kOfxImagePropRegionOfDefinition, std::ceil(rod.left()*scale.x), 0);
+    setIntProperty(kOfxImagePropRegionOfDefinition, std::ceil(rod.bottom()*scale.y), 1);
+    setIntProperty(kOfxImagePropRegionOfDefinition, std::floor(rod.right()*scale.x), 2);
+    setIntProperty(kOfxImagePropRegionOfDefinition, std::floor(rod.top()*scale.y), 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, pixelrod.width() *
+    setIntProperty(kOfxImagePropRowBytes, bounds.width() *
                    Natron::getElementsCountForComponents(internalImage->getComponents()) *
                    getSizeOfForBitDepth(internalImage->getBitDepth()));
     setStringProperty(kOfxImageEffectPropComponents, OfxClipInstance::natronsComponentsToOfxComponents(internalImage->getComponents()));

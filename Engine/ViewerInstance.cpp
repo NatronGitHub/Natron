@@ -439,7 +439,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     U64 inputNodeHash = activeInputToRender->hash();
         
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
-    RectI rod,pixelRoD;
+    RectI rod, bounds;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime = time;
@@ -472,7 +472,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             inputImage->getBitDepth() != imageDepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(components,inputImage->getRoD(),mipMapLevel,imageDepth));
-            inputImage->convertToFormat(inputImage->getPixelRoD(), remappedImage.get(),
+            inputImage->convertToFormat(inputImage->getBounds(), remappedImage.get(),
                                    getApp()->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
                                    getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
                                    3, false, true);
@@ -523,7 +523,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         }
         
         rod = inputImage->getRoD();
-        pixelRoD = inputImage->getPixelRoD();
+        bounds = inputImage->getBounds();
         isRodProjectFormat = cachedImgParams->isRodProjectFormat();
         
         ///since we are going to render a new image, decrease the current memory use of the viewer by
@@ -558,7 +558,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
         // For the viewer, we need the enclosing rectangle to avoid black borders.
         // Do this here to avoid infinity values.
-        pixelRoD = rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+        bounds = rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
     }
 
     emit rodChanged(rod,textureIndex);
@@ -571,10 +571,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     
     /*computing the RoI*/
 
-    ///The RoI of the viewer, given the pixelRoD (which takes into account the current render scale).
+    ///The RoI of the viewer, given the bounds (which takes into account the current render scale).
     ///The roi is then in pixel coordinates.
     assert(_imp->uiContext);
-    RectI roi = _imp->uiContext->getImageRectangleDisplayed(pixelRoD,mipMapLevel);
+    RectI roi = _imp->uiContext->getImageRectangleDisplayed(bounds,mipMapLevel);
     
     
     ///Clip the roi  the project window (in pixel coordinates)
@@ -587,7 +587,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         roi.intersect(pixelDispW, &roi);
     }
 
-    ////Texrect is the coordinates of the 4 corners of the texture in the pixelRoD with the current zoom
+    ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
     RectI texRect;
     double tileSize = std::pow(2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2());
@@ -603,8 +603,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     ///TexRectClipped is the same as texRect but without the zoom factor taken into account (in pixel coords)
     RectI texRectClipped ;
     
-    ///Make sure the bounds of the area to render in the texture lies in the pixelRoD
-    texRect.intersect(pixelRoD, &texRectClipped);
+    ///Make sure the bounds of the area to render in the texture lies in the bounds
+    texRect.intersect(bounds, &texRectClipped);
     ///Clip again against the project window
     if (isClippingToProjectWindow) {
         ///it has already been computed in the previous clip above
@@ -752,7 +752,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
         } else {
             boost::shared_ptr<const Natron::FrameParams> cachedFrameParams =
-            FrameEntry::makeParams(pixelRoD, key.getBitDepth(), textureRect.w, textureRect.h);
+            FrameEntry::makeParams(bounds, key.getBitDepth(), textureRect.w, textureRect.h);
             
             bool textureIsCached = Natron::getTextureFromCacheOrCreate(key, cachedFrameParams, &params->cachedFrame);
             if (!params->cachedFrame) {
@@ -784,7 +784,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         assert(ramBuffer);
 
         ///intersect the image render window to the actual image region of definition.
-        texRectClipped.intersect(pixelRoD, &texRectClipped);
+        texRectClipped.intersect(bounds, &texRectClipped);
         
         boost::shared_ptr<Natron::Image> originalInputImage = inputImage;
         
@@ -800,7 +800,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
             if (!rectsToRender.empty()) {
                 boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,rod,0,downscaledImage->getBitDepth()));
-                downscaledImage->scale_box_generic(downscaledImage->getPixelRoD(),upscaledImage.get());
+                downscaledImage->scale_box_generic(downscaledImage->getBounds(),upscaledImage.get());
                 inputImage = upscaledImage;
             } else {
                 renderedCompletely = true;

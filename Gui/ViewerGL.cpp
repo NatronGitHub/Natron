@@ -447,7 +447,7 @@ void ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,Viewer
     
     
     ////The texture real size (r.w,r.h) might be slightly bigger than the actual
-    ////pixel coordinates bounds r.x1,r.x2 r.y1 r.y2 because we clipped these bounds against the pixelRoD
+    ////pixel coordinates bounds r.x1,r.x2 r.y1 r.y2 because we clipped these bounds against the bounds
     ////in the ViewerInstance::renderViewer function. That means we need to draw actually only the part of
     ////the texture that contains the bounds.
     ////Notice that r.w and r.h are scaled to the closest Po2 of the current scaling factor, so we need to scale it up

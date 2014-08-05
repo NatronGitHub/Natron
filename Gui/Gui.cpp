@@ -2614,7 +2614,7 @@ void Gui::debugImage(const Natron::Image* image,const QString& filename ) {
         qDebug() << "Debug image only works on float images.";
         return;
     }
-    const RectI& rod = image->getPixelRoD();
+    const RectI& rod = image->getBounds();
     QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
     const float* from = (const float*)image->pixelAt(rod.left(), rod.bottom());

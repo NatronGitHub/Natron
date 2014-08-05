@@ -49,7 +49,7 @@ public:
     ImageParams()
     : NonKeyParams()
     , _rod()
-    , _pixelRoD()
+    , _bounds()
     , _isRoDProjectFormat(false)
     , _inputNbIdentity(-1)
     , _inputTimeIdentity(0)
@@ -62,7 +62,7 @@ public:
     ImageParams(const ImageParams& other)
     : NonKeyParams(other)
     , _rod(other._rod)
-    , _pixelRoD(other._pixelRoD)
+    , _bounds(other._bounds)
     , _isRoDProjectFormat(other._isRoDProjectFormat)
     , _inputNbIdentity(other._inputNbIdentity)
     , _inputTimeIdentity(other._inputTimeIdentity)
@@ -72,12 +72,12 @@ public:
         
     }
     
-    ImageParams(int cost,const RectI& rod,const RectI& pixelRoD,Natron::ImageBitDepth bitdepth,
+    ImageParams(int cost,const RectI& rod,const RectI& bounds,Natron::ImageBitDepth bitdepth,
                 bool isRoDProjectFormat,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> >& framesNeeded)
-    : NonKeyParams(cost,pixelRoD.area() * getElementsCountForComponents(components) * getSizeOfForBitDepth(bitdepth))
+    : NonKeyParams(cost,bounds.area() * getElementsCountForComponents(components) * getSizeOfForBitDepth(bitdepth))
     , _rod(rod)
-    , _pixelRoD(pixelRoD)
+    , _bounds(bounds)
     , _isRoDProjectFormat(isRoDProjectFormat)
     , _inputNbIdentity(inputNbIdentity)
     , _inputTimeIdentity(inputTimeIdentity)
@@ -90,9 +90,10 @@ public:
     
     virtual ~ImageParams() {}
     
+#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
     const RectI& getRoD() const { return _rod; }
     
-    const RectI& getPixelRoD() const { return _pixelRoD; }
+    const RectI& getBounds() const { return _bounds; }
     
     int getInputNbIdentity() const { return _inputNbIdentity; }
     
@@ -139,7 +140,7 @@ private:
     }
     
     RectI _rod;
-    RectI _pixelRoD;
+    RectI _bounds;
 
     
     /// if true then when retrieving the associated image from cache

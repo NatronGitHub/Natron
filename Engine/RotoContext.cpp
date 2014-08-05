@@ -4732,7 +4732,7 @@ RotoContext::renderMask(const RectI& roi,
     }
     
     ///////////////////////////////////Render internal
-    RectI pixelRod = params->getPixelRoD();
+    RectI pixelRod = params->getBounds();
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
  

@@ -1574,7 +1574,7 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
     }
   
     ///update the Rod to the scaled image rod
-    rod = img->getPixelRoD();
+    rod = img->getBounds();
     
     ImageComponents components = img->getComponents();
     int elemCount = getElementsCountForComponents(components);

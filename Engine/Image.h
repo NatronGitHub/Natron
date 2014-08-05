@@ -90,6 +90,7 @@ namespace Natron {
         
         void clear() { std::fill(_map, _map+ _rod.area(), 0); }
         
+#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
         const RectI& getRoD() const {return _rod;}
         
         std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
@@ -107,6 +108,7 @@ namespace Natron {
         char* getBitmapAt(int x,int y);
 
     private:
+#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
         RectI _rod;
         char* _map;
     };
@@ -122,7 +124,7 @@ namespace Natron {
         mutable QReadWriteLock _lock;
         Bitmap _bitmap;
         RectI _rod;
-        RectI _pixelRod;
+        RectI _bounds;
 
         
     public:
@@ -152,7 +154,7 @@ namespace Natron {
         
         /**
          * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
-         * scale applied to it. In order to return the true pixel data window you must call getPixelRoD()
+         * scale applied to it. In order to return the true pixel data window you must call getBounds()
          **/
         const RectI& getRoD() const;
         
@@ -161,7 +163,7 @@ namespace Natron {
          * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
          * but slightly faster since it is stored as a member of the image.
          **/
-        const RectI& getPixelRoD() const;
+        const RectI& getBounds() const;
         
         virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
         
@@ -196,7 +198,7 @@ namespace Natron {
         const unsigned char* pixelAt(int x,int y) const;
         
         /**
-         * @brief Same as getElementsCount(getComponents()) * getPixelRoD().width()
+         * @brief Same as getElementsCount(getComponents()) * getBounds().width()
          **/
         unsigned int getRowElements() const;
         
@@ -254,7 +256,7 @@ namespace Natron {
          * @brief Fills the entire image with the given R,G,B value and an alpha value.
          **/
         void defaultInitialize(float colorValue = 0.f,float alphaValue = 1.f){
-            fill(_pixelRod,colorValue,alphaValue);
+            fill(_bounds,colorValue,alphaValue);
         }
         
         /**
