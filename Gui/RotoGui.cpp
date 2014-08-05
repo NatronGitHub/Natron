@@ -2840,6 +2840,12 @@ void RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier>& curve)
     removeFeather->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_E));
     menu.addAction(removeFeather);
     
+    QAction* linkTo = new QAction(tr("Link to track..."),&menu);
+    menu.addAction(linkTo);
+    QAction* unLinkFrom = new QAction(tr("Unlink from track"),&menu);
+    menu.addAction(unLinkFrom);
+    
+    
     QAction* ret = menu.exec(pos);
     
    
@@ -2880,6 +2886,39 @@ void RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier>& curve)
     else if (ret == removeFeather)
     {
         removeFeatherForSelectedCurve();
+    }
+    else if (ret == linkTo)
+    {
+        SelectedCPs points;
+        
+        const std::list<boost::shared_ptr<BezierCP> >& cps = curve->getControlPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& fps = curve->getFeatherPoints();
+        assert(cps.size() == fps.size());
+        
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator cpIT = cps.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++ cpIT) {
+            if (!(*cpIT)->isSlaved() && !(*fpIT)->isSlaved()) {
+                points.push_back(std::make_pair(*cpIT, *fpIT));
+            }
+        }
+
+        linkPointTo(points);
+    }
+    else if (ret == unLinkFrom) {
+        SelectedCPs points;
+        
+        const std::list<boost::shared_ptr<BezierCP> >& cps = curve->getControlPoints();
+        const std::list<boost::shared_ptr<BezierCP> >& fps = curve->getFeatherPoints();
+        assert(cps.size() == fps.size());
+        
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator cpIT = cps.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++ cpIT) {
+            if ((*cpIT)->isSlaved() && (*fpIT)->isSlaved()) {
+                points.push_back(std::make_pair(*cpIT, *fpIT));
+            }
+        }
+
+        pushUndoCommand(new UnLinkFromTrackUndoCommand(this,points));
     }
 }
 
@@ -3012,12 +3051,14 @@ void RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier>& curve,
     }
     else if (ret == linkTo && ret != NULL)
     {
-        linkPointTo(cp);
+        SelectedCPs points;
+        points.push_back(cp);
+        linkPointTo(points);
     }
     else if (ret == unLinkFrom && ret != NULL) {
         SelectedCPs points;
         points.push_back(cp);
-        pushUndoCommand(new UnLinkFromTrackUndoCommand(this,points,cp.first->isSlaved()));
+        pushUndoCommand(new UnLinkFromTrackUndoCommand(this,points));
     }
 
 }
@@ -3055,7 +3096,7 @@ public:
 };
 
 
-void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >& cp)
+void RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points)
 {
     std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > knobs;
     std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
@@ -3086,9 +3127,6 @@ void RotoGui::linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::sha
         if (index >= 0 && index < (int)knobs.size()) {
             const boost::shared_ptr<Double_Knob>& knob = knobs[index].second;
             if (knob && knob->getDimension() == 2) {
-                        
-                SelectedCPs points;
-                points.push_back(cp);
                 pushUndoCommand(new LinkToTrackUndoCommand(this,points,knob));
             }
         }

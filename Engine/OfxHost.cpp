@@ -576,6 +576,7 @@ static QThreadStorage<int> gThreadIndex;
 
 namespace {
 #ifdef OFX_MULTITHREAD_USES_QTCONCURRENT
+#pragma message WARN("QtConcurrent enabled in multithread suite")
     static OfxStatus threadFunctionWrapper(OfxThreadFunctionV1 func,
                                            unsigned int threadIndex,
                                            unsigned int threadMax,
@@ -597,7 +598,6 @@ namespace {
         return ret;
     }
 #else
-#pragma message WARN("QtConcurrent disabled in multithread suite")
 class OfxThread : public QThread
 {
 public:

@@ -659,11 +659,17 @@ private:
 class UnLinkFromTrackUndoCommand: public QUndoCommand
 {
     
+    struct PointToUnlink
+    {
+        boost::shared_ptr<BezierCP> cp;
+        boost::shared_ptr<BezierCP> fp;
+        boost::shared_ptr<Double_Knob> track;
+    };
+    
 public:
     
     
-    UnLinkFromTrackUndoCommand(RotoGui* roto,const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points,
-                           const boost::shared_ptr<Double_Knob>& track);
+    UnLinkFromTrackUndoCommand(RotoGui* roto,const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points);
     
     virtual ~UnLinkFromTrackUndoCommand();
     
@@ -674,8 +680,7 @@ public:
 private:
     
     RotoGui* _roto;
-    std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _points;
-    boost::shared_ptr<Double_Knob> _track;
+    std::list<PointToUnlink> _points;
     
 };
 

@@ -1816,14 +1816,18 @@ void LinkToTrackUndoCommand::redo()
 }
 
 UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(RotoGui* roto,
-                                                       const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points,
-                                                       const boost::shared_ptr<Double_Knob>& track)
+                                                       const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& points)
 : QUndoCommand()
 , _roto(roto)
-, _points(points)
-, _track(track)
+, _points()
 {
-    
+    for (SelectedCpList::const_iterator it = points.begin(); it!=points.end(); ++it) {
+        PointToUnlink p;
+        p.cp = !it->first->isFeatherPoint() ? it->first : it->second;
+        p.fp = !it->first->isFeatherPoint() ? it->second : it->first;
+        p.track = p.cp->isSlaved();
+        _points.push_back(p);
+    }
 }
 
 UnLinkFromTrackUndoCommand::~UnLinkFromTrackUndoCommand()
@@ -1835,14 +1839,14 @@ void UnLinkFromTrackUndoCommand::undo()
 {
     SequenceTime time = _roto->getContext()->getTimelineCurrentTime();
     bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
-    for (SelectedCpList::iterator it = _points.begin(); it!=_points.end(); ++it) {
+    for (std::list<PointToUnlink>::iterator it = _points.begin(); it!=_points.end(); ++it) {
         
-        it->first->slaveTo(time,_track);
-        _track->addSlavedTrack(it->first);
+        it->cp->slaveTo(time,it->track);
+        it->track->addSlavedTrack(it->cp);
         
         if (featherLinkEnabled) {
-            it->second->slaveTo(time, _track);
-            _track->addSlavedTrack(it->second);
+            it->fp->slaveTo(time, it->track);
+            it->track->addSlavedTrack(it->fp);
         }
     }
     setText(QObject::tr("Unlink from track"));
@@ -1852,12 +1856,12 @@ void UnLinkFromTrackUndoCommand::undo()
 
 void UnLinkFromTrackUndoCommand::redo()
 {
-    for (SelectedCpList::iterator it = _points.begin(); it!=_points.end(); ++it) {
-        it->first->unslave();
-        _track->removeSlavedTrack(it->first);
-        if (it->second->isSlaved()) {
-            it->second->unslave();
-            _track->removeSlavedTrack(it->second);
+    for (std::list<PointToUnlink>::iterator it = _points.begin(); it!=_points.end(); ++it) {
+        it->cp->unslave();
+        it->track->removeSlavedTrack(it->cp);
+        if (it->fp->isSlaved()) {
+            it->fp->unslave();
+            it->track->removeSlavedTrack(it->fp);
         }
     }
     _roto->evaluate(true);

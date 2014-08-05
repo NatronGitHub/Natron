@@ -195,7 +195,7 @@ public:
     
     bool isFeatherVisible() const;
     
-    void linkPointTo(const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP>  >& cp);
+    void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >& cp);
     
 signals:
     
