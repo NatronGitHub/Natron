@@ -720,23 +720,20 @@ public:
                                          Natron::Point* fp, //< the feather point
                                          double featherDistance, //< feather distance
                                          const std::list<Natron::Point>& featherPolygon, //< the polygon of the bezier
-                                         const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
-                                         const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
                                          const RectD& featherPolyBBox, //< helper to speed-up pointInPolygon computations
                                          int time, //< time
                                          std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                          std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
                                          std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
-        
-    static void precomputePointInPolygonTables(const std::list<Natron::Point>& polygon,
-                                               std::vector<double>* constants,
-                                               std::vector<double>* multiples);
+ 
 
+    enum FillRule {
+        OddEvenFill,
+        WindingFill
+    };
     
     static bool pointInPolygon(const Natron::Point& p,const std::list<Natron::Point>& polygon,
-                               const std::vector<double>& constants,
-                               const std::vector<double>& multiples,
-                               const RectD& featherPolyBBox);
+                               const RectD& featherPolyBBox,FillRule rule);
     
     /**
      * @brief Must be implemented by the derived class to save the state into

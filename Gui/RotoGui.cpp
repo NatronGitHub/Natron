@@ -789,7 +789,6 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             
             ///draw the feather points
             std::list< Point > featherPoints;
-            std::vector<double> constants,multiples;
             RectD featherBBox(std::numeric_limits<double>::infinity(),
                               std::numeric_limits<double>::infinity(),
                               -std::numeric_limits<double>::infinity(),
@@ -803,9 +802,6 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                 // then check if the bbox is visible
                 // if the bbox is visible, compute the polygon and draw it.
                 (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, true, &featherPoints, &featherBBox);
-                constants.resize(featherPoints.size());
-                multiples.resize(featherPoints.size());
-                Bezier::precomputePointInPolygonTables(featherPoints, &constants, &multiples);
                 
                 if (!featherPoints.empty()) {
                     glLineStipple(2, 0xAAAA);
@@ -957,7 +953,7 @@ void RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
                                 featherPoint.x = xF;
                                 featherPoint.y = yF;
                                 
-                                Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, featherPoints, constants, multiples, featherBBox, time, prevCp, it2, nextCp);
+                                Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, featherPoints, featherBBox, time, prevCp, it2, nextCp);
                                 
                                 if ((_imp->state == DRAGGING_FEATHER_BAR &&
                                     (*itF == _imp->rotoData->featherBarBeingDragged.first ||
@@ -2534,8 +2530,6 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
                           -std::numeric_limits<double>::infinity(),
                           -std::numeric_limits<double>::infinity());
         (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
-        std::vector<double> constants(polygon.size()),multipliers(polygon.size());
-        Bezier::precomputePointInPolygonTables(polygon, &constants, &multipliers);
     
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
@@ -2557,8 +2551,8 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             (*itCp)->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
             (*itF)->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
             
-            Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, polygon, constants,
-                                            multipliers, polygonBBox, time, prevF, itF, nextF);
+            Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, polygon,
+                                             polygonBBox, time, prevF, itF, nextF);
             assert(featherPoint.x != controlPoint.x || featherPoint.y != controlPoint.y);
             
             if (((pos.y() >= (controlPoint.y - acceptance) && pos.y() <= (featherPoint.y + acceptance)) ||

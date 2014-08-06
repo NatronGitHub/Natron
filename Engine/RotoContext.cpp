@@ -3287,63 +3287,67 @@ Bezier::getNextKeyframeTime(int time) const
     return INT_MAX;
 }
 
-void
-Bezier::precomputePointInPolygonTables(const std::list<Point>& polygon,
-                                       std::vector<double>* constants,
-                                       std::vector<double>* multiples)
+
+static
+void point_line_intersection(const Point &p1, const Point &p2, const Point &pos,
+                                  int *winding)
 {
-    assert(constants->size() == multiples->size() && constants->size() == polygon.size());
+    double x1 = p1.x;
+    double y1 = p1.y;
+    double x2 = p2.x;
+    double y2 = p2.y;
+    double y = pos.y;
     
-    std::list<Point>::const_iterator i = polygon.begin();
-	if (polygon.empty()) {
-		return;
-	}
-    ++i;
-    int index = 0;
-    for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++index) {
-        if (i == polygon.end()) {
-            i = polygon.begin();
-        }
-        if (i->y == j->y) {
-            constants->at(index) = j->x;
-            multiples->at(index) = 0;
-        } else {
-            double multiplier = (j->x - i->x) / (j->y - i->y);
-            constants->at(index) = i->x - i->y * multiplier;
-            multiples->at(index) = multiplier;
+    int dir = 1;
+    
+    if (qFuzzyCompare(y1, y2)) {
+        // ignore horizontal lines according to scan conversion rule
+        return;
+    } else if (y2 < y1) {
+        double x_tmp = x2; x2 = x1; x1 = x_tmp;
+        double y_tmp = y2; y2 = y1; y1 = y_tmp;
+        dir = -1;
+    }
+    
+    if (y >= y1 && y < y2) {
+        double x = x1 + ((x2 - x1) / (y2 - y1)) * (y - y1);
+        
+        // count up the winding number if we're
+        if (x <= pos.x) {
+            (*winding) += dir;
         }
     }
 }
 
+
 bool
 Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
-                       const std::vector<double>& constants,
-                       const std::vector<double>& multiples,
-                       const RectD& featherPolyBBox)
+                       const RectD& featherPolyBBox,FillRule rule)
 {
-    assert(constants.size() == multiples.size() && constants.size() == polygon.size());
     
     ///first check if the point lies inside the bounding box
-    if (p.x < featherPolyBBox.x1 || p.x >= featherPolyBBox.x2 || p.y < featherPolyBBox.y1 || p.y >= featherPolyBBox.y2) {
+    if (p.x < featherPolyBBox.x1 || p.x >= featherPolyBBox.x2 || p.y < featherPolyBBox.y1 || p.y >= featherPolyBBox.y2
+        || polygon.empty()) {
         return false;
     }
     
-    bool odd = false;
-    std::list<Point>::const_iterator i = polygon.begin();
-    ++i;
-    std::vector<double>::const_iterator cIt = constants.begin();
-    std::vector<double>::const_iterator mIt = multiples.begin();
+    int winding_number = 0;
     
-    for (std::list<Point>::const_iterator j = polygon.begin(); j!=polygon.end(); ++j,++i,++cIt,++mIt) {
-        if (i == polygon.end()) {
-            i = polygon.begin();
-        }
-        if (((i->y > p.y) != (j->y > p.y)) &&
-            (p.x < (p.y * *mIt + *cIt))) {
-            odd = !odd;
-        }
+    std::list<Point>::const_iterator last_pt = polygon.begin();
+    std::list<Point>::const_iterator last_start = last_pt;
+    std::list<Point>::const_iterator cur = last_pt;
+    ++cur;
+    for (;cur != polygon.end();++cur,++last_pt) {
+        point_line_intersection(*last_pt, *cur, p, &winding_number);
     }
-    return odd;
+    
+    // implicitly close last subpath
+    if (last_pt != last_start)
+        point_line_intersection(*last_pt, *last_start, p, &winding_number);
+    
+    return (rule == WindingFill
+            ? (winding_number != 0)
+            : ((winding_number % 2) != 0));
 }
 
 /**
@@ -3362,8 +3366,6 @@ Bezier::expandToFeatherDistance(const Point& cp, //< the point
                                 Point* fp, //< the feather point
                                 double featherDistance, //< feather distance
                                 const std::list<Point>& featherPolygon, //< the polygon of the bezier
-                                const std::vector<double>& constants, //< helper to speed-up pointInPolygon computations
-                                const std::vector<double>& multiples, //< helper to speed-up pointInPolygon computations
                                 const RectD& featherPolyBBox, //< helper to speed-up pointInPolygon computations
                                 int time, //< time
                                 BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
@@ -3415,7 +3417,7 @@ Bezier::expandToFeatherDistance(const Point& cp, //< the point
             extent.x = cp.x + ret.x;
             extent.y = cp.y + ret.y;
             
-            bool inside = pointInPolygon(extent, featherPolygon, constants, multiples,featherPolyBBox);
+            bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::OddEvenFill);
             if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
                 //*fp = extent;
                 fp->x = cp.x + ret.x * featherDistance;
@@ -4872,7 +4874,6 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         ///the control points in order to still be able to apply the feather distance.
         std::list<Point> featherPolygon;
         std::list<Point> bezierPolygon;
-        std::vector<double> multiples,constants;
         RectD featherPolyBBox(std::numeric_limits<double>::infinity(),
                               std::numeric_limits<double>::infinity(),
                               -std::numeric_limits<double>::infinity(),
@@ -4883,11 +4884,6 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
 
         assert(!featherPolygon.empty());
-
-        multiples.resize(featherPolygon.size());
-        constants.resize(featherPolygon.size());
-        Bezier::precomputePointInPolygonTables(featherPolygon, &constants, &multiples);
-
 
         std::list<Point> featherContour;
 
@@ -4910,7 +4906,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         p1.y = cur->y + dy;
 
 
-        bool inside = Bezier::pointInPolygon(p1, featherPolygon, constants, multiples, featherPolyBBox);
+        bool inside = Bezier::pointInPolygon(p1, featherPolygon,featherPolyBBox,Bezier::OddEvenFill);
         if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
             p1.x = cur->x - dx * absFeatherDist;
             p1.y = cur->y - dy * absFeatherDist;
@@ -4962,7 +4958,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                 p2.x = cur->x + dx;
                 p2.y = cur->y + dy;
 
-                inside = Bezier::pointInPolygon(p2, featherPolygon, constants, multiples, featherPolyBBox);
+                inside = Bezier::pointInPolygon(p2, featherPolygon, featherPolyBBox,Bezier::OddEvenFill);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
                     p2.x = cur->x - dx * absFeatherDist;
                     p2.y = cur->y - dy * absFeatherDist;

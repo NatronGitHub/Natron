@@ -1237,7 +1237,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
     
     ///Note that here we use the downscaledImage pointer because in all cases this pixel rod is always good.
     ///See the 2 lines assert above
-    renderWindow.intersect(downscaledImage->getBounds(), &intersection);
+    if (image != downscaledImage) {
+        renderWindow.intersect(image->getBounds(), &intersection);
+    } else {
+        renderWindow.intersect(downscaledImage->getBounds(), &intersection);
+    }
     
     /// If the list is empty then we already rendered it all
     std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
