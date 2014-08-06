@@ -48,9 +48,9 @@
 #define COL_NAME 0
 #define COL_ACTIVATED 1
 #define COL_LOCKED 2
-#define COL_OVERLAY 3
-#define COL_COLOR 4
-#define COL_OPERATOR 5
+#define COL_OVERLAY 4
+#define COL_COLOR 5
+#define COL_OPERATOR 3
 
 #ifdef NATRON_ROTO_INVERTIBLE
 #define COL_INVERTED 6
