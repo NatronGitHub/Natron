@@ -488,7 +488,7 @@ OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
 {
     std::string groupStr = effectInstance()->getPluginGrouping();
     std::string label = pluginLabel();
-    QStringList groups = ofxExtractAllPartsOfGrouping(groupStr.c_str());
+    QStringList groups = ofxExtractAllPartsOfGrouping(label.c_str(), groupStr.c_str());
     for (int i = 0; i < groups.size(); ++i) {
         grouping->push_back(groups[i].toStdString());
     }
