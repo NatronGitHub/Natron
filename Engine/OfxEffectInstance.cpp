@@ -1675,11 +1675,10 @@ OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const 
         return;
     }
     
-    if (reason == SLAVE_REFRESH) {
+    if (reason == SLAVE_REFRESH || reason == RESTORE_DEFAULT) {
         reason = PLUGIN_EDITED;
     }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
-#pragma message WARN("crash here when Resetting to defaults of a single parameter (from right-click menu)")
     assert(!ofxReason.empty()); // crashes when resetting to defaults
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
