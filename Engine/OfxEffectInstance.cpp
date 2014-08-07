@@ -150,6 +150,7 @@ namespace  {
 OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     : AbstractOfxEffectInstance(node)
     , effect_()
+    , _natronPluginID()
     , _isOutput(false)
     , _penDown(false)
     , _overlayInteract(0)
@@ -197,6 +198,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
         effect_->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
+        
+        _natronPluginID = generateImageEffectClassName(effect_->getDescriptor().getShortLabel(),
+                                                       effect_->getDescriptor().getLabel(),
+                                                       effect_->getDescriptor().getLongLabel(),
+                                                       effect_->getDescriptor().getPluginGrouping());
+
         
         blockEvaluation();
 
@@ -257,6 +264,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
         throw;
     }
+    
+    
     _initialized = true;
 }
 
@@ -467,11 +476,7 @@ AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& short
 std::string
 OfxEffectInstance::pluginID() const
 {
-    assert(effect_);
-    return generateImageEffectClassName(effect_->getDescriptor().getShortLabel(),
-                                        effect_->getDescriptor().getLabel(),
-                                        effect_->getDescriptor().getLongLabel(),
-                                        effect_->getDescriptor().getPluginGrouping());
+    return _natronPluginID;
 }
 
 std::string
