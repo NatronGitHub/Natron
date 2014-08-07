@@ -97,7 +97,9 @@ void FloatingWidget::closeEvent(QCloseEvent* e) {
         } else {
             TabWidget* otherPane = *panes.begin();
             while (embedded->count() > 0) {
-                TabWidget::moveTab(embedded->tabAt(0), otherPane);
+                if (!TabWidget::moveTab(embedded->tabAt(0), otherPane)) {
+                    break;
+                }
             }
         }
     }
@@ -539,7 +541,7 @@ void TabWidget::floatCurrentWidget(){
         return;
     
     
-    if (_tabs.size() > 1) {
+    if (_tabs.size() > 1 || !_closeButton->isEnabled()) {
         ///Make a new tab widget and float it instead
         TabWidget* newPane = new TabWidget(_gui,_gui);
         moveTab(_currentWidget, newPane);
@@ -1107,7 +1109,7 @@ void TabWidget::keyPressEvent ( QKeyEvent * event ){
 }
 
 
-void TabWidget::moveTab(QWidget* what,TabWidget *where){
+bool TabWidget::moveTab(QWidget* what,TabWidget *where){
     TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
     
 
@@ -1121,7 +1123,7 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
             }
         }
         if (found) {
-            return;
+            return false;
         }
         //it wasn't found somehow
     }
@@ -1135,6 +1137,7 @@ void TabWidget::moveTab(QWidget* what,TabWidget *where){
     if (!where->getGui()->getApp()->getProject()->isLoadingProject()) {
         where->getGui()->getApp()->triggerAutoSave();
     }
+    return true;
 }
 
 DragPixmap::DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse)

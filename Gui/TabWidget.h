@@ -200,7 +200,7 @@ public:
     
     bool removeSplit(TabWidget* tab,bool* orientation = NULL);
     
-    static void moveTab(QWidget* what,TabWidget* where);
+    static bool moveTab(QWidget* what,TabWidget* where);
     
     /**
      * @brief Starts dragging the selected panel. The following actions are performed:

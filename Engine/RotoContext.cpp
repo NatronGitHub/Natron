@@ -1358,7 +1358,7 @@ bezierPoint(const Point& p0, const Point& p1, const Point& p2, const Point& p3, 
     Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
     return bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, dest);
 }
-
+#if 0 //UNUSED CODE
 // compute polynomial coefficients so that
 // P(t) = A*t^3 + B*t^2 + C*t + D
 static inline void
@@ -1373,7 +1373,7 @@ bezierPolyCoeffs(double p0, double p1, double p2, double p3, double *a, double *
     // a = P3-3*P2+3*P1-P0
     *a = p3 - 3*p2 + 3*p1 - p0;
 }
-
+#endif
 
 // compute polynomial coefficients so that
 // P'(t) = A*t^2 + B*t + C
@@ -5018,7 +5018,6 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
             p1 = p2;
         }  // for each point in polygon
 
-        int loopCount;
         cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
 
         if (!inverted) {
