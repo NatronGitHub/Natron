@@ -412,8 +412,12 @@ ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str)
         out.push_back("Sapphire");
     } else if (str.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
         out.push_back("Monsters");
-    } else if (str.startsWith("RollingShutter") || str.startsWith(" RollingShutter")) {
+    } else if (str.startsWith("particleIllusion")) {
+        out.push_back("particleIllusion");
+    }  else if (str.startsWith("RollingShutter")) {
         out.push_back("RollingShutter");
+    } else if (str.startsWith("Keylight")) {
+        out.push_back("Keyer");
     }
 
     int pos = 0;
