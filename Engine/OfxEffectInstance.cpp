@@ -1651,6 +1651,7 @@ natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reaso
         case Natron::TIME_CHANGED:
             return kOfxChangeTime;
         default:
+            assert(false); // all Natron reasons should be processed
             return "";
     }
 }
@@ -1678,7 +1679,8 @@ OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const 
         reason = PLUGIN_EDITED;
     }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
-    assert(!ofxReason.empty());
+#pragma message WARN("crash here when Resetting to defaults of a single parameter (from right-click menu)")
+    assert(!ofxReason.empty()); // crashes when resetting to defaults
     OfxPointD renderScale;
     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
     OfxStatus stat = kOfxStatOK;
