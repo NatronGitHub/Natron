@@ -415,8 +415,6 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const Q
         out.push_back("Sapphire");
     } else if (s.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
         out.push_back("Monsters");
-    } else if (s.startsWith("particleIllusion")) {
-        out.push_back("particleIllusion");
     } else if (s == "Keylight") {
         s = PLUGIN_GROUP_KEYER;
     }
@@ -427,6 +425,7 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const Q
 QStringList
 AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping)
 {
+    //printf("%s,%s\n",pluginLabel.c_str(),grouping.c_str());
     return ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
 }
 

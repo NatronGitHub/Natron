@@ -569,7 +569,7 @@ void GuiApplicationManager::onPluginLoaded(const QStringList& groups,
     PluginGroupNode* parent = NULL;
     for(int i = 0; i < groups.size();++i){
         PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath);
-        if(parent){
+        if (parent && parent != child) {
             parent->tryAddChild(child);
             child->setParent(parent);
         }
@@ -577,7 +577,7 @@ void GuiApplicationManager::onPluginLoaded(const QStringList& groups,
         
     }
     PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath);
-    if(parent){
+    if (parent && parent != lastChild) {
         parent->tryAddChild(lastChild);
         lastChild->setParent(parent);
     }

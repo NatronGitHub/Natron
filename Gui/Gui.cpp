@@ -1587,9 +1587,13 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     
     //first-off create the tool-button's parent, if any
     ToolButton* parentToolButton = NULL;
-    if(plugin->hasParent())
-        parentToolButton = findOrCreateToolButton(plugin->getParent());
-    
+    if (plugin->hasParent()) {
+        assert(plugin->getParent() != plugin);
+        if (plugin->getParent() != plugin) {
+            parentToolButton = findOrCreateToolButton(plugin->getParent());
+        }
+    }
+
     QIcon icon;
     if(!plugin->getIconPath().isEmpty() && QFile::exists(plugin->getIconPath())){
         icon.addFile(plugin->getIconPath());
