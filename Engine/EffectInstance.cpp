@@ -1371,6 +1371,12 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 assert(foundInputRoI != inputsRoi.end());
                 
                 ///Convert to pixel coords the RoI
+                if (foundInputRoI->second.isInfinite()) {
+#pragma message WARN("Graph 'Denoise (from Nuke) - particleIllusion - Viewer' (no reader) gives infinite RoI")
+                    assert(false); // Denoise (from Nuke) - particleIllusion - Viewer (no reader) gives infinite RoI
+                    throw std::runtime_error(std::string("Plugin ") + this->pluginLabel() + " asked for an infinite region of interest!");
+                }
+
                 RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
                 
                 ///Notify the node that we're going to render something with the input

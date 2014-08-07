@@ -217,6 +217,8 @@ public:
     }
 
     bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
+
+    bool isInfinite() const { return x1 <= kOfxFlagInfiniteMin || x2 >= kOfxFlagInfiniteMax || y1 <= kOfxFlagInfiniteMin || y2 >= kOfxFlagInfiniteMax; }
     
     operator bool() const { return !isNull(); }
     
