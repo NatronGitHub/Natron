@@ -293,7 +293,7 @@ void KnobGui::showRightClickMenuForDimension(const QPoint&,int dimension) {
         
     }
     
-    QAction* resetDefaultAction = new QAction(tr("Set default value"),_imp->copyRightClickMenu);
+    QAction* resetDefaultAction = new QAction(tr("Reset to default value"),_imp->copyRightClickMenu);
     resetDefaultAction->setData(QVariant(dimension));
     QObject::connect(resetDefaultAction,SIGNAL(triggered()),this,SLOT(onResetDefaultValuesActionTriggered()));
     _imp->copyRightClickMenu->addAction(resetDefaultAction);
