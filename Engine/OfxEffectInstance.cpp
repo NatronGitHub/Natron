@@ -403,7 +403,10 @@ ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str)
         out.push_back("Sapphire");
     } else if (str.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
         out.push_back("Monsters");
+    } else if (str.startsWith("RollingShutter") || str.startsWith(" RollingShutter")) {
+        out.push_back("RollingShutter");
     }
+
     int pos = 0;
     while (pos < str.size()) {
         QString newPart;
