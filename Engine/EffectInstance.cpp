@@ -1527,6 +1527,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
                     canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
@@ -1548,6 +1549,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
                     canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
@@ -1569,6 +1571,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
                     canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
@@ -1658,6 +1661,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     RectI upscaledRoi = rectToRender;
     if (useFullResImage) {
         upscaledRoi = rectToRender.upscalePowerOfTwo(args._mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
         upscaledRoi.intersect(fullScaleOutput->getBounds(), &upscaledRoi);
     }
     
