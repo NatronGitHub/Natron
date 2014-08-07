@@ -418,7 +418,6 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const Q
     } else if (s.startsWith("particleIllusion")) {
         out.push_back("particleIllusion");
     } else if (s == "Keylight") {
-        printf("%s\n", s.toLatin1().data());
         s = PLUGIN_GROUP_KEYER;
     }
 
