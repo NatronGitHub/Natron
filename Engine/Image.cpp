@@ -811,7 +811,7 @@ void Image::upscaleMipMapForDepth(const RectI& roi, Natron::Image* output,unsign
 
     RectI dstRoi = roi.upscalePowerOfTwo(level);
     dstRoi.intersect(output->getBounds(), &dstRoi); //output may be a bit smaller than the upscaled RoI
-    unsigned int scale = 1 << level;
+    int scale = 1 << level;
 
     assert(output->getComponents() == getComponents());
     int components = getElementsCountForComponents(getComponents());
@@ -822,24 +822,41 @@ void Image::upscaleMipMapForDepth(const RectI& roi, Natron::Image* output,unsign
     const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
     PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
     assert(src && dst);
-    for (int y = 0; y < srcRoi.height(); ++y) {
-        const PIX *srcLineStart = src + y*srcRowSize;
-        PIX *dstLineStart = dst + y*scale*dstRowSize;
-        for (int x = 0; x < srcRoi.width(); ++x) {
-            const PIX *srcPix = srcLineStart + x*components;
-            PIX *dstPix = dstLineStart + x*scale*components;
-            for (unsigned int j = 0; j < scale; ++j) {
-                PIX *dstSubPixLineStart = dstPix + j*dstRowSize;
-                for (unsigned int i = 0; i < scale; ++i) {
-                    PIX *dstSubPix = dstSubPixLineStart + i*components;
-                    for (int c = 0; c < components; ++c) {
-                        dstSubPix[c] = srcPix[c];
-                    }
+
+    // algorithm: fill the first line of output, and replicate it as many times as necessary
+    // works even if dstRoi is not exactly a multiple of srcRoi (first/last column/line may not be complete)
+    int yi = srcRoi.y1;
+    int ycount; // how many lines should be filled
+    for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount*dstRowSize) {
+        const PIX * const srcLineStart = src;
+        PIX * const dstLineBatchStart = dst;
+        ycount = scale + yo - yi*scale; // how many lines should be filled
+        assert(0 < ycount && ycount <= scale);
+        int xi = srcRoi.x1;
+        int xcount = 0; // how many pixels should be filled
+        const PIX * srcPix = srcLineStart;
+        PIX * dstPixFirst = dstLineBatchStart;
+        // fill the first line
+        for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += components, xo += xcount, dstPixFirst += xcount*components) {
+            xcount = scale + xo - xi*scale;
+            assert(0 < xcount && xcount <= scale);
+            // replicate srcPix as many times as necessary
+            PIX * dstPix = dstPixFirst;
+            //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
+            for (int i = 0; i < xcount; ++i, dstPix += components) {
+                assert((dstPix-(PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1)) % components == 0);
+                for (int c = 0; c < components; ++c) {
+                    dstPix[c] = srcPix[c];
                 }
             }
+            //assert(dstPix == dstPixFirst + xcount*components);
+        }
+        PIX * dstLineStart = dstLineBatchStart + dstRowSize; // first line was filled already
+        // now replicate the line as many times as necessary
+        for (int i = 1; i < ycount; ++i, dstLineStart += dstRowSize) {
+            std::copy(dstLineBatchStart, dstLineBatchStart+dstRowSize, dstLineStart);
         }
     }
-
 }
 
 void Image::upscaleMipMap(const RectI& roi, Natron::Image* output,unsigned int level) const
