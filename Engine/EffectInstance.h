@@ -809,8 +809,9 @@ private:
     void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason) OVERRIDE;
 
     
-    virtual void onSlaveStateChanged(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
-
+    virtual void onAllKnobsSlaved(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
+    
+    virtual void onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool isSlave,KnobHolder* master) OVERRIDE FINAL;
     
     
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,

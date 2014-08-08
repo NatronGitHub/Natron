@@ -42,6 +42,7 @@ class KnobI;
 class NodeGuiSerialization;
 class KnobGui;
 class QUndoStack;
+class LinkArrow;
 class MultiInstancePanel;
 class QMenu;
 namespace Natron {
@@ -66,6 +67,8 @@ public:
     void setToolTip(const QString& tooltip);
     
     void setActive(bool active);
+    
+    bool isActive() const;
     
     void refreshPosition(const QPointF& topLeft);
     
@@ -269,6 +272,7 @@ public:
     void setParentMultiInstance(const boost::shared_ptr<NodeGui>& parent);
     
     
+    void setKnobLinksVisible(bool visible);
     
 public slots:
     
@@ -306,6 +310,8 @@ public slots:
             
     void refreshEdges();
     
+    void refreshKnobLinks();
+    
     /*initialises the input edges*/
     void initializeInputs();
     
@@ -338,10 +344,10 @@ public slots:
     
     void centerGraphOnIt();
     
-    void onSlaveStateChanged(bool b);
+    void onAllKnobsSlaved(bool b);
     
-    void refreshSlaveMasterLinkPosition();
-    
+    void onKnobsLinksChanged();
+        
     void refreshOutputEdgeVisibility();
     
     void toggleBitDepthIndicator(bool on,const QString& tooltip);
@@ -443,8 +449,21 @@ private:
     
     mutable QMutex positionMutex;
     
-    QGraphicsLineItem* _slaveMasterLink;
+    ///This is the garphical red line displayed when the node is a clone
+    LinkArrow* _slaveMasterLink;
     boost::shared_ptr<NodeGui> _masterNodeGui;
+    
+    ///For each knob that has a link to another parameter, display an arrow
+    ///This might need to be a multimap in the future if an expression refers to several params
+    struct LinkedDim
+    {
+        KnobI* knob;
+        int dimension;
+        LinkArrow* arrow;
+    };
+    typedef std::list<LinkedDim> KnobGuiLinks;
+    KnobGuiLinks _knobsLinks;
+    NodeGuiIndicator* _expressionIndicator;
     
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y

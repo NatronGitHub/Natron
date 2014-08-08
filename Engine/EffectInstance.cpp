@@ -1899,10 +1899,14 @@ void EffectInstance::unregisterPluginMemory(size_t nBytes) {
     _node->unregisterPluginMemory(nBytes);
 }
 
-void EffectInstance::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
-    _node->onSlaveStateChanged(isSlave,master);
+void EffectInstance::onAllKnobsSlaved(bool isSlave,KnobHolder* master) {
+    _node->onAllKnobsSlaved(isSlave,master);
 }
 
+void EffectInstance::onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool isSlave,KnobHolder* master)
+{
+    _node->onKnobSlaved(knob,dimension,isSlave,master);
+}
 
 void EffectInstance::drawOverlay_public(double scaleX,double scaleY)
 {

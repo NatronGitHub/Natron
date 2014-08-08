@@ -135,6 +135,8 @@ public:
      **/
     void invalidateAllNodesParenting();
     
+    bool areKnobLinksVisible() const;
+    
 public slots:
     
     void deleteSelection();
@@ -154,6 +156,8 @@ public slots:
     void toggleAutoPreview();
     
     void forceRefreshAllPreviews();
+    
+    void toggleKnobLinksVisible();
 
     void onProjectNodesCleared();
     

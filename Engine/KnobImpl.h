@@ -499,7 +499,9 @@ void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyS
             checkAnimationLevel(dimension);
         }
     }
-    
+    if (getHolder() && _signalSlotHandler) {
+        getHolder()->onKnobSlaved(_signalSlotHandler->getKnob(),dimension,false, master.second->getHolder());
+    }
 }
 
 template<>
@@ -624,13 +626,6 @@ std::string Knob<std::string>::getKeyFrameValueByIndex(int dimension,int index,b
 
 
 template<typename T>
-const std::vector<T>& Knob<T>::getValueForEachDimension() const
-{
-    return _values;
-}
-
-
-template<typename T>
 std::list<T> Knob<T>::getValueForEachDimension_mt_safe() const
 {
     QReadLocker l(&_valueMutex);
@@ -639,6 +634,13 @@ std::list<T> Knob<T>::getValueForEachDimension_mt_safe() const
         ret.push_back(_values[i]);
     }
     return ret;
+}
+
+template<typename T>
+std::vector<T> Knob<T>::getValueForEachDimension_mt_safe_vector() const
+{
+    QReadLocker l(&_valueMutex);
+    return _values;
 }
 
 template<typename T>
@@ -822,22 +824,73 @@ template<>
 void Knob<int>::cloneValues(KnobI* other)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    assert(isInt);
-    _values = isInt->_values;
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    assert(isInt || isBool || isDouble);
+    QWriteLocker k(&_valueMutex);
+    if (isInt) {
+        _values = isInt->getValueForEachDimension_mt_safe_vector();
+    } else if (isBool) {
+        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
+        assert(v.size() == _values.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+        }
+    } else {
+        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
+        assert(v.size() == _values.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+        }
+    }
 }
 template<>
 void Knob<bool>::cloneValues(KnobI* other)
 {
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    assert(isBool),
-    _values = isBool->_values;
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    assert(isInt || isBool || isDouble);
+    QWriteLocker k(&_valueMutex);
+    if (isInt) {
+        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
+        assert(v.size() == _values.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+        }
+    } else if (isBool) {
+        _values = isBool->getValueForEachDimension_mt_safe_vector();
+    } else {
+        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
+        assert(v.size() == _values.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+        }
+    }
 }
 template<>
 void Knob<double>::cloneValues(KnobI* other)
 {
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-    assert(isDouble);
-    _values = isDouble->_values;
+    assert(isInt || isBool || isDouble);
+    QWriteLocker k(&_valueMutex);
+    if (isInt) {
+        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
+        assert(v.size() == _values.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+        }
+    } else if (isBool) {
+        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
+        assert(v.size() == _values.size());
+        for (U32 i = 0; i < v.size(); ++i) {
+            _values[i] = v[i];
+        }
+    } else {
+        _values = isDouble->getValueForEachDimension_mt_safe_vector();
+    }
 }
 template<>
 void Knob<std::string>::cloneValues(KnobI* other)

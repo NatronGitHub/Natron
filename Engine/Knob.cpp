@@ -68,7 +68,9 @@ void KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 
 void KnobSignalSlotHandler::onMasterChanged(int dimension)
 {
-    k->evaluateValueChange(dimension, Natron::SLAVE_REFRESH);
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    assert(handler);
+    k->onMasterChanged(handler->getKnob().get(),dimension);
 }
 
 void KnobSignalSlotHandler::onEvaluateValueChangedInOtherThread(int dimension, int reason)
@@ -683,6 +685,10 @@ bool KnobHelper::slaveTo(int dimension,
         }
         checkAnimationLevel(dimension);
     }
+    if (getHolder() && _signalSlotHandler) {
+        ///hackish way to get a shared ptr to this knob
+        getHolder()->onKnobSlaved(_signalSlotHandler->getKnob(),dimension,true, other->getHolder());
+    }
     return true;
 
 }
@@ -861,7 +867,22 @@ int KnobHelper::getKeyFrameIndex(int dimension, double time) const
     return curve->keyFrameIndex(time);
 }
 
-
+void KnobHelper::onMasterChanged(KnobI* master,int /*masterDimension*/)
+{
+    ///Map to the good dimension
+    {
+        QReadLocker l(&_imp->mastersMutex);
+        for (U32 i = 0; i < _imp->masters.size(); ++i) {
+            if (_imp->masters[i].second.get() == master) {
+                evaluateValueChange(i, Natron::SLAVE_REFRESH);
+                return;
+            }
+        }
+        
+    }
+    ///The master must exist.
+    assert(false);
+}
 
 /***************************KNOB HOLDER******************************************/
 
@@ -1057,7 +1078,7 @@ void KnobHolder::slaveAllKnobs(KnobHolder* other) {
         }
     }
     _imp->isSlave = true;
-    onSlaveStateChanged(true,other);
+    onAllKnobsSlaved(true,other);
 
 }
 
@@ -1078,7 +1099,7 @@ void KnobHolder::unslaveAllKnobs() {
         }
     }
     _imp->isSlave = false;
-    onSlaveStateChanged(false,(KnobHolder*)NULL);
+    onAllKnobsSlaved(false,(KnobHolder*)NULL);
 }
 
 void KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reason)

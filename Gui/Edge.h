@@ -57,8 +57,6 @@ public:
     
     void setInputNumber(int i) { inputNb = i; }
     
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0);
-    
     boost::shared_ptr<NodeGui> getDest() const {return dest;}
     
     boost::shared_ptr<NodeGui> getSource() const {return source;}
@@ -90,6 +88,9 @@ public:
     bool isNearbyBendPoint(const QPointF& scenePoint);
     
 private:
+    
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
+
 
     bool _isOutputEdge;
     int inputNb;
@@ -106,6 +107,44 @@ private:
     bool _paintBendPoint;
     bool _bendPointHiddenAutomatically;
     QPointF _middlePoint; //updated only when dest && source are valid
+};
+
+/**
+ * @brief An arrow in the graph representing an expression between 2 nodes or that one node is a clone of another.
+ **/
+class LinkArrow: public QObject, public QGraphicsLineItem
+{
+    Q_OBJECT
+public:
+    
+    LinkArrow(const NodeGui* master,const NodeGui* slave,QGraphicsItem* parent);
+    
+    virtual ~LinkArrow();
+    
+    void setColor(const QColor& color);
+    
+    void setArrowHeadColor(const QColor& headColor);
+    
+    void setWidth(int lineWidth);
+    
+public slots:
+    
+    /**
+     * @brief Called when one of the 2 nodes is moved
+     **/
+    void refreshPosition();
+    
+private:
+    
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
+
+    
+    const NodeGui* _master;
+    const NodeGui* _slave;
+    QPolygonF _arrowHead;
+    QColor _renderColor;
+    QColor _headColor;
+    int _lineWidth;
 };
 
 #endif // NATRON_GUI_EDGE_H_

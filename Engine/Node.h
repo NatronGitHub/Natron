@@ -514,8 +514,10 @@ public:
     
     U64 getKnobsAge() const;
     
-    void onSlaveStateChanged(bool isSlave,KnobHolder* master);
+    void onAllKnobsSlaved(bool isSlave,KnobHolder* master);
   
+    void onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool isSlave,KnobHolder* master);
+    
     boost::shared_ptr<Natron::Node> getMasterNode() const;
     
     /**
@@ -601,6 +603,19 @@ public:
      **/
     void clearLastRenderedImage();
     
+    struct KnobLink
+    {
+        ///The knob being slaved
+        boost::shared_ptr<KnobI> knob;
+        
+        ///The dimension being slaved
+        int dimension;
+        
+        ///The master to which the knob is slaved to
+        boost::shared_ptr<Node> masterNode;
+    };
+    void getKnobsLinks(std::list<KnobLink>& links) const;
+    
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -682,7 +697,12 @@ signals:
     ///and the old value
     void pluginMemoryUsageChanged(qint64 mem);
     
-    void slavedStateChanged(bool b);
+    void allKnobsSlaved(bool b);
+    
+    ///Called when a knob is either slaved or unslaved
+    void knobsLinksChanged();
+    
+    void knobSlaved();
     
     void previewKnobToggled();
     
@@ -691,6 +711,7 @@ signals:
     void bitDepthWarningToggled(bool,QString);
     
     void nodeExtraLabelChanged(QString);
+    
 protected:
 
     /**

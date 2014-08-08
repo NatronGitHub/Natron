@@ -174,6 +174,12 @@ public:
      * @brief Calls removeAnimation with a reason of Natron::USER_EDITED
      **/
     void onAnimationRemoved(int dimension);
+    
+    /**
+     * @brief Called when the master knob has changed its values or keyframes.
+     * @param masterDimension The dimension of the master which has changed
+     **/
+    virtual void onMasterChanged(KnobI* master,int masterDimension) = 0;
 
     /**
      * @brief Calls setValueAtTime with a reason of Natron::USER_EDITED.
@@ -697,6 +703,8 @@ private:
     
 public:
     
+    virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
+    
     virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
     
     virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReason reason) OVERRIDE FINAL;
@@ -948,18 +956,13 @@ public:
      * false otherwise.
      **/
     T getKeyFrameValueByIndex(int dimension,int index,bool* ok) const WARN_UNUSED_RETURN;
-    /**
-     * @brief Returns the values of the knob across all dimensions. 
-     * WARNING: This is not MT thread-safe! You should use getValueForEachDimension_mt_safe()
-     * for a MT-safe version. 
-     * This function asserts that the caller is running in the application's main-thread.
-     **/
-    const std::vector<T>& getValueForEachDimension() const WARN_UNUSED_RETURN;
-    
+
     /**
      * @brief Same as getValueForEachDimension() but MT thread-safe.
      **/
+    std::vector<T> getValueForEachDimension_mt_safe_vector() const WARN_UNUSED_RETURN;
     std::list<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
+    
     
     /**
      * @brief Set a default value for the particular dimension.
@@ -1278,11 +1281,18 @@ protected:
     
     /**
      * @brief Called when the knobHolder is made slave or unslaved.
-     * @param master The master knobHolder. When isSlave is false, master
-     * will be set to NULL.
+     * @param master The master knobHolder.
+     * @param isSlave Whether this KnobHolder is now slaved or not.
+     * If false, master will be NULL.
      **/
-    virtual void onSlaveStateChanged(bool /*isSlave*/,KnobHolder* /*master*/) {}
+    virtual void onAllKnobsSlaved(bool /*isSlave*/,KnobHolder* /*master*/) {}
+   
+public:
     
+    /**
+     * @brief Same as onAllKnobsSlaved but called when only 1 knob is slaved
+     **/
+    virtual void onKnobSlaved(const boost::shared_ptr<KnobI>& /*knob*/,int /*dimension*/,bool /*isSlave*/,KnobHolder* /*master*/) {}
 private:
 
     

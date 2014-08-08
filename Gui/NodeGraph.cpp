@@ -237,6 +237,7 @@ struct NodeGraphPrivate
     
     bool _bendPointsVisible;
 
+    bool _knobLinksVisible;
     
     NodeGraphPrivate(Gui* gui,NodeGraph* p)
     : _publicInterface(p)
@@ -281,6 +282,7 @@ struct NodeGraphPrivate
     , _selection()
     , _selectionRect(NULL)
     , _bendPointsVisible(false)
+    , _knobLinksVisible(true)
     {
         
     }
@@ -1592,6 +1594,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
                && !e->modifiers().testFlag(Qt::ControlModifier)
                && !e->modifiers().testFlag(Qt::AltModifier)) {
         _imp->toggleSelectedNodesEnabled();
+    } else if (e->key() == Qt::Key_E && e->modifiers().testFlag(Qt::ShiftModifier)
+               && !e->modifiers().testFlag(Qt::ControlModifier)
+               && !e->modifiers().testFlag(Qt::AltModifier)) {
+        toggleKnobLinksVisible();
     }
     
 }
@@ -2124,8 +2130,14 @@ NodeGraph::populateMenu()
     QObject::connect(connectionHints,SIGNAL(triggered()),this,SLOT(toggleConnectionHints()));
     _imp->_menu->addAction(connectionHints);
 
+    QAction* knobLinks = new QAction(tr("Display parameters links"),this);
+    knobLinks->setCheckable(true);
+    knobLinks->setChecked(areKnobLinksVisible());
+    knobLinks->setShortcut(QKeySequence(Qt::ShiftModifier + Qt::Key_E));
+    QObject::connect(knobLinks,SIGNAL(triggered()),this,SLOT(toggleKnobLinksVisible()));
+    _imp->_menu->addAction(knobLinks);
     
-    QAction* autoPreview = new QAction(tr("Auto preview"),this);
+    QAction* autoPreview = new QAction(tr("Enable auto preview"),this);
     autoPreview->setCheckable(true);
     autoPreview->setChecked(_imp->_gui->getApp()->getProject()->isAutoPreviewEnabled());
     QObject::connect(autoPreview,SIGNAL(triggered()),this,SLOT(toggleAutoPreview()));
@@ -2151,6 +2163,21 @@ NodeGraph::populateMenu()
     }
    
     
+}
+
+void
+NodeGraph::toggleKnobLinksVisible()
+{
+    _imp->_knobLinksVisible = !_imp->_knobLinksVisible;
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+            (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
+        }
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+            (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
+        }
+    }
 }
 
 void
@@ -3015,4 +3042,9 @@ void NodeGraphPrivate::toggleSelectedNodesEnabled()
     } else {
         _undoStack->push(new DisableNodesCommand(_selection.nodes));
     }
+}
+
+bool NodeGraph::areKnobLinksVisible() const
+{
+    return _imp->_knobLinksVisible;
 }

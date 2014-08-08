@@ -121,6 +121,30 @@ void Edge::setUseHighlight(bool highlight)
     update();
 }
 
+static void makeEdges(const QRectF& bbox,std::vector<QLineF>& edges)
+{
+    QPointF topLeft = bbox.topLeft();
+    edges.push_back(QLineF(topLeft.x()+bbox.width(), // right
+                         topLeft.y(),
+                         topLeft.x()+bbox.width(),
+                         topLeft.y()+bbox.height()));
+    
+    edges.push_back(QLineF(topLeft.x()+bbox.width(), // bottom
+                         topLeft.y()+bbox.height(),
+                         topLeft.x(),
+                         topLeft.y()+bbox.height()));
+    
+    edges.push_back(QLineF(topLeft.x(),  // left
+                         topLeft.y()+bbox.height(),
+                         topLeft.x(),
+                         topLeft.y()));
+    
+    edges.push_back(QLineF(topLeft.x(), // top
+                         topLeft.y(),
+                         topLeft.x()+bbox.width(),
+                         topLeft.y()));
+}
+
 void Edge::initLine()
 {
     if (!source && !dest) {
@@ -149,46 +173,13 @@ void Edge::initLine()
         dst = QPointF(sourceBBOX.x(),sourceBBOX.y()) + QPointF(srcNodeSize.width() / 2., srcNodeSize.height() + 10);
     }
     
-    QLineF dstEdges[4];
-    QLineF srcEdges[4];
+    std::vector<QLineF> dstEdges;
+    std::vector<QLineF> srcEdges;
     if (dest) {
-        QPointF dstBBoxTopLeft = destBBOX.topLeft();
-        dstEdges[0] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // right
-                          dstBBoxTopLeft.y(),
-                          dstBBoxTopLeft.x()+dstNodeSize.width(),
-                          dstBBoxTopLeft.y()+dstNodeSize.height());
-        dstEdges[1] = QLineF(dstBBoxTopLeft.x()+dstNodeSize.width(), // bottom
-                          dstBBoxTopLeft.y()+dstNodeSize.height(),
-                          dstBBoxTopLeft.x(),
-                          dstBBoxTopLeft.y()+dstNodeSize.height());
-        dstEdges[2] = QLineF(dstBBoxTopLeft.x(),  // left
-                          dstBBoxTopLeft.y()+dstNodeSize.height(),
-                          dstBBoxTopLeft.x(),
-                          dstBBoxTopLeft.y());
-        dstEdges[3] = QLineF(dstBBoxTopLeft.x(), // top
-                          dstBBoxTopLeft.y(),
-                          dstBBoxTopLeft.x()+dstNodeSize.width(),
-                          dstBBoxTopLeft.y());
+        makeEdges(destBBOX, dstEdges);
     }
     if (source) {
-        QPointF srcBBoxTopLeft = sourceBBOX.topLeft();
-        srcEdges[0] = QLineF(srcBBoxTopLeft.x()+srcNodeSize.width(), // right
-                             srcBBoxTopLeft.y(),
-                             srcBBoxTopLeft.x()+srcNodeSize.width(),
-                             srcBBoxTopLeft.y()+srcNodeSize.height());
-        srcEdges[1] = QLineF(srcBBoxTopLeft.x()+srcNodeSize.width(), // bottom
-                             srcBBoxTopLeft.y()+srcNodeSize.height(),
-                             srcBBoxTopLeft.x(),
-                             srcBBoxTopLeft.y()+srcNodeSize.height());
-        srcEdges[2] = QLineF(srcBBoxTopLeft.x(),  // left
-                             srcBBoxTopLeft.y()+srcNodeSize.height(),
-                             srcBBoxTopLeft.x(),
-                             srcBBoxTopLeft.y());
-        srcEdges[3] = QLineF(srcBBoxTopLeft.x(), // top
-                             srcBBoxTopLeft.y(),
-                             srcBBoxTopLeft.x()+srcNodeSize.width(),
-                             srcBBoxTopLeft.y());
-
+        makeEdges(sourceBBOX, srcEdges);
     }
     
     QPointF srcpt;
@@ -419,48 +410,175 @@ bool Edge::isNearbyBendPoint(const QPointF& scenePoint)
 }
 
 void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * /*options*/,
-           QWidget * /*parent*/)
- {
+                 QWidget * /*parent*/)
+{
+    
+    QPen myPen = pen();
+    
+    if (_paintWithDash) {
+        QVector<qreal> dashStyle;
+        qreal space = 4;
+        dashStyle << 3 << space;
+        myPen.setDashPattern(dashStyle);
+    }else{
+        myPen.setStyle(Qt::SolidLine);
+    }
+    
+    QColor color;
+    if (_useHighlight) {
+        color = Qt::green;
+    } else if (_useRenderingColor) {
+        color = _renderingColor;
+    } else {
+        color = _defaultColor;
+    }
+    myPen.setColor(color);
+    painter->setPen(myPen);
+    QLineF l = line();
+    painter->drawLine(l);
+    
+    myPen.setStyle(Qt::SolidLine);
+    painter->setPen(myPen);
+    
+    QPainterPath headPath;
+    headPath.addPolygon(arrowHead);
+    headPath.closeSubpath();
+    painter->fillPath(headPath, color);
+    
+    if (_paintBendPoint) {
+        QRectF arcRect(_middlePoint.x() - 5,_middlePoint.y() - 5,10,10);
+        QPainterPath bendPointPath;
+        bendPointPath.addEllipse(arcRect);
+        bendPointPath.closeSubpath();
+        painter->fillPath(bendPointPath,Qt::yellow);
+    }
+    
+}
 
-     QPen myPen = pen();
-     
-     if (_paintWithDash) {
-         QVector<qreal> dashStyle;
-         qreal space = 4;
-         dashStyle << 3 << space;
-         myPen.setDashPattern(dashStyle);
-     }else{
-         myPen.setStyle(Qt::SolidLine);
-     }
-     
-     QColor color;
-     if (_useHighlight) {
-         color = Qt::green;
-     } else if (_useRenderingColor) {
-         color = _renderingColor;
-     } else {
-         color = _defaultColor;
-     }
-     myPen.setColor(color);
-     painter->setPen(myPen);
-     QLineF l = line();
-     painter->drawLine(l);
 
-     myPen.setStyle(Qt::SolidLine);
-     painter->setPen(myPen);
-     
-     QPainterPath headPath;
-     headPath.addPolygon(arrowHead);
-     headPath.closeSubpath();
-     painter->fillPath(headPath, color);
-     
-     if (_paintBendPoint) {
-         QRectF arcRect(_middlePoint.x() - 5,_middlePoint.y() - 5,10,10);
-         QPainterPath bendPointPath;
-         bendPointPath.addEllipse(arcRect);
-         bendPointPath.closeSubpath();
-         painter->fillPath(bendPointPath,Qt::yellow);
-     }
+LinkArrow::LinkArrow(const NodeGui* master,const NodeGui* slave,QGraphicsItem* parent)
+: QObject(), QGraphicsLineItem(parent)
+, _master(master)
+, _slave(slave)
+, _arrowHead()
+, _renderColor(Qt::black)
+, _headColor(Qt::white)
+, _lineWidth(1)
+{
+    QObject::connect(master,SIGNAL(positionChanged()),this,SLOT(refreshPosition()));
+    QObject::connect(slave,SIGNAL(positionChanged()),this,SLOT(refreshPosition()));
+    refreshPosition();
+    setZValue(0);
+}
 
-  }
+LinkArrow::~LinkArrow()
+{
+    
+}
 
+void LinkArrow::setColor(const QColor& color)
+{
+    _renderColor = color;
+}
+
+void LinkArrow::setArrowHeadColor(const QColor& headColor)
+{
+    _headColor = headColor;
+}
+
+void LinkArrow::setWidth(int lineWidth)
+{
+    _lineWidth = lineWidth;
+}
+
+void LinkArrow::refreshPosition()
+{
+    QRectF bboxSlave = mapFromItem(_slave,_slave->boundingRect()).boundingRect();
+    
+    ///like the box master in kfc! was bound to name it so I'm hungry atm
+    QRectF boxMaster = mapFromItem(_master,_master->boundingRect()).boundingRect();
+    
+    QPointF dst = boxMaster.center();
+    QPointF src = bboxSlave.center();
+    setLine(QLineF(src,dst));
+    
+    ///Get the intersections of the line with the nodes
+    std::vector<QLineF> masterEdges;
+    std::vector<QLineF> slaveEdges;
+    makeEdges(bboxSlave, slaveEdges);
+    makeEdges(boxMaster, masterEdges);
+    
+    
+    QPointF masterIntersect;
+    QPointF slaveIntersect;
+    
+    bool foundIntersection = false;
+    for (int i = 0; i < 4; ++i) {
+        QLineF::IntersectType type = slaveEdges[i].intersect(line(), &slaveIntersect);
+        if (type == QLineF::BoundedIntersection) {
+            foundIntersection = true;
+            break;
+        }
+    }
+    
+    if (!foundIntersection) {
+        ///Don't bother continuing, there's no intersection that means the line is contained in the node bbox
+        ///hence that the 2 nodes are overlapping on the nodegraph so probably we wouldn't see the link anyway.
+        return;
+    }
+    
+    foundIntersection = false;
+    for (int i = 0; i < 4; ++i) {
+        QLineF::IntersectType type = masterEdges[i].intersect(line(), &masterIntersect);
+        if (type == QLineF::BoundedIntersection) {
+            foundIntersection = true;
+            break;
+        }
+    }
+    if (!foundIntersection) {
+        ///Don't bother continuing, there's no intersection that means the line is contained in the node bbox
+        ///hence that the 2 nodes are overlapping on the nodegraph so probably we wouldn't see the link anyway.
+        return;
+    }
+
+    ///Now get the middle of the visible portion of the link
+    QPointF middle = (masterIntersect + slaveIntersect) / 2.;
+    
+    double length = line().length();
+    ///This is the angle the edge forms with the X axis
+    qreal a = std::acos(line().dx() / length);
+    
+    if (line().dy() >= 0) {
+        a = 2 * M_PI - a;
+    }
+    
+    qreal arrowSize = 10. * scale();
+    QPointF arrowP1 = middle + QPointF(std::sin(a + M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI / 3) * arrowSize);
+    QPointF arrowP2 = middle + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
+                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    
+    _arrowHead.clear();
+    _arrowHead << middle << arrowP1 << arrowP2;
+
+
+}
+
+void LinkArrow::paint(QPainter *painter, const QStyleOptionGraphicsItem* /*options*/,QWidget* /*parent*/)
+{
+    QPen myPen = pen();
+    myPen.setColor(_renderColor);
+    myPen.setWidth(_lineWidth);
+    painter->setPen(myPen);
+    QLineF l = line();
+    painter->drawLine(l);
+    
+    myPen.setStyle(Qt::SolidLine);
+    painter->setPen(myPen);
+    
+    QPainterPath headPath;
+    headPath.addPolygon(_arrowHead);
+    headPath.closeSubpath();
+    painter->fillPath(headPath, _headColor);
+
+}

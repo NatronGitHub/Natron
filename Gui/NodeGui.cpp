@@ -45,7 +45,7 @@
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
-
+#include "Engine/Knob.h"
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
 #define NATRON_EDGE_DROP_TOLERANCE 15
@@ -106,6 +106,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , positionMutex()
 , _slaveMasterLink(NULL)
 , _masterNodeGui()
+, _knobsLinks()
+, _expressionIndicator(NULL)
 , _magnecEnabled()
 , _magnecDistance()
 , _updateDistanceSinceLastMagnec()
@@ -127,6 +129,7 @@ NodeGui::~NodeGui()
     delete _defaultGradient;
     delete _disabledGradient;
     delete _bitDepthWarning;
+    delete _expressionIndicator;
 }
 
 
@@ -157,7 +160,8 @@ void NodeGui::initialize(NodeGraph* dag,
     QObject::connect(_internalNode.get(), SIGNAL(renderingEnded()), this, SLOT(onRenderingFinished()));
     QObject::connect(_internalNode.get(), SIGNAL(inputNIsRendering(int)), this, SLOT(onInputNRenderingStarted(int)));
     QObject::connect(_internalNode.get(), SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)));
-    QObject::connect(_internalNode.get(), SIGNAL(slavedStateChanged(bool)), this, SLOT(onSlaveStateChanged(bool)));
+    QObject::connect(_internalNode.get(), SIGNAL(allKnobsSlaved(bool)), this, SLOT(onAllKnobsSlaved(bool)));
+    QObject::connect(_internalNode.get(), SIGNAL(knobsLinksChanged()), this, SLOT(onKnobsLinksChanged()));
     QObject::connect(_internalNode.get(), SIGNAL(outputsChanged()),this,SLOT(refreshOutputEdgeVisibility()));
     QObject::connect(_internalNode.get(), SIGNAL(previewKnobToggled()),this,SLOT(onPreviewKnobToggled()));
     QObject::connect(_internalNode.get(), SIGNAL(disabledKnobToggled(bool)),this,SLOT(onDisabledKnobToggled(bool)));
@@ -295,14 +299,25 @@ void NodeGui::createGui()
     _stateIndicator->setZValue(-1);
     _stateIndicator->hide();
     
-    QPointF bitDepthPos = mapFromParent(pos());
+    QRectF bbox = boundingRect();
     QGradientStops bitDepthGrad;
     bitDepthGrad.push_back(qMakePair(0., QColor(Qt::white)));
     bitDepthGrad.push_back(qMakePair(0.3, QColor(Qt::yellow)));
     bitDepthGrad.push_back(qMakePair(1., QColor(243,137,0)));
-    _bitDepthWarning = new NodeGuiIndicator("C",bitDepthPos,NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+    _bitDepthWarning = new NodeGuiIndicator("C",bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                             bitDepthGrad,QColor(0,0,0,255),this);
     _bitDepthWarning->setActive(false);
+    
+    
+    QGradientStops exprGrad;
+    exprGrad.push_back(qMakePair(0., QColor(Qt::white)));
+    exprGrad.push_back(qMakePair(0.3, QColor(Qt::green)));
+    exprGrad.push_back(qMakePair(1., QColor(69,96,63)));
+    _expressionIndicator = new NodeGuiIndicator("E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+                                                exprGrad,QColor(255,255,255),this);
+    _expressionIndicator->setToolTip(tr("This node has one or several expression(s) involving values of parameters of other "
+                                        "nodes in the project. Hover the mouse on the green connections to see what are the effective links."));
+    _expressionIndicator->setActive(false);
 
 }
 
@@ -395,6 +410,8 @@ void NodeGui::updateShape(int width,int height)
     
     QPointF bitDepthPos(topLeft.x() + width / 2,0);
     _bitDepthWarning->refreshPosition(bitDepthPos);
+    
+    _expressionIndicator->refreshPosition(topLeft + QPointF(width,0));
     
     _persistentMessage->setPos(topLeft.x() + (width/2) - (pMWidth/2), topLeft.y() + height/2 - metrics.height()/2);
     _stateIndicator->setRect(topLeft.x()-NATRON_STATE_INDICATOR_OFFSET,topLeft.y()-NATRON_STATE_INDICATOR_OFFSET,
@@ -586,6 +603,15 @@ void NodeGui::refreshEdges() {
     }
 }
 
+void NodeGui::refreshKnobLinks()
+{
+    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it!=_knobsLinks.end(); ++it) {
+        it->arrow->refreshPosition();
+    }
+    if (_slaveMasterLink) {
+        _slaveMasterLink->refreshPosition();
+    }
+}
 
 void NodeGui::markInputNull(Edge* e){
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
@@ -1011,7 +1037,7 @@ void NodeGui::showGui()
     
     if (_slaveMasterLink) {
         if (!_internalNode->getMasterNode()) {
-            onSlaveStateChanged(false);
+            onAllKnobsSlaved(false);
         } else {
             _slaveMasterLink->show();
         }
@@ -1371,7 +1397,7 @@ void NodeGui::centerGraphOnIt()
     _graph->centerOnNode(_graph->getNodeGuiSharedPtr(this));
 }
 
-void NodeGui::onSlaveStateChanged(bool b) {
+void NodeGui::onAllKnobsSlaved(bool b) {
     if (b) {
         boost::shared_ptr<Natron::Node> masterNode = _internalNode->getMasterNode();
         assert(masterNode);
@@ -1380,24 +1406,17 @@ void NodeGui::onSlaveStateChanged(bool b) {
         _masterNodeGui = masterNodeGui;
         assert(!_slaveMasterLink);
 
-        QObject::connect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
-        QObject::connect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
-        _slaveMasterLink = new QGraphicsLineItem(parentItem());
-        _slaveMasterLink->setZValue(0);
-        QPen pen;
-        pen.setWidth(3);
-        pen.setBrush(QColor(200,100,100));
-        _slaveMasterLink->setPen(pen);
+        _slaveMasterLink = new LinkArrow(_masterNodeGui.get(),this,parentItem());
+        _slaveMasterLink->setColor(QColor(200,100,100));
+        _slaveMasterLink->setArrowHeadColor(QColor(243,137,20));
+        _slaveMasterLink->setWidth(3);
         if (!_internalNode->isNodeDisabled()) {
             if (!isSelected()) {
                 applyBrush(*_clonedGradient);
             }
         }
-        refreshSlaveMasterLinkPosition();
         
     } else {
-        QObject::disconnect(_masterNodeGui.get(), SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
-        QObject::disconnect(this, SIGNAL(positionChanged()), this, SLOT(refreshSlaveMasterLinkPosition()));
 
         assert(_slaveMasterLink);
         delete _slaveMasterLink;
@@ -1412,20 +1431,99 @@ void NodeGui::onSlaveStateChanged(bool b) {
     update();
 }
 
-void NodeGui::refreshSlaveMasterLinkPosition() {
-    if (!_masterNodeGui || !_slaveMasterLink) {
-        return;
+void NodeGui::onKnobsLinksChanged()
+{
+    typedef std::list<Natron::Node::KnobLink> InternalLinks;
+    InternalLinks links;
+    _internalNode->getKnobsLinks(links);
+    
+    ///1st pass: remove the no longer needed links
+    KnobGuiLinks newLinks;
+    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it!=_knobsLinks.end(); ++it) {
+        bool found = false;
+        for (InternalLinks::iterator it2 = links.begin(); it2!=links.end(); ++it2) {
+            if (it2->knob.get() == it->knob && it2->dimension == it->dimension) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            delete it->arrow;
+        } else {
+            newLinks.push_back(*it);
+        }
+    }
+    _knobsLinks = newLinks;
+    
+    ///2nd pass: create the new links
+    
+    for (InternalLinks::iterator it = links.begin(); it!=links.end(); ++it) {
+        bool found = false;
+        for (KnobGuiLinks::iterator it2 = _knobsLinks.begin(); it2!=_knobsLinks.end(); ++it2) {
+            if (it2->knob == it->knob.get()) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            boost::shared_ptr<NodeGui> master = getDagGui()->getGui()->getApp()->getNodeGui(it->masterNode);
+            LinkArrow* arrow = new LinkArrow(master.get(),this,parentItem());
+            arrow->setWidth(2);
+            arrow->setColor(QColor(143,201,103));
+            arrow->setArrowHeadColor(QColor(200,255,200));
+            
+            int masterDim,slaveDim;
+            slaveDim = it->dimension;
+            std::pair<int,boost::shared_ptr<KnobI> > masterKnob = it->knob->getMaster(slaveDim);
+            assert(masterKnob.second);
+            masterDim = masterKnob.first;
+            QString tt;
+            tt.append(master->getNode()->getName().c_str());
+            tt.append(".");
+            tt.append(masterKnob.second->getDescription().c_str());
+            if (masterKnob.second->getDimension() > 1) {
+                tt.append(".");
+                tt.append(masterKnob.second->getDimensionName(masterDim).c_str());
+            }
+            tt.append(" (master) ");
+            
+            tt.append("------->");
+            
+            tt.append(getNode()->getName().c_str());
+            tt.append(".");
+            tt.append(QString(it->knob->getDescription().c_str()));
+            if (it->knob->getDimension() > 1) {
+                tt.append(".");
+                tt.append(it->knob->getDimensionName(slaveDim).c_str());
+            }
+            
+            tt.append(" (slave) ");
+            
+            arrow->setToolTip(tt);
+            if (!getDagGui()->areKnobLinksVisible()) {
+                arrow->setVisible(false);
+            }
+            LinkedDim guilink;
+            guilink.knob = it->knob.get();
+            guilink.dimension = slaveDim;
+            guilink.arrow = arrow;
+            _knobsLinks.push_back(guilink);
+
+        }
     }
     
-    QRectF bboxThisNode = boundingRect();
-    QRectF bboxMasterNode = _masterNodeGui->boundingRect();
-
-    QPointF dst = _slaveMasterLink->mapFromItem(_masterNodeGui.get(),QPointF(bboxMasterNode.x(),bboxMasterNode.y())
-                              + QPointF(bboxMasterNode.width() / 2., bboxMasterNode.height() / 2.));
-    QPointF src = _slaveMasterLink->mapFromItem(this,QPointF(bboxThisNode.x(),bboxThisNode.y())
-                              + QPointF(bboxThisNode.width() / 2., bboxThisNode.height() / 2.));
-    _slaveMasterLink->setLine(QLineF(src,dst));
+    if (_knobsLinks.size() > 0) {
+        if (!_expressionIndicator->isActive()) {
+            _expressionIndicator->setActive(true);
+        }
+    } else {
+        if (_expressionIndicator->isActive()) {
+            _expressionIndicator->setActive(false);
+        }
+    }
+    
 }
+
 
 void NodeGui::refreshOutputEdgeVisibility() {
     if (_outputEdge) {
@@ -1589,6 +1687,11 @@ void NodeGuiIndicator::setActive(bool active)
     _imp->textItem->setActive(active);
     _imp->ellipse->setVisible(active);
     _imp->textItem->setVisible(active);
+}
+
+bool NodeGuiIndicator::isActive() const
+{
+    return _imp->ellipse->isVisible();
 }
 
 void NodeGuiIndicator::refreshPosition(const QPointF& topLeft)
@@ -1885,6 +1988,12 @@ void NodeGui::setParentMultiInstance(const boost::shared_ptr<NodeGui>& node)
     _parentMultiInstance = node;
 }
 
+void NodeGui::setKnobLinksVisible(bool visible)
+{
+    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it!=_knobsLinks.end(); ++it) {
+        it->arrow->setVisible(visible);
+    }
+}
 
 //////////Dot node gui
 DotGui::DotGui(QGraphicsItem* parent)

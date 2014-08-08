@@ -447,8 +447,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
     const std::list<boost::shared_ptr<NodeGui> > nodesGui = getVisibleNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodesGui.begin();it!=nodesGui.end();++it) {
         (*it)->refreshEdges();
-        (*it)->refreshSlaveMasterLinkPosition();
-        
+        (*it)->refreshKnobLinks();
         ///restore the multi-instance panels now that all nodes are restored
         std::string parentName = (*it)->getNode()->getParentMultiInstanceName();
         

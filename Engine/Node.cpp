@@ -54,6 +54,9 @@ namespace { // protect local classes in anonymous namespace
 /*The output node was connected from inputNumber to this...*/
 typedef std::map<boost::shared_ptr<Node> ,int > DeactivatedState;
 
+
+typedef std::list<Node::KnobLink> KnobLinkList ;
+    
 }
 
 struct Node::Implementation {
@@ -88,6 +91,7 @@ struct Node::Implementation {
         , knobsAgeMutex()
         , masterNodeMutex()
         , masterNode()
+        , nodeLinks()
         , enableMaskKnob()
         , maskChannelKnob()
         , nodeSettingsPage()
@@ -156,8 +160,9 @@ struct Node::Implementation {
     mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
     Hash64 hash; //< recomputed everytime knobsAge is changed.
     
-    mutable QMutex masterNodeMutex;
-    boost::shared_ptr<Node> masterNode;
+    mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
+    boost::shared_ptr<Node> masterNode; //< this points to the master when the node is a clone
+    KnobLinkList nodeLinks; //< these point to the parents of the params links
   
     ///For each mask, the input number and the knob
     std::map<int,boost::shared_ptr<Bool_Knob> > enableMaskKnob;
@@ -1839,7 +1844,7 @@ void Node::refreshPreviewsRecursively() {
 }
 
 
-void Node::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
+void Node::onAllKnobsSlaved(bool isSlave,KnobHolder* master) {
    
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1865,8 +1870,71 @@ void Node::onSlaveStateChanged(bool isSlave,KnobHolder* master) {
         }
     }
     
-    emit slavedStateChanged(isSlave);
+    emit allKnobsSlaved(isSlave);
 
+}
+
+void Node::onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool isSlave,KnobHolder* master)
+{
+    ///ignore the call if the node is a clone
+    {
+        QMutexLocker l(&_imp->masterNodeMutex);
+        if (_imp->masterNode) {
+            return;
+        }
+    }
+    
+    ///If the holder isn't an effect, ignore it too
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(master);
+    if (!isEffect) {
+        return;
+    }
+    boost::shared_ptr<Natron::Node> parentNode  = isEffect->getNode();
+    bool changed = false;
+    {   QMutexLocker l(&_imp->masterNodeMutex);
+        KnobLinkList::iterator found = _imp->nodeLinks.end();
+        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it!= _imp->nodeLinks.end(); ++it) {
+            if (it->masterNode == parentNode) {
+                found = it;
+                break;
+            }
+        }
+        
+        if (found == _imp->nodeLinks.end()) {
+            if (!isSlave) {
+                ///We want to unslave from the given node but the link didn't existed, just return
+                return;
+            } else {
+                ///Add a new link
+                KnobLink link;
+                link.masterNode = parentNode;
+                link.knob = knob;
+                link.dimension = dimension;
+                _imp->nodeLinks.push_back(link);
+                changed = true;
+                
+            }
+        } else if (found != _imp->nodeLinks.end()) {
+            if (isSlave) {
+                ///We want to slave to the given node but it already has a link on another parameter, just return
+                return;
+            } else {
+                ///Remove the given link
+                _imp->nodeLinks.erase(found);
+                changed = true;
+                
+            }
+        }
+    }
+    if (changed) {
+        emit knobsLinksChanged();
+    }
+}
+
+void Node::getKnobsLinks(std::list<Node::KnobLink>& links) const
+{
+    QMutexLocker l(&_imp->masterNodeMutex);
+    links = _imp->nodeLinks;
 }
 
 void Node::onMasterNodeDeactivated() {
