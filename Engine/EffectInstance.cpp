@@ -595,7 +595,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
         RectI upscaledRoD = inputImg->getBounds().upscalePowerOfTwo(inputImgMipMapLevel);
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0,bitdepth));
-        inputImg->upscaleMipMap(inputImg->getBounds(), upscaledImg.get(), inputImgMipMapLevel);
+        inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, upscaledImg.get());
         return upscaledImg;
     } else {
         _imp->addInputImageTempPointer(inputImg);
@@ -879,10 +879,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
                 ///Convert the image to the requested components
                 boost::shared_ptr<Image> remappedImage(new Image(args.components,image->getRoD(),args.mipMapLevel,args.bitdepth));
                 if (!byPassCache) {
-                    image->convertToFormat(image->getBounds(), remappedImage.get(),
+                    image->convertToFormat(image->getBounds(),
                                            getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
                                            getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                           args.channelForAlpha,false, true);
+                                           args.channelForAlpha, false, true,
+                                           remappedImage.get());
                 }
                 ///switch the pointer
                 image = remappedImage;
@@ -1126,7 +1127,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
             
             ///Allocate the upscaled image
             boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(args.components,cachedImgParams->getRoD(),0,args.bitdepth));
-            downscaledImage->scale_box_generic(downscaledImage->getBounds(),upscaledImage.get());
+            downscaledImage->scaleBox(downscaledImage->getBounds(),upscaledImage.get());
             image = upscaledImage;
         }
         
@@ -1599,20 +1600,22 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             if (useFullResImage) {
                 ///First demap the fullScaleMappedImage to the original image if it needs to
                 if (imageConversionNeeded) {
-                    fullScaleMappedImage->convertToFormat(canonicalRectToRender, image.get(),
+                    fullScaleMappedImage->convertToFormat(canonicalRectToRender,
                                                           getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
                                                           getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
-                                                          channelForAlpha, false,true);
+                                                          channelForAlpha, false, true,
+                                                          image.get());
                 }
                 if (mipMapLevel != 0) {
-                    image->downscale_mipmap(canonicalRectToRender,downscaledImage.get(), args._mipMapLevel);
+                    image->downscaleMipMap(canonicalRectToRender, args._mipMapLevel, downscaledImage.get());
                 }
             } else {
                 if (imageConversionNeeded) {
-                    downscaledMappedImage->convertToFormat(canonicalRectToRender, downscaledImage.get(),
+                    downscaledMappedImage->convertToFormat(canonicalRectToRender,
                                                            getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
                                                            getApp()->getDefaultColorSpaceForBitDepth(downscaledImage->getBitDepth()),
-                                                           channelForAlpha,false, false);
+                                                           channelForAlpha, false, false,
+                                                           downscaledImage.get());
                 }
             }
             
@@ -1694,20 +1697,22 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
         if (useFullResImage) {
             ///First demap the fullScaleMappedImage to the original image if it needs to
             if (fullScaleOutput != fullScaleMappedOutput) {
-                fullScaleMappedOutput->convertToFormat(roi, fullScaleOutput.get(),
+                fullScaleMappedOutput->convertToFormat(roi,
                                                        getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedOutput->getBitDepth()),
                                                        getApp()->getDefaultColorSpaceForBitDepth(fullScaleOutput->getBitDepth()),
-                                                       args._channelForAlpha, false, true);
+                                                       args._channelForAlpha, false, true,
+                                                       fullScaleOutput.get());
             }
             if (args._mipMapLevel != 0) {
-                fullScaleOutput->downscale_mipmap(roi,downscaledOutput.get(), args._mipMapLevel);
+                fullScaleOutput->downscaleMipMap(roi, args._mipMapLevel, downscaledOutput.get());
             }
         } else {
             if (fullScaleOutput != fullScaleMappedOutput) {
-                downscaledMappedOutput->convertToFormat(roi, downscaledOutput.get(),
+                downscaledMappedOutput->convertToFormat(roi,
                                                         getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedOutput->getBitDepth()),
                                                         getApp()->getDefaultColorSpaceForBitDepth(downscaledOutput->getBitDepth()),
-                                                        args._channelForAlpha, false, true);
+                                                        args._channelForAlpha, false, true,
+                                                        downscaledOutput.get());
             }
         }
     }

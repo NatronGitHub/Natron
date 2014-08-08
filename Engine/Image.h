@@ -155,15 +155,16 @@ namespace Natron {
         /**
          * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
          * scale applied to it. In order to return the true pixel data window you must call getBounds()
+         * WARNING: this is NOT the same definition as in OpenFX, where the Image RoD is always in pixels.
          **/
-        const RectI& getRoD() const;
+        const RectI& getRoD() const { return _rod; };
         
         /**
          * @brief Returns the bounds where data is in the image.
          * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
          * but slightly faster since it is stored as a member of the image.
          **/
-        const RectI& getBounds() const;
+        const RectI& getBounds() const { return _bounds; };
         
         virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
         
@@ -242,13 +243,13 @@ namespace Natron {
          * For example if the image comps is ImageComponentAlpha, then only the alpha value 'a' will
          * be used.
          **/
-        void fill(const RectI& rect,float r,float g,float b,float a);
+        void fill(const RectI& roi,float r,float g,float b,float a);
         
         /**
          * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
          * components with the same value.
          **/
-        void fill(const RectI& rect,float colorValue = 0.f,float alphaValue = 1.f){
+        void fill(const RectI& rect,float colorValue = 0.f,float alphaValue = 1.f) {
             fill(rect,colorValue,colorValue,colorValue,alphaValue);
         }
 
@@ -263,7 +264,7 @@ namespace Natron {
          * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
          * The internal bitmap will be copied aswell
          **/
-        void copy(const Natron::Image& other,const RectI& roi,bool copyBitmap = true);
+        void pasteFrom(const Natron::Image& src, const RectI& srcRoi, bool copyBitmap = true);
         
         /**
          * @brief Downscales a portion of this image into output.
@@ -271,19 +272,22 @@ namespace Natron {
          * given mipmap level,
          * and then computes the mipmap of the given level of that rectangle.
          **/
-        void downscale_mipmap(const RectI& roi, Natron::Image* output, unsigned int level) const;
+        void downscaleMipMap(const RectI& roi, unsigned int level, Natron::Image* output) const;
 
         /**
          * @brief Upscales a portion of this image into output.
+         * If the upscaled roi does not fit into output's bounds, it is cropped first.
          **/
-        void upscaleMipMap(const RectI& roi, Natron::Image* output, unsigned int level) const;
+        void upscaleMipMap(const RectI& roi, unsigned int level, Natron::Image* output) const;
 
         /**
          * @brief Scales the roi of this image to the size of the output image.
          * This is used internally by buildMipMapLevel when the image is a NPOT.
          * This should not be used for downscaling.
+         * The scale is computed from the RoD of both images.
+         * FIXME: this following function has plenty of bugs (see code).
          **/
-        void scale_box_generic(const RectI& roi,Natron::Image* output) const;
+        void scaleBox(const RectI& roi, Natron::Image* output) const;
         
         
 
@@ -321,13 +325,16 @@ namespace Natron {
          * or bit depth conversion
          * Implementation should tend to optimize these cases.
          **/
-        void convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,
+        void convertToFormat(const RectI& renderWindow,
                              Natron::ViewerColorSpace srcColorSpace,
                              Natron::ViewerColorSpace dstColorSpace,
-                             int channelForAlpha,bool invert,bool copyBitMap) const;
-        
+                             int channelForAlpha,
+                             bool invert,
+                             bool copyBitMap,
+                             Natron::Image* dstImg) const;
 
-        
+
+
     private:
         
         /**
@@ -335,24 +342,39 @@ namespace Natron {
          * function computes the mip map of this image in the given roi.
          * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
          **/
-        void buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int level) const;
+        void buildMipMapLevel(const RectI& roi, unsigned int level, Natron::Image* output) const;
         
         
         /**
          * @brief Halve the given roi of this image into output.
          * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
          **/
-        void halveRoI(const RectI& roi,Natron::Image* output) const;
-        
+        void halveRoI(const RectI& roi, Natron::Image* output) const;
+
+        template <typename PIX, int maxValue>
+        void halveRoIForDepth(const RectI& roi, Natron::Image* output) const;
+
         /**
          * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
          **/
-        void halve1DImage(const RectI& roi,Natron::Image* output) const;
+        void halve1DImage(const RectI& roi, Natron::Image* output) const;
+        
+        template <typename PIX, int maxValue>
+        void halve1DImageForDepth(const RectI& roi, Natron::Image* output) const;
 
         template <typename PIX,int maxValue>
-        void upscaleMipMapForDepth(const RectI& roi, Natron::Image* output, unsigned int level) const;
+        void upscaleMipMapForDepth(const RectI& roi, unsigned int level, Natron::Image* output) const;
+
+        template<typename PIX>
+        void pasteFromForDepth(const Natron::Image& src, const RectI& srcRoi, bool copyBitmap = true);
+
+        template <typename PIX, int maxValue>
+        void fillForDepth(const RectI& roi,float r,float g,float b,float a);
+
+        template<typename PIX>
+        void scaleBoxForDepth(const RectI& roi, Natron::Image* output) const;
     };
-    
+
     template <typename SRCPIX,typename DSTPIX>
     DSTPIX convertPixelDepth(SRCPIX pix);
     

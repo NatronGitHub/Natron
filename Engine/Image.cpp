@@ -41,9 +41,13 @@ ImageKey::ImageKey(U64 nodeHashKey,
 , _time(time)
 , _view(view)
 , _pixelAspect(pixelAspect)
-{ _mipMapLevel = mipMapLevel; }
+{
+    _mipMapLevel = mipMapLevel;
+}
 
-void ImageKey::fillHash(Hash64* hash) const {
+void
+ImageKey::fillHash(Hash64* hash) const
+{
     hash->append(_nodeHashKey);
     hash->append(_mipMapLevel);
     hash->append(_time);
@@ -53,7 +57,9 @@ void ImageKey::fillHash(Hash64* hash) const {
 
 
 
-bool ImageKey::operator==(const ImageKey& other) const {
+bool
+ImageKey::operator==(const ImageKey& other) const
+{
     return _nodeHashKey == other._nodeHashKey &&
     _mipMapLevel == other._mipMapLevel &&
     _time == other._time &&
@@ -65,7 +71,8 @@ bool ImageKey::operator==(const ImageKey& other) const {
 
 
 
-RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
+RectI
+Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 {
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
@@ -134,7 +141,8 @@ RectI Natron::Bitmap::minimalNonMarkedBbox(const RectI& roi) const
     return bbox;
 }
 
-std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
+std::list<RectI>
+Bitmap::minimalNonMarkedRects(const RectI& roi) const
 {
     std::list<RectI> ret;
 
@@ -285,24 +293,16 @@ std::list<RectI> Natron::Bitmap::minimalNonMarkedRects(const RectI& roi) const
     return ret;
 }
 
-const RectI& Image::getBounds() const
-{
-    return _bounds;
-}
-
-const RectI& Image::getRoD() const
-{
-    return _rod;
-}
-
-void Natron::Bitmap::markForRendered(const RectI& roi){
+void
+Natron::Bitmap::markForRendered(const RectI& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width() + (roi.left() - _rod.left())];
         memset(buf, 1, roi.width());
     }
 }
 
-const char* Natron::Bitmap::getBitmapAt(int x,int y) const
+const char*
+Natron::Bitmap::getBitmapAt(int x, int y) const
 {
     if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
         return _map + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
@@ -311,7 +311,8 @@ const char* Natron::Bitmap::getBitmapAt(int x,int y) const
     }
 }
 
-char* Natron::Bitmap::getBitmapAt(int x,int y)
+char*
+Natron::Bitmap::getBitmapAt(int x, int y)
 {
     if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
         return _map + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
@@ -320,8 +321,10 @@ char* Natron::Bitmap::getBitmapAt(int x,int y)
     }
 }
 
-Image::Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,const Natron::CacheAPI* cache):
-CacheEntryHelper<unsigned char,ImageKey>(key,params,cache)
+Image::Image(const ImageKey& key,
+             const boost::shared_ptr<const NonKeyParams>& params,
+             const Natron::CacheAPI* cache)
+: CacheEntryHelper<unsigned char, ImageKey>(key,params,cache)
 {
     const ImageParams* p = dynamic_cast<const ImageParams*>(params.get());
     _components = p->getComponents();
@@ -335,17 +338,20 @@ CacheEntryHelper<unsigned char,ImageKey>(key,params,cache)
 /*This constructor can be used to allocate a local Image. The deallocation should
  then be handled by the user. Note that no view number is passed in parameter
  as it is not needed.*/
-Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel,Natron::ImageBitDepth bitdepth)
+Image::Image(ImageComponents components,
+             const RectI& regionOfDefinition,
+             unsigned int mipMapLevel,
+             Natron::ImageBitDepth bitdepth)
 : CacheEntryHelper<unsigned char,ImageKey>(makeKey(0,0,mipMapLevel,0),
-            boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
-                                                regionOfDefinition,
-                                                regionOfDefinition.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
-                                                bitdepth,
-                                                false ,
-                                                components,
-                                                -1,
-                                                0,
-                                                std::map<int,std::vector<RangeD> >())),NULL)
+                                           boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
+                                                                                                 regionOfDefinition,
+                                                                                                 regionOfDefinition.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
+                                                                                                 bitdepth,
+                                                                                                 false ,
+                                                                                                 components,
+                                                                                                 -1,
+                                                                                                 0,
+                                                                                                 std::map<int,std::vector<RangeD> >())),NULL)
 {
     // NOTE: before removing the following assert, please explain why an empty image may happen
     assert(!regionOfDefinition.isNull());
@@ -360,127 +366,166 @@ Image::Image(ImageComponents components,const RectI& regionOfDefinition,unsigned
 }
 
 #ifdef NATRON_DEBUG
-void Image::onMemoryAllocated()
+void
+Image::onMemoryAllocated()
 {
     ///fill with red, to recognize unrendered pixels
     fill(_bounds,1.,0.,0.,1.);
 }
 #endif
 
-ImageKey Image::makeKey(U64 nodeHashKey,
-                        SequenceTime time,
-                        unsigned int mipMapLevel,
-                        int view){
+ImageKey
+Image::makeKey(U64 nodeHashKey,
+               SequenceTime time,
+               unsigned int mipMapLevel,
+               int view)
+{
     return ImageKey(nodeHashKey,time,mipMapLevel,view);
 }
 
-boost::shared_ptr<ImageParams> Image::makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
-                                                 bool isRoDProjectFormat,ImageComponents components,
-                                                 Natron::ImageBitDepth bitdepth,
-                                                 int inputNbIdentity,int inputTimeIdentity,
-                                                 const std::map<int, std::vector<RangeD> >& framesNeeded) {
-    return boost::shared_ptr<ImageParams>(new ImageParams(cost,rod,rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel)
-                                                          ,bitdepth,isRoDProjectFormat,components,
-                                                          inputNbIdentity,inputTimeIdentity,framesNeeded));
-}
-
-template<typename PIX>
-void copyInternal(const Image& srcImg,Image& dstImg,const RectI& dstRoD,int elemCount,const RectI& renderWindow,bool copyBitmap)
+boost::shared_ptr<ImageParams>
+Image::makeParams(int cost,
+                  const RectI& rod,
+                  unsigned int mipMapLevel,
+                  bool isRoDProjectFormat,
+                  ImageComponents components,
+                  Natron::ImageBitDepth bitdepth,
+                  int inputNbIdentity,
+                  int inputTimeIdentity,
+                  const std::map<int, std::vector<RangeD> >& framesNeeded)
 {
-    for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
-        const PIX* src = (const PIX*)srcImg.pixelAt(dstRoD.x1, y);
-        PIX* dst = (PIX*)dstImg.pixelAt(renderWindow.x1, y);
-        memcpy(dst, src, renderWindow.width() * sizeof(PIX) * elemCount);
-        
-        if (copyBitmap) {
-            const char* srcBm = srcImg.getBitmapAt(dstRoD.x1, y);
-            char* dstBm = dstImg.getBitmapAt(renderWindow.x1, y);
-            memcpy(dstBm, srcBm, renderWindow.width());
-        }
-        
-    }
-
+    return boost::shared_ptr<ImageParams>(new ImageParams(cost,
+                                                          rod,
+                                                          rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
+                                                          bitdepth,
+                                                          isRoDProjectFormat,
+                                                          components,
+                                                          inputNbIdentity,
+                                                          inputTimeIdentity,
+                                                          framesNeeded));
 }
 
-void Natron::Image::copy(const Natron::Image& other,const RectI& roi,bool copyBitmap)
+// code proofread and fixed by @devernay on 8/8/2014
+template<typename PIX>
+void
+Image::pasteFromForDepth(const Natron::Image& srcImg,
+                         const RectI& srcRoi,
+                         bool copyBitmap)
 {
     ///Cannot copy images with different bit depth, this is not the purpose of this function.
     ///@see convert
-    assert(getBitDepth() == other.getBitDepth());
-    
-    
+    assert(getBitDepth() == srcImg.getBitDepth());
+    assert((getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4));
     // NOTE: before removing the following asserts, please explain why an empty image may happen
-    const RectI& srcRoD = getBounds();
-    const RectI& dstRoD = other.getBounds();
-    
-    assert(!srcRoD.isNull());
-    assert(!dstRoD.isNull());
-    RectI intersection;
-    bool doInteresect = srcRoD.intersect(dstRoD, &intersection);
+    const RectI& bounds = getBounds();
+    const RectI& srcBounds = srcImg.getBounds();
+
+    assert(!bounds.isNull());
+    assert(!srcBounds.isNull());
+
+    // only copy the intersection of roi, bounds and otherBounds
+    RectI roi = srcRoi;
+    bool doInteresect = roi.intersect(bounds, &roi);
     if (!doInteresect) {
+        // no intersection between roi and the bounds of this image
         return;
     }
-    
-    if (!roi.intersect(intersection, &intersection)) {
+    doInteresect = roi.intersect(srcBounds, &roi);
+    if (!doInteresect) {
+        // no intersection between roi and the bounds of the other image
         return;
     }
-    
-    Natron::ImageBitDepth depth = getBitDepth();
-    assert(getComponents() == other.getComponents());
+
+    assert(getComponents() == srcImg.getComponents());
     int components = getElementsCountForComponents(getComponents());
+
+    // now we're safe: both images contain the area in roi
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, y);
+        PIX* dst = (PIX*)pixelAt(roi.x1, y);
+        memcpy(dst, src, roi.width() * sizeof(PIX) * components);
+        
+        if (copyBitmap) {
+            const char* srcBm = srcImg.getBitmapAt(roi.x1, y);
+            char* dstBm = getBitmapAt(roi.x1, y);
+            memcpy(dstBm, srcBm, roi.width());
+        }
+    }
+}
+
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::pasteFrom(const Natron::Image& src,
+                 const RectI& srcRoi,
+                 bool copyBitmap)
+{
+    Natron::ImageBitDepth depth = getBitDepth();
     switch (depth) {
         case IMAGE_BYTE:
-            copyInternal<unsigned char>(other, *this, dstRoD, components, intersection, copyBitmap);
+            pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap);
             break;
         case IMAGE_SHORT:
-            copyInternal<unsigned short>(other, *this, dstRoD, components, intersection, copyBitmap);
+            pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap);
             break;
         case IMAGE_FLOAT:
-            copyInternal<float>(other, *this, dstRoD, components, intersection, copyBitmap);
+            pasteFromForDepth<float>(src, srcRoi, copyBitmap);
             break;
         default:
             break;
     }
 }
 
-template <typename PIX,int maxValue>
-void fillInternal(Image& img,const RectI& rect,int rowElems,Natron::ImageComponents comps,float r,float g,float b,float a)
+// code proofread and fixed by @devernay on 8/8/2014
+template <typename PIX, int maxValue>
+void
+Image::fillForDepth(const RectI& roi_,
+                    float r, float g, float b, float a)
 {
-    
-    float fillValue[4] = {r,g,b,a};
+    assert((getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4));
+
+    ImageComponents comps = getComponents();
+    if (comps == ImageComponentNone) {
+        return;
+    }
+
+    RectI roi = roi_;
+    bool doInteresect = roi.intersect(getBounds(), &roi);
+    if (!doInteresect) {
+        // no intersection between roi and the bounds of the image
+        return;
+    }
+
+    int rowElems = (int)getRowElements();
+
+    const float fillValue[4] = {comps == Natron::ImageComponentAlpha ? a : r, g, b, a};
 
     int nComps = getElementsCountForComponents(comps);
 
-    PIX* dst = (PIX*)img.pixelAt(rect.x1, rect.y1);
-    for (int i = 0; i < rect.height();++i,dst += (rowElems - rect.width() * nComps)) {
-        for (int j = 0; j < rect.width();++j,dst+=nComps) {
+    // now we're safe: the image contains the area in roi
+    PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
+    for (int i = 0; i < roi.height(); ++i, dst += (rowElems - roi.width() * nComps)) {
+        for (int j = 0; j < roi.width(); ++j, dst += nComps) {
             for (int k = 0; k < nComps; ++k) {
-                if (comps == Natron::ImageComponentAlpha) {
-                    dst[k] = a * maxValue;
-                } else {
-                    dst[k] = fillValue[k] * maxValue;
-                }
+                dst[k] = fillValue[k] * maxValue;
             }
         }
     }
 }
 
-void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
-    ImageComponents comps = getComponents();
-    if (comps == ImageComponentNone) {
-        return;
-    }
-    
-    int rowElems = (int)getRowElements();
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::fill(const RectI& roi,
+            float r, float g, float b, float a)
+{
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            fillInternal<unsigned char, 255>(*this, rect, rowElems, comps, r, g, b, a);
+            fillForDepth<unsigned char, 255>(roi, r, g, b, a);
             break;
         case IMAGE_SHORT:
-            fillInternal<unsigned short, 65535>(*this, rect, rowElems, comps, r, g, b, a);
+            fillForDepth<unsigned short, 65535>(roi, r, g, b, a);
             break;
         case IMAGE_FLOAT:
-            fillInternal<float, 1>(*this, rect, rowElems, comps, r, g, b, a);
+            fillForDepth<float, 1>(roi, r, g, b, a);
             break;
 
         default:
@@ -488,7 +533,9 @@ void Natron::Image::fill(const RectI& rect,float r,float g,float b,float a) {
     }
 }
 
-unsigned char* Image::pixelAt(int x,int y){
+unsigned char*
+Image::pixelAt(int x, int y)
+{
     int compsCount = getElementsCountForComponents(getComponents());
     if (x >= _bounds.left() && x < _bounds.right() && y >= _bounds.bottom() && y < _bounds.top()) {
         int compDataSize = getSizeOfForBitDepth(getBitDepth()) * compsCount;
@@ -500,7 +547,8 @@ unsigned char* Image::pixelAt(int x,int y){
     }
 }
 
-const unsigned char* Image::pixelAt(int x,int y) const {
+const unsigned char*
+Image::pixelAt(int x,int y) const {
     int compsCount = getElementsCountForComponents(getComponents());
     if (x >= _bounds.left() && x < _bounds.right() && y >= _bounds.bottom() && y < _bounds.top()) {
         int compDataSize = getSizeOfForBitDepth(getBitDepth()) * compsCount;
@@ -512,12 +560,15 @@ const unsigned char* Image::pixelAt(int x,int y) const {
     }
 }
 
-unsigned int Image::getComponentsCount() const
+unsigned int
+Image::getComponentsCount() const
 {
     return getElementsCountForComponents(getComponents());
 }
 
-bool Image::hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageComponents to)
+bool
+Image::hasEnoughDataToConvert(Natron::ImageComponents from,
+                              Natron::ImageComponents to)
 {
     switch (from) {
         case ImageComponentRGBA:
@@ -552,7 +603,9 @@ bool Image::hasEnoughDataToConvert(Natron::ImageComponents from,Natron::ImageCom
     }
 }
 
-std::string Image::getFormatString(Natron::ImageComponents comps,Natron::ImageBitDepth depth)
+std::string
+Image::getFormatString(Natron::ImageComponents comps,
+                       Natron::ImageBitDepth depth)
 {
     std::string s;
     switch (comps) {
@@ -572,7 +625,8 @@ std::string Image::getFormatString(Natron::ImageComponents comps,Natron::ImageBi
     return s;
 }
 
-std::string Image::getDepthString(Natron::ImageBitDepth depth)
+std::string
+Image::getDepthString(Natron::ImageBitDepth depth)
 {
     std::string s;
     switch (depth) {
@@ -591,31 +645,85 @@ std::string Image::getDepthString(Natron::ImageBitDepth depth)
     return s;
 }
 
-bool Image::isBitDepthConversionLossy(Natron::ImageBitDepth from,Natron::ImageBitDepth to)
+bool
+Image::isBitDepthConversionLossy(Natron::ImageBitDepth from,
+                                 Natron::ImageBitDepth to)
 {
     int sizeOfFrom = getSizeOfForBitDepth(from);
     int sizeOfTo = getSizeOfForBitDepth(to);
     return sizeOfTo < sizeOfFrom;
 }
 
-unsigned int Image::getRowElements() const
+unsigned int
+Image::getRowElements() const
 {
     return getComponentsCount() * _bounds.width();
 }
 
-template <typename PIX,int maxValue>
-void halveRoIInternal(const Image& srcImg,const RectI& srcRoD,Image& dstImg,const RectI& dstRoD,
-                      const RectI& srcRoI,const RectI& dstRoI,int components)
+// code proofread and fixed by @devernay on 8/8/2014
+template <typename PIX, int maxValue>
+void
+Image::halveRoIForDepth(const RectI& roi,
+                        Natron::Image* output) const
 {
+    assert((getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4));
+
+    ///handle case where there is only 1 column/row
+    if (roi.width() == 1 || roi.height() == 1) {
+        assert( !(roi.width() == 1 && roi.height() == 1) ); /// can't be 1x1
+        halve1DImage(roi, output);
+        return;
+    }
+
+    ///The source rectangle, intersected to this image region of definition in pixels
+    const RectI &srcBounds = getBounds();
+    const RectI &dstBounds = output->getBounds();
+
+    // the srcRoD of the output should be enclosed in half the roi.
+    // It does not have to be exactly half of the input.
+    //    assert(dstRoD.x1*2 >= roi.x1 &&
+    //           dstRoD.x2*2 <= roi.x2 &&
+    //           dstRoD.y1*2 >= roi.y1 &&
+    //           dstRoD.y2*2 <= roi.y2 &&
+    //           dstRoD.width()*2 <= roi.width() &&
+    //           dstRoD.height()*2 <= roi.height());
+    assert(getComponents() == output->getComponents());
+
+    int components = getElementsCountForComponents(getComponents());
+
+    RectI srcRoI = roi;
+    srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
+    srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
+
+    RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
+    // a few checks...
+    // srcRoI must be inside srcBounds
+    assert(srcRoI.x1 >= srcBounds.x1);
+    assert(srcRoI.x2 <= srcBounds.x2);
+    assert(srcRoI.y1 >= srcBounds.y1);
+    assert(srcRoI.y2 <= srcBounds.y2);
+    // srcRoI must be inside dstBounds*2
+    assert(srcRoI.x1 >= dstBounds.x1*2);
+    assert(srcRoI.x2 <= dstBounds.x2*2);
+    assert(srcRoI.y1 >= dstBounds.y1*2);
+    assert(srcRoI.y2 <= dstBounds.y2*2);
+    // srcRoI must be equal to dstRoI*2
+    assert(srcRoI.x1 == dstRoI.x1*2);
+    assert(srcRoI.x2 == dstRoI.x2*2);
+    assert(srcRoI.y1 == dstRoI.y1*2);
+    assert(srcRoI.y2 == dstRoI.y2*2);
+    assert(srcRoI.width() == dstRoI.width()*2);
+    assert(srcRoI.height() == dstRoI.height()*2);
+    
     int srcRoIWidth = srcRoI.width();
     //int srcRoIHeight = srcRoI.height();
     int dstRoIWidth = dstRoI.width();
     int dstRoIHeight = dstRoI.height();
-    const PIX* src = (const PIX*)srcImg.pixelAt(srcRoI.x1, srcRoI.y1);
-    PIX* dst = (PIX*)dstImg.pixelAt(dstRoI.x1, dstRoI.y1);
+    const PIX* src = (const PIX*)pixelAt(srcRoI.x1, srcRoI.y1);
+    PIX* dst = (PIX*)output->pixelAt(dstRoI.x1, dstRoI.y1);
     
-    int srcRowSize = srcRoD.width() * components;
-    int dstRowSize = dstRoD.width() * components;
+    int srcRowSize = srcBounds.width() * components;
+    int dstRowSize = dstBounds.width() * components;
     
     // Loop with sliding pointers:
     // at each loop iteration, add the step to the pointer, minus what was done during previous iteration.
@@ -629,12 +737,12 @@ void halveRoIInternal(const Image& srcImg,const RectI& srcRoD,Image& dstImg,cons
              ++x,
              src += (components+components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components) { // one pixel minus what was done on previous iteration
-            assert(dstRoD.x1 <= dstRoI.x1+x && dstRoI.x1+x < dstRoD.x2);
-            assert(dstRoD.y1 <= dstRoI.y1+y && dstRoI.y1+y < dstRoD.y2);
-            assert(dst == (PIX*)dstImg.pixelAt(dstRoI.x1+x, dstRoI.y1+y));
-            assert(srcRoD.x1 <= srcRoI.x1+2*x && srcRoI.x1+2*x < srcRoD.x2);
-            assert(srcRoD.y1 <= srcRoI.y1+2*y && srcRoI.y1+2*y < srcRoD.y2);
-            assert(src == (const PIX*)srcImg.pixelAt(srcRoI.x1+2*x, srcRoI.y1+2*y));
+            assert(dstBounds.x1 <= dstRoI.x1+x && dstRoI.x1+x < dstBounds.x2);
+            assert(dstBounds.y1 <= dstRoI.y1+y && dstRoI.y1+y < dstBounds.y2);
+            assert(dst == (PIX*)output->pixelAt(dstRoI.x1+x, dstRoI.y1+y));
+            assert(srcBounds.x1 <= srcRoI.x1+2*x && srcRoI.x1+2*x < srcBounds.x2);
+            assert(srcBounds.y1 <= srcRoI.y1+2*y && srcRoI.y1+2*y < srcBounds.y2);
+            assert(src == (const PIX*)pixelAt(srcRoI.x1+2*x, srcRoI.y1+2*y));
             for (int k = 0; k < components; ++k, ++dst, ++src) {
                 *dst = PIX((float)(*src +
                         *(src + components) +
@@ -646,80 +754,52 @@ void halveRoIInternal(const Image& srcImg,const RectI& srcRoD,Image& dstImg,cons
 
 }
 
-void Image::halveRoI(const RectI& roi,Natron::Image* output) const
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::halveRoI(const RectI& roi,
+                Natron::Image* output) const
 {
-    ///handle case where there is only 1 column/row
-    if (roi.width() == 1 || roi.height() == 1) {
-        assert( !(roi.width() == 1 && roi.height() == 1) ); /// can't be 1x1
-        halve1DImage(roi,output);
-        return;
-    }
-
-    ///The source rectangle, intersected to this image region of definition in pixels
-    const RectI &srcRoD = getBounds();
-    const RectI &dstRoD = output->getBounds();
-
-   // the srcRoD of the output should be enclosed in half the roi.
-    // It does not have to be exactly half of the input.
-//    assert(dstRoD.x1*2 >= roi.x1 &&
-//           dstRoD.x2*2 <= roi.x2 &&
-//           dstRoD.y1*2 >= roi.y1 &&
-//           dstRoD.y2*2 <= roi.y2 &&
-//           dstRoD.width()*2 <= roi.width() &&
-//           dstRoD.height()*2 <= roi.height());
-    assert(getComponents() == output->getComponents());
-    
-    int components = getElementsCountForComponents(getComponents());
-
-    RectI srcRoI = roi;
-    srcRoI.intersect(srcRoD, &srcRoI); // intersect srcRoI with the region of definition
-    srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
-    
-    RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
-    // a few checks...
-    // srcRoI must be inside srcRoD
-    assert(srcRoI.x1 >= srcRoD.x1);
-    assert(srcRoI.x2 <= srcRoD.x2);
-    assert(srcRoI.y1 >= srcRoD.y1);
-    assert(srcRoI.y2 <= srcRoD.y2);
-    // srcRoI must be inside dstRoD*2
-    assert(srcRoI.x1 >= dstRoD.x1*2);
-    assert(srcRoI.x2 <= dstRoD.x2*2);
-    assert(srcRoI.y1 >= dstRoD.y1*2);
-    assert(srcRoI.y2 <= dstRoD.y2*2);
-    // srcRoI must be equal to dstRoI*2
-    assert(srcRoI.x1 == dstRoI.x1*2);
-    assert(srcRoI.x2 == dstRoI.x2*2);
-    assert(srcRoI.y1 == dstRoI.y1*2);
-    assert(srcRoI.y2 == dstRoI.y2*2);
-    assert(srcRoI.width() == dstRoI.width()*2);
-    assert(srcRoI.height() == dstRoI.height()*2);
-
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            halveRoIInternal<unsigned char,255>(*this,srcRoD, *output, dstRoD, srcRoI, dstRoI, components);
+            halveRoIForDepth<unsigned char,255>(roi, output);
             break;
         case IMAGE_SHORT:
-            halveRoIInternal<unsigned short,65535>(*this,srcRoD, *output, dstRoD, srcRoI, dstRoI, components);
+            halveRoIForDepth<unsigned short,65535>(roi, output);
             break;
         case IMAGE_FLOAT:
-            halveRoIInternal<float,1>(*this,srcRoD, *output, dstRoD, srcRoI, dstRoI, components);
+            halveRoIForDepth<float,1>(roi, output);
             break;
         default:
             break;
     }
 }
 
-template <typename PIX,int maxValue>
-void halve1DImageInternal(const Image& srcImg,Image& dstImg,const RectI& roi,int width,int height,int components)
+// code proofread and fixed by @devernay on 8/8/2014
+template <typename PIX, int maxValue>
+void
+Image::halve1DImageForDepth(const RectI& roi,
+                            Natron::Image* output) const
 {
+    int width = roi.width();
+    int height = roi.height();
+
+    assert(width == 1 || height == 1); /// must be 1D
+    assert(output->getComponents() == getComponents());
+    const RectI& srcBounds = getBounds();
+    const RectI& dstBounds = output->getBounds();
+    assert(dstBounds.x1*2 == roi.x1 &&
+           dstBounds.x2*2 == roi.x2 &&
+           dstBounds.y1*2 == roi.y1 &&
+           dstBounds.y2*2 == roi.y2);
+
+    int components = getElementsCountForComponents(getComponents());
     int halfWidth = width / 2;
     int halfHeight = height / 2;
     if (height == 1) { //1 row
         assert(width != 1);	/// widthxheight can't be 1x1
         
-        const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)dstImg.pixelAt(dstImg.getRoD().x1, dstImg.getRoD().y1);
+        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
+        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
         assert(src && dst);
         for (int x = 0; x < halfWidth; ++x) {
             for (int k = 0; k < components; ++k) {
@@ -728,13 +808,11 @@ void halve1DImageInternal(const Image& srcImg,Image& dstImg,const RectI& roi,int
             }
             src += components;
         }
-        
     } else if (width == 1) {
+        int rowSize = srcBounds.width() * components;
         
-        int rowSize = srcImg.getBounds().width() * components;
-        
-        const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)dstImg.pixelAt(dstImg.getRoD().x1, dstImg.getRoD().y1);
+        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
+        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
         assert(src && dst);
         for (int y = 0; y < halfHeight; ++y) {
             for (int k = 0; k < components;++k) {
@@ -747,38 +825,31 @@ void halve1DImageInternal(const Image& srcImg,Image& dstImg,const RectI& roi,int
 
 }
 
-void Image::halve1DImage(const RectI& roi,Natron::Image* output) const
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::halve1DImage(const RectI& roi,
+                    Natron::Image* output) const
 {
-    int width = roi.width();
-    int height = roi.height();
-    
-    
-    
-    assert(width == 1 || height == 1); /// must be 1D
-    assert(output->getComponents() == getComponents());
-    assert(output->getBounds().x1*2 == roi.x1 &&
-           output->getBounds().x2*2 == roi.x2 &&
-           output->getBounds().y1*2 == roi.y1 &&
-           output->getBounds().y2*2 == roi.y2);
-
-    int components = getElementsCountForComponents(getComponents());
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            halve1DImageInternal<unsigned char,255>(*this, *output, roi, width, height, components);
+            halve1DImageForDepth<unsigned char, 255>(roi, output);
             break;
         case IMAGE_SHORT:
-            halve1DImageInternal<unsigned short,65535>(*this, *output, roi, width, height, components);
+            halve1DImageForDepth<unsigned short, 65535>(roi, output);
             break;
         case IMAGE_FLOAT:
-            halve1DImageInternal<float , 1>(*this, *output, roi, width, height, components);
+            halve1DImageForDepth<float, 1>(roi, output);
             break;
         default:
             break;
     }
-    
 }
 
-void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::downscaleMipMap(const RectI& roi,
+                       unsigned int level,
+                       Natron::Image* output) const
 {
     ///You should not call this function with a level equal to 0.
     assert(level > 0);
@@ -790,18 +861,25 @@ void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int
     ///resulting mipmap of that roi should fit into output.
     Natron::Image* tmpImg = new Natron::Image(getComponents(),dstRoI,0,getBitDepth());
     
-    buildMipMapLevel(tmpImg, roi, level);
+    buildMipMapLevel(roi, level, tmpImg);
   
     ///Now copy the result of tmpImg into the output image
-    output->copy(*tmpImg, dstRoI,false);
+    output->pasteFrom(*tmpImg, dstRoI, false);
         
     ///clean-up
     delete tmpImg;
 }
 
-template <typename PIX,int maxValue>
-void Image::upscaleMipMapForDepth(const RectI& roi, Natron::Image* output,unsigned int level) const
+// code proofread and fixed by @devernay on 8/8/2014
+template <typename PIX, int maxValue>
+void
+Image::upscaleMipMapForDepth(const RectI& roi,
+                             unsigned int level,
+                             Natron::Image* output) const
 {
+    assert(getBitDepth() == output->getBitDepth());
+    assert((getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4));
+
     ///You should not call this function with a level equal to 0.
     assert(level > 0);
 
@@ -859,29 +937,59 @@ void Image::upscaleMipMapForDepth(const RectI& roi, Natron::Image* output,unsign
     }
 }
 
-void Image::upscaleMipMap(const RectI& roi, Natron::Image* output,unsigned int level) const
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::upscaleMipMap(const RectI& roi,
+                     unsigned int level,
+                     Natron::Image* output) const
 {
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            upscaleMipMapForDepth<unsigned char, 255>(roi, output, level);
+            upscaleMipMapForDepth<unsigned char, 255>(roi, level, output);
             break;
         case IMAGE_SHORT:
-            upscaleMipMapForDepth<unsigned short, 65535>(roi, output, level);
+            upscaleMipMapForDepth<unsigned short, 65535>(roi, level, output);
             break;
         case IMAGE_FLOAT:
-            upscaleMipMapForDepth<float,1>(roi, output, level);
+            upscaleMipMapForDepth<float,1>(roi, level, output);
             break;
         default:
             break;
     }
 }
 
+// FIXME: the following function has plenty of bugs.
+// - scale should be determined from the RoD, not bounds, so that tiles images can be scaled too
+// - the scaled roi may not start at dstBounds.x1, dstBounds.y1
 template<typename PIX>
-void scale_box_genericInternal(const Image& srcImg,const RectI& srcRod,Image& dstImg,const RectI& dstRod)
+void
+Image::scaleBoxForDepth(const RectI& roi,
+                        Natron::Image* output) const
 {
+    assert(getBitDepth() == output->getBitDepth());
+    assert((getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4));
+
+    ///The destination rectangle
+    const RectI& dstBounds = output->getBounds();
+
+    ///The source rectangle, intersected to this image region of definition in pixels
+    const RectI& srcBounds = getBounds();
+    RectI srcRoi = roi;
+    srcRoi.intersect(srcBounds, &srcRoi);
+
+    ///If the roi is exactly twice the destination rect, just halve that portion into output.
+    if (srcRoi.x1 == 2 * dstBounds.x1 &&
+        srcRoi.x2 == 2 * dstBounds.x2 &&
+        srcRoi.y1 == 2 * dstBounds.y1 &&
+        srcRoi.y2 == 2 * dstBounds.y2) {
+        halveRoI(srcRoi, output);
+        return;
+    }
+
     RenderScale scale;
-    scale.x = (double) srcRod.width() / dstRod.width();
-    scale.y = (double) srcRod.height() / dstRod.height();
+    // FIXME: should use the RoD instead of RoI/bounds !
+    scale.x = (double) srcRoi.width() / dstBounds.width();
+    scale.y = (double) srcRoi.height() / dstBounds.height();
     
     int convx_int = std::floor(scale.x);
     int convy_int = std::floor(scale.y);
@@ -894,30 +1002,31 @@ void scale_box_genericInternal(const Image& srcImg,const RectI& srcRod,Image& ds
     int highy_int = convy_int;
     double highy_float = convy_float;
     
-    const PIX *src = (const PIX*)srcImg.pixelAt(srcRod.x1, srcRod.y1);
-    PIX* dst = (PIX*)dstImg.pixelAt(dstRod.x1, dstRod.y1);
+    // FIXME: dstBounds.(x1,y1) may not correspond to the scaled srcRoi!
+    const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
+    PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
     assert(src && dst);
-    assert(dstImg.getComponents() == srcImg.getComponents());
-    int components = getElementsCountForComponents(srcImg.getComponents());
+    assert(output->getComponents() == getComponents());
+    int components = getElementsCountForComponents(getComponents());
     
-    int rowSize = srcImg.getBounds().width() * components;
+    int rowSize = srcBounds.width() * components;
     
     float totals[4];
     
-    for (int y = 0; y < dstRod.height(); ++y) {
+    for (int y = 0; y < dstBounds.height(); ++y) {
         
         /* Clamp here to be sure we don't read beyond input buffer. */
-        if (highy_int >= srcRod.height())
-            highy_int = srcRod.height() - 1;
+        if (highy_int >= srcRoi.height())
+            highy_int = srcRoi.height() - 1;
         
         int lowx_int = 0;
         double lowx_float = 0.;
         int highx_int = convx_int;
         double highx_float = convx_float;
         
-        for (int x = 0; x < dstRod.width(); ++x) {
-            if (highx_int >= srcRod.width()) {
-                highx_int = srcRod.width() - 1;
+        for (int x = 0; x < dstBounds.width(); ++x) {
+            if (highx_int >= srcRoi.width()) {
+                highx_int = srcRoi.width() - 1;
             }
             
             /*
@@ -1051,7 +1160,7 @@ void scale_box_genericInternal(const Image& srcImg,const RectI& srcRod,Image& ds
                 temp0 += rowSize;
             }
             
-            int outindex = (x + (y * dstRod.width())) * components;
+            int outindex = (x + (y * dstBounds.width())) * components;
             for (int k = 0; k < components; ++k) {
                 dst[outindex + k] = PIX(totals[k] / area);
             }
@@ -1078,33 +1187,20 @@ void scale_box_genericInternal(const Image& srcImg,const RectI& srcRod,Image& ds
 
 //Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by
 //buildMipMapLevel
-void Image::scale_box_generic(const RectI& roi,Natron::Image* output) const
+// FIXME: this function has many bugs (see scaleBoxForDepth())
+void
+Image::scaleBox(const RectI& roi,
+                Natron::Image* output) const
 {
-    ///The destination rectangle
-    const RectI& dstRod = output->getBounds();
-    
-    ///The source rectangle, intersected to this image region of definition in pixels
-    RectI srcRod = roi;
-    srcRod.intersect(getBounds(), &srcRod);
-
-    ///If the roi is exactly twice the destination rect, just halve that portion into output.
-    if (srcRod.x1 == 2 * dstRod.x1 &&
-        srcRod.x2 == 2 * dstRod.x2 &&
-        srcRod.y1 == 2 * dstRod.y1 &&
-        srcRod.y2 == 2 * dstRod.y2) {
-        halveRoI(srcRod,output);
-        return;
-    }
-    
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            scale_box_genericInternal<unsigned char>(*this,srcRod, *output, dstRod);
+            scaleBoxForDepth<unsigned char>(roi, output);
             break;
         case IMAGE_SHORT:
-            scale_box_genericInternal<unsigned short>(*this,srcRod, *output, dstRod);
+            scaleBoxForDepth<unsigned short>(roi, output);
             break;
         case IMAGE_FLOAT:
-            scale_box_genericInternal<float>(*this,srcRod, *output, dstRod);
+            scaleBoxForDepth<float>(roi, output);
             break;
         default:
             break;
@@ -1112,7 +1208,8 @@ void Image::scale_box_generic(const RectI& roi,Natron::Image* output) const
     
 }
 
-void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int level) const
+// code proofread and fixed by @devernay on 8/8/2014
+void Image::buildMipMapLevel(const RectI& roi, unsigned int level, Natron::Image* output) const
 {
     ///The output image data window
     const RectI& dstRoD = output->getBounds();
@@ -1128,7 +1225,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
 
     if (level == 0) {
         ///Just copy the roi and return
-        output->copy(*this, roi);
+        output->pasteFrom(*this, roi);
         return;
     } 
 
@@ -1165,7 +1262,7 @@ void Image::buildMipMapLevel(Natron::Image* output,const RectI& roi,unsigned int
     assert(srcImg->getBounds() == lastLevelRoI);
     
     ///Finally copy the last mipmap level into output.
-    output->copy(*srcImg,srcImg->getBounds());
+    output->pasteFrom(*srcImg, srcImg->getBounds());
     
     ///Clean-up, we should use shared_ptrs for safety
     if (mustFreeSrc) {
@@ -1192,7 +1289,8 @@ Image::getLevelFromScale(double s)
     return retval;
 }
 
-void Image::clearBitmap()
+void
+Image::clearBitmap()
 {
     _bitmap.clear();
 }
@@ -1539,10 +1637,14 @@ void convertToFormatInternal(const RectI& renderWindow,const Image& srcImg,Image
 
 
 
-void Image::convertToFormat(const RectI& renderWindow,Natron::Image* dstImg,
-                            Natron::ViewerColorSpace srcColorSpace,
-                            Natron::ViewerColorSpace dstColorSpace,
-                            int channelForAlpha,bool invert,bool copyBitmap) const
+void
+Image::convertToFormat(const RectI& renderWindow,
+                       Natron::ViewerColorSpace srcColorSpace,
+                       Natron::ViewerColorSpace dstColorSpace,
+                       int channelForAlpha,
+                       bool invert,
+                       bool copyBitmap,
+                       Natron::Image* dstImg) const
 {
     assert(getBounds() == dstImg->getBounds());
     

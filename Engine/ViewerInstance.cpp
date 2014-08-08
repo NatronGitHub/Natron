@@ -472,10 +472,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             inputImage->getBitDepth() != imageDepth) {
             ///Convert the image to the requested components
             boost::shared_ptr<Image> remappedImage(new Image(components,inputImage->getRoD(),mipMapLevel,imageDepth));
-            inputImage->convertToFormat(inputImage->getBounds(), remappedImage.get(),
-                                   getApp()->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
-                                   getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
-                                   3, false, true);
+            inputImage->convertToFormat(inputImage->getBounds(),
+                                        getApp()->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
+                                        getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
+                                        3, false, true,
+                                        remappedImage.get());
             
             ///switch the pointer
             inputImage = remappedImage;
@@ -800,7 +801,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
             if (!rectsToRender.empty()) {
                 boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,rod,0,downscaledImage->getBitDepth()));
-                downscaledImage->scale_box_generic(downscaledImage->getBounds(),upscaledImage.get());
+                downscaledImage->scaleBox(downscaledImage->getBounds(), upscaledImage.get());
                 inputImage = upscaledImage;
             } else {
                 renderedCompletely = true;
