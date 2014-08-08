@@ -1228,7 +1228,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     _rBox->setMaximum(maximums[0]);
     _rBox->setMinimum(minimums[0]);
     _rBox->decimals(6);
-    _rBox->setIncrement(0.1);
+    _rBox->setIncrement(0.001);
     
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_rBox,0);
@@ -1247,7 +1247,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         _gBox->setMaximum(maximums[1]);
         _gBox->setMinimum(minimums[1]);
         _gBox->decimals(6);
-        _gBox->setIncrement(0.1);
+        _gBox->setIncrement(0.001);
         
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_gBox,1);
@@ -1265,7 +1265,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         _bBox->setMaximum(maximums[2]);
         _bBox->setMinimum(minimums[2]);
         _bBox->decimals(6);
-        _bBox->setIncrement(0.1);
+        _bBox->setIncrement(0.001);
         
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_bBox,2);
@@ -1285,7 +1285,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         _aBox->setMaximum(maximums[3]);
         _aBox->setMinimum(minimums[3]);
         _aBox->decimals(6);
-        _aBox->setIncrement(0.1);
+        _aBox->setIncrement(0.001);
         
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_aBox,3);
@@ -1547,26 +1547,33 @@ Color_KnobGui::updateGUI(int dimension)
         default:
             throw std::logic_error("wrong dimension");
     }
-    
-    uchar r = Color::floatToInt<256>(Natron::Color::to_func_srgb(_rBox->value()));
+
+    double rf = _rBox->value();
+    uchar r = Color::floatToInt<256>(Natron::Color::to_func_srgb(rf));
+    double gf = rf;
     uchar g = r;
+    double bf = rf;
     uchar b = r;
+    double af = 1.;
     uchar a = 255;
     if (_dimension >= 3) {
-        g = Color::floatToInt<256>(Natron::Color::to_func_srgb(_gBox->value()));
-        b = Color::floatToInt<256>(Natron::Color::to_func_srgb(_bBox->value()));
+        gf = _gBox->value();
+        g = Color::floatToInt<256>(Natron::Color::to_func_srgb(gf));
+        bf = _bBox->value();
+        b = Color::floatToInt<256>(Natron::Color::to_func_srgb(bf));
     }
     if (_dimension >= 4) {
-        a = Color::floatToInt<256>(Natron::Color::to_func_srgb(_aBox->value()));
+        af = _aBox->value();
+        a = Color::floatToInt<256>(Natron::Color::to_func_srgb(af));
     }
     QColor color(r, g, b, a);
     updateLabel(color);
     
-    bool colorsEqual;
+    bool colorsEqual = true;
     if (_dimension == 3) {
-        colorsEqual = (r == g && r == b);
+        colorsEqual = (rf == gf && rf == bf);
     } else {
-        colorsEqual = (r == g && r == b && r == a);
+        colorsEqual = (rf == gf && rf == bf && r == af);
     }
     if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
         expandAllDimensions();
