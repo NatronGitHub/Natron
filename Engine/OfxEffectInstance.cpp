@@ -1184,8 +1184,13 @@ OfxEffectInstance::render(SequenceTime time,
                                  false, //< setFrameRange ?
                                  0,0);
         
-        stat = effect_->renderAction((OfxTime)time, field, ofxRoI,useScaleOne ? scaleOne : scale,
-                                     isSequentialRender,isRenderResponseToUserInteraction,view, viewsCount);
+        stat = effect_->renderAction((OfxTime)time,
+                                     field,
+                                     ofxRoI,useScaleOne ? scaleOne : scale,
+                                     isSequentialRender,
+                                     isRenderResponseToUserInteraction,
+                                     view,
+                                     viewsCount);
     }
 
     if (stat != kOfxStatOK) {

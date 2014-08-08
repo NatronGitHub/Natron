@@ -1193,7 +1193,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   const RenderScale& scale,
                                   unsigned int mipMapLevel,
                                   int view,
-                                  const RectI& renderWindow,
+                                  const RectI& renderWindow, //!< seems to be in downscaledImage's pixel coordinates ??
                                   const boost::shared_ptr<const ImageParams>& cachedImgParams,
                                   const boost::shared_ptr<Image>& image,
                                   const boost::shared_ptr<Image>& downscaledImage,
@@ -1251,9 +1251,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     if (image != downscaledImage) {
         renderWindow.intersect(image->getBounds(), &intersection);
     } else {
+#pragma message WARN("downscaledImage is the same as image in this case... why the if? renderWindow.intersect(image->getBounds(), &intersection); should work in all cases")
         renderWindow.intersect(downscaledImage->getBounds(), &intersection);
     }
-    
+    // renderWindow seems to be in full (not downscaled) image pixels...
+
     /// If the list is empty then we already rendered it all
     std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
     
@@ -1289,7 +1291,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     if (!rectsToRender.empty()) {
         if (imageConversionNeeded) {
             if (useFullResImage) {
-#pragma message WARN("if useFullResImage is true, then retrieve the full-res image from the cache! maybe it's there already!")
                 // TODO: as soon as partial images are supported (RoD != bounds): no need to allocate a full image...
                 // one rectangle should be allocated for each rendered rectangle
                 fullScaleMappedImage.reset(new Image(outputComponents,image->getRoD(),image->getMipMapLevel(),outputDepth));
@@ -1302,23 +1303,23 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             fullScaleMappedImage = image;
             downscaledMappedImage = downscaledImage;
         }
+        renderMappedImage = useFullResImage ? fullScaleMappedImage : downscaledImage;
     }
     
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
-        
-        RectI rectToRender = *it;
+        const RectI& downscaledRectToRender = *it; // please leave it as const, copy it if necessary
         
         ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
         ///FIXME : Take par into account. (why?)
-        RectI canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+        const RectI canonicalRectToRender = downscaledRectToRender.upscalePowerOfTwo(mipMapLevel);
 
         
 #ifdef NATRON_LOG
         Natron::Log::print(QString("Rect left to render in the image... xmin= "+
-                                   QString::number(rectToRender.left())+" ymin= "+
-                                   QString::number(rectToRender.bottom())+ " xmax= "+
-                                   QString::number(rectToRender.right())+ " ymax= "+
-                                   QString::number(rectToRender.top())).toStdString());
+                                   QString::number(downscaledRectToRender.left())+" ymin= "+
+                                   QString::number(downscaledRectToRender.bottom())+ " xmax= "+
+                                   QString::number(downscaledRectToRender.right())+ " ymax= "+
+                                   QString::number(downscaledRectToRender.top())).toStdString());
 #endif
         
         ///the getRegionOfInterest call will not be cached because it would be unnecessary
@@ -1343,7 +1344,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///getImage() call.
         /// @see EffectInstance::getImage
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
-                                                    rectToRender,
+                                                    downscaledRectToRender,
                                                     inputsRoi,
                                                     time,
                                                     view,
@@ -1438,7 +1439,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
         if (rotoCtx) {
 
-            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(rectToRender,image->getComponents(), nodeHash,rotoAge,
+            boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(downscaledRectToRender,image->getComponents(), nodeHash,rotoAge,
                                                                         cachedImgParams->getRoD() ,time,getBitDepth(),
                                                                         view, mipMapLevel, byPassCache);
             assert(mask);
@@ -1491,30 +1492,26 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             }
         }
 
-        ////////////////////////////
-        //// FIXME FIXME FIXME /////
-        //// FACTORIZE!!!!!!   /////
-        //// TOO MUCH COPYPASTE/////
-        ////////////////////////////
         switch (safety) {
-            case FULLY_SAFE_FRAME: // the plugin will not perform any per frame SMP threading
-            {
+            case FULLY_SAFE_FRAME: { // the plugin will not perform any per frame SMP threading
                 // we can split the frame in tiles and do per frame SMP threading (see kOfxImageEffectPluginPropHostFrameThreading)
                 if (nbThreads == 0) {
                     nbThreads = QThreadPool::globalInstance()->maxThreadCount();
                 }
-                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(rectToRender, nbThreads);
+                std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(downscaledRectToRender, nbThreads);
                 // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
                 QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
-                                                                   boost::bind(&EffectInstance::tiledRenderingFunctor,
-                                                                               this,args,_1,downscaledMappedImage,fullScaleMappedImage,
-                                                                               downscaledMappedImage,fullScaleMappedImage));
+                                                                   boost::bind(&EffectInstance::tiledRenderingFunctor, this,
+                                                                               args,
+                                                                               _1,
+                                                                               downscaledMappedImage,
+                                                                               fullScaleMappedImage,
+                                                                               renderMappedImage));
                 ret.waitForFinished();
                 
                 bool callEndRender = false;
                 ///never call endsequence render here if the render is sequential
-                if (!args._isSequentialRender)
-                {
+                if (!args._isSequentialRender) {
                     assert(_imp->beginEndRenderCount.hasLocalData());
                     if (_imp->beginEndRenderCount.localData() ==  1) {
                         callEndRender = true;
@@ -1527,150 +1524,41 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                         break;
                     }
                 }
-                
                 for (QFuture<Natron::Status>::const_iterator it2 = ret.begin(); it2!=ret.end(); ++it2) {
                     if ((*it2) == Natron::StatFailed) {
                         renderStatus = *it2;
                         break;
                     }
                 }
-            } break;
+            }   break;
                 
             case INSTANCE_SAFE: // indicating that any instance can have a single 'render' call at any one time,
-            {
+            case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
+            case UNSAFE: { // indicating that only a single 'render' call can be made at any time amoung all instances
+                // INSTANCE_SAFE means that there is at most one render per instance
                 // NOTE: the per-instance lock should probably be shared between
                 // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
                 // and read-write on it.
                 // It is probably safer to assume that several clones may write to the same output image only in the FULLY_SAFE case.
-                
-                QMutexLocker l(&getNode()->getRenderInstancesSharedMutex());
-                
-                // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                const RectI& downscaledBounds = downscaledImage->getBounds();
-                assert(downscaledBounds.x1 <= rectToRender.x1 && rectToRender.x2 <= downscaledBounds.x2 &&
-                       downscaledBounds.y1 <= rectToRender.y1 && rectToRender.y2 <= downscaledBounds.y2);
-                rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                canonicalRectToRender = rectToRender;
-                if (useFullResImage && mipMapLevel != 0) {
-                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    
-                    ///Q: shouldn't it be getRoD() instead of getBounds() on the next line?
-                    ///A: Image is the "full-res" image, so getBounds() is identical to getRoD().
-                    canonicalRectToRender.intersect(image->getRoD(), &canonicalRectToRender);
-                }
-                
-                if (!canonicalRectToRender.isNull()) {
-                    renderStatus = render_public(time, scale, canonicalRectToRender,view,isSequentialRender,
-                                               isRenderMadeInResponseToUserInteraction,
-                                                      useFullResImage ? fullScaleMappedImage : downscaledMappedImage);
-                }
-            } break;
-            case FULLY_SAFE:    // indicating that any instance of a plugin can have multiple renders running simultaneously
-            {
-                ///FULLY_SAFE means that there is only one render per FRAME for a given instance take a per-frame lock here (the map of per-frame
-                ///locks belongs to an instance)
-                
-                QMutexLocker l(&getNode()->getFrameMutex(time));
-                
-                // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-                const RectI& downscaledBounds = downscaledImage->getBounds();
-                assert(downscaledBounds.x1 <= rectToRender.x1 && rectToRender.x2 <= downscaledBounds.x2 &&
-                       downscaledBounds.y1 <= rectToRender.y1 && rectToRender.y2 <= downscaledBounds.y2);
-                rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                canonicalRectToRender = rectToRender;
-                if (useFullResImage && mipMapLevel != 0) {
-                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    
-                    ///Q: shouldn't it be getRoD() instead of getBounds() on the next line?
-                    ///A: Image is the "full-res" image, so getBounds() is identical to getRoD().
-                    canonicalRectToRender.intersect(image->getRoD(), &canonicalRectToRender);
-                }
-                
-                if (!canonicalRectToRender.isNull()) {
-                    renderStatus = render_public(time,scale, canonicalRectToRender,view,isSequentialRender,
-                                               isRenderMadeInResponseToUserInteraction, useFullResImage ? fullScaleMappedImage
-                                                      : downscaledMappedImage);
-                    
-                }
-            } break;
-                
-                
-            case UNSAFE: // indicating that only a single 'render' call can be made at any time amoung all instances
-            default:
-            {
-                QMutexLocker lock(appPTR->getMutexForPlugin(pluginID().c_str()));
-                
-                const RectI& downscaledBounds = downscaledImage->getBounds();
-                assert(downscaledBounds.x1 <= rectToRender.x1 && rectToRender.x2 <= downscaledBounds.x2 &&
-                       downscaledBounds.y1 <= rectToRender.y1 && rectToRender.y2 <= downscaledBounds.y2);
-                rectToRender = downscaledImage->getMinimalRect(rectToRender);
-                canonicalRectToRender = rectToRender;
-                if (useFullResImage && mipMapLevel != 0) {
-                    canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
-                    ///Q: shouldn't it be getRoD() instead of getBounds() on the next line?
-                    ///A: Image is the "full-res" image, so getBounds() is identical to getRoD().
-                    canonicalRectToRender.intersect(image->getRoD(), &canonicalRectToRender);
-                }
-                
-                if (!canonicalRectToRender.isNull()) {
-                    renderStatus = render_public(time,scale, canonicalRectToRender,view,isSequentialRender,
-                                               isRenderMadeInResponseToUserInteraction, useFullResImage ? fullScaleMappedImage
-                                                      : downscaledMappedImage);
-                }
-            } break;
-        }
-        
-        ///Factorize code by making all this portion the same for all safetys except FULLY SAFE FRAME
-        if (safety != FULLY_SAFE_FRAME) {
-            ///copy the rectangle rendered in the full scale image to the downscaled output
-            if (useFullResImage) {
-                ///First demap the fullScaleMappedImage to the original image if it needs to
-                if (imageConversionNeeded) {
-                    fullScaleMappedImage->convertToFormat(canonicalRectToRender,
-                                                          getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
-                                                          getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth()),
-                                                          channelForAlpha, false, true,
-                                                          image.get());
-                }
-                if (mipMapLevel != 0) {
-                    image->downscaleMipMap(canonicalRectToRender, args._mipMapLevel, downscaledImage.get());
-                }
-            } else {
-                if (imageConversionNeeded) {
-                    downscaledMappedImage->convertToFormat(canonicalRectToRender,
-                                                           getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
-                                                           getApp()->getDefaultColorSpaceForBitDepth(downscaledImage->getBitDepth()),
-                                                           channelForAlpha, false, false,
-                                                           downscaledImage.get());
-                }
-            }
-            
-            bool callEndRender = false;
-            ///never call endsequence render here if the render is sequential
-            if (!args._isSequentialRender)
-            {
-                assert(_imp->beginEndRenderCount.hasLocalData());
-                if (_imp->beginEndRenderCount.localData() ==  1) {
-                    callEndRender = true;
-                }
-            }
-            if (callEndRender) {
-                if (endSequenceRender_public(time, time, time, false, scale,isSequentialRender,
-                                             isRenderMadeInResponseToUserInteraction,view) == StatFailed) {
-                    renderStatus = StatFailed;
-                    break;
-                }
-            }
-            
-            if (!aborted()) {
-                downscaledImage->markForRendered(rectToRender);
-            }
-        }
 
+                // FULLY_SAFE means that there is only one render per FRAME for a given instance take a per-frame lock here (the map of per-frame
+                ///locks belongs to an instance)
+
+                QMutexLocker l((safety == INSTANCE_SAFE) ? &getNode()->getRenderInstancesSharedMutex() :
+                               ((safety == FULLY_SAFE) ? &getNode()->getFrameMutex(time) :
+                                appPTR->getMutexForPlugin(pluginID().c_str())));
+
+                renderStatus = tiledRenderingFunctor(args,
+                                                     downscaledRectToRender,
+                                                     downscaledMappedImage,
+                                                     fullScaleMappedImage,
+                                                     renderMappedImage);
+            }   break;
+        }
 
         ///notify the node we've finished rendering
         _node->notifyRenderingEnded();
-        
+
         if (renderStatus != StatOK) {
             break;
         }
@@ -1686,63 +1574,81 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 }
 
 Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
-                                                     const RectI& roi,
-                                                     boost::shared_ptr<Natron::Image> downscaledOutput,
-                                                     boost::shared_ptr<Natron::Image> fullScaleOutput,
-                                                     boost::shared_ptr<Natron::Image> downscaledMappedOutput,
-                                                     boost::shared_ptr<Natron::Image> fullScaleMappedOutput)
+                                                     const RectI& downscaledRectToRender,
+                                                     boost::shared_ptr<Natron::Image> downscaledMappedImage, // this is the final output
+                                                     boost::shared_ptr<Natron::Image> fullScaleMappedImage, // only used if renderscale not supported
+                                                     boost::shared_ptr<Natron::Image> renderMappedImage) // the render output, in the plugins's format
 {
+    assert(downscaledMappedImage && fullScaleMappedImage && renderMappedImage);
     Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
+    const SequenceTime time = args._time;
+    const RenderScale scale = args._scale;
+    int mipMapLevel = args._mipMapLevel;
+    const int view = args._view;
+    const bool isSequentialRender = args._isSequentialRender;
+    const bool isRenderResponseToUserInteraction = args._isRenderResponseToUserInteraction;
+    const int channelForAlpha = args._channelForAlpha;
+
+    const bool useFullResImage = (!supportsRenderScale() && mipMapLevel != 0);
+
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
-    RectI rectToRender = downscaledOutput->getMinimalRect(roi);
-    bool useFullResImage = (!supportsRenderScale() && args._mipMapLevel != 0);
-    
-    RectI upscaledRoi = rectToRender;
+    const RectI& renderBounds = renderMappedImage->getBounds();
+    assert(renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
+           renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
+
+    // check the bitmap!
+    const RectI downscaledRectToRenderMinimal = downscaledMappedImage->getMinimalRect(downscaledRectToRender);
+
+    assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
+           renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
+
+
+    RectI renderRectToRender; // rectangle to render, in renderMappedImage's pixel coordinates
     if (useFullResImage) {
-        upscaledRoi = rectToRender.upscalePowerOfTwo(args._mipMapLevel);
-        ///Q: shouldn't it be getRoD() instead of getBounds() on the next line?
-        ///A: fullScaleOutput is the "full-res" image, so getBounds() is identical to getRoD().
-        upscaledRoi.intersect(fullScaleOutput->getRoD(), &upscaledRoi);
+        renderRectToRender = downscaledRectToRenderMinimal.upscalePowerOfTwo(mipMapLevel);
+        renderRectToRender.intersect(renderMappedImage->getBounds(), &renderRectToRender);
+    } else {
+        renderRectToRender = downscaledRectToRenderMinimal;
     }
     
-    if (!upscaledRoi.isNull()) {
+    if (!downscaledRectToRenderMinimal.isNull()) {
         
-        Natron::Status st = render_public(args._time,args._scale, upscaledRoi, args._view,
-                                   args._isSequentialRender,args._isRenderResponseToUserInteraction,
-                                   useFullResImage ? fullScaleMappedOutput : downscaledMappedOutput);
-        if(st != StatOK){
+        Natron::Status st = render_public(time, scale, renderRectToRender, view,
+                                          isSequentialRender,
+                                          isRenderResponseToUserInteraction,
+                                          renderMappedImage);
+        if (st != StatOK) {
             return st;
         }
-        
-        
-        
+
         if (!aborted()) {
-            downscaledOutput->markForRendered(rectToRender);
+            renderMappedImage->markForRendered(renderRectToRender);
         }
+
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (useFullResImage) {
             ///First demap the fullScaleMappedImage to the original image if it needs to
-            if (fullScaleOutput != fullScaleMappedOutput) {
-                fullScaleMappedOutput->convertToFormat(roi,
-                                                       getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedOutput->getBitDepth()),
-                                                       getApp()->getDefaultColorSpaceForBitDepth(fullScaleOutput->getBitDepth()),
-                                                       args._channelForAlpha, false, true,
-                                                       fullScaleOutput.get());
+            if (fullScaleMappedImage != renderMappedImage) {
+                renderMappedImage->convertToFormat(downscaledRectToRender,
+                                                   getApp()->getDefaultColorSpaceForBitDepth(renderMappedImage->getBitDepth()),
+                                                   getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
+                                                   channelForAlpha, false, true,
+                                                   fullScaleMappedImage.get());
             }
-            if (args._mipMapLevel != 0) {
-                fullScaleOutput->downscaleMipMap(roi, args._mipMapLevel, downscaledOutput.get());
+            if (mipMapLevel != 0) {
+                fullScaleMappedImage->downscaleMipMap(downscaledRectToRender, mipMapLevel, downscaledMappedImage.get());
             }
         } else {
-            if (fullScaleOutput != fullScaleMappedOutput) {
-                downscaledMappedOutput->convertToFormat(roi,
-                                                        getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedOutput->getBitDepth()),
-                                                        getApp()->getDefaultColorSpaceForBitDepth(downscaledOutput->getBitDepth()),
-                                                        args._channelForAlpha, false, true,
-                                                        downscaledOutput.get());
+            if (downscaledMappedImage != renderMappedImage) {
+                renderMappedImage->convertToFormat(downscaledRectToRender,
+                                                   getApp()->getDefaultColorSpaceForBitDepth(renderMappedImage->getBitDepth()),
+                                                   getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
+                                                   channelForAlpha, false, true,
+                                                   downscaledMappedImage.get());
             }
         }
     }
-    
+
     return StatOK;
 }
 

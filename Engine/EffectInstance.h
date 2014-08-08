@@ -818,8 +818,7 @@ private:
                                          const RectI& roi,
                                          boost::shared_ptr<Natron::Image> downscaledOutput,
                                          boost::shared_ptr<Natron::Image> fullScaleOutput,
-                                         boost::shared_ptr<Natron::Image> downscaledMappedOutput,
-                                         boost::shared_ptr<Natron::Image> fullScaleMappedOutput);
+                                         boost::shared_ptr<Natron::Image> renderMappedOutput);
     
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
