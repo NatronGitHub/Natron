@@ -82,6 +82,8 @@
 #define NATRON_BACKDROP_NODE_NAME "BackDrop"
 
 #define PLUGIN_GROUP_IMAGE "Image"
+#define PLUGIN_GROUP_IMAGE_READERS "Readers"
+#define PLUGIN_GROUP_IMAGE_WRITERS "Writers"
 #define PLUGIN_GROUP_COLOR "Color"
 #define PLUGIN_GROUP_FILTER "Filter"
 #define PLUGIN_GROUP_TRANSFORM "Transform"
