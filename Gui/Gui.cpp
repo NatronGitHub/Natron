@@ -1338,7 +1338,7 @@ void Gui::maximize(TabWidget* what) {
             }
             
             bool hasNodeGraphOrCurveEditor = false;
-            for (int i = 0; i < what->count();++it) {
+            for (int i = 0; i < what->count();++i) {
                 QString tabName = what->tabAt(i)->objectName();
                 if (tabName == kNodeGraphObjectName || tabName == kCurveEditorObjectName) {
                     hasNodeGraphOrCurveEditor = true;
