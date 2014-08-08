@@ -1168,34 +1168,43 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
 }
 
 
-void EffectInstance::renderRoI(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
-                               int view,const RectI& renderWindow,
-                               const boost::shared_ptr<const ImageParams>& cachedImgParams,
-                               const boost::shared_ptr<Image>& image,
-                               const boost::shared_ptr<Image>& downscaledImage,
-                               bool isSequentialRender,
-                               bool isRenderMadeInResponseToUserInteraction,
-                               bool byPassCache,
-                               U64 nodeHash) {
+void
+EffectInstance::renderRoI(SequenceTime time,
+                          const RenderScale& scale,
+                          unsigned int mipMapLevel,
+                          int view,
+                          const RectI& renderWindow,
+                          const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                          const boost::shared_ptr<Image>& image,
+                          const boost::shared_ptr<Image>& downscaledImage,
+                          bool isSequentialRender,
+                          bool isRenderMadeInResponseToUserInteraction,
+                          bool byPassCache,
+                          U64 nodeHash)
+{
    EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(time, scale,mipMapLevel, view, renderWindow, cachedImgParams, image,downscaledImage,isSequentialRender,isRenderMadeInResponseToUserInteraction, byPassCache,nodeHash,3);
     if (renderRetCode == eImageRenderFailed && !aborted()) {
         throw std::runtime_error("Rendering Failed");
     }
 }
 
-EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
-                                                                  int view,const RectI& renderWindow,
-                                                                  const boost::shared_ptr<const ImageParams>& cachedImgParams,
-                                                                  const boost::shared_ptr<Image>& image,
-                                                                  const boost::shared_ptr<Image>& downscaledImage,
-                                                                  bool isSequentialRender,
-                                                                  bool isRenderMadeInResponseToUserInteraction,
-                                                                  bool byPassCache,
-                                                                  U64 nodeHash,
-                                                                  int channelForAlpha) {
-    
+EffectInstance::RenderRoIStatus
+EffectInstance::renderRoIInternal(SequenceTime time,
+                                  const RenderScale& scale,
+                                  unsigned int mipMapLevel,
+                                  int view,
+                                  const RectI& renderWindow,
+                                  const boost::shared_ptr<const ImageParams>& cachedImgParams,
+                                  const boost::shared_ptr<Image>& image,
+                                  const boost::shared_ptr<Image>& downscaledImage,
+                                  bool isSequentialRender,
+                                  bool isRenderMadeInResponseToUserInteraction,
+                                  bool byPassCache,
+                                  U64 nodeHash,
+                                  int channelForAlpha)
+{
     EffectInstance::RenderRoIStatus retCode;
-    
+
     ///First off check if the requested components and bitdepth are supported by the output clip
     Natron::ImageBitDepth outputDepth ;
     Natron::ImageComponents outputComponents;
@@ -1276,10 +1285,13 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
 
     
     ///These are the image passed to the plug-in to render
-    boost::shared_ptr<Image> fullScaleMappedImage,downscaledMappedImage;
+    boost::shared_ptr<Image> fullScaleMappedImage, downscaledMappedImage, renderMappedImage;
     if (!rectsToRender.empty()) {
         if (imageConversionNeeded) {
             if (useFullResImage) {
+#pragma message WARN("if useFullResImage is true, then retrieve the full-res image from the cache! maybe it's there already!")
+                // TODO: as soon as partial images are supported (RoD != bounds): no need to allocate a full image...
+                // one rectangle should be allocated for each rendered rectangle
                 fullScaleMappedImage.reset(new Image(outputComponents,image->getRoD(),image->getMipMapLevel(),outputDepth));
                 downscaledMappedImage = downscaledImage;
             } else {
@@ -1297,7 +1309,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
         RectI rectToRender = *it;
         
         ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
-        ///FIXME : Take par into account.
+        ///FIXME : Take par into account. (why?)
         RectI canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
 
         
@@ -1479,6 +1491,11 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             }
         }
 
+        ////////////////////////////
+        //// FIXME FIXME FIXME /////
+        //// FACTORIZE!!!!!!   /////
+        //// TOO MUCH COPYPASTE/////
+        ////////////////////////////
         switch (safety) {
             case FULLY_SAFE_FRAME: // the plugin will not perform any per frame SMP threading
             {
@@ -1529,6 +1546,9 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 QMutexLocker l(&getNode()->getRenderInstancesSharedMutex());
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+                const RectI& downscaledBounds = downscaledImage->getBounds();
+                assert(downscaledBounds.x1 <= rectToRender.x1 && rectToRender.x2 <= downscaledBounds.x2 &&
+                       downscaledBounds.y1 <= rectToRender.y1 && rectToRender.y2 <= downscaledBounds.y2);
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
@@ -1553,6 +1573,9 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 QMutexLocker l(&getNode()->getFrameMutex(time));
                 
                 // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+                const RectI& downscaledBounds = downscaledImage->getBounds();
+                assert(downscaledBounds.x1 <= rectToRender.x1 && rectToRender.x2 <= downscaledBounds.x2 &&
+                       downscaledBounds.y1 <= rectToRender.y1 && rectToRender.y2 <= downscaledBounds.y2);
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
@@ -1577,6 +1600,9 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
             {
                 QMutexLocker lock(appPTR->getMutexForPlugin(pluginID().c_str()));
                 
+                const RectI& downscaledBounds = downscaledImage->getBounds();
+                assert(downscaledBounds.x1 <= rectToRender.x1 && rectToRender.x2 <= downscaledBounds.x2 &&
+                       downscaledBounds.y1 <= rectToRender.y1 && rectToRender.y2 <= downscaledBounds.y2);
                 rectToRender = downscaledImage->getMinimalRect(rectToRender);
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {

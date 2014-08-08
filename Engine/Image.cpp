@@ -81,7 +81,8 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 //        return ret;
 //    }
     
-    RectI bbox = roi;
+    RectI bbox;
+    roi.intersect(_rod, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
         char* buf = &_map[(i-_rod.bottom())*_rod.width()];
