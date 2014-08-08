@@ -668,7 +668,7 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     // "nThreads can be more than the value returned by multiThreadNumCPUs, however
     // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
 
-    if (nThreads == 1 || appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+    if (nThreads == 1 || maxConcurrentThread <= 1 || appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         try {
             for (unsigned int i = 0; i < nThreads; ++i) {
                 func(i, nThreads, customArg);
@@ -707,17 +707,30 @@ OfxStatus Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,unsigned int nTh
     QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
     status.fill(kOfxStatFailed); // by default, a thread fails
     {
+        // at most maxConcurrentThread should be running at the same time
         QVector<OfxThread*> threads(nThreads);
         for (unsigned int i = 0; i < nThreads; ++i) {
             threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
-            threads[i]->start();
         }
-        for (unsigned int i = 0; i < nThreads; ++i) {
-            threads[i]->wait();
-            assert(!threads[i]->isRunning());
-            assert(threads[i]->isFinished());
-            delete threads[i];
+        unsigned int i = 0; // index of next thread to launch
+        unsigned int running = 0; // number of running threads
+        unsigned int j = 0; // index of first running thread. all threads before this one are finished running
+        while (j < nThreads) {
+            // have no more than maxConcurrentThread threads launched at the same time
+            while (i < nThreads && running < maxConcurrentThread) {
+                threads[i]->start();
+                ++i;
+                ++running;
+            }
+            // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
+            threads[j]->wait();
+            assert(!threads[j]->isRunning());
+            assert(threads[j]->isFinished());
+            delete threads[j];
+            ++j;
+            --running;
         }
+        assert(running == 0);
     }
     // check the return status of each thread, return the first error found
     for (QVector<OfxStatus>::const_iterator it = status.begin(); it != status.end(); ++it) {
