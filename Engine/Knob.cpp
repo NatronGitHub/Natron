@@ -1062,6 +1062,9 @@ void KnobHolder::slaveAllKnobs(KnobHolder* other) {
     if (_imp->isSlave) {
         return;
     }
+    ///Call it prior to slaveTo: it will set the master pointer as pointing to other
+    onAllKnobsSlaved(true,other);
+
     const std::vector<boost::shared_ptr<KnobI> >& otherKnobs = other->getKnobs();
     const std::vector<boost::shared_ptr<KnobI> >& thisKnobs = getKnobs();
     for (U32 i = 0; i < otherKnobs.size(); ++i) {
@@ -1078,7 +1081,6 @@ void KnobHolder::slaveAllKnobs(KnobHolder* other) {
         }
     }
     _imp->isSlave = true;
-    onAllKnobsSlaved(true,other);
 
 }
 

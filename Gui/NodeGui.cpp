@@ -1042,6 +1042,9 @@ void NodeGui::showGui()
             _slaveMasterLink->show();
         }
     }
+    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it!=_knobsLinks.end(); ++it) {
+        it->arrow->show();
+    }
     
 }
 
@@ -1096,6 +1099,9 @@ void NodeGui::hideGui()
     
     if (_slaveMasterLink) {
         _slaveMasterLink->hide();
+    }
+    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it!=_knobsLinks.end(); ++it) {
+        it->arrow->hide();
     }
     
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
