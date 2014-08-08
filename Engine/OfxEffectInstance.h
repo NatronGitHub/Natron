@@ -265,11 +265,4 @@ private:
 
 };
 
-
-/*group is a string as such:
- Toto/Superplugins/blabla
- This functions extracts the all parts of such a grouping, e.g in this case
- it would return [Toto,Superplugins,blabla].*/
-QStringList ofxExtractAllPartsOfGrouping(const QString& group,const QString& bundlePath);
-
 #endif // NATRON_ENGINE_OFXNODE_H_

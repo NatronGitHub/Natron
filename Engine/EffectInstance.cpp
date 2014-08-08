@@ -1371,6 +1371,12 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 assert(foundInputRoI != inputsRoi.end());
                 
                 ///Convert to pixel coords the RoI
+                if (foundInputRoI->second.isInfinite()) {
+#pragma message WARN("Graph 'Denoise (from Nuke) - particleIllusion - Viewer' (no reader) gives infinite RoI")
+                    assert(false); // Denoise (from Nuke) - particleIllusion - Viewer (no reader) gives infinite RoI
+                    throw std::runtime_error(std::string("Plugin ") + this->pluginLabel() + " asked for an infinite region of interest!");
+                }
+
                 RectI inputRoIPixelCoords = foundInputRoI->second.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
                 
                 ///Notify the node that we're going to render something with the input
@@ -1527,6 +1533,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
                     canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
@@ -1548,6 +1555,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
                     canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
@@ -1569,6 +1577,7 @@ EffectInstance::RenderRoIStatus EffectInstance::renderRoIInternal(SequenceTime t
                 canonicalRectToRender = rectToRender;
                 if (useFullResImage && mipMapLevel != 0) {
                     canonicalRectToRender = rectToRender.upscalePowerOfTwo(mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
                     canonicalRectToRender.intersect(image->getBounds(), &canonicalRectToRender);
                 }
                 
@@ -1658,6 +1667,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     RectI upscaledRoi = rectToRender;
     if (useFullResImage) {
         upscaledRoi = rectToRender.upscalePowerOfTwo(args._mipMapLevel);
+#pragma message WARN("shouldn't it be getRoD() instead of getBounds() on the next line?")
         upscaledRoi.intersect(fullScaleOutput->getBounds(), &upscaledRoi);
     }
     

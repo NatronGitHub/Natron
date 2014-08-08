@@ -404,41 +404,29 @@ OfxEffectInstance::isGeneratorAndFilter() const
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-QStringList
-ofxExtractAllPartsOfGrouping(const QString& pluginLabel,const QString& str)
+static
+QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const QString& str)
 {
+    QString s(str);
+    s.replace(QChar('\\'),QChar('/'));
+
     QStringList out;
-    if (str.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
+    if (s.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
         out.push_back("Sapphire");
-    } else if (str.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
+    } else if (s.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
         out.push_back("Monsters");
-    } else if (str.startsWith("particleIllusion")) {
-        out.push_back("particleIllusion");
-    }  else if (str.startsWith("RollingShutter")) {
-        out.push_back("RollingShutter");
-    } else if (str.startsWith("Keylight")) {
-        out.push_back("Keyer");
+    } else if (s == "Keylight") {
+        s = PLUGIN_GROUP_KEYER;
     }
 
-    int pos = 0;
-    while (pos < str.size()) {
-        QString newPart;
-        while (pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')) {
-            newPart.append(str.at(pos));
-            ++pos;
-        }
-        ++pos;
-        if (newPart != pluginLabel) {
-            out.push_back(newPart);
-        }
-    }
-    return out;
+    return out + s.split('/');
 }
 
 QStringList
 AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping)
 {
-    return  ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
+    //printf("%s,%s\n",pluginLabel.c_str(),grouping.c_str());
+    return ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
 }
 
 std::string
@@ -490,6 +478,8 @@ OfxEffectInstance::pluginLabel() const
     return getPluginLabel( effect_->getDescriptor().getShortLabel(),effect_->getDescriptor().getLabel(),effect_->getDescriptor().getLongLabel());
 }
 
+static
+QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const QString& str);
 
 void
 OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
