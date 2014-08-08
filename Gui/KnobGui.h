@@ -34,6 +34,7 @@ class QHBoxLayout; //used by KnobGui
 class QFormLayout;
 class QMenu;
 class QLabel;
+class QString;
 
 // Engine
 class Variant; //used by KnobGui
@@ -328,6 +329,7 @@ private:
 };
 
 
+struct LinkToKnobDialogPrivate;
 class LinkToKnobDialog : public QDialog {
     
     Q_OBJECT
@@ -335,24 +337,18 @@ public:
     
     LinkToKnobDialog(KnobGui* from,QWidget* parent);
     
-    virtual ~LinkToKnobDialog() OVERRIDE { _allKnobs.clear(); }
+    virtual ~LinkToKnobDialog();
     
     std::pair<int ,boost::shared_ptr<KnobI> > getSelectedKnobs() const;
 
+public slots:
+    
+    void onNodeComboBoxCurrentIndexChanged(const QString& index);
+    
 private:
-    // FIXME: PIMPL
-    QVBoxLayout* _mainLayout;
-    QHBoxLayout* _firstLineLayout;
-    QWidget* _firstLine;
-    QLabel* _selectKnobLabel;
-    ComboBox* _selectionCombo;
+    
+    boost::scoped_ptr<LinkToKnobDialogPrivate> _imp;
 
-    QWidget* _buttonsWidget;
-    Button* _cancelButton;
-    Button* _okButton;
-    QHBoxLayout* _buttonsLayout;
-
-    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > > _allKnobs;
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_

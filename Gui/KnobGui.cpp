@@ -23,6 +23,7 @@
 #include <QFileDialog>
 #include <QTextEdit>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QTimer>
 
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -35,6 +36,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QLabel>
 #include <QMenu>
 #include <QComboBox>
+#include <QDialogButtonBox>
+#include <QCompleter>
 
 #include "Engine/LibraryBinary.h"
 #include "Global/GlobalDefines.h"
@@ -1018,79 +1021,142 @@ void KnobGui::onPasteValuesActionTriggered(){
     }
 }
 
+struct LinkToKnobDialogPrivate
+{
+    KnobGui* fromKnob;
+    QVBoxLayout* mainLayout;
+    QHBoxLayout* firstLineLayout;
+    QWidget* firstLine;
+    QLabel* selectNodeLabel;
+    QComboBox* nodeSelectionCombo;
+    QComboBox* knobSelectionCombo;
+    
+    QDialogButtonBox* buttons;
+    std::vector< boost::shared_ptr<Natron::Node> > allNodes;
+    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > > allKnobs;
+
+    LinkToKnobDialogPrivate(KnobGui* from)
+    : fromKnob(from)
+    {
+        
+    }
+};
 
 LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
 : QDialog(parent)
+, _imp(new LinkToKnobDialogPrivate(from))
 {
     
     
-    _mainLayout = new QVBoxLayout(this);
-    setLayout(_mainLayout);
+    _imp->mainLayout = new QVBoxLayout(this);
     
-    _firstLine = new QWidget(this);
-    _firstLineLayout = new QHBoxLayout(_firstLine);
-    _firstLine->setLayout(_firstLineLayout);
+    _imp->firstLine = new QWidget(this);
+    _imp->firstLineLayout = new QHBoxLayout(_imp->firstLine);
     
-    _mainLayout->addWidget(_firstLine);
+    _imp->mainLayout->addWidget(_imp->firstLine);
+  
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+                                         Qt::Horizontal,this);
+    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(accept()));
+    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
+    _imp->mainLayout->addWidget(_imp->buttons);
     
-    _buttonsWidget = new QWidget(this);
-    _buttonsLayout = new QHBoxLayout(_buttonsWidget);
-    _buttonsWidget->setLayout(_buttonsLayout);
+    _imp->selectNodeLabel = new QLabel(tr("Parent:"),_imp->firstLine);
+    _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
     
-    _mainLayout->addWidget(_buttonsWidget);
-    
-    _selectKnobLabel = new QLabel(tr("Target:"),_firstLine);
-    _firstLineLayout->addWidget(_selectKnobLabel);
-    
-    _selectionCombo = new ComboBox(_firstLine);
-    _firstLineLayout->addWidget(_selectionCombo);
-    
-    std::vector<boost::shared_ptr<Natron::Node> > allActiveNodes;
+    _imp->nodeSelectionCombo = new QComboBox(_imp->firstLine);
+    _imp->nodeSelectionCombo->setEditable(true);
+    _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
     
     assert(from->getKnob()->getHolder()->getApp());
+    from->getKnob()->getHolder()->getApp()->getActiveNodes(&_imp->allNodes);
     
-    from->getKnob()->getHolder()->getApp()->getActiveNodes(&allActiveNodes);
-    for (U32 i = 0; i < allActiveNodes.size(); ++i) {
-        const std::vector< boost::shared_ptr<KnobI> >& knobs = allActiveNodes[i]->getKnobs();
-        
-        for (U32 j = 0; j < knobs.size(); ++j) {
-            if(!knobs[j]->getIsSecret() && knobs[j] != from->getKnob()) {
-                if (from->getKnob()->isTypeCompatible(knobs[j])) {
-                    for (int k = 0; k < knobs[j]->getDimension(); ++k) {
-                        if (!knobs[j]->isSlave(k) && knobs[j]->isEnabled(k)) {
-                            QString name(allActiveNodes[i]->getName().c_str());
-                            name.append('.');
-                            name.append(knobs[j]->getDescription().c_str());
+    QStringList nodeNames;
+    for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
+        QString name(_imp->allNodes[i]->getName().c_str());
+        nodeNames.push_back(name);
+        //_imp->nodeSelectionCombo->addItem(name);
+    }
+    nodeNames.sort();
+
+    QCompleter* completer = new QCompleter(nodeNames,this);
+    QObject::connect(completer,SIGNAL(activated(QString)),this,SLOT(onNodeComboBoxCurrentIndexChanged(QString)));
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    _imp->nodeSelectionCombo->setCompleter(completer);
+    _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
+    QTimer::singleShot(25, _imp->nodeSelectionCombo->completer(), SLOT(complete()));
+    
+    _imp->knobSelectionCombo = new QComboBox(_imp->firstLine);
+    _imp->firstLineLayout->addWidget(_imp->knobSelectionCombo);
+    
+    QObject::connect(_imp->nodeSelectionCombo,SIGNAL(currentIndexChanged(QString)),this,SLOT(onNodeComboBoxCurrentIndexChanged(QString)));
+
+    
+    _imp->firstLineLayout->addStretch();
+    
+}
+
+LinkToKnobDialog::~LinkToKnobDialog()
+{
+    
+}
+                     
+
+
+void LinkToKnobDialog::onNodeComboBoxCurrentIndexChanged(const QString& index)
+{
+    _imp->knobSelectionCombo->clear();
+    boost::shared_ptr<Natron::Node> selectedNode;
+    std::string currentNodeName = index.toStdString();
+    for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
+        if (_imp->allNodes[i]->getName() == currentNodeName) {
+            selectedNode = _imp->allNodes[i];
+            break;
+        }
+    }
+    if (!selectedNode) {
+        return;
+    }
+    
+    const std::vector< boost::shared_ptr<KnobI> >& knobs = selectedNode->getKnobs();
+    
+    boost::shared_ptr<KnobI> from = _imp->fromKnob->getKnob();
+    for (U32 j = 0; j < knobs.size(); ++j) {
+        if(!knobs[j]->getIsSecret() && knobs[j] != from) {
+            
+            Button_Knob* isButton = dynamic_cast<Button_Knob*>(knobs[j].get());
+            Page_Knob* isPage = dynamic_cast<Page_Knob*>(knobs[j].get());
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(knobs[j].get());
+            if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
+                for (int k = 0; k < knobs[j]->getDimension(); ++k) {
+                    if (!knobs[j]->isSlave(k) && knobs[j]->isEnabled(k)) {
+                        QString name(knobs[j]->getDescription().c_str());
+                        if (knobs[j]->getDimension() > 1) {
                             QString dimensionName = knobs[j]->getDimensionName(k).c_str();
+                            
                             if (!dimensionName.isEmpty()) {
                                 name.append('.');
                                 name.append(dimensionName);
                             }
-                            _allKnobs.insert(std::make_pair(name, std::make_pair(k,knobs[j])));
-                            _selectionCombo->addItem(name);
                         }
+                        _imp->allKnobs.insert(std::make_pair(name, std::make_pair(k,knobs[j])));
+                        _imp->knobSelectionCombo->addItem(name);
                     }
                 }
-                
             }
+            
         }
     }
-    _selectionCombo->setFocus();
     
-    _cancelButton = new Button(tr("Cancel"),_buttonsWidget);
-    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
-    _buttonsLayout->addWidget(_cancelButton);
-    _okButton = new Button(tr("Ok"),_buttonsWidget);
-    QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
-    _buttonsLayout->QLayout::addWidget(_okButton);
 }
 
+
 std::pair<int,boost::shared_ptr<KnobI> > LinkToKnobDialog::getSelectedKnobs() const {
-    QString str = _selectionCombo->itemText(_selectionCombo->activeIndex());
-    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > >::const_iterator it = _allKnobs.find(str);
-    if(it != _allKnobs.end()){
+    QString str = _imp->knobSelectionCombo->itemText(_imp->knobSelectionCombo->currentIndex());
+    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > >::const_iterator it = _imp->allKnobs.find(str);
+    if (it != _imp->allKnobs.end()) {
         return it->second;
-    }else{
+    } else {
         return std::make_pair(-1,boost::shared_ptr<KnobI>());
     }
 }
