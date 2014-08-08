@@ -858,19 +858,19 @@ OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     }
     if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it) {
-             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            //if (inputNode && inputNode != this) {
-                RectI inputRoi;
-                ofxRectDToEnclosingRectI(it->second, &inputRoi);
-                ret.insert(std::make_pair(inputNode,inputRoi));
-            // }
+            EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+            RectI inputRoi;
+            ofxRectDToEnclosingRectI(it->second, &inputRoi);
+            
+            ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
+            ///infinite rod.
+            ifInfiniteclipRectToProjectDefault(&inputRoi);
+            ret.insert(std::make_pair(inputNode,inputRoi));
         }
     } else if (stat == kOfxStatReplyDefault) {
         for (int i = 0; i < effectInstance()->getNClips(); ++i) {
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(effectInstance()->getNthClip(i))->getAssociatedNode();
-            // if (inputNode && inputNode != this) {
-                ret.insert(std::make_pair(inputNode, renderWindow));
-            //}
+            ret.insert(std::make_pair(inputNode, renderWindow));
         }
     }
     return ret;
