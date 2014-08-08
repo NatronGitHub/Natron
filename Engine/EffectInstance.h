@@ -329,12 +329,15 @@ public:
     
     /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
-     * @param hashUsed, if not null, it will be set to the hash of this effect used to render.
+     * @param args See the definition of the class for comments on each argument.
+     * @param hashUsed, if not null, it will be set to the hash of this effect used by this function to render.
+     * This is useful if we want to retrieve results from the cache with this exact hash key afterwards because the
+     * real hash key of the effect might have changed due to user interaction already.
      **/
     boost::shared_ptr<Image> renderRoI(const RenderRoIArgs& args,U64* hashUsed = NULL) WARN_UNUSED_RETURN;
     
     /**
-     * @brief Same as renderRoI(SequenceTime,RenderScale,int,RectI,bool) but takes in parameter
+     * @brief Same as renderRoI(...) but takes in parameter
      * the outputImage where to render instead. This is used by the Viewer which already did
      * a cache look-up for optimization purposes.
      **/
@@ -788,6 +791,25 @@ private:
     };
     /**
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
+     * @param time The time at which to render
+     * @param scale The scale at which to render
+     * @param mipMapLevel Redundant with scale
+     * @param view The view on which to render
+     * @param renderWindow The rectangle to render of the image, in pixel coordinates (downscaled then)
+     * @param cachedImgParams The parameters of the image to render as they are in the cache.
+     * @param image This is the "full-scale" image, if the effect does support the render scale, then
+     * image and downscaledImage are pointing to the SAME image.
+     * @param downscaledImage If the effect doesn't support the render scale, then this is a pointer to the
+     * downscaled image. If the effect doesn't support render scale then it will render in the "image" parameter
+     * and then downscale the results into downscaledImage.
+     * @param isSequentialRender True when the render is sequential
+     * @param isRenderMadeInResponseToUserInteraction True when the render is made due to user interaction
+     * @param byPassCache Cache look-ups have been already handled by renderRoI(...) but we pass it here because
+     * we need to call renderRoI() on the input effects with this parameter too.
+     * @param nodeHash The hash of the node used to render. This might no longer be equal to the value returned by
+     * hash() because the user might have changed something in the project (parameters...links..)
+     * @param channelForAlpha This is passed here so that we can remember it later when converting the mask
+     * which channel we wanted for the alpha channel.
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatus renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
@@ -814,11 +836,34 @@ private:
     virtual void onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool isSlave,KnobHolder* master) OVERRIDE FINAL;
     
     
+    ///These are the image passed to the plug-in to render
+    /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
+    /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
+    /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
+    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
+    ///
+    /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
+    ///can render onto (good scale, good components, good bitdepth)
+    ///
+    /// These are the possible scenarios:
+    /// - 1) Plugin doesn't need remapping and doesn't need downscaling
+    ///    * We render in downscaledImage always, all image pointers point to it.
+    /// - 2) Plugin doesn't need remapping but needs downscaling (doesn't support the renderscale)
+    ///    * We render in fullScaleImage, fullscaleMappedImage points to it and then we downscale into downscaledImage.
+    ///    * renderMappedImage points to fullScaleImage
+    /// - 3) Plugin needs remapping (doesn't support requested components or bitdepth) but doesn't need downscaling
+    ///    * renderMappedImage points to downscaledMappedImage
+    ///    * We render in downscaledMappedImage and then convert back to downscaledImage with requested comps/bitdepth
+    /// - 4) Plugin needs remapping and downscaling
+    ///    * renderMappedImage points to fullScaleMappedImage
+    ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,
                                          const RectI& roi,
-                                         boost::shared_ptr<Natron::Image> downscaledOutput,
-                                         boost::shared_ptr<Natron::Image> fullScaleOutput,
-                                         boost::shared_ptr<Natron::Image> renderMappedOutput);
+                                         const boost::shared_ptr<Natron::Image>& downscaledImage,
+                                         const boost::shared_ptr<Natron::Image>& fullScaleImage,
+                                         const boost::shared_ptr<Natron::Image>& downscaledMappedImage,
+                                         const boost::shared_ptr<Natron::Image>& fullScaleMappedImage,
+                                         const boost::shared_ptr<Natron::Image>& renderMappedImage);
     
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

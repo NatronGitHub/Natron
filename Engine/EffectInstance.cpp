@@ -1244,19 +1244,15 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///We check what is left to render.
     
     ///intersect the image render window to the actual image region of definition.
+    ///Intersection will be in pixel coordinates (downscaled).
     RectI intersection;
     
     ///Note that here we use the downscaledImage pointer because in all cases this pixel rod is always good.
     ///See the 2 lines assert above
-    if (image != downscaledImage) {
-        renderWindow.intersect(image->getBounds(), &intersection);
-    } else {
-#pragma message WARN("downscaledImage is the same as image in this case... why the if? renderWindow.intersect(image->getBounds(), &intersection); should work in all cases")
-        renderWindow.intersect(downscaledImage->getBounds(), &intersection);
-    }
-    // renderWindow seems to be in full (not downscaled) image pixels...
-
+    renderWindow.intersect(image->getBounds(), &intersection);
+ 
     /// If the list is empty then we already rendered it all
+    /// Each rect in this list is in pixel coordinate (downscaled)
     std::list<RectI> rectsToRender = downscaledImage->getRestToRender(intersection);
     
     ///if the effect doesn't support tiles and it has something left to render, just render the rod again
@@ -1273,7 +1269,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     }
 #endif
     
-    
+    ///Here we fetch the age of the roto context if there's any to pass it through
+    ///the tree and remember it when the plugin calls getImage() afterwards
     boost::shared_ptr<RotoContext> rotoContext = _node->getRotoContext();
     U64 rotoAge = rotoContext ? rotoContext->getAge() : 0;
     
@@ -1287,6 +1284,26 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
     
     ///These are the image passed to the plug-in to render
+    /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
+    /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
+    /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
+    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
+    ///
+    /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
+    ///can render onto (good scale, good components, good bitdepth)
+    ///
+    /// These are the possible scenarios:
+    /// - 1) Plugin doesn't need remapping and doesn't need downscaling
+    ///    * We render in downscaledImage always, all image pointers point to it.
+    /// - 2) Plugin doesn't need remapping but needs downscaling (doesn't support the renderscale)
+    ///    * We render in fullScaleImage, fullscaleMappedImage points to it and then we downscale into downscaledImage.
+    ///    * renderMappedImage points to fullScaleImage
+    /// - 3) Plugin needs remapping (doesn't support requested components or bitdepth) but doesn't need downscaling
+    ///    * renderMappedImage points to downscaledMappedImage
+    ///    * We render in downscaledMappedImage and then convert back to downscaledImage with requested comps/bitdepth
+    /// - 4) Plugin needs remapping and downscaling
+    ///    * renderMappedImage points to fullScaleMappedImage
+    ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     boost::shared_ptr<Image> fullScaleMappedImage, downscaledMappedImage, renderMappedImage;
     if (!rectsToRender.empty()) {
         if (imageConversionNeeded) {
@@ -1303,14 +1320,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             fullScaleMappedImage = image;
             downscaledMappedImage = downscaledImage;
         }
-        renderMappedImage = useFullResImage ? fullScaleMappedImage : downscaledImage;
+        renderMappedImage = useFullResImage ? fullScaleMappedImage : downscaledMappedImage;
     }
     
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         const RectI& downscaledRectToRender = *it; // please leave it as const, copy it if necessary
         
         ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
-        ///FIXME : Take par into account. (why?)
         const RectI canonicalRectToRender = downscaledRectToRender.upscalePowerOfTwo(mipMapLevel);
 
         
@@ -1324,7 +1340,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         
         ///the getRegionOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
-        ///store it into the render args so the getImage() function can retrieve the results.
+        ///store it into the render args (thread-storage) so the getImage() function can retrieve the results.
         RoIMap inputsRoi = getRegionOfInterest_public(time, scale,image->getRoD(), canonicalRectToRender,view);
         
         ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
@@ -1504,6 +1520,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                    boost::bind(&EffectInstance::tiledRenderingFunctor, this,
                                                                                args,
                                                                                _1,
+                                                                               downscaledImage,
+                                                                               image,
                                                                                downscaledMappedImage,
                                                                                fullScaleMappedImage,
                                                                                renderMappedImage));
@@ -1550,6 +1568,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
                 renderStatus = tiledRenderingFunctor(args,
                                                      downscaledRectToRender,
+                                                     downscaledImage,
+                                                     image,
                                                      downscaledMappedImage,
                                                      fullScaleMappedImage,
                                                      renderMappedImage);
@@ -1575,9 +1595,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
 Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
                                                      const RectI& downscaledRectToRender,
-                                                     boost::shared_ptr<Natron::Image> downscaledMappedImage, // this is the final output
-                                                     boost::shared_ptr<Natron::Image> fullScaleMappedImage, // only used if renderscale not supported
-                                                     boost::shared_ptr<Natron::Image> renderMappedImage) // the render output, in the plugins's format
+                                                     const boost::shared_ptr<Natron::Image>& downscaledImage,
+                                                     const boost::shared_ptr<Natron::Image>& fullScaleImage,
+                                                     const boost::shared_ptr<Natron::Image>& downscaledMappedImage,
+                                                     const boost::shared_ptr<Natron::Image>& fullScaleMappedImage,
+                                                     const boost::shared_ptr<Natron::Image>& renderMappedImage)
 {
     assert(downscaledMappedImage && fullScaleMappedImage && renderMappedImage);
     Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
@@ -1627,24 +1649,26 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
 
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (useFullResImage) {
-            ///First demap the fullScaleMappedImage to the original image if it needs to
-            if (fullScaleMappedImage != renderMappedImage) {
+            ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
+            if (renderMappedImage == fullScaleMappedImage && fullScaleMappedImage != fullScaleImage) {
                 renderMappedImage->convertToFormat(downscaledRectToRender,
                                                    getApp()->getDefaultColorSpaceForBitDepth(renderMappedImage->getBitDepth()),
                                                    getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
                                                    channelForAlpha, false, true,
-                                                   fullScaleMappedImage.get());
+                                                   fullScaleImage.get());
             }
             if (mipMapLevel != 0) {
-                fullScaleMappedImage->downscaleMipMap(downscaledRectToRender, mipMapLevel, downscaledMappedImage.get());
+                assert(fullScaleImage != downscaledImage);
+                fullScaleImage->downscaleMipMap(downscaledRectToRender, mipMapLevel, downscaledImage.get());
             }
         } else {
-            if (downscaledMappedImage != renderMappedImage) {
-                renderMappedImage->convertToFormat(downscaledRectToRender,
+            assert(renderMappedImage == downscaledMappedImage);
+            if (downscaledMappedImage != downscaledImage) {
+                downscaledMappedImage->convertToFormat(downscaledRectToRender,
                                                    getApp()->getDefaultColorSpaceForBitDepth(renderMappedImage->getBitDepth()),
                                                    getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
                                                    channelForAlpha, false, true,
-                                                   downscaledMappedImage.get());
+                                                   downscaledImage.get());
             }
         }
     }
