@@ -143,6 +143,12 @@ SpinBox::wheelEvent(QWheelEvent *e)
         double miniD = 0.;
         _currentDelta += e->delta();
         double inc = _currentDelta * _increment / 120.;
+        if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+            inc *= 10.;
+        }
+        if (e->modifiers().testFlag(Qt::ControlModifier)) {
+            inc /= 10.;
+        }
         switch (_type) {
             case DOUBLE_SPINBOX:
                 maxiD = _maxi.toDouble();
@@ -206,25 +212,38 @@ SpinBox::keyPressEvent(QKeyEvent *e)
                 break;
         }
         if(e->key() == Qt::Key_Up){
-
-            if (cur+_increment <= maxiD) {
-                cur+=_increment;
+            double inc = _increment;
+            if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+                inc *= 10.;
+            }
+            if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                inc /= 10.;
+            }
+            if (cur + inc <= maxiD) {
+                cur += inc;
             }
             if (cur < miniD || cur > maxiD) {
                 return;
             }
-            if ( cur != old ) {
+            if (cur != old) {
                 setValue(cur);
                 emit valueChanged(cur);
             }
         } else if (e->key() == Qt::Key_Down) {
-            if(cur-_increment >= miniD) {
-                cur-=_increment;
+            double inc = _increment;
+            if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+                inc *= 10.;
             }
-            if(cur < miniD || cur > maxiD) {
+            if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                inc /= 10.;
+            }
+            if (cur - inc >= miniD) {
+                cur -= inc;
+            }
+            if (cur < miniD || cur > maxiD) {
                 return;
             }
-            if ( cur != old ) {
+            if (cur != old) {
                 setValue(cur);
                 emit valueChanged(cur);
             }
