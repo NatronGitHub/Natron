@@ -276,7 +276,7 @@ namespace Natron {
         /**
          * @brief Upscales a portion of this image into output.
          **/
-        void upscale_mipmap(const RectI& roi, Natron::Image* output, unsigned int level) const;
+        void upscaleMipMap(const RectI& roi, Natron::Image* output, unsigned int level) const;
 
         /**
          * @brief Scales the roi of this image to the size of the output image.
@@ -348,6 +348,9 @@ namespace Natron {
          * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
          **/
         void halve1DImage(const RectI& roi,Natron::Image* output) const;
+
+        template <typename PIX,int maxValue>
+        void upscaleMipMapForDepth(const RectI& roi, Natron::Image* output, unsigned int level) const;
     };
     
     template <typename SRCPIX,typename DSTPIX>

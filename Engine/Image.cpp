@@ -800,16 +800,32 @@ void Image::downscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int
 }
 
 template <typename PIX,int maxValue>
-void upscale_mipmapInternal(const Image& srcImg,Image& dstImg,const RectI& srcRod,const RectI& dstRod,int components,
-                            int srcRowSize,int dstRowSize,unsigned int scale)
+void Image::upscaleMipMapForDepth(const RectI& roi, Natron::Image* output,unsigned int level) const
 {
-    const PIX *src = (const PIX*)srcImg.pixelAt(srcRod.x1, srcRod.y1);
-    PIX* dst = (PIX*)dstImg.pixelAt(dstRod.x1, dstRod.y1);
+    ///You should not call this function with a level equal to 0.
+    assert(level > 0);
+
+    ///The source rectangle, intersected to this image region of definition in pixels
+    RectI srcRoi = roi;
+    srcRoi.intersect(getBounds(), &srcRoi);
+
+    RectI dstRoi = roi.upscalePowerOfTwo(level);
+    dstRoi.intersect(output->getBounds(), &dstRoi); //output may be a bit smaller than the upscaled RoI
+    unsigned int scale = 1 << level;
+
+    assert(output->getComponents() == getComponents());
+    int components = getElementsCountForComponents(getComponents());
+
+    int srcRowSize = getBounds().width() * components;
+    int dstRowSize = output->getBounds().width() * components;
+
+    const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
+    PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
     assert(src && dst);
-    for (int y = 0; y < srcRod.height(); ++y) {
+    for (int y = 0; y < srcRoi.height(); ++y) {
         const PIX *srcLineStart = src + y*srcRowSize;
         PIX *dstLineStart = dst + y*scale*dstRowSize;
-        for (int x = 0; x < srcRod.width(); ++x) {
+        for (int x = 0; x < srcRoi.width(); ++x) {
             const PIX *srcPix = srcLineStart + x*components;
             PIX *dstPix = dstLineStart + x*scale*components;
             for (unsigned int j = 0; j < scale; ++j) {
@@ -826,33 +842,17 @@ void upscale_mipmapInternal(const Image& srcImg,Image& dstImg,const RectI& srcRo
 
 }
 
-void Image::upscale_mipmap(const RectI& roi,Natron::Image* output,unsigned int level) const
+void Image::upscaleMipMap(const RectI& roi, Natron::Image* output,unsigned int level) const
 {
-    ///You should not call this function with a level equal to 0.
-    assert(level > 0);
-
-    ///The source rectangle, intersected to this image region of definition in pixels
-    RectI srcRod = roi;
-    srcRod.intersect(getBounds(), &srcRod);
-
-    RectI dstRod = roi.upscalePowerOfTwo(level);
-    unsigned int scale = 1 << level;
-
-    assert(output->getComponents() == getComponents());
-    int components = getElementsCountForComponents(getComponents());
-
-    int srcRowSize = getBounds().width() * components;
-    int dstRowSize = output->getBounds().width() * components;
-
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            upscale_mipmapInternal<unsigned char, 255>(*this, *output, srcRod, dstRod, components, srcRowSize, dstRowSize, scale);
+            upscaleMipMapForDepth<unsigned char, 255>(roi, output, level);
             break;
         case IMAGE_SHORT:
-            upscale_mipmapInternal<unsigned short, 65535>(*this, *output, srcRod, dstRod, components, srcRowSize, dstRowSize, scale);
+            upscaleMipMapForDepth<unsigned short, 65535>(roi, output, level);
             break;
         case IMAGE_FLOAT:
-            upscale_mipmapInternal<float,1>(*this, *output, srcRod, dstRod, components, srcRowSize, dstRowSize, scale);
+            upscaleMipMapForDepth<float,1>(roi, output, level);
             break;
         default:
             break;

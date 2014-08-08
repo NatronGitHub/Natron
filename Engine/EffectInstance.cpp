@@ -591,10 +591,11 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
     if (!dontUpscale && inputImgMipMapLevel > 0 && !supportsRenderScale()) {
+#pragma message WARN("wrong: it should use the originial RoD of the full-res image, not an upscaled one (which may be larger)")
         RectI upscaledRoD = inputImg->getBounds().upscalePowerOfTwo(inputImgMipMapLevel);
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(),upscaledRoD,0,bitdepth));
-        inputImg->upscale_mipmap(inputImg->getBounds(), upscaledImg.get(), inputImgMipMapLevel);
+        inputImg->upscaleMipMap(inputImg->getBounds(), upscaledImg.get(), inputImgMipMapLevel);
         return upscaledImg;
     } else {
         _imp->addInputImageTempPointer(inputImg);
