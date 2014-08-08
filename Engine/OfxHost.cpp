@@ -422,14 +422,16 @@ void Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::strin
                                                                     p->getDescriptor().getLongLabel());
      
         
-        std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getDescriptor().getShortLabel(),
+        std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getIdentifier(),
+                                                                               p->getVersionMajor(),
+                                                                               p->getVersionMinor(),
+                                                                               p->getDescriptor().getShortLabel(),
                                                                                p->getDescriptor().getLabel(),
                                                                                p->getDescriptor().getLongLabel(),
                                                                            grouping);
 
        
-        
-        QStringList groups = OfxEffectInstance::getPluginGrouping(pluginLabel, grouping);
+        QStringList groups = OfxEffectInstance::getPluginGrouping(p->getIdentifier(), p->getVersionMajor(), p->getVersionMinor(), pluginLabel, grouping);
         
         assert(p->getBinary());
         QString iconFilename = QString(bundlePath.c_str()) + "/Contents/Resources/";

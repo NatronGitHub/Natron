@@ -199,7 +199,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         assert(effect_);
         effect_->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
         
-        _natronPluginID = generateImageEffectClassName(effect_->getDescriptor().getShortLabel(),
+        _natronPluginID = generateImageEffectClassName(effect_->getPlugin()->getIdentifier(),
+                                                       effect_->getPlugin()->getVersionMajor(),
+                                                       effect_->getPlugin()->getVersionMinor(),
+                                                       effect_->getDescriptor().getShortLabel(),
                                                        effect_->getDescriptor().getLabel(),
                                                        effect_->getDescriptor().getLongLabel(),
                                                        effect_->getDescriptor().getPluginGrouping());
@@ -405,28 +408,30 @@ OfxEffectInstance::isGeneratorAndFilter() const
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
 static
-QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const QString& str)
+QStringList ofxExtractAllPartsOfGrouping(const QString& pluginIdentifier, int /*versionMajor*/, int /*versionMinor*/, const QString& /*pluginLabel*/, const QString& str)
 {
     QString s(str);
     s.replace(QChar('\\'),QChar('/'));
 
     QStringList out;
-    if (s.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
+    if (pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || str.startsWith(" Sapphire ")) {
         out.push_back("Sapphire");
-    } else if (s.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
+    } else if (pluginIdentifier.startsWith("com.genarts.monsters.") ||s.startsWith("Monsters ") || str.startsWith(" Monsters ")) {
         out.push_back("Monsters");
-    } else if (s == "Keylight") {
+    } else if (pluginIdentifier == "uk.co.thefoundry.keylight.keylight") {
         s = PLUGIN_GROUP_KEYER;
+    } else if (pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") {
+        s = PLUGIN_GROUP_FILTER;
     }
 
     return out + s.split('/');
 }
 
 QStringList
-AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginLabel,const std::string& grouping)
+AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginIdentifier, int versionMajor, int versionMinor, const std::string& pluginLabel, const std::string& grouping)
 {
     //printf("%s,%s\n",pluginLabel.c_str(),grouping.c_str());
-    return ofxExtractAllPartsOfGrouping(pluginLabel.c_str(),grouping.c_str());
+    return ofxExtractAllPartsOfGrouping(pluginIdentifier.c_str(), versionMajor, versionMinor, pluginLabel.c_str(),grouping.c_str());
 }
 
 std::string
@@ -445,13 +450,16 @@ AbstractOfxEffectInstance::getPluginLabel(const std::string& shortLabel,
 }
 
 std::string
-AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
+AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& pluginIdentifier,
+                                                        int versionMajor,
+                                                        int versionMinor,
+                                                        const std::string& shortLabel,
                                                         const std::string& label,
                                                         const std::string& longLabel,
                                                         const std::string& grouping)
 {
-    std::string labelToUse = getPluginLabel(shortLabel,label,longLabel);
-    QStringList groups = getPluginGrouping(labelToUse,grouping);
+    std::string labelToUse = getPluginLabel(shortLabel, label, longLabel);
+    QStringList groups = getPluginGrouping(pluginIdentifier, versionMajor, versionMinor, labelToUse, grouping);
 
     if (labelToUse == "Viewer") { // we don't want a plugin to have the same name as our viewer
         labelToUse =  groups[0].toStdString() + longLabel;
@@ -478,15 +486,13 @@ OfxEffectInstance::pluginLabel() const
     return getPluginLabel( effect_->getDescriptor().getShortLabel(),effect_->getDescriptor().getLabel(),effect_->getDescriptor().getLongLabel());
 }
 
-static
-QStringList ofxExtractAllPartsOfGrouping(const QString& /*pluginLabel*/, const QString& str);
-
 void
 OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
 {
     std::string groupStr = effectInstance()->getPluginGrouping();
     std::string label = pluginLabel();
-    QStringList groups = ofxExtractAllPartsOfGrouping(label.c_str(), groupStr.c_str());
+    const OFX::Host::ImageEffect::ImageEffectPlugin *p = effectInstance()->getPlugin();
+    QStringList groups = ofxExtractAllPartsOfGrouping(p->getIdentifier().c_str(), p->getVersionMajor(), p->getVersionMinor(), label.c_str(), groupStr.c_str());
     for (int i = 0; i < groups.size(); ++i) {
         grouping->push_back(groups[i].toStdString());
     }

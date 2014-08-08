@@ -51,13 +51,16 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               const std::string& context,const NodeSerialization* serialization) = 0;
     
-    static QStringList getPluginGrouping(const std::string& pluginLabel,const std::string& grouping) WARN_UNUSED_RETURN;
+    static QStringList getPluginGrouping(const std::string& pluginIdentifier, int versionMajor, int versionMinor, const std::string& pluginLabel, const std::string& grouping) WARN_UNUSED_RETURN;
     
     static std::string getPluginLabel(const std::string& shortLabel,
                                       const std::string& label,
                                       const std::string& longLabel) WARN_UNUSED_RETURN;
     
-    static std::string generateImageEffectClassName(const std::string& shortLabel,
+    static std::string generateImageEffectClassName(const std::string& pluginIdentifier,
+                                                    int versionMajor,
+                                                    int versionMinor,
+                                                    const std::string& shortLabel,
                                                     const std::string& label,
                                                     const std::string& longLabel,
                                                     const std::string& grouping) WARN_UNUSED_RETURN;
