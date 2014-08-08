@@ -613,7 +613,7 @@ public:
         outputPos += QPointF(nodeSize.width() / 2.,nodeSize.height() / 2.);
         addNode(output, outputPos);
         
-        buildTreeInternal(output.get(),outputPos, usedNodes);
+        buildTreeInternal(output.get(),output->mapToScene(output->mapFromParent(outputPos)), usedNodes);
     }
     
     const std::list<TreeNode>& getNodes() const { return nodes; }
