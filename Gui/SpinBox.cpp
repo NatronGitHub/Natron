@@ -35,25 +35,30 @@ struct SpinBoxPrivate
      For the 'g' and 'G' formats, the precision represents the maximum number
      of significant digits (trailing zeroes are omitted)*/
     int decimals; // for the double spinbox only
+    
+#ifdef OLD_SPINBOX_INCREMENT
     double increment;
+    int currentDelta; // accumulates the deltas from wheelevents
+#endif
     Variant mini,maxi;
     QDoubleValidator* doubleValidator;
     QIntValidator* intValidator;
     double valueWhenEnteringFocus;
-    int currentDelta; // accumulates the deltas from wheelevents
     bool hasChangedSinceLastValidation;
     double valueAfterLastValidation;
     
     SpinBoxPrivate(SpinBox::SPINBOX_TYPE type)
     : type(type)
     , decimals(2)
+#ifdef OLD_SPINBOX_INCREMENT
     , increment(1.0)
+    , currentDelta(0)
+#endif
     , mini()
     , maxi()
     , doubleValidator(0)
     , intValidator(0)
     , valueWhenEnteringFocus(0)
-    , currentDelta(0)
     , hasChangedSinceLastValidation(false)
     , valueAfterLastValidation(0)
     {
@@ -125,6 +130,27 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
             str.setNum((int)d);
             break;
     }
+    assert(!str.isEmpty());
+    
+    ///Remove trailing 0s by hand...
+    int decimalPtPos = str.indexOf(QChar('.'));
+    if (decimalPtPos != -1) {
+        int i = str.size() - 1;
+        while (i > decimalPtPos && str.at(i) == QChar('0')) {
+            --i;
+        }
+        str = str.left(i + 1);
+    }
+    
+    int i = 0;
+    if (str.at(0) == QChar('-')) {
+        ++i;
+    }
+    while (i < str.size() && i == QChar('0')) {
+        ++i;
+    }
+    str = str.remove(0, i);
+    
     insert(str);
     setCursorPosition(pos);
     _imp->hasChangedSinceLastValidation = false;
@@ -237,14 +263,18 @@ SpinBox::wheelEvent(QWheelEvent *e)
                 maxiD = _imp->maxi.toDouble();
                 miniD = _imp->mini.toDouble();
                 cur += inc;
+#ifdef OLD_SPINBOX_INCREMENT
                 _imp->currentDelta = 0;
+#endif
                 break;
             case INT_SPINBOX:
                 maxiD = _imp->maxi.toInt();
                 miniD = _imp->mini.toInt();
                 cur += (int)inc;
+#ifdef OLD_SPINBOX_INCREMENT
                 _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
                 assert(std::abs(_imp->currentDelta) < 120);
+#endif
                 break;
         }
         cur = std::max(miniD, std::min(cur,maxiD));

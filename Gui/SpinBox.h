@@ -33,26 +33,28 @@ public:
     
     virtual ~SpinBox() OVERRIDE;
     
+    ///Set the digits after the decimal point.
     void decimals(int d);
     
+    ///Min/Max of the spinbox
     void setMaximum(double t);
-    
     void setMinimum(double b);
     
-    double value(){return text().toDouble();}
+    double value() { return text().toDouble(); }
     
     ///If OLD_SPINBOX_INCREMENT is defined in SpinBox.cpp, this function does nothing
     ///as the increments are relative to the position of the cursor in the spinbox.
     void setIncrement(double d);
    
+    ///For the stylesheet: it controls the background color to represent the animated states of parameters
     void setAnimation(int i);
-
     int getAnimation() const { return animation; }
     
+    ///Get a pointer to the right click menu, this can be used to add extra entries. @see KnobGuiTypes.cpp
     QMenu* getRightClickMenu();
     
+    ///For the stylesheet: it controls whether the background should be paint in black or not.
     void setDirty(bool d) ;
-
     bool getDirty() const { return dirty; }
 private:
     
