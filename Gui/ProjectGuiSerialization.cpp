@@ -81,11 +81,12 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
              layout.splits.push_back(split->second);
          }
          layout.floating = (*it)->isFloating();
-         if(layout.floating){
-             QPoint pos = (*it)->pos_mt_safe();
+         if (layout.floating) {
+             QPoint pos = (*it)->getWindowPos_mt_safe();
              layout.posx = pos.x();
              layout.posy = pos.y();
-         }else{
+             (*it)->getWindowSize_mt_safe(layout.width, layout.height);
+         } else {
              //not releveant since the tab is not floating
              layout.posx = -1;
              layout.posy = -1;

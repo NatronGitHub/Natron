@@ -275,7 +275,11 @@ void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneL
     }
     if(layout->second.floating){
         pane->floatPane();
-        pane->move(layout->second.posx, layout->second.posy);
+        FloatingWidget* window = dynamic_cast<FloatingWidget*>(pane->parentWidget());
+        assert(window);
+        //QPoint pos(layout->second.posx,layout->second.posy);
+        window->move(layout->second.posx, layout->second.posy);
+        window->resize(layout->second.width, layout->second.height);
     }
     
     ///find all the tabs and move them to this widget

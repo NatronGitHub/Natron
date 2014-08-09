@@ -36,7 +36,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_CHANGES_SPLITTERS
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
-#define PANE_SERIALIZATION_VERSION PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB
+#define PANE_SERIALIZATION_INTRODUCES_SIZE 3
+#define PANE_SERIALIZATION_VERSION PANE_SERIALIZATION_INTRODUCES_SIZE
 
 class ProjectGui;
 
@@ -96,7 +97,11 @@ BOOST_CLASS_VERSION(ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
 struct PaneLayout{
     
     bool floating;
+    
+    ///These are only relevant when floating is true
     int posx,posy;
+    int width,height;
+    
     bool parentingCreated;
     std::list<bool> splits;
     std::string parentName;
@@ -116,6 +121,14 @@ struct PaneLayout{
         ar & boost::serialization::make_nvp("Tabs",tabs);
         if (version >= PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB) {
             ar & boost::serialization::make_nvp("Index",currentIndex);
+        }
+        if (version >= PANE_SERIALIZATION_INTRODUCES_SIZE) {
+            if (floating) {
+                ar & boost::serialization::make_nvp("x",posx);
+                ar & boost::serialization::make_nvp("y",posy);
+                ar & boost::serialization::make_nvp("w",width);
+                ar & boost::serialization::make_nvp("h",height);
+            }
         }
     }
     

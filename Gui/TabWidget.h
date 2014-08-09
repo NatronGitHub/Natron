@@ -68,6 +68,10 @@ signals:
     
 private:
     
+    virtual void moveEvent(QMoveEvent* event) OVERRIDE FINAL;
+    
+    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
+    
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     
     QWidget* _embeddedWidget;
@@ -228,6 +232,12 @@ public:
     
     int activeIndex() const;
     
+    ///Relevant only when floating
+    QPoint getWindowPos_mt_safe() const;
+    void getWindowSize_mt_safe(int& w,int& h) const;
+    void setWindowPos(const QPoint& globalPos);
+    void setWindowSize(int w,int h);
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
@@ -263,14 +273,14 @@ public slots:
     
     void closeTab(int index);
     
-    QPoint pos_mt_safe() const;
 private:
     
-    virtual void dropEvent(QDropEvent* event);
     
-    virtual void paintEvent(QPaintEvent* event);
+    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
     
-    virtual void keyPressEvent (QKeyEvent *event);
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+    
+    virtual void keyPressEvent (QKeyEvent *event) OVERRIDE FINAL;
     
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
@@ -308,7 +318,12 @@ private:
 
     bool _fullScreen;
     std::list< std::pair<TabWidget*,bool> > _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
+    
+    ///Protects _mtSafePos, _mtSafeWidth,_mtSafeHeight, _isFloating
     mutable QMutex _tabWidgetStateMutex;
+    
+    QPoint _mtSafeWindowPos;
+    int _mtSafeWindowWidth,_mtSafeWindowHeight;
 
 };
 

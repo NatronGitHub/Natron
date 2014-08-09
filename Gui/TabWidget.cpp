@@ -121,7 +121,10 @@ _isFloating(false),
 _drawDropRect(false),
 _fullScreen(false),
 _userSplits(),
-_tabWidgetStateMutex()
+_tabWidgetStateMutex(),
+_mtSafeWindowPos(),
+_mtSafeWindowWidth(0),
+_mtSafeWindowHeight(0)
 {
     
     setMouseTracking(true);
@@ -479,9 +482,10 @@ void TabWidget::closePane() {
 }
 
 void TabWidget::floatPane(QPoint* position){
-    QMutexLocker l(&_tabWidgetStateMutex);
-    _isFloating = true;
-    
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        _isFloating = true;
+    }
     FloatingWidget* floatingW = new FloatingWidget(_gui);
     
     setVisible(false);
@@ -537,7 +541,7 @@ void TabWidget::setTabName(QWidget* tab,const QString& name) {
 }
 
 void TabWidget::floatCurrentWidget(){
-    if(!_currentWidget)
+    if(!_currentWidget || _isFloating)
         return;
     
     
@@ -606,7 +610,6 @@ void TabWidget::movePropertiesBinHere(){
 TabWidget* TabWidget::splitHorizontally(bool autoSave)
 {
     
-    QMutexLocker l(&_tabWidgetStateMutex);
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if (!container) {
         return NULL;
@@ -662,9 +665,7 @@ TabWidget* TabWidget::splitHorizontally(bool autoSave)
 }
 
 TabWidget* TabWidget::splitVertically(bool autoSave) {
-    
-    QMutexLocker l(&_tabWidgetStateMutex);
-    
+        
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if (!container)
         return NULL;
@@ -836,21 +837,24 @@ void TabWidget::makeCurrentTab(int index){
     if (_modifyingTabBar) {
         return;
     }
-    QMutexLocker l(&_tabWidgetStateMutex);
-    if(index < 0 || index >= (int)_tabs.size()) {
-        return;
+    QWidget* tab;
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        if(index < 0 || index >= (int)_tabs.size()) {
+            return;
+        }
+        /*Removing previous widget if any*/
+        if (_currentWidget) {
+            _currentWidget->setVisible(false);
+            _mainLayout->removeWidget(_currentWidget);
+            // _currentWidget->setParent(0);
+        }
+        tab = _tabs[index];
+        _mainLayout->addWidget(tab);
+        _currentWidget = tab;
     }
-    /*Removing previous widget if any*/
-    if (_currentWidget) {
-        _currentWidget->setVisible(false);
-        _mainLayout->removeWidget(_currentWidget);
-        // _currentWidget->setParent(0);
-    }
-    QWidget* tab = _tabs[index];
-    _mainLayout->addWidget(tab);
-    _currentWidget = tab;
-    _currentWidget->setVisible(true);
-    _currentWidget->setParent(this);
+    tab->setVisible(true);
+    tab->setParent(this);
     _modifyingTabBar = true;
     _tabBar->setCurrentIndex(index);
     _modifyingTabBar = false;
@@ -1140,6 +1144,50 @@ bool TabWidget::moveTab(QWidget* what,TabWidget *where){
     return true;
 }
 
+void FloatingWidget::moveEvent(QMoveEvent* event)
+{
+    QWidget::moveEvent(event);
+    TabWidget* isTab = dynamic_cast<TabWidget*>(_embeddedWidget);
+    if (isTab) {
+        isTab->setWindowPos(pos());
+    }
+}
+
+void FloatingWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    TabWidget* isTab = dynamic_cast<TabWidget*>(_embeddedWidget);
+    if (isTab) {
+        isTab->setWindowSize(width(), height());
+    }
+}
+
+QPoint TabWidget::getWindowPos_mt_safe() const
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    return _mtSafeWindowPos;
+}
+
+void TabWidget::getWindowSize_mt_safe(int& w,int& h) const
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    w = _mtSafeWindowWidth;
+    h = _mtSafeWindowHeight;
+}
+
+void TabWidget::setWindowPos(const QPoint& globalPos)
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    _mtSafeWindowPos = globalPos;
+}
+
+void TabWidget::setWindowSize(int w,int h)
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    _mtSafeWindowWidth = w;
+    _mtSafeWindowHeight = h;
+}
+
 DragPixmap::DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse)
 : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
 , _pixmap(pixmap)
@@ -1161,10 +1209,6 @@ void DragPixmap::paintEvent(QPaintEvent*)
     p.drawPixmap(0,0,_pixmap);
 }
 
-QPoint TabWidget::pos_mt_safe() const {
-    QMutexLocker l(&_tabWidgetStateMutex);
-    return pos();
-}
 
 QStringList TabWidget::getTabNames() const {
     QMutexLocker l(&_tabWidgetStateMutex);
