@@ -155,19 +155,30 @@ struct KnobHelper::KnobHelperPrivate {
     
     ////curve links
     ///A slave link CANNOT be master at the same time (i.e: if _slaveLinks[i] != NULL  then _masterLinks[i] == NULL )
-    mutable QReadWriteLock mastersMutex; //< protects _masters & ignoreMasterPersistence
+    mutable QReadWriteLock mastersMutex; //< protects _masters & ignoreMasterPersistence & listeners
     MastersMap masters; //from what knob is slaved each curve if any
     bool ignoreMasterPersistence; //< when true masters will not be serialized
+    
+    ///This is a list of all the knobs that have expressions/links to this knob. It could be named "slaves" but
+    ///in the future we will also add expressions.
+    std::list<KnobI*> listeners;
     
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevel> animationLevel;//< indicates for each dimension whether it is static/interpolated/onkeyframe
     
     bool declaredByPlugin; //< was the knob declared by a plug-in or added by Natron
     
+    ///Pointer to the ofx param overlay interact
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
+    
+    ///Pointer to the knobGui interface if it has any
     KnobGuiI* gui;
+    
+    ///A blind handle to the ofx param, needed for custom overlay interacts
     void* ofxParamHandle;
     
+    ///This is to deal with multi-instance effects such as the Tracker: instance specifics knobs are
+    ///not shared between instances whereas non instance specifics are shared.
     bool isInstanceSpecific;
     
 
@@ -195,6 +206,7 @@ struct KnobHelper::KnobHelperPrivate {
     , mastersMutex()
     , masters(dimension_)
     , ignoreMasterPersistence(false)
+    , listeners()
     , animationLevelMutex()
     , animationLevel(dimension_)
     , declaredByPlugin(declaredByPlugin_)
@@ -672,7 +684,7 @@ bool KnobHelper::slaveTo(int dimension,
         _imp->masters[dimension].first = otherDimension;
     }
     
-    boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(other);
+    KnobHelper* helper = dynamic_cast<KnobHelper*>(other.get());
     assert(helper);
     
     if (helper->_signalSlotHandler && _signalSlotHandler) {
@@ -689,6 +701,9 @@ bool KnobHelper::slaveTo(int dimension,
         ///hackish way to get a shared ptr to this knob
         getHolder()->onKnobSlaved(_signalSlotHandler->getKnob(),dimension,true, other->getHolder());
     }
+    
+    ///Register this as a listener of the master
+    helper->addListener(this);
     return true;
 
 }
@@ -882,6 +897,27 @@ void KnobHelper::onMasterChanged(KnobI* master,int /*masterDimension*/)
     }
     ///The master must exist.
     assert(false);
+}
+
+void KnobHelper::addListener(KnobI* knob)
+{
+    QWriteLocker l(&_imp->mastersMutex);
+    _imp->listeners.push_back(knob);
+}
+
+void KnobHelper::removeListener(KnobI* knob)
+{
+    QWriteLocker l(&_imp->mastersMutex);
+    std::list<KnobI*>::iterator found = std::find(_imp->listeners.begin(), _imp->listeners.end(), knob);
+    if (found != _imp->listeners.end()) {
+        _imp->listeners.erase(found);
+    }
+}
+
+void KnobHelper::getListeners(std::list<KnobI*>& listeners) const
+{
+    QReadLocker l(&_imp->mastersMutex);
+    listeners = _imp->listeners;
 }
 
 /***************************KNOB HOLDER******************************************/

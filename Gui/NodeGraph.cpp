@@ -1773,6 +1773,26 @@ void NodeGraph::keyReleaseEvent(QKeyEvent* e)
 
 void NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
 {
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getNode()->getKnobs();
+    for (U32 i = 0; i < knobs.size();++i) {
+        std::list<KnobI*> listeners;
+        knobs[i]->getListeners(listeners);
+        if (!listeners.empty()) {
+            Natron::StandardButton reply = Natron::questionDialog(tr("Delete").toStdString(), tr("This node has one or several "
+                                                                                                 "parameters from which other parameters "
+                                                                                                 "of the project rely on through expressions "
+                                                                                                 "or links. Deleting this node will "
+                                                                                                 "remove these expressions permanantly "
+                                                                                                 "and undoing the action will not recover "
+                                                                                                 "them. Do you wish to continue ?")
+                                                                  .toStdString());
+            if (reply == Natron::No) {
+                return;
+            }
+            break;
+        }
+    }
+    
     node->setSelected(false);
     std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
     std::list<NodeBackDrop*> bds;
@@ -1797,12 +1817,47 @@ void NodeGraph::deleteSelection()
                     nodesToRemove.push_back(*it2);
                 }
             }
-            (*it)->setSelected(false);
         }
 
+
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToRemove.begin();it!=nodesToRemove.end();++it) {
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getNode()->getKnobs();
+            bool mustBreak = false;
+            for (U32 i = 0; i < knobs.size();++i) {
+                std::list<KnobI*> listeners;
+                knobs[i]->getListeners(listeners);
+                if (!listeners.empty()) {
+                    Natron::StandardButton reply = Natron::questionDialog(tr("Delete").toStdString(),
+                                                                          tr("This node has one or several "
+                                                                             "parameters from which other parameters "
+                                                                             "of the project rely on through expressions "
+                                                                             "or links. Deleting this node will "
+                                                                             "remove these expressions permanantly "
+                                                                             "and undoing the action will not recover "
+                                                                             "them. Do you wish to continue ?")
+                                                                          .toStdString());
+                    if (reply == Natron::No) {
+                        return;
+                    }
+                    mustBreak = true;
+                    break;
+                }
+            }
+            if (mustBreak) {
+                break;
+            }
+
+        }
+        
+        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
+            (*it)->setSelected(false);
+        }
+        
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToRemove.begin();it!=nodesToRemove.end();++it) {
             (*it)->setSelected(false);
         }
+        
+        
         
         _imp->_undoStack->setActive();
         _imp->_undoStack->push(new RemoveMultipleNodesCommand(this,nodesToRemove,_imp->_selection.bds));

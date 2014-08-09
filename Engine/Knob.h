@@ -480,6 +480,11 @@ public:
     void unSlave(int dimension,bool copyState);
     
     /**
+     * @brief Returns a list of all the knobs whose value depends upon this knob.
+     **/
+    virtual void getListeners(std::list<KnobI*>& listeners) const = 0;
+    
+    /**
      * @brief Calls unSlave with a value changed reason of Natron::USER_EDITED.
      **/
     void onKnobUnSlaved(int dimension);
@@ -826,7 +831,17 @@ public:
     
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI>& other) const = 0;
     
+    
+    /**
+     * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
+     * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
+     **/
+    void addListener(KnobI* knob);
+    void removeListener(KnobI* knob);
+    
+    virtual void getListeners(std::list<KnobI*>& listeners) const OVERRIDE FINAL;
 protected:
+   
     
     /**
      * @brief Called when you must copy any extra data you maintain from the other knob.

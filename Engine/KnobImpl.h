@@ -524,7 +524,7 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
         
         cloneExtraData(master.second.get());
     }
-    boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
+    KnobHelper* helper = dynamic_cast<KnobHelper*>(master.second.get());
     QObject::disconnect(helper->getSignalSlotHandler().get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(),
                         SLOT(onMasterChanged(int)));
     resetMaster(dimension);
@@ -533,6 +533,7 @@ void Knob<std::string>::unSlave(int dimension,Natron::ValueChangedReason reason,
     if (reason == Natron::PLUGIN_EDITED) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
+    helper->removeListener(this);
 }
 
 template<typename T>

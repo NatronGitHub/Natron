@@ -1257,6 +1257,21 @@ void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& output
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage();
 
+    ///For all knobs that have listeners, kill expressions
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        std::list<KnobI*> listeners;
+        knobs[i]->getListeners(listeners);
+        for (std::list<KnobI*>::iterator it = listeners.begin(); it!=listeners.end(); ++it) {
+            for (int dim = 0; dim < (*it)->getDimension(); ++dim) {
+                std::pair<int, boost::shared_ptr<KnobI> > master = (*it)->getMaster(dim);
+                if (master.second == knobs[i]) {
+                    (*it)->unSlave(dim, true);
+                }
+            }
+        }
+    }
+    
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
     ///this node is the node the outputs should attempt to connect to
     boost::shared_ptr<Node> inputToConnectTo;

@@ -1221,6 +1221,7 @@ void RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLa
 
 void RotoPanel::onItemSelectionChanged()
 {
+    
     ///disconnect previous selection
     for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
         const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
@@ -1231,6 +1232,12 @@ void RotoPanel::onItemSelectionChanged()
     }
     _imp->context->deselect(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
     _imp->selectedItems.clear();
+    
+    ///Don't allow any selection to be made if the roto is a clone of another roto  node.
+    if (_imp->node->getNode()->getMasterNode()) {
+        _imp->tree->selectionModel()->clear();
+        return;
+    }
     
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
     
