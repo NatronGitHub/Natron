@@ -202,7 +202,6 @@ public:
     
     void dettachTabs();
     
-    bool removeSplit(TabWidget* tab,bool* orientation = NULL);
     
     static bool moveTab(QWidget* what,TabWidget* where);
     
@@ -237,6 +236,22 @@ public:
     void getWindowSize_mt_safe(int& w,int& h) const;
     void setWindowPos(const QPoint& globalPos);
     void setWindowSize(int w,int h);
+    
+    /**
+     * @brief Returns the name of the parent TabWidget of this widget (the one from which the split was originated) or an empty string
+     * if it is not a split.
+     * @param isSplit[out] If set to true then this indicates this function ran OK and the returned name is the name of the parent
+     * If set to false this indicates this tabwidget is not a split and the return value will be the objectName argument.
+     * @param horizontal[out] If non null, it will be set to the orientation of this split.
+     **/
+    static QString getTabWidgetParentName(const QString& objectName,bool* isSplit,bool* horizontal = NULL);
+    
+    /**
+     * @brief Same as getTabWidgetParentName except that it calls the function with objectName_mt_safe()
+     * Also this function will check that the name of the parent really exists in the panes vector in the GUI object
+     * @returns The name of the parent TabWidget on success, an empty string otherwise.
+     **/
+    QString getParentName(bool* horizontal = NULL) const;
     
 public slots:
     /*Makes current the tab at index "index". Passing an
@@ -292,6 +307,10 @@ private:
      * This is called when closing a pane, hence removing one level of splitting.
      **/
     static void removeTagNameRecursively(TabWidget* widget, bool horizontal);
+    
+    bool removeSplit(TabWidget* tab,bool* orientation = NULL);
+    
+    int countSplitsForOrientation(bool vertical) const;
         
     // FIXME: PIMPL
     Gui* _gui;
@@ -319,7 +338,7 @@ private:
     bool _fullScreen;
     std::list< std::pair<TabWidget*,bool> > _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
     
-    ///Protects _mtSafePos, _mtSafeWidth,_mtSafeHeight, _isFloating
+    ///Protects _mtSafePos, _mtSafeWidth,_mtSafeHeight, _isFloating, _userSplits
     mutable QMutex _tabWidgetStateMutex;
     
     QPoint _mtSafeWindowPos;

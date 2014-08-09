@@ -150,37 +150,17 @@ void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) {
     
 }
 
-void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::iterator it){
+void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::iterator it) {
     QString nameCpy = it->first.c_str();
-    int indexOfVerticalTag = nameCpy.lastIndexOf(TabWidget::splitVerticallyTag);
-    int indexOfHorizontalTag = nameCpy.lastIndexOf(TabWidget::splitHorizontallyTag);
-    bool horizontalSplit;
-    if (indexOfHorizontalTag != -1 && indexOfVerticalTag != -1) {
-        horizontalSplit = indexOfHorizontalTag > indexOfVerticalTag;
-    } else if (indexOfHorizontalTag != -1 && indexOfVerticalTag == -1) {
-        horizontalSplit = true;
-    } else if (indexOfHorizontalTag == - 1 && indexOfVerticalTag != -1) {
-        horizontalSplit = false;
-    } else {
+    
+    bool isSplit,horizontalSplit;
+    nameCpy = TabWidget::getTabWidgetParentName(nameCpy, &isSplit,&horizontalSplit);
+    if (!isSplit) {
         ///not a child
         return;
     }
     
-    ///Remove the index of the split located at the end of the name
-    int identifierIndex = nameCpy.size() - 1;
-    while (identifierIndex >= 0 && nameCpy.at(identifierIndex).isDigit()) {
-        --identifierIndex;
-    }
-    ++identifierIndex;
-    nameCpy = nameCpy.remove(identifierIndex, nameCpy.size() - identifierIndex);  
-    
     if (!horizontalSplit) {
-        //this is a vertical split, find the parent widget and insert this widget as child
-        
-        ///The goal of the next lines is to erase the split tag string from the name of the tab widget
-        /// to find out the name of the tab widget from whom this tab was originated
-        nameCpy = nameCpy.remove(indexOfVerticalTag, TabWidget::splitVerticallyTag.size());
-        //we now have the name of the parent
         std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
         assert(foundParent != _layout.end());
         std::list<std::string>::iterator foundSplit = std::find(foundParent->second.splitsNames.begin(),
@@ -195,25 +175,22 @@ void ProjectGuiSerialization::createParenting(std::map<std::string,PaneLayout>::
         //call this recursively
         createParenting(foundParent);
     } else {
-        if (indexOfHorizontalTag != -1)  {
-            //this is a horizontal split, find the parent widget and insert this widget as child
-            nameCpy = nameCpy.remove(indexOfHorizontalTag, TabWidget::splitVerticallyTag.size());
-            //we now have the name of the parent
-            std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
-            assert(foundParent != _layout.end());
-            
-            std::list<std::string>::iterator foundSplit = std::find(foundParent->second.splitsNames.begin(),
-                                                                    foundParent->second.splitsNames.end(),it->first);
-            
-            if (foundSplit == foundParent->second.splitsNames.end()) {
-                foundParent->second.splitsNames.push_back(it->first);
-            }
-            
-            it->second.parentName = nameCpy.toStdString();
-            it->second.parentingCreated = true;
-            
-            //call this recursively
-            createParenting(foundParent);
+        //we now have the name of the parent
+        std::map<std::string,PaneLayout>::iterator foundParent = _layout.find(nameCpy.toStdString());
+        assert(foundParent != _layout.end());
+        
+        std::list<std::string>::iterator foundSplit = std::find(foundParent->second.splitsNames.begin(),
+                                                                foundParent->second.splitsNames.end(),it->first);
+        
+        if (foundSplit == foundParent->second.splitsNames.end()) {
+            foundParent->second.splitsNames.push_back(it->first);
         }
+        
+        it->second.parentName = nameCpy.toStdString();
+        it->second.parentingCreated = true;
+        
+        //call this recursively
+        createParenting(foundParent);
+        
     }
 }

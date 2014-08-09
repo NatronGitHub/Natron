@@ -287,8 +287,6 @@ bool TabWidget::removeSplit(TabWidget* tab,bool* orientation){
             }
             _userSplits.erase(it);
             return true;
-            
-            break;
         }
     }
 
@@ -307,6 +305,7 @@ static void getOtherTabWidget(Splitter* parentSplitter,TabWidget* thisWidget,QWi
     }
     
 }
+
 
 static void getTabWidgetRecursively(const TabWidget* caller,Splitter* parentSplitter,TabWidget*& tab) {
     bool found = false;
@@ -335,6 +334,7 @@ static void getTabWidgetRecursively(const TabWidget* caller,Splitter* parentSpli
     }
 }
 
+
 void TabWidget::removeTagNameRecursively(TabWidget* widget, bool horizontal)
 {
     QString name = widget->objectName();
@@ -352,9 +352,30 @@ void TabWidget::removeTagNameRecursively(TabWidget* widget, bool horizontal)
     name = name.remove(identifierIndex,name.size() - identifierIndex);
     
     widget->setObjectName_mt_safe(name);
-    for (std::list<std::pair<TabWidget*,bool> >::iterator it = widget->_userSplits.begin();it != widget->_userSplits.end();++it) {
+    
+    std::list<std::pair<TabWidget*,bool> > splitsCopy;
+    {
+        QMutexLocker l(&widget->_tabWidgetStateMutex);
+        splitsCopy = widget->_userSplits;
+    }
+    for (std::list<std::pair<TabWidget*,bool> >::iterator it = splitsCopy.begin();it != splitsCopy.end();++it) {
         removeTagNameRecursively(it->first,horizontal);
     }
+}
+
+int TabWidget::countSplitsForOrientation(bool vertical) const
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    int splitsCount = 0;
+    for (std::list<std::pair<TabWidget*,bool> >::const_iterator it2 = _userSplits.begin();
+         it2!=_userSplits.end(); ++it2) {
+        if (vertical && it2->second) {
+            ++splitsCount;
+        } else if (!vertical && !it2->second) {
+            ++splitsCount;
+        }
+    }
+    return splitsCount;
 }
 
 void TabWidget::closePane() {
@@ -410,54 +431,95 @@ void TabWidget::closePane() {
         }
     }
     
-    ///iterate recursively over parents splitter to find a tabwidget where to move the tabs
-    TabWidget* firstParentTabWidget = NULL;
-    getTabWidgetRecursively(this,parentContainer,firstParentTabWidget);
-    assert(firstParentTabWidget);
-   
-    ///move this tab's splits to the first parent tab widget
-    for (std::list<std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it != _userSplits.end();++it) {
-        removeTagNameRecursively(it->first,!it->second);
+    ///Get the parent name
+    bool isHorizontalSplit;
+    QString parentName = getParentName(&isHorizontalSplit);
+    
+    
+    ///This is the TabWidget to which we will move all our splits.
+    TabWidget* tabToTransferTo = 0;
+    if (!parentName.isEmpty()) {
+        
+        ///Find the parent
+        const std::list<TabWidget*>& panes = _gui->getPanes();
+        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
+            if ((*it)->objectName() == parentName) {
+                tabToTransferTo = *it;
+                break;
+            }
+        }
+        assert(tabToTransferTo);
+        
+        ///Remove this as a split from the parent
+        bool ok = tabToTransferTo->removeSplit(this);
+        assert(ok);
+    } else {
+        ///Find another TabWidget recursively in the children
+        getTabWidgetRecursively(this, container, tabToTransferTo);
     }
     
-    for (std::list<std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin();it != _userSplits.end();++it) {
-        if (firstParentTabWidget != this && it->first != firstParentTabWidget) {
-            int splitsCount = 0;
-            for (std::list<std::pair<TabWidget*,bool> >::iterator it2 = firstParentTabWidget->_userSplits.begin();
-                 it2!=firstParentTabWidget->_userSplits.end(); ++it2) {
-                if (it->second && it2->second) {
-                    ++splitsCount;
-                } else if (!it->second && !it2->second) {
-                    ++splitsCount;
+    if (tabToTransferTo) {
+        
+        assert(tabToTransferTo != this);
+        
+        
+        std::list<std::pair<TabWidget*,bool> > splitsCopy;
+        {
+            QMutexLocker l(&_tabWidgetStateMutex);
+            splitsCopy = _userSplits;
+        }
+        ///For all splits, remove one hierarchy level from their name.
+        for (std::list<std::pair<TabWidget*,bool> >::iterator it = splitsCopy.begin();it != splitsCopy.end();++it) {
+            removeTagNameRecursively(it->first,!it->second);
+        }
+        
+        ///change the name of all the splits so they are children of the parent now
+        for (std::list<std::pair<TabWidget*,bool> >::iterator it = splitsCopy.begin();it != splitsCopy.end();++it) {
+            ///In the case where we're closing the pane that has no parent, we are actually moving its tabs to one of its splits
+            ///hence it->first can be equal to tabToTransferTo
+            if (it->first != tabToTransferTo) {
+                
+                ///Count in the parent how many splits of the same orientation there are
+                ///to give the approriate index to the new split we're moving
+                int splitsCount = tabToTransferTo->countSplitsForOrientation(it->second);
+                
+                if (it->second) {
+                    it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() +
+                                                     TabWidget::splitVerticallyTag +
+                                                     QString::number(splitsCount));
+                } else {
+                    it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() +
+                                                     TabWidget::splitHorizontallyTag +
+                                                     QString::number(splitsCount));
+                }
+                {
+                    QMutexLocker l(&tabToTransferTo->_tabWidgetStateMutex);
+                    tabToTransferTo->_userSplits.push_back(*it);
                 }
             }
             
-            if (it->second) {
-                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() +
-                                                 TabWidget::splitVerticallyTag +
-                                                 QString::number(splitsCount));
-            } else {
-                it->first->setObjectName_mt_safe(it->first->objectName_mt_safe() +
-                                                 TabWidget::splitHorizontallyTag +
-                                                 QString::number(splitsCount));
-            }
-            firstParentTabWidget->_userSplits.push_back(*it);
+        }
+        
+        ///Effectively move this tab's splits to the  parent tab widget
+        while(count() > 0) {
+            moveTab(tabAt(0), tabToTransferTo);
         }
     }
+    //else { //!tabToTransferTo
     
+    ///If there's no other tab to transfer to we're not supposed to be able to close it
+    ///Because the close button should be greyed out.
+    ///The only case the last pane can be close is when wiping the Gui layout
+    ///programatically to load a new layout, in that case the "unique" widgets
+    ///should've been removed by hand so that nothing gets destroyed.
+    // }
     
+
     
-    /*Removing "what" from the container and delete it*/
+    ///Hide this
     setVisible(false);
-    //move all its tabs to the  firstParentTabWidget
     
-    while(count() > 0) {
-        moveTab(tabAt(0), firstParentTabWidget);
-    }
-    
-    // delete what;
-    
-    /*Removing the container from the mainContainer*/
+    /*Removing the splitter container from its parent*/
     int subSplitterIndex = 0;
     for (int i = 0; i < parentContainer->count(); ++i) {
         Splitter* subSplitter = dynamic_cast<Splitter*>(parentContainer->widget(i));
@@ -468,6 +530,7 @@ void TabWidget::closePane() {
             break;
         }
     }
+    
     /*moving the other to the mainContainer*/
     parentContainer->insertWidget(subSplitterIndex, other);
     other->setVisible(true);
@@ -937,15 +1000,6 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
         _dragPix->update(event->globalPos());
         _dragPix->show();
         grabMouse();
-        
-        
-        //#if QT_VERSION < 0x050000
-        //        QPixmap pix = QPixmap::grabWidget(_tabWidget);
-        //#else
-        //        QPixmap pix = _tabWidget->grab();
-        //#endif
-        //        drag->setPixmap(pix);
-        //        drag->exec();
     }
     QTabBar::mouseMoveEvent(event);
     
@@ -1050,9 +1104,6 @@ void TabWidget::stopDragTab(const QPoint& globalPos) {
         ///if we reach here that means the mouse is not over any tab widget, then float the panel
         QPoint windowPos = globalPos;
         floatPane(&windowPos);
-//        TabWidget* newTab = new TabWidget(_gui);
-//        newTab->appendTab(draggedPanel);
-//        newTab->floatPane(&windowPos);
         
     }
     
@@ -1238,4 +1289,77 @@ void TabWidget::setObjectName_mt_safe(const QString& str) {
 QString TabWidget::objectName_mt_safe() const {
     QMutexLocker l(&_tabWidgetStateMutex);
     return objectName();
+}
+
+QString TabWidget::getTabWidgetParentName(const QString& objectName,bool* isSplit,bool* horizontal)
+{
+    QString nameCpy = objectName;
+    int indexOfVerticalTag = nameCpy.lastIndexOf(TabWidget::splitVerticallyTag);
+    int indexOfHorizontalTag = nameCpy.lastIndexOf(TabWidget::splitHorizontallyTag);
+    bool horizontalSplit;
+    if (indexOfHorizontalTag != -1 && indexOfVerticalTag != -1) {
+        horizontalSplit = indexOfHorizontalTag > indexOfVerticalTag;
+    } else if (indexOfHorizontalTag != -1 && indexOfVerticalTag == -1) {
+        horizontalSplit = true;
+    } else if (indexOfHorizontalTag == - 1 && indexOfVerticalTag != -1) {
+        horizontalSplit = false;
+    } else {
+        ///not a child
+        *isSplit = false;
+        return objectName;
+    }
+    
+    ///Remove the index of the split located at the end of the name
+    int identifierIndex = nameCpy.size() - 1;
+    while (identifierIndex >= 0 && nameCpy.at(identifierIndex).isDigit()) {
+        --identifierIndex;
+    }
+    ++identifierIndex;
+    nameCpy = nameCpy.remove(identifierIndex, nameCpy.size() - identifierIndex);
+    if (!horizontalSplit) {
+        //this is a vertical split, find the parent widget and insert this widget as child
+        
+        ///The goal of the next lines is to erase the split tag string from the name of the tab widget
+        /// to find out the name of the tab widget from whom this tab was originated
+        nameCpy = nameCpy.remove(indexOfVerticalTag, TabWidget::splitVerticallyTag.size());
+        if (horizontal) {
+            *horizontal = false;
+        }
+        return nameCpy;
+
+    } else {
+        if (indexOfHorizontalTag != -1)  {
+            //this is a horizontal split, find the parent widget and insert this widget as child
+            nameCpy = nameCpy.remove(indexOfHorizontalTag, TabWidget::splitVerticallyTag.size());
+            if (horizontal) {
+                *horizontal = true;
+            }
+            *isSplit = true;
+            return nameCpy;
+
+        }
+    }
+    *isSplit = false;
+    return objectName;
+}
+
+QString TabWidget::getParentName(bool* horizontal) const
+{
+    bool isSplit;
+    QString objectN = objectName_mt_safe();
+    QString ret = getTabWidgetParentName(objectN,&isSplit,horizontal);
+    if (!isSplit) {
+        return "";
+    }
+    
+    const std::list<TabWidget*>& panes = _gui->getPanes();
+    for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
+        if ((*it)->objectName_mt_safe() == ret) {
+            return ret;
+        }
+    }
+    
+    ///The parent doesn't seem to be registered in the Gui object...there's an issue here.
+    assert(false);
+    return "";
 }
