@@ -12,13 +12,12 @@
 #ifndef NATRON_GUI_FEEDBACKSPINBOX_H_
 #define NATRON_GUI_FEEDBACKSPINBOX_H_
 
+#include <boost/scoped_ptr.hpp>
 #include "Gui/LineEdit.h"
-#include "Engine/Variant.h"
 
-class QDoubleValidator;
-class QIntValidator;
 class QMenu;
 
+struct SpinBoxPrivate;
 class SpinBox : public LineEdit
 {
     Q_OBJECT
@@ -42,7 +41,9 @@ public:
     
     double value(){return text().toDouble();}
     
-    void setIncrement(double d){_increment=d;}
+    ///If OLD_SPINBOX_INCREMENT is defined in SpinBox.cpp, this function does nothing
+    ///as the increments are relative to the position of the cursor in the spinbox.
+    void setIncrement(double d);
    
     void setAnimation(int i);
 
@@ -85,22 +86,13 @@ private:
     
     void setValue_internal(double d,bool ignoreDecimals);
 
-    void incrementAccordingToPosition(const QString& str,int cursorPos,double& inc);
-    
-    QString setNum(double cur);
-
-    SPINBOX_TYPE _type;
-    int _decimals; // for the double spinbox only
-    double _increment;
-    Variant _mini,_maxi;
-    QDoubleValidator* _doubleValidator;
-    QIntValidator* _intValidator;
+    ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
-    double _valueWhenEnteringFocus;
-    int _currentDelta; // accumulates the deltas from wheelevents
-    bool _hasChangedSinceLastValidation;
-    double _valueAfterLastValidation;
     bool dirty;
+
+    boost::scoped_ptr<SpinBoxPrivate> _imp;
+    
+    
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */
