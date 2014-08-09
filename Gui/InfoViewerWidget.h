@@ -39,7 +39,7 @@ public:
     
     void setResolution(const Format& f);
     
-    void setDataWindow(const RectI& r);
+    void setDataWindow(const RectD& r); // in canonical coordinates
     
     void setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth);
     

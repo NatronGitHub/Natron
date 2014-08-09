@@ -246,7 +246,7 @@ QtWriter::render(SequenceTime time,
         type = QImage::Format_ARGB32;
     }
     
-    _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getRoD(), roi,
+    _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
                          Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
     
     QImage img(buf,roi.width(),roi.height(),type);

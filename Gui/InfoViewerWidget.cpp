@@ -25,7 +25,9 @@
 using std::cout; using std::endl;
 using namespace Natron;
 
-InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent)
+InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
+                                   const QString& description,
+                                   QWidget* parent)
 : QWidget(parent)
 , _comp(ImageComponentNone)
 {
@@ -83,9 +85,16 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,const QString& description,QWidge
     
 }
 
-QSize InfoViewerWidget::sizeHint() const { return QSize(0,0); }
+QSize
+InfoViewerWidget::sizeHint() const
+{
+    return QSize(0,0);
+}
 
-void InfoViewerWidget::setFps(double actualFps,double desiredFps){
+void
+InfoViewerWidget::setFps(double actualFps,
+                         double desiredFps)
+{
     QString colorStr("green");
     if (actualFps < (desiredFps -  desiredFps / 10.f) && actualFps > (desiredFps / 2.f)) {
         colorStr = QString("orange");
@@ -99,36 +108,47 @@ void InfoViewerWidget::setFps(double actualFps,double desiredFps){
     }
 }
 
-void InfoViewerWidget::hideFps() {
+void
+InfoViewerWidget::hideFps()
+{
     if (_fpsLabel->isVisible()) {
         _fpsLabel->hide();
     }
 }
 
-bool InfoViewerWidget::colorAndMouseVisible()
+bool
+InfoViewerWidget::colorAndMouseVisible()
 {
     return coordMouse->isVisible();
 }
 
-void InfoViewerWidget::showColorAndMouseInfo(){
+void
+InfoViewerWidget::showColorAndMouseInfo()
+{
     coordMouse->show();
     hvl_lastOption->show();
     rgbaValues->show();
     color->show();
 }
-void InfoViewerWidget::hideColorAndMouseInfo(){
 
+void
+InfoViewerWidget::hideColorAndMouseInfo()
+{
     coordMouse->hide();
     hvl_lastOption->hide();
     rgbaValues->hide();
     color->hide();
 }
 
-InfoViewerWidget::~InfoViewerWidget(){
-    
+InfoViewerWidget::~InfoViewerWidget()
+{
 }
 
-void InfoViewerWidget::setColor(float r, float g, float b, float a)
+void
+InfoViewerWidget::setColor(float r,
+                           float g,
+                           float b,
+                           float a)
 {
     QString values;
     //values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
@@ -186,7 +206,9 @@ void InfoViewerWidget::setColor(float r, float g, float b, float a)
     hvl_lastOption->repaint();
 }
 
-void InfoViewerWidget::setMousePos(QPoint p) {
+void
+InfoViewerWidget::setMousePos(QPoint p)
+{
     QString coord;
     coord = QString("<font color=\"#DBE0E0\">x=%1 y=%2</font>")
     .arg(p.x())
@@ -194,7 +216,8 @@ void InfoViewerWidget::setMousePos(QPoint p) {
     coordMouse->setText(coord);
 }
 
-void InfoViewerWidget::setResolution(const Format& f)
+void
+InfoViewerWidget::setResolution(const Format& f)
 {
     assert(QThread::currentThread() == qApp->thread());
     format = f;
@@ -217,7 +240,8 @@ void InfoViewerWidget::setResolution(const Format& f)
 }
 
 
-void InfoViewerWidget::setDataWindow(const RectI& r)
+void
+InfoViewerWidget::setDataWindow(const RectD& r)
 {
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
@@ -230,7 +254,9 @@ void InfoViewerWidget::setDataWindow(const RectI& r)
 }
 
 
-void InfoViewerWidget::setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth)
+void
+InfoViewerWidget::setImageFormat(Natron::ImageComponents comp,
+                                 Natron::ImageBitDepth depth)
 {
     std::string format = Natron::Image::getFormatString(comp, depth);
     imageFormat->setText(format.c_str());

@@ -35,7 +35,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Splitter.h"
 #include "Gui/DockablePanel.h"
 
-void ProjectGuiSerialization::initialize(const ProjectGui* projectGui) { 
+void
+ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
+{
      std::list<boost::shared_ptr<NodeGui> > activeNodes = projectGui->getVisibleNodes();
      _serializedNodes.clear();
      for (std::list<boost::shared_ptr<NodeGui> >::iterator it = activeNodes.begin();it!=activeNodes.end();++it) {

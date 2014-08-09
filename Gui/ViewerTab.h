@@ -27,7 +27,7 @@ CLANG_DIAG_ON(uninitialized)
 class ViewerGL;
 class ViewerInstance;
 class Gui;
-class RectI;
+class RectD;
 class Format;
 class QMouseEvent;
 class RotoGui;
@@ -101,7 +101,7 @@ public:
     
     void setUserRoIEnabled(bool b);
     
-    void setUserRoI(const RectI& r);
+    void setUserRoI(const RectD& r);
     
     void setClipToProject(bool b);
     
@@ -140,9 +140,9 @@ public:
      **/
     void setRotoInterface(NodeGui* n);
     
-    void removeRotoInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother);
+    void removeRotoInterface(NodeGui* n, bool permanently, bool removeAndDontSetAnother);
     
-    void getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<NodeGui*,RotoGui*>* currentRoto) const;
+    void getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes, std::pair<NodeGui*,RotoGui*>* currentRoto) const;
     
     void updateRotoSelectedTool(int tool,RotoGui* sender);
     
@@ -155,9 +155,9 @@ public:
     
     void setTrackerInterface(NodeGui* n);
     
-    void removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother);
+    void removeTrackerInterface(NodeGui* n, bool permanently, bool removeAndDontSetAnother);
     
-    void getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes,std::pair<NodeGui*,TrackerGui*>* currentTracker) const;
+    void getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes, std::pair<NodeGui*,TrackerGui*>* currentTracker) const;
     
     
     Natron::ViewerCompositingOperator getCompositingOperator() const;

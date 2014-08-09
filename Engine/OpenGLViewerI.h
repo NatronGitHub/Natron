@@ -63,9 +63,9 @@ public:
     virtual bool isUserRegionOfInterestEnabled() const = 0;
 
     /**
-     * @brief Must return the user's region of interest rectangle.
+     * @brief Must return the user's region of interest rectangle in canonical coordinates.
     **/
-    virtual RectI getUserRegionOfInterest() const = 0;
+    virtual RectD getUserRegionOfInterest() const = 0;
 
     /**
      * @brief This function must do the following:

@@ -312,15 +312,15 @@ public:
         other.y2 <= y2;
     }
     
-    bool contains(int x,int y) const {
+    bool contains(int x, int y) const {
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
     
-    bool contains(double x,double y) const {
+    bool contains(double x, double y) const {
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
     
-    void move(int dx,int dy) {
+    void translate(int dx, int dy) {
         x1 += dx;
         y1 += dy;
         x2 += dx;
@@ -467,7 +467,14 @@ public:
         x2 = 0;
         y2 = 0;
     }
-    
+
+    void translate(int dx, int dy) {
+        x1 += dx;
+        y1 += dy;
+        x2 += dx;
+        y2 += dy;
+    }
+
     /*merge the current box with another integerBox.
      *The current box is the smallest box enclosing the two boxes
      (not the union, which is not a box).*/
@@ -546,7 +553,7 @@ public:
         other.y2 <= y2;
     }
     
-    bool contains(double x,double y) const {
+    bool contains(double x, double y) const {
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
 
