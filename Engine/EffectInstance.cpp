@@ -1659,7 +1659,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
             }
             if (mipMapLevel != 0) {
                 assert(fullScaleImage != downscaledImage);
-                fullScaleImage->downscaleMipMap(downscaledRectToRender, mipMapLevel, downscaledImage.get());
+                fullScaleImage->downscaleMipMap(renderRectToRender, mipMapLevel, downscaledImage.get());
             }
         } else {
             assert(renderMappedImage == downscaledMappedImage);
