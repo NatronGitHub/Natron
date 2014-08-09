@@ -85,6 +85,7 @@ private:
     
     void setValue_internal(double d,bool ignoreDecimals);
 
+    void incrementAccordingToPosition(const QString& str,int cursorPos,double& inc);
     
     QString setNum(double cur);
 

@@ -22,6 +22,10 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Global/Macros.h"
 
+///Define it to keep the old spinbox increment depending on external source
+///The new increments are depending on the cursor position
+//#define OLD_SPINBOX_INCREMENT
+
 SpinBox::SpinBox(QWidget* parent, SPINBOX_TYPE type)
 : LineEdit(parent)
 , _type(type)
@@ -77,6 +81,7 @@ void
 SpinBox::setValue_internal(double d, bool ignoreDecimals)
 {
     _valueWhenEnteringFocus = d;
+    int pos = cursorPosition();
     clear();
     QString str;
     switch (_type) {
@@ -92,7 +97,7 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
             break;
     }
     insert(str);
-    home(false);
+    setCursorPosition(pos);
     _hasChangedSinceLastValidation = false;
     _valueAfterLastValidation = value();
 }
@@ -129,26 +134,74 @@ SpinBox::setNum(double cur)
     }
 }
 
+void SpinBox::incrementAccordingToPosition(const QString& str,int cursorPos,double& inc)
+{
+    ///Try to find a '.' to handle digits after the decimal point
+    int dotPos = str.indexOf('.');
+    bool incSet = false;
+    
+    if (dotPos != -1 && cursorPos >= dotPos) {
+        ///Handle digits after decimal point
+        ///when cursor == dotPos the cursor is actually on the left of the dot
+        if (cursorPos == dotPos) {
+            ++cursorPos;
+        }
+        inc = 1. / std::pow(10.,(double)(cursorPos - dotPos));
+        incSet = true;
+        
+    }
+    
+    if (!incSet) {
+        ///if the character prior to the dot is '-' then increment the first digit after the dot
+        if (cursorPos == dotPos - 1 && str.at(cursorPos) == QChar('-')) {
+            inc = _type == DOUBLE_SPINBOX ? 0.1 : 1; //< we don't want INT_SPINBOX being incremented by lower than 1
+        } else {
+            if (cursorPos == dotPos -1) {
+                inc = 1;
+            } else {
+                if (dotPos != -1) {
+                    inc = std::pow(10.,(double)(dotPos - cursorPos));
+                } else {
+                    inc = std::pow(10.,(double)str.size() - 1 - cursorPos);
+                }
+            }
+        }
+    }
+    
+   
+}
+
 void
 SpinBox::wheelEvent(QWheelEvent *e)
 {
+    setFocus();
+    setCursorPosition(cursorPositionAt(e->pos()));
     if (e->orientation() != Qt::Vertical) {
         return;
     }
     if (isEnabled() && !isReadOnly()) {
-        bool ok;
-        double cur = text().toDouble(&ok);
-        double old = cur;
+        QString str = text();
+        double cur = str.toDouble();
         double maxiD = 0.;
         double miniD = 0.;
+        double inc;
+        double old = cur;
         _currentDelta += e->delta();
-        double inc = _currentDelta * _increment / 120.;
+#ifdef OLD_SPINBOX_INCREMENT
+        inc = _currentDelta * _increment / 120.;
         if (e->modifiers().testFlag(Qt::ShiftModifier)) {
             inc *= 10.;
         }
         if (e->modifiers().testFlag(Qt::ControlModifier)) {
             inc /= 10.;
         }
+#else
+        incrementAccordingToPosition(str,cursorPosition(),inc);
+        if (e->delta() < 0) {
+            inc = -inc;
+        }
+        
+#endif
         switch (_type) {
             case DOUBLE_SPINBOX:
                 maxiD = _maxi.toDouble();
@@ -211,7 +264,8 @@ SpinBox::keyPressEvent(QKeyEvent *e)
                 miniD = _mini.toDouble();
                 break;
         }
-        if(e->key() == Qt::Key_Up){
+        if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
+#ifdef OLD_SPINBOX_INCREMENT
             double inc = _increment;
             if (e->modifiers().testFlag(Qt::ShiftModifier)) {
                 inc *= 10.;
@@ -219,30 +273,25 @@ SpinBox::keyPressEvent(QKeyEvent *e)
             if (e->modifiers().testFlag(Qt::ControlModifier)) {
                 inc /= 10.;
             }
-            if (cur + inc <= maxiD) {
-                cur += inc;
+#else
+            double inc;
+            int cursorPos = cursorPosition();
+            QString txt = text();
+            incrementAccordingToPosition(txt, cursorPos, inc);
+#endif
+            if (e->key() == Qt::Key_Up) {
+                if (cur + inc <= maxiD) {
+                    cur += inc;
+                }
+            } else {
+                if (cur - inc >= miniD) {
+                    cur -= inc;
+                }
             }
             if (cur < miniD || cur > maxiD) {
                 return;
             }
-            if (cur != old) {
-                setValue(cur);
-                emit valueChanged(cur);
-            }
-        } else if (e->key() == Qt::Key_Down) {
-            double inc = _increment;
-            if (e->modifiers().testFlag(Qt::ShiftModifier)) {
-                inc *= 10.;
-            }
-            if (e->modifiers().testFlag(Qt::ControlModifier)) {
-                inc /= 10.;
-            }
-            if (cur - inc >= miniD) {
-                cur -= inc;
-            }
-            if (cur < miniD || cur > maxiD) {
-                return;
-            }
+
             if (cur != old) {
                 setValue(cur);
                 emit valueChanged(cur);
