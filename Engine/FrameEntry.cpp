@@ -31,24 +31,34 @@ FrameKey::FrameKey()
 }
 
 
-FrameKey::FrameKey(SequenceTime time,U64 treeVersion,double gain,
-         int lut,int bitDepth,int channels,int view,const TextureRect& textureRect,const RenderScale& scale,const std::string& inputName):
-KeyHelper<U64>()
-,_time(time)
-,_treeVersion(treeVersion)
-,_gain(gain)
-,_lut(lut)
-,_bitDepth(bitDepth)
-,_channels(channels)
-,_view(view)
-,_textureRect(textureRect)
-,_scale(scale)
-,_inputName(inputName)
+FrameKey::FrameKey(SequenceTime time,
+                   U64 treeVersion,
+                   double gain,
+                   int lut,
+                   int bitDepth,
+                   int channels,
+                   int view,
+                   const TextureRect& textureRect,
+                   const RenderScale& scale,
+                   const std::string& inputName)
+: KeyHelper<U64>()
+, _time(time)
+, _treeVersion(treeVersion)
+, _gain(gain)
+, _lut(lut)
+, _bitDepth(bitDepth)
+, _channels(channels)
+, _view(view)
+, _textureRect(textureRect)
+, _scale(scale)
+, _inputName(inputName)
 {
     
 }
 
-void FrameKey::fillHash(Hash64* hash) const {
+void
+FrameKey::fillHash(Hash64* hash) const
+{
     hash->append(_time);
     hash->append(_treeVersion);
     hash->append(_gain);
@@ -70,7 +80,9 @@ void FrameKey::fillHash(Hash64* hash) const {
     }
 }
 
-bool FrameKey::operator==(const FrameKey& other) const {
+bool
+FrameKey::operator==(const FrameKey& other) const
+{
     return  _time == other._time &&
     _treeVersion == other._treeVersion &&
     _gain == other._gain &&
@@ -84,14 +96,27 @@ bool FrameKey::operator==(const FrameKey& other) const {
     _inputName == other._inputName;
 }
 
-FrameKey FrameEntry::makeKey(SequenceTime time,U64 treeVersion,double gain,
-                        int lut,int bitDepth,int channels,int view,const TextureRect& textureRect,
-                             const RenderScale& scale,const std::string& inputName){
+FrameKey
+FrameEntry::makeKey(SequenceTime time,
+                    U64 treeVersion,
+                    double gain,
+                    int lut,
+                    int bitDepth,
+                    int channels,
+                    int view,
+                    const TextureRect& textureRect,
+                    const RenderScale& scale,
+                    const std::string& inputName)
+{
     return FrameKey(time,treeVersion,gain,lut,bitDepth,channels,view,textureRect,scale,inputName);
 }
 
-boost::shared_ptr<const FrameParams> FrameEntry::makeParams(const RectI rod,int bitDepth,int texW,int texH)
+boost::shared_ptr<const FrameParams>
+FrameEntry::makeParams(const RectI& rod,
+                       int bitDepth,
+                       int texW,
+                       int texH)
 {
-    return boost::shared_ptr<const FrameParams>(new FrameParams(rod,bitDepth,texW,texH));
+    return boost::shared_ptr<const FrameParams>(new FrameParams(rod, bitDepth, texW, texH));
 }
 

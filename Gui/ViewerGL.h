@@ -79,10 +79,10 @@ public:
     
     
     /**
-     *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
+     *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX) in canonical coordinates
      **/
     // MT-SAFE: don't return a reference
-    RectI getRoD(int textureIndex) const ;
+    RectD getRoD(int textureIndex) const ;
     
     
     /**
@@ -210,7 +210,7 @@ public:
      **/
     void zoomSlot(QString);
     
-    void setRegionOfDefinition(const RectI& rod,int textureIndex);
+    void setRegionOfDefinition(const RectD& rod, int textureIndex);
     
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
     
@@ -238,7 +238,7 @@ public:
     
 public:
 
-    void renderText(int x, int y, const QString &string,const QColor& color,const QFont& font);
+    void renderText(double x, double y, const QString &string, const QColor& color, const QFont& font);
 
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const;
     
@@ -248,9 +248,9 @@ public:
     
     virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
     
-    virtual RectI getUserRegionOfInterest() const OVERRIDE FINAL;
+    virtual RectD getUserRegionOfInterest() const OVERRIDE FINAL;
     
-    void setUserRoI(const RectI& r);
+    void setUserRoI(const RectD& r);
 
     /**
     * @brief Swap the OpenGL buffers.
@@ -441,26 +441,64 @@ private:
      **/
     void drawPersistentMessage();
 
-    bool isNearByUserRoITopEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoIRightEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoILeftEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoIBottomEdge(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoIMiddleHandle(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoITopLeft(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoITopRight(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoIBottomRight(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
-    
-    bool isNearByUserRoIBottomLeft(const RectI& roi,const QPointF& zoomPos, double zoomScreenPixelWidth, double zoomScreenPixelHeight);
+    bool isNearByUserRoITopEdge(const RectD& roi,
+                                const QPointF& zoomPos,
+                                double zoomScreenPixelWidth,
+                                double zoomScreenPixelHeight);
 
-    void updateInfoWidgetColorPicker(const QPointF& imgPos,const QPoint& widgetPos,int width,int height,
-                                     const RectI& rod,const RectI& dispW,int texIndex);
+    bool isNearByUserRoIRightEdge(const RectD& roi,
+                                  const QPointF& zoomPos,
+                                  double zoomScreenPixelWidth,
+                                  double zoomScreenPixelHeight);
+
+    bool isNearByUserRoILeftEdge(const RectD& roi,
+                                 const QPointF& zoomPos,
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight);
+
+    
+    bool isNearByUserRoIBottomEdge(const RectD& roi,
+                                   const QPointF& zoomPos,
+                                   double zoomScreenPixelWidth,
+                                   double zoomScreenPixelHeight);
+
+    
+    bool isNearByUserRoIMiddleHandle(const RectD& roi,
+                                     const QPointF& zoomPos,
+                                     double zoomScreenPixelWidth,
+                                     double zoomScreenPixelHeight);
+
+    bool isNearByUserRoITopLeft(const RectD& roi,
+                                const QPointF& zoomPos,
+                                double zoomScreenPixelWidth,
+                                double zoomScreenPixelHeight);
+
+    
+    bool isNearByUserRoITopRight(const RectD& roi,
+                                 const QPointF& zoomPos,
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight);
+
+    
+    bool isNearByUserRoIBottomRight(const RectD& roi,
+                                    const QPointF& zoomPos,
+                                    double zoomScreenPixelWidth,
+                                    double zoomScreenPixelHeight);
+
+    
+    bool isNearByUserRoIBottomLeft(const RectD& roi,
+                                   const QPointF& zoomPos,
+                                   double zoomScreenPixelWidth,
+                                   double zoomScreenPixelHeight);
+
+
+    void updateInfoWidgetColorPicker(const QPointF& imgPos,
+                                     const QPoint& widgetPos,
+                                     int width,
+                                     int height,
+                                     const RectD& rod, // in canonical coordinates
+                                     const RectD& dispW, // in canonical coordinates
+                                     int texIndex);
     void updateRectangleColorPicker();
     /**
      * @brief X and Y are in widget coords!

@@ -47,7 +47,7 @@ struct ViewerData {
     double zoomFactor;
     double zoomPAR;
     bool userRoIenabled;
-    RectI userRoI;
+    RectD userRoI; // in canonical coordinates
     bool isClippedToProject;
     bool autoContrastEnabled;
     double gain;

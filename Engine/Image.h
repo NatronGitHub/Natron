@@ -118,24 +118,19 @@ namespace Natron {
     
     class Image  : public CacheEntryHelper<unsigned char,ImageKey>
     {
-        
-        Natron::ImageBitDepth _bitDepth;
-        ImageComponents _components;
-        mutable QReadWriteLock _lock;
-        Bitmap _bitmap;
-        RectI _rod;
-        RectI _bounds;
-
-        
     public:
-   
+        
         Image(const ImageKey& key,const boost::shared_ptr<const NonKeyParams>&  params,const Natron::CacheAPI* cache);
         
         
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(ImageComponents components,const RectI& regionOfDefinition,unsigned int mipMapLevel,Natron::ImageBitDepth bitdepth);
+        Image(ImageComponents components,
+              const RectD& regionOfDefinition, //!< rod in canonical coordinates
+              const RectI& bounds, //!< bounds in pixel coordinates
+              unsigned int mipMapLevel,
+              Natron::ImageBitDepth bitdepth);
         
         virtual ~Image(){ deallocate(); }
 #ifdef NATRON_DEBUG
@@ -146,10 +141,14 @@ namespace Natron {
                                 unsigned int mipMapLevel,
                                 int view);
         
-        static boost::shared_ptr<ImageParams> makeParams(int cost,const RectI& rod,unsigned int mipMapLevel,
-                                                         bool isRoDProjectFormat,ImageComponents components,
+        static boost::shared_ptr<ImageParams> makeParams(int cost,
+                                                         const RectD& rod, // the image rod in canonical coordinates
+                                                         unsigned int mipMapLevel,
+                                                         bool isRoDProjectFormat,
+                                                         ImageComponents components,
                                                          Natron::ImageBitDepth bitdepth,
-                                                         int inputNbIdentity,int inputTimeIdentity,
+                                                         int inputNbIdentity,
+                                                         int inputTimeIdentity,
                                                          const std::map<int, std::vector<RangeD> >& framesNeeded) ;
         
         /**
@@ -157,7 +156,7 @@ namespace Natron {
          * scale applied to it. In order to return the true pixel data window you must call getBounds()
          * WARNING: this is NOT the same definition as in OpenFX, where the Image RoD is always in pixels.
          **/
-        const RectI& getRoD() const { return _rod; };
+        const RectD& getRoD() const { return _rod; };
         
         /**
          * @brief Returns the bounds where data is in the image.
@@ -272,13 +271,13 @@ namespace Natron {
          * given mipmap level,
          * and then computes the mipmap of the given level of that rectangle.
          **/
-        void downscaleMipMap(const RectI& roi, unsigned int level, Natron::Image* output) const;
+        void downscaleMipMap(const RectI& roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
 
         /**
          * @brief Upscales a portion of this image into output.
          * If the upscaled roi does not fit into output's bounds, it is cropped first.
          **/
-        void upscaleMipMap(const RectI& roi, unsigned int level, Natron::Image* output) const;
+        void upscaleMipMap(const RectI& roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
 
         /**
          * @brief Scales the roi of this image to the size of the output image.
@@ -363,7 +362,7 @@ namespace Natron {
         void halve1DImageForDepth(const RectI& roi, Natron::Image* output) const;
 
         template <typename PIX,int maxValue>
-        void upscaleMipMapForDepth(const RectI& roi, unsigned int level, Natron::Image* output) const;
+        void upscaleMipMapForDepth(const RectI& roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
 
         template<typename PIX>
         void pasteFromForDepth(const Natron::Image& src, const RectI& srcRoi, bool copyBitmap = true);
@@ -373,6 +372,14 @@ namespace Natron {
 
         template<typename PIX>
         void scaleBoxForDepth(const RectI& roi, Natron::Image* output) const;
+
+    private:
+        Natron::ImageBitDepth _bitDepth;
+        ImageComponents _components;
+        mutable QReadWriteLock _lock;
+        Bitmap _bitmap;
+        RectD _rod; // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
+        RectI _bounds;
     };
 
     template <typename SRCPIX,typename DSTPIX>

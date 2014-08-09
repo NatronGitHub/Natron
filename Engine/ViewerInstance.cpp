@@ -439,7 +439,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     U64 inputNodeHash = activeInputToRender->hash();
         
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
-    RectI rod, bounds;
+    RectD rod;
+    RectI bounds;
     bool isRodProjectFormat = false;
     int inputIdentityNumber = -1;
     SequenceTime inputIdentityTime = time;
@@ -471,7 +472,11 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
              Image::hasEnoughDataToConvert(inputImage->getComponents(),components)) ||
             inputImage->getBitDepth() != imageDepth) {
             ///Convert the image to the requested components
-            boost::shared_ptr<Image> remappedImage(new Image(components,inputImage->getRoD(),mipMapLevel,imageDepth));
+            boost::shared_ptr<Image> remappedImage(new Image(components,
+                                                             inputImage->getRoD(),
+                                                             inputImage->getBounds(),
+                                                             mipMapLevel,
+                                                             imageDepth));
             inputImage->convertToFormat(inputImage->getBounds(),
                                         getApp()->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
                                         getApp()->getDefaultColorSpaceForBitDepth(imageDepth),
@@ -559,10 +564,10 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
         // For the viewer, we need the enclosing rectangle to avoid black borders.
         // Do this here to avoid infinity values.
-        bounds = rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+        rod.toPixelEnclosing(mipMapLevel, &bounds);
     }
 
-    emit rodChanged(rod,textureIndex);
+    emit rodChanged(rod, textureIndex);
 
     assert(_imp->uiContext);
     bool isClippingToProjectWindow = _imp->uiContext->isClippingImageToProjectWindow();
@@ -581,10 +586,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     ///Clip the roi  the project window (in pixel coordinates)
     RectI pixelDispW;
     if (isClippingToProjectWindow) {
-        pixelDispW = dispW;
-        if (mipMapLevel != 0) {
-            pixelDispW = dispW.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
-        }
+        dispW.toPixelEnclosing(mipMapLevel, &pixelDispW);
         roi.intersect(pixelDispW, &roi);
     }
 
@@ -794,13 +796,21 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         
         ///If the plug-in doesn't support the render scale and we found an image cached but which still
         ///contains some stuff to render we don't want to use it, instead we need to upscale the image
+#pragma message WARN("OFX always returns true for supportsRenderScale(), but rendering with scale != 1 may fail")
         if (!activeInputToRender->supportsRenderScale() && isInputImgCached && mipMapLevel != 0) {
 
             /// If the list is empty then we already rendered it all
             /// Otherwise we have to upscale the found image, render what we need and downscale it again
             std::list<RectI> rectsToRender = inputImage->getRestToRender(texRectClipped);
+            RectI bounds;
+            unsigned int mipMapLevel = 0;
+            rod.toPixelEnclosing(mipMapLevel, &bounds);
             if (!rectsToRender.empty()) {
-                boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,rod,0,downscaledImage->getBitDepth()));
+                boost::shared_ptr<Natron::Image> upscaledImage(new Natron::Image(components,
+                                                                                 rod,
+                                                                                 bounds,
+                                                                                 mipMapLevel,
+                                                                                 downscaledImage->getBitDepth()));
                 downscaledImage->scaleBox(downscaledImage->getBounds(), upscaledImage.get());
                 inputImage = upscaledImage;
             } else {
@@ -826,7 +836,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                 if (isInputImgCached) {
                     ///if the input image is cached, call the shorter version of renderRoI which doesn't do all the
                     ///cache lookup things because we already did it ourselves.
-                        activeInputToRender->renderRoI(time, scale,mipMapLevel, view, texRectClipped, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true,byPassCache,inputNodeHash);
+                        activeInputToRender->renderRoI(time, scale, mipMapLevel, view, texRectClipped, rod, cachedImgParams, inputImage,downscaledImage,isSequentialRender,true,byPassCache,inputNodeHash);
                     
                 } else {
                     
@@ -839,7 +849,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                                   isSequentialRender,
                                                   true,
                                                   byPassCache,
-                                                  &rod,
+                                                  rod,
                                                   components,
                                                   imageDepth)); //< render the input depth as the viewer can handle it
                     

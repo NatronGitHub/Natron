@@ -18,7 +18,7 @@
 #include "Global/GlobalDefines.h"
 
 class OfxEffectInstance;
-class RectI;
+class RectD;
 namespace Natron {
 class Image;
 
@@ -193,7 +193,7 @@ public:
     
     void discardClipsImage();
     
-    void setClipsOutputRoD(const RectI& rod);
+    void setClipsOutputRoD(const RectD& rod); //!< rod in canonical coordinates
     
     void discardClipsOutputRoD();
     

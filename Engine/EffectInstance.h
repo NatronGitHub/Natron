@@ -43,7 +43,7 @@ class EffectInstance : public NamedKnobHolder
 {
 public:
     
-    typedef std::map<EffectInstance*,RectI> RoIMap;
+    typedef std::map<EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
     
     typedef std::map<int, std::vector<RangeD> > FramesNeededMap;
     
@@ -53,11 +53,11 @@ public:
         RenderScale scale; //< the scale at which to render
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         int view; //< the view to render
-        RectI roi; //< the region of interest (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
+        RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         bool isSequentialRender; //< is this render part of a sequential render (playback or render on disk) ?
         bool isRenderUserInteraction; // is this render due to user interaction ? (parameter tweek)
         bool byPassCache; //< turn-off the cache ability to look-up existing images ? (false when a refresh is forced)
-        const RectI* preComputedRoD; //<  pre-computed region of definition for this effect to speed-up the call to renderRoi
+        RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         Natron::ImageComponents components; //< the requested image components
         Natron::ImageBitDepth bitdepth; //< the requested bit depth
         int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
@@ -65,14 +65,14 @@ public:
         RenderRoIArgs() {}
         
         RenderRoIArgs(SequenceTime time_,
-                      RenderScale scale_,
+                      const RenderScale& scale_,
                       unsigned int mipMapLevel_,
                       int view_,
-                      RectI roi_,
+                      const RectI& roi_,
                       bool isSequentialRender_,
                       bool isRenderUserInteraction_,
                       bool byPassCache_,
-                      const RectI* preComputedRoD_,
+                      const RectD& preComputedRoD_,
                       Natron::ImageComponents components_,
                       Natron::ImageBitDepth bitdepth_,
                       int channelForAlpha_ = 3)
@@ -341,8 +341,12 @@ public:
      * the outputImage where to render instead. This is used by the Viewer which already did
      * a cache look-up for optimization purposes.
      **/
-    void renderRoI(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
-                   int view,const RectI& renderWindow,
+    void renderRoI(SequenceTime time,
+                   const RenderScale& scale,
+                   unsigned int mipMapLevel,
+                   int view,
+                   const RectI& renderWindow,
+                   const RectD& rod, //!< effect rod in canonical coords
                    const boost::shared_ptr<const ImageParams>& cachedImgParams,
                    const boost::shared_ptr<Image>& image,
                    const boost::shared_ptr<Image>& downscaledImage,
@@ -365,15 +369,25 @@ protected:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/,
-                                  bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
-                                  boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN { return Natron::StatOK; }
+    virtual Natron::Status render(SequenceTime /*time*/,
+                                  const RenderScale& /*scale*/,
+                                  const RectI& /*roi*/,
+                                  int /*view*/,
+                                  bool /*isSequentialRender*/,
+                                  bool /*isRenderResponseToUserInteraction*/,
+                                  boost::shared_ptr<Natron::Image> /*output*/) WARN_UNUSED_RETURN {
+        return Natron::StatOK;
+    }
     
 public:
     
-     Natron::Status render_public(SequenceTime time, RenderScale scale, const RectI& roi, int view,
-                                      bool isSequentialRender,bool isRenderResponseToUserInteraction,
-                                      boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN;
+     Natron::Status render_public(SequenceTime time,
+                                  const RenderScale& scale,
+                                  const RectI& roi,
+                                  int view,
+                                  bool isSequentialRender,
+                                  bool isRenderResponseToUserInteraction,
+                                  boost::shared_ptr<Natron::Image> output) WARN_UNUSED_RETURN;
     
 protected:
     /**
@@ -387,13 +401,20 @@ protected:
      * @param inputNb[out] the input number of the effect that is identity of.
      * The special value of -2 indicates that the plugin is identity of itself at another time
      **/
-    virtual bool isIdentity(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& /*roi*/,
-                            int /*view*/,SequenceTime* /*inputTime*/,int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool isIdentity(SequenceTime /*time*/,
+                            const RenderScale& /*scale*/,
+                            const RectI& /*roi*/,
+                            int /*view*/,
+                            SequenceTime* /*inputTime*/,
+                            int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
     
 public:
     
-    bool isIdentity_public(SequenceTime time,RenderScale scale,const RectI& roi,
-                           int view,SequenceTime* inputTime,int* inputNb) WARN_UNUSED_RETURN;
+    bool isIdentity_public(SequenceTime time,
+                           const RenderScale& scale,
+                           const RectI& roi, // renderWindow in pixel coordinates
+                           int view,SequenceTime* inputTime,
+                           int* inputNb) WARN_UNUSED_RETURN;
     
     enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2,FULLY_SAFE_FRAME = 3};
     /**
@@ -427,9 +448,9 @@ public:
      */
     boost::shared_ptr<Image> getImage(int inputNb,
                                       SequenceTime time,
-                                      RenderScale scale,
+                                      const RenderScale& scale,
                                       int view,
-                                      const RectD *optionalBounds,
+                                      const RectD *optionalBounds, //!< optional region in canonical coordinates
                                       Natron::ImageComponents comp,
                                       Natron::ImageBitDepth depth,
                                       bool dontUpscale) WARN_UNUSED_RETURN;
@@ -446,16 +467,16 @@ protected:
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod) WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectD* rod) WARN_UNUSED_RETURN;
 
     virtual RectD calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale) const WARN_UNUSED_RETURN;
 
     /**
-     * @brief If the rod is infinite, returns the union of all connected inputs. If there's no input this returns the
+     * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
      * @returns true if the rod is set to the project format.
      **/
-    bool ifInfiniteApplyHeuristic(SequenceTime time,const RenderScale& scale, int view,RectI* rod) const;
+    bool ifInfiniteApplyHeuristic(SequenceTime time, const RenderScale& scale, int view, RectD* rod) const;
     
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
@@ -464,8 +485,11 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& outputRoD,
-                                       const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
+    virtual RoIMap getRegionsOfInterest(SequenceTime time,
+                                        const RenderScale& scale,
+                                        const RectD& outputRoD, //!< the RoD of the effect, in canonical coordinates
+                                        const RectD& renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                        int view) WARN_UNUSED_RETURN;
     
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
@@ -484,12 +508,17 @@ protected:
     
 public:
     
-    Natron::Status getRegionOfDefinition_public(SequenceTime time,const RenderScale& scale,int view,
-                                         RectI* rod,bool* isProjectFormat) WARN_UNUSED_RETURN;
-    
-    RoIMap getRegionOfInterest_public(SequenceTime time,RenderScale scale,
-                                      const RectI& outputRoD,
-                                      const RectI& renderWindow,int view) WARN_UNUSED_RETURN;
+    Natron::Status getRegionOfDefinition_public(SequenceTime time,
+                                                const RenderScale& scale,
+                                                int view,
+                                                RectD* rod,
+                                                bool* isProjectFormat) WARN_UNUSED_RETURN;
+
+    RoIMap getRegionsOfInterest_public(SequenceTime time,
+                                       const RenderScale& scale,
+                                       const RectD& outputRoD,
+                                       const RectD& renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                       int view) WARN_UNUSED_RETURN;
     
     FramesNeededMap getFramesNeeded_public(SequenceTime time) WARN_UNUSED_RETURN;
     
@@ -581,11 +610,25 @@ public:
     
     /**
      * @brief Does this effect supports tiling ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
+     * If a clip or plugin does not support tiled images, then the host should supply
+     * full RoD images to the effect whenever it fetches one.
      **/
     virtual bool supportsTiles() const { return false; }
     
     /**
+     * @brief Does this effect supports multiresolution ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+     * Multiple resolution images mean...
+     * input and output images can be of any size
+     * input and output images can be offset from the origin
+     **/
+    virtual bool supportsMultiResolution() const { return false; }
+
+    /**
      * @brief Does this effect supports rendering at a different scale than 1 ?
+     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
+     * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
      **/
     virtual bool supportsRenderScale() const { return false; }
     
@@ -663,17 +706,25 @@ protected:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/) {}
+    virtual void knobChanged(KnobI* /*k*/, Natron::ValueChangedReason /*reason*/, const RectD& /*rod*/, int /*view*/,SequenceTime /*time*/) {}
     
     
-    virtual Natron::Status beginSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
-                                     SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
-                                     bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+    virtual Natron::Status beginSequenceRender(SequenceTime /*first*/,
+                                               SequenceTime /*last*/,
+                                               SequenceTime /*step*/,
+                                               bool /*interactive*/,
+                                               const RenderScale& /*scale*/,
+                                               bool /*isSequentialRender*/,
+                                               bool /*isRenderResponseToUserInteraction*/,
                                                int /*view*/) { return Natron::StatOK; }
     
-    virtual Natron::Status endSequenceRender(SequenceTime /*first*/,SequenceTime /*last*/,
-                                   SequenceTime /*step*/,bool /*interactive*/,RenderScale /*scale*/,
-                                   bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+    virtual Natron::Status endSequenceRender(SequenceTime /*first*/,
+                                             SequenceTime /*last*/,
+                                             SequenceTime /*step*/,
+                                             bool /*interactive*/,
+                                             const RenderScale& /*scale*/,
+                                             bool /*isSequentialRender*/,
+                                             bool /*isRenderResponseToUserInteraction*/,
                                              int /*view*/) { return Natron::StatOK;}
 public:
     
@@ -681,15 +732,15 @@ public:
     virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
     
     
-    Natron::Status beginSequenceRender_public(SequenceTime first,SequenceTime last,
-                                     SequenceTime step,bool interactive,RenderScale scale,
-                                     bool isSequentialRender,bool isRenderResponseToUserInteraction,
-                                    int view);
-    
-    Natron::Status endSequenceRender_public(SequenceTime first,SequenceTime last,
-                                   SequenceTime step,bool interactive,RenderScale scale,
-                                   bool isSequentialRender,bool isRenderResponseToUserInteraction,
-                                  int view);
+    Natron::Status beginSequenceRender_public(SequenceTime first, SequenceTime last,
+                                              SequenceTime step, bool interactive, const RenderScale& scale,
+                                              bool isSequentialRender, bool isRenderResponseToUserInteraction,
+                                              int view);
+
+    Natron::Status endSequenceRender_public(SequenceTime first, SequenceTime last,
+                                            SequenceTime step, bool interactive, const RenderScale& scale,
+                                            bool isSequentialRender, bool isRenderResponseToUserInteraction,
+                                            int view);
     
     
     void drawOverlay_public(double scaleX,double scaleY);
@@ -737,43 +788,43 @@ protected:
      */
     virtual bool hasOverlay() const { return false; }
     
-    virtual void drawOverlay(double /*scaleX*/,double /*scaleY*/,const RectI& /*outputRoD*/){}
+    virtual void drawOverlay(double /*scaleX*/,double /*scaleY*/,const RectD& /*outputRoD*/){}
     
     virtual bool onOverlayPenDown(double /*scaleX*/,double /*scaleY*/,
-                                  const QPointF& /*viewportPos*/, const QPointF& /*pos*/
-                                  ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+                                  const QPointF& /*viewportPos*/, const QPointF& /*pos*/,
+                                  const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayPenMotion(double /*scaleX*/,double /*scaleY*/,
-                                    const QPointF& /*viewportPos*/, const QPointF& /*pos*/
-                                    ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+                                    const QPointF& /*viewportPos*/, const QPointF& /*pos*/,
+                                    const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayPenUp(double /*scaleX*/,double /*scaleY*/,
-                                const QPointF& /*viewportPos*/, const QPointF& /*pos*/
-                                ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+                                const QPointF& /*viewportPos*/, const QPointF& /*pos*/,
+                                const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayKeyDown(double /*scaleX*/,double /*scaleY*/,
-                                  Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/
-                                  ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+                                  Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/,
+                                  const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayKeyUp(double /*scaleX*/,double /*scaleY*/,
-                                Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/
-                                ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+                                Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/,
+                                const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     virtual bool onOverlayKeyRepeat(double /*scaleX*/,double /*scaleY*/,
-                                    Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/
-                                    ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+                                    Natron::Key /*key*/,Natron::KeyboardModifiers /*modifiers*/,
+                                    const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/
-                                      ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/,
+                                      const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
-    virtual bool onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/
-                                    ,const RectI& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
+    virtual bool onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,
+                                    const RectD& /*outputRoD*/) WARN_UNUSED_RETURN { return false; }
     
     /**
      * @brief Retrieves the current time, the view rendered by the attached viewer , the mipmaplevel of the attached
      * viewer and the rod of the output.
      **/
-    void getClipThreadStorageData(SequenceTime time, int *view, unsigned int *mipMapLevel, RectI *outputRoD);
+    void getClipThreadStorageData(SequenceTime time, int *view, unsigned int *mipMapLevel, RectD *outputRoD);
     
     boost::shared_ptr<Node> _node; //< the node holding this effect
 
@@ -812,8 +863,12 @@ private:
      * which channel we wanted for the alpha channel.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    RenderRoIStatus renderRoIInternal(SequenceTime time,const RenderScale& scale,unsigned int mipMapLevel,
-                                      int view,const RectI& renderWindow, //< renderWindow in pixel coordinates
+    RenderRoIStatus renderRoIInternal(SequenceTime time,
+                                      const RenderScale& scale,
+                                      unsigned int mipMapLevel,
+                                      int view,
+                                      const RectI& renderWindow, //< renderWindow in pixel coordinates
+                                      const RectD& rod, //!< rod in canonical coordinates
                                       const boost::shared_ptr<const ImageParams>& cachedImgParams,
                                       const boost::shared_ptr<Image>& image,
                                       const boost::shared_ptr<Image>& downscaledImage,
@@ -930,9 +985,9 @@ public:
 
     void updateTreeAndRender();
 
-    void refreshAndContinueRender(bool forcePreview,bool abortRender);
+    void refreshAndContinueRender(bool forcePreview, bool abortRender);
 
-    bool ifInfiniteclipRectToProjectDefault(RectI* rod) const;
+    bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
     /**
      * @brief Returns the frame number this effect is currently rendering.

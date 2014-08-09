@@ -339,12 +339,12 @@ void Settings::initializeKnobs(){
     
     ///////////////////DEFAULT GROUP COLORS
     
-    _defaultReaderColor =  Natron::createKnob<Color_Knob>(this, "Readers",3);
+    _defaultReaderColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_READERS,3);
     _defaultReaderColor->setAnimationEnabled(false);
     _defaultReaderColor->setHintToolTip("This is default color which reader nodes have when created.");
     _nodegraphTab->addKnob(_defaultReaderColor);
     
-    _defaultWriterColor =  Natron::createKnob<Color_Knob>(this, "Writers",3);
+    _defaultWriterColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
     _defaultWriterColor->setAnimationEnabled(false);
     _defaultWriterColor->setHintToolTip("This is default color which writer nodes have when created.");
     _nodegraphTab->addKnob(_defaultWriterColor);
@@ -465,10 +465,10 @@ void Settings::initializeKnobs(){
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
     
-    _readersTab = Natron::createKnob<Page_Knob>(this, "Readers");
+    _readersTab = Natron::createKnob<Page_Knob>(this, PLUGIN_GROUP_IMAGE_READERS);
     _readersTab->setName("readersTab");
 
-    _writersTab = Natron::createKnob<Page_Knob>(this, "Writers");
+    _writersTab = Natron::createKnob<Page_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS);
     _writersTab->setName("writersTab");
     
     setDefaultValues();
@@ -705,7 +705,7 @@ void Settings::saveSettings(){
 
     settings.endGroup();
     
-    settings.beginGroup("Readers");
+    settings.beginGroup(PLUGIN_GROUP_IMAGE_READERS);
     
     
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
@@ -713,7 +713,7 @@ void Settings::saveSettings(){
     }
     settings.endGroup();
     
-    settings.beginGroup("Writers");
+    settings.beginGroup(PLUGIN_GROUP_IMAGE_WRITERS);
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
         settings.setValue(_writersMapping[i]->getDescription().c_str(),_writersMapping[i]->getValue());
     }
@@ -981,7 +981,7 @@ void Settings::restoreSettings(){
     
     settings.endGroup();
     
-    settings.beginGroup("Readers");
+    settings.beginGroup(PLUGIN_GROUP_IMAGE_READERS);
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
         QString format = _readersMapping[i]->getDescription().c_str();
         if(settings.contains(format)){
@@ -993,7 +993,7 @@ void Settings::restoreSettings(){
     }
     settings.endGroup();
     
-    settings.beginGroup("Writers");
+    settings.beginGroup(PLUGIN_GROUP_IMAGE_WRITERS);
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
         QString format = _writersMapping[i]->getDescription().c_str();
         if(settings.contains(format)){

@@ -16,7 +16,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
-
+#include <cmath>
 
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(unused-parameter)
@@ -28,11 +28,14 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Global/Macros.h"
 
 GCC_DIAG_OFF(strict-overflow)
+
+class RectD;
+
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)
  **/
-class RectI{
-
+class RectI
+{
 public:
     
     ////public so the fields can be access exactly like the OfxRect struct !
@@ -103,7 +106,10 @@ public:
         ret.y2 = y2 << thisLevel;
         return ret;
     }
+
+    inline void toCanonical(unsigned int thisLevel, const RectD& rod, RectD *rect) const;
     
+    // the following should never be used: only canonical coordinates may be downscaled
     /**
      * @brief Scales down the rectangle by the given power of 2
      **/
@@ -306,15 +312,15 @@ public:
         other.y2 <= y2;
     }
     
-    bool contains(int x,int y) const {
+    bool contains(int x, int y) const {
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
     
-    bool contains(double x,double y) const {
+    bool contains(double x, double y) const {
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
     
-    void move(int dx,int dy) {
+    void translate(int dx, int dy) {
         x1 += dx;
         y1 += dy;
         x2 += dx;
@@ -437,6 +443,10 @@ public:
     
     void set(const RectD& b) { *this = b; }
     
+    bool isInfinite() const { return x1 <= kOfxFlagInfiniteMin || x2 >= kOfxFlagInfiniteMax || y1 <= kOfxFlagInfiniteMin || y2 >= kOfxFlagInfiniteMax; }
+
+    /*
+    // RectD are in canonical coordinates and should never be scaled!
     RectD scaled(double sx,double sy) const {
         RectD ret;
         ret.x1 = x1;
@@ -445,6 +455,7 @@ public:
         ret.y2 = (double)y2 * sy;
         return ret;
     }
+     */
     
     bool isNull() const { return (x2 <= x1) || (y2 <= y1); }
     
@@ -456,7 +467,14 @@ public:
         x2 = 0;
         y2 = 0;
     }
-    
+
+    void translate(int dx, int dy) {
+        x1 += dx;
+        y1 += dy;
+        x2 += dx;
+        y2 += dy;
+    }
+
     /*merge the current box with another integerBox.
      *The current box is the smallest box enclosing the two boxes
      (not the union, which is not a box).*/
@@ -535,7 +553,7 @@ public:
         other.y2 <= y2;
     }
     
-    bool contains(double x,double y) const {
+    bool contains(double x, double y) const {
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
 
@@ -548,8 +566,23 @@ public:
         std::cout << "top = " << y2 << std::endl;
     }
     
-    
-    
+    void toPixelEnclosing(const RenderScale& scale, RectI *rect) const
+    {
+        rect->x1 = std::floor(x1*scale.x);
+        rect->y1 = std::floor(y1*scale.y);
+        rect->x2 = std::ceil(x2*scale.x);
+        rect->y2 = std::ceil(y2*scale.y);
+    }
+
+    void toPixelEnclosing(unsigned int mipMapLevel, RectI *rect) const
+    {
+        double scale = 1./(1<<mipMapLevel);
+        rect->x1 = std::floor(x1*scale);
+        rect->y1 = std::floor(y1*scale);
+        rect->x2 = std::ceil(x2*scale);
+        rect->y2 = std::ceil(y2*scale);
+    }
+
 };
 
 /// equality of boxes
@@ -569,6 +602,17 @@ inline bool operator!=(const RectD& b1, const RectD& b2)
     b1.right() != b2.right() ||
     b1.top() != b2.top();
 }
+
+inline void
+RectI::toCanonical(unsigned int thisLevel, const RectD& rod, RectD *rect) const
+{
+    rect->x1 = x1 << thisLevel;
+    rect->x2 = x2 << thisLevel;
+    rect->y1 = y1 << thisLevel;
+    rect->y2 = y2 << thisLevel;
+    rect->intersect(rod, rect);
+}
+
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
 
 Q_DECLARE_METATYPE(RectD)

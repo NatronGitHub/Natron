@@ -76,17 +76,7 @@ namespace  {
      **/
     class ClipsThreadStorageSetter
     {
-        OfxImageEffectInstance* effect;
-        bool skipDiscarding;
-        
-        bool mipmaplvlSet;
-        bool renderedImageSet;
-        bool viewSet;
-        bool outputRoDSet;
-        bool frameRangeSet;
-        
     public:
-        
         ClipsThreadStorageSetter(OfxImageEffectInstance* effect,
                                  bool skipDiscarding, //< this is in case a recursive action is called
                                  bool setMipMapLevel,
@@ -96,7 +86,7 @@ namespace  {
                                  bool setView,
                                  int view,
                                  bool setOutputRoD,
-                                 const RectI& rod,
+                                 const RectD& rod, //!< output RoD in canonical coordinates
                                  bool setFrameRange,
                                  double first,double last)
         : effect(effect)
@@ -144,6 +134,15 @@ namespace  {
                 }
             }
         }
+    private:
+        OfxImageEffectInstance* effect;
+        bool skipDiscarding;
+
+        bool mipmaplvlSet;
+        bool renderedImageSet;
+        bool viewSet;
+        bool outputRoDSet;
+        bool frameRangeSet;
     };
 }
 
@@ -324,7 +323,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
                                      true, //< setView ?
                                      0,
                                      false, //< setOutputRoD ?
-                                     RectI(),
+                                     RectD(),
                                      false,
                                      0,0);
             
@@ -422,8 +421,90 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginIdentifier, int /*
         s = PLUGIN_GROUP_KEYER;
     } else if (pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") {
         s = PLUGIN_GROUP_FILTER;
+    } else if ((pluginIdentifier == "tuttle.anisotropicdiffusion") ||
+               (pluginIdentifier == "tuttle.anisotropictensors") ||
+               (pluginIdentifier == "tuttle.blur") ||
+               (pluginIdentifier == "tuttle.floodfill") ||
+               (pluginIdentifier == "tuttle.localmaxima") ||
+               (pluginIdentifier == "tuttle.nlmdenoiser") ||
+               (pluginIdentifier == "tuttle.sobel") ||
+               (pluginIdentifier == "tuttle.thinning")) {
+        s = PLUGIN_GROUP_FILTER;
+    } else if ((pluginIdentifier == "tuttle.bitdepth") ||
+               (pluginIdentifier == "tuttle.colorgradation") ||
+               (pluginIdentifier == "tuttle.colorsuppress") ||
+               (pluginIdentifier == "tuttle.colortransfer") ||
+               (pluginIdentifier == "tuttle.ctl") ||
+               (pluginIdentifier == "tuttle.gamma") ||
+               (pluginIdentifier == "tuttle.invert") ||
+               (pluginIdentifier == "tuttle.normalize")) {
+        s = PLUGIN_GROUP_COLOR;
+    } else if ((pluginIdentifier == "tuttle.ocio.colorspace") ||
+               (pluginIdentifier == "tuttle.ocio.lut")) {
+        out.push_back(PLUGIN_GROUP_COLOR);
+        s = "OCIO";
+    } else if ((pluginIdentifier == "tuttle.histogramkeyer") ||
+               (pluginIdentifier == "tuttle.idkeyer")) {
+        s = PLUGIN_GROUP_KEYER;
+    } else if ((pluginIdentifier == "tuttle.avreader") ||
+               (pluginIdentifier == "tuttle.avwriter") ||
+               (pluginIdentifier == "tuttle.dpxwriter") ||
+               (pluginIdentifier == "tuttle.exrreader") ||
+               (pluginIdentifier == "tuttle.exrwriter") ||
+               (pluginIdentifier == "tuttle.imagemagickreader") ||
+               (pluginIdentifier == "tuttle.jpeg2000reader") ||
+               (pluginIdentifier == "tuttle.jpeg2000writer") ||
+               (pluginIdentifier == "tuttle.jpegreader") ||
+               (pluginIdentifier == "tuttle.jpegwriter") ||
+               (pluginIdentifier == "tuttle.oiioreader") ||
+               (pluginIdentifier == "tuttle.oiiowriter") ||
+               (pluginIdentifier == "tuttle.pngreader") ||
+               (pluginIdentifier == "tuttle.pngwriter") ||
+               (pluginIdentifier == "tuttle.rawreader") ||
+               (pluginIdentifier == "tuttle.turbojpegreader") ||
+               (pluginIdentifier == "tuttle.turbojpegwriter")) {
+        out.push_back(PLUGIN_GROUP_IMAGE);
+        if (pluginIdentifier.endsWith("reader")) {
+            s = PLUGIN_GROUP_IMAGE_READERS;
+        } else {
+            s = PLUGIN_GROUP_IMAGE_WRITERS;
+        }
+    } else if ((pluginIdentifier == "tuttle.checkerboard") ||
+               (pluginIdentifier == "tuttle.colorbars") ||
+               (pluginIdentifier == "tuttle.colorcube") ||
+               (pluginIdentifier == "tuttle.colorwheel") ||
+               (pluginIdentifier == "tuttle.constant") ||
+               (pluginIdentifier == "tuttle.inputbuffer") ||
+               (pluginIdentifier == "tuttle.outputbuffer") ||
+               (pluginIdentifier == "tuttle.ramp") ||
+               (pluginIdentifier == "tuttle.seexpr")) {
+        s = PLUGIN_GROUP_IMAGE;
+    } else if ((pluginIdentifier == "tuttle.text")) {
+        s = PLUGIN_GROUP_PAINT;
+    } else if ((pluginIdentifier == "tuttle.component") ||
+               (pluginIdentifier == "tuttle.merge")) {
+        s = PLUGIN_GROUP_MERGE;
+    } else if ((pluginIdentifier == "tuttle.crop") ||
+               (pluginIdentifier == "tuttle.flip") ||
+               (pluginIdentifier == "tuttle.lensdistort") ||
+               (pluginIdentifier == "tuttle.pinning") ||
+               (pluginIdentifier == "tuttle.pushpixel") ||
+               (pluginIdentifier == "tuttle.resize") ||
+               (pluginIdentifier == "tuttle.swscale")) {
+        s = PLUGIN_GROUP_TRANSFORM;
+    } else if ((pluginIdentifier == "tuttle.mathoperator")) {
+        out.push_back(PLUGIN_GROUP_COLOR);
+        s = "Math";
+    } else if ((pluginIdentifier == "tuttle.timeshift")) {
+        s = PLUGIN_GROUP_TIME;
     }
-
+    /*
+     (pluginIdentifier == "tuttle.diff") ||
+     (pluginIdentifier == "tuttle.dummy") ||
+     (pluginIdentifier == "tuttle.histogram") ||
+     (pluginIdentifier == "tuttle.imagestatistics") ||
+     (pluginIdentifier == "tuttle.viewer") ||
+     */
     return out + s.split('/');
 }
 
@@ -719,7 +800,7 @@ OfxEffectInstance::supportedFileFormats() const
 }
 
 Natron::Status
-OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,RectI* rod)
+OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view, RectD* rod)
 {
     if (!_initialized) {
         return Natron::StatFailed;
@@ -751,24 +832,20 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
                                  true, //< setView ?
                                  view,
                                  false, //< setOutputRoD ?
-                                 RectI(),
+                                 RectD(),
                                  false, //< setFrameRange ?
                                  0,0);
-        
-        
-        
+
         stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
     }
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
-    
-    ofxRectDToEnclosedRectI(ofxRod,rod);
-    
+
     ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     ///1 pixel large image
-    if (rod->x2 == 1 && rod->y2 == 1 && rod->x1 == 0 && rod->y1 == 0) {
+    if (ofxRod.x2 == 1. && ofxRod.y2 == 1. && ofxRod.x1 == 0. && ofxRod.y1 == 0.) {
         int maxInputs = maximumInputs();
         for (int i = 0; i < maxInputs; ++i) {
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
@@ -797,24 +874,22 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(SequenceTime time,
     return RectD(rod.x1, rod.y1, rod.x2, rod.y2);
 }
 
-OfxRectD
-rectToOfxRect2D(const RectI b)
+static void
+rectToOfxRectD(const RectD& b, OfxRectD *out)
 {
-    OfxRectD out;
-    out.x1 = b.left();
-    out.x2 = b.right();
-    out.y1 = b.bottom();
-    out.y2 = b.top();
-    return out;
+    out->x1 = b.left();
+    out->x2 = b.right();
+    out->y1 = b.bottom();
+    out->y2 = b.top();
 }
 
 
 EffectInstance::RoIMap
-OfxEffectInstance::getRegionOfInterest(SequenceTime time,
-                                       RenderScale scale,
-                                       const RectI& outputRoD,
-                                       const RectI& renderWindow,
-                                       int view)
+OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
+                                        const RenderScale& scale,
+                                        const RectD& outputRoD,
+                                        const RectD& renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                        int view)
 {
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
@@ -852,9 +927,10 @@ OfxEffectInstance::getRegionOfInterest(SequenceTime time,
                                  outputRoD,
                                  false,
                                  0,0); //< setFrameRange ?
-        
+        OfxRectD roi;
+        rectToOfxRectD(renderWindow, &roi);
         stat = effect_->getRegionOfInterestAction((OfxTime)time, useScaleOne ? scaleOne : scale,
-                                                  rectToOfxRect2D(renderWindow), inputRois);
+                                                  roi, inputRois);
         
     }
     
@@ -865,9 +941,12 @@ OfxEffectInstance::getRegionOfInterest(SequenceTime time,
     if (stat != kOfxStatReplyDefault) {
         for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it) {
             EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-            RectI inputRoi;
-            ofxRectDToEnclosingRectI(it->second, &inputRoi);
-            
+            RectD inputRoi; // input RoI in canonical coordinates
+            inputRoi.x1 = it->second.x1;
+            inputRoi.x2 = it->second.x2;
+            inputRoi.y1 = it->second.y1;
+            inputRoi.y2 = it->second.y2;
+
             ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
             ///infinite rod.
             ifInfiniteclipRectToProjectDefault(&inputRoi);
@@ -977,7 +1056,7 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
 
 bool
 OfxEffectInstance::isIdentity(SequenceTime time,
-                              RenderScale scale,
+                              const RenderScale& scale,
                               const RectI& roi,
                               int view,
                               SequenceTime* inputTime,
@@ -1007,17 +1086,17 @@ OfxEffectInstance::isIdentity(SequenceTime time,
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                 skipDiscarding,
-                                 true, //< setMipMapLevel ?
-                                 mipmapLevel,
-                                 false, //< setRenderedImage ?
-                                 boost::shared_ptr<Image>(),
-                                 true, //< setView ?
-                                 view,
-                                 false, //< setOutputRoD ?
-                                 RectI(),
-                                 false,
-                                 0,0); //< setFrameRange ?
+                                            skipDiscarding,
+                                            true, //< setMipMapLevel ?
+                                            mipmapLevel,
+                                            false, //< setRenderedImage ?
+                                            boost::shared_ptr<Image>(),
+                                            true, //< setView ?
+                                            view,
+                                            false, //< setOutputRoD ?
+                                            RectD(),
+                                            false,
+                                            0,0); //< setFrameRange ?
         
         stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,useScaleOne ? scaleOne : scale,inputclip);
     }
@@ -1050,7 +1129,7 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
                                        SequenceTime last,
                                        SequenceTime step,
                                        bool interactive,
-                                       RenderScale scale,
+                                       const RenderScale& scale,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
                                        int view)
@@ -1070,17 +1149,17 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                 skipDiscarding,
-                                 true, //< setMipMapLevel ?
-                                 mipmapLevel,
-                                 false, //< setRenderedImage ?
-                                 boost::shared_ptr<Image>(),
-                                 true, //< setView ?
-                                 view,
-                                 false, //< setOutputRoD ?
-                                 RectI(),
-                                 false,
-                                 0,0); //< setFrameRange ?
+                                            skipDiscarding,
+                                            true, //< setMipMapLevel ?
+                                            mipmapLevel,
+                                            false, //< setRenderedImage ?
+                                            boost::shared_ptr<Image>(),
+                                            true, //< setView ?
+                                            view,
+                                            false, //< setOutputRoD ?
+                                            RectD(),
+                                            false,
+                                            0,0); //< setFrameRange ?
         
         stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
     }
@@ -1096,7 +1175,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
                                      SequenceTime last,
                                      SequenceTime step,
                                      bool interactive,
-                                     RenderScale scale,
+                                     const RenderScale& scale,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      int view)
@@ -1116,17 +1195,17 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                 skipDiscarding,
-                                 true, //< setMipMapLevel ?
-                                 mipmapLevel,
-                                 false, //< setRenderedImage ?
-                                 boost::shared_ptr<Image>(),
-                                 true, //< setView ?
-                                 view,
-                                 false, //< setOutputRoD ?
-                                 RectI(),
-                                 false,
-                                 0,0); //< setFrameRange ?
+                                            skipDiscarding,
+                                            true, //< setMipMapLevel ?
+                                            mipmapLevel,
+                                            false, //< setRenderedImage ?
+                                            boost::shared_ptr<Image>(),
+                                            true, //< setView ?
+                                            view,
+                                            false, //< setOutputRoD ?
+                                            RectD(),
+                                            false,
+                                            0,0); //< setFrameRange ?
         
         stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
     }
@@ -1139,7 +1218,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
 
 Natron::Status
 OfxEffectInstance::render(SequenceTime time,
-                          RenderScale scale,
+                          const RenderScale& scale,
                           const RectI& roi,
                           int view,
                           bool isSequentialRender,
@@ -1253,7 +1332,7 @@ OfxEffectInstance::initializeOverlayInteract()
 void
 OfxEffectInstance::drawOverlay(double /*scaleX*/,
                                double /*scaleY*/,
-                               const RectI& rod)
+                               const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return;
@@ -1308,7 +1387,7 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
                                     double /*scaleY*/,
                                     const QPointF& viewportPos,
                                     const QPointF& pos,
-                                    const RectI& rod)
+                                    const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1358,7 +1437,7 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
                                       double /*scaleY*/,
                                       const QPointF& viewportPos,
                                       const QPointF& pos,
-                                      const RectI& rod)
+                                      const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1409,7 +1488,7 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
                                   double /*scaleY*/,
                                   const QPointF& viewportPos,
                                   const QPointF& pos,
-                                  const RectI& rod)
+                                  const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1455,7 +1534,7 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
                                     double /*scaleY*/,
                                     Natron::Key key,
                                     Natron::KeyboardModifiers /*modifiers*/,
-                                    const RectI& rod)
+                                    const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;;
@@ -1494,7 +1573,7 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
                                   double /*scaleY*/,
                                   Natron::Key key,
                                   Natron::KeyboardModifiers /* modifiers*/,
-                                  const RectI& rod)
+                                  const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1534,7 +1613,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
                                       double /*scaleY*/,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers /*modifiers*/,
-                                      const RectI& rod)
+                                      const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1569,7 +1648,9 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/,const RectI& rod)
+OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
+                                        double /*scaleY*/,
+                                        const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1608,7 +1689,9 @@ OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,double /*scaleY*/,cons
 }
 
 bool
-OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,double /*scaleY*/,const RectI& rod)
+OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,
+                                      double /*scaleY*/,
+                                      const RectD& rod) //!< effect RoD in canonical coordinates
 {
     if (!_initialized) {
         return false;
@@ -1670,7 +1753,11 @@ natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReason reaso
 }
 
 void
-OfxEffectInstance::knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time)
+OfxEffectInstance::knobChanged(KnobI* k,
+                               Natron::ValueChangedReason reason,
+                               const RectD& rod, //!< effect RoD in canonical coordinates
+                               int view,
+                               SequenceTime time)
 {
     if (!_initialized) {
         return;
@@ -1828,13 +1915,14 @@ OfxEffectInstance::supportsTiles() const
 }
 
 bool
-OfxEffectInstance::supportsRenderScale() const
+OfxEffectInstance::supportsMultiResolution() const
 {
     return effectInstance()->supportsMultiResolution();
 }
 
 void
-OfxEffectInstance::beginEditKnobs() {
+OfxEffectInstance::beginEditKnobs()
+{
     effectInstance()->beginInstanceEditAction();
 }
 

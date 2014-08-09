@@ -325,7 +325,7 @@ Natron::Bitmap::getBitmapAt(int x, int y)
 Image::Image(const ImageKey& key,
              const boost::shared_ptr<const NonKeyParams>& params,
              const Natron::CacheAPI* cache)
-: CacheEntryHelper<unsigned char, ImageKey>(key,params,cache)
+: CacheEntryHelper<unsigned char, ImageKey>(key, params, cache)
 {
     const ImageParams* p = dynamic_cast<const ImageParams*>(params.get());
     _components = p->getComponents();
@@ -340,23 +340,24 @@ Image::Image(const ImageKey& key,
  then be handled by the user. Note that no view number is passed in parameter
  as it is not needed.*/
 Image::Image(ImageComponents components,
-             const RectI& regionOfDefinition,
+             const RectD& regionOfDefinition, //!< rod in canonical coordinates
+             const RectI& bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              Natron::ImageBitDepth bitdepth)
-: CacheEntryHelper<unsigned char,ImageKey>(makeKey(0,0,mipMapLevel,0),
-                                           boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
-                                                                                                 regionOfDefinition,
-                                                                                                 regionOfDefinition.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
-                                                                                                 bitdepth,
-                                                                                                 false ,
-                                                                                                 components,
-                                                                                                 -1,
-                                                                                                 0,
-                                                                                                 std::map<int,std::vector<RangeD> >())),NULL)
+: CacheEntryHelper<unsigned char,ImageKey>()
 {
-    // NOTE: before removing the following assert, please explain why an empty image may happen
-    assert(!regionOfDefinition.isNull());
-    
+    setCacheEntry(makeKey(0,0,mipMapLevel,0),
+                  boost::shared_ptr<const NonKeyParams>(new ImageParams(0,
+                                                                        regionOfDefinition,
+                                                                        bounds,
+                                                                        bitdepth,
+                                                                        false ,
+                                                                        components,
+                                                                        -1,
+                                                                        0,
+                                                                        std::map<int,std::vector<RangeD> >())),
+                  NULL);
+
     const ImageParams* p = dynamic_cast<const ImageParams*>(_params.get());
     _components = components;
     _bitDepth = bitdepth;
@@ -386,7 +387,7 @@ Image::makeKey(U64 nodeHashKey,
 
 boost::shared_ptr<ImageParams>
 Image::makeParams(int cost,
-                  const RectI& rod,
+                  const RectD& rod,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   ImageComponents components,
@@ -395,9 +396,11 @@ Image::makeParams(int cost,
                   int inputTimeIdentity,
                   const std::map<int, std::vector<RangeD> >& framesNeeded)
 {
+    RectI bounds;
+    rod.toPixelEnclosing(mipMapLevel, &bounds);
     return boost::shared_ptr<ImageParams>(new ImageParams(cost,
                                                           rod,
-                                                          rod.downscalePowerOfTwoSmallestEnclosing(mipMapLevel),
+                                                          bounds,
                                                           bitdepth,
                                                           isRoDProjectFormat,
                                                           components,
@@ -695,8 +698,12 @@ Image::halveRoIForDepth(const RectI& roi,
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
     srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
+    RectI dstRoI;
+    dstRoI.x1 = srcRoI.x1/2;
+    dstRoI.y1 = srcRoI.y1/2;
+    dstRoI.x2 = srcRoI.x2/2;
+    dstRoI.y2 = srcRoI.y2/2;
 
-    RectI dstRoI = srcRoI.downscalePowerOfTwo(1);
     // a few checks...
     // srcRoI must be inside srcBounds
     assert(srcRoI.x1 >= srcBounds.x1);
@@ -849,20 +856,23 @@ Image::halve1DImage(const RectI& roi,
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::downscaleMipMap(const RectI& roi,
-                       unsigned int level,
+                       unsigned int fromLevel,
+                       unsigned int toLevel,
                        Natron::Image* output) const
 {
     ///You should not call this function with a level equal to 0.
-    assert(level > 0);
+    assert(toLevel >  fromLevel);
+
+    assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
+           roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
+    RectD roiCanonical;
+    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+    RectI dstRoI;
+    roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
+
+    Natron::Image* tmpImg = new Natron::Image(getComponents(), getRoD(), dstRoI, toLevel, getBitDepth());
     
-    ///This is the portion we computed in buildMipMapLevel
-    RectI dstRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
-    
-    ///Even if the roi is this image's RoD, the
-    ///resulting mipmap of that roi should fit into output.
-    Natron::Image* tmpImg = new Natron::Image(getComponents(),dstRoI,0,getBitDepth());
-    
-    buildMipMapLevel(roi, level, tmpImg);
+    buildMipMapLevel(roi, toLevel - fromLevel, tmpImg);
   
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, false);
@@ -875,22 +885,29 @@ Image::downscaleMipMap(const RectI& roi,
 template <typename PIX, int maxValue>
 void
 Image::upscaleMipMapForDepth(const RectI& roi,
-                             unsigned int level,
+                             unsigned int fromLevel,
+                             unsigned int toLevel,
                              Natron::Image* output) const
 {
     assert(getBitDepth() == output->getBitDepth());
     assert((getBitDepth() == IMAGE_BYTE && sizeof(PIX) == 1) || (getBitDepth() == IMAGE_SHORT && sizeof(PIX) == 2) || (getBitDepth() == IMAGE_FLOAT && sizeof(PIX) == 4));
 
     ///You should not call this function with a level equal to 0.
-    assert(level > 0);
+    assert(fromLevel > toLevel);
+
+    assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
+           roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
 
     ///The source rectangle, intersected to this image region of definition in pixels
-    RectI srcRoi = roi;
-    srcRoi.intersect(getBounds(), &srcRoi);
+    RectD roiCanonical;
+    roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
+    RectI dstRoi;
+    roiCanonical.toPixelEnclosing(toLevel, &dstRoi);
 
-    RectI dstRoi = roi.upscalePowerOfTwo(level);
+    const RectI& srcRoi = roi;
+
     dstRoi.intersect(output->getBounds(), &dstRoi); //output may be a bit smaller than the upscaled RoI
-    int scale = 1 << level;
+    int scale = 1 << (fromLevel - toLevel);
 
     assert(output->getComponents() == getComponents());
     int components = getElementsCountForComponents(getComponents());
@@ -941,18 +958,19 @@ Image::upscaleMipMapForDepth(const RectI& roi,
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::upscaleMipMap(const RectI& roi,
-                     unsigned int level,
+                     unsigned int fromLevel,
+                     unsigned int toLevel,
                      Natron::Image* output) const
 {
     switch (getBitDepth()) {
         case IMAGE_BYTE:
-            upscaleMipMapForDepth<unsigned char, 255>(roi, level, output);
+            upscaleMipMapForDepth<unsigned char, 255>(roi, fromLevel, toLevel, output);
             break;
         case IMAGE_SHORT:
-            upscaleMipMapForDepth<unsigned short, 65535>(roi, level, output);
+            upscaleMipMapForDepth<unsigned short, 65535>(roi, fromLevel, toLevel, output);
             break;
         case IMAGE_FLOAT:
-            upscaleMipMapForDepth<float,1>(roi, level, output);
+            upscaleMipMapForDepth<float,1>(roi, fromLevel, toLevel, output);
             break;
         default:
             break;
@@ -1237,12 +1255,12 @@ void Image::buildMipMapLevel(const RectI& roi, unsigned int level, Natron::Image
     RectI previousRoI = roi;
     ///Build all the mipmap levels until we reach the one we are interested in
     for (unsigned int i = 1; i <= level; ++i) {
-        
+#pragma message WARN("wrong mipmap level FIXME")
         ///Halve the smallest enclosing po2 rect as we need to render a minimum of the renderWindow
         RectI halvedRoI = roi.downscalePowerOfTwoSmallestEnclosing(i);
-        
+
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image(getComponents(),halvedRoI,0,getBitDepth());
+        dstImg = new Natron::Image(getComponents(), getRoD(), halvedRoI, 0, getBitDepth());
         
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image

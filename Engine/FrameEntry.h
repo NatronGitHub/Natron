@@ -107,7 +107,7 @@ namespace Natron{
                                 const RenderScale& scale,
                                 const std::string& inputName);
         
-        static boost::shared_ptr<const FrameParams> makeParams(const RectI rod,
+        static boost::shared_ptr<const FrameParams> makeParams(const RectI& rod,
                                                                int bitDepth,
                                                                int texW,
                                                                int texH);

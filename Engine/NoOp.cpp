@@ -22,8 +22,8 @@ void NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) co
     depths->push_back(Natron::IMAGE_FLOAT);
 }
 
-bool NoOpBase::isIdentity(SequenceTime time,RenderScale /*scale*/,const RectI& /*roi*/,
-                int /*view*/,SequenceTime* inputTime,int* inputNb)
+bool NoOpBase::isIdentity(SequenceTime time, const RenderScale& /*scale*/,const RectI& /*roi*/,
+                          int /*view*/, SequenceTime* inputTime, int* inputNb)
 {
     *inputTime = time;
     *inputNb = 0;

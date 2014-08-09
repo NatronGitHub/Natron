@@ -767,7 +767,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 }
 
-void ViewerTab::onColorSpaceComboBoxChanged(int v)
+void
+ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
     Natron::ViewerColorSpace colorspace;
     if (v == 0) {
@@ -783,12 +784,16 @@ void ViewerTab::onColorSpaceComboBoxChanged(int v)
     _imp->_viewerNode->onColorSpaceChanged(colorspace);
 }
 
-void ViewerTab::onEnableViewerRoIButtonToggle(bool b) {
+void
+ViewerTab::onEnableViewerRoIButtonToggle(bool b)
+{
     _imp->_enableViewerRoI->setDown(b);
     _imp->viewer->setUserRoIEnabled(b);
 }
 
-void ViewerTab::updateViewsMenu(int count){
+void
+ViewerTab::updateViewsMenu(int count)
+{
     int currentIndex = _imp->_viewsComboBox->activeIndex();
     _imp->_viewsComboBox->clear();
     if(count == 1){
@@ -813,26 +818,35 @@ void ViewerTab::updateViewsMenu(int count){
     _imp->_gui->updateViewsActions(count);
 }
 
-void ViewerTab::setCurrentView(int view){
+void
+ViewerTab::setCurrentView(int view)
+{
     _imp->_viewsComboBox->setCurrentIndex(view);
 }
-int ViewerTab::getCurrentView() const{
+int
+ViewerTab::getCurrentView() const
+{
     QMutexLocker l(&_imp->_currentViewMutex);
     return _imp->_currentViewIndex;
 }
 
-void ViewerTab::toggleLoopMode(bool b){
+void
+ViewerTab::toggleLoopMode(bool b)
+{
     _imp->loopMode_Button->setDown(b);
     _imp->_viewerNode->getVideoEngine()->toggleLoopMode(b);
 }
 
-void ViewerTab::onClipToProjectButtonToggle(bool b){
+void
+ViewerTab::onClipToProjectButtonToggle(bool b)
+{
     _imp->_clipToProjectFormatButton->setDown(b);
     _imp->viewer->setClipToDisplayWindow(b);
 }
 
-void ViewerTab::onEngineStarted(bool forward,int frameCount){
-    
+void
+ViewerTab::onEngineStarted(bool forward,int frameCount)
+{
     if (frameCount > 1) {
         _imp->play_Forward_Button->setChecked(forward);
         _imp->play_Forward_Button->setDown(forward);
@@ -841,14 +855,18 @@ void ViewerTab::onEngineStarted(bool forward,int frameCount){
     }
 }
 
-void ViewerTab::onEngineStopped(){
+void
+ViewerTab::onEngineStopped()
+{
     _imp->play_Forward_Button->setChecked(false);
     _imp->play_Forward_Button->setDown(false);
     _imp->play_Backward_Button->setChecked(false);
     _imp->play_Backward_Button->setDown(false);
 }
 
-void ViewerTab::updateZoomComboBox(int value){
+void
+ViewerTab::updateZoomComboBox(int value)
+{
     assert(value > 0);
     QString str = QString::number(value);
     str.append(QChar('%'));
@@ -859,7 +877,9 @@ void ViewerTab::updateZoomComboBox(int value){
 
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
-void ViewerTab::startPause(bool b){
+void
+ViewerTab::startPause(bool b)
+{
     abortRendering();
     if(b){
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
@@ -870,7 +890,9 @@ void ViewerTab::startPause(bool b){
                                                     false);/*force preview?*/
     }
 }
-void ViewerTab::abortRendering()
+
+void
+ViewerTab::abortRendering()
 {
     ///Abort all viewers because they are all synchronised.
     const std::list<boost::shared_ptr<NodeGui> >& activeNodes = _imp->_gui->getNodeGraph()->getAllActiveNodes();
@@ -881,7 +903,10 @@ void ViewerTab::abortRendering()
         }
     }
 }
-void ViewerTab::startBackward(bool b){
+
+void
+ViewerTab::startBackward(bool b)
+{
     abortRendering();
     if(b){
         _imp->_viewerNode->getVideoEngine()->render(-1, /*frame count*/
@@ -892,40 +917,66 @@ void ViewerTab::startBackward(bool b){
                                                     false);/*force preview?*/
     }
 }
-void ViewerTab::seek(SequenceTime time){
+
+void
+ViewerTab::seek(SequenceTime time)
+{
     _imp->_currentFrameBox->setValue(time);
     _imp->_timeLineGui->seek(time);
 }
 
-void ViewerTab::previousFrame(){
+void
+ViewerTab::previousFrame()
+{
     seek(_imp->_timeLineGui->currentFrame()-1);
 }
-void ViewerTab::nextFrame(){
+
+void
+ViewerTab::nextFrame()
+{
     seek(_imp->_timeLineGui->currentFrame()+1);
 }
-void ViewerTab::previousIncrement(){
+
+void
+ViewerTab::previousIncrement()
+{
     seek(_imp->_timeLineGui->currentFrame()-_imp->incrementSpinBox->value());
 }
-void ViewerTab::nextIncrement(){
+
+void
+ViewerTab::nextIncrement()
+{
     seek(_imp->_timeLineGui->currentFrame()+_imp->incrementSpinBox->value());
 }
-void ViewerTab::firstFrame(){
+
+void
+ViewerTab::firstFrame()
+{
     seek(_imp->_timeLineGui->leftBound());
 }
-void ViewerTab::lastFrame(){
+
+void
+ViewerTab::lastFrame()
+{
     seek(_imp->_timeLineGui->rightBound());
 }
 
-void ViewerTab::onTimeLineTimeChanged(SequenceTime time,int /*reason*/){
+void
+ViewerTab::onTimeLineTimeChanged(SequenceTime time,
+                                 int /*reason*/)
+{
     _imp->_currentFrameBox->setValue(time);
 }
 
-void ViewerTab::onCurrentTimeSpinBoxChanged(double time){
+void
+ViewerTab::onCurrentTimeSpinBoxChanged(double time)
+{
     _imp->_timeLineGui->seek(time);
 }
 
-
-void ViewerTab::centerViewer(){
+void
+ViewerTab::centerViewer()
+{
     _imp->viewer->fitImageToFormat();
     if(_imp->viewer->displayingImage()){
         _imp->_viewerNode->refreshAndContinueRender(false,true);
@@ -935,7 +986,9 @@ void ViewerTab::centerViewer(){
     }
 }
 
-void ViewerTab::refresh(){
+void
+ViewerTab::refresh()
+{
     _imp->_viewerNode->forceFullComputationOnNextFrame();
     _imp->_viewerNode->updateTreeAndRender();
 }
@@ -957,24 +1010,27 @@ ViewerTab::~ViewerTab()
     }
 }
 
-bool ViewerTab::isPlayingForward() const
+bool
+ViewerTab::isPlayingForward() const
 {
     return _imp->play_Forward_Button->isDown();
 }
 
-bool ViewerTab::isPlayingBackward() const
+bool
+ViewerTab::isPlayingBackward() const
 {
     return _imp->play_Backward_Button->isDown();
 }
 
-void ViewerTab::keyPressEvent ( QKeyEvent * event ){
-
+void
+ViewerTab::keyPressEvent(QKeyEvent * event)
+{
     if (event->key() == Qt::Key_Space) {
         if (parentWidget()) {
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
-    }else if (event->key() == Qt::Key_Y && !event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_Y && !event->modifiers().testFlag(Qt::ControlModifier)
               && !event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
@@ -983,7 +1039,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         } else {
             _imp->_viewerChannels->setCurrentIndex(0);
         }
-    }else if (event->key() == Qt::Key_R && !event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_R && !event->modifiers().testFlag(Qt::ControlModifier)
               && !event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
@@ -992,7 +1048,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         } else {
             _imp->_viewerChannels->setCurrentIndex(2);
         }
-    }else if (event->key() == Qt::Key_G && !event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_G && !event->modifiers().testFlag(Qt::ControlModifier)
               && !event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
@@ -1001,7 +1057,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         } else {
             _imp->_viewerChannels->setCurrentIndex(3);
         }
-    }else if (event->key() == Qt::Key_B  && !event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_B  && !event->modifiers().testFlag(Qt::ControlModifier)
               && !event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
@@ -1010,7 +1066,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         } else {
             _imp->_viewerChannels->setCurrentIndex(4);
         }
-    }else if (event->key() == Qt::Key_A && !event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_A && !event->modifiers().testFlag(Qt::ControlModifier)
               && !event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::AltModifier)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
@@ -1019,34 +1075,28 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         } else {
             _imp->_viewerChannels->setCurrentIndex(5);
         }
-    }
-    else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
+    } else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
                                          && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         previousFrame();
-    }
-    else if (event->key() == Qt::Key_J && !event->modifiers().testFlag(Qt::ShiftModifier)
+    } else if (event->key() == Qt::Key_J && !event->modifiers().testFlag(Qt::ShiftModifier)
              && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         startBackward(!_imp->play_Backward_Button->isDown());
-    }
-    else if (event->key() == Qt::Key_K && !event->modifiers().testFlag(Qt::ShiftModifier)
+    } else if (event->key() == Qt::Key_K && !event->modifiers().testFlag(Qt::ShiftModifier)
              && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         abortRendering();
-    }
-    else if (event->key() == Qt::Key_L && !event->modifiers().testFlag(Qt::ShiftModifier)
+    } else if (event->key() == Qt::Key_L && !event->modifiers().testFlag(Qt::ShiftModifier)
              && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         startPause(!_imp->play_Forward_Button->isDown());
         
-    }
-    else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
+    } else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
                                             && !event->modifiers().testFlag(Qt::ControlModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         nextFrame();
-    }
-    else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
+    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
               && !event->modifiers().testFlag(Qt::ControlModifier)) {
         //prev incr
         previousIncrement();
@@ -1065,14 +1115,12 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
                && !event->modifiers().testFlag(Qt::AltModifier)) {
         //last frame
         lastFrame();
-    }
-    else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
             && event->modifiers().testFlag(Qt::ShiftModifier)
              && !event->modifiers().testFlag(Qt::AltModifier)) {
         //prev key
         _imp->app->getTimeLine()->goToPreviousKeyframe();
-    }
-    else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
+    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
             &&  event->modifiers().testFlag(Qt::ShiftModifier)) {
         //next key
         _imp->app->getTimeLine()->goToNextKeyframe();
@@ -1116,23 +1164,28 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
 }
 
 
-bool ViewerTab::isPlayForwardButtonDown() const
+bool
+ViewerTab::isPlayForwardButtonDown() const
 {
     return _imp->play_Forward_Button->isDown();
 }
 
-bool ViewerTab::isPlayBackwardButtonDown() const
+bool
+ViewerTab::isPlayBackwardButtonDown() const
 {
     return _imp->play_Backward_Button->isDown();
 }
 
-void ViewerTab::onGainSliderChanged(double v)
+void
+ViewerTab::onGainSliderChanged(double v)
 {
     _imp->viewer->setGain(v);
     _imp->_viewerNode->onGainChanged(v);
 }
 
-void ViewerTab::onViewerChannelsChanged(int i){
+void
+ViewerTab::onViewerChannelsChanged(int i)
+{
     ViewerInstance::DisplayChannels channels;
     switch (i) {
         case 0:
@@ -1159,7 +1212,10 @@ void ViewerTab::onViewerChannelsChanged(int i){
     }
     _imp->_viewerNode->setDisplayChannels(channels);
 }
-bool ViewerTab::eventFilter(QObject *target, QEvent *event){
+
+bool
+ViewerTab::eventFilter(QObject *target, QEvent *event)
+{
     if (event->type() == QEvent::MouseButtonPress) {
         if (_imp->_gui && _imp->app) {
             _imp->_gui->selectNode(_imp->app->getNodeGui(_imp->_viewerNode->getNode()));
@@ -1169,21 +1225,26 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     return QWidget::eventFilter(target, event);
 }
 
-void ViewerTab::disconnectViewer(){
+void
+ViewerTab::disconnectViewer()
+{
     _imp->viewer->disconnectViewer();
 }
 
-
-
-QSize ViewerTab::minimumSizeHint() const{
+QSize
+ViewerTab::minimumSizeHint() const
+{
     return QWidget::minimumSizeHint();
 }
-QSize ViewerTab::sizeHint() const{
+
+QSize ViewerTab::sizeHint() const
+{
     return QWidget::sizeHint();
 }
 
-
-void ViewerTab::showView(int view){
+void
+ViewerTab::showView(int view)
+{
     QMutexLocker l(&_imp->_currentViewMutex);
     _imp->_currentViewIndex = view;
     abortRendering();
@@ -1192,7 +1253,9 @@ void ViewerTab::showView(int view){
 }
 
 
-void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
+void
+ViewerTab::drawOverlays(double scaleX,double scaleY) const
+{
     if (!_imp->app || _imp->app->isClosing()) {
         return;
     }
@@ -1216,8 +1279,13 @@ void ViewerTab::drawOverlays(double scaleX,double scaleY) const{
     }
 }
 
-bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e){
-    
+bool
+ViewerTab::notifyOverlaysPenDown(double scaleX,
+                                 double scaleY,
+                                 const QPointF& viewportPos,
+                                 const QPointF& pos,
+                                 QMouseEvent* e)
+{
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
@@ -1256,7 +1324,11 @@ bool ViewerTab::notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF&
     return didSomething;
 }
 
-bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
+bool
+ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
+                                        double scaleY,
+                                        const QPointF& viewportPos,
+                                        const QPointF& pos)
 {
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
@@ -1277,8 +1349,12 @@ bool ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const Q
     return false;
 }
 
-bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
-    
+bool
+ViewerTab::notifyOverlaysPenMotion(double scaleX,
+                                   double scaleY,
+                                   const QPointF& viewportPos,
+                                   const QPointF& pos)
+{
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
@@ -1317,13 +1393,16 @@ bool ViewerTab::notifyOverlaysPenMotion(double scaleX,double scaleY,const QPoint
     return didSomething;
 }
 
-bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos){
-    
+bool
+ViewerTab::notifyOverlaysPenUp(double scaleX,
+                               double scaleY,
+                               const QPointF& viewportPos,
+                               const QPointF& pos)
+{
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
-    
     
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
@@ -1352,16 +1431,15 @@ bool ViewerTab::notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& v
             didSomething  =  true;
         }
     }
-    
-    
-   
-    
 
     return didSomething ;
 }
 
-bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
-    
+bool
+ViewerTab::notifyOverlaysKeyDown(double scaleX,
+                                 double scaleY,
+                                 QKeyEvent* e)
+{
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
@@ -1402,8 +1480,11 @@ bool ViewerTab::notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e){
     return didSomething;
 }
 
-bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
-    
+bool
+ViewerTab::notifyOverlaysKeyUp(double scaleX,
+                               double scaleY,
+                               QKeyEvent* e)
+{
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
@@ -1445,8 +1526,11 @@ bool ViewerTab::notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e){
     return didSomething;
 }
 
-bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e){
-    
+bool
+ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
+                                   double scaleY,
+                                   QKeyEvent* e)
+{
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
@@ -1476,8 +1560,10 @@ bool ViewerTab::notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e
     return false;
 }
 
-bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
-    
+bool
+ViewerTab::notifyOverlaysFocusGained(double scaleX,
+                                     double scaleY)
+{
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
@@ -1498,9 +1584,10 @@ bool ViewerTab::notifyOverlaysFocusGained(double scaleX,double scaleY){
     return ret;
 }
 
-bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
-    
-    
+bool
+ViewerTab::notifyOverlaysFocusLost(double scaleX,
+                                   double scaleY)
+{
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
@@ -1521,11 +1608,15 @@ bool ViewerTab::notifyOverlaysFocusLost(double scaleX,double scaleY){
     return ret;
 }
 
-bool ViewerTab::isClippedToProject() const {
+bool
+ViewerTab::isClippedToProject() const
+{
     return _imp->viewer->isClippingImageToProjectWindow();
 }
 
-std::string ViewerTab::getColorSpace() const {
+std::string
+ViewerTab::getColorSpace() const
+{
     Natron::ViewerColorSpace lut = (Natron::ViewerColorSpace)_imp->_viewerNode->getLutType();
     switch (lut) {
         case Natron::Linear:
@@ -1543,47 +1634,64 @@ std::string ViewerTab::getColorSpace() const {
     }
 }
 
-void ViewerTab::setUserRoIEnabled(bool b) {
+void
+ViewerTab::setUserRoIEnabled(bool b)
+{
     onEnableViewerRoIButtonToggle(b);
 }
 
-bool ViewerTab::isAutoContrastEnabled() const {
+bool
+ViewerTab::isAutoContrastEnabled() const
+{
     return _imp->_viewerNode->isAutoContrastEnabled();
 }
 
-void ViewerTab::setAutoContrastEnabled(bool b) {
+void
+ViewerTab::setAutoContrastEnabled(bool b)
+{
     _imp->_autoContrast->setChecked(b);
     _imp->_gainSlider->setEnabled(!b);
     _imp->_gainBox->setEnabled(!b);
     _imp->_viewerNode->onAutoContrastChanged(b,true);
 }
 
-void ViewerTab::setUserRoI(const RectI& r) {
+void
+ViewerTab::setUserRoI(const RectD& r)
+{
     _imp->viewer->setUserRoI(r);
 }
 
-void ViewerTab::setClipToProject(bool b) {
+void
+ViewerTab::setClipToProject(bool b)
+{
     onClipToProjectButtonToggle(b);
 }
 
-void ViewerTab::setColorSpace(const std::string& colorSpaceName) {
+void
+ViewerTab::setColorSpace(const std::string& colorSpaceName)
+{
     int index = _imp->_viewerColorSpace->itemIndex(colorSpaceName.c_str());
     if (index != -1) {
         _imp->_viewerColorSpace->setCurrentIndex(index);
     }
 }
 
-void ViewerTab::setGain(double d) {
+void
+ViewerTab::setGain(double d)
+{
     _imp->_gainBox->setValue(d);
     _imp->_gainSlider->seekScalePosition(d);
     _imp->_viewerNode->onGainChanged(d);
 }
 
-double ViewerTab::getGain() const {
+double
+ViewerTab::getGain() const
+{
     return _imp->_viewerNode->getGain();
 }
 
-void ViewerTab::setMipMapLevel(int level)
+void
+ViewerTab::setMipMapLevel(int level)
 {
     if (level > 0) {
         _imp->_renderScaleCombo->setCurrentIndex(level - 1);
@@ -1592,32 +1700,39 @@ void ViewerTab::setMipMapLevel(int level)
     _imp->_viewerNode->onMipMapLevelChanged(level);
 }
 
-int ViewerTab::getMipMapLevel() const
+int
+ViewerTab::getMipMapLevel() const
 {
     return _imp->_viewerNode->getMipMapLevel();
 }
 
-void ViewerTab::setRenderScaleActivated(bool act)
+void
+ViewerTab::setRenderScaleActivated(bool act)
 {
     onRenderScaleButtonClicked(act);
 }
 
-bool ViewerTab::getRenderScaleActivated() const
+bool
+ViewerTab::getRenderScaleActivated() const
 {
     return _imp->_viewerNode->getMipMapLevel() != 0;
 }
 
-void ViewerTab::setZoomOrPannedSinceLastFit(bool enabled)
+void
+ViewerTab::setZoomOrPannedSinceLastFit(bool enabled)
 {
     _imp->viewer->setZoomOrPannedSinceLastFit(enabled);
 }
 
-bool ViewerTab::getZoomOrPannedSinceLastFit() const
+bool
+ViewerTab::getZoomOrPannedSinceLastFit() const
 {
     return _imp->viewer->getZoomOrPannedSinceLastFit();
 }
 
-std::string ViewerTab::getChannelsString() const {
+std::string
+ViewerTab::getChannelsString() const
+{
     ViewerInstance::DisplayChannels c = _imp->_viewerNode->getChannels();
     switch (c) {
         case ViewerInstance::RGB:
@@ -1638,24 +1753,42 @@ std::string ViewerTab::getChannelsString() const {
     }
 }
 
-void ViewerTab::setChannels(const std::string& channelsStr) {
+void
+ViewerTab::setChannels(const std::string& channelsStr)
+{
     int index = _imp->_viewerChannels->itemIndex(channelsStr.c_str());
     if (index != -1) {
         _imp->_viewerChannels->setCurrentIndex(index);
     }
 }
 
-ViewerGL* ViewerTab::getViewer() const {
+ViewerGL*
+ViewerTab::getViewer() const
+{
     return _imp->viewer;
 }
 
-ViewerInstance* ViewerTab::getInternalNode() const { return _imp->_viewerNode; }
+ViewerInstance*
+ViewerTab::getInternalNode() const
+{
+    return _imp->_viewerNode;
+}
 
-Gui* ViewerTab::getGui() const { return _imp->_gui; }
+Gui*
+ViewerTab::getGui() const
+{
+    return _imp->_gui;
+}
 
-void ViewerTab::enterEvent(QEvent*)  { setFocus(); }
+void
+ViewerTab::enterEvent(QEvent*)
+{
+    setFocus();
+}
 
-void ViewerTab::onAutoContrastChanged(bool b) {
+void
+ViewerTab::onAutoContrastChanged(bool b)
+{
     _imp->_gainSlider->setEnabled(!b);
     _imp->_gainBox->setEnabled(!b);
     _imp->_viewerNode->onAutoContrastChanged(b,b);
@@ -1664,7 +1797,8 @@ void ViewerTab::onAutoContrastChanged(bool b) {
     }
 }
 
-void ViewerTab::onRenderScaleComboIndexChanged(int index)
+void
+ViewerTab::onRenderScaleComboIndexChanged(int index)
 {
     int level;
     if (_imp->_renderScaleActive) {
@@ -1675,7 +1809,8 @@ void ViewerTab::onRenderScaleComboIndexChanged(int index)
     _imp->_viewerNode->onMipMapLevelChanged(level);
 }
 
-void ViewerTab::onRenderScaleButtonClicked(bool checked)
+void
+ViewerTab::onRenderScaleButtonClicked(bool checked)
 {
     _imp->_activateRenderScale->blockSignals(true);
     _imp->_renderScaleActive = checked;
@@ -1685,13 +1820,15 @@ void ViewerTab::onRenderScaleButtonClicked(bool checked)
     onRenderScaleComboIndexChanged(_imp->_renderScaleCombo->activeIndex());
 }
 
-void ViewerTab::setInfoBarResolution(const Format& f)
+void
+ViewerTab::setInfoBarResolution(const Format& f)
 {
     _imp->_infosWidget[0]->setResolution(f);
     _imp->_infosWidget[1]->setResolution(f);
 }
 
-void ViewerTab::createTrackerInterface(NodeGui* n)
+void
+ViewerTab::createTrackerInterface(NodeGui* n)
 {
     boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
     boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
@@ -1707,7 +1844,8 @@ void ViewerTab::createTrackerInterface(NodeGui* n)
     }
 }
 
-void ViewerTab::setTrackerInterface(NodeGui* n)
+void
+ViewerTab::setTrackerInterface(NodeGui* n)
 {
     assert(n);
     std::map<NodeGui*,TrackerGui*>::iterator it = _imp->_trackerNodes.find(n);
@@ -1744,13 +1882,14 @@ void ViewerTab::setTrackerInterface(NodeGui* n)
 
 }
 
-void ViewerTab::removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother)
+void
+ViewerTab::removeTrackerInterface(NodeGui* n,bool permanently,bool removeAndDontSetAnother)
 {
     
     std::map<NodeGui*,TrackerGui*>::iterator it = _imp->_trackerNodes.find(n);
     if (it != _imp->_trackerNodes.end()) {
         if (!_imp->_gui) {
-            if (permanantly) {
+            if (permanently) {
                 delete it->second;
             }
             return;
@@ -1786,7 +1925,7 @@ void ViewerTab::removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAn
             
         }
         
-        if (permanantly) {
+        if (permanently) {
             delete it->second;
             _imp->_trackerNodes.erase(it);
         }
@@ -1794,7 +1933,8 @@ void ViewerTab::removeTrackerInterface(NodeGui* n,bool permanantly,bool removeAn
 
 }
 
-void ViewerTab::createRotoInterface(NodeGui* n)
+void
+ViewerTab::createRotoInterface(NodeGui* n)
 {
     RotoGui* roto = new RotoGui(n,this,getRotoGuiSharedData(n));
     QObject::connect(roto,SIGNAL(selectedToolChanged(int)),_imp->_gui,SLOT(onRotoSelectedToolChanged(int)));
@@ -1810,7 +1950,8 @@ void ViewerTab::createRotoInterface(NodeGui* n)
 }
 
 
-void ViewerTab::setRotoInterface(NodeGui* n)
+void
+ViewerTab::setRotoInterface(NodeGui* n)
 {
     assert(n);
     std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.find(n);
@@ -1851,7 +1992,10 @@ void ViewerTab::setRotoInterface(NodeGui* n)
     
 }
 
-void ViewerTab::removeRotoInterface(NodeGui* n,bool permanantly,bool removeAndDontSetAnother)
+void
+ViewerTab::removeRotoInterface(NodeGui* n,
+                               bool permanently,
+                               bool removeAndDontSetAnother)
 {
     std::map<NodeGui*,RotoGui*>::iterator it = _imp->_rotoNodes.find(n);
     if (it != _imp->_rotoNodes.end()) {
@@ -1892,26 +2036,32 @@ void ViewerTab::removeRotoInterface(NodeGui* n,bool permanantly,bool removeAndDo
 
         }
     
-        if (permanantly) {
+        if (permanently) {
             delete it->second;
             _imp->_rotoNodes.erase(it);
         }
     }
 }
 
-void ViewerTab::getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,std::pair<NodeGui*,RotoGui*>* currentRoto) const
+void
+ViewerTab::getRotoContext(std::map<NodeGui*,RotoGui*>* rotoNodes,
+                          std::pair<NodeGui*,RotoGui*>* currentRoto) const
 {
     *rotoNodes = _imp->_rotoNodes;
     *currentRoto = _imp->_currentRoto;
 }
 
-void ViewerTab::getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes,std::pair<NodeGui*,TrackerGui*>* currentTracker) const
+void
+ViewerTab::getTrackerContext(std::map<NodeGui*,TrackerGui*>* trackerNodes,
+                             std::pair<NodeGui*,TrackerGui*>* currentTracker) const
 {
     *trackerNodes = _imp->_trackerNodes;
     *currentTracker = _imp->_currentTracker;
 }
 
-void ViewerTab::onRotoRoleChanged(int previousRole,int newRole)
+void
+ViewerTab::onRotoRoleChanged(int previousRole,
+                             int newRole)
 {
     RotoGui* roto = qobject_cast<RotoGui*>(sender());
     if (roto) {
@@ -1930,14 +2080,17 @@ void ViewerTab::onRotoRoleChanged(int previousRole,int newRole)
     }
 }
 
-void ViewerTab::updateRotoSelectedTool(int tool,RotoGui* sender)
+void
+ViewerTab::updateRotoSelectedTool(int tool,
+                                  RotoGui* sender)
 {
     if (_imp->_currentRoto.second && _imp->_currentRoto.second != sender) {
         _imp->_currentRoto.second->setCurrentTool((RotoGui::Roto_Tool)tool,false);
     }
 }
 
-boost::shared_ptr<RotoGuiSharedData> ViewerTab::getRotoGuiSharedData(NodeGui* node) const
+boost::shared_ptr<RotoGuiSharedData>
+ViewerTab::getRotoGuiSharedData(NodeGui* node) const
 {
     std::map<NodeGui*,RotoGui*>::const_iterator found = _imp->_rotoNodes.find(node);
     if (found == _imp->_rotoNodes.end()) {
@@ -1947,12 +2100,14 @@ boost::shared_ptr<RotoGuiSharedData> ViewerTab::getRotoGuiSharedData(NodeGui* no
     }
 }
 
-void ViewerTab::onRotoEvaluatedForThisViewer()
+void
+ViewerTab::onRotoEvaluatedForThisViewer()
 {
     _imp->_gui->onViewerRotoEvaluated(this);
 }
 
-void ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
+void
+ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
 {
     NodeGui* n = qobject_cast<NodeGui*>(sender());
     if (n) {
@@ -1966,7 +2121,8 @@ void ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
     }
 }
 
-void ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
+void
+ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
 {
     NodeGui* n = qobject_cast<NodeGui*>(sender());
     if (n) {
@@ -1980,13 +2136,15 @@ void ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
     }
 }
 
-void ViewerTab::notifyAppClosing()
+void
+ViewerTab::notifyAppClosing()
 {
     _imp->_gui = 0;
     _imp->app = 0;
 }
 
-void ViewerTab::onCompositingOperatorIndexChanged(int index)
+void
+ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
     ViewerCompositingOperator newOp,oldOp;
     {
@@ -2035,7 +2193,8 @@ void ViewerTab::onCompositingOperatorIndexChanged(int index)
     _imp->viewer->updateGL();
 }
 
-void ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
+void
+ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
 {
     int comboIndex ;
     switch (op) {
@@ -2065,14 +2224,16 @@ void ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperator op)
     _imp->viewer->updateGL();
 }
 
-ViewerCompositingOperator ViewerTab::getCompositingOperator() const
+ViewerCompositingOperator
+ViewerTab::getCompositingOperator() const
 {
     QMutexLocker l(&_imp->compOperatorMutex);
     return _imp->_compOperator;
 }
 
 ///Called when the user change the combobox choice
-void ViewerTab::onFirstInputNameChanged(const QString& text)
+void
+ViewerTab::onFirstInputNameChanged(const QString& text)
 {
     int inputIndex = -1;
     for (InputNamesMap::iterator it = _imp->_inputNamesMap.begin(); it!= _imp->_inputNamesMap.end(); ++it) {
@@ -2086,7 +2247,8 @@ void ViewerTab::onFirstInputNameChanged(const QString& text)
 }
 
 ///Called when the user change the combobox choice
-void ViewerTab::onSecondInputNameChanged(const QString& text)
+void
+ViewerTab::onSecondInputNameChanged(const QString& text)
 {
     int inputIndex = -1;
     for (InputNamesMap::iterator it = _imp->_inputNamesMap.begin(); it!= _imp->_inputNamesMap.end(); ++it) {
@@ -2115,7 +2277,8 @@ void ViewerTab::onSecondInputNameChanged(const QString& text)
 }
 
 ///This function is called only when the user changed inputs on the node graph
-void ViewerTab::onActiveInputsChanged()
+void
+ViewerTab::onActiveInputsChanged()
 {
     int activeInputs[2];
     _imp->_viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
@@ -2162,7 +2325,8 @@ void ViewerTab::onActiveInputsChanged()
     }
 }
 
-void ViewerTab::onInputChanged(int inputNb)
+void
+ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
     EffectInstance* inp = _imp->_viewerNode->input(inputNb);
@@ -2203,7 +2367,9 @@ void ViewerTab::onInputChanged(int inputNb)
     _imp->viewer->clearPersistentMessage();
 }
 
-void ViewerTab::onInputNameChanged(int inputNb,const QString& name)
+void
+ViewerTab::onInputNameChanged(int inputNb,
+                              const QString& name)
 {
     InputNamesMap::iterator found = _imp->_inputNamesMap.find(inputNb);
     assert(found != _imp->_inputNamesMap.end());
@@ -2216,7 +2382,9 @@ void ViewerTab::onInputNameChanged(int inputNb,const QString& name)
     
 }
 
-void ViewerTab::manageSlotsForInfoWidget(int textureIndex,bool connect)
+void
+ViewerTab::manageSlotsForInfoWidget(int textureIndex,
+                                    bool connect)
 {
     VideoEngine* vengine = _imp->_viewerNode->getVideoEngine().get();
     if (connect) {
@@ -2229,12 +2397,16 @@ void ViewerTab::manageSlotsForInfoWidget(int textureIndex,bool connect)
     }
 }
 
-void ViewerTab::onImageFormatChanged(int texIndex,int components,int bitdepth)
+void
+ViewerTab::onImageFormatChanged(int texIndex,
+                                int components,
+                                int bitdepth)
 {
     _imp->_infosWidget[texIndex]->setImageFormat((ImageComponents)components, (ImageBitDepth)bitdepth);
 }
 
-void ViewerTab::onFrameRangeEditingFinished()
+void
+ViewerTab::onFrameRangeEditingFinished()
 {
     QString text = _imp->frameRangeEdit->text();
     ///try to parse the frame range, if failed set it back to what the timeline currently is
@@ -2281,7 +2453,8 @@ void ViewerTab::onFrameRangeEditingFinished()
     _imp->frameRangeEdit->adjustSize();
 }
 
-void ViewerTab::onLockFrameRangeButtonClicked(bool toggled)
+void
+ViewerTab::onLockFrameRangeButtonClicked(bool toggled)
 {
     _imp->lockFrameRangeButton->setDown(toggled);
     _imp->frameRangeEdit->setReadOnly(toggled);
@@ -2291,36 +2464,44 @@ void ViewerTab::onLockFrameRangeButtonClicked(bool toggled)
     }
 }
 
-void ViewerTab::setFrameRangeLocked(bool toggled)
+void
+ViewerTab::setFrameRangeLocked(bool toggled)
 {
     _imp->lockFrameRangeButton->setChecked(toggled);
     onLockFrameRangeButtonClicked(toggled);
 }
 
-void ViewerTab::onTimelineBoundariesChanged(SequenceTime first,SequenceTime second,int /*reason*/)
+void
+ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
+                                       SequenceTime second,
+                                       int /*reason*/)
 {
     QString text = QString("%1 - %2").arg(first).arg(second);
     _imp->frameRangeEdit->setText(text);
     _imp->frameRangeEdit->adjustSize();
 }
 
-bool ViewerTab::isFrameRangeLocked() const
+bool
+ViewerTab::isFrameRangeLocked() const
 {
     QMutexLocker l(&_imp->frameRangeLockedMutex);
     return _imp->frameRangeLocked;
 }
 
-void ViewerTab::connectToViewerCache()
+void
+ViewerTab::connectToViewerCache()
 {
     _imp->_timeLineGui->connectSlotsToViewerCache();
 }
 
-void ViewerTab::disconnectFromViewerCache()
+void
+ViewerTab::disconnectFromViewerCache()
 {
     _imp->_timeLineGui->disconnectSlotsFromViewerCache();
 }
 
-void ViewerTab::clearTimelineCacheLine()
+void
+ViewerTab::clearTimelineCacheLine()
 {
     if (_imp->_timeLineGui) {
         _imp->_timeLineGui->clearCachedFrames();

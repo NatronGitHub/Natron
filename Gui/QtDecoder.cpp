@@ -53,25 +53,33 @@ QtReader::~QtReader(){
         delete _img;
 }
 
-std::string QtReader::pluginID() const {
+std::string
+QtReader::pluginID() const
+{
     return "ReadQt";
 }
 
-std::string QtReader::pluginLabel() const {
+std::string
+QtReader::pluginLabel() const
+{
     return "ReadQt";
 }
 
-void QtReader::pluginGrouping(std::list<std::string>* grouping) const
+void
+QtReader::pluginGrouping(std::list<std::string>* grouping) const
 {
     grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
 
-std::string QtReader::description() const {
+std::string
+QtReader::description() const
+{
     return QObject::tr("A QImage (Qt) based image reader.").toStdString();
 }
 
-void QtReader::initializeKnobs() {
-    
+void
+QtReader::initializeKnobs()
+{
     Natron::warningDialog(getName(), QObject::tr("This plugin exists only to help the developers team to test %1"
                           ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString());
     
@@ -139,7 +147,13 @@ void QtReader::initializeKnobs() {
     
 }
 
-void QtReader::knobChanged(KnobI* k, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/) {
+void
+QtReader::knobChanged(KnobI* k,
+                      Natron::ValueChangedReason /*reason*/,
+                      const RectD& /*rod*/,
+                      int /*view*/,
+                      SequenceTime /*time*/)
+{
     if (k == _fileKnob.get()) {
         SequenceTime first,last;
         getSequenceTimeDomain(first,last);
@@ -201,12 +215,19 @@ void QtReader::knobChanged(KnobI* k, Natron::ValueChangedReason /*reason*/,const
 
 }
 
-void QtReader::getSequenceTimeDomain(SequenceTime& first,SequenceTime& last) {
+void
+QtReader::getSequenceTimeDomain(SequenceTime& first,
+                                SequenceTime& last)
+{
     first = _fileKnob->firstFrame();
     last = _fileKnob->lastFrame();
 }
 
-void QtReader::timeDomainFromSequenceTimeDomain(SequenceTime& first,SequenceTime& last,bool mustSetFrameRange) {
+void
+QtReader::timeDomainFromSequenceTimeDomain(SequenceTime& first,
+                                           SequenceTime& last
+                                           ,bool mustSetFrameRange)
+{
     ///the values held by GUI parameters
     int frameRangeFirst,frameRangeLast;
     int startingFrame;
@@ -235,26 +256,34 @@ void QtReader::timeDomainFromSequenceTimeDomain(SequenceTime& first,SequenceTime
 }
 
 
-void QtReader::getFrameRange(SequenceTime *first,SequenceTime *last){
+void
+QtReader::getFrameRange(SequenceTime *first,
+                        SequenceTime *last)
+{
     getSequenceTimeDomain(*first, *last);
     timeDomainFromSequenceTimeDomain(*first, *last, false);
 }
 
 
-void QtReader::supportedFileFormats_static(std::vector<std::string>* formats) {
+void
+QtReader::supportedFileFormats_static(std::vector<std::string>* formats)
+{
     const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
     for (int i = 0; i < supported.size(); ++i) {
         formats->push_back(supported.at(i).data());
     }
 };
 
-std::vector<std::string> QtReader::supportedFileFormats() const  {
+std::vector<std::string>
+QtReader::supportedFileFormats() const
+{
     std::vector<std::string> ret;
     QtReader::supportedFileFormats_static(&ret);
     return ret;
 }
 
-SequenceTime QtReader::getSequenceTime(SequenceTime t)
+SequenceTime
+QtReader::getSequenceTime(SequenceTime t)
 {
     
     int timeOffset = _timeOffset->getValue();
@@ -353,7 +382,9 @@ SequenceTime QtReader::getSequenceTime(SequenceTime t)
     return sequenceTime;
 }
 
-void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filename)
+void
+QtReader::getFilenameAtSequenceTime(SequenceTime time,
+                                    std::string &filename)
 {
    
     
@@ -384,11 +415,15 @@ void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filenam
     }
     
     
-    
+
 }
 
-Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,const RenderScale& /*scale*/,int /*view*/,RectI* rod ) {
-
+Natron::Status
+QtReader::getRegionOfDefinition(SequenceTime time,
+                                const RenderScale& /*scale*/,
+                                int /*view*/,
+                                RectD* rod )
+{
     QMutexLocker l(&_lock);
     double sequenceTime;
     try {
@@ -397,9 +432,9 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,const RenderSca
         return StatFailed;
     }
     std::string filename;
-    
+
     getFilenameAtSequenceTime(sequenceTime, filename);
-    
+
     if (filename.empty()) {
         return StatFailed;
     }
@@ -424,10 +459,15 @@ Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,const RenderSca
     return StatOK;
 }
 
-Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
-                                const RectI& roi,int /*view*/,
-                                bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
-                                boost::shared_ptr<Natron::Image> output) {
+Natron::Status
+QtReader::render(SequenceTime /*time*/,
+                 const RenderScale& /*scale*/,
+                 const RectI& roi,
+                 int /*view*/,
+                 bool /*isSequentialRender*/,
+                 bool /*isRenderResponseToUserInteraction*/,
+                 boost::shared_ptr<Natron::Image> output)
+{
     int missingFrameChoice = _missingFrameChoice->getValue();
     if (!_img) {
         if (!_img && missingFrameChoice == 2) { // black image
@@ -442,12 +482,12 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
             //might have to invert y coordinates here
-            _lut->from_byte_packed((float*)output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
+            _lut->from_byte_packed((float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
                                    Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,false);
             break;
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
             //might have to invert y coordinates here
-            _lut->from_byte_packed((float*)output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),output->getRoD(),
+            _lut->from_byte_packed((float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
                                    Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,true);
             break;
         case QImage::Format_Mono: // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
@@ -460,7 +500,7 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
         case QImage::Format_RGB444: // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
         {
             QImage img = _img->convertToFormat(QImage::Format_ARGB32);
-            _lut->from_byte_packed((float*)output->pixelAt(0, 0), img.bits(), roi, output->getRoD(), output->getRoD(),
+            _lut->from_byte_packed((float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
                                    Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, false);
         }
             break;
@@ -470,7 +510,7 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
         {
             QImage img = _img->convertToFormat(QImage::Format_ARGB32_Premultiplied);
-            _lut->from_byte_packed((float*)output->pixelAt(0, 0), img.bits(), roi, output->getRoD(), output->getRoD(),
+            _lut->from_byte_packed((float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
                                    Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, true);
         }
             break;
@@ -485,13 +525,16 @@ Natron::Status QtReader::render(SequenceTime /*time*/,RenderScale /*scale*/,
 }
 
 
-void QtReader::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+void
+QtReader::addAcceptedComponents(int /*inputNb*/,
+                                std::list<Natron::ImageComponents>* comps)
 {
     ///QtReader only supports RGBA for now.
     comps->push_back(Natron::ImageComponentRGBA);
 }
 
-void QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+void
+QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
 {
     depths->push_back(IMAGE_FLOAT);
 }

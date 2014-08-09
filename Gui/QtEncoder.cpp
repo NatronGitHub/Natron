@@ -34,20 +34,25 @@ QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
 :Natron::OutputEffectInstance(node)
 , _lut(Natron::Color::LutManager::sRGBLut())
 {
-   
 }
 
-QtWriter::~QtWriter(){
+QtWriter::~QtWriter()
+{
 }
 
-std::string QtWriter::pluginID() const {
+std::string
+QtWriter::pluginID() const
+{
     return "WriteQt";
 }
-std::string QtWriter::pluginLabel() const{
+std::string
+QtWriter::pluginLabel() const
+{
     return "WriteQt";
 }
 
-void QtWriter::pluginGrouping(std::list<std::string>* grouping) const
+void
+QtWriter::pluginGrouping(std::list<std::string>* grouping) const
 {
     grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
@@ -58,7 +63,9 @@ std::string QtWriter::description() const {
 
 
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-void QtWriter::supportedFileFormats_static(std::vector<std::string>* formats) {
+void
+QtWriter::supportedFileFormats_static(std::vector<std::string>* formats)
+{
     // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
     const QList<QByteArray>& supported = QImageWriter::supportedImageFormats();
     // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
@@ -68,13 +75,18 @@ void QtWriter::supportedFileFormats_static(std::vector<std::string>* formats) {
     }
 }
 
-std::vector<std::string> QtWriter::supportedFileFormats() const {
+std::vector<std::string>
+QtWriter::supportedFileFormats() const
+{
     std::vector<std::string> ret;
     supportedFileFormats_static(&ret);
     return ret;
 }
 
-void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
+void
+QtWriter::getFrameRange(SequenceTime *first,
+                        SequenceTime *last)
+{
     int index = _frameRangeChoosal->getValue();
     if(index == 0){
         EffectInstance* inp = input_other_thread(0);
@@ -94,8 +106,9 @@ void QtWriter::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 
-void QtWriter::initializeKnobs(){
-    
+void
+QtWriter::initializeKnobs()
+{
     Natron::warningDialog(getName(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                           ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString());
     
@@ -128,13 +141,19 @@ void QtWriter::initializeKnobs(){
     _renderKnob->setAsRenderButton();
 }
 
-void QtWriter::knobChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/){
-    if(k == _frameRangeChoosal.get()){
+void
+QtWriter::knobChanged(KnobI* k,
+                      Natron::ValueChangedReason /*reason*/,
+                      const RectD& /*rod*/,
+                      int /*view*/,
+                      SequenceTime /*time*/)
+{
+    if (k == _frameRangeChoosal.get()) {
         int index = _frameRangeChoosal->getValue();
         if(index != 2){
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
-        }else{
+        } else {
             int first = getApp()->getTimeLine()->firstFrame();
             int last = getApp()->getTimeLine()->lastFrame();
             _firstFrameKnob->setValue(first,0);
@@ -153,10 +172,11 @@ void QtWriter::knobChanged(KnobI* k,Natron::ValueChangedReason /*reason*/,const 
     }
 }
 
-static std::string filenameFromPattern(const std::string& pattern,int frameIndex) {
+static std::string filenameFromPattern(const std::string& pattern,int frameIndex)
+{
     std::string ret = pattern;
     int lastDot = pattern.find_last_of('.');
-    if(lastDot == (int)std::string::npos){
+    if (lastDot == (int)std::string::npos) {
         ///the filename has not extension, return an empty str
         return "";
     }
@@ -199,16 +219,21 @@ static std::string filenameFromPattern(const std::string& pattern,int frameIndex
     return ret;
 }
 
-Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const RectI& roi, int view,
-                                bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
-                                boost::shared_ptr<Natron::Image> output){
-    
+Natron::Status
+QtWriter::render(SequenceTime time,
+                 const RenderScale& scale,
+                 const RectI& roi,
+                 int view,
+                 bool /*isSequentialRender*/,
+                 bool /*isRenderResponseToUserInteraction*/,
+                 boost::shared_ptr<Natron::Image> output)
+{
     boost::shared_ptr<Natron::Image> src = getImage(0, time, scale, view, NULL, output->getComponents(), output->getBitDepth(), false);
-    
+
     if (hasOutputConnected()) {
         output->pasteFrom(*src, src->getBounds());
     }
-    
+
     ////initializes to black
     unsigned char* buf = (unsigned char*)calloc(roi.area() * 4,1);
     
@@ -217,11 +242,11 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
     bool premult = _premultKnob->getValue();
     if (premult) {
         type = QImage::Format_ARGB32_Premultiplied;
-    }else{
+    } else {
         type = QImage::Format_ARGB32;
     }
     
-    _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getRoD(), roi,
+    _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
                          Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
     
     QImage img(buf,roi.width(),roi.height(),type);
@@ -235,13 +260,16 @@ Natron::Status QtWriter::render(SequenceTime time, RenderScale scale, const Rect
 }
 
 
-void QtWriter::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+void
+QtWriter::addAcceptedComponents(int /*inputNb*/,
+                                std::list<Natron::ImageComponents>* comps)
 {
     ///QtWriter only supports RGBA for now.
     comps->push_back(Natron::ImageComponentRGBA);
 }
 
-void QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+void
+QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
 {
     depths->push_back(IMAGE_FLOAT);
 }

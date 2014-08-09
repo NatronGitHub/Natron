@@ -153,7 +153,7 @@ public:
     
     void setMipMapLevel(unsigned int mipMapLevel);
     
-    void setFrameRange(double first,double last);
+    void setFrameRange(double first, double last);
     
     void discardFrameRange();
     
@@ -169,7 +169,7 @@ public:
     void discardRenderedImage();
     
     ///Set the output rod the node has for this thread
-    void setOutputRoD(const RectI& rod);
+    void setOutputRoD(const RectD& rod);
     
     void discardOutputRoD();
 
@@ -201,7 +201,7 @@ private:
         int view;
         boost::shared_ptr<Natron::Image> image;
         bool isImageValid;
-        RectI rod;
+        RectD rod; //!< effect output rod in canonical coordinates
         bool rodValid;
         double firstFrame,lastFrame;
         bool frameRangeValid;

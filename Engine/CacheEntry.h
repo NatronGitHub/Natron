@@ -346,6 +346,19 @@ class CacheEntryHelper : public AbstractCacheEntry<KeyType> {
 public:
     typedef DataType data_t;
     typedef KeyType key_t;
+
+    /**
+     * @brief Ctor
+     * the cache entry needs to be set afterwards using setCacheEntry()
+     **/
+    CacheEntryHelper()
+    : _key()
+    , _params()
+    , _data()
+    , _cache()
+    {
+    }
+
     /**
      * @brief Allocates a new cache entry. This function does not allocate the memory required by the entry,
      * the storage will not be available until allocateMemory(...) has been called.
@@ -363,7 +376,16 @@ public:
     }
     
     virtual ~CacheEntryHelper() { deallocate(); }
-    
+
+    void setCacheEntry(const KeyType& key,
+                       const boost::shared_ptr<const NonKeyParams>& params,
+                       const CacheAPI* cache) {
+        assert(!_params && _cache == NULL);
+        _key = key;
+        _params = params;
+        _cache = cache;
+    }
+
     /**
      * @brief Allocates the memory required by the cache entry. It allocates enough memory to contain at least the
      * memory specified by the key.
