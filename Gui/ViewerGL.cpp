@@ -823,7 +823,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
     onProjectFormatChanged(projectFormat);
     resetWipeControls();
     
-    QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectI,int)), this, SLOT(setRegionOfDefinition(RectI,int)));
+    QObject::connect(getInternalNode(), SIGNAL(rodChanged(RectD, int)), this, SLOT(setRegionOfDefinition(RectD, int)));
 
 }
 
@@ -2767,8 +2767,8 @@ void ViewerGL::disconnectViewer()
 
 
 
-/*The dataWindow of the currentFrame(BBOX)*/
-RectI ViewerGL::getRoD(int textureIndex) const
+/* The dataWindow of the currentFrame(BBOX) in canonical coordinates */
+RectD ViewerGL::getRoD(int textureIndex) const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());

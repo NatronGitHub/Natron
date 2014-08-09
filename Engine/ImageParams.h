@@ -72,8 +72,14 @@ public:
         
     }
     
-    ImageParams(int cost,const RectI& rod,const RectI& bounds,Natron::ImageBitDepth bitdepth,
-                bool isRoDProjectFormat,ImageComponents components,int inputNbIdentity,int inputTimeIdentity,
+    ImageParams(int cost,
+                const RectD& rod,
+                const RectI& bounds,
+                Natron::ImageBitDepth bitdepth,
+                bool isRoDProjectFormat,
+                ImageComponents components,
+                int inputNbIdentity,
+                int inputTimeIdentity,
                 const std::map<int, std::vector<RangeD> >& framesNeeded)
     : NonKeyParams(cost,bounds.area() * getElementsCountForComponents(components) * getSizeOfForBitDepth(bitdepth))
     , _rod(rod)
@@ -89,9 +95,9 @@ public:
     }
     
     virtual ~ImageParams() {}
-    
-#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
-    const RectI& getRoD() const { return _rod; }
+
+    // return the RoD in canonical coordinates
+    const RectD& getRoD() const { return _rod; }
     
     const RectI& getBounds() const { return _bounds; }
     
@@ -139,7 +145,7 @@ private:
         && _bitdepth == imgParams._bitdepth;
     }
     
-    RectI _rod;
+    RectD _rod;
     RectI _bounds;
 
     

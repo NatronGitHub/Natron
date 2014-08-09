@@ -34,18 +34,18 @@ public:
     void setDisplayWindow(const Format& format) { _displayWindow = format; }
     const Format& getDisplayWindow() const { return _displayWindow; }
     
-    void setRoD(const RectI& win) { _rod = win; }
-    const RectI& getRoD() const { return _rod; }
+    void setRoD(const RectD& win) { _rod = win; }
+    const RectD& getRoD() const { return _rod; }
     
     void setChannels(const Natron::ChannelSet& mask) { _channels = mask; }
     const Natron::ChannelSet& getChannels() const { return _channels; }
     
-    bool operator==(const ImageInfo &other){
+    bool operator==(const ImageInfo &other) {
         return _rod == other._rod &&
         _displayWindow == other._displayWindow &&
         _channels == other._channels;
     }
-    void operator=(const ImageInfo &other){
+    void operator=(const ImageInfo &other ){
         _rod = other._rod;
         _displayWindow = other._displayWindow;
         _channels = other._channels;
@@ -53,7 +53,7 @@ public:
     
 private:
     
-    RectI _rod;
+    RectD _rod;  // the image RoD in canonical coordinates (not the same as the OFX::Image rod, which is in pixel coordinates)
     Format _displayWindow; // display window of the data
     Natron::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 };

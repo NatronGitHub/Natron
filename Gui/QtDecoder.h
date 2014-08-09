@@ -64,8 +64,10 @@ public:
 
     virtual std::string description() const OVERRIDE;
     
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view,
-                                                 RectI* rod) OVERRIDE;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,
+                                                 const RenderScale& scale,
+                                                 int view,
+                                                 RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
 	
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
@@ -77,13 +79,16 @@ public:
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE { return false; }
 
-    virtual Natron::Status render(SequenceTime time,RenderScale scale,
-                                  const RectI& roi,int view,
-                                  bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
+    virtual Natron::Status render(SequenceTime time,
+                                  const RenderScale& scale,
+                                  const RectI& roi
+                                  ,int view,
+                                  bool /*isSequentialRender*/,
+                                  bool /*isRenderResponseToUserInteraction*/,
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
 
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD& rod, int view, SequenceTime time) OVERRIDE FINAL;
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::INSTANCE_SAFE;}
             

@@ -48,8 +48,12 @@ private:
     /**
      * @brief A NoOp is always an identity on its input.
      **/
-    virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
-                            int view,SequenceTime* inputTime,int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isIdentity(SequenceTime time,
+                            const RenderScale& scale,
+                            const RectI& roi, //!< renderWindow in pixel coordinates
+                            int view,
+                            SequenceTime* inputTime,
+                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 class Dot: public NoOpBase

@@ -89,8 +89,6 @@ public:
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
     
-    bool ifInfiniteApplyHeuristic(OfxTime time,const RenderScale& scale, int view,OfxRectD* rod) const;
-
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
 
@@ -128,14 +126,16 @@ public:
 
     virtual bool isInputRotoBrush(int inputNb) const WARN_UNUSED_RETURN;
 
-    virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectI* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
     virtual RectD calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale) const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,
-                                                               const RectI& outputRoD,
-                                                               const RectI& renderWindow,int view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::EffectInstance::RoIMap getRegionsOfInterest(SequenceTime time,
+                                                                const RenderScale& scale,
+                                                                const RectD& outputRoD, //!< full RoD in canonical coordinates
+                                                                const RectD& renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                                                int view) OVERRIDE WARN_UNUSED_RETURN;
     
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
 
@@ -145,32 +145,25 @@ public:
 
     virtual bool hasOverlay() const OVERRIDE FINAL; 
 
-    virtual void drawOverlay(double scaleX,double scaleY,const RectI& rod) OVERRIDE FINAL;
+    virtual void drawOverlay(double scaleX, double scaleY, const RectD& rod) OVERRIDE FINAL;
 
-    virtual bool onOverlayPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos
-                                  ,const RectI& rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDown(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, const RectD& rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenMotion(double scaleX,double scaleY,
-                                    const QPointF& viewportPos,const QPointF& pos
-                                    ,const RectI& rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(double scaleX, double scaleY,
+                                    const QPointF& viewportPos, const QPointF& pos, const RectD& rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos
-                                ,const RectI& rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, const RectD& rod) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayKeyDown(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers
-                                  ,const RectI& rod) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers, const RectD& rod) OVERRIDE FINAL;
 
-    virtual bool onOverlayKeyUp(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers
-                                ,const RectI& rod) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers
+                                , const RectD& rod) OVERRIDE FINAL;
 
-    virtual bool onOverlayKeyRepeat(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers
-                                    ,const RectI& rod) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers, const RectD& rod) OVERRIDE FINAL;
 
-    virtual bool onOverlayFocusGained(double scaleX,double scaleY
-                                      ,const RectI& rod) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(double scaleX, double scaleY, const RectD& rod) OVERRIDE FINAL;
 
-    virtual bool onOverlayFocusLost(double scaleX,double scaleY
-                                    ,const RectI& rod) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(double scaleX, double scaleY, const RectD& rod) OVERRIDE FINAL;
 
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
 
@@ -178,17 +171,24 @@ public:
 
     virtual void endKnobsValuesChanged(Natron::ValueChangedReason reason) OVERRIDE;
 
-    virtual void knobChanged(KnobI* k,Natron::ValueChangedReason reason,const RectI& rod,int view,SequenceTime time) OVERRIDE;
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD& rod, int view, SequenceTime time) OVERRIDE;
     
     virtual void beginEditKnobs() OVERRIDE;
 
-    virtual Natron::Status render(SequenceTime time,RenderScale scale,
-                                   const RectI& roi,int view,
-                                  bool isSequentialRender,bool isRenderResponseToUserInteraction,
+    virtual Natron::Status render(SequenceTime time,
+                                  const RenderScale& scale,
+                                  const RectI& roi, //!< renderWindow in pixel coordinates
+                                  int view,
+                                  bool isSequentialRender,
+                                  bool isRenderResponseToUserInteraction,
                                   boost::shared_ptr<Natron::Image> output) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual bool isIdentity(SequenceTime time,RenderScale scale,const RectI& roi,
-                                int view,SequenceTime* inputTime,int* inputNb) OVERRIDE;
+    virtual bool isIdentity(SequenceTime time,
+                            const RenderScale& scale,
+                            const RectI& roi, //!< renderWindow in pixel coordinates
+                            int view,
+                            SequenceTime* inputTime,
+                            int* inputNb) OVERRIDE;
 
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -224,19 +224,29 @@ public:
     
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     
-    virtual Natron::Status beginSequenceRender(SequenceTime first,SequenceTime last,
-                                     SequenceTime step,bool interactive,RenderScale scale,
-                                     bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::Status beginSequenceRender(SequenceTime first,
+                                               SequenceTime last,
+                                               SequenceTime step,
+                                               bool interactive,
+                                               const RenderScale& scale,
+                                               bool isSequentialRender,
+                                               bool isRenderResponseToUserInteraction,
+                                               int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual Natron::Status endSequenceRender(SequenceTime first,SequenceTime last,
-                                     SequenceTime step,bool interactive,RenderScale scale,
-                                   bool isSequentialRender,bool isRenderResponseToUserInteraction,int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::Status endSequenceRender(SequenceTime first,
+                                             SequenceTime last,
+                                             SequenceTime step,
+                                             bool interactive,
+                                             const RenderScale& scale,
+                                             bool isSequentialRender,
+                                             bool isRenderResponseToUserInteraction,
+                                             int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
 
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const OVERRIDE FINAL;
 
-    virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponents* comp,Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponents* comp, Natron::ImageBitDepth* depth) const OVERRIDE FINAL;
 
     virtual Natron::SequentialPreference getSequentialPreference() const OVERRIDE FINAL;
 

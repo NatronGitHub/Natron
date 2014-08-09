@@ -513,14 +513,18 @@ bool OfxImageEffectInstance::progressUpdate(double t) {
 
 /// get the current time on the timeline. This is not necessarily the same
 /// time as being passed to an action (eg render)
-double OfxImageEffectInstance::timeLineGetTime() {
+double
+OfxImageEffectInstance::timeLineGetTime()
+{
     
     return _node->getApp()->getTimeLine()->currentFrame();
 }
 
 
 /// set the timeline to a specific time
-void OfxImageEffectInstance::timeLineGotoTime(double t) {
+void
+OfxImageEffectInstance::timeLineGotoTime(double t)
+{
     _node->updateCurrentFrameRecursive((int)t);
     _node->getApp()->getTimeLine()->seekFrame((int)t,NULL);
     
@@ -528,19 +532,24 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
 
 
 /// get the first and last times available on the effect's timeline
-void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
-
+void
+OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2)
+{
     t1 = _node->getApp()->getTimeLine()->leftBound();
     t2 = _node->getApp()->getTimeLine()->rightBound();
 }
 
 
 // override this to make processing abort, return 1 to abort processing
-int OfxImageEffectInstance::abort() {
+int
+OfxImageEffectInstance::abort()
+{
     return (int)node()->aborted();
 }
 
-OFX::Host::Memory::Instance* OfxImageEffectInstance::newMemoryInstance(size_t nBytes) {
+OFX::Host::Memory::Instance*
+OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
+{
     OfxMemory* ret = new OfxMemory(_node);
     bool allocated = ret->alloc(nBytes);
     if (!ret->getPtr() || !allocated) {
@@ -549,21 +558,24 @@ OFX::Host::Memory::Instance* OfxImageEffectInstance::newMemoryInstance(size_t nB
     return ret;
 }
 
-void OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
+void
+OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->setMipMapLevel(mipMapLevel);
     } 
 }
 
-void OfxImageEffectInstance::setClipsView(int view)
+void
+OfxImageEffectInstance::setClipsView(int view)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->setRenderedView(view);
     }
 }
 
-void OfxImageEffectInstance::discardClipsMipMapLevel()
+void
+OfxImageEffectInstance::discardClipsMipMapLevel()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->discardMipMapLevel();
@@ -571,7 +583,8 @@ void OfxImageEffectInstance::discardClipsMipMapLevel()
 
 }
 
-void OfxImageEffectInstance::discardClipsView()
+void
+OfxImageEffectInstance::discardClipsView()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->discardView();
@@ -579,7 +592,8 @@ void OfxImageEffectInstance::discardClipsView()
 
 }
 
-void OfxImageEffectInstance::setClipsRenderedImage(const boost::shared_ptr<Natron::Image>& image)
+void
+OfxImageEffectInstance::setClipsRenderedImage(const boost::shared_ptr<Natron::Image>& image)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         ///Set the rendered image only on the output clip
@@ -589,7 +603,8 @@ void OfxImageEffectInstance::setClipsRenderedImage(const boost::shared_ptr<Natro
     }
 }
 
-void OfxImageEffectInstance::discardClipsImage()
+void
+OfxImageEffectInstance::discardClipsImage()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         if (it->second->isOutput()) {
@@ -598,7 +613,8 @@ void OfxImageEffectInstance::discardClipsImage()
     }
 }
 
-void OfxImageEffectInstance::setClipsOutputRoD(const RectI& rod)
+void
+OfxImageEffectInstance::setClipsOutputRoD(const RectD& rod) //!< effect rod in canonical coordinates
 {
     assert(rod.x2 >= rod.x1 && rod.y2 >= rod.y1);
 
@@ -607,28 +623,33 @@ void OfxImageEffectInstance::setClipsOutputRoD(const RectI& rod)
     }
 }
 
-void OfxImageEffectInstance::discardClipsOutputRoD()
+void
+OfxImageEffectInstance::discardClipsOutputRoD()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->discardOutputRoD();
     }
 }
 
-void OfxImageEffectInstance::setClipsFrameRange(double first,double last)
+void
+OfxImageEffectInstance::setClipsFrameRange(double first,
+                                           double last)
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->setFrameRange(first, last);
     }
 }
 
-void OfxImageEffectInstance::discardClipsFrameRange()
+void
+OfxImageEffectInstance::discardClipsFrameRange()
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
         dynamic_cast<OfxClipInstance*>(it->second)->discardFrameRange();
     }
 }
 
-bool OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
+bool
+OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
 {
     for(std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
         if (!it->second->isOutput() && !it->second->isOptional() && !it->second->getConnected()) {

@@ -139,7 +139,13 @@ void QtReader::initializeKnobs() {
     
 }
 
-void QtReader::knobChanged(KnobI* k, Natron::ValueChangedReason /*reason*/,const RectI& /*rod*/,int /*view*/,SequenceTime /*time*/) {
+void
+QtReader::knobChanged(KnobI* k,
+                      Natron::ValueChangedReason /*reason*/,
+                      const RectD& /*rod*/,
+                      int /*view*/,
+                      SequenceTime /*time*/)
+{
     if (k == _fileKnob.get()) {
         SequenceTime first,last;
         getSequenceTimeDomain(first,last);
@@ -387,7 +393,10 @@ void QtReader::getFilenameAtSequenceTime(SequenceTime time, std::string &filenam
     
 }
 
-Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,const RenderScale& /*scale*/,int /*view*/,RectI* rod ) {
+Natron::Status QtReader::getRegionOfDefinition(SequenceTime time,
+                                               const RenderScale& /*scale*/,
+                                               int /*view*/,
+                                               RectD* rod ) {
 
     QMutexLocker l(&_lock);
     double sequenceTime;

@@ -26,18 +26,16 @@ CLANG_DIAG_ON(deprecated)
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the
  *frame accordingly*/
-class Format : public RectI {
+class Format : public RectD { //!< project format is in canonical coordinates
 	
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        boost::serialization::void_cast_register<Format,RectI>(
-                                                                static_cast<Format *>(NULL),
-                                                                static_cast<RectI *>(NULL)
-                                                               );
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
+        boost::serialization::void_cast_register<Format,RectD>(static_cast<Format *>(NULL),
+                                                               static_cast<RectD *>(NULL));
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectD);
         ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_pixel_aspect);
         ar & boost::serialization::make_nvp("Name",_name);
         
@@ -45,27 +43,27 @@ class Format : public RectI {
 	
 public:
     Format(int l, int b, int r, int t, const std::string& name, double pa)
-    : RectI(l,b,r,t)
+    : RectD(l,b,r,t)
     , _pixel_aspect(pa)
     , _name(name)
     {}
 
-    Format(const RectI& rect)
-        :RectI(rect)
-        ,_pixel_aspect(1.)
-        ,_name()
+    Format(const RectD& rect)
+    : RectD(rect)
+    , _pixel_aspect(1.)
+    , _name()
     {
 
     }
     
     Format(const Format& other)
-    :RectI(other.left(),other.bottom(),other.right(),other.top())
-    ,_pixel_aspect(other.getPixelAspect())
-    ,_name(other.getName())
+    : RectD(other.left(),other.bottom(),other.right(),other.top())
+    , _pixel_aspect(other.getPixelAspect())
+    , _name(other.getName())
     {}
     
     Format()
-    : RectI()
+    : RectD()
     , _pixel_aspect(1.0)
     , _name()
     {
@@ -81,12 +79,13 @@ public:
 
     void setPixelAspect( double p) {_pixel_aspect = p;}
 	
-	Format operator=(const Format& other){
+	Format& operator=(const Format& other) {
         set(other.left(), other.bottom(), other.right(), other.top());
         setName(other.getName());
         setPixelAspect(other.getPixelAspect());
         return *this;
     }
+
     bool operator==(const Format& other) const {
         return _pixel_aspect == other.getPixelAspect() &&
         left() == other.left() &&
@@ -94,13 +93,10 @@ public:
         right() == other.right() &&
         top() == other.top();
     }
-    
-  
-    
+
 private:
 	double _pixel_aspect;
     std::string _name;
-    
 };
 
 Q_DECLARE_METATYPE(Format);

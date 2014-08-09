@@ -79,10 +79,10 @@ public:
     
     
     /**
-     *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
+     *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX) in canonical coordinates
      **/
     // MT-SAFE: don't return a reference
-    RectI getRoD(int textureIndex) const ;
+    RectD getRoD(int textureIndex) const ;
     
     
     /**
@@ -210,7 +210,7 @@ public:
      **/
     void zoomSlot(QString);
     
-    void setRegionOfDefinition(const RectI& rod,int textureIndex);
+    void setRegionOfDefinition(const RectD& rod, int textureIndex);
     
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
     

@@ -122,9 +122,9 @@ void Project::loadProjectInternal(const QString& path,const QString& name) {
     try {
         boost::archive::xml_iarchive iArchive(ifile);
         bool bgProject;
-        iArchive >> boost::serialization::make_nvp("Background_project",bgProject);
+        iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
         ProjectSerialization projectSerializationObj(getApp());
-        iArchive >> boost::serialization::make_nvp("Project",projectSerializationObj);
+        iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
         load(projectSerializationObj);
         if (!bgProject) {
             getApp()->loadProjectGui(iArchive);

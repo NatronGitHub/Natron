@@ -3815,7 +3815,8 @@ RotoContext::onRippleEditChanged(bool enabled)
 void
 RotoContext::getMaskRegionOfDefinition(int time,
                                        int /*view*/,
-                                       RectI* rod) const
+                                       RectD* rod) // rod is in canonical coordinates
+const
 {
     QMutexLocker l(&_imp->rotoContextMutex);
     
@@ -3829,17 +3830,12 @@ RotoContext::getMaskRegionOfDefinition(int time,
                 if (splineRoD.isNull()) {
                     continue;
                 }
-                RectI splineRoDI;
-                splineRoDI.x1 = std::floor(splineRoD.x1);
-                splineRoDI.y1 = std::floor(splineRoD.y1);
-                splineRoDI.x2 = std::ceil(splineRoD.x2);
-                splineRoDI.y2 = std::ceil(splineRoD.y2);
-                
+
                 if (first) {
                     first = false;
-                    *rod = splineRoDI;
+                    *rod = splineRoD;
                 } else {
-                    rod->merge(splineRoDI);
+                    rod->merge(splineRoD);
                 }
             }
         }
@@ -4645,7 +4641,7 @@ RotoContext::renderMask(const RectI& roi,
                         Natron::ImageComponents components,
                         U64 nodeHash,
                         U64 ageToRender,
-                        const RectI& nodeRoD,
+                        const RectD& nodeRoD, //!< rod in canonical coordinates
                         SequenceTime time,
                         Natron::ImageBitDepth depth,
                         int view,
@@ -4713,7 +4709,7 @@ RotoContext::renderMask(const RectI& roi,
         
     } else {
         
-        params = Natron::Image::makeParams(0, nodeRoD,mipmapLevel,false,
+        params = Natron::Image::makeParams(0, nodeRoD, mipmapLevel, false,
                                            components,
                                            depth,
                                            -1, time,

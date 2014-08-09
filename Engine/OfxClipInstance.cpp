@@ -197,7 +197,7 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
-    RectI rod;
+    RectD rod; // rod is in canonical coordinates
     
     unsigned int mipmapLevel;
     int view;
@@ -236,7 +236,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (getName() == "Roto" && _nodeInstance->getNode()->isRotoNode()) {
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
         assert(rotoCtx);
-        RectI rod;
+        RectD rod;
         rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
         ret.x1 = rod.x1;
         ret.x2 = rod.x2;
@@ -311,7 +311,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
                 }
                 RenderScale scale;
                 scale.x = scale.y = 1.;
-                Natron::Status st = associatedNode->getRegionOfDefinition_public(time,scale,view,&rod,&isProjectFormat);
+                Natron::Status st = associatedNode->getRegionOfDefinition_public(time, scale, view, &rod, &isProjectFormat);
                 if (st == StatFailed) {
                     ret.x1 = kOfxFlagInfiniteMin;
                     ret.x2 = kOfxFlagInfiniteMax;
@@ -453,7 +453,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstanc
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
     const RectI& bounds = internalImage->getBounds();
-    const RectI& rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
+    const RectD& rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
     setPointerProperty(kOfxImagePropData,internalImage->pixelAt(bounds.left(), bounds.bottom()));
     // bounds and rod
     setIntProperty(kOfxImagePropBounds, bounds.left(), 0);
@@ -464,6 +464,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstanc
     // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImagePropRegionOfDefinition
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
     // Natron::Image::getRoD() is in *CANONICAL* coordinates
+    // OFX::Image RoD is in *PIXEL* coordinates
     setIntProperty(kOfxImagePropRegionOfDefinition, std::ceil(rod.left()*scale.x), 0);
     setIntProperty(kOfxImagePropRegionOfDefinition, std::ceil(rod.bottom()*scale.y), 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, std::floor(rod.right()*scale.x), 2);
@@ -482,7 +483,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstanc
 
 OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     assert(_bitDepth == eBitDepthFloat);
-    const RectI& bounds = _floatImage->getRoD();
+    const RectI& bounds = _floatImage->getBounds();
     if ((x >= bounds.left()) && ( x < bounds.right()) && ( y >= bounds.bottom()) && ( y < bounds.top()) )
     {
         return reinterpret_cast<OfxRGBAColourF*>(_floatImage->pixelAt(x, y));
@@ -671,7 +672,8 @@ void OfxClipInstance::discardRenderedImage()
     _lastRenderArgs.localData().image.reset();
 }
 
-void OfxClipInstance::setOutputRoD(const RectI& rod)
+void
+OfxClipInstance::setOutputRoD(const RectD& rod) //!< effect rod in canonical coordinates
 {
     if (_lastRenderArgs.hasLocalData()) {
         LastRenderArgs &args = _lastRenderArgs.localData();

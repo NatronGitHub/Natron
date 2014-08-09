@@ -1433,7 +1433,6 @@ namespace {
 ///output is always RGBA with alpha = 255
 template<typename PIX,int maxValue>
 void renderPreview(const Natron::Image& srcImg,
-                       const RectI& srcRoD,
                        int elemCount,
                        int *dstWidth,
                        int *dstHeight,
@@ -1441,25 +1440,26 @@ void renderPreview(const Natron::Image& srcImg,
                        unsigned int* dstPixels)
 {
     ///recompute it after the rescaling
-    double yZoomFactor = *dstHeight/(double)srcRoD.height();
-    double xZoomFactor = *dstWidth/(double)srcRoD.width();
+    const RectI& srcBounds = srcImg.getBounds();
+    double yZoomFactor = *dstHeight/(double)srcBounds.height();
+    double xZoomFactor = *dstWidth/(double)srcBounds.width();
     double zoomFactor;
     if (xZoomFactor < yZoomFactor) {
         zoomFactor = xZoomFactor;
-        *dstHeight = (double)srcRoD.height() * zoomFactor;
+        *dstHeight = srcBounds.height() * zoomFactor;
     } else {
         zoomFactor = yZoomFactor;
-		*dstWidth = (double)srcRoD.width() * zoomFactor;
+		*dstWidth = srcBounds.width() * zoomFactor;
     }
     assert(elemCount >= 3);
 
     for (int i = 0; i < *dstHeight; ++i) {
-        double y = (i - *dstHeight/2.)/zoomFactor + (srcRoD.y1 + srcRoD.y2)/2.;
+        double y = (i - *dstHeight/2.)/zoomFactor + (srcBounds.y1 + srcBounds.y2)/2.;
         int yi = std::floor(y+0.5);
 
         U32 *dst_pixels = dstPixels + *dstWidth * (*dstHeight-1-i);
         
-        const PIX* src_pixels = (const PIX*)srcImg.pixelAt(srcRoD.x1, yi);
+        const PIX* src_pixels = (const PIX*)srcImg.pixelAt(srcBounds.x1, yi);
         if (!src_pixels) {
             // out of bounds
             for (int j = 0; j < *dstWidth; ++j) {
@@ -1473,10 +1473,10 @@ void renderPreview(const Natron::Image& srcImg,
             for (int j = 0; j < *dstWidth; ++j) {
                 // bilinear interpolation is pointless when downscaling a lot, and this is a preview anyway.
                 // just use nearest neighbor
-                double x = (j- *dstWidth/2.)/zoomFactor + (srcRoD.x1 + srcRoD.x2)/2.;
+                double x = (j- *dstWidth/2.)/zoomFactor + (srcBounds.x1 + srcBounds.x2)/2.;
 
                 int xi = std::floor(x+0.5); // round to nearest
-                if (xi < 0 || xi >=(srcRoD.x2-srcRoD.x1)) {
+                if (xi < 0 || xi >=(srcBounds.x2-srcBounds.x1)) {
 #ifndef __NATRON_WIN32__
 					dst_pixels[j] = toBGRA(0, 0, 0, 0);
 #else
@@ -1516,11 +1516,11 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
     QMutexLocker locker(&_imp->computingPreviewMutex); /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     _imp->computingPreview = true;
     
-    RectI rod;
+    RectD rod;
     bool isProjectFormat;
     RenderScale scale;
     scale.x = scale.y = 1.;
-    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(time,scale,0, &rod,&isProjectFormat);
+    Natron::Status stat = _imp->liveInstance->getRegionOfDefinition_public(time,scale,0, &rod, &isProjectFormat);
     if (stat == StatFailed || rod.isNull()) {
         _imp->computingPreview = false;
         _imp->computingPreviewCond.wakeOne();
@@ -1545,7 +1545,8 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
 
     boost::shared_ptr<Image> img;
     
-    RectI scaledRod = rod.roundPowerOfTwoLargestEnclosed(mipMapLevel);
+    RectI renderWindow;
+    rod.toPixelEnclosing(mipMapLevel, &renderWindow);
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
     try {
@@ -1553,11 +1554,11 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
                                                                           scale,
                                                                           mipMapLevel,
                                                                           0, //< preview only renders view 0 (left)
-                                                                          scaledRod,
+                                                                          renderWindow,
                                                                           false,
                                                                           true,
                                                                           false,
-                                                                          &rod,
+                                                                          rod,
                                                                           Natron::ImageComponentRGB,
                                                                           getBitDepth())); //< preview is always rgb...
     } catch (const std::exception& e) {
@@ -1577,10 +1578,7 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
         _imp->computingPreviewCond.wakeOne();
         return;
     }
-  
-    ///update the Rod to the scaled image rod
-    rod = img->getBounds();
-    
+
     ImageComponents components = img->getComponents();
     int elemCount = getElementsCountForComponents(components);
 
@@ -1590,13 +1588,13 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
     
     switch (img->getBitDepth()) {
         case Natron::IMAGE_BYTE: {
-            renderPreview<unsigned char, 255>(*img, rod, elemCount, width, height,convertToSrgb, buf);
+            renderPreview<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
         } break;
         case Natron::IMAGE_SHORT: {
-            renderPreview<unsigned short, 65535>(*img, rod, elemCount, width, height,convertToSrgb, buf);
+            renderPreview<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
         } break;
         case Natron::IMAGE_FLOAT: {
-            renderPreview<float, 1>(*img, rod, elemCount, width, height,convertToSrgb, buf);
+            renderPreview<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
         } break;
         default:
             break;

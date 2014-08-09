@@ -36,6 +36,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
+#include "Engine/Image.h"
 
 
 #define NATRON_FPS_REFRESH_RATE 10
@@ -673,9 +674,10 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
         }
     
     } else {
+        int mipMapLevel = 0;
         RenderScale scale;
-        scale.x = scale.y = 1.;
-        RectI rod;
+        scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
+        RectD rod;
         bool isProjectFormat;
         
         int viewsCount = _tree.getOutput()->getApp()->getProject()->getProjectViewsCount();
@@ -693,20 +695,22 @@ Natron::Status VideoEngine::renderFrame(SequenceTime time,bool singleThreaded) {
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            stat = _tree.getOutput()->getRegionOfDefinition_public(time,scale,i, &rod,&isProjectFormat);
+            stat = _tree.getOutput()->getRegionOfDefinition_public(time, scale, i, &rod, &isProjectFormat);
             if (stat != StatFailed) {
                 ImageComponents components;
                 ImageBitDepth imageDepth;
                 _tree.getOutput()->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+                RectI renderWindow;
+                rod.toPixelEnclosing(scale, &renderWindow);
                 (void)_tree.getOutput()->renderRoI(EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                  scale, //< the scale at which to render
-                                                                                 0, //< the mipmap level (redundant with the scale)
+                                                                                 mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                  i , //< the view to render
-                                                                                 rod, //< the region of interest (in pixel coordinates)
+                                                                                 renderWindow, //< the region of interest (in pixel coordinates)
                                                                                  isSequentialRender, // is this sequential
                                                                                  false,  // is this render due to user interaction ?
                                                                                  false,//< bypass cache ?
-                                                                                 &rod, // < any precomputed rod ?
+                                                                                 rod, // < any precomputed rod ? in canonical coordinates
                                                                                  components,
                                                                                  imageDepth));
             } else {
