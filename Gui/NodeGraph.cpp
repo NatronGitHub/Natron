@@ -1777,7 +1777,16 @@ void NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
     for (U32 i = 0; i < knobs.size();++i) {
         std::list<KnobI*> listeners;
         knobs[i]->getListeners(listeners);
-        if (!listeners.empty()) {
+        ///For all listeners make sure they belong to a node
+        bool foundEffect = false;
+        for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2!=listeners.end(); ++it2) {
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>((*it2)->getHolder());
+            if (isEffect) {
+                foundEffect = true;
+                break;
+            }
+        }
+        if (foundEffect) {
             Natron::StandardButton reply = Natron::questionDialog(tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                  "parameters from which other parameters "
                                                                                                  "of the project rely on through expressions "
@@ -1826,7 +1835,17 @@ void NodeGraph::deleteSelection()
             for (U32 i = 0; i < knobs.size();++i) {
                 std::list<KnobI*> listeners;
                 knobs[i]->getListeners(listeners);
-                if (!listeners.empty()) {
+                
+                ///For all listeners make sure they belong to a node
+                bool foundEffect = false;
+                for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2!=listeners.end(); ++it2) {
+                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>((*it2)->getHolder());
+                    if (isEffect) {
+                        foundEffect = true;
+                        break;
+                    }
+                }
+                if (foundEffect) {
                     Natron::StandardButton reply = Natron::questionDialog(tr("Delete").toStdString(),
                                                                           tr("This node has one or several "
                                                                              "parameters from which other parameters "
