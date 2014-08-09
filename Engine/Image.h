@@ -60,9 +60,9 @@ namespace Natron {
     
     class Bitmap {
     public:
-        Bitmap(const RectI& rod)
-        : _rod(rod)
-        , _map(new char[rod.area()])
+        Bitmap(const RectI& bounds)
+        : _bounds(bounds)
+        , _map(new char[bounds.area()])
         {
             //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -72,26 +72,25 @@ namespace Natron {
         }
         
         Bitmap()
-        : _rod()
+        : _bounds()
         , _map(0)
         {
             
         }
         
-        void initialize(const RectI& rod)
+        void initialize(const RectI& bounds)
         {
             assert(!_map);
-            _rod = rod;
-            _map = new char[rod.area()];
+            _bounds = bounds;
+            _map = new char[bounds.area()];
             clear();
         }
         
         ~Bitmap() { delete [] _map; }
         
-        void clear() { std::fill(_map, _map+ _rod.area(), 0); }
+        void clear() { std::fill(_map, _map+ _bounds.area(), 0); }
         
-#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
-        const RectI& getRoD() const {return _rod;}
+        const RectI& getBounds() const {return _bounds;}
         
         std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
         
@@ -108,8 +107,7 @@ namespace Natron {
         char* getBitmapAt(int x,int y);
 
     private:
-#pragma message WARN("The Image RoD should be in pixels everywhere in Natron!")
-        RectI _rod;
+        RectI _bounds;
         char* _map;
     };
     
@@ -165,7 +163,7 @@ namespace Natron {
          **/
         const RectI& getBounds() const { return _bounds; };
         
-        virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getRoD().area(); }
+        virtual size_t size() const OVERRIDE FINAL { return dataSize() + _bitmap.getBounds().area(); }
         
         unsigned int getMipMapLevel() const {return this->_key._mipMapLevel;}
                 

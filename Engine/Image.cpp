@@ -82,11 +82,11 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 //    }
     
     RectI bbox;
-    roi.intersect(_rod, &bbox); // be safe
+    roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
-        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
-        if(!memchr(buf, 0, _rod.width())){
+        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        if(!memchr(buf, 0, _bounds.width())){
             bbox.set_bottom(bbox.bottom()+1);
         } else {
             break;
@@ -95,8 +95,8 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 
     //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
-        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
-        if (!memchr(buf, 0, _rod.width())) {
+        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        if (!memchr(buf, 0, _bounds.width())) {
             bbox.set_top(bbox.top()-1);
         } else {
             break;
@@ -112,7 +112,7 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
     for (int j = bbox.left(); j < bbox.right(); ++j) {
         bool shouldStop = false;
         for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[(i-_rod.bottom())*_rod.width() + (j-_rod.left())]) {
+            if (!_map[(i-_bounds.bottom())*_bounds.width() + (j-_bounds.left())]) {
                 shouldStop = true;
                 break;
             }
@@ -128,7 +128,7 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
     for (int j = bbox.right()-1; j >= bbox.left(); --j) {
         bool shouldStop = false;
         for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-            if (!_map[(i-_rod.bottom())*_rod.width() + (j-_rod.left())]) {
+            if (!_map[(i-_bounds.bottom())*_bounds.width() + (j-_bounds.left())]) {
                 shouldStop = true;
                 break;
             }
@@ -185,8 +185,8 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     RectI bboxA = bboxX;
     bboxA.set_top(bboxX.bottom());
     for (int i = bboxX.bottom(); i < bboxX.top();++i) {
-        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
-        if (!memchr(buf, 1, _rod.width())) {
+        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        if (!memchr(buf, 1, _bounds.width())) {
             bboxX.set_bottom(bboxX.bottom()+1);
             bboxA.set_top(bboxX.bottom());
         } else {
@@ -202,8 +202,8 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     RectI bboxB = bboxX;
     bboxB.set_bottom(bboxX.top());
     for (int i = bboxX.top()-1; i >= bboxX.bottom();--i) {
-        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
-        if (!memchr(buf, 1, _rod.width())) {
+        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        if (!memchr(buf, 1, _bounds.width())) {
             bboxX.set_top(bboxX.top()-1);
             bboxB.set_bottom(bboxX.top());
         } else {
@@ -220,7 +220,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     for (int j = bboxX.left(); j < bboxX.right(); ++j) {
         bool shouldStop = false;
         for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
+            if (_map[(i-_bounds.bottom())*_bounds.width()+(j-_bounds.left())]) {
                 shouldStop = true;
                 break;
             }
@@ -242,7 +242,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     for (int j = bboxX.right()-1; j >= bboxX.left(); --j) {
         bool shouldStop = false;
         for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-            if (_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]) {
+            if (_map[(i-_bounds.bottom())*_bounds.width()+(j-_bounds.left())]) {
                 shouldStop = true;
                 break;
             }
@@ -297,7 +297,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
 void
 Natron::Bitmap::markForRendered(const RectI& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
-        char* buf = &_map[(i-_rod.bottom())*_rod.width() + (roi.left() - _rod.left())];
+        char* buf = &_map[(i-_bounds.bottom())*_bounds.width() + (roi.left() - _bounds.left())];
         memset(buf, 1, roi.width());
     }
 }
@@ -305,8 +305,8 @@ Natron::Bitmap::markForRendered(const RectI& roi){
 const char*
 Natron::Bitmap::getBitmapAt(int x, int y) const
 {
-    if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
-        return _map + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
+    if (x >= _bounds.left() && x < _bounds.right() && y >= _bounds.bottom() && y < _bounds.top()) {
+        return _map + (y - _bounds.bottom()) * _bounds.width() + (x - _bounds.left());
     } else {
         return NULL;
     }
@@ -315,8 +315,8 @@ Natron::Bitmap::getBitmapAt(int x, int y) const
 char*
 Natron::Bitmap::getBitmapAt(int x, int y)
 {
-    if (x >= _rod.left() && x < _rod.right() && y >= _rod.bottom() && y < _rod.top()) {
-        return _map + (y - _rod.bottom()) * _rod.width() + (x - _rod.left());
+    if (x >= _bounds.left() && x < _bounds.right() && y >= _bounds.bottom() && y < _bounds.top()) {
+        return _map + (y - _bounds.bottom()) * _bounds.width() + (x - _bounds.left());
     } else {
         return NULL;
     }
