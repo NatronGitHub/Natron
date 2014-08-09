@@ -1910,13 +1910,14 @@ OfxEffectInstance::supportsTiles() const
 }
 
 bool
-OfxEffectInstance::supportsRenderScale() const
+OfxEffectInstance::supportsMultiResolution() const
 {
     return effectInstance()->supportsMultiResolution();
 }
 
 void
-OfxEffectInstance::beginEditKnobs() {
+OfxEffectInstance::beginEditKnobs()
+{
     effectInstance()->beginInstanceEditAction();
 }
 

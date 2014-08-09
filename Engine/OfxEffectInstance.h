@@ -66,35 +66,20 @@ public:
                                                     const std::string& grouping) WARN_UNUSED_RETURN;
 };
 
-class OfxEffectInstance : public QObject, public AbstractOfxEffectInstance {
-    
-    
+class OfxEffectInstance : public QObject, public AbstractOfxEffectInstance
+{
     Q_OBJECT
-    
-    Natron::OfxImageEffectInstance* effect_;
-    mutable std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-    bool _isOutput;//if the OfxNode can output a file somehow
 
-    bool _penDown; // true when the overlay trapped a penDow action
-    Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
-
-    bool _initialized; //true when the image effect instance has been created and populated
-    boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
-    mutable EffectInstance::RenderSafety _renderSafety;
-    mutable bool _wasRenderSafetySet;
-    mutable QReadWriteLock* _renderSafetyLock;
 public:
-    
-    
     OfxEffectInstance(boost::shared_ptr<Natron::Node> node);
     
     virtual ~OfxEffectInstance();
     
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string& context,const NodeSerialization* serialization) OVERRIDE FINAL;
-    
+
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return effect_; }
-    
+
     const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN { return effect_; }
 
     void setAsOutputNode() {_isOutput = true;}
@@ -209,10 +194,30 @@ public:
 
     virtual void purgeCaches() OVERRIDE;
 
+    /**
+     * @brief Does this effect supports tiling ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
+     * If a clip or plugin does not support tiled images, then the host should supply
+     * full RoD images to the effect whenever it fetches one.
+     **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool supportsRenderScale() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+    /**
+     * @brief Does this effect supports multiresolution ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+     * Multiple resolution images mean...
+     * input and output images can be of any size
+     * input and output images can be offset from the origin
+     **/
+    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Does this effect supports rendering at a different scale than 1 ?
+     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
+     * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
+     **/
+    virtual bool supportsRenderScale() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     
     virtual void onMultipleInputsChanged() OVERRIDE FINAL;
@@ -265,6 +270,20 @@ private:
     void tryInitializeOverlayInteracts();
 
     void initializeContextDependentParams();
+
+private:
+Natron::OfxImageEffectInstance* effect_;
+mutable std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
+bool _isOutput;//if the OfxNode can output a file somehow
+
+bool _penDown; // true when the overlay trapped a penDow action
+Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
+
+bool _initialized; //true when the image effect instance has been created and populated
+boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
+mutable EffectInstance::RenderSafety _renderSafety;
+mutable bool _wasRenderSafetySet;
+mutable QReadWriteLock* _renderSafetyLock;
 
 };
 

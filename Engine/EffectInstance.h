@@ -581,11 +581,25 @@ public:
     
     /**
      * @brief Does this effect supports tiling ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
+     * If a clip or plugin does not support tiled images, then the host should supply
+     * full RoD images to the effect whenever it fetches one.
      **/
     virtual bool supportsTiles() const { return false; }
     
     /**
+     * @brief Does this effect supports multiresolution ?
+     * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+     * Multiple resolution images mean...
+     * input and output images can be of any size
+     * input and output images can be offset from the origin
+     **/
+    virtual bool supportsMultiResolution() const { return false; }
+
+    /**
      * @brief Does this effect supports rendering at a different scale than 1 ?
+     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
+     * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
      **/
     virtual bool supportsRenderScale() const { return false; }
     

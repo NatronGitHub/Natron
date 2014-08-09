@@ -590,6 +590,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::getImage(int inputNb,
 
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
+#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
     if (!dontUpscale && inputImgMipMapLevel > 0 && !supportsRenderScale()) {
 #pragma message WARN("wrong: it should use the originial RoD of the full-res image, not an upscaled one (which may be larger)")
         RectI upscaledRoD = inputImg->getBounds().upscalePowerOfTwo(inputImgMipMapLevel);
@@ -1048,6 +1049,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         image = newImage;
         downscaledImage = image;
         
+#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
         if (!supportsRenderScale() && args.mipMapLevel != 0) {
             ///Allocate the upscaled image
             image.reset(new Natron::Image(args.components,rod,0,args.bitdepth));
@@ -1114,6 +1116,7 @@ boost::shared_ptr<Natron::Image> EffectInstance::renderRoI(const RenderRoIArgs& 
         ///render the parts we are interested in and then downscale again
         ///Before doing that we verify if everything we want is already rendered in which case we
         ///dont degrade the image
+#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
         if (!supportsRenderScale() && args.mipMapLevel != 0) {
             
             RectI intersection;
@@ -1216,6 +1219,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
     ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
     ///if the plug-in can just use the downscaled image to render.
+#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
     bool useFullResImage = (!supportsRenderScale() && mipMapLevel != 0);
     
     ///The image and downscaled image are pointing to the same image in 2 cases:
@@ -1223,6 +1227,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///2) Proxy mode is turned on but plug-in supports render scale
     ///Subsequently the image and downscaled image are different only if the plug-in
     ///does not support the render scale and the proxy mode is turned on.
+#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
     assert((image == downscaledImage && (supportsRenderScale() || mipMapLevel == 0)) ||
            (image != downscaledImage && !supportsRenderScale() && mipMapLevel != 0));
     
@@ -1436,6 +1441,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                              inputPrefDepth,
                                                              channelForAlphaInput)); //< requested bitdepth
                         
+#pragma message WARN("TODO: if supportsMultiResolution is false, check that all inputs have the same rod and their (x1,y1) is at the origin")
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }
@@ -1611,6 +1617,7 @@ Natron::Status EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     const bool isRenderResponseToUserInteraction = args._isRenderResponseToUserInteraction;
     const int channelForAlpha = args._channelForAlpha;
 
+#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
     const bool useFullResImage = (!supportsRenderScale() && mipMapLevel != 0);
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
