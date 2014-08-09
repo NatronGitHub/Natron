@@ -2396,6 +2396,7 @@ Bezier::setLeftBezierPoint(int index,
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool keySet = false;
+    bool rippleEditEnabled = getContext()->isRippleEditEnabled();
     {
     QMutexLocker l(&itemMutex);
     
@@ -2418,7 +2419,7 @@ Bezier::setLeftBezierPoint(int index,
             (*fp)->setLeftBezierStaticPosition(x, y);
         }
         
-        if (getContext()->isRippleEditEnabled()) {
+        if (rippleEditEnabled) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
@@ -2446,6 +2447,7 @@ Bezier::setRightBezierPoint(int index,
     
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool keySet = false;
+    bool rippleEditEnabled = getContext()->isRippleEditEnabled();
     {
         QMutexLocker l(&itemMutex);
         
@@ -2468,7 +2470,7 @@ Bezier::setRightBezierPoint(int index,
             (*fp)->setRightBezierStaticPosition(x, y);
         }
         
-        if (getContext()->isRippleEditEnabled()) {
+        if (rippleEditEnabled) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2!=keyframes.end(); ++it2) {
