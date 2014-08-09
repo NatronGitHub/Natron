@@ -1728,7 +1728,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
             }
             if (mipMapLevel != 0) {
                 assert(fullScaleImage != downscaledImage);
-                fullScaleImage->downscaleMipMap(renderRectToRender, mipMapLevel, downscaledImage.get());
+                fullScaleImage->downscaleMipMap(renderRectToRender, 0, mipMapLevel, downscaledImage.get());
             }
         } else {
             assert(renderMappedImage == downscaledMappedImage);
