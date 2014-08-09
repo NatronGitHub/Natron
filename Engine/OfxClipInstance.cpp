@@ -539,21 +539,10 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime tim
             "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
             "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
             ///try to recover from the mistake of the plug-in.
-            unsigned int mipmapLevel;
-            std::list<ViewerInstance*> viewersConnected;
-            _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
-            if (viewersConnected.empty()) {
-                if (view == -1) {
-                    view = 0;
-                }
-                mipmapLevel = 0;
-            } else {
-                if (view == -1) {
-                    view = viewersConnected.front()->getCurrentView();
-                }
-                mipmapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
+            unsigned int mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
+            if (view == -1) {
+                view = _nodeInstance->getCurrentViewRecursive();
             }
-
             outputImage = _nodeInstance->getNode()->getImageBeingRendered(time,mipmapLevel, view);
         } else {
             outputImage = _lastRenderArgs.localData().image;

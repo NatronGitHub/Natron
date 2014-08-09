@@ -483,18 +483,7 @@ EffectInstance::getImage(int inputNb,
         isSequentialRender = true;
         isRenderUserInteraction = true;
         byPassCache = false;
-        std::list<ViewerInstance*> viewers;
-        getNode()->hasViewersConnected(&viewers);
-#pragma message WARN("ovverrides the 'scale' parameter, is that what we want?")
-        RenderScale scale;
-        if (!viewers.empty()) {
-            mipMapLevel = viewers.front()->getMipMapLevel();
-#pragma message WARN("changes the 'view' parameter, is that what we want?")
-            //view = (unsigned int)viewers.front()->getCurrentView();
-        }
-        scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-        scale.y = scale.x;
-
+    
         Natron::Status stat = getRegionOfDefinition(time, scale, view, &rod);
         if (stat == StatFailed) {
             return boost::shared_ptr<Natron::Image>();
