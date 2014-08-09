@@ -34,16 +34,20 @@ QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
 :Natron::OutputEffectInstance(node)
 , _lut(Natron::Color::LutManager::sRGBLut())
 {
-   
 }
 
-QtWriter::~QtWriter(){
+QtWriter::~QtWriter()
+{
 }
 
-std::string QtWriter::pluginID() const {
+std::string
+QtWriter::pluginID() const
+{
     return "WriteQt";
 }
-std::string QtWriter::pluginLabel() const{
+std::string
+QtWriter::pluginLabel() const
+{
     return "WriteQt";
 }
 
@@ -71,7 +75,9 @@ QtWriter::supportedFileFormats_static(std::vector<std::string>* formats)
     }
 }
 
-std::vector<std::string> QtWriter::supportedFileFormats() const {
+std::vector<std::string>
+QtWriter::supportedFileFormats() const
+{
     std::vector<std::string> ret;
     supportedFileFormats_static(&ret);
     return ret;
@@ -166,7 +172,8 @@ QtWriter::knobChanged(KnobI* k,
     }
 }
 
-static std::string filenameFromPattern(const std::string& pattern,int frameIndex) {
+static std::string filenameFromPattern(const std::string& pattern,int frameIndex)
+{
     std::string ret = pattern;
     int lastDot = pattern.find_last_of('.');
     if (lastDot == (int)std::string::npos) {

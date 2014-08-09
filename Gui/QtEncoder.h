@@ -64,9 +64,13 @@ public:
     
     void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD& rod, int view, SequenceTime time) OVERRIDE FINAL;
 
-    virtual Natron::Status render(SequenceTime /*time*/, RenderScale /*scale*/, const RectI& /*roi*/, int /*view*/,
-                                  bool /*isSequentialRender*/,bool /*isRenderResponseToUserInteraction*/,
-                                  boost::shared_ptr<Natron::Image> /*output*/) OVERRIDE;
+    virtual Natron::Status render(SequenceTime time,
+                                  const RenderScale& scale,
+                                  const RectI& roi,
+                                  int view,
+                                  bool isSequentialRender,
+                                  bool isRenderResponseToUserInteraction,
+                                  boost::shared_ptr<Natron::Image> output) OVERRIDE;
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
 
