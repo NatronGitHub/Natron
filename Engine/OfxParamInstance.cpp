@@ -651,12 +651,18 @@ OfxChoiceInstance::setOption(int /*num*/)
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     _entries.clear();
     std::vector<std::string> helpStrings;
+    bool hashelp = false;
     for (int i = 0; i < dim; ++i) {
         std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
         std::string help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
-
+        if (!help.empty()) {
+            hashelp = true;
+        }
         _entries.push_back(str);
         helpStrings.push_back(help);
+    }
+    if (!hashelp) {
+        helpStrings.clear();
     }
     _knob->populateChoices(_entries, helpStrings);
 }
