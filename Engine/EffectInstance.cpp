@@ -508,9 +508,14 @@ EffectInstance::getImage(int inputNb,
             ///// should never happen.
             inputsRoI = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
         }
-        RectI optionalBoundsI;
-        optionalBounds.toPixelEnclosing(scale, &optionalBoundsI);
-        isIdentity = isIdentity_public(time, scale, optionalBoundsI, view, &identityTime, &inputNbIdentity);
+        //RectI optionalBoundsI;
+        //optionalBounds.toPixelEnclosing(scale, &optionalBoundsI);
+
+        // isIdentity is testing for the renderWindow given as a parameter.
+        // In Natron, we only consider isIdentity for whole images
+        RectI imageRoDPixel;
+        rod.toPixelEnclosing(scale, &imageRoDPixel);
+        isIdentity = isIdentity_public(time, scale, imageRoDPixel, view, &identityTime, &inputNbIdentity);
     } else {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
@@ -951,7 +956,11 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         int inputNbIdentity;
         FramesNeededMap framesNeeded;
 
-        bool identity = isIdentity_public(args.time,args.scale,args.roi,args.view,&inputTimeIdentity,&inputNbIdentity);
+        // isIdentity is testing for the renderWindow given as a parameter.
+        // In Natron, we only consider isIdentity for whole images
+        RectI imageRoDPixel;
+        rod.toPixelEnclosing(args.scale, &imageRoDPixel);
+        bool identity = isIdentity_public(args.time, args.scale, imageRoDPixel, args.view, &inputTimeIdentity, &inputNbIdentity);
     
         if (identity) {
             
@@ -2594,9 +2603,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             
             SequenceTime identityTime;
             int identityNb;
-            RectI roi;
-            rod.toPixelEnclosing(scale, &roi);
-            bool isIdentity = isIdentity_public(time, scale, roi, view, &identityTime, &identityNb);
+
+            // isIdentity is testing for the renderWindow given as a parameter.
+            // In Natron, we only consider isIdentity for whole images
+            RectI imageRoDPixel;
+            rod.toPixelEnclosing(scale, &imageRoDPixel);
+            bool isIdentity = isIdentity_public(time, scale, imageRoDPixel, view, &identityTime, &identityNb);
             
             ///These args remain valid on the thread storage 'til it gets out of scope
             Implementation::ScopedInstanceChangedArgs args(&_imp->renderArgs,
