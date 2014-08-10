@@ -33,7 +33,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include <SequenceParsing.h>
 
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS 2
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS
+#define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET 3
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET
 
 struct MasterSerialization
 {
@@ -289,6 +290,7 @@ class KnobSerialization
                 ar & boost::serialization::make_nvp("SlavePtBezier",it->bezierName);
                 ar & boost::serialization::make_nvp("SlavePtIndex",it->cpIndex);
                 ar & boost::serialization::make_nvp("SlavePtIsFeather",it->isFeather);
+                ar & boost::serialization::make_nvp("OffsetTime",it->offsetTime);
             }
             
         }
@@ -350,6 +352,9 @@ class KnobSerialization
                 ar & boost::serialization::make_nvp("SlavePtBezier",t.bezierName);
                 ar & boost::serialization::make_nvp("SlavePtIndex",t.cpIndex);
                 ar & boost::serialization::make_nvp("SlavePtIsFeather",t.isFeather);
+                if (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET) {
+                    ar & boost::serialization::make_nvp("OffsetTime",t.offsetTime);
+                }
                 slavedTracks.push_back(t);
             }
         }

@@ -1657,7 +1657,7 @@ void Gui::maximize(TabWidget* what) {
             // also if we want to maximize the workshop pane, don't hide the properties pane
             
             bool hasProperties = false;
-            for (int i = 0; i < (*it)->count();++it) {
+            for (int i = 0; i < (*it)->count();++i) {
                 QString tabName = (*it)->tabAt(i)->objectName();
                 if (tabName == kPropertiesBinName) {
                     hasProperties = true;

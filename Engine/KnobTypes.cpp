@@ -534,6 +534,7 @@ void Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
         s.isFeather = (*it)->isFeatherPoint();
         s.cpIndex = !s.isFeather ? (*it)->getBezier()->getControlPointIndex(*it) : (*it)->getBezier()->getFeatherPointIndex(*it);
         s.rotoNodeName = (*it)->getBezier()->getRotoNodeName();
+        s.offsetTime = (*it)->getOffsetTime();
         tracks->push_back(s);
     }
 }
@@ -554,7 +555,6 @@ void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const 
     
     std::string lastNodeName;
     RotoContext* lastRoto = 0;
-    SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it!=tracks.end(); ++it) {
         RotoContext* roto = 0;
         ///speed-up by remembering the last one
@@ -589,7 +589,7 @@ void Double_Knob::restoreTracks(const std::list <SerializedTrack>& tracks,const 
                 qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
                 break;
             }
-            point->slaveTo(time,thisShared);
+            point->slaveTo(it->offsetTime,thisShared);
             _slavedTracks.push_back(point);
         }
     }

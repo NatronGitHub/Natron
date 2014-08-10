@@ -161,6 +161,8 @@ public:
     boost::shared_ptr<Double_Knob> isSlaved() const;
     void unslave();
     
+    SequenceTime getOffsetTime() const;
+    
 private:
     
     template<class Archive>

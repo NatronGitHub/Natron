@@ -243,6 +243,7 @@ public:
         std::string bezierName;
         int cpIndex;
         bool isFeather;
+        int offsetTime;
     };
     void serializeTracks(std::list<SerializedTrack>* tracks);
 

@@ -112,7 +112,8 @@ BezierCP::setPositionAtTime(int time,double x,double y)
         ///update the offset time
         QWriteLocker l(&_imp->masterMutex);
         if (_imp->masterTrack) {
-            _imp->offsetTime = time;
+            return;
+            // _imp->offsetTime = time;
         }
     }
     
@@ -257,7 +258,8 @@ BezierCP::setLeftBezierPointAtTime(int time,double x,double y)
         ///update the offset time
         QWriteLocker l(&_imp->masterMutex);
         if (_imp->masterTrack) {
-            _imp->offsetTime = time;
+            return;
+            //_imp->offsetTime = time;
         }
     }    {
         KeyFrame k(time,x);
@@ -280,7 +282,8 @@ BezierCP::setRightBezierPointAtTime(int time,double x,double y)
         ///update the offset time
         QWriteLocker l(&_imp->masterMutex);
         if (_imp->masterTrack) {
-            _imp->offsetTime = time;
+            return;
+            // _imp->offsetTime = time;
         }
     }
     {
@@ -626,6 +629,13 @@ BezierCP::equalsAtTime(int time,const BezierCP& other) const
         return true;
     }
     return false;
+}
+
+SequenceTime
+BezierCP::getOffsetTime() const
+{
+    QReadLocker l(&_imp->masterMutex);
+    return _imp->offsetTime;
 }
 
 void
