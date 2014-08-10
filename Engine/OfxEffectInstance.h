@@ -216,7 +216,7 @@ public:
      * There is no OFX property for this purpose. The only solution found for OFX is that if a render
      * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
      **/
-    virtual bool supportsRenderScale() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool supportsRenderScale() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     

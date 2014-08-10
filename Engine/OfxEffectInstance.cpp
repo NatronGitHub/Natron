@@ -191,7 +191,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
-    
 
     try {
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
@@ -1233,7 +1232,8 @@ OfxEffectInstance::render(SequenceTime time,
         
         stat = effect_->renderAction((OfxTime)time,
                                      field,
-                                     ofxRoI,useScaleOne ? scaleOne : scale,
+                                     ofxRoI,
+                                     useScaleOne ? scaleOne : scale,
                                      isSequentialRender,
                                      isRenderResponseToUserInteraction,
                                      view,
@@ -1887,6 +1887,13 @@ OfxEffectInstance::supportsMultiResolution() const
 {
     return effectInstance()->supportsMultiResolution();
 }
+
+bool
+OfxEffectInstance::supportsRenderScale() const
+{
+    // Most readers don't support multiresolution, including Tuttle readers -
+    // which crash on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
+    return effect_->getContext() != kOfxImageEffectContextReader;}
 
 void
 OfxEffectInstance::beginEditKnobs()
