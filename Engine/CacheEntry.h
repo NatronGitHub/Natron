@@ -398,6 +398,10 @@ public:
      **/
     void allocateMemory(bool restore,const std::string& path)
     {
+        ///Don't allocate if cost is -1
+        if (_params->getCost() == -1) {
+            return;
+        }
         
         if (restore) {
             restoreBufferFromFile(path);

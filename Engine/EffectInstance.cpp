@@ -1477,7 +1477,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                              isSequentialRender, //< sequential render ?
                                                              isRenderMadeInResponseToUserInteraction, // < user interaction ?
                                                              byPassCache, //< look-up the cache for existing images ?
-                                                             rod,// < did we precompute any RoD to speed-up the call ?
+                                                             RectD(),// < did we precompute any RoD to speed-up the call ?
                                                              inputPrefComps, //< requested comps
                                                              inputPrefDepth,
                                                              channelForAlphaInput)); //< requested bitdepth
