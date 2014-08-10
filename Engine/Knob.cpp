@@ -1167,11 +1167,8 @@ void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason r
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    {
-        QMutexLocker l(&_imp->evaluationBlockedMutex);
-        if (_imp->evaluationBlocked) {
-            return;
-        }
+    if (isEvaluationBlocked()) {
+        return;
     }
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
@@ -1183,11 +1180,8 @@ void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueCha
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    {
-        QMutexLocker l(&_imp->evaluationBlockedMutex);
-        if (_imp->evaluationBlocked) {
-            return;
-        }
+    if (isEvaluationBlocked()) {
+        return;
     }
     _imp->evaluateQueue.isSignificant |= isSignificant;
     _imp->evaluateQueue.requester = knob;
