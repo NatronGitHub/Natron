@@ -1531,10 +1531,17 @@ Color_KnobGui::updateGUI(int dimension)
     assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
     double value = _knob->getValue(dimension);
     switch (dimension) {
-        case 0:
+        case 0: {
             _rBox->setValue(value);
             _slider->seekScalePosition(value);
-            break;
+            if (!_knob->areAllDimensionsEnabled()) {
+                _gBox->setValue(value);
+                _bBox->setValue(value);
+                if (_dimension >= 4) {
+                    _aBox->setValue(value);
+                }
+            }
+        }   break;
         case 1:
             _gBox->setValue(value);
             break;
@@ -1548,6 +1555,7 @@ Color_KnobGui::updateGUI(int dimension)
             throw std::logic_error("wrong dimension");
     }
 
+    
     double rf = _rBox->value();
     uchar r = Color::floatToInt<256>(Natron::Color::to_func_srgb(rf));
     double gf = rf;

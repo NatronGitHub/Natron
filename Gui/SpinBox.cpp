@@ -143,13 +143,15 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
     }
     
     int i = 0;
+    bool skipFirst = false;
     if (str.at(0) == QChar('-')) {
+        skipFirst = true;
         ++i;
     }
     while (i < str.size() && i == QChar('0')) {
         ++i;
     }
-    str = str.remove(0, i);
+    str = str.remove(skipFirst ? 1 : 0, i);
     
     insert(str);
     setCursorPosition(pos);
