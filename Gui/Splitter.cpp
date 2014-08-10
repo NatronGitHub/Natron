@@ -14,14 +14,14 @@
 #include <cassert>
 Splitter::Splitter(QWidget* parent)
 : QSplitter(parent)
-, _lock(QMutex::Recursive)
+, _lock()
 {
     
 }
 
 Splitter::Splitter(Qt::Orientation orientation, QWidget * parent)
 : QSplitter(orientation,parent)
-, _lock(QMutex::Recursive)
+, _lock()
 {
     
 }
@@ -61,9 +61,9 @@ void Splitter::setSizes_mt_safe(const QList<int> & list) {
     setSizes(list);
 }
 
-bool Splitter::event(QEvent * e) {
+void Splitter::resizeEvent(QResizeEvent * e) {
     QMutexLocker l(&_lock);
-    return QSplitter::event(e);
+    return QSplitter::resizeEvent(e);
 }
 
 void Splitter::setObjectName_mt_safe(const QString& str) {

@@ -1139,19 +1139,24 @@ void Gui::wipeLayout()
                     (*it)->removeTab(*it2);
                 }
             }
-            
-            (*it)->hide();
             (*it)->setParent(NULL);
+            delete *it;
         }
         _imp->_panes.clear();
     }
-    for (std::list<Splitter*>::iterator it = _imp->_splitters.begin(); it!=_imp->_splitters.end(); ++it) {
-        if (_imp->_leftRightSplitter != *it) {
-            (*it)->deleteLater();
+    {
+        QMutexLocker l(&_imp->_splittersMutex);
+        for (std::list<Splitter*>::iterator it = _imp->_splitters.begin(); it!=_imp->_splitters.end(); ++it) {
+            if (_imp->_leftRightSplitter != *it) {
+                while ((*it)->count() > 0) {
+                    (*it)->widget(0)->setParent(NULL);
+                }
+                (*it)->setParent(NULL);
+                delete *it;
+            }
         }
+        _imp->_splitters.clear();
     }
-    _imp->_splitters.clear();
-    
     Splitter *newSplitter = new Splitter(_imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
     newSplitter->setObjectName_mt_safe(_imp->_leftRightSplitter->objectName_mt_safe()); 
@@ -1160,7 +1165,11 @@ void Gui::wipeLayout()
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
     _imp->_mainLayout->addWidget(newSplitter);
-    _imp->_splitters.push_back(newSplitter);
+    
+    {
+         QMutexLocker l(&_imp->_splittersMutex);
+        _imp->_splitters.push_back(newSplitter);
+    }
     
 }
 
@@ -1169,7 +1178,10 @@ void Gui::createDefaultLayout1()
     ///First tab widget must be created this way
     _imp->_viewersPane = new TabWidget(this,_imp->_leftRightSplitter);
     _imp->_viewersPane->setObjectName(kViewerPaneName);
-    _imp->_panes.push_back(_imp->_viewersPane);
+    {
+        QMutexLocker l(&_imp->_panesMutex);
+        _imp->_panes.push_back(_imp->_viewersPane);
+    }
     _imp->_leftRightSplitter->addWidget(_imp->_viewersPane);
     
     QList<int> sizes;

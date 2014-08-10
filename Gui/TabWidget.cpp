@@ -541,7 +541,12 @@ void TabWidget::closePane() {
     
     /*deleting the subSplitter*/
     _gui->removeSplitter(container);
-    container->deleteLater();
+    
+    while (container->count() > 0) {
+        container->widget(0)->setParent(NULL);
+    }
+    container->setParent(NULL);
+    delete container;
 }
 
 void TabWidget::floatPane(QPoint* position){
@@ -633,7 +638,14 @@ void TabWidget::floatCurrentWidget(){
             ///move otherWidget to the parent splitter of the splitter
             Splitter* parentParentSplitter = dynamic_cast<Splitter*>(parentSplitter->parentWidget());
             _gui->removeSplitter(parentSplitter);
-            parentSplitter->deleteLater();
+            
+            while (parentSplitter->count() > 0) {
+                parentSplitter->widget(0)->setParent(NULL);
+            }
+            parentSplitter->setParent(NULL);
+            delete parentSplitter;
+
+            
             if (parentParentSplitter) {
                 parentParentSplitter->addWidget_mt_safe(otherWidget);
             }

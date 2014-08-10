@@ -50,7 +50,7 @@ public:
     QString objectName_mt_safe() const;
 private:
     
-    virtual bool event(QEvent * e);
+    virtual void resizeEvent(QResizeEvent * e) OVERRIDE FINAL;
     
     mutable QMutex _lock;
 };
