@@ -1700,9 +1700,9 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
         renderRectToRender = downscaledRectToRenderMinimal;
     }
     
-    if (!downscaledRectToRenderMinimal.isNull()) {
+    if (!renderRectToRender.isNull()) {
         
-        Natron::Status st = render_public(time, scale, downscaledRectToRenderMinimal, view,
+        Natron::Status st = render_public(time, scale, renderRectToRender, view,
                                           isSequentialRender,
                                           isRenderResponseToUserInteraction,
                                           renderMappedImage);
@@ -1711,14 +1711,14 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
         }
 
         if (!aborted()) {
-            renderMappedImage->markForRendered(downscaledRectToRenderMinimal);
+            renderMappedImage->markForRendered(renderRectToRender);
         }
 
         ///copy the rectangle rendered in the full scale image to the downscaled output
         if (useFullResImage) {
             ///First demap the fullScaleMappedImage to the original comps/bitdepth if it needs to
             if (renderMappedImage == fullScaleMappedImage && fullScaleMappedImage != fullScaleImage) {
-                renderMappedImage->convertToFormat(downscaledRectToRenderMinimal,
+                renderMappedImage->convertToFormat(renderRectToRender,
                                                    getApp()->getDefaultColorSpaceForBitDepth(renderMappedImage->getBitDepth()),
                                                    getApp()->getDefaultColorSpaceForBitDepth(fullScaleMappedImage->getBitDepth()),
                                                    channelForAlpha, false, true,
@@ -1730,8 +1730,9 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
             }
         } else {
             assert(renderMappedImage == downscaledMappedImage);
-            if (downscaledMappedImage != downscaledImage) {
-                downscaledMappedImage->convertToFormat(downscaledRectToRenderMinimal,
+            assert(renderRectToRender == downscaledRectToRenderMinimal);
+            if (renderMappedImage != downscaledImage) {
+                renderMappedImage->convertToFormat(renderRectToRender,
                                                    getApp()->getDefaultColorSpaceForBitDepth(renderMappedImage->getBitDepth()),
                                                    getApp()->getDefaultColorSpaceForBitDepth(downscaledMappedImage->getBitDepth()),
                                                    channelForAlpha, false, true,
