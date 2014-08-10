@@ -1573,7 +1573,7 @@ Color_KnobGui::updateGUI(int dimension)
     if (_dimension == 3) {
         colorsEqual = (rf == gf && rf == bf);
     } else {
-        colorsEqual = (rf == gf && rf == bf && r == af);
+        colorsEqual = (rf == gf && rf == bf && rf == af);
     }
     if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
         expandAllDimensions();
