@@ -71,6 +71,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CustomParamInteract.h"
+#include "Gui/NodeCreationDialog.h"
 
 using namespace Natron;
 
@@ -1028,8 +1029,8 @@ struct LinkToKnobDialogPrivate
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
     QLabel* selectNodeLabel;
-    QComboBox* nodeSelectionCombo;
-    QComboBox* knobSelectionCombo;
+    CompleterLineEdit* nodeSelectionCombo;
+    ComboBox* knobSelectionCombo;
     
     QDialogButtonBox* buttons;
     std::vector< boost::shared_ptr<Natron::Node> > allNodes;
@@ -1064,13 +1065,9 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
     _imp->selectNodeLabel = new QLabel(tr("Parent:"),_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
     
-    _imp->nodeSelectionCombo = new QComboBox(_imp->firstLine);
-    _imp->nodeSelectionCombo->setEditable(true);
-    _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
     
     assert(from->getKnob()->getHolder()->getApp());
     from->getKnob()->getHolder()->getApp()->getActiveNodes(&_imp->allNodes);
-    
     QStringList nodeNames;
     for (U32 i = 0; i < _imp->allNodes.size(); ++i) {
         QString name(_imp->allNodes[i]->getName().c_str());
@@ -1078,19 +1075,20 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
         //_imp->nodeSelectionCombo->addItem(name);
     }
     nodeNames.sort();
-
-    QCompleter* completer = new QCompleter(nodeNames,this);
-    QObject::connect(completer,SIGNAL(activated(QString)),this,SLOT(onNodeComboBoxCurrentIndexChanged(QString)));
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    _imp->nodeSelectionCombo->setCompleter(completer);
-    _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
-    QTimer::singleShot(25, _imp->nodeSelectionCombo->completer(), SLOT(complete()));
+    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,false,this);
+    _imp->nodeSelectionCombo->setToolTip(tr("Input the name of a node in the current project."));
+    _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
     
-    _imp->knobSelectionCombo = new QComboBox(_imp->firstLine);
+   
+   
+
+    _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
+    QTimer::singleShot(25, _imp->nodeSelectionCombo, SLOT(showCompleter()));
+    
+    _imp->knobSelectionCombo = new ComboBox(_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->knobSelectionCombo);
     
-    QObject::connect(_imp->nodeSelectionCombo,SIGNAL(currentIndexChanged(QString)),this,SLOT(onNodeComboBoxCurrentIndexChanged(QString)));
-
+    QObject::connect(_imp->nodeSelectionCombo,SIGNAL(itemCompletionChosen()),this,SLOT(onNodeComboEditingFinished()));
     
     _imp->firstLineLayout->addStretch();
     
@@ -1103,8 +1101,9 @@ LinkToKnobDialog::~LinkToKnobDialog()
                      
 
 
-void LinkToKnobDialog::onNodeComboBoxCurrentIndexChanged(const QString& index)
+void LinkToKnobDialog::onNodeComboEditingFinished()
 {
+    QString index = _imp->nodeSelectionCombo->text();
     _imp->knobSelectionCombo->clear();
     boost::shared_ptr<Natron::Node> selectedNode;
     std::string currentNodeName = index.toStdString();
@@ -1129,8 +1128,8 @@ void LinkToKnobDialog::onNodeComboBoxCurrentIndexChanged(const QString& index)
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>(knobs[j].get());
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {
-                    if (!knobs[j]->isSlave(k) && knobs[j]->isEnabled(k)) {
-                        QString name(knobs[j]->getDescription().c_str());
+                    QString name(knobs[j]->getDescription().c_str());
+                    if (!knobs[j]->isSlave(k) && knobs[j]->isEnabled(k) && !name.isEmpty()) {
                         if (knobs[j]->getDimension() > 1) {
                             QString dimensionName = knobs[j]->getDimensionName(k).c_str();
                             
@@ -1152,7 +1151,7 @@ void LinkToKnobDialog::onNodeComboBoxCurrentIndexChanged(const QString& index)
 
 
 std::pair<int,boost::shared_ptr<KnobI> > LinkToKnobDialog::getSelectedKnobs() const {
-    QString str = _imp->knobSelectionCombo->itemText(_imp->knobSelectionCombo->currentIndex());
+    QString str = _imp->knobSelectionCombo->itemText(_imp->knobSelectionCombo->activeIndex());
     std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > >::const_iterator it = _imp->allKnobs.find(str);
     if (it != _imp->allKnobs.end()) {
         return it->second;

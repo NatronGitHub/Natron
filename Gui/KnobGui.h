@@ -343,7 +343,7 @@ public:
 
 public slots:
     
-    void onNodeComboBoxCurrentIndexChanged(const QString& index);
+    void onNodeComboEditingFinished();
     
 private:
     

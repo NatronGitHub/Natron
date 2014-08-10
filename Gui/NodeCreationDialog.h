@@ -24,7 +24,6 @@ CLANG_DIAG_ON(uninitialized)
 
 class QStringList;
 class QModelIndex;
-class NodeCreationDialog;
 class QListView;
 struct CompleterLineEditPrivate;
 class CompleterLineEdit: public LineEdit
@@ -33,7 +32,7 @@ class CompleterLineEdit: public LineEdit
     Q_OBJECT
 public:
     
-    CompleterLineEdit(const QStringList& words,NodeCreationDialog* parent);
+    CompleterLineEdit(const QStringList& words,bool quickExit,QDialog* parent);
     
     virtual ~CompleterLineEdit();
     
@@ -43,6 +42,10 @@ public slots:
     void filterText(const QString& txt);
     void setTextFromIndex(const QModelIndex& index);
     void showCompleter();
+    
+signals:
+    
+    void itemCompletionChosen();
     
 private:
     
@@ -63,7 +66,6 @@ public:
     
     QString getNodeName() const;
     
-    bool determineIfAcceptNeeded();
 private:
 
     

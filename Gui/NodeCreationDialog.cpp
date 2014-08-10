@@ -7,13 +7,11 @@
 
 #include "NodeCreationDialog.h"
 
-#include <QCompleter>
 #include <QVBoxLayout>
 #include <QStringList>
 #include <QKeyEvent>
 #include <QAbstractItemView>
 #include <QTimer>
-#include <QStyledItemDelegate>
 #include <QApplication>
 #include <QListView>
 #include <QDesktopWidget>
@@ -24,29 +22,21 @@
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
-class ListView : public QListView
-{
-    /*NodeCreationDialog* dialog;*/
-public:
-    
-    ListView(NodeCreationDialog* parent) : QListView(parent) /*, dialog(parent)*/ {}
-    
-private:
-    
-};
 
 
 struct CompleterLineEditPrivate {
-    NodeCreationDialog* dialog;
+    QDialog* dialog;
     QListView* listView;
     QStringListModel* model;
     QStringList words;
+    bool quickExitEnabled;
     
-    CompleterLineEditPrivate(const QStringList& words,NodeCreationDialog* parent)
+    CompleterLineEditPrivate(const QStringList& words,bool quickExit,QDialog* parent)
     : dialog(parent)
     , listView(NULL)
     , model(NULL)
     , words(words)
+    , quickExitEnabled(quickExit)
     {
         
     }
@@ -54,9 +44,9 @@ struct CompleterLineEditPrivate {
 
 
 
-CompleterLineEdit::CompleterLineEdit(const QStringList& words,NodeCreationDialog* parent)
+CompleterLineEdit::CompleterLineEdit(const QStringList& words,bool quickExit,QDialog* parent)
 : LineEdit(parent)
-, _imp(new CompleterLineEditPrivate(words,parent))
+, _imp(new CompleterLineEditPrivate(words,quickExit,parent))
 {
     _imp->listView = new QListView(this);
     _imp->model = new QStringListModel(this);
@@ -110,6 +100,7 @@ void CompleterLineEdit::setTextFromIndex(const QModelIndex& index)
 {
     QString text = index.data().toString();
     setText(text);
+    emit itemCompletionChosen();
     _imp->listView->hide();
 }
 
@@ -122,7 +113,15 @@ void CompleterLineEdit::keyPressEvent(QKeyEvent* e) {
     QModelIndex currentIndex = _imp->listView->currentIndex();
     
     if (key == Qt::Key_Escape) {
-        _imp->dialog->close();
+        if (_imp->quickExitEnabled) {
+            _imp->dialog->reject();
+        } else {
+            if (_imp->listView->isVisible()) {
+                _imp->listView->hide();
+            } else {
+                _imp->dialog->reject();
+            }
+        }
         e->accept();
     } else if (key == Qt::Key_Down) {
         if (viewVisible) {
@@ -151,14 +150,21 @@ void CompleterLineEdit::keyPressEvent(QKeyEvent* e) {
     } else if (key == Qt::Key_Enter || key == Qt::Key_Return) {
         if (_imp->model->rowCount() == 1) {
             setText(_imp->model->index(0).data().toString());
-            _imp->dialog->accept();
+            emit itemCompletionChosen();
+            if (_imp->quickExitEnabled) {
+                _imp->dialog->accept();
+            }
             e->accept();
+                
         } else {
             const QItemSelection selection = _imp->listView->selectionModel()->selection();
             QModelIndexList indexes = selection.indexes();
             if (indexes.size() == 1) {
                 setText(_imp->model->index(indexes[0].row()).data().toString());
-                _imp->dialog->accept();
+                emit itemCompletionChosen();
+                if (_imp->quickExitEnabled) {
+                    _imp->dialog->accept();
+                }
                 e->accept();
             } else {
                 QLineEdit::keyPressEvent(e);
@@ -216,7 +222,7 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     }
     strings.sort();
     
-    _imp->textEdit = new CompleterLineEdit(strings,this);
+    _imp->textEdit = new CompleterLineEdit(strings,true,this);
 
     QPoint global = QCursor::pos();
     QSize sizeH = sizeHint();
@@ -234,33 +240,6 @@ NodeCreationDialog::~NodeCreationDialog()
     
 }
 
-bool NodeCreationDialog::determineIfAcceptNeeded()
-{
-    QCompleter* completer =  _imp->textEdit->completer();
-    int count = completer->completionCount();
-    const QItemSelection selection = completer->popup()->selectionModel()->selection();
-    QModelIndexList indexes = selection.indexes();
-    
-    if (count == 1) {
-        completer->setCurrentRow(0);
-        _imp->textEdit->blockSignals(true);
-        _imp->textEdit->setText(completer->currentCompletion());
-        _imp->textEdit->blockSignals(false);
-        accept();
-        return true;
-    } else if (indexes.size() == 1) {
-        completer->setCurrentRow(indexes[0].row());
-        _imp->textEdit->blockSignals(true);
-        _imp->textEdit->setText(completer->currentCompletion());
-        _imp->textEdit->blockSignals(false);
-        accept();
-        return true;
-        
-    } else {
-        return false;
-    }
-
-}
 
 QString NodeCreationDialog::getNodeName() const
 {

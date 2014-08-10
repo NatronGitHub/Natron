@@ -1776,7 +1776,7 @@ void NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
         bool foundEffect = false;
         for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2!=listeners.end(); ++it2) {
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>((*it2)->getHolder());
-            if (isEffect) {
+            if (isEffect && isEffect != node->getNode()->getLiveInstance()) {
                 foundEffect = true;
                 break;
             }
@@ -1835,7 +1835,7 @@ void NodeGraph::deleteSelection()
                 bool foundEffect = false;
                 for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2!=listeners.end(); ++it2) {
                     EffectInstance* isEffect = dynamic_cast<EffectInstance*>((*it2)->getHolder());
-                    if (isEffect) {
+                    if (isEffect && isEffect != (*it)->getNode()->getLiveInstance()) {
                         foundEffect = true;
                         break;
                     }
