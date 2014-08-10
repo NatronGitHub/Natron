@@ -630,6 +630,7 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
                                       int view,
                                       RectD* rod) //!< rod is in canonical coordinates
 {
+    bool firstInput = true;
     for (int i = 0; i < maximumInputs(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
@@ -641,14 +642,16 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
                 return st;
             }
             
-            if (i == 0) {
+            if (firstInput) {
                 *rod = inputRod;
+                firstInput = false;
             } else {
                 rod->merge(inputRod);
             }
             assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
         }
     }
+
     return StatReplyDefault;
 }
 
