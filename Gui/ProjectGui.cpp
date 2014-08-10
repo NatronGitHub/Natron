@@ -233,85 +233,6 @@ void ProjectGui::save(boost::archive::xml_oarchive& archive) const {
     archive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
 }
 
-void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
-                                       std::map<std::string,PaneLayout>::const_iterator layout,unsigned int projectVersion)
-{
-    const std::map<std::string,QWidget*>& registeredTabs = gui->getRegisteredTabs();
-    const std::list<TabWidget*>& registeredPanes = gui->getPanes();
-    
-    QString serializedTabName(layout->first.c_str());
-    ///for older projects before the layout change, map the old defaut tab names to new defaultLayout1 tab names
-    if (projectVersion < PROJECT_GUI_CHANGES_SPLITTERS) {
-        if (serializedTabName == "PropertiesPane") {
-            serializedTabName = "ViewerPane" + TabWidget::splitHorizontallyTag + QString::number(0);
-        } else if (serializedTabName == "WorkshopPane") {
-            serializedTabName = "ViewerPane" + TabWidget::splitVerticallyTag + QString::number(0);
-        }
-    }
-    
-    TabWidget* pane = 0;
-    for (std::list<TabWidget*>::const_iterator it = registeredPanes.begin(); it!=registeredPanes.end(); ++it) {
-        if ((*it)->objectName() == serializedTabName) {
-            ///For splits we should pass by here
-            pane = *it;
-        }
-    }
-
-    if (!pane) {
-        pane = new TabWidget(gui,gui);
-        gui->registerPane(pane);
-        pane->setObjectName_mt_safe(serializedTabName);
-    }
-    
-    
-    
-    //we found the pane, restore it!
-    for (std::list<bool>::const_iterator it2 = layout->second.splits.begin();it2!=layout->second.splits.end();++it2) {
-        if (*it2) {
-            pane->splitVertically();
-        } else {
-            pane->splitHorizontally();
-        }
-    }
-    if(layout->second.floating){
-        pane->floatPane();
-        FloatingWidget* window = dynamic_cast<FloatingWidget*>(pane->parentWidget());
-        assert(window);
-        //QPoint pos(layout->second.posx,layout->second.posy);
-        window->move(layout->second.posx, layout->second.posy);
-        window->resize(layout->second.width, layout->second.height);
-    }
-    
-    ///find all the tabs and move them to this widget
-    for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
-        std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
-        if (foundTab != registeredTabs.end()) {
-            TabWidget::moveTab(foundTab->second,pane);
-        } else if (*it2 == gui->getCurveEditor()->objectName().toStdString()) {
-            TabWidget::moveTab(gui->getCurveEditor(),pane);
-        } else if (*it2 == gui->getPropertiesScrollArea()->objectName().toStdString()) {
-            TabWidget::moveTab(gui->getPropertiesScrollArea(), pane);
-        } else if (*it2 == gui->getNodeGraph()->objectName().toStdString()) {
-            TabWidget::moveTab(gui->getNodeGraph(), pane);
-        }
-    }
-    
-    pane->makeCurrentTab(layout->second.currentIndex);
-    
-    ///now call this recursively on the freshly new splits
-    for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
-        //find in the guiLayout map the PaneLayout corresponding to the split
-        std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
-        if (splitIt != guiLayout.end()) {
-            
-            restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt,projectVersion);
-        }
-    }
-    
-    
-    
-    
-}
 
 void ProjectGui::load(boost::archive::xml_iarchive& archive){
     
@@ -474,46 +395,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         }
     }
     
-    ///Wipe the current layout
-    _gui->wipeLayout();
-    
-    ///For older projects prior to the layout change, try to load panes
-    if (obj.getVersion() < PROJECT_GUI_CHANGES_SPLITTERS) {
-        _gui->createDefaultLayout1();
-    }
-    
-   
-    
-    ///now restore the gui layout
-
-    const std::map<std::string,PaneLayout>& guiLayout = obj.getGuiLayout();
-    for (std::map<std::string,PaneLayout>::const_iterator it = guiLayout.begin(); it!=guiLayout.end(); ++it) {
-        
-        ///if it is a top level tab (i.e: the original tabs)
-        ///this will recursively restore all their splits
-        if(it->second.parentName.empty()){
-            restoreTabWidgetLayoutRecursively(_gui->getApp()->getGui(), guiLayout, it,obj.getVersion());
-        }
-    }
-    
-    ///now restore the splitters
-    const std::map<std::string,std::string>& splitters = obj.getSplittersStates();
-    std::list<Splitter*> appSplitters = _gui->getApp()->getGui()->getSplitters();
-    for (std::map<std::string,std::string>::const_iterator it = splitters.begin();it!=splitters.end();++it) {
-        //find the splitter by name
-        for (std::list<Splitter*>::const_iterator it2 = appSplitters.begin(); it2!=appSplitters.end(); ++it2) {
-            
-            if ((*it2)->objectName().toStdString() == it->first) {
-                //found a matching splitter, restore its state
-                QString splitterGeometry(it->second.c_str());
-                if (!splitterGeometry.isEmpty()) {
-                    (*it2)->restoreNatron(splitterGeometry);
-                }
-                break;
-            }
-        }
-        
-    }
+    _gui->restoreLayout(true,obj.getVersion() < PROJECT_GUI_CHANGES_SPLITTERS,obj.getGuiLayout());
     
     ///restore the histograms
     const std::list<std::string>& histograms = obj.getHistograms();

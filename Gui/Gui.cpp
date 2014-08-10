@@ -11,6 +11,7 @@
 #include "Gui/Gui.h"
 
 #include <cassert>
+#include <fstream>
 
 #include <QtCore/QTextStream>
 #include <QWaitCondition>
@@ -48,6 +49,11 @@ CLANG_DIAG_ON(unused-private-field)
 #include <cairo/cairo.h>
 
 #include <boost/version.hpp>
+CLANG_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
+#include <boost/archive/xml_iarchive.hpp>
+CLANG_DIAG_ON(unused-parameter)
+#include <boost/archive/xml_oarchive.hpp>
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
@@ -82,6 +88,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/SpinBox.h"
 #include "Gui/Button.h"
 #include "Gui/RotoGui.h"
+#include "Gui/ProjectGuiSerialization.h"
 
 
 #define kViewerPaneName "ViewerPane"
@@ -208,6 +215,10 @@ struct GuiPrivate {
     QAction* actionConnectInput9;
     QAction* actionConnectInput10;
     
+    QAction* actionImportLayout;
+    QAction* actionExportLayout;
+    QAction* actionRestoreDefaultLayout;
+    
     ///the main "central" widget
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout; //< its layout
@@ -271,6 +282,7 @@ struct GuiPrivate {
     QMenu *menuFile;
     QMenu *menuRecentFiles;
     QMenu *menuEdit;
+    QMenu *menuLayout;
     QMenu *menuDisplay;
     QMenu *menuOptions;
     QMenu *menuRender;
@@ -359,6 +371,9 @@ struct GuiPrivate {
     , actionConnectInput8(0)
     , actionConnectInput9(0)
     , actionConnectInput10(0)
+    , actionImportLayout(0)
+    , actionExportLayout(0)
+    , actionRestoreDefaultLayout(0)
     , _centralWidget(0)
     , _mainLayout(0)
     , _lastLoadSequenceOpenedDir()
@@ -386,6 +401,7 @@ struct GuiPrivate {
     , menuFile(0)
     , menuRecentFiles(0)
     , menuEdit(0)
+    , menuLayout(0)
     , menuDisplay(0)
     , menuOptions(0)
     , menuRender(0)
@@ -421,17 +437,15 @@ struct GuiPrivate {
     void addToolButton(ToolButton* tool);
     
     ///Creates the properties bin and appends it as a tab to the propertiesPane TabWidget
-    void createPropertiesBinGui(TabWidget* propertiesPane);
+    void createPropertiesBinGui();
 
     void notifyGuiClosing();
 
     ///Must be called absolutely before createPropertiesBinGui
-    void createNodeGraphGui(TabWidget* workshopPane);
+    void createNodeGraphGui();
     
-    void createCurveEditorGui(TabWidget* workshopPane);
-    
-    ///Called whenever the gui is created to make the basic default layout
-    void createDefaultLayout();
+    void createCurveEditorGui();
+
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -528,6 +542,7 @@ void Gui::abortProject(bool quitApp)
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->getProject()->closeProject();
+        restoreDefaultLayout();
     }
     
     ///Reset current undo/reso actions
@@ -601,8 +616,6 @@ void Gui::createGui(){
     ///post a fake event so the qt handlers are called and the proper widget receives the focus
     QMouseEvent e(QEvent::MouseMove,QCursor::pos(),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
     qApp->sendEvent(this, &e);
-    
-  //  QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(quit()));
     
 }
 
@@ -680,7 +693,12 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     actionConnectInput9 ->setText(QObject::tr("Connect to input 9"));
     assert(actionConnectInput10);
     actionConnectInput10 ->setText(QObject::tr("Connect to input 10"));
-    
+    assert(actionImportLayout);
+    actionImportLayout->setText(QObject::tr("Import layout..."));
+    assert(actionExportLayout);
+    actionExportLayout->setText(QObject::tr("Export layout..."));
+    assert(actionRestoreDefaultLayout);
+    actionRestoreDefaultLayout->setText(QObject::tr("Restore default layout"));
     
     assert(menuFile);
     menuFile->setTitle(QObject::tr("File"));
@@ -688,6 +706,8 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     menuRecentFiles->setTitle(QObject::tr("Open recent"));
     assert(menuEdit);
     menuEdit->setTitle(QObject::tr("Edit"));
+    assert(menuLayout);
+    menuLayout->setTitle(QObject::tr("Layout"));
     assert(menuDisplay);
     menuDisplay->setTitle(QObject::tr("Display"));
     assert(menuOptions);
@@ -708,15 +728,14 @@ void Gui::setupUi()
     
     setMouseTracking(true);
     installEventFilter(this);
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
     assert(!isFullScreen());
-    resize((int)(0.93*screen.width()),(int)(0.93*screen.height())); // leave some space
-    assert(!isDockNestingEnabled()); // should be false by default
     
+    assert(!isDockNestingEnabled()); // should be false by default
     
     loadStyleSheet();
     
+    _imp->restoreGuiGeometry();
+
     
     _imp->_undoStacksGroup = new QUndoGroup;
     QObject::connect(_imp->_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)));
@@ -727,6 +746,7 @@ void Gui::setupUi()
     _imp->menuFile = new QMenu(_imp->menubar);
     _imp->menuRecentFiles = new QMenu(_imp->menuFile);
     _imp->menuEdit = new QMenu(_imp->menubar);
+    _imp->menuLayout = new QMenu(_imp->menubar);
     _imp->menuDisplay = new QMenu(_imp->menubar);
     _imp->menuOptions = new QMenu(_imp->menubar);
     _imp->menuRender = new QMenu(_imp->menubar);
@@ -877,7 +897,15 @@ void Gui::setupUi()
     _imp->actionConnectInput10->setShortcutContext(Qt::WindowShortcut);
     _imp->actionConnectInput10->setShortcut(QKeySequence(Qt::Key_0));
 
+    _imp->actionImportLayout = new QAction(this);
+    _imp->actionImportLayout->setCheckable(false);
     
+    _imp->actionExportLayout = new QAction(this);
+    _imp->actionExportLayout->setCheckable(false);
+    
+    _imp->actionRestoreDefaultLayout = new QAction(this);
+    _imp->actionRestoreDefaultLayout->setCheckable(false);
+
     /*CENTRAL AREA*/
     //======================
     _imp->_centralWidget = new QWidget(this);
@@ -899,14 +927,14 @@ void Gui::setupUi()
     
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);
     
-    _imp->createDefaultLayout();
-
-    ///Necessary for the first time Natron launches
-    QList<int> sizes;
-    sizes << 50 << 1000;
-    _imp->_leftRightSplitter->setSizes_mt_safe(sizes);
-    
     _imp->_mainLayout->addWidget(_imp->_leftRightSplitter);
+
+    _imp->createNodeGraphGui();
+    _imp->createCurveEditorGui();
+    ///Must be absolutely called once _nodeGraphArea has been initialized.
+    _imp->createPropertiesBinGui();
+    
+    createDefaultLayoutInternal(false);
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(_imp->_appInstance->getProject(),
@@ -925,6 +953,7 @@ void Gui::setupUi()
     
     _imp->menubar->addAction(_imp->menuFile->menuAction());
     _imp->menubar->addAction(_imp->menuEdit->menuAction());
+    _imp->menubar->addAction(_imp->menuLayout->menuAction());
     _imp->menubar->addAction(_imp->menuDisplay->menuAction());
     _imp->menubar->addAction(_imp->menuOptions->menuAction());
     _imp->menubar->addAction(_imp->menuRender->menuAction());
@@ -947,6 +976,10 @@ void Gui::setupUi()
     
     _imp->menuEdit->addAction(_imp->actionPreferences);
 
+    _imp->menuLayout->addAction(_imp->actionImportLayout);
+    _imp->menuLayout->addAction(_imp->actionExportLayout);
+    _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
+    
     _imp->menuOptions->addAction(_imp->actionProject_settings);
     _imp->menuOptions->addAction(_imp->actionShowOfxLog);
     _imp->menuDisplay->addAction(_imp->actionNewViewer);
@@ -1006,19 +1039,22 @@ void Gui::setupUi()
     QObject::connect(_imp->actionConnectInput9, SIGNAL(triggered()),this,SLOT(connectInput9()));
     QObject::connect(_imp->actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
+    QObject::connect(_imp->actionImportLayout, SIGNAL(triggered()),this,SLOT(importLayout()));
+    QObject::connect(_imp->actionExportLayout, SIGNAL(triggered()),this,SLOT(exportLayout()));
+    QObject::connect(_imp->actionRestoreDefaultLayout, SIGNAL(triggered()),this,SLOT(restoreDefaultLayout()));
+    
     QObject::connect(_imp->actionPreferences,SIGNAL(triggered()),this,SLOT(showSettings()));
     QObject::connect(_imp->_appInstance->getProject().get(),SIGNAL(projectNameChanged(QString)),this,SLOT(onProjectNameChanged(QString)));
     QMetaObject::connectSlotsByName(this);
     
-    _imp->restoreGuiGeometry();
     
     
 } // setupUi
 
 
-void GuiPrivate::createPropertiesBinGui(TabWidget* propertiesPane)
+void GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesScrollArea = new QScrollArea(propertiesPane);
+    _propertiesScrollArea = new QScrollArea(_gui);
     assert(_nodeGraphArea);
     _nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
     _propertiesScrollArea->setObjectName(kPropertiesBinName);
@@ -1063,25 +1099,21 @@ void GuiPrivate::createPropertiesBinGui(TabWidget* propertiesPane)
     
     _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
     
-    
-    propertiesPane->appendTab(_propertiesScrollArea);
 }
 
-void GuiPrivate::createNodeGraphGui(TabWidget* workshopPane)
+void GuiPrivate::createNodeGraphGui()
 {
     _graphScene = new QGraphicsScene(_gui);
     _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui,_graphScene,workshopPane);
+    _nodeGraphArea = new NodeGraph(_gui,_graphScene,_gui);
     _nodeGraphArea->setObjectName(kNodeGraphObjectName);
-    workshopPane->appendTab(_nodeGraphArea);
 
 }
 
-void GuiPrivate::createCurveEditorGui(TabWidget* workshopPane)
+void GuiPrivate::createCurveEditorGui()
 {
     _curveEditor = new CurveEditor(_gui,_appInstance->getTimeLine(),_gui);
     _curveEditor->setObjectName(kCurveEditorObjectName);
-    workshopPane->appendTab(_curveEditor);
 }
 
 void Gui::wipeLayout()
@@ -1089,10 +1121,25 @@ void Gui::wipeLayout()
     {
         QMutexLocker l(&_imp->_panesMutex);
         for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it!=_imp->_panes.end(); ++it) {
-            ///Conserve the node graph and the curve editor
+            ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
             (*it)->removeTab(_imp->_nodeGraphArea);
             (*it)->removeTab(_imp->_curveEditor);
             (*it)->removeTab(_imp->_propertiesScrollArea);
+            
+            {
+                QMutexLocker l(&_imp->_viewerTabsMutex);
+                for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2!=_imp->_viewerTabs.end(); ++it2) {
+                    (*it)->removeTab(*it2);
+                }
+            }
+            
+            {
+                QMutexLocker l(&_imp->_histogramsMutex);
+                for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2!=_imp->_histograms.end(); ++it2) {
+                    (*it)->removeTab(*it2);
+                }
+            }
+            
             (*it)->hide();
             (*it)->setParent(NULL);
         }
@@ -1125,41 +1172,310 @@ void Gui::createDefaultLayout1()
     _imp->_panes.push_back(_imp->_viewersPane);
     _imp->_leftRightSplitter->addWidget(_imp->_viewersPane);
     
+    QList<int> sizes;
+    sizes << _imp->_toolBox->sizeHint().width() << width();
+    _imp->_leftRightSplitter->setSizes_mt_safe(sizes);
+
+    
     TabWidget* propertiesPane = _imp->_viewersPane->splitHorizontally(false);
     TabWidget* workshopPane = _imp->_viewersPane->splitVertically(false);
-    QList<int> sizes;
-    sizes << _imp->_toolBox->sizeHint().width() << _imp->_viewersPane->parentWidget()->sizeHint().width();
-    _imp->_leftRightSplitter->setSizes_mt_safe(sizes); 
+    
+    Splitter* propertiesSplitter = dynamic_cast<Splitter*>(propertiesPane->parentWidget());
+    assert(propertiesSplitter);
+    sizes.clear();
+    sizes << width() * 0.65 << width() * 0.35;
+    propertiesSplitter->setSizes_mt_safe(sizes);
     
     TabWidget::moveTab(_imp->_nodeGraphArea, workshopPane);
     TabWidget::moveTab(_imp->_curveEditor,workshopPane);
     TabWidget::moveTab(_imp->_propertiesScrollArea,propertiesPane);
+    
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2!=_imp->_viewerTabs.end(); ++it2) {
+            TabWidget::moveTab(*it2,_imp->_viewersPane);
+        }
+    }
+    {
+        QMutexLocker l(&_imp->_histogramsMutex);
+        for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2!=_imp->_histograms.end(); ++it2) {
+            TabWidget::moveTab(*it2,_imp->_viewersPane);
+        }
+    }
+
+    
     ///Default to NodeGraph displayed
     workshopPane->makeCurrentTab(0);
 }
 
-void GuiPrivate::createDefaultLayout()
+
+static void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
+                                       std::map<std::string,PaneLayout>::const_iterator layout,bool enableOldProjectCompatibility)
 {
-    ///First tab widget must be created this way
-    _viewersPane = new TabWidget(_gui,_leftRightSplitter);
-    _viewersPane->setObjectName(kViewerPaneName);
-    _panes.push_back(_viewersPane);
-    _viewersPane->resize(_viewersPane->width(), _gui->height()/5);
-    _leftRightSplitter->addWidget(_viewersPane);
-    TabWidget* propertiesPane = _viewersPane->splitHorizontally(false);
+    const std::map<std::string,QWidget*>& registeredTabs = gui->getRegisteredTabs();
+    const std::list<TabWidget*>& registeredPanes = gui->getPanes();
     
-    TabWidget* workshopPane = _viewersPane->splitVertically(false);
+    QString serializedTabName(layout->first.c_str());
+    ///for older projects before the layout change, map the old defaut tab names to new defaultLayout1 tab names
+    if (enableOldProjectCompatibility) {
+        if (serializedTabName == "PropertiesPane") {
+            serializedTabName = "ViewerPane" + TabWidget::splitHorizontallyTag + QString::number(0);
+        } else if (serializedTabName == "WorkshopPane") {
+            serializedTabName = "ViewerPane" + TabWidget::splitVerticallyTag + QString::number(0);
+        }
+    }
     
-    createNodeGraphGui(workshopPane);
-    createCurveEditorGui(workshopPane);
+    TabWidget* pane = 0;
+    for (std::list<TabWidget*>::const_iterator it = registeredPanes.begin(); it!=registeredPanes.end(); ++it) {
+        if ((*it)->objectName() == serializedTabName) {
+            ///For splits we should pass by here
+            pane = *it;
+        }
+    }
     
-    ///Default to NodeGraph displayed
-    workshopPane->makeCurrentTab(0);
+    if (!pane) {
+        pane = new TabWidget(gui,gui);
+        gui->registerPane(pane);
+        pane->setObjectName_mt_safe(serializedTabName);
+    }
     
-    ///Must be absolutely called once _nodeGraphArea has been initialized.
-    createPropertiesBinGui(propertiesPane);
+    
+    
+    //we found the pane, restore it!
+    for (std::list<bool>::const_iterator it2 = layout->second.splits.begin();it2!=layout->second.splits.end();++it2) {
+        if (*it2) {
+            pane->splitVertically();
+        } else {
+            pane->splitHorizontally();
+        }
+    }
+    if(layout->second.floating){
+        pane->floatPane();
+        FloatingWidget* window = dynamic_cast<FloatingWidget*>(pane->parentWidget());
+        assert(window);
+        //QPoint pos(layout->second.posx,layout->second.posy);
+        window->move(layout->second.posx, layout->second.posy);
+        window->resize(layout->second.width, layout->second.height);
+    }
+    
+    ///find all the tabs and move them to this widget
+    for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin();it2!=layout->second.tabs.end();++it2) {
+        std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
+        if (foundTab != registeredTabs.end()) {
+            TabWidget::moveTab(foundTab->second,pane);
+        } else if (*it2 == gui->getCurveEditor()->objectName().toStdString()) {
+            TabWidget::moveTab(gui->getCurveEditor(),pane);
+        } else if (*it2 == gui->getPropertiesScrollArea()->objectName().toStdString()) {
+            TabWidget::moveTab(gui->getPropertiesScrollArea(), pane);
+        } else if (*it2 == gui->getNodeGraph()->objectName().toStdString()) {
+            TabWidget::moveTab(gui->getNodeGraph(), pane);
+        }
+    }
+    
+    pane->makeCurrentTab(layout->second.currentIndex);
+    
+    ///now call this recursively on the freshly new splits
+    for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin();it2!=layout->second.splitsNames.end();++it2) {
+        //find in the guiLayout map the PaneLayout corresponding to the split
+        std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
+        if (splitIt != guiLayout.end()) {
+            
+            restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt,enableOldProjectCompatibility);
+        }
+    }
+    
+    
+    
+    
 }
 
+void Gui::restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,const GuiLayoutSerialization& layoutSerialization)
+{
+    
+    ///Wipe the current layout
+    if (wipePrevious) {
+        wipeLayout();
+    }
+    
+    ///For older projects prior to the layout change, try to load panes
+    if (enableOldProjectCompatibility) {
+        createDefaultLayout1();
+    }
+    
+    
+    
+    ///now restore the gui layout
+    
+    const std::map<std::string,PaneLayout>& guiLayout = layoutSerialization._layout;
+    for (std::map<std::string,PaneLayout>::const_iterator it = guiLayout.begin(); it!=guiLayout.end(); ++it) {
+        
+        ///if it is a top level tab (i.e: the original tabs)
+        ///this will recursively restore all their splits
+        if(it->second.parentName.empty()){
+            restoreTabWidgetLayoutRecursively(this, guiLayout, it,enableOldProjectCompatibility);
+        }
+    }
+    
+    ///now restore the splitters
+    const std::map<std::string,std::string>& splitters = layoutSerialization._splittersStates;
+    std::list<Splitter*> appSplitters = getSplitters();
+    for (std::map<std::string,std::string>::const_iterator it = splitters.begin();it!=splitters.end();++it) {
+        //find the splitter by name
+        for (std::list<Splitter*>::const_iterator it2 = appSplitters.begin(); it2!=appSplitters.end(); ++it2) {
+            
+            if ((*it2)->objectName().toStdString() == it->first) {
+                //found a matching splitter, restore its state
+                QString splitterGeometry(it->second.c_str());
+                if (!splitterGeometry.isEmpty()) {
+                    (*it2)->restoreNatron(splitterGeometry);
+                }
+                break;
+            }
+        }
+        
+    }
+    
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2!=_imp->_viewerTabs.end(); ++it2) {
+            TabWidget::moveTab(*it2,_imp->_viewersPane);
+        }
+    }
+    {
+        QMutexLocker l(&_imp->_histogramsMutex);
+        for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2!=_imp->_histograms.end(); ++it2) {
+            TabWidget::moveTab(*it2,_imp->_viewersPane);
+        }
+    }
+
+
+}
+
+void Gui::exportLayout()
+{
+    std::vector<std::string> filters;
+    filters.push_back(".nl");
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString());
+    if (dialog.exec()) {
+        std::string filename = dialog.filesToSave();
+        QString filenameCpy(filename.c_str());
+        QString ext = Natron::removeFileExtension(filenameCpy);
+        if (ext != "nl") {
+            filename.append(".nl");
+        }
+        
+        std::ofstream ofile;
+        try {
+            ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ofile.open(filename.c_str(),std::ofstream::out);
+        } catch (const std::ofstream::failure& e) {
+            Natron::errorDialog(tr("Error").toStdString()
+                                , tr("Exception occured when opening file").toStdString());
+            return;
+        }
+        if (!ofile.good()) {
+            Natron::errorDialog(tr("Error").toStdString()
+                                , tr("Failure to open the file").toStdString());
+            return;
+
+        }
+        
+        try {
+            boost::archive::xml_oarchive oArchive(ofile);
+            GuiLayoutSerialization s;
+            s.initialize(this);
+            oArchive << boost::serialization::make_nvp("Layout",s);
+        }
+        catch (...) {
+            
+            Natron::errorDialog(tr("Error").toStdString()
+                                , tr("Failure when saving the layout").toStdString());
+            ofile.close();
+            return;
+        }
+        ofile.close();
+        
+    }
+    
+}
+
+void Gui::importLayout()
+{
+    std::vector<std::string> filters;
+    filters.push_back(".nl");
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString());
+    if (dialog.exec()) {
+        std::string filename = dialog.selectedFiles();
+        std::ifstream ifile;
+        try {
+            ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ifile.open(filename.c_str(),std::ifstream::in);
+        } catch (const std::ifstream::failure& e) {
+            QString err = QString("Exception occured when opening file %1: %2").arg(filename.c_str()).arg(e.what());
+            Natron::errorDialog(tr("Error").toStdString(),tr(err.toStdString().c_str()).toStdString());
+            return;
+        }
+        try {
+            boost::archive::xml_iarchive iArchive(ifile);
+            GuiLayoutSerialization s;
+            iArchive >> boost::serialization::make_nvp("Layout", s);
+            restoreLayout(true,false, s);
+        } catch(const boost::archive::archive_exception& e) {
+            ifile.close();
+            QString err = QString("Exception occured when opening file %1: %2").arg(filename.c_str()).arg(e.what());
+            Natron::errorDialog(tr("Error").toStdString(),tr(err.toStdString().c_str()).toStdString());
+            return;
+        } catch(const std::exception& e) {
+            ifile.close();
+            QString err = QString("Exception occured when opening file %1: %2").arg(filename.c_str()).arg(e.what());
+            Natron::errorDialog(tr("Error").toStdString(),tr(err.toStdString().c_str()).toStdString());
+            return;
+        }
+        ifile.close();
+    }
+}
+
+void Gui::createDefaultLayoutInternal(bool wipePrevious)
+{
+    if (wipePrevious) {
+        wipeLayout();
+    }
+    
+    std::string fileLayout = appPTR->getCurrentSettings()->getDefaultLayoutFile();
+    if (!fileLayout.empty()) {
+        std::ifstream ifile;
+        ifile.open(fileLayout.c_str());
+        if (!ifile.is_open()) {
+            createDefaultLayout1();
+        } else {
+            try {
+                boost::archive::xml_iarchive iArchive(ifile);
+                GuiLayoutSerialization s;
+                iArchive >> boost::serialization::make_nvp("Layout", s);
+                restoreLayout(false,false, s);
+            } catch(const boost::archive::archive_exception& e) {
+                ifile.close();
+                QString err = QString("Exception occured when opening file %1: %2").arg(fileLayout.c_str()).arg(e.what());
+                Natron::errorDialog(tr("Error").toStdString(),tr(err.toStdString().c_str()).toStdString());
+                return;
+            } catch(const std::exception& e) {
+                ifile.close();
+                QString err = QString("Exception occured when opening file %1: %2").arg(fileLayout.c_str()).arg(e.what());
+                Natron::errorDialog(tr("Error").toStdString(),tr(err.toStdString().c_str()).toStdString());
+                return;
+            }
+            ifile.close();
+        }
+    } else {
+        createDefaultLayout1();
+    }
+
+}
+
+void Gui::restoreDefaultLayout()
+{
+    createDefaultLayoutInternal(true);
+}
 void Gui::initProjectGuiKnobs() {
     assert(_imp->_projectGui);
     _imp->_projectGui->initializeKnobsGui();
@@ -2235,35 +2551,24 @@ void GuiPrivate::restoreGuiGeometry(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("MainWindow");
     
-    if(settings.contains("pos")){
+    if (settings.contains("pos")) {
         QPoint pos = settings.value("pos").toPoint();
         _gui->move(pos);
     }
-    if(settings.contains("size")){
+    if (settings.contains("size")) {
         QSize size = settings.value("size").toSize();
         _gui->resize(size);
+    } else {
+        ///No window size serialized, give some appriopriate default value according to the screen size
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect screen = desktop->screenGeometry();
+        _gui->resize((int)(0.93*screen.width()),(int)(0.93*screen.height())); // leave some space
+
     }
-    if(settings.contains("fullScreen")){
+    if (settings.contains("fullScreen")) {
         bool fs = settings.value("fullScreen").toBool();
         if(fs)
             _gui->toggleFullScreen();
-    }
-    
-    {
-        QMutexLocker l(&_splittersMutex);
-        for (std::list<Splitter*>::iterator it = _splitters.begin(); it!=_splitters.end(); ++it) {
-            QString name = (*it)->objectName_mt_safe();
-            if (settings.contains(name)) {
-                QByteArray splitterData = settings.value(name).toByteArray();
-                QDataStream splitterStream(&splitterData, QIODevice::ReadOnly);
-                if (splitterStream.atEnd())
-                    return;
-                QByteArray state;
-                
-                splitterStream >> state;
-                (*it)->restoreState(state);
-            }
-        }
     }
     
     
@@ -2291,16 +2596,6 @@ void GuiPrivate::saveGuiGeometry(){
     settings.setValue("size", _gui->size());
     settings.setValue("fullScreen", _gui->isFullScreen());
     
-    {
-        QMutexLocker l(&_splittersMutex);
-        for (std::list<Splitter*>::iterator it = _splitters.begin(); it!=_splitters.end(); ++it) {
-            QString name = (*it)->objectName_mt_safe();
-            QByteArray splitterData;
-            QDataStream splitterStream(&splitterData, QIODevice::WriteOnly);
-            splitterStream << (*it)->saveState_mt_safe();
-            settings.setValue(name,splitterData);
-        }
-    }
     settings.endGroup();
     
     settings.setValue("LastOpenProjectDialogPath", _lastLoadProjectOpenedDir);

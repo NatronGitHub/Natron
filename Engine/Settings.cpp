@@ -126,6 +126,23 @@ void Settings::initializeKnobs(){
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
     
+    _useCursorPositionIncrements = Natron::createKnob<Bool_Knob>(this, "Cursor position aware value fields");
+    _useCursorPositionIncrements->setHintToolTip("When enabled, incrementing the value fields of parameters with the "
+                                                 "mouse wheel or with arrow keys will increment the digits on the right "
+                                                 "of the cursor. \n"
+                                                 "When disabled, the value fields are incremented given what the plug-in "
+                                                 "decided it should be. You can alter this increment by holding "
+                                                 "shift (x10) or control (/10) while incrementing.");
+    _useCursorPositionIncrements->setAnimationEnabled(false);
+    _generalTab->addKnob(_useCursorPositionIncrements);
+    
+    _defaultLayoutFile = Natron::createKnob<File_Knob>(this, "Default layout file");
+    _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " will use the layout indicated in the file "
+                                       "as default layout for new projects. You can export/import a layout to/from a file "
+                                       "from the Layout menu. If empty, the default layout of the application will be used.");
+    _defaultLayoutFile->setAnimationEnabled(false);
+    _generalTab->addKnob(_defaultLayoutFile);
+    
     _renderOnEditingFinished = Natron::createKnob<Bool_Knob>(this, "Render on editing finished only");
     _renderOnEditingFinished->setHintToolTip("When checked, the render engine will run only when you finish editing "
                                              "a curve or a parameter. For example, for curves editing, that is only when you release the button"
@@ -500,6 +517,7 @@ void Settings::setDefaultValues() {
     _renderInSeparateProcess->setDefaultValue(true,0);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _maxPanelsOpened->setDefaultValue(10,0);
+    _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
     _extraPluginPaths->setDefaultValue("",0);
     _preferBundledPlugins->setDefaultValue(true);
@@ -609,6 +627,8 @@ void Settings::saveSettings(){
     settings.setValue("RenderInSeparateProcess", _renderInSeparateProcess->getValue());
     settings.setValue("AutoPreviewDefault", _autoPreviewEnabledForNewProjects->getValue());
     settings.setValue("MaxPanelsOpened", _maxPanelsOpened->getValue());
+    settings.setValue("UseCursorPosIncrements", _useCursorPositionIncrements->getValue());
+    settings.setValue("DefaultLayoutFile", _defaultLayoutFile->getValue().c_str());
     settings.setValue("RenderOnEditingFinished",_renderOnEditingFinished->getValue());
     settings.setValue("ExtraPluginsPaths", _extraPluginPaths->getValue().c_str());
     settings.setValue("PreferBundledPlugins", _preferBundledPlugins->getValue());
@@ -748,6 +768,12 @@ void Settings::restoreSettings(){
 
     if (settings.contains("MaxPanelsOpened")) {
         _maxPanelsOpened->setValue(settings.value("MaxPanelsOpened").toInt(), 0);
+    }
+    if (settings.contains("UseCursorPosIncrements")) {
+        _useCursorPositionIncrements->setValue(settings.value("UseCursorPosIncrements").toBool(), 0);
+    }
+    if (settings.contains("DefaultLayoutFile")) {
+        _defaultLayoutFile->setValue(settings.value("DefaultLayoutFile").toString().toStdString(), 0);
     }
     if (settings.contains("RenderOnEditingFinished")) {
         _renderOnEditingFinished->setValue(settings.value("RenderOnEditingFinished").toBool(), 0);
@@ -1456,4 +1482,14 @@ void Settings::setRenderOnEditingFinishedOnly(bool render)
 bool Settings::getIconsBlackAndWhite() const
 {
     return _useBWIcons->getValue();
+}
+
+std::string Settings::getDefaultLayoutFile() const
+{
+    return _defaultLayoutFile->getValue();
+}
+
+bool Settings::useCursorPositionIncrements() const
+{
+    return _useCursorPositionIncrements->getValue();
 }

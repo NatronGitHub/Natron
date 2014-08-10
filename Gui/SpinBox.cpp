@@ -21,11 +21,10 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 
 #include "Engine/Variant.h"
+#include "Engine/Settings.h"
+#include "Engine/AppManager.h"
 #include "Global/Macros.h"
 
-///Define it to keep the old spinbox increment depending on external source
-///The new increments are depending on the cursor position
-//#define OLD_SPINBOX_INCREMENT
 
 struct SpinBoxPrivate
 {
@@ -36,10 +35,9 @@ struct SpinBoxPrivate
      of significant digits (trailing zeroes are omitted)*/
     int decimals; // for the double spinbox only
     
-#ifdef OLD_SPINBOX_INCREMENT
     double increment;
     int currentDelta; // accumulates the deltas from wheelevents
-#endif
+
     Variant mini,maxi;
     QDoubleValidator* doubleValidator;
     QIntValidator* intValidator;
@@ -50,10 +48,8 @@ struct SpinBoxPrivate
     SpinBoxPrivate(SpinBox::SPINBOX_TYPE type)
     : type(type)
     , decimals(2)
-#ifdef OLD_SPINBOX_INCREMENT
     , increment(1.0)
     , currentDelta(0)
-#endif
     , mini()
     , maxi()
     , doubleValidator(0)
@@ -138,6 +134,10 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
         int i = str.size() - 1;
         while (i > decimalPtPos && str.at(i) == QChar('0')) {
             --i;
+        }
+        ///let 1 trailing 0
+        if (i < str.size() - 1) {
+            ++i;
         }
         str = str.left(i + 1);
     }
@@ -242,39 +242,38 @@ SpinBox::wheelEvent(QWheelEvent *e)
         double miniD = 0.;
         double inc;
         double old = cur;
-#ifdef OLD_SPINBOX_INCREMENT
-        _imp->currentDelta += e->delta();
-        inc = _imp->currentDelta * _imp->increment / 120.;
-        if (e->modifiers().testFlag(Qt::ShiftModifier)) {
-            inc *= 10.;
-        }
-        if (e->modifiers().testFlag(Qt::ControlModifier)) {
-            inc /= 10.;
-        }
-#else
-        _imp->incrementAccordingToPosition(str,cursorPosition(),inc);
-        if (e->delta() < 0) {
-            inc = -inc;
-        }
         
-#endif
+        bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
+        
+        if (!useCursorPositionIncr) {
+            _imp->currentDelta += e->delta();
+            inc = _imp->currentDelta * _imp->increment / 120.;
+            if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+                inc *= 10.;
+            }
+            if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                inc /= 10.;
+            }
+        } else {
+            _imp->incrementAccordingToPosition(str,cursorPosition(),inc);
+            if (e->delta() < 0) {
+                inc = -inc;
+            }
+            
+        }
         switch (_imp->type) {
             case DOUBLE_SPINBOX:
                 maxiD = _imp->maxi.toDouble();
                 miniD = _imp->mini.toDouble();
                 cur += inc;
-#ifdef OLD_SPINBOX_INCREMENT
                 _imp->currentDelta = 0;
-#endif
                 break;
             case INT_SPINBOX:
                 maxiD = _imp->maxi.toInt();
                 miniD = _imp->mini.toInt();
                 cur += (int)inc;
-#ifdef OLD_SPINBOX_INCREMENT
                 _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
                 assert(std::abs(_imp->currentDelta) < 120);
-#endif
                 break;
         }
         cur = std::max(miniD, std::min(cur,maxiD));
@@ -325,20 +324,21 @@ SpinBox::keyPressEvent(QKeyEvent *e)
                 break;
         }
         if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
-#ifdef OLD_SPINBOX_INCREMENT
-            double inc = _imp->increment;
-            if (e->modifiers().testFlag(Qt::ShiftModifier)) {
-                inc *= 10.;
-            }
-            if (e->modifiers().testFlag(Qt::ControlModifier)) {
-                inc /= 10.;
-            }
-#else
+            bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
             double inc;
-            int cursorPos = cursorPosition();
-            QString txt = text();
-            _imp->incrementAccordingToPosition(txt, cursorPos, inc);
-#endif
+            if (!useCursorPositionIncr) {
+                inc = _imp->increment;
+                if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+                    inc *= 10.;
+                }
+                if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                    inc /= 10.;
+                }
+            } else {
+                int cursorPos = cursorPosition();
+                QString txt = text();
+                _imp->incrementAccordingToPosition(txt, cursorPos, inc);
+            }
             if (e->key() == Qt::Key_Up) {
                 if (cur + inc <= maxiD) {
                     cur += inc;

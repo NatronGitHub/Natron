@@ -55,6 +55,7 @@ class NodeGraph;
 class CurveEditor;
 class Histogram;
 class NodeBackDropSerialization;
+class GuiLayoutSerialization;
 class RotoGui;
 
 //Natron engine
@@ -162,11 +163,14 @@ public:
     
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
-    
-    void wipeLayout();
-    
+        
     ///Make the layout of the application as it is the first time Natron is opened
     void createDefaultLayout1();
+    
+    ///Make the layout according to the serialization.
+    ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
+    ///prior to restoring. This is because older projects didn't have as much infos to recreate the entire layout.
+    void restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,const GuiLayoutSerialization& layoutSerialization);
     
     const std::list<TabWidget*>& getPanes() const;
     
@@ -433,7 +437,11 @@ public slots:
     
     void onMaxPanelsSpinBoxValueChanged(double val);
 
+    void exportLayout();
     
+    void importLayout();
+    
+    void restoreDefaultLayout();
 private:
     
     /**
@@ -445,6 +453,10 @@ private:
     void openProjectInternal(const std::string& absoluteFileName);
 
     void setupUi();
+    
+    void wipeLayout();
+    
+    void createDefaultLayoutInternal(bool wipePrevious);
     
     boost::scoped_ptr<GuiPrivate> _imp;
     

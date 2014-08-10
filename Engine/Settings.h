@@ -147,6 +147,10 @@ public:
     bool getIconsBlackAndWhite() const;
     
     std::string getHostName() const;
+    
+    std::string getDefaultLayoutFile() const;
+    
+    bool useCursorPositionIncrements() const;
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -165,7 +169,12 @@ private:
     boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
     boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<Int_Knob> _maxPanelsOpened;
+    boost::shared_ptr<Bool_Knob> _useCursorPositionIncrements;
+    boost::shared_ptr<File_Knob> _defaultLayoutFile;
+
+    
     boost::shared_ptr<Bool_Knob> _renderOnEditingFinished;
+    
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;

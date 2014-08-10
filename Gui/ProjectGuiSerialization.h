@@ -33,13 +33,15 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
 #define PROJECT_GUI_INTRODUCES_PANELS 4
 #define PROJECT_GUI_CHANGES_SPLITTERS 5
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_CHANGES_SPLITTERS
+#define PROJECT_GUI_EXERNALISE_GUI_LAYOUT 6
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_EXERNALISE_GUI_LAYOUT
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
 #define PANE_SERIALIZATION_VERSION PANE_SERIALIZATION_INTRODUCES_SIZE
 
 class ProjectGui;
+class Gui;
 
 struct ViewerData {
     double zoomLeft;
@@ -137,15 +139,37 @@ struct PaneLayout{
 
 BOOST_CLASS_VERSION(PaneLayout, PANE_SERIALIZATION_VERSION)
 
-class ProjectGuiSerialization {
+
+class GuiLayoutSerialization
+{
     
-    std::list< NodeGuiSerialization > _serializedNodes;
+public:
+    
+    GuiLayoutSerialization() {}
+    
+    void initialize(const Gui* gui);
     
     ///widget name, pane layout
     std::map<std::string,PaneLayout> _layout;
     
     //splitter name, splitter serialization
     std::map<std::string,std::string> _splittersStates;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar,const unsigned int /*version*/)
+    {
+        ar & boost::serialization::make_nvp("Gui_Layout",_layout);
+        ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
+    }
+};
+
+
+class ProjectGuiSerialization {
+    
+    std::list< NodeGuiSerialization > _serializedNodes;
+    
+    GuiLayoutSerialization _layoutSerialization;
     
     std::map<std::string, ViewerData > _viewersData;
     
@@ -159,14 +183,32 @@ class ProjectGuiSerialization {
     
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,const unsigned int version)
+    void save(Archive & ar,const unsigned int version) const
     {
         (void)version;
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
-        ar & boost::serialization::make_nvp("Gui_Layout",_layout);
-        ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
-        if (version < PROJECT_GUI_CHANGES_SPLITTERS) {
-            _splittersStates.clear();
+        ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
+        ar & boost::serialization::make_nvp("ViewersData",_viewersData);
+        ar & boost::serialization::make_nvp("Histograms",_histograms);
+        ar & boost::serialization::make_nvp("Backdrops",_backdrops);
+        ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
+    }
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void load(Archive & ar,const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
+        
+        if (version < PROJECT_GUI_EXERNALISE_GUI_LAYOUT) {
+            ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization._layout);
+            ar & boost::serialization::make_nvp("Splitters_states",_layoutSerialization._splittersStates);
+            if (version < PROJECT_GUI_CHANGES_SPLITTERS) {
+                _layoutSerialization._splittersStates.clear();
+            }
+        } else {
+            ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
         }
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
         if (version < PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED) {
@@ -183,6 +225,7 @@ class ProjectGuiSerialization {
         _version = version;
     }
     
+    
 public:
     
     ProjectGuiSerialization(){}
@@ -193,9 +236,7 @@ public:
     
     const std::list< NodeGuiSerialization >& getSerializedNodesGui() const { return _serializedNodes; }
     
-    const std::map<std::string,PaneLayout>& getGuiLayout() const { return _layout; }
-    
-    const std::map<std::string,std::string>& getSplittersStates() const { return _splittersStates; }
+    const GuiLayoutSerialization& getGuiLayout() const { return _layoutSerialization; }
     
     const std::map<std::string, ViewerData >& getViewersProjections() const { return _viewersData; }
         
@@ -207,9 +248,9 @@ public:
     
     unsigned int getVersion() const { return _version; }
     
-private:
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     
-    void createParenting(std::map<std::string,PaneLayout>::iterator it);
 };
 BOOST_CLASS_VERSION(ProjectGuiSerialization, PROJECT_GUI_SERIALIZATION_VERSION)
 
