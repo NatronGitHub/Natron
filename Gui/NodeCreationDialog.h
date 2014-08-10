@@ -20,6 +20,38 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Gui/LineEdit.h"
+
+class QStringList;
+class QModelIndex;
+class NodeCreationDialog;
+class QListView;
+struct CompleterLineEditPrivate;
+class CompleterLineEdit: public LineEdit
+{
+    
+    Q_OBJECT
+public:
+    
+    CompleterLineEdit(const QStringList& words,NodeCreationDialog* parent);
+    
+    virtual ~CompleterLineEdit();
+    
+    QListView* getView() const;
+public slots:
+    
+    void filterText(const QString& txt);
+    void setTextFromIndex(const QModelIndex& index);
+    void showCompleter();
+    
+private:
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    boost::scoped_ptr<CompleterLineEditPrivate> _imp;
+    
+};
+
 struct NodeCreationDialogPrivate;
 class NodeCreationDialog : public QDialog
 {

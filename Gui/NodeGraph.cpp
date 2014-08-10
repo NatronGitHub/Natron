@@ -1373,19 +1373,14 @@ bool NodeGraph::event(QEvent* event){
     if ( event->type() == QEvent::KeyPress ) {
         QKeyEvent *ke = static_cast<QKeyEvent*>(event);
         if (ke &&  ke->key() == Qt::Key_Tab && _imp->_nodeCreationShortcutEnabled ) {
-            QPoint global = QCursor::pos();
             NodeCreationDialog nodeCreation(this);
-            QSize sizeH = nodeCreation.sizeHint();
-            global.rx() -= sizeH.width() / 2;
-            global.ry() -= sizeH.height() / 2;
-            nodeCreation.move(global.x(), global.y());
             
             if (nodeCreation.exec()) {
                 QString res = nodeCreation.getNodeName();
                 const std::vector<Natron::Plugin*>& allPlugins = appPTR->getPluginsList();
                 for (U32 i = 0; i < allPlugins.size(); ++i) {
                     if (allPlugins[i]->getPluginID() == res) {
-                        QPointF posHint = mapToScene(mapFromGlobal(global));
+                        QPointF posHint = mapToScene(mapFromGlobal(QCursor::pos()));
                         getGui()->getApp()->createNode(CreateNodeArgs(res,
                                                                       "",
                                                                       -1,
