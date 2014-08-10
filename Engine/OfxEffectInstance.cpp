@@ -803,7 +803,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
                                  0,0);
 
         stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
-        *rod = RectD::fromOfxRectD(ofxRod);
+        RectD::ofxRectDToRectD(ofxRod, rod);
     }
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {

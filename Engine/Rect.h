@@ -590,10 +590,12 @@ public:
         rect->y2 = std::ceil(y2*scale);
     }
 
-    static RectD fromOfxRectD(const OfxRectD& r)
+    static void ofxRectDToRectD(const OfxRectD& r, RectD *ret)
     {
-        RectD ret(r.x1,r.y1,r.x2,r.y2);
-        return ret;
+        ret->x1 = r.x1;
+        ret->x2 = r.x2;
+        ret->y1 = r.y1;
+        ret->y2 = r.y2;
     }
 };
 
