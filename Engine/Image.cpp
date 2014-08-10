@@ -863,8 +863,8 @@ Image::downscaleMipMap(const RectI& roi,
     ///You should not call this function with a level equal to 0.
     assert(toLevel >  fromLevel);
 
-    assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
-           roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
+    assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
+           _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
     RectD roiCanonical;
     roi.toCanonical(fromLevel, getRoD(), &roiCanonical);
     RectI dstRoI;

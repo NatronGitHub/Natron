@@ -2341,12 +2341,11 @@ EffectInstance::getRegionOfDefinition_public(SequenceTime time,
 
     try {
         ret = getRegionOfDefinition(time, scale, view, rod);
-        
     } catch (const std::exception& e) {
         decrementRecursionLevel();
         throw e;
     }
-    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+    assert(ret != StatOK || (rod->x1 <= rod->x2 && rod->y1 <= rod->y2));
     
     decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
