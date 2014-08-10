@@ -16,6 +16,8 @@
 #include <QStyledItemDelegate>
 #include <QApplication>
 #include <QListView>
+#include <QDesktopWidget>
+#include <QApplication>
 #include <QStringListModel>
 
 #include "Engine/Plugin.h"
@@ -84,14 +86,23 @@ void CompleterLineEdit::filterText(const QString& txt)
     _imp->model->setStringList(sl);
     _imp->listView->setModel(_imp->model);
     
-    if (_imp->model->rowCount() == 0) {
+    int rowCount = _imp->model->rowCount();
+    if (rowCount == 0) {
         return;
     }
     
-    // Position the text edit
-    _imp->listView->setFixedWidth(width());
+    QPoint p = mapToGlobal(QPoint(0,height()));
+    QDesktopWidget* desktop = QApplication::desktop();
+    QRect screen = desktop->screenGeometry();
     
-    _imp->listView->move(mapToGlobal(QPoint(0,height())));
+    double maxHeight = (screen.height() - p.y()) * 0.8;
+    QFontMetrics fm = _imp->listView->fontMetrics();
+    maxHeight = std::min(maxHeight, (rowCount * fm.height() * 1.2));
+    
+    // Position the text edit
+    _imp->listView->resize(width(),maxHeight);
+    
+    _imp->listView->move(p);
     _imp->listView->show();
 }
 
