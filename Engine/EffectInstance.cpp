@@ -648,7 +648,7 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
             } else {
                 rod->merge(inputRod);
             }
-            assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+            assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
         }
     }
 
@@ -669,7 +669,7 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
     assert(!projectDefault.isNull());
     
     assert(rod);
-    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+    assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
     bool x1Infinite = rod->x1 <= kOfxFlagInfiniteMin;
     bool y1Infinite = rod->y1 <= kOfxFlagInfiniteMin;
     bool x2Infinite = rod->x2 >= kOfxFlagInfiniteMax;
@@ -740,7 +740,7 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
     if (isProjectFormat && !isGenerator()) {
         isProjectFormat = false;
     }
-    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+    assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
     return isProjectFormat;
 }
 
@@ -2349,7 +2349,7 @@ EffectInstance::getRegionOfDefinition_public(SequenceTime time,
     
     decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
-    assert(rod->x2 >= rod->x1 && rod->y2 >= rod->y1);
+    assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
     return ret;
 }
 
