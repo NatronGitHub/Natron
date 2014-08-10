@@ -360,6 +360,13 @@ public:
         }
         return ret;
     }
+    
+    static RectI fromOfxRectI(const OfxRectI& r)
+    {
+        RectI ret(r.x1,r.y1,r.x2,r.y2);
+        return ret;
+    }
+    
 };
 GCC_DIAG_ON(strict-overflow)
     
@@ -583,6 +590,11 @@ public:
         rect->y2 = std::ceil(y2*scale);
     }
 
+    static RectD fromOfxRectD(const OfxRectD& r)
+    {
+        RectD ret(r.x1,r.y1,r.x2,r.y2);
+        return ret;
+    }
 };
 
 /// equality of boxes

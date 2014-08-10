@@ -468,13 +468,6 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         texRectClipped.intersect(rod, &texRectClipped);
     }
     
-    
-    assert((texRect.y2  - texRect.y1) > 0 &&(texRect.x2  - texRect.x1) > 0 &&
-           (texRectClipped.y1 - texRect.y1) <= (texRect.y2 - texRect.y1) &&
-           (texRectClipped.x1 - texRect.x1) <= (texRect.x2 - texRect.x1) &&
-           texRectClipped.y2 <= texRect.y2 &&
-           texRectClipped.x2 <= texRect.x2);
-    
     if (polygonMode != ALL_PLANE) {
         /// draw only  the plane defined by the wipe handle
         QPolygonF polygonPoints,polygonTexCoords;
@@ -522,19 +515,6 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
             (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
         };
         
-        
-        
-        ///Now  the texture coordinates must be adjusted according to the clipping we applied.
-        GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
-        
-        texBottomTmp = (GLfloat)(texRectClipped.y1 - texRect.y1) / (GLfloat) (texRect.y2 - texRect.y1) * (texTop - texBottom);
-        texTopTmp = (GLfloat)(texRectClipped.y2 - texRect.y1) / (GLfloat) (texRect.y2  - texRect.y1) * (texTop - texBottom);
-        texLeftTmp = (GLfloat)(texRectClipped.x1 - texRect.x1) / (GLfloat) (texRect.x2 - texRect.x1) * (texRight - texLeft);
-        texRightTmp = (GLfloat)(texRectClipped.x2  - texRect.x1) / (GLfloat) (texRect.x2  - texRect.x1) * (texRight - texLeft);
-        texBottom = texBottomTmp;
-        texTop = texTopTmp;
-        texLeft = texLeftTmp;
-        texRight = texRightTmp;
         
         GLfloat renderingTextureCoordinates[32] = {
             texLeft , texTop , //0

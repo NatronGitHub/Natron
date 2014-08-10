@@ -665,39 +665,6 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
     return inputs[inputs.size()-1-inputNb]->getName() == "Roto" && getNode()->isRotoNode();
 }
 
-/// the smallest RectI enclosing the given RectD
-static void
-ofxRectDToEnclosingRectI(const OfxRectD& ofxrect,RectI* box)
-{
-    // safely convert to OfxRectI, avoiding overflows
-    int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.x1));
-    int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.y1));
-    int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.x2));
-    int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.y2));
-    
-    ///only take into account valid boxes
-    if (xmax > xmin && ymax > ymin) {
-        box->set(xmin, ymin, xmax, ymax);
-    }
-}
-
-/// the largest RectI enclosed in the given RectD
-static void
-ofxRectDToEnclosedRectI(const OfxRectD& ofxrect,RectI* box)
-{
-    // safely convert to OfxRectI, avoiding overflows
-    int xmin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.x1));
-    int ymin = (int)std::max((double)kOfxFlagInfiniteMin, std::floor(ofxrect.y1));
-    int xmax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.x2));
-    int ymax = (int)std::min((double)kOfxFlagInfiniteMax, std::ceil(ofxrect.y2));
-    
-    ///only take into account valid boxes
-    if (xmax > xmin && ymax > ymin) {
-        box->set(xmin, ymin, xmax, ymax);
-    }
-}
-
-
 
 void
 OfxEffectInstance::onInputChanged(int inputNo)
@@ -837,6 +804,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
                                  0,0);
 
         stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
+        *rod = RectD::fromOfxRectD(ofxRod);
     }
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
