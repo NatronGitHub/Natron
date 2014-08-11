@@ -494,7 +494,7 @@ void VideoEngine::iterateKernel(bool singleThreaded) {
             }
             
             //If the frame range is not locked, let the user define it.
-            if (viewer->isFrameRangeLocked()) {
+            if (viewer->isFrameRangeLocked() && _currentRunArgs._seekTimeline) {
                 _timeline->setFrameRange(_firstFrame, _lastFrame);
             }
         }
