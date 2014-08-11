@@ -102,6 +102,9 @@ void CompleterLineEdit::setTextFromIndex(const QModelIndex& index)
     setText(text);
     emit itemCompletionChosen();
     _imp->listView->hide();
+    if (_imp->quickExitEnabled) {
+        _imp->dialog->accept();
+    }
 }
 
 void CompleterLineEdit::keyPressEvent(QKeyEvent* e) {
