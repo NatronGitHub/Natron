@@ -87,7 +87,7 @@ void CompleterLineEdit::filterText(const QString& txt)
     
     double maxHeight = (screen.height() - p.y()) * 0.8;
     QFontMetrics fm = _imp->listView->fontMetrics();
-    maxHeight = std::min(maxHeight, (rowCount * fm.height() * 1.2));
+    maxHeight = std::min(maxHeight, (rowCount * fm.height() * 1.2 + fm.height()));
     
     // Position the text edit
     _imp->listView->resize(width(),maxHeight);
@@ -231,7 +231,7 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     move(global.x(), global.y());
     
     _imp->layout->addWidget(_imp->textEdit);
-    _imp->textEdit->setFocus(Qt::PopupFocusReason);
+    _imp->textEdit->setFocus();
     QTimer::singleShot(25, _imp->textEdit, SLOT(showCompleter()));
 }
 

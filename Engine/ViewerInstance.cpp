@@ -506,6 +506,13 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             if (isInputImgCached) {
                 inputIdentityNumber = cachedImgParams->getInputNbIdentity();
                 inputIdentityTime = cachedImgParams->getInputTimeIdentity();
+                if (forceRender) {
+                    ///If we want to by-pass the cache, we will just zero-out the bitmap of the image, so
+                    ///we're sure renderRoIInternal will compute the whole image again.
+                    ///We must use the cache facility anyway because we rely on it for caching the results
+                    ///of actions which is necessary to avoid recursive actions.
+                    inputImage->clearBitmap();
+                }
             }
             activeInputToRender = recursiveInput;
         } else {
@@ -793,7 +800,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         
         bool renderedCompletely = false;
         boost::shared_ptr<Natron::Image> downscaledImage = inputImage;
-        
+        boost::shared_ptr<Natron::Image> lastRenderedImage;
+
         ///If the plug-in doesn't support the render scale and we found an image cached but which still
         ///contains some stuff to render we don't want to use it, instead we need to upscale the image
 #pragma message WARN("OFX always returns true for supportsRenderScale(), but rendering with scale != 1 may fail")
@@ -813,18 +821,23 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
                                                                                  downscaledImage->getBitDepth()));
                 downscaledImage->scaleBox(downscaledImage->getBounds(), upscaledImage.get());
                 inputImage = upscaledImage;
+                if (isInputImgCached) {
+                    lastRenderedImage = downscaledImage;
+                }
             } else {
                 renderedCompletely = true;
+            }
+            
+        } else {
+            if (isInputImgCached) {
+                lastRenderedImage = inputImage;
             }
         }
         _node->notifyInputNIsRendering(activeInputIndex);
 
       
         
-        boost::shared_ptr<Natron::Image> lastRenderedImage;
-        if (isInputImgCached) {
-            lastRenderedImage = inputImage;
-        }
+       
         
         
         if (!renderedCompletely) {
