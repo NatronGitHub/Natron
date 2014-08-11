@@ -275,7 +275,7 @@ SpinBox::wheelEvent(QWheelEvent *e)
                 miniD = _imp->mini.toInt();
                 cur += (int)inc;
                 _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
-                assert(std::abs(_imp->currentDelta) < 120);
+                assert(std::abs(_imp->currentDelta) <= 120);
                 break;
         }
         cur = std::max(miniD, std::min(cur,maxiD));
