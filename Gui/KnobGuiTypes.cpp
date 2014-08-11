@@ -1353,18 +1353,20 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
     }
     
-    _dimensionSwitchButton->setChecked(enableAllDimensions);
-    if (!enableAllDimensions) {
-        _rBox->setValue(_knob->getValue(0));
-    }
-    onDimensionSwitchClicked();
-    QObject::connect(_dimensionSwitchButton, SIGNAL(clicked()), this, SLOT(onDimensionSwitchClicked()));
+    
     colorLayout->addWidget(_dimensionSwitchButton);
     
     mainLayout->addWidget(boxContainers);
     mainLayout->addWidget(colorContainer);
     
     layout->addWidget(mainContainer);
+    
+    _dimensionSwitchButton->setChecked(enableAllDimensions);
+    if (!enableAllDimensions) {
+        _rBox->setValue(_knob->getValue(0));
+    }
+    onDimensionSwitchClicked();
+    QObject::connect(_dimensionSwitchButton, SIGNAL(clicked()), this, SLOT(onDimensionSwitchClicked()));
 }
 
 void Color_KnobGui::onMustShowAllDimension()
@@ -1436,12 +1438,11 @@ void Color_KnobGui::onDimensionSwitchClicked()
     } else {
         foldAllDimensions();
         if (_dimension > 1) {
-            boost::shared_ptr<Color_Knob> k = boost::dynamic_pointer_cast<Color_Knob>(getKnob());
             double value(_rBox->value());
             if (_dimension == 3) {
-                k->setValues(value, value, value);
+                _knob->setValues(value, value, value);
             } else {
-                k->setValues(value, value, value,value);
+                _knob->setValues(value, value, value,value);
             }
         }
 
@@ -1500,7 +1501,7 @@ Color_KnobGui::onDisplayMinMaxChanged(double mini,double maxi,int index )
 void
 Color_KnobGui::setEnabled()
 {
-    bool r = getKnob()->isEnabled(0);
+    bool r = _knob->isEnabled(0);
     
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
@@ -1510,15 +1511,15 @@ Color_KnobGui::setEnabled()
     }
     
     if (_dimension >= 3) {
-        bool g = getKnob()->isEnabled(1);
-        bool b = getKnob()->isEnabled(2);
+        bool g = _knob->isEnabled(1);
+        bool b = _knob->isEnabled(2);
         //_gBox->setEnabled(g);
         _gBox->setReadOnly(!g);
         //_bBox->setEnabled(b);
         _bBox->setReadOnly(!b);
     }
     if (_dimension >= 4) {
-        bool a = getKnob()->isEnabled(3);
+        bool a = _knob->isEnabled(3);
         //_aBox->setEnabled(a);
         _aBox->setReadOnly(!a);
 
