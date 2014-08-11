@@ -424,10 +424,15 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow(2,-std::ceil(std::log(zoomFactor) / M_LN2));
     mipMapLevel = std::max((double)mipMapLevel,std::log(closestPowerOf2) / M_LN2);
-  
-    
-    scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
+
+    // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
+    // this after the first call to getRegionOfDefinition().
+    EffectInstance::SupportsEnum supportsRS = activeInputToRender->supportsRenderScaleMaybe();
+    if (supportsRS == eSupportsNo) {
+        scale.x = scale.y = 1.;
+    } else {
+        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+    }
     closestPowerOf2 = 1 << mipMapLevel;
     
     ImageComponents components;
@@ -559,13 +564,20 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         }
         
     }  else {
-        Status stat = activeInputToRender->getRegionOfDefinition_public(time,scale,view, &rod,&isRodProjectFormat);
+        Status stat = activeInputToRender->getRegionOfDefinition_public(time, scale, view, &rod, &isRodProjectFormat);
         if(stat == StatFailed){
 #ifdef NATRON_LOG
             Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
             Natron::Log::endFunction(getName(),"renderViewer");
 #endif
             return stat;
+        }
+        // update scale after the first call to getRegionOfDefinition
+        if (supportsRS == eSupportsMaybe && mipMapLevel != 0) {
+            supportsRS = activeInputToRender->supportsRenderScaleMaybe();
+            if (supportsRS == eSupportsNo) {
+                scale.x = scale.y = 1.;
+            }
         }
         isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
 

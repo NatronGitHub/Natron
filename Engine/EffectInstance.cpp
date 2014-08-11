@@ -597,8 +597,7 @@ EffectInstance::getImage(int inputNb,
 
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
-#pragma message WARN("supportsRenderScale() always returns true for OFX - 'upscale' should be a parameter maybe?") // see doc for OfxEffectInstance::supportsRenderScale()
-    if (!dontUpscale && inputImgMipMapLevel > 0 && !supportsRenderScale()) {
+    if (!dontUpscale && inputImgMipMapLevel > 0 && supportsRenderScaleMaybe() == eSupportsNo) {
 #pragma message WARN("wrong: it should use the originial RoD of the full-res image, not an upscaled one (which may be larger)")
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         int mipMapLevel = 0;
@@ -620,7 +619,7 @@ EffectInstance::calcDefaultRegionOfDefinition(SequenceTime /*time*/,
 {
     Format projectDefault;
     getRenderFormat(&projectDefault);
-    return RectD(projectDefault.left(), projectDefault.bottom(), projectDefault.right(), projectDefault.top());
+    *rod = RectD(projectDefault.left(), projectDefault.bottom(), projectDefault.right(), projectDefault.top());
 }
 
 Natron::Status
@@ -687,7 +686,11 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
             if (input) {
                 RectD inputRod;
                 bool isProjectFormat;
-                Status st = input->getRegionOfDefinition_public(time, scale, view, &inputRod, &isProjectFormat);
+                RenderScale inputScale = scale;
+                if (input->supportsRenderScaleMaybe() == eSupportsNo) {
+                    inputScale.x = inputScale.y = 1.;
+                }
+                Status st = input->getRegionOfDefinition_public(time, inputScale, view, &inputRod, &isProjectFormat);
                 if (st != StatFailed) {
                     if (firstInput) {
                         inputsUnion = inputRod;
@@ -840,22 +843,35 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
 
     RectD rod; //!< rod is in canonical coordinates
     bool isProjectFormat = false;
-
+    RenderScale scale = args.scale;
+    unsigned int mipMapLevel = args.mipMapLevel;
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    if (supportsRS == eSupportsNo) {
+        scale.x = scale.y = 1.;
+        mipMapLevel = 0;
+    }
     ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
     if (!args.preComputedRoD.isNull()) {
         rod = args.preComputedRoD;
     } else {
         ///before allocating it we must fill the RoD of the image we want to render
-        Status stat = getRegionOfDefinition_public(args.time, args.scale, args.view, &rod, &isProjectFormat);
+        Status stat = getRegionOfDefinition_public(args.time, scale, args.view, &rod, &isProjectFormat);
 
         ///The rod might be NULL for a roto that has no beziers and no input
         if (stat == StatFailed || rod.isNull()) {
             ///if getRoD fails, just return a NULL ptr
             return boost::shared_ptr<Natron::Image>();
         }
+        if (supportsRS == eSupportsMaybe && (scale.x != 1. || scale.y != 1.)) {
+            supportsRS = supportsRenderScaleMaybe();
+            if (supportsRS == eSupportsNo) {
+                scale.x = scale.y = 1.;
+                mipMapLevel = 0;
+            }
+        }
     }
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time,args.mipMapLevel,args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, args.time, args.mipMapLevel, args.view);
     {
         ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
         ///just remove the old image from the cache to recycle memory.
@@ -951,15 +967,20 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
     boost::shared_ptr<Natron::Image> downscaledImage = image;
 
     if (!isCached) {
-        
         ///first-off check whether the effect is identity, in which case we don't want
         /// to cache anything or render anything for this effect.
         SequenceTime inputTimeIdentity = 0.;
         int inputNbIdentity;
         FramesNeededMap framesNeeded;
 
-        bool identity = isIdentity_public(args.time, args.scale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
-    
+        bool identity = isIdentity_public(args.time, scale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
+        if (supportsRS == eSupportsMaybe && (scale.x != 1. || scale.y != 1.)) {
+            supportsRS = supportsRenderScaleMaybe();
+            if (supportsRS == eSupportsNo) {
+                scale.x = scale.y = 1.;
+            }
+        }
+
         if (identity) {
             
             ///The effect is an identity but it has no inputs
@@ -1018,7 +1039,6 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             assert(!rod.isNull());
             
             framesNeeded = getFramesNeeded_public(args.time);
-          
         }
     
         
@@ -1077,10 +1097,9 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         image = newImage;
         downscaledImage = image;
         
-#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
-        if (!supportsRenderScale() && args.mipMapLevel != 0) {
+        if (supportsRS == eSupportsNo && args.mipMapLevel != 0) {
             ///Allocate the upscaled image
-            int mipMapLevel = 0;
+            assert(mipMapLevel == 0);
             RectI bounds;
             rod.toPixelEnclosing(mipMapLevel, &bounds);
             image.reset(new Natron::Image(args.components, rod, bounds, mipMapLevel, args.bitdepth));
@@ -1149,8 +1168,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         ///render the parts we are interested in and then downscale again
         ///Before doing that we verify if everything we want is already rendered in which case we
         ///dont degrade the image
-        //#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
-        if (!supportsRenderScale() && args.mipMapLevel != 0) {
+        if (supportsRS == eSupportsNo && args.mipMapLevel != 0) {
             
             RectI intersection;
             args.roi.intersect(image->getBounds(), &intersection);
@@ -1162,7 +1180,6 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             downscaledImage = image;
 
             RectD rod = cachedImgParams->getRoD();
-            int mipMapLevel = 0;
             RectI bounds;
             rod.toPixelEnclosing(mipMapLevel, &bounds);
             ///Allocate the upscaled image
@@ -1179,7 +1196,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
 
     ///If we reach here, it can be either because the image is cached or not, either way
     ///the image is NOT an identity, and it may have some content left to render.
-    EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(args.time, args.scale,args.mipMapLevel,
+    EffectInstance::RenderRoIStatus renderRetCode = renderRoIInternal(args.time, args.scale, args.mipMapLevel,
                                                                       args.view, args.roi, rod, cachedImgParams, image,
                                                                       downscaledImage,args.isSequentialRender,
                                                                       args.isRenderUserInteraction ,byPassCache,nodeHash,
@@ -1254,20 +1271,20 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     bool imageConversionNeeded = outputComponents != image->getComponents() || outputDepth != image->getBitDepth();
     
     assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
-    
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
     ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
     ///if the plug-in can just use the downscaled image to render.
-#pragma message WARN("supportsRenderScale() always returns true for OFX - renderROI should try rendering twice instead (once with rs<1, once with rs=1)") // see doc for OfxEffectInstance::supportsRenderScale()
-    bool useFullResImage = (!supportsRenderScale() && mipMapLevel != 0);
+    bool useFullResImage = (supportsRS == eSupportsNo && mipMapLevel != 0);
     
     ///The image and downscaled image are pointing to the same image in 2 cases:
     ///1) Proxy mode is turned off
     ///2) Proxy mode is turned on but plug-in supports render scale
     ///Subsequently the image and downscaled image are different only if the plug-in
     ///does not support the render scale and the proxy mode is turned on.
-    assert((image == downscaledImage && (supportsRenderScale() || mipMapLevel == 0)) ||
-           (image != downscaledImage && !supportsRenderScale() && mipMapLevel != 0));
+    assert((image == downscaledImage && !useFullResImage) ||
+           (image != downscaledImage && useFullResImage));
     
     
     ///Add the window to the project's available formats if the effect is a reader
@@ -1674,7 +1691,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     const int channelForAlpha = args._channelForAlpha;
 
     //#pragma message WARN("supportsRenderScale() always returns true for OFX") // see doc for OfxEffectInstance::supportsRenderScale()
-    const bool useFullResImage = (!supportsRenderScale() && mipMapLevel != 0);
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    const bool useFullResImage = (supportsRS == eSupportsNo && mipMapLevel != 0);
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
     const RectI& renderBounds = renderMappedImage->getBounds();
@@ -1919,6 +1937,7 @@ EffectInstance::supportsRenderScaleMaybe() const
     return _imp->supportsRenderScale;
 }
 
+/// should be set during effect initialization, but may also be set by the first getRegionOfDefinition that succeeds
 void
 EffectInstance::setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const
 {
@@ -2598,7 +2617,10 @@ EffectInstance::getClipThreadStorageData(SequenceTime time,
     bool isProjectFormat;
     
     ///we don't care if it fails
-    (void)getRegionOfDefinition_public(time, scale, *view, outputRoD, &isProjectFormat);
+    Natron::Status stat = getRegionOfDefinition_public(time, scale, *view, outputRoD, &isProjectFormat);
+    if (stat != StatOK && stat != StatReplyDefault) {
+        throw std::runtime_error("can't get region of definition");
+    }
     assert(outputRoD->x2 >= outputRoD->x1 && outputRoD->y2 >= outputRoD->y1);
 }
 

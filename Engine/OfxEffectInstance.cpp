@@ -250,7 +250,33 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             throw std::runtime_error("Could not create effect instance for plugin");
         }
 
-        
+        // Try to set renderscale support at plugin creation.
+        // This is not always possible (e.g. if a param has a wrong value).
+        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
+            // does the effect support renderscale?
+            OfxRangeD range;
+            range.min = 0;
+            OfxStatus tdstat = effect_->getTimeDomainAction(range);
+            if (tdstat == kOfxStatOK || tdstat == kOfxStatReplyDefault) {
+                double time = range.min;
+                OfxPointD scale;
+                scale.x = 1.;
+                scale.y = 1.;
+                OfxRectD rod;
+                OfxStatus rodstat = effect_->getRegionOfDefinitionAction(time, scale, rod);
+                if (rodstat == kOfxStatOK || rodstat == kOfxStatReplyDefault) {
+                    scale.x = 0.5;
+                    scale.y = 0.5;
+                    rodstat = effect_->getRegionOfDefinitionAction(time, scale, rod);
+                    if (rodstat == kOfxStatOK || rodstat == kOfxStatReplyDefault) {
+                        setSupportsRenderScaleMaybe(eSupportsYes);
+                    } else {
+                        setSupportsRenderScaleMaybe(eSupportsNo);
+                    }
+                }
+            }
+        }
+
         if (!effect_->getClipPreferences()) {
            qDebug() << "The plugin failed in the getClipPreferencesAction.";
         }
@@ -860,12 +886,12 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
     
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     
-    OfxPointD scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
-
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool useScaleOne = (supportsRS == eSupportsNo) && (scale.x != 1. || scale.y != 1.);
-    bool scaleIsOne = useScaleOne || (scale.x == 1. && scale.y == 1.);
+    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
+        qDebug() << "getRegionOfDefinition called with render scale != 1, but effect does not support render scale!";
+        return StatFailed;
+    }
 
     OfxRectD ofxRod;
     OfxStatus stat;
@@ -889,7 +915,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
                                  false, //< setFrameRange ?
                                  0,0);
 
-        stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
+        stat = effect_->getRegionOfDefinitionAction(time, scale, ofxRod);
         if (!scaleIsOne && supportsRS == eSupportsMaybe) {
             if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
                 // we got at least one success with RS != 1
@@ -897,22 +923,31 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
             } else if (stat == kOfxStatFailed) {
                 // maybe the effect does not support renderscale
                 // try again with scale one
-                stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
+                OfxPointD scaleOne;
+                scaleOne.x = scaleOne.y = 1.;
+                
+                stat = effect_->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
                 if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
                     // we got success with scale = 1, which means it doesn't support renderscale after all
                     setSupportsRenderScaleMaybe(eSupportsNo);
+                } else {
+                    // if both actions failed, we can't say anything
+                    return StatFailed;
                 }
-                // if both actions failed, we can't say anything
+                if (stat == kOfxStatReplyDefault) {
+                    calcDefaultRegionOfDefinition(time, scaleOne, rod);
+                    return StatReplyDefault;
+                }
             }
         }
     }
     
-    if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         return StatFailed;
     }
 
     if (stat == kOfxStatReplyDefault) {
-        calcDefaultRegionOfDefinition(time, useScaleOne ? scaleOne : (OfxPointD)scale, rod);
+        calcDefaultRegionOfDefinition(time, scale, rod);
         return StatReplyDefault;
     }
 
@@ -989,10 +1024,13 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    OfxPointD scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
-    
-    bool useScaleOne = !supportsRenderScale();
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
+        qDebug() << "getRegionsOfInterest called with render scale != 1, but effect does not support render scale!";
+        assert(false);
+        throw std::logic_error("getRegionsOfInterest called with render scale != 1, but effect does not support render scale!");
+    }
     OfxStatus stat;
     
     ///before calling getRoIaction set the relevant infos on the clips
@@ -1018,7 +1056,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
                                  0,0); //< setFrameRange ?
         OfxRectD roi;
         rectToOfxRectD(renderWindow, &roi);
-        stat = effect_->getRegionOfInterestAction((OfxTime)time, useScaleOne ? scaleOne : scale,
+        stat = effect_->getRegionOfInterestAction((OfxTime)time, scale,
                                                   roi, inputRois);
         
     }
@@ -1158,15 +1196,12 @@ OfxEffectInstance::isIdentity(SequenceTime time,
     std::string inputclip;
     OfxTime inputTimeOfx = time;
 
-    OfxPointD scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
-    
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool useScaleOne = (supportsRS == eSupportsNo) && (scale.x != 1. || scale.y != 1.);
-    bool scaleIsOne = useScaleOne || (scale.x == 1. && scale.y == 1.);
-
-    if (supportsRS == eSupportsMaybe) {
-        qDebug() << "OfxEffectInstance::isIdentity: supportsRenderScaleMaybe() not set, but getRegionOfDefinition() should have set it!";
+    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
+        qDebug() << "isIdentity called with render scale != 1, but effect does not support render scale!";
+        assert(false);
+        throw std::logic_error("isIdentity called with render scale != 1, but effect does not support render scale!");
     }
 
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
@@ -1199,7 +1234,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         ofxRoI.x2 = roi.right();
         ofxRoI.y1 = roi.bottom();
         ofxRoI.y2 = roi.top();
-        stat = effect_->isIdentityAction(inputTimeOfx, field, ofxRoI, useScaleOne ? scaleOne : scale, inputclip);
+        stat = effect_->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
         if (!scaleIsOne && supportsRS == eSupportsMaybe) {
             if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
                 // we got at least one success with RS != 1
@@ -1207,6 +1242,9 @@ OfxEffectInstance::isIdentity(SequenceTime time,
             } else if (stat == kOfxStatFailed) {
                 // maybe the effect does not support renderscale
                 // try again with scale one
+                OfxPointD scaleOne;
+                scaleOne.x = scaleOne.y = 1.;
+                
                 rod.toPixelEnclosing(scaleOne, &roi);
                 ofxRoI.x1 = roi.left();
                 ofxRoI.x2 = roi.right();
@@ -1255,10 +1293,14 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
                                        bool isRenderResponseToUserInteraction,
                                        int view)
 {
-    OfxPointD scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
-    bool useScaleOne = !supportsRenderScale();
-    
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
+        qDebug() << "beginSequenceRender called with render scale != 1, but effect does not support render scale!";
+        assert(false);
+        throw std::logic_error("beginSequenceRender called with render scale != 1, but effect does not support render scale!");
+    }
+
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
     
     OfxStatus stat ;
@@ -1282,7 +1324,7 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
                                             false,
                                             0,0); //< setFrameRange ?
         
-        stat = effectInstance()->beginRenderAction(first, last, step, interactive,useScaleOne ? scaleOne :  scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+        stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     }
 
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
@@ -1301,10 +1343,14 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
                                      bool isRenderResponseToUserInteraction,
                                      int view)
 {
-    OfxPointD scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
-    bool useScaleOne = !supportsRenderScale();
-    
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
+        qDebug() << "endSequenceRender called with render scale != 1, but effect does not support render scale!";
+        assert(false);
+        throw std::logic_error("endSequenceRender called with render scale != 1, but effect does not support render scale!");
+    }
+
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
     
     OfxStatus stat ;
@@ -1328,7 +1374,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
                                             false,
                                             0,0); //< setFrameRange ?
         
-        stat = effectInstance()->endRenderAction(first, last, step, interactive,useScaleOne ? scaleOne : scale,isSequentialRender,isRenderResponseToUserInteraction,view);
+        stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, view);
     }
 
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
@@ -1351,11 +1397,11 @@ OfxEffectInstance::render(SequenceTime time,
     }
 
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    if (supportsRS == eSupportsMaybe) {
-        qDebug() << "Error: OfxEffectInstance::render() called, but supportsRenderScale was not set. Continuing anyway.";
-    }
-    if (supportsRS == eSupportsNo && (scale.x != 1. || scale.y != 1.)) {
-        qDebug() << "Error: OfxEffectInstance::render() called with renderscale != 1., but plugin does not support it";
+    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
+        qDebug() << "render called with render scale != 1, but effect does not support render scale!";
+        assert(false);
+        throw std::logic_error("render called with render scale != 1, but effect does not support render scale!");
     }
 
     OfxRectI ofxRoI;
@@ -1368,11 +1414,6 @@ OfxEffectInstance::render(SequenceTime time,
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     ///before calling render, set the render scale thread storage for each clip
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    ///This is passed to the render action to plug-ins that don't support render scale
-    RenderScale scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
-    
-    bool useScaleOne = !supportsRenderScale();
 
     {
         bool skipDiscarding = false;
@@ -1396,7 +1437,7 @@ OfxEffectInstance::render(SequenceTime time,
         stat = effect_->renderAction((OfxTime)time,
                                      field,
                                      ofxRoI,
-                                     useScaleOne ? scaleOne : scale,
+                                     scale,
                                      isSequentialRender,
                                      isRenderResponseToUserInteraction,
                                      view,

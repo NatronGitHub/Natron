@@ -648,6 +648,7 @@ public:
 
     SupportsEnum supportsRenderScaleMaybe() const;
 
+    /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
     void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
     
     /**
