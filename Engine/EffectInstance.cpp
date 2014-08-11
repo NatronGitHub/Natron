@@ -513,6 +513,10 @@ EffectInstance::getImage(int inputNb,
             inputsRoI = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
         }
 
+        {
+            bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
+        }
         isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &inputNbIdentity);
     } else {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
@@ -634,7 +638,11 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
-            Status st = input->getRegionOfDefinition_public(time, scale, view, &inputRod, &isProjectFormat);
+            RenderScale inputScale = scale;
+            if (input->supportsRenderScaleMaybe() == eSupportsNo) {
+                inputScale.x = inputScale.y = 1.;
+            }
+            Status st = input->getRegionOfDefinition_public(time, inputScale, view, &inputRod, &isProjectFormat);
             assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == StatFailed) {
                 return st;
@@ -855,6 +863,10 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         rod = args.preComputedRoD;
     } else {
         ///before allocating it we must fill the RoD of the image we want to render
+        {
+            bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+            assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
+        }
         Status stat = getRegionOfDefinition_public(args.time, scale, args.view, &rod, &isProjectFormat);
 
         ///The rod might be NULL for a roto that has no beziers and no input
@@ -973,11 +985,16 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         int inputNbIdentity;
         FramesNeededMap framesNeeded;
 
+        {
+            bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+            assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
+        }
         bool identity = isIdentity_public(args.time, scale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
         if (supportsRS == eSupportsMaybe && (scale.x != 1. || scale.y != 1.)) {
             supportsRS = supportsRenderScaleMaybe();
             if (supportsRS == eSupportsNo) {
                 scale.x = scale.y = 1.;
+                mipMapLevel = 0;
             }
         }
 
@@ -1410,6 +1427,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///To put that information (which depends on the RoI) into the cache. That's why we
         ///store it into the render args (thread-storage) so the getImage() function can retrieve the results.
 #pragma message WARN("of course, it should use the effect RoD instead of image->getRoD()!")
+        {
+            bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+            assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
+        }
         RoIMap inputsRoi = getRegionsOfInterest_public(time, scale, image->getRoD(), canonicalRectToRender, view);
         
         ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
@@ -1557,7 +1578,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             }
         }
         if (callBegin) {
-            if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), scale,isSequentialRender,
+            {
+                bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+                assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
+            }
+            if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), scale, isSequentialRender,
                                            isRenderMadeInResponseToUserInteraction,view) == StatFailed) {
                 renderStatus = StatFailed;
                 break;
@@ -1614,8 +1639,14 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                     }
                 }
                 if (callEndRender) {
+                    {
+                        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+                        assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
+                    }
                     if (endSequenceRender_public(time, time, time, false, scale,
-                                                 isSequentialRender,isRenderMadeInResponseToUserInteraction,view) == StatFailed) {
+                                                 isSequentialRender,
+                                                 isRenderMadeInResponseToUserInteraction,
+                                                 view) == StatFailed) {
                         renderStatus = StatFailed;
                         break;
                     }
@@ -1717,7 +1748,10 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     }
     
     if (!renderRectToRender.isNull()) {
-        
+        {
+            bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+            assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
+        }
         Natron::Status st = render_public(time, scale, renderRectToRender, view,
                                           isSequentialRender,
                                           isRenderResponseToUserInteraction,
@@ -2654,6 +2688,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             scale.y = scale.x;
             
             U64 nodeHash = hash();
+            {
+                bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+                assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
+            }
             RoIMap inputRois = getRegionsOfInterest_public(time, scale, rod, rod, view);
             
             boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
@@ -2665,6 +2703,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             SequenceTime identityTime;
             int identityNb;
 
+            {
+                bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+                assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
+            }
             bool isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);
             
             ///These args remain valid on the thread storage 'til it gets out of scope
