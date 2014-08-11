@@ -478,10 +478,11 @@ protected:
      * By default it returns in rod the union of all inputs RoD and StatReplyDefault is returned.
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return StatFailed.
+     * @returns StatOK, StatReplyDefault, or StatFailed. rod is set except if return value is StatOK or StatReplyDefault.
      **/
     virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectD* rod) WARN_UNUSED_RETURN;
 
-    virtual RectD calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale) const WARN_UNUSED_RETURN;
+    virtual void calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale, RectD *rod) const WARN_UNUSED_RETURN;
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the

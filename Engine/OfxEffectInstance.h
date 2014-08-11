@@ -129,7 +129,7 @@ public:
     virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual RectD calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale) const OVERRIDE WARN_UNUSED_RETURN;
+    virtual void calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale, RectD *rod) const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual Natron::EffectInstance::RoIMap getRegionsOfInterest(SequenceTime time,
                                                                 const RenderScale& scale,
@@ -265,6 +265,20 @@ signals:
     void syncPrivateDataRequested();
 
 private:
+    /** @brief Enumerates the contexts a plugin can be used in */
+    enum ContextEnum {
+        eContextNone,
+        eContextGenerator,
+        eContextFilter,
+        eContextTransition,
+        eContextPaint,
+        eContextGeneral,
+        eContextRetimer,
+        eContextReader,
+        eContextWriter,
+    };
+
+    ContextEnum mapToContextEnum(const std::string &s);
 
     void checkClipPrefs(double time,const RenderScale& scale,const std::string&  reason);
 
@@ -275,19 +289,19 @@ private:
     void initializeContextDependentParams();
 
 private:
-Natron::OfxImageEffectInstance* effect_;
-mutable std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-bool _isOutput;//if the OfxNode can output a file somehow
+    Natron::OfxImageEffectInstance* effect_;
+    mutable std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
+    bool _isOutput;//if the OfxNode can output a file somehow
 
-bool _penDown; // true when the overlay trapped a penDow action
-Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
+    bool _penDown; // true when the overlay trapped a penDow action
+    Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
 
-bool _initialized; //true when the image effect instance has been created and populated
-boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
-mutable EffectInstance::RenderSafety _renderSafety;
-mutable bool _wasRenderSafetySet;
-mutable QReadWriteLock* _renderSafetyLock;
-
+    bool _initialized; //true when the image effect instance has been created and populated
+    boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
+    mutable EffectInstance::RenderSafety _renderSafety;
+    mutable bool _wasRenderSafetySet;
+    mutable QReadWriteLock* _renderSafetyLock;
+    ContextEnum _context;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_

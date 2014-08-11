@@ -158,6 +158,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
     , _renderSafety(EffectInstance::UNSAFE)
     , _wasRenderSafetySet(false)
     , _renderSafetyLock(new QReadWriteLock)
+    , _context(eContextNone)
 {
     QObject::connect(this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()));
 }
@@ -177,13 +178,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     
     ///Only called from the main thread.
     assert(QThread::currentThread() == qApp->thread());
-    
-    if (context == kOfxImageEffectContextWriter) {
+    ContextEnum ctx = mapToContextEnum(context);
+
+    if (ctx == eContextWriter) {
         setAsOutputNode();
         // Writers don't support render scale (full-resolution images are written to disk)
         setSupportsRenderScaleMaybe(eSupportsNo);
     }
-    if (context == kOfxImageEffectContextReader) {
+    if (ctx == eContextReader) {
         // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
         // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
         std::string prefix("tuttle.");
@@ -201,7 +203,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
-
+    _context = mapToContextEnum(context);
     try {
         effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(effect_);
@@ -295,6 +297,7 @@ OfxEffectInstance::~OfxEffectInstance()
 void
 OfxEffectInstance::initializeContextDependentParams()
 {
+    assert(_context != eContextNone);
     if (isWriter()) {
         _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
         _renderButton->setHintToolTip("Starts rendering the specified frame range.");
@@ -305,6 +308,7 @@ OfxEffectInstance::initializeContextDependentParams()
 std::string
 OfxEffectInstance::description() const
 {
+    assert(_context != eContextNone);
     if (effectInstance()) {
         return effectInstance()->getProps().getStringProperty(kOfxPropPluginDescription);
     } else {
@@ -315,6 +319,7 @@ OfxEffectInstance::description() const
 void
 OfxEffectInstance::tryInitializeOverlayInteracts()
 {
+    assert(_context != eContextNone);
     /*create overlay instance if any*/
     OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
@@ -362,12 +367,14 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
 bool
 OfxEffectInstance::isOutput() const
 {
+    assert(_context != eContextNone);
     return _isOutput;
 }
 
 bool
 OfxEffectInstance::isGenerator() const
 {
+#if 0
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
@@ -375,11 +382,16 @@ OfxEffectInstance::isGenerator() const
     if (foundGenerator != contexts.end() || foundReader!= contexts.end())
         return true;
     return false;
+#else
+    assert(_context != eContextNone);
+    return _context == eContextGenerator || _context == eContextReader;
+#endif
 }
 
 bool
 OfxEffectInstance::isReader() const
 {
+#if 0
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
@@ -387,11 +399,17 @@ OfxEffectInstance::isReader() const
         return true;
     }
     return false;
+#else
+    assert(_context != eContextNone);
+    return _context == eContextReader;
+#endif
 }
 
 bool
 OfxEffectInstance::isWriter() const
 {
+#if 0
+    assert(_context != eContextNone);
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
@@ -399,11 +417,16 @@ OfxEffectInstance::isWriter() const
         return true;
     }
     return false;
+#else
+    assert(_context != eContextNone);
+    return _context == eContextWriter;
+#endif
 }
 
 bool
 OfxEffectInstance::isGeneratorAndFilter() const
 {
+    assert(_context != eContextNone);
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
     std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
@@ -566,12 +589,14 @@ AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& plugi
 std::string
 OfxEffectInstance::pluginID() const
 {
+    assert(_context != eContextNone);
     return _natronPluginID;
 }
 
 std::string
 OfxEffectInstance::pluginLabel() const
 {
+    assert(_context != eContextNone);
     assert(effect_);
     return getPluginLabel( effect_->getDescriptor().getShortLabel(),effect_->getDescriptor().getLabel(),effect_->getDescriptor().getLongLabel());
 }
@@ -579,6 +604,7 @@ OfxEffectInstance::pluginLabel() const
 void
 OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
 {
+    assert(_context != eContextNone);
     std::string groupStr = effectInstance()->getPluginGrouping();
     std::string label = pluginLabel();
     const OFX::Host::ImageEffect::ImageEffectPlugin *p = effectInstance()->getPlugin();
@@ -591,7 +617,8 @@ OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
 std::string
 OfxEffectInstance::inputLabel(int inputNb) const
 {
-    
+    assert(_context != eContextNone);
+
     MappedInputV copy = inputClipsCopyWithoutOutput();
     if (inputNb < (int)copy.size()) {
         return copy[copy.size()-1-inputNb]->getShortLabel();
@@ -603,6 +630,7 @@ OfxEffectInstance::inputLabel(int inputNb) const
 OfxEffectInstance::MappedInputV
 OfxEffectInstance::inputClipsCopyWithoutOutput() const
 {
+    assert(_context != eContextNone);
     assert(effectInstance());
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
     MappedInputV copy;
@@ -619,6 +647,7 @@ OfxEffectInstance::inputClipsCopyWithoutOutput() const
 OfxClipInstance*
 OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 {
+    assert(_context != eContextNone);
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
     assert(inputNo < (int)clips.size());
     OFX::Host::ImageEffect::ClipInstance* clip = effect_->getClip(clips[clips.size() - 1 - inputNo]->getName());
@@ -629,6 +658,7 @@ OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 int
 OfxEffectInstance::maximumInputs() const
 {
+    assert(_context != eContextNone);
     const std::string& context = effectInstance()->getContext();
     if (context == kOfxImageEffectContextReader ||
         context == kOfxImageEffectContextGenerator) {
@@ -644,6 +674,7 @@ OfxEffectInstance::maximumInputs() const
 bool
 OfxEffectInstance::isInputOptional(int inputNb) const
 {
+    assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
     if (inputs[inputs.size()-1-inputNb]->isOptional()) {
@@ -659,6 +690,7 @@ OfxEffectInstance::isInputOptional(int inputNb) const
 bool
 OfxEffectInstance::isInputMask(int inputNb) const
 {
+    assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
     return inputs[inputs.size()-1-inputNb]->isMask();
@@ -667,6 +699,7 @@ OfxEffectInstance::isInputMask(int inputNb) const
 bool
 OfxEffectInstance::isInputRotoBrush(int inputNb) const
 {
+    assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert(inputNb < (int)inputs.size());
     
@@ -678,6 +711,7 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
 void
 OfxEffectInstance::onInputChanged(int inputNo)
 {
+    assert(_context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
     double time = effect_->getFrameRecursive();
@@ -694,9 +728,43 @@ OfxEffectInstance::onInputChanged(int inputNo)
     }
 }
 
+/** @brief map a std::string to a context */
+OfxEffectInstance::ContextEnum
+OfxEffectInstance::mapToContextEnum(const std::string &s)
+{
+    if (s == kOfxImageEffectContextGenerator) {
+        return eContextGenerator;
+    }
+    if (s == kOfxImageEffectContextFilter) {
+        return eContextFilter;
+    }
+    if (s == kOfxImageEffectContextTransition) {
+        return eContextTransition;
+    }
+    if (s == kOfxImageEffectContextPaint) {
+        return eContextPaint;
+    }
+    if (s == kOfxImageEffectContextGeneral) {
+        return eContextGeneral;
+    }
+    if (s == kOfxImageEffectContextRetimer) {
+        return eContextRetimer;
+    }
+    if (s == kOfxImageEffectContextReader) {
+        return eContextReader;
+    }
+    if (s == kOfxImageEffectContextWriter) {
+        return eContextWriter;
+    }
+    qDebug() << "OfxEffectInstance::mapToContextEnum: Unknown image effect context '" << s.c_str() << "'";
+    throw std::invalid_argument(s);
+}
+
+
 void
 OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, const std::string& reason)
 {
+    assert(_context != eContextNone);
     assert(QThread::currentThread() == qApp->thread());
     
     effect_->runGetClipPrefsConditionally();
@@ -757,6 +825,7 @@ OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, const st
 void
 OfxEffectInstance::onMultipleInputsChanged()
 {
+    assert(_context != eContextNone);
     ///Recursive action, must not call assertActionIsNotRecursive()
     incrementRecursionLevel();
     effect_->runGetClipPrefsConditionally();
@@ -766,6 +835,7 @@ OfxEffectInstance::onMultipleInputsChanged()
 std::vector<std::string>
 OfxEffectInstance::supportedFileFormats() const
 {
+    assert(_context != eContextNone);
     int formatsCount = effect_->getDescriptor().getProps().getDimension(kTuttleOfxImageEffectPropSupportedExtensions);
     std::vector<std::string> formats(formatsCount);
     for (int k = 0; k < formatsCount; ++k) {
@@ -781,6 +851,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
                                          int view,
                                          RectD* rod)
 {
+    assert(_context != eContextNone);
     if (!_initialized) {
         return Natron::StatFailed;
     }
@@ -839,6 +910,11 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
         return StatFailed;
     }
 
+    if (stat == kOfxStatReplyDefault) {
+        calcDefaultRegionOfDefinition(time, useScaleOne ? scaleOne : (OfxPointD)scale, rod);
+        return StatReplyDefault;
+    }
+
     ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     ///1 pixel large image
     if (ofxRod.x2 == 1. && ofxRod.y2 == 1. && ofxRod.x1 == 0. && ofxRod.y1 == 0.) {
@@ -860,15 +936,29 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
     //double pa = clip->getAspectRatio();
 }
 
-RectD
+void
 OfxEffectInstance::calcDefaultRegionOfDefinition(SequenceTime time,
-                                                 const RenderScale& scale) const
+                                                 const RenderScale& scale,
+                                                 RectD *rod) const
 {
+    assert(_context != eContextNone);
     if (!_initialized) {
         throw std::runtime_error("OfxEffectInstance not initialized");
     }
-    OfxRectD rod = effect_->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
-    return RectD(rod.x1, rod.y1, rod.x2, rod.y2);
+
+    // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
+    // generator context - defaults to the project window,
+    // filter and paint contexts - defaults to the RoD of the 'Source' input clip at the given time,
+    // transition context - defaults to the union of the RoDs of the 'SourceFrom' and 'SourceTo' input clips at the given time,
+    // general context - defaults to the union of the RoDs of all the effect non optional input clips at the given time, if none exist, then it is the project window
+    // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
+
+    // the following ofxh function does the job
+    OfxRectD ofxRod = effect_->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+    rod->x1 = ofxRod.x1;
+    rod->x2 = ofxRod.x2;
+    rod->y1 = ofxRod.y1;
+    rod->y2 = ofxRod.y2;
 }
 
 static void
@@ -888,6 +978,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
                                         const RectD& renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                         int view)
 {
+    assert(_context != eContextNone);
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
     EffectInstance::RoIMap ret;
     if (!_initialized) {
@@ -961,6 +1052,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 Natron::EffectInstance::FramesNeededMap
 OfxEffectInstance::getFramesNeeded(SequenceTime time)
 {
+    assert(_context != eContextNone);
     EffectInstance::FramesNeededMap ret;
     if (!_initialized) {
         return ret;
@@ -988,6 +1080,7 @@ void
 OfxEffectInstance::getFrameRange(SequenceTime *first,
                                  SequenceTime *last)
 {
+    assert(_context != eContextNone);
     if (!_initialized) {
         return;
     }
@@ -996,10 +1089,10 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
     //  see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetTimeDomain"
     // Edit: Also add the 'writer' context as we need the getTimeDomain action to be able to find out the frame range to render.
     OfxStatus st = kOfxStatReplyDefault;
-    if (effect_->getContext() == kOfxImageEffectContextGeneral ||
-        effect_->getContext() == kOfxImageEffectContextReader ||
-        effect_->getContext() == kOfxImageEffectContextWriter ||
-        effect_->getContext() == kOfxImageEffectContextGenerator) {
+    if (_context == eContextGeneral ||
+        _context == eContextReader ||
+        _context == eContextWriter ||
+        _context == eContextGenerator) {
         st = effect_->getTimeDomainAction(range);
     }
     if (st == kOfxStatOK) {
@@ -1059,6 +1152,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                               SequenceTime* inputTime,
                               int* inputNb)
 {
+    assert(_context != eContextNone);
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
     OfxTime inputTimeOfx = time;
@@ -1146,9 +1240,8 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         return true;
     } else if (stat == kOfxStatReplyDefault) {
         return false;
-    } else if (stat == kOfxStatFailed) {
-
     }
+    throw std::runtime_error("isIdentity failed");
 }
 
 

@@ -613,9 +613,10 @@ EffectInstance::getImage(int inputNb,
     }
 }
 
-RectD
+void
 EffectInstance::calcDefaultRegionOfDefinition(SequenceTime /*time*/,
-                                              const RenderScale &/*scale*/) const
+                                              const RenderScale &/*scale*/,
+                                              RectD *rod) const
 {
     Format projectDefault;
     getRenderFormat(&projectDefault);
@@ -679,8 +680,8 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        inputsUnion = calcDefaultRegionOfDefinition(time, scale);
-        bool first = true;
+        calcDefaultRegionOfDefinition(time, scale, &inputsUnion);
+        bool firstInput = true;
         for (int i = 0; i < maximumInputs(); ++i) {
             Natron::EffectInstance* input = input_other_thread(i);
             if (input) {
@@ -688,9 +689,9 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
                 bool isProjectFormat;
                 Status st = input->getRegionOfDefinition_public(time, scale, view, &inputRod, &isProjectFormat);
                 if (st != StatFailed) {
-                    if (first) {
+                    if (firstInput) {
                         inputsUnion = inputRod;
-                        first = false;
+                        firstInput = false;
                     } else {
                         inputsUnion.merge(inputRod);
                     }
@@ -2375,7 +2376,12 @@ EffectInstance::getRegionOfDefinition_public(SequenceTime time,
         decrementRecursionLevel();
         throw e;
     }
-    assert(ret != StatOK || (rod->x1 <= rod->x2 && rod->y1 <= rod->y2));
+    if (ret != StatOK && ret != StatReplyDefault) {
+        // rod is not valid
+        decrementRecursionLevel();
+        return ret;
+    }
+    assert((ret == StatOK || ret == StatReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2));
     
     decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
