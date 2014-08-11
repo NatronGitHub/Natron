@@ -268,14 +268,18 @@ SpinBox::wheelEvent(QWheelEvent *e)
                 maxiD = _imp->maxi.toDouble();
                 miniD = _imp->mini.toDouble();
                 cur += inc;
-                _imp->currentDelta = 0;
+                if (!useCursorPositionIncr) {
+                    _imp->currentDelta = 0;
+                }
                 break;
             case INT_SPINBOX:
                 maxiD = _imp->maxi.toInt();
                 miniD = _imp->mini.toInt();
                 cur += (int)inc;
-                _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
-                assert(std::abs(_imp->currentDelta) <= 120);
+                if (!useCursorPositionIncr) {
+                    _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
+                    assert(std::abs(_imp->currentDelta) < 120);
+                }
                 break;
         }
         cur = std::max(miniD, std::min(cur,maxiD));
