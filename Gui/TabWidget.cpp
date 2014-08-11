@@ -95,13 +95,21 @@ void FloatingWidget::closeEvent(QCloseEvent* e) {
         if (panes.empty()) {
             embedded->destroyTabs();
         } else {
-            TabWidget* otherPane = *panes.begin();
+            TabWidget* otherPane = 0;
+            for (std::list<TabWidget*>::const_iterator it = panes.begin();it!=panes.end();++it) {
+                if (*it != embedded) {
+                    otherPane = *it;
+                    break;
+                }
+            }
+            assert(otherPane);
             while (embedded->count() > 0) {
                 if (!TabWidget::moveTab(embedded->tabAt(0), otherPane)) {
                     break;
                 }
             }
         }
+        embedded->getGui()->removePane(embedded);
     }
     QWidget::closeEvent(e);
 }

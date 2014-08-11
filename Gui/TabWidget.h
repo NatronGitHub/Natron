@@ -135,7 +135,7 @@ public:
     
     virtual ~TabWidget();
     
-    const Gui* getGui() const {return _gui;}
+    Gui* getGui() const {return _gui;}
     
     ////To be called when it is going to be deleted
     void notifyGuiAboutRemoval();

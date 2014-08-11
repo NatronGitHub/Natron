@@ -1118,45 +1118,38 @@ void GuiPrivate::createCurveEditorGui()
 
 void Gui::wipeLayout()
 {
+    std::list<TabWidget*> panesCpy;
     {
         QMutexLocker l(&_imp->_panesMutex);
-        for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it!=_imp->_panes.end(); ++it) {
-            ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
-            (*it)->removeTab(_imp->_nodeGraphArea);
-            (*it)->removeTab(_imp->_curveEditor);
-            (*it)->removeTab(_imp->_propertiesScrollArea);
-            
-            {
-                QMutexLocker l(&_imp->_viewerTabsMutex);
-                for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2!=_imp->_viewerTabs.end(); ++it2) {
-                    (*it)->removeTab(*it2);
-                }
-            }
-            
-            {
-                QMutexLocker l(&_imp->_histogramsMutex);
-                for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2!=_imp->_histograms.end(); ++it2) {
-                    (*it)->removeTab(*it2);
-                }
+        panesCpy = _imp->_panes;
+        _imp->_panes.clear();
+        
+    }
+    for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it!=panesCpy.end(); ++it) {
+        ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
+        while ((*it)->count() > 0) {
+            (*it)->removeTab(0);
+        }
+        (*it)->setParent(NULL);
+        delete *it;
+    }
+    
+    std::list<Splitter*> splittersCpy;
+    {
+        QMutexLocker l(&_imp->_splittersMutex);
+        splittersCpy = _imp->_splitters;
+        _imp->_splitters.clear();
+    }
+    for (std::list<Splitter*>::iterator it = splittersCpy.begin(); it!=splittersCpy.end(); ++it) {
+        if (_imp->_leftRightSplitter != *it) {
+            while ((*it)->count() > 0) {
+                (*it)->widget(0)->setParent(NULL);
             }
             (*it)->setParent(NULL);
             delete *it;
         }
-        _imp->_panes.clear();
     }
-    {
-        QMutexLocker l(&_imp->_splittersMutex);
-        for (std::list<Splitter*>::iterator it = _imp->_splitters.begin(); it!=_imp->_splitters.end(); ++it) {
-            if (_imp->_leftRightSplitter != *it) {
-                while ((*it)->count() > 0) {
-                    (*it)->widget(0)->setParent(NULL);
-                }
-                (*it)->setParent(NULL);
-                delete *it;
-            }
-        }
-        _imp->_splitters.clear();
-    }
+    
     Splitter *newSplitter = new Splitter(_imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
     newSplitter->setObjectName_mt_safe(_imp->_leftRightSplitter->objectName_mt_safe()); 
@@ -1842,8 +1835,9 @@ void Gui::removePane(TabWidget* pane)
     
     QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
-    assert(found != _imp->_panes.end());
-    _imp->_panes.erase(found);
+    if (found != _imp->_panes.end()) {
+        _imp->_panes.erase(found);
+    }
     ///When there's only 1 tab left make it unclosable/floatable
     if (_imp->_panes.size() == 1) {
         _imp->_panes.front()->setClosable(false);
