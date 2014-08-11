@@ -253,6 +253,8 @@ public:
      **/
     QString getParentName(bool* horizontal = NULL) const;
     
+    void closePane(bool calledFromFloatingWindow);
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/

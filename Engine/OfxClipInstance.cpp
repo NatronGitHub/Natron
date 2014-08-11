@@ -215,15 +215,8 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         } else {
             if (!_lastRenderArgs.hasLocalData() || !_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
-                std::list<ViewerInstance*> viewersConnected;
-                _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
-                if (viewersConnected.empty()) {
-                    view = 0;
-                    mipmapLevel = 0;
-                } else {
-                    view = viewersConnected.front()->getCurrentView();
-                    mipmapLevel = (unsigned int)viewersConnected.front()->getMipMapLevel();
-                }
+                view = associatedNode->getCurrentViewRecursive();
+                mipmapLevel = associatedNode->getCurrentMipMapLevelRecursive();
             } else {
                 mipmapLevel = _lastRenderArgs.localData().mipMapLevel;
                 view = _lastRenderArgs.localData().view;
