@@ -8,22 +8,36 @@
 #include "NoOp.h"
 
 
-void NoOpBase::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
+: Natron::EffectInstance(n)
+{
+    setSupportsRenderScaleMaybe(eSupportsYes);
+}
+
+void
+NoOpBase::addAcceptedComponents(int /*inputNb*/,
+                                std::list<Natron::ImageComponents>* comps)
 {
     comps->push_back(Natron::ImageComponentRGB);
     comps->push_back(Natron::ImageComponentRGBA);
     comps->push_back(Natron::ImageComponentAlpha);
 }
 
-void NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
+void
+NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
 {
     depths->push_back(Natron::IMAGE_BYTE);
     depths->push_back(Natron::IMAGE_SHORT);
     depths->push_back(Natron::IMAGE_FLOAT);
 }
 
-bool NoOpBase::isIdentity(SequenceTime time, const RenderScale& /*scale*/,const RectI& /*roi*/,
-                          int /*view*/, SequenceTime* inputTime, int* inputNb)
+bool
+NoOpBase::isIdentity(SequenceTime time,
+                     const RenderScale& /*scale*/,
+                     const RectD& /*rod*/,
+                     int /*view*/,
+                     SequenceTime* inputTime,
+                     int* inputNb)
 {
     *inputTime = time;
     *inputNb = 0;

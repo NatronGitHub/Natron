@@ -8,7 +8,9 @@
 #ifndef NOOP_H
 #define NOOP_H
 
+#include <boost/shared_ptr.hpp>
 #include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
 
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
@@ -18,7 +20,7 @@ class NoOpBase : public Natron::EffectInstance
 {
 public:
     
-    NoOpBase(boost::shared_ptr<Natron::Node> n) : Natron::EffectInstance(n) {}
+    NoOpBase(boost::shared_ptr<Natron::Node> n);
     
     virtual int majorVersion() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return 1; }
     
@@ -50,7 +52,7 @@ private:
      **/
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale& scale,
-                            const RectI& roi, //!< renderWindow in pixel coordinates
+                            const RectD& rod, //!< image rod in canonical coordinates
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;

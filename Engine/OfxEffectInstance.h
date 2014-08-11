@@ -185,7 +185,7 @@ public:
 
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale& scale,
-                            const RectI& roi, //!< renderWindow in pixel coordinates
+                            const RectD& rod, //!< image rod in canonical coordinates
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE;
@@ -210,13 +210,6 @@ public:
      * input and output images can be offset from the origin
      **/
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Does this effect supports rendering at a different scale than 1 ?
-     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
-     * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
-     **/
-    virtual bool supportsRenderScale() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     

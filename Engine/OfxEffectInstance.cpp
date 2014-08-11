@@ -180,8 +180,18 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     
     if (context == kOfxImageEffectContextWriter) {
         setAsOutputNode();
+        // Writers don't support render scale (full-resolution images are written to disk)
+        setSupportsRenderScaleMaybe(eSupportsNo);
     }
-    
+    if (context == kOfxImageEffectContextReader) {
+        // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
+        // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
+        std::string prefix("tuttle.");
+        if (!plugin->getIdentifier().compare(0, prefix.size(), prefix)) {
+            setSupportsRenderScaleMaybe(eSupportsNo);
+        }
+    }
+
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
     assert(ph->getOfxPlugin());
     assert(ph->getOfxPlugin()->mainEntry);
@@ -766,7 +776,10 @@ OfxEffectInstance::supportedFileFormats() const
 }
 
 Natron::Status
-OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& scale,int view, RectD* rod)
+OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
+                                         const RenderScale& scale,
+                                         int view,
+                                         RectD* rod)
 {
     if (!_initialized) {
         return Natron::StatFailed;
@@ -778,8 +791,10 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
     
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
-    
-    bool useScaleOne = !supportsRenderScale();
+
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    bool useScaleOne = (supportsRS == eSupportsNo) && (scale.x != 1. || scale.y != 1.);
+
     OfxRectD ofxRod;
     OfxStatus stat;
     
@@ -803,7 +818,21 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
                                  0,0);
 
         stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
-        RectD::ofxRectDToRectD(ofxRod, rod);
+        if (!useScaleOne && supportsRS == eSupportsMaybe) {
+            if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
+                // we got at least one success with RS != 1
+                setSupportsRenderScaleMaybe(eSupportsYes);
+            } else if (stat == kOfxStatFailed) {
+                // maybe the effect does not support renderscale
+                // try again with scale one
+                stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
+                if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
+                    // we got success with scale = 1, which means it doesn't support renderscale after all
+                    setSupportsRenderScaleMaybe(eSupportsNo);
+                }
+                // if both actions failed, we can't say anything
+            }
+        }
     }
     
     if (stat!= kOfxStatOK && stat != kOfxStatReplyDefault) {
@@ -823,6 +852,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,const RenderScale& sc
         }
     }
     
+    RectD::ofxRectDToRectD(ofxRod, rod);
     return StatOK;
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
@@ -1024,25 +1054,25 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
 bool
 OfxEffectInstance::isIdentity(SequenceTime time,
                               const RenderScale& scale,
-                              const RectI& roi,
+                              const RectD& rod,
                               int view,
                               SequenceTime* inputTime,
                               int* inputNb)
 {
-    OfxRectI ofxRoI;
-    ofxRoI.x1 = roi.left();
-    ofxRoI.x2 = roi.right();
-    ofxRoI.y1 = roi.bottom();
-    ofxRoI.y2 = roi.top();
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
     OfxTime inputTimeOfx = time;
-    
+
     OfxPointD scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     
-    bool useScaleOne = !supportsRenderScale();
-    
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    bool useScaleOne = (supportsRS == eSupportsNo) && (scale.x != 1. || scale.y != 1.);
+
+    if (supportsRS == eSupportsMaybe) {
+        qDebug() << "OfxEffectInstance::isIdentity: supportsRenderScaleMaybe() not set, but getRegionOfDefinition() should have set it!";
+    }
+
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
     OfxStatus stat ;
     
@@ -1065,7 +1095,36 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                                             false,
                                             0,0); //< setFrameRange ?
         
-        stat = effect_->isIdentityAction(inputTimeOfx,field,ofxRoI,useScaleOne ? scaleOne : scale,inputclip);
+        // In Natron, we only consider isIdentity for whole images
+        RectI roi;
+        rod.toPixelEnclosing(scale, &roi);
+        OfxRectI ofxRoI;
+        ofxRoI.x1 = roi.left();
+        ofxRoI.x2 = roi.right();
+        ofxRoI.y1 = roi.bottom();
+        ofxRoI.y2 = roi.top();
+        stat = effect_->isIdentityAction(inputTimeOfx, field, ofxRoI, useScaleOne ? scaleOne : scale, inputclip);
+        if (!useScaleOne && supportsRS == eSupportsMaybe) {
+            if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
+                // we got at least one success with RS != 1
+                setSupportsRenderScaleMaybe(eSupportsYes);
+            } else if (stat == kOfxStatFailed) {
+                // maybe the effect does not support renderscale
+                // try again with scale one
+                // maybe the effect does not support renderscale
+                // try again with scale one
+                rod.toPixelEnclosing(scaleOne, &roi);
+                ofxRoI.x1 = roi.left();
+                ofxRoI.x2 = roi.right();
+                ofxRoI.y1 = roi.bottom();
+                ofxRoI.y2 = roi.top();
+                stat = effect_->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
+                    // we got success with scale = 1, which means it doesn't support renderscale after all
+                    setSupportsRenderScaleMaybe(eSupportsNo);
+                }
+            }
+        }
     }
 
     if (stat == kOfxStatOK) {
@@ -1085,8 +1144,10 @@ OfxEffectInstance::isIdentity(SequenceTime time,
             *inputNb = natronClip->getInputNb();
         }
         return true;
-    } else {
+    } else if (stat == kOfxStatReplyDefault) {
         return false;
+    } else if (stat == kOfxStatFailed) {
+
     }
 }
 
@@ -1195,6 +1256,15 @@ OfxEffectInstance::render(SequenceTime time,
     if (!_initialized) {
         return Natron::StatFailed;
     }
+
+    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    if (supportsRS == eSupportsMaybe) {
+        qDebug() << "Error: OfxEffectInstance::render() called, but supportsRenderScale was not set. Continuing anyway.";
+    }
+    if (supportsRS == eSupportsNo && (scale.x != 1. || scale.y != 1.)) {
+        qDebug() << "Error: OfxEffectInstance::render() called with renderscale != 1., but plugin does not support it";
+    }
+
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -1887,13 +1957,6 @@ OfxEffectInstance::supportsMultiResolution() const
 {
     return effectInstance()->supportsMultiResolution();
 }
-
-bool
-OfxEffectInstance::supportsRenderScale() const
-{
-    // Most readers don't support multiresolution, including Tuttle readers -
-    // which crash on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
-    return effect_->getContext() != kOfxImageEffectContextReader;}
 
 void
 OfxEffectInstance::beginEditKnobs()

@@ -91,7 +91,13 @@ public:
         {
         }
     };
-    
+
+    enum SupportsEnum {
+        eSupportsMaybe = -1,
+        eSupportsNo = 0,
+        eSupportsYes = 1
+    };
+
 public:
     
     
@@ -395,7 +401,7 @@ protected:
      * any change in output.
      * @param time The time of interest
      * @param scale The scale of interest
-     * @param roi The region of interest
+     * @param rod The image region of definition, in canonical coordinates
      * @param view The view we 're interested in
      * @param inputTime[out] the input time to which this plugin is identity of
      * @param inputNb[out] the input number of the effect that is identity of.
@@ -403,7 +409,7 @@ protected:
      **/
     virtual bool isIdentity(SequenceTime /*time*/,
                             const RenderScale& /*scale*/,
-                            const RectI& /*roi*/,
+                            const RectD& /*rod*/,
                             int /*view*/,
                             SequenceTime* /*inputTime*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN { return false; }
@@ -412,11 +418,17 @@ public:
     
     bool isIdentity_public(SequenceTime time,
                            const RenderScale& scale,
-                           const RectI& roi, // renderWindow in pixel coordinates
+                           const RectD& rod, //!< image rod in canonical coordinates
                            int view,SequenceTime* inputTime,
                            int* inputNb) WARN_UNUSED_RETURN;
     
-    enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2,FULLY_SAFE_FRAME = 3};
+    enum RenderSafety {
+        UNSAFE = 0,
+        INSTANCE_SAFE = 1,
+        FULLY_SAFE = 2,
+        FULLY_SAFE_FRAME = 3,
+    };
+    
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
      * RenderSafety::UNSAFE - indicating that only a single 'render' call can be made at any time amoung all instances,
@@ -628,9 +640,14 @@ public:
     /**
      * @brief Does this effect supports rendering at a different scale than 1 ?
      * There is no OFX property for this purpose. The only solution found for OFX is that if a render
-     * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
+     * or isIdentity with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
+     * If the renderScale support was not set, this throws an exception.
      **/
-    virtual bool supportsRenderScale() const { return false; }
+    bool supportsRenderScale() const;
+
+    SupportsEnum supportsRenderScaleMaybe() const;
+
+    void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
     
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed

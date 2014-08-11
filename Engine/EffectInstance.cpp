@@ -114,6 +114,7 @@ struct EffectInstance::Implementation {
     , duringInteractAction(false)
     , pluginMemoryChunksMutex()
     , pluginMemoryChunks()
+    , supportsRenderScale(eSupportsMaybe)
     {
     }
 
@@ -136,7 +137,10 @@ struct EffectInstance::Implementation {
 
     mutable QMutex pluginMemoryChunksMutex;
     std::list<PluginMemory*> pluginMemoryChunks;
-    
+
+    QMutex supportsRenderScaleMutex;
+    SupportsEnum supportsRenderScale;
+
     void setDuringInteractAction(bool b) {
         QWriteLocker l(&duringInteractActionMutex);
         duringInteractAction = b;
@@ -508,14 +512,8 @@ EffectInstance::getImage(int inputNb,
             ///// should never happen.
             inputsRoI = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
         }
-        //RectI optionalBoundsI;
-        //optionalBounds.toPixelEnclosing(scale, &optionalBoundsI);
 
-        // isIdentity is testing for the renderWindow given as a parameter.
-        // In Natron, we only consider isIdentity for whole images
-        RectI imageRoDPixel;
-        rod.toPixelEnclosing(scale, &imageRoDPixel);
-        isIdentity = isIdentity_public(time, scale, imageRoDPixel, view, &identityTime, &inputNbIdentity);
+        isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &inputNbIdentity);
     } else {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
@@ -959,11 +957,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         int inputNbIdentity;
         FramesNeededMap framesNeeded;
 
-        // isIdentity is testing for the renderWindow given as a parameter.
-        // In Natron, we only consider isIdentity for whole images
-        RectI imageRoDPixel;
-        rod.toPixelEnclosing(args.scale, &imageRoDPixel);
-        bool identity = isIdentity_public(args.time, args.scale, imageRoDPixel, args.view, &inputTimeIdentity, &inputNbIdentity);
+        bool identity = isIdentity_public(args.time, args.scale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
     
         if (identity) {
             
@@ -1898,6 +1892,39 @@ EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const
     return -1;
 }
 
+/**
+ * @brief Does this effect supports rendering at a different scale than 1 ?
+ * There is no OFX property for this purpose. The only solution found for OFX is that if a isIdentity
+ * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
+ * If the renderScale support was not set, this throws an exception.
+ **/
+bool
+EffectInstance::supportsRenderScale() const
+{
+    if (_imp->supportsRenderScale == eSupportsMaybe) {
+        qDebug() << "EffectInstance::supportsRenderScale not set";
+#pragma message WARN("EffectInstance::supportsRenderScale should be set before testing, or use supportsRenderScaleMaybe()")
+        // uncomment the following as soon as it is fixed:
+        //throw std::runtime_error("supportsRenderScale not set");
+        return true;
+    }
+    return _imp->supportsRenderScale == eSupportsYes;
+}
+
+EffectInstance::SupportsEnum
+EffectInstance::supportsRenderScaleMaybe() const
+{
+    QMutexLocker l(&_imp->supportsRenderScaleMutex);
+    return _imp->supportsRenderScale;
+}
+
+void
+EffectInstance::setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const
+{
+    QMutexLocker l(&_imp->supportsRenderScaleMutex);
+    _imp->supportsRenderScale = s;
+}
+
 void
 EffectInstance::setOutputFilesForWriter(const std::string& pattern)
 {
@@ -2290,11 +2317,14 @@ EffectInstance::render_public(SequenceTime time,
 bool
 EffectInstance::isIdentity_public(SequenceTime time,
                                   const RenderScale& scale,
-                                  const RectI& roi, // the window (in \ref PixelCoordinates) to test for identity under
+                                  const RectD& rod, //!< image rod in canonical coordinates
                                   int view,
                                   SequenceTime* inputTime,
                                   int* inputNb)
 {
+    if (supportsRenderScaleMaybe() == eSupportsNo && (scale.x != 1. || scale.y != 1.)) {
+        qDebug() << "EffectInstance::isIdentity_public() called with renderscale !=1, but plugin does not support it";
+    }
     assertActionIsNotRecursive();
     incrementRecursionLevel();
     bool ret = false;
@@ -2321,7 +2351,7 @@ EffectInstance::isIdentity_public(SequenceTime time,
     } else {
         /// Don't call isIdentity if plugin is sequential only.
         if (getSequentialPreference() != Natron::EFFECT_ONLY_SEQUENTIAL) {
-            ret = isIdentity(time, scale, roi, view, inputTime, inputNb);
+            ret = isIdentity(time, scale, rod, view, inputTime, inputNb);
         }
     }
     decrementRecursionLevel();
@@ -2607,11 +2637,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             SequenceTime identityTime;
             int identityNb;
 
-            // isIdentity is testing for the renderWindow given as a parameter.
-            // In Natron, we only consider isIdentity for whole images
-            RectI imageRoDPixel;
-            rod.toPixelEnclosing(scale, &imageRoDPixel);
-            bool isIdentity = isIdentity_public(time, scale, imageRoDPixel, view, &identityTime, &identityNb);
+            bool isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);
             
             ///These args remain valid on the thread storage 'til it gets out of scope
             Implementation::ScopedInstanceChangedArgs args(&_imp->renderArgs,
