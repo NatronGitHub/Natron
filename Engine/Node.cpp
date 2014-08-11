@@ -1634,12 +1634,6 @@ bool Node::isOutputNode() const
 }
 
 
-bool Node::isInputAndProcessingNode() const
-{   ///MT-safe, never changes
-    return _imp->liveInstance->isGeneratorAndFilter();
-}
-
-
 bool Node::isOpenFXNode() const
 {
     ///MT-safe, never changes

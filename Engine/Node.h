@@ -155,12 +155,6 @@ public:
      **/
     bool isOutputNode() const;
     
-    
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    bool isInputAndProcessingNode() const ;
-    
     /**
      * @brief Forwarded to the live effect instance
      **/
