@@ -865,6 +865,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
 
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     bool useScaleOne = (supportsRS == eSupportsNo) && (scale.x != 1. || scale.y != 1.);
+    bool scaleIsOne = useScaleOne || (scale.x == 1. && scale.y == 1.);
 
     OfxRectD ofxRod;
     OfxStatus stat;
@@ -889,7 +890,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
                                  0,0);
 
         stat = effect_->getRegionOfDefinitionAction(time, useScaleOne ? scaleOne : (OfxPointD)scale, ofxRod);
-        if (!useScaleOne && supportsRS == eSupportsMaybe) {
+        if (!scaleIsOne && supportsRS == eSupportsMaybe) {
             if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
                 // we got at least one success with RS != 1
                 setSupportsRenderScaleMaybe(eSupportsYes);
@@ -1162,6 +1163,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
     
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     bool useScaleOne = (supportsRS == eSupportsNo) && (scale.x != 1. || scale.y != 1.);
+    bool scaleIsOne = useScaleOne || (scale.x == 1. && scale.y == 1.);
 
     if (supportsRS == eSupportsMaybe) {
         qDebug() << "OfxEffectInstance::isIdentity: supportsRenderScaleMaybe() not set, but getRegionOfDefinition() should have set it!";
@@ -1198,13 +1200,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         ofxRoI.y1 = roi.bottom();
         ofxRoI.y2 = roi.top();
         stat = effect_->isIdentityAction(inputTimeOfx, field, ofxRoI, useScaleOne ? scaleOne : scale, inputclip);
-        if (!useScaleOne && supportsRS == eSupportsMaybe) {
+        if (!scaleIsOne && supportsRS == eSupportsMaybe) {
             if (stat == kOfxStatOK || stat == kOfxStatReplyDefault) {
                 // we got at least one success with RS != 1
                 setSupportsRenderScaleMaybe(eSupportsYes);
             } else if (stat == kOfxStatFailed) {
-                // maybe the effect does not support renderscale
-                // try again with scale one
                 // maybe the effect does not support renderscale
                 // try again with scale one
                 rod.toPixelEnclosing(scaleOne, &roi);

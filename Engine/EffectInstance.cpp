@@ -1906,7 +1906,7 @@ EffectInstance::supportsRenderScale() const
         qDebug() << "EffectInstance::supportsRenderScale not set";
 #pragma message WARN("EffectInstance::supportsRenderScale should be set before testing, or use supportsRenderScaleMaybe()")
         // uncomment the following as soon as it is fixed:
-        //throw std::runtime_error("supportsRenderScale not set");
+        throw std::runtime_error("supportsRenderScale not set");
         return true;
     }
     return _imp->supportsRenderScale == eSupportsYes;
