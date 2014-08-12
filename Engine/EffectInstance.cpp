@@ -1510,8 +1510,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
             assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
         }
-#pragma message WARN("of course, the following line should use the effect RoD instead of image->getRoD()! is it accessible somewhere?")
-        RoIMap inputsRoi = getRegionsOfInterest_public(time, renderMappedScale, image->getRoD(), canonicalRectToRender, view);
+
+        RoIMap inputsRoi = getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRectToRender, view);
         
         ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
         assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
