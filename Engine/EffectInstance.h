@@ -482,7 +482,7 @@ protected:
      **/
     virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectD* rod) WARN_UNUSED_RETURN;
 
-    virtual void calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale, RectD *rod) const WARN_UNUSED_RETURN;
+    virtual void calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale, RectD *rod) const;
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the

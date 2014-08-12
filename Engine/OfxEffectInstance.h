@@ -129,7 +129,7 @@ public:
     virtual Natron::Status getRegionOfDefinition(SequenceTime time, const RenderScale& scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale, RectD *rod) const OVERRIDE WARN_UNUSED_RETURN;
+    virtual void calcDefaultRegionOfDefinition(SequenceTime  time, const RenderScale& scale, RectD *rod) const OVERRIDE;
 
     virtual Natron::EffectInstance::RoIMap getRegionsOfInterest(SequenceTime time,
                                                                 const RenderScale& scale,

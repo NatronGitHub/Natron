@@ -141,7 +141,7 @@ public:
 
     int getControlPointsCount() const;
 
-#pragma message WARN("Error: returning a reference to a mutex-protected member!")
+#pragma message WARN("BUG: returning a reference to what seems to be a mutex-protected member!")
     Bezier* getBezier() const;
     
     /**
