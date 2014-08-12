@@ -73,7 +73,8 @@ AppInstance::~AppInstance(){
     _imp->_currentProject->clearNodes(false);
 }
 
-void AppInstance::checkForNewVersion() const
+void
+AppInstance::checkForNewVersion() const
 {
     
     FileDownloader* downloader = new FileDownloader(QUrl(NATRON_LAST_VERSION_URL));
@@ -88,7 +89,8 @@ void AppInstance::checkForNewVersion() const
 }
 
 
-void AppInstance::newVersionCheckDownloaded()
+void
+AppInstance::newVersionCheckDownloaded()
 {
     FileDownloader* downloader = qobject_cast<FileDownloader*>(sender());
     assert(downloader);
@@ -123,7 +125,8 @@ void AppInstance::newVersionCheckDownloaded()
     downloader->deleteLater();
 }
 
-void AppInstance::newVersionCheckError()
+void
+AppInstance::newVersionCheckError()
 {
     ///Nothing to do,
     FileDownloader* downloader = qobject_cast<FileDownloader*>(sender());
@@ -131,7 +134,8 @@ void AppInstance::newVersionCheckError()
     downloader->deleteLater();
 }
 
-void AppInstance::load(const QString& projectName,const QStringList& writers)
+void
+AppInstance::load(const QString& projectName,const QStringList& writers)
 {
 
     
@@ -181,11 +185,19 @@ void AppInstance::load(const QString& projectName,const QStringList& writers)
     
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& pluginID,const std::string& multiInstanceParentName,
-                                                                int majorVersion,int minorVersion,
-                                                                bool requestedByLoad,bool openImageFileDialog,
-                                                                const NodeSerialization& serialization,bool dontLoadName,
-                                                                int childIndex,bool autoConnect,double xPosHint,double yPosHint)
+boost::shared_ptr<Natron::Node>
+AppInstance::createNodeInternal(const QString& pluginID,
+                                const std::string& multiInstanceParentName,
+                                int majorVersion,
+                                int minorVersion,
+                                bool requestedByLoad,
+                                bool openImageFileDialog,
+                                const NodeSerialization& serialization,
+                                bool dontLoadName,
+                                int childIndex,
+                                bool autoConnect,
+                                double xPosHint,
+                                double yPosHint)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -203,7 +215,8 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     }
     
     
-    try{
+    try {
+        // load() calls OfxEffectInstance::createOFXImageEffectInstance()
         node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName);
     } catch (const std::exception& e) {
         std::string title = std::string("Error while creating node");
@@ -224,11 +237,12 @@ boost::shared_ptr<Natron::Node> AppInstance::createNodeInternal(const QString& p
     
     _imp->_currentProject->addNodeToProject(node);
     createNodeGui(node,multiInstanceParentName,requestedByLoad,openImageFileDialog,autoConnect,xPosHint,yPosHint);
+#pragma message WARN("TODO: after node creation, call a 'setup' or 'validate' method, which sets supportsRenderScale on OFX effects")
     return node;
-
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& args)
+boost::shared_ptr<Natron::Node>
+AppInstance::createNode(const CreateNodeArgs& args)
 {    
     ///use the same entry point to create backdrops.
     ///Since they are purely GUI we don't actually return a node.
@@ -241,45 +255,67 @@ boost::shared_ptr<Natron::Node> AppInstance::createNode(const CreateNodeArgs& ar
                               args.autoConnect,args.xPosHint,args.yPosHint);
 }
 
-boost::shared_ptr<Natron::Node> AppInstance::loadNode(const LoadNodeArgs& args)
+boost::shared_ptr<Natron::Node>
+AppInstance::loadNode(const LoadNodeArgs& args)
 {
     return createNodeInternal(args.pluginID,args.multiInstanceParentName ,args.majorV, args.minorV,
                               true, false, *args.serialization,args.dontLoadName,-1,false,INT_MIN,INT_MIN);
 }
 
-int AppInstance::getAppID() const { return _imp->_appID; }
+int
+AppInstance::getAppID() const
+{
+    return _imp->_appID;
+}
 
-void AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* activeNodes) const{
-    
+void
+AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* activeNodes) const
+{    
     const std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
-    for(U32 i = 0; i < nodes.size(); ++i){
-        if(nodes[i]->isActivated()){
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isActivated()) {
             activeNodes->push_back(nodes[i]);
         }
     }
 }
 
-boost::shared_ptr<Natron::Project> AppInstance::getProject() const {
+boost::shared_ptr<Natron::Project>
+AppInstance::getProject() const
+{
     return _imp->_currentProject;
 }
 
-boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  { return _imp->_currentProject->getTimeLine(); }
+boost::shared_ptr<TimeLine>
+AppInstance::getTimeLine() const
+{
+    return _imp->_currentProject->getTimeLine();
+}
 
 
-void AppInstance::errorDialog(const std::string& title,const std::string& message) const {
+void
+AppInstance::errorDialog(const std::string& title,const std::string& message) const
+{
     std::cout << "ERROR: " << title + ": " << message << std::endl;
 }
 
-void AppInstance::warningDialog(const std::string& title,const std::string& message) const {
+void
+AppInstance::warningDialog(const std::string& title,const std::string& message) const
+{
     std::cout << "WARNING: " << title + ": " << message << std::endl;
 }
 
-void AppInstance::informationDialog(const std::string& title,const std::string& message) const {
+void
+AppInstance::informationDialog(const std::string& title,const std::string& message) const
+{
     std::cout << "INFO: " << title + ": " << message << std::endl;
 }
 
-Natron::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons /*buttons*/,
-                                                   Natron::StandardButton /*defaultButton*/) const {
+Natron::StandardButton
+AppInstance::questionDialog(const std::string& title,
+                            const std::string& message,
+                            Natron::StandardButtons /*buttons*/,
+                            Natron::StandardButton /*defaultButton*/) const
+{
     std::cout << "QUESTION: " << title + ": " << message << std::endl;
     ///FIXME: maybe we could use scanf here... but we have to translat all the standard buttons to strings...i'm lazy
     ///to do this now.
@@ -288,7 +324,9 @@ Natron::StandardButton AppInstance::questionDialog(const std::string& title,cons
 
 
 
-void AppInstance::checkViewersConnection(){
+void
+AppInstance::checkViewersConnection()
+{
     std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
@@ -300,7 +338,9 @@ void AppInstance::checkViewersConnection(){
     }
 }
 
-void AppInstance::redrawAllViewers() {
+void
+AppInstance::redrawAllViewers()
+{
     std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
@@ -314,12 +354,15 @@ void AppInstance::redrawAllViewers() {
 
 
 
-void AppInstance::triggerAutoSave() {
+void
+AppInstance::triggerAutoSave()
+{
     _imp->_currentProject->triggerAutoSave();
 }
 
-void AppInstance::startWritersRendering(const QStringList& writers){
-    
+void
+AppInstance::startWritersRendering(const QStringList& writers)
+{
     const std::vector<boost::shared_ptr<Node> > projectNodes = _imp->_currentProject->getCurrentNodes();
     
     std::vector<Natron::OutputEffectInstance* > renderers;
@@ -349,7 +392,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
                 renderers.push_back(dynamic_cast<OutputEffectInstance*>(node->getLiveInstance()));
             }
         }
-    }else{
+    } else {
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
             if(projectNodes[j]->isOutputNode() && projectNodes[j]->pluginID() != "Viewer"){
@@ -359,10 +402,10 @@ void AppInstance::startWritersRendering(const QStringList& writers){
         
     }
     
-    if(appPTR->isBackground()){
+    if (appPTR->isBackground()) {
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap(renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1));
-    }else{
+    } else {
         for (U32 i = 0; i < renderers.size(); ++i) {
             startRenderingFullSequence(renderers[i]);
         }
@@ -370,22 +413,26 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 }
 
 
-void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
-    
+void
+AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer)
+{
     BlockingBackgroundRender backgroundRender(writer);
     backgroundRender.blockingRender(); //< doesn't return before rendering is finished
 }
 
 
 
-void AppInstance::clearOpenFXPluginsCaches(){
+void
+AppInstance::clearOpenFXPluginsCaches()
+{
     const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
         activeNodes[i]->purgeAllInstancesCaches();
     }
 }
 
-void AppInstance::clearAllLastRenderedImages()
+void
+AppInstance::clearAllLastRenderedImages()
 {
     const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
@@ -393,7 +440,8 @@ void AppInstance::clearAllLastRenderedImages()
     }
 }
 
-void AppInstance::clearViewersLastRenderedTexture()
+void
+AppInstance::clearViewersLastRenderedTexture()
 {
     const std::vector<boost::shared_ptr<Node> > activeNodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
@@ -404,16 +452,19 @@ void AppInstance::clearViewersLastRenderedTexture()
     }
 }
 
-void AppInstance::quit() {
+void
+AppInstance::quit() {
     appPTR->quit(this);
 }
 
-Natron::ViewerColorSpace AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
+Natron::ViewerColorSpace
+AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepth bitdepth) const
 {
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
 }
 
-int AppInstance::getMainView() const
+int
+AppInstance::getMainView() const
 {
     return _imp->_currentProject->getProjectMainView();
 }

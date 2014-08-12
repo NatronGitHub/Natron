@@ -215,7 +215,8 @@ Node::Node(AppInstance* app,LibraryBinary* plugin)
     QObject::connect(this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)));
 }
 
-void Node::createRotoContextConditionnally()
+void
+Node::createRotoContextConditionnally()
 {
     assert(!_imp->rotoContext);
     assert(_imp->liveInstance);
@@ -225,9 +226,13 @@ void Node::createRotoContextConditionnally()
     }
 }
 
-void Node::load(const std::string& pluginID,const std::string& parentMultiInstanceName,int childIndex ,
-                const boost::shared_ptr<Natron::Node>& thisShared,
-                const NodeSerialization& serialization,bool dontLoadName)
+void
+Node::load(const std::string& pluginID,
+           const std::string& parentMultiInstanceName,
+           int childIndex ,
+           const boost::shared_ptr<Natron::Node>& thisShared,
+           const NodeSerialization& serialization,
+           bool dontLoadName)
 {
     ///Called from the main thread. MT-safe
     assert(QThread::currentThread() == qApp->thread());
@@ -312,7 +317,8 @@ void Node::load(const std::string& pluginID,const std::string& parentMultiInstan
     
 }
 
-void Node::fetchParentMultiInstancePointer()
+void
+Node::fetchParentMultiInstancePointer()
 {
     std::vector<boost::shared_ptr<Node> > nodes = getApp()->getProject()->getCurrentNodes();
     for (U32 i = 0; i < nodes.size() ; ++i) {
@@ -326,13 +332,15 @@ void Node::fetchParentMultiInstancePointer()
     }
 }
 
-bool Node::isMultiInstance() const
+bool
+Node::isMultiInstance() const
 {
     return _imp->isMultiInstance;
 }
 
 ///Accessed by the serialization thread, but mt safe since never changed
-std::string Node::getParentMultiInstanceName() const
+std::string
+Node::getParentMultiInstanceName() const
 {
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->getName_mt_safe();
@@ -341,13 +349,15 @@ std::string Node::getParentMultiInstanceName() const
     }
 }
 
-U64 Node::getHashValue() const
+U64
+Node::getHashValue() const
 {
     QReadLocker l(&_imp->knobsAgeMutex);
     return _imp->hash.value();
 }
 
-void Node::computeHash()
+void
+Node::computeHash()
 {    
     ///Always called in the main thread
     assert(QThread::currentThread() == qApp->thread());
@@ -403,8 +413,9 @@ void Node::computeHash()
     }
 }
 
-void Node::loadKnobs(const NodeSerialization& serialization) {
-    
+void
+Node::loadKnobs(const NodeSerialization& serialization)
+{
     ///Only called from the main thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -421,7 +432,9 @@ void Node::loadKnobs(const NodeSerialization& serialization) {
     setKnobsAge(serialization.getKnobsAge());
 }
 
-void Node::loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization)
+void
+Node::loadKnob(const boost::shared_ptr<KnobI>& knob,
+               const NodeSerialization& serialization)
 {
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///try to find a serialized value for this knob
@@ -436,8 +449,10 @@ void Node::loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization
     }
 }
 
-void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::vector<boost::shared_ptr<Natron::Node> >& allNodes) {
-    
+void
+Node::restoreKnobsLinks(const NodeSerialization& serialization,
+                        const std::vector<boost::shared_ptr<Natron::Node> >& allNodes)
+{
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -454,8 +469,9 @@ void Node::restoreKnobsLinks(const NodeSerialization& serialization,const std::v
     }
 }
 
-void Node::setKnobsAge(U64 newAge)  {
-    
+void
+Node::setKnobsAge(U64 newAge)
+{
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -469,8 +485,9 @@ void Node::setKnobsAge(U64 newAge)  {
     }
 }
 
-void Node::incrementKnobsAge() {
-    
+void
+Node::incrementKnobsAge()
+{
     U32 newAge;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
@@ -488,17 +505,22 @@ void Node::incrementKnobsAge() {
     computeHash();
 }
 
-U64 Node::getKnobsAge() const {
+U64
+Node::getKnobsAge() const
+{
     QReadLocker l(&_imp->knobsAgeMutex);
     return _imp->knobsAge;
 }
 
-bool Node::isRenderingPreview() const {
+bool
+Node::isRenderingPreview() const
+{
     QMutexLocker l(&_imp->computingPreviewMutex);
     return _imp->computingPreview;
 }
 
-void Node::Implementation::abortPreview()
+void
+Node::Implementation::abortPreview()
 {
     bool computing;
     {
@@ -516,7 +538,8 @@ void Node::Implementation::abortPreview()
 
 }
 
-void Node::abortAnyProcessing()
+void
+Node::abortAnyProcessing()
 {
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(getLiveInstance());
     if (isOutput) {
@@ -525,7 +548,8 @@ void Node::abortAnyProcessing()
     _imp->abortPreview();
 }
 
-void Node::quitAnyProcessing() {
+void
+Node::quitAnyProcessing() {
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(getLiveInstance());
     if (isOutput) {
         isOutput->getVideoEngine()->quitEngineThread();
@@ -541,7 +565,8 @@ Node::~Node()
     }
 }
 
-void Node::removeReferences()
+void
+Node::removeReferences()
 {
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
     if (isOutput && isOutput->getVideoEngine()->isThreadRunning()) {
@@ -551,7 +576,8 @@ void Node::removeReferences()
     _imp->liveInstance = 0;
 }
 
-const std::vector<std::string>& Node::getInputLabels() const
+const std::vector<std::string>&
+Node::getInputLabels() const
 {
     ///MT-safe as it never changes.
     ////Only called by the main-thread
@@ -559,14 +585,16 @@ const std::vector<std::string>& Node::getInputLabels() const
     return _imp->inputLabels;
 }
 
-const std::list<boost::shared_ptr<Natron::Node> >& Node::getOutputs() const
+const std::list<boost::shared_ptr<Natron::Node> >&
+Node::getOutputs() const
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     return _imp->outputsQueue;
 }
 
-std::vector<std::string> Node::getInputNames() const
+std::vector<std::string>
+Node::getInputNames() const
 {
     std::vector<std::string> ret;
     QMutexLocker l(&_imp->inputsMutex);
@@ -580,8 +608,9 @@ std::vector<std::string> Node::getInputNames() const
     return ret;
 }
 
-int Node::getPreferredInputForConnection() const {
-    
+int
+Node::getPreferredInputForConnection() const
+{
     assert(QThread::currentThread() == qApp->thread());
     if (maximumInputs() == 0) {
         return -1;
@@ -625,7 +654,9 @@ int Node::getPreferredInputForConnection() const {
     }
 }
 
-void Node::getOutputsConnectedToThisNode(std::map<boost::shared_ptr<Node>,int>* outputs) {
+void
+Node::getOutputsConnectedToThisNode(std::map<boost::shared_ptr<Node>,int>* outputs)
+{
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -637,7 +668,8 @@ void Node::getOutputsConnectedToThisNode(std::map<boost::shared_ptr<Node>,int>* 
     }
 }
 
-const std::string& Node::getName() const
+const std::string&
+Node::getName() const
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -645,12 +677,15 @@ const std::string& Node::getName() const
     return _imp->name;
 }
 
-std::string Node::getName_mt_safe() const {
+std::string
+Node::getName_mt_safe() const
+{
     QMutexLocker l(&_imp->nameMutex);
     return _imp->name;
 }
 
-void Node::setName(const QString& name)
+void
+Node::setName(const QString& name)
 {
     {
         QMutexLocker l(&_imp->nameMutex);
@@ -659,19 +694,23 @@ void Node::setName(const QString& name)
     emit nameChanged(name);
 }
 
-AppInstance* Node::getApp() const
+AppInstance*
+Node::getApp() const
 {
     return _imp->app;
 }
 
-bool Node::isActivated() const
+bool
+Node::isActivated() const
 {
     QMutexLocker l(&_imp->activatedMutex);
     return _imp->activated;
 }
 
 
-void Node::initializeKnobs(const NodeSerialization& serialization) {
+void
+Node::initializeKnobs(const NodeSerialization& serialization)
+{
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -749,35 +788,42 @@ void Node::initializeKnobs(const NodeSerialization& serialization) {
     emit knobsInitialized();
 }
 
-void Node::beginEditKnobs() {
+void
+Node::beginEditKnobs()
+{
     _imp->liveInstance->beginEditKnobs();
 }
 
-void Node::createKnobDynamically()
+void
+Node::createKnobDynamically()
 {
     emit knobsInitialized();
 }
 
 
-void Node::setLiveInstance(Natron::EffectInstance* liveInstance)
+void
+Node::setLiveInstance(Natron::EffectInstance* liveInstance)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     _imp->liveInstance = liveInstance;
 }
 
-Natron::EffectInstance* Node::getLiveInstance() const
+Natron::EffectInstance*
+Node::getLiveInstance() const
 {
     ///Thread safe as it never changes
     return _imp->liveInstance;
 }
 
-bool Node::hasEffect() const
+bool
+Node::hasEffect() const
 {
     return _imp->liveInstance != NULL;
 }
 
-void Node::hasViewersConnected(std::list< ViewerInstance* >* viewers) const
+void
+Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
 {
     
     ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance);
@@ -802,7 +848,8 @@ void Node::hasViewersConnected(std::list< ViewerInstance* >* viewers) const
     }
 }
 
-void Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) const
+void
+Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) const
 {
     Natron::OutputEffectInstance* thisWriter = dynamic_cast<Natron::OutputEffectInstance*>(_imp->liveInstance);
     if(thisWriter) {
@@ -826,17 +873,22 @@ void Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writer
     }
 }
 
-int Node::majorVersion() const {
+int
+Node::majorVersion() const
+{
      ///Thread safe as it never changes
     return _imp->liveInstance->majorVersion();
 }
 
-int Node::minorVersion() const {
+int
+Node::minorVersion() const
+{
      ///Thread safe as it never changes
     return _imp->liveInstance->minorVersion();
 }
 
-void Node::initializeInputs()
+void
+Node::initializeInputs()
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -872,7 +924,8 @@ void Node::initializeInputs()
     emit inputsInitialized();
 }
 
-boost::shared_ptr<Node> Node::input(int index) const
+boost::shared_ptr<Node>
+Node::input(int index) const
 {
     
     ////Only called by the main-thread
@@ -889,7 +942,8 @@ boost::shared_ptr<Node> Node::input(int index) const
     
 }
 
-boost::shared_ptr<Node> Node::input_other_thread(int index) const
+boost::shared_ptr<Node>
+Node::input_other_thread(int index) const
 {
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->input_other_thread(index);
@@ -901,7 +955,8 @@ boost::shared_ptr<Node> Node::input_other_thread(int index) const
     return _imp->inputs[index];
 }
 
-void Node::updateRenderInputs()
+void
+Node::updateRenderInputs()
 {
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -913,7 +968,8 @@ void Node::updateRenderInputs()
     }
 }
 
-void Node::updateRenderInputsRecursive()
+void
+Node::updateRenderInputsRecursive()
 {
     updateRenderInputs();
     for (std::vector<boost::shared_ptr<Node> >::iterator it = _imp->inputsQueue.begin(); it!=_imp->inputsQueue.end(); ++it) {
@@ -923,7 +979,8 @@ void Node::updateRenderInputsRecursive()
     }
 }
 
-const std::vector<boost::shared_ptr<Natron::Node> >& Node::getInputs_other_thread() const
+const std::vector<boost::shared_ptr<Natron::Node> >&
+Node::getInputs_other_thread() const
 {
     QMutexLocker l(&_imp->inputsMutex);
     if (_imp->multiInstanceParent) {
@@ -932,7 +989,8 @@ const std::vector<boost::shared_ptr<Natron::Node> >& Node::getInputs_other_threa
     return _imp->inputs;
 }
 
-const std::vector<boost::shared_ptr<Natron::Node> >& Node::getInputs_mt_safe() const
+const std::vector<boost::shared_ptr<Natron::Node> >&
+Node::getInputs_mt_safe() const
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -942,7 +1000,8 @@ const std::vector<boost::shared_ptr<Natron::Node> >& Node::getInputs_mt_safe() c
     return _imp->inputsQueue;
 }
 
-std::string Node::getInputLabel(int inputNb) const
+std::string
+Node::getInputLabel(int inputNb) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     if (inputNb < 0 || inputNb >= (int)_imp->inputLabels.size()) {
@@ -952,12 +1011,14 @@ std::string Node::getInputLabel(int inputNb) const
 }
 
 
-bool Node::isInputConnected(int inputNb) const
+bool
+Node::isInputConnected(int inputNb) const
 {
     return input(inputNb) != NULL;
 }
 
-bool Node::hasInputConnected() const
+bool
+Node::hasInputConnected() const
 {
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->hasInputConnected();
@@ -979,7 +1040,8 @@ bool Node::hasInputConnected() const
     return false;
 }
 
-bool Node::hasOutputConnected() const
+bool
+Node::hasOutputConnected() const
 {
     ////Only called by the main-thread
     if (_imp->multiInstanceParent) {
@@ -993,7 +1055,8 @@ bool Node::hasOutputConnected() const
     }
 }
 
-bool Node::checkIfConnectingInputIsOk(Natron::Node* input) const
+bool
+Node::checkIfConnectingInputIsOk(Natron::Node* input) const
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1005,7 +1068,8 @@ bool Node::checkIfConnectingInputIsOk(Natron::Node* input) const
     return !found;
 }
 
-void Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
+void
+Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
 {
     
     ////Only called by the main-thread
@@ -1037,7 +1101,8 @@ void Node::isNodeUpstream(const Natron::Node* input,bool* ok) const
     
 }
 
-bool Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
+bool
+Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1061,7 +1126,8 @@ bool Node::connectInput(boost::shared_ptr<Node> input,int inputNumber)
     return true;
 }
 
-void Node::switchInput0And1()
+void
+Node::switchInput0And1()
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1122,7 +1188,8 @@ void Node::switchInput0And1()
     computeHash();
 }
 
-void Node::onInputNameChanged(const QString& name)
+void
+Node::onInputNameChanged(const QString& name)
 {
     assert(QThread::currentThread() == qApp->thread());
     Natron::Node* inp = dynamic_cast<Natron::Node*>(sender());
@@ -1143,7 +1210,8 @@ void Node::onInputNameChanged(const QString& name)
     }
 }
 
-void Node::connectOutput(boost::shared_ptr<Node> output)
+void
+Node::connectOutput(boost::shared_ptr<Node> output)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1155,7 +1223,8 @@ void Node::connectOutput(boost::shared_ptr<Node> output)
     emit outputsChanged();
 }
 
-int Node::disconnectInput(int inputNumber)
+int
+Node::disconnectInput(int inputNumber)
 {
     
     ////Only called by the main-thread
@@ -1175,7 +1244,8 @@ int Node::disconnectInput(int inputNumber)
     return inputNumber;
 }
 
-int Node::disconnectInput(boost::shared_ptr<Node> input)
+int
+Node::disconnectInput(boost::shared_ptr<Node> input)
 {
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1198,9 +1268,9 @@ int Node::disconnectInput(boost::shared_ptr<Node> input)
     
 }
 
-int Node::disconnectOutput(boost::shared_ptr<Node> output)
+int
+Node::disconnectOutput(boost::shared_ptr<Node> output)
 {
-
     assert(output);
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1218,8 +1288,9 @@ int Node::disconnectOutput(boost::shared_ptr<Node> output)
     return ret;
 }
 
-int Node::inputIndex(Node* n) const {
-    
+int
+Node::inputIndex(Node* n) const
+{
     if (!n) {
         return -1;
     }
@@ -1241,19 +1312,23 @@ int Node::inputIndex(Node* n) const {
     return -1;
 }
 
-void Node::clearLastRenderedImage()
+void
+Node::clearLastRenderedImage()
 {
     _imp->liveInstance->clearLastRenderedImage();
 }
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
-void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect,
-                      bool disconnectAll,bool reconnect,bool hideGui)
+void
+Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect,
+                 bool disconnectAll,
+                 bool reconnect,
+                 bool hideGui)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    
+
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage();
 
@@ -1381,7 +1456,9 @@ void Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& output
     
 }
 
-void Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore,bool restoreAll)
+void
+Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore,
+               bool restoreAll)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1436,7 +1513,8 @@ void Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsT
 }
 
 
-boost::shared_ptr<KnobI> Node::getKnobByName(const std::string& name) const
+boost::shared_ptr<KnobI>
+Node::getKnobByName(const std::string& name) const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->getKnobByName(name);
@@ -1516,7 +1594,11 @@ void renderPreview(const Natron::Image& srcImg,
 
 }
 
-void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned int* buf)
+void
+Node::makePreviewImage(SequenceTime time,
+                       int *width,
+                       int *height,
+                       unsigned int* buf)
 {
 
     {
@@ -1622,25 +1704,30 @@ void Node::makePreviewImage(SequenceTime time,int *width,int *height,unsigned in
 #endif
 }
 
-bool Node::isInputNode() const{
+bool
+Node::isInputNode() const
+{
     ///MT-safe, never changes
     return _imp->liveInstance->isGenerator();
 }
 
 
-bool Node::isOutputNode() const
+bool
+Node::isOutputNode() const
 {   ///MT-safe, never changes
     return _imp->liveInstance->isOutput();
 }
 
 
-bool Node::isOpenFXNode() const
+bool
+Node::isOpenFXNode() const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->isOpenFX();
 }
 
-bool Node::isRotoNode() const
+bool
+Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
@@ -1651,79 +1738,93 @@ bool Node::isRotoNode() const
 /**
  * @brief Returns true if the node is a rotopaint node
  **/
-bool Node::isRotoPaintingNode() const
+bool
+Node::isRotoPaintingNode() const
 {
     ///Runs only in the main thread (checked by getName())
     QString name = pluginID().c_str();
     return name.contains("rotopaint",Qt::CaseInsensitive);
 }
 
-boost::shared_ptr<RotoContext> Node::getRotoContext() const
+boost::shared_ptr<RotoContext>
+Node::getRotoContext() const
 {
     return _imp->rotoContext;
 }
 
-const std::vector< boost::shared_ptr<KnobI> >& Node::getKnobs() const
+const std::vector<boost::shared_ptr<KnobI> >&
+Node::getKnobs() const
 {
     ///MT-safe from EffectInstance::getKnobs()
     return _imp->liveInstance->getKnobs();
 }
 
-std::string Node::pluginID() const
+std::string
+Node::pluginID() const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->pluginID();
 }
 
-std::string Node::pluginLabel() const
+std::string
+Node::pluginLabel() const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->pluginLabel();
 }
 
-std::string Node::description() const
+std::string
+Node::description() const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->description();
 }
 
-int Node::maximumInputs() const
+int
+Node::maximumInputs() const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->maximumInputs();
 }
 
-bool Node::makePreviewByDefault() const
+bool
+Node::makePreviewByDefault() const
 {
     ///MT-safe, never changes
     return _imp->liveInstance->makePreviewByDefault();
 }
 
-void Node::togglePreview()
+void
+Node::togglePreview()
 {
     ///MT-safe from Knob
     _imp->previewEnabledKnob->setValue(!_imp->previewEnabledKnob->getValue(),0);
 }
 
-bool Node::isPreviewEnabled() const
+bool
+Node::isPreviewEnabled() const
 {
      ///MT-safe from EffectInstance
     return _imp->previewEnabledKnob->getValue();
 }
 
-bool Node::aborted() const
+bool
+Node::aborted() const
 {
      ///MT-safe from EffectInstance
     return _imp->liveInstance->aborted();
 }
 
-void Node::setAborted(bool b)
+void
+Node::setAborted(bool b)
 {
      ///MT-safe from EffectInstance
     _imp->liveInstance->setAborted(b);
 }
 
-bool Node::message(MessageType type,const std::string& content) const
+bool
+Node::message(MessageType type,
+              const std::string& content) const
 {
     switch (type) {
         case INFO_MESSAGE:
@@ -1742,7 +1843,9 @@ bool Node::message(MessageType type,const std::string& content) const
     }
 }
 
-void Node::setPersistentMessage(MessageType type,const std::string& content)
+void
+Node::setPersistentMessage(MessageType type,
+                           const std::string& content)
 {
     if (!appPTR->isBackground()) {
         //if the message is just an information, display a popup instead.
@@ -1765,7 +1868,8 @@ void Node::setPersistentMessage(MessageType type,const std::string& content)
     }
 }
 
-void Node::clearPersistentMessage()
+void
+Node::clearPersistentMessage()
 {
     if(!appPTR->isBackground()){
         emit persistentMessageCleared();
@@ -1774,34 +1878,47 @@ void Node::clearPersistentMessage()
 
 
 
-void Node::purgeAllInstancesCaches() {
-    
+void
+Node::purgeAllInstancesCaches()
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     _imp->liveInstance->purgeCaches();
 }
 
-void Node::notifyInputNIsRendering(int inputNb) {
+void
+Node::notifyInputNIsRendering(int inputNb)
+{
     emit inputNIsRendering(inputNb);
 }
 
-void Node::notifyInputNIsFinishedRendering(int inputNb) {
+void
+Node::notifyInputNIsFinishedRendering(int inputNb)
+{
     emit inputNIsFinishedRendering(inputNb);
 }
 
-void Node::notifyRenderingStarted() {
+void
+Node::notifyRenderingStarted()
+{
     emit renderingStarted();
 }
 
-void Node::notifyRenderingEnded() {
+void
+Node::notifyRenderingEnded()
+{
     emit renderingEnded();
 }
 
-void Node::setOutputFilesForWriter(const std::string& pattern) {
+void
+Node::setOutputFilesForWriter(const std::string& pattern)
+{
     _imp->liveInstance->setOutputFilesForWriter(pattern);
 }
 
-void Node::registerPluginMemory(size_t nBytes) {
+void
+Node::registerPluginMemory(size_t nBytes)
+{
     {
         QMutexLocker l(&_imp->memoryUsedMutex);
         _imp->pluginInstanceMemoryUsed += nBytes;
@@ -1809,7 +1926,9 @@ void Node::registerPluginMemory(size_t nBytes) {
     emit pluginMemoryUsageChanged(nBytes);
 }
 
-void Node::unregisterPluginMemory(size_t nBytes) {
+void
+Node::unregisterPluginMemory(size_t nBytes)
+{
     {
         QMutexLocker l(&_imp->memoryUsedMutex);
         _imp->pluginInstanceMemoryUsed -= nBytes;
@@ -1817,12 +1936,14 @@ void Node::unregisterPluginMemory(size_t nBytes) {
     emit pluginMemoryUsageChanged(-nBytes);
 }
 
-QMutex& Node::getRenderInstancesSharedMutex()
+QMutex&
+Node::getRenderInstancesSharedMutex()
 {
     return _imp->renderInstancesSharedMutex;
 }
 
-QMutex& Node::getFrameMutex(int time)
+QMutex&
+Node::getFrameMutex(int time)
 {
     QMutexLocker l(&_imp->perFrameMutexesLock);
     std::map<int,boost::shared_ptr<QMutex> >::const_iterator it = _imp->renderInstancesFullySafePerFrameMutexes.find(time);
@@ -1836,8 +1957,9 @@ QMutex& Node::getFrameMutex(int time)
     return *m;
 }
 
-void Node::refreshPreviewsRecursively() {
-    
+void
+Node::refreshPreviewsRecursively()
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -1851,8 +1973,9 @@ void Node::refreshPreviewsRecursively() {
 }
 
 
-void Node::onAllKnobsSlaved(bool isSlave,KnobHolder* master) {
-   
+void
+Node::onAllKnobsSlaved(bool isSlave,KnobHolder* master)
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -1881,7 +2004,11 @@ void Node::onAllKnobsSlaved(bool isSlave,KnobHolder* master) {
 
 }
 
-void Node::onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool isSlave,KnobHolder* master)
+void
+Node::onKnobSlaved(const boost::shared_ptr<KnobI>& knob,
+                   int dimension,
+                   bool isSlave,
+                   KnobHolder* master)
 {
     ///ignore the call if the node is a clone
     {
@@ -1938,24 +2065,31 @@ void Node::onKnobSlaved(const boost::shared_ptr<KnobI>& knob,int dimension,bool 
     }
 }
 
-void Node::getKnobsLinks(std::list<Node::KnobLink>& links) const
+void
+Node::getKnobsLinks(std::list<Node::KnobLink>& links) const
 {
     QMutexLocker l(&_imp->masterNodeMutex);
     links = _imp->nodeLinks;
 }
 
-void Node::onMasterNodeDeactivated() {
+void
+Node::onMasterNodeDeactivated()
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     _imp->liveInstance->unslaveAllKnobs();
 }
 
-boost::shared_ptr<Natron::Node> Node::getMasterNode() const {
+boost::shared_ptr<Natron::Node>
+Node::getMasterNode() const
+{
     QMutexLocker l(&_imp->masterNodeMutex);
     return _imp->masterNode;
 }
 
-bool Node::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
+bool
+Node::isSupportedComponent(int inputNb,
+                           Natron::ImageComponents comp) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     if (inputNb >= 0) {
@@ -1972,7 +2106,9 @@ bool Node::isSupportedComponent(int inputNb,Natron::ImageComponents comp) const
     }
 }
 
-Natron::ImageComponents Node::findClosestSupportedComponents(int inputNb,Natron::ImageComponents comp) const
+Natron::ImageComponents
+Node::findClosestSupportedComponents(int inputNb,
+                                     Natron::ImageComponents comp) const
 {
     int compCount = getElementsCountForComponents(comp);
 
@@ -2020,7 +2156,8 @@ Natron::ImageComponents Node::findClosestSupportedComponents(int inputNb,Natron:
     }
 }
 
-int Node::getMaskChannel(int inputNb) const
+int
+Node::getMaskChannel(int inputNb) const
 {
     std::map<int, boost::shared_ptr<Choice_Knob> >::const_iterator it = _imp->maskChannelKnob.find(inputNb);
     if (it != _imp->maskChannelKnob.end()) {
@@ -2032,7 +2169,8 @@ int Node::getMaskChannel(int inputNb) const
 }
 
 
-bool Node::isMaskEnabled(int inputNb) const
+bool
+Node::isMaskEnabled(int inputNb) const
 {
     std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->enableMaskKnob.find(inputNb);
     if (it != _imp->enableMaskKnob.end()) {
@@ -2044,7 +2182,8 @@ bool Node::isMaskEnabled(int inputNb) const
 
 
 
-void Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
+void
+Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     std::list<boost::shared_ptr<Natron::Image> >::iterator it =
@@ -2058,7 +2197,8 @@ void Node::addImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
     _imp->imagesBeingRendered.push_back(image);
 }
 
-void Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
+void
+Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     
@@ -2074,7 +2214,10 @@ void Node::removeImageBeingRendered(const boost::shared_ptr<Natron::Image>& imag
     _imp->imageBeingRenderedCond.wakeAll();
 }
 
-boost::shared_ptr<Natron::Image> Node::getImageBeingRendered(int time,unsigned int mipMapLevel,int view)
+boost::shared_ptr<Natron::Image>
+Node::getImageBeingRendered(int time,
+                            unsigned int mipMapLevel,
+                            int view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     for (std::list<boost::shared_ptr<Natron::Image> >::iterator it = _imp->imagesBeingRendered.begin();
@@ -2087,7 +2230,8 @@ boost::shared_ptr<Natron::Image> Node::getImageBeingRendered(int time,unsigned i
     return boost::shared_ptr<Natron::Image>();
 }
 
-void Node::onInputChanged(int inputNb)
+void
+Node::onInputChanged(int inputNb)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->duringInputChangedAction = true;
@@ -2102,7 +2246,8 @@ void Node::onInputChanged(int inputNb)
     _imp->duringInputChangedAction = false;
 }
 
-void Node::onMultipleInputChanged()
+void
+Node::onMultipleInputChanged()
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->duringInputChangedAction = true;
@@ -2114,13 +2259,16 @@ void Node::onMultipleInputChanged()
     _imp->duringInputChangedAction = false;
 }
 
-bool Node::duringInputChangedAction() const
+bool
+Node::duringInputChangedAction() const
 {
     assert(QThread::currentThread() == qApp->thread());
     return _imp->duringInputChangedAction;
 }
 
-void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reason)
+void
+Node::onEffectKnobValueChanged(KnobI* what,
+                               Natron::ValueChangedReason reason)
 {
     for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it!=_imp->maskChannelKnob.end(); ++it) {
         if (it->second.get() == what) {
@@ -2158,7 +2306,8 @@ void Node::onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReason reaso
     }
 }
 
-void Node::replaceCustomDataInlabel(const QString& data)
+void
+Node::replaceCustomDataInlabel(const QString& data)
 {
     
     assert(QThread::currentThread() == qApp->thread());
@@ -2191,17 +2340,20 @@ void Node::replaceCustomDataInlabel(const QString& data)
     _imp->nodeLabelKnob->setValue(label.toStdString(), 0);
 }
 
-bool Node::isNodeDisabled() const
+bool
+Node::isNodeDisabled() const
 {
     return _imp->disableNodeKnob->getValue();
 }
 
-void Node::setNodeDisabled(bool disabled)
+void
+Node::setNodeDisabled(bool disabled)
 {
     _imp->disableNodeKnob->setValue(disabled, 0);
 }
 
-void Node::showKeyframesOnTimeline(bool emitSignal)
+void
+Node::showKeyframesOnTimeline(bool emitSignal)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->keyframesDisplayedOnTimeline || appPTR->isBackground()) {
@@ -2214,7 +2366,8 @@ void Node::showKeyframesOnTimeline(bool emitSignal)
     
 }
 
-void Node::hideKeyframesFromTimeline(bool emitSignal)
+void
+Node::hideKeyframesFromTimeline(bool emitSignal)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (!_imp->keyframesDisplayedOnTimeline || appPTR->isBackground()) {
@@ -2227,13 +2380,15 @@ void Node::hideKeyframesFromTimeline(bool emitSignal)
 
 }
 
-bool Node::areKeyframesVisibleOnTimeline() const
+bool
+Node::areKeyframesVisibleOnTimeline() const
 {
     assert(QThread::currentThread() == qApp->thread());
     return _imp->keyframesDisplayedOnTimeline;
 }
 
-void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
+void
+Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2256,9 +2411,8 @@ void Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 }
 
 
-
-
-Natron::ImageBitDepth Natron::Node::getBitDepth() const
+Natron::ImageBitDepth
+Node::getBitDepth() const
 {
     bool foundShort = false;
     bool foundByte = false;
@@ -2282,17 +2436,20 @@ Natron::ImageBitDepth Natron::Node::getBitDepth() const
     }
 }
 
-bool Node::isSupportedBitDepth(Natron::ImageBitDepth depth) const
+bool
+Node::isSupportedBitDepth(Natron::ImageBitDepth depth) const
 {
     return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
 
-std::string Node::getNodeExtraLabel() const
+std::string
+Node::getNodeExtraLabel() const
 {
     return _imp->nodeLabelKnob->getValue();
 }
 
-bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
+bool
+Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
 {
     
     if (_imp->liveInstance->getSequentialPreference() == Natron::EFFECT_ONLY_SEQUENTIAL && _imp->liveInstance->isWriter()) {
@@ -2321,12 +2478,14 @@ bool Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
 }
 
 
-bool Node::isTrackerNode() const
+bool
+Node::isTrackerNode() const
 {
     return pluginID().find("Tracker") != std::string::npos;
 }
 
-void Node::updateEffectLabelKnob(const QString& name)
+void
+Node::updateEffectLabelKnob(const QString& name)
 {
     if (!_imp->liveInstance) {
         return;
@@ -2338,7 +2497,8 @@ void Node::updateEffectLabelKnob(const QString& name)
     }
 }
 
-bool Node::canOthersConnectToThisNode() const
+bool
+Node::canOthersConnectToThisNode() const
 {
     ///In debug mode only allow connections to Writer nodes
 #ifndef NATRON_DEBUG
@@ -2362,8 +2522,9 @@ InspectorNode::~InspectorNode(){
     
 }
 
-bool InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber) {
-    
+bool
+InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber)
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2375,10 +2536,7 @@ bool InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber) 
     if (!checkIfConnectingInputIsOk(input.get())) {
         return false;
     }
-    
-    
-   
-    
+
     ///If the node 'input' is already to an input of the inspector, find it.
     ///If it has the same input number as what we want just return, otherwise
     ///disconnect it and continue as usual.
@@ -2413,13 +2571,13 @@ bool InspectorNode::connectInput(boost::shared_ptr<Node> input,int inputNumber) 
     }
     tryAddEmptyInput();
     return true;
-    
 }
 
 
 
-bool InspectorNode::tryAddEmptyInput() {
-    
+bool
+InspectorNode::tryAddEmptyInput()
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
 
@@ -2446,8 +2604,10 @@ bool InspectorNode::tryAddEmptyInput() {
     }
     return false;
 }
-void InspectorNode::addEmptyInput() {
-    
+
+void
+InspectorNode::addEmptyInput()
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     {
@@ -2458,8 +2618,9 @@ void InspectorNode::addEmptyInput() {
     initializeInputs();
 }
 
-void InspectorNode::removeEmptyInputs() {
-    
+void
+InspectorNode::removeEmptyInputs()
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2474,8 +2635,10 @@ void InspectorNode::removeEmptyInputs() {
         }
     }
 }
-int InspectorNode::disconnectInput(int inputNumber) {
-    
+
+int
+InspectorNode::disconnectInput(int inputNumber)
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2491,15 +2654,18 @@ int InspectorNode::disconnectInput(int inputNumber) {
     return ret;
 }
 
-int InspectorNode::disconnectInput(boost::shared_ptr<Node> input) {
-    
+int
+InspectorNode::disconnectInput(boost::shared_ptr<Node> input)
+{
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     
     return disconnectInput(inputIndex(input.get()));
 }
 
-void InspectorNode::setActiveInputAndRefresh(int inputNb){
+void
+InspectorNode::setActiveInputAndRefresh(int inputNb)
+{
     if (inputNb > (_inputsCount - 1) || inputNb < 0 || input(inputNb) == NULL) {
         return;
     }
@@ -2512,6 +2678,5 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     if (isOutputNode()) {
         dynamic_cast<Natron::OutputEffectInstance*>(getLiveInstance())->updateTreeAndRender();
     }
-
 }
 
