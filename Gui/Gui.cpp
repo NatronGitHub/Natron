@@ -456,7 +456,8 @@ static QIcon get_icon(const QString &name)
     return QIcon::fromTheme(name, QIcon(QString(":icons/") + name));
 }
 
-Gui::Gui(GuiAppInstance* app,QWidget* parent)
+Gui::Gui(GuiAppInstance* app,
+         QWidget* parent)
 : QMainWindow(parent)
 , _imp(new GuiPrivate(app,this))
 
@@ -477,7 +478,8 @@ Gui::~Gui()
     }
 }
 
-void GuiPrivate::notifyGuiClosing()
+void
+GuiPrivate::notifyGuiClosing()
 {
     ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
     ///cause bad pointer dereference to the Gui object since we're destroying it.
@@ -489,7 +491,8 @@ void GuiPrivate::notifyGuiClosing()
     }
 }
 
-bool Gui::closeInstance()
+bool
+Gui::closeInstance()
 {
     if (getApp()->getProject()->hasNodes()) {
         int ret = saveWarning();
@@ -507,7 +510,8 @@ bool Gui::closeInstance()
     return true;
 }
 
-void Gui::closeProject()
+void
+Gui::closeProject()
 {
     if (getApp()->getProject()->hasNodes()) {
         int ret = saveWarning();
@@ -526,7 +530,8 @@ void Gui::closeProject()
 }
 
 #pragma message WARN("same thing should be done in the non-Gui app, and should be connected to aboutToQuit() also")
-void Gui::abortProject(bool quitApp)
+void
+Gui::abortProject(bool quitApp)
 {
     if (quitApp) {
         ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
@@ -550,7 +555,8 @@ void Gui::abortProject(bool quitApp)
     _imp->_currentRedoAction = 0;
 }
 
-void Gui::toggleFullScreen()
+void
+Gui::toggleFullScreen()
 {
     if (isFullScreen()) {
         showNormal();
@@ -575,7 +581,12 @@ Gui::closeEvent(QCloseEvent *e)
 }
 
 
-boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool requestedByLoad,double xPosHint,double yPosHint){
+boost::shared_ptr<NodeGui>
+Gui::createNodeGUI( boost::shared_ptr<Node> node,
+                   bool requestedByLoad,
+                   double xPosHint,
+                   double yPosHint)
+{
     assert(_imp->_nodeGraphArea);
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
                                                                              xPosHint,yPosHint);
@@ -584,11 +595,15 @@ boost::shared_ptr<NodeGui> Gui::createNodeGUI( boost::shared_ptr<Node> node,bool
     return nodeGui;
 }
 
-void Gui::addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node){
+void
+Gui::addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node)
+{
     _imp->_curveEditor->addNode(node);
 }
 
-void Gui::createViewerGui(boost::shared_ptr<Node> viewer){
+void
+Gui::createViewerGui(boost::shared_ptr<Node> viewer)
+{
     TabWidget* where = _imp->_nextViewerTabPlace;
     if(!where){
         where = _imp->_viewersPane;
@@ -602,15 +617,17 @@ void Gui::createViewerGui(boost::shared_ptr<Node> viewer){
 }
 
 
-const std::list<boost::shared_ptr<NodeGui> >& Gui::getSelectedNodes() const {
+const std::list<boost::shared_ptr<NodeGui> >&
+Gui::getSelectedNodes() const
+{
     assert(_imp->_nodeGraphArea);
     return _imp->_nodeGraphArea->getSelectedNodes();
 }
 
 
-void Gui::createGui(){
-    
-    
+void
+Gui::createGui()
+{
     setupUi();
     
     ///post a fake event so the qt handlers are called and the proper widget receives the focus
@@ -619,7 +636,9 @@ void Gui::createGui(){
     
 }
 
-bool Gui::eventFilter(QObject *target, QEvent *event) {
+bool
+Gui::eventFilter(QObject *target, QEvent *event)
+{
     assert(_imp->_appInstance);
     if (dynamic_cast<QInputEvent*>(event)) {
         /*Make top level instance this instance since it receives all
@@ -628,9 +647,10 @@ bool Gui::eventFilter(QObject *target, QEvent *event) {
     }
     
     return QMainWindow::eventFilter(target, event);
-    
 }
-void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
+
+void
+GuiPrivate::retranslateUi(QMainWindow *MainWindow)
 {
     Q_UNUSED(MainWindow);
     _gui->setWindowTitle(QCoreApplication::applicationName());
@@ -723,7 +743,9 @@ void GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     assert(viewersViewMenu);
     viewersViewMenu->setTitle(QObject::tr("Display view number"));
 }
-void Gui::setupUi()
+
+void
+Gui::setupUi()
 {
     
     setMouseTracking(true);
@@ -1052,7 +1074,8 @@ void Gui::setupUi()
 } // setupUi
 
 
-void GuiPrivate::createPropertiesBinGui()
+void
+GuiPrivate::createPropertiesBinGui()
 {
     _propertiesScrollArea = new QScrollArea(_gui);
     assert(_nodeGraphArea);
@@ -1101,7 +1124,8 @@ void GuiPrivate::createPropertiesBinGui()
     
 }
 
-void GuiPrivate::createNodeGraphGui()
+void
+GuiPrivate::createNodeGraphGui()
 {
     _graphScene = new QGraphicsScene(_gui);
     _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -1110,13 +1134,15 @@ void GuiPrivate::createNodeGraphGui()
 
 }
 
-void GuiPrivate::createCurveEditorGui()
+void
+GuiPrivate::createCurveEditorGui()
 {
     _curveEditor = new CurveEditor(_gui,_appInstance->getTimeLine(),_gui);
     _curveEditor->setObjectName(kCurveEditorObjectName);
 }
 
-void Gui::wipeLayout()
+void
+Gui::wipeLayout()
 {
     std::list<TabWidget*> panesCpy;
     {
@@ -1166,7 +1192,8 @@ void Gui::wipeLayout()
     
 }
 
-void Gui::createDefaultLayout1()
+void
+Gui::createDefaultLayout1()
 {
     ///First tab widget must be created this way
     _imp->_viewersPane = new TabWidget(this,_imp->_leftRightSplitter);
@@ -1214,8 +1241,10 @@ void Gui::createDefaultLayout1()
 }
 
 
-static void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::string,PaneLayout>& guiLayout,
-                                       std::map<std::string,PaneLayout>::const_iterator layout,bool enableOldProjectCompatibility)
+static void restoreTabWidgetLayoutRecursively(Gui* gui,
+                                              const std::map<std::string,PaneLayout>& guiLayout,
+                                              std::map<std::string,PaneLayout>::const_iterator layout,
+                                              bool enableOldProjectCompatibility)
 {
     const std::map<std::string,QWidget*>& registeredTabs = gui->getRegisteredTabs();
     const std::list<TabWidget*>& registeredPanes = gui->getPanes();
@@ -1243,9 +1272,7 @@ static void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::strin
         gui->registerPane(pane);
         pane->setObjectName_mt_safe(serializedTabName);
     }
-    
-    
-    
+
     //we found the pane, restore it!
     for (std::list<bool>::const_iterator it2 = layout->second.splits.begin();it2!=layout->second.splits.end();++it2) {
         if (*it2) {
@@ -1288,15 +1315,13 @@ static void restoreTabWidgetLayoutRecursively(Gui* gui,const std::map<std::strin
             restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt,enableOldProjectCompatibility);
         }
     }
-    
-    
-    
-    
 }
 
-void Gui::restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,const GuiLayoutSerialization& layoutSerialization)
+void
+Gui::restoreLayout(bool wipePrevious,
+                   bool enableOldProjectCompatibility,
+                   const GuiLayoutSerialization& layoutSerialization)
 {
-    
     ///Wipe the current layout
     if (wipePrevious) {
         wipeLayout();
@@ -1306,11 +1331,9 @@ void Gui::restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,con
     if (enableOldProjectCompatibility) {
         createDefaultLayout1();
     }
-    
-    
-    
+
     ///now restore the gui layout
-    
+
     const std::map<std::string,PaneLayout>& guiLayout = layoutSerialization._layout;
     for (std::map<std::string,PaneLayout>::const_iterator it = guiLayout.begin(); it!=guiLayout.end(); ++it) {
         
@@ -1352,11 +1375,10 @@ void Gui::restoreLayout(bool wipePrevious,bool enableOldProjectCompatibility,con
             TabWidget::moveTab(*it2,_imp->_viewersPane);
         }
     }
-
-
 }
 
-void Gui::exportLayout()
+void
+Gui::exportLayout()
 {
     std::vector<std::string> filters;
     filters.push_back(".nl");
@@ -1399,12 +1421,11 @@ void Gui::exportLayout()
             return;
         }
         ofile.close();
-        
     }
-    
 }
 
-void Gui::importLayout()
+void
+Gui::importLayout()
 {
     std::vector<std::string> filters;
     filters.push_back(".nl");
@@ -1440,7 +1461,8 @@ void Gui::importLayout()
     }
 }
 
-void Gui::createDefaultLayoutInternal(bool wipePrevious)
+void
+Gui::createDefaultLayoutInternal(bool wipePrevious)
 {
     if (wipePrevious) {
         wipeLayout();
@@ -1474,19 +1496,24 @@ void Gui::createDefaultLayoutInternal(bool wipePrevious)
     } else {
         createDefaultLayout1();
     }
-
 }
 
-void Gui::restoreDefaultLayout()
+void
+Gui::restoreDefaultLayout()
 {
     createDefaultLayoutInternal(true);
 }
-void Gui::initProjectGuiKnobs() {
+
+void
+Gui::initProjectGuiKnobs()
+{
     assert(_imp->_projectGui);
     _imp->_projectGui->initializeKnobsGui();
 }
 
-QKeySequence Gui::keySequenceForView(int v){
+QKeySequence
+Gui::keySequenceForView(int v)
+{
     switch (v) {
     case 0:
         return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
@@ -1520,11 +1547,11 @@ QKeySequence Gui::keySequenceForView(int v){
         break;
     default:
         return QKeySequence();
-
     }
 }
 
-static const char* slotForView(int view){
+static const char* slotForView(int view)
+{
     switch (view){
     case 0:
         return SLOT(showView0());
@@ -1561,7 +1588,9 @@ static const char* slotForView(int view){
     }
 }
 
-void Gui::updateViewsActions(int viewsCount){
+void
+Gui::updateViewsActions(int viewsCount)
+{
     _imp->viewersViewMenu->clear();
     //if viewsCount == 1 we don't add a menu entry
     _imp->viewersMenu->removeAction(_imp->viewersViewMenu->menuAction());
@@ -1604,20 +1633,27 @@ void Gui::updateViewsActions(int viewsCount){
 }
 
 
-void Gui::putSettingsPanelFirst(DockablePanel* panel){
+void
+Gui::putSettingsPanelFirst(DockablePanel* panel)
+{
     _imp->_layoutPropertiesBin->removeWidget(panel);
     _imp->_layoutPropertiesBin->insertWidget(1, panel);
     _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
 }
 
-void Gui::setVisibleProjectSettingsPanel() {
+void
+Gui::setVisibleProjectSettingsPanel()
+{
     putSettingsPanelFirst(_imp->_projectGui->getPanel());
     addVisibleDockablePanel(_imp->_projectGui->getPanel());
     if(!_imp->_projectGui->isVisible()){
         _imp->_projectGui->setVisible(true);
     }
 }
-void Gui::loadStyleSheet(){
+
+void
+Gui::loadStyleSheet()
+{
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
     if(qss.open(QIODevice::ReadOnly
                 | QIODevice::Text))
@@ -1636,10 +1672,13 @@ void Gui::loadStyleSheet(){
     }
 }
 
-void Gui::maximize(TabWidget* what) {
+void
+Gui::maximize(TabWidget* what)
+{
     assert(what);
-    if(what->isFloating())
+    if (what->isFloating()) {
         return;
+    }
     
     QMutexLocker l(&_imp->_panesMutex);
     for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
@@ -1675,7 +1714,9 @@ void Gui::maximize(TabWidget* what) {
     }
 }
 
-void Gui::minimize(){
+void
+Gui::minimize()
+{
     QMutexLocker l(&_imp->_panesMutex);
     for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
         (*it)->show();
@@ -1683,7 +1724,9 @@ void Gui::minimize(){
 }
 
 
-ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
+ViewerTab*
+Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where)
+{
     std::map<NodeGui*,RotoGui*> rotoNodes;
     std::list<NodeGui*> rotoNodesList;
     std::pair<NodeGui*,RotoGui*> currentRoto;
@@ -1730,7 +1773,9 @@ ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
     return tab;
 }
 
-void Gui::onViewerImageChanged(int texIndex) {
+void
+Gui::onViewerImageChanged(int texIndex)
+{
     ///notify all histograms a viewer image changed
     ViewerGL* viewer = qobject_cast<ViewerGL*>(sender());
     if (viewer) {
@@ -1741,7 +1786,10 @@ void Gui::onViewerImageChanged(int texIndex) {
     }
 }
 
-void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
+void
+Gui::addViewerTab(ViewerTab* tab,
+                  TabWidget* where)
+{
     assert(tab);
     assert(where);
     {
@@ -1756,21 +1804,27 @@ void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
     
 }
 
-void Gui::registerTab(QWidget* tab) {
+void
+Gui::registerTab(QWidget* tab)
+{
     std::map<std::string, QWidget*>::iterator registeredTab = _imp->_registeredTabs.find(tab->objectName().toStdString());
     if (registeredTab == _imp->_registeredTabs.end()) {
         _imp->_registeredTabs.insert(std::make_pair(tab->objectName().toStdString(), tab));
     }
 }
 
-void Gui::unregisterTab(QWidget* tab) {
+void
+Gui::unregisterTab(QWidget* tab)
+{
     std::map<std::string, QWidget*>::iterator registeredTab = _imp->_registeredTabs.find(tab->objectName().toStdString());
     if(registeredTab != _imp->_registeredTabs.end()){
         _imp->_registeredTabs.erase(registeredTab);
     }
 }
 
-void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData) {
+void
+Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
+{
     assert(tab);
 
     if (!initiatedFromNode) {
@@ -1798,11 +1852,11 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     }
    
     emit viewersChanged();
-
-    
 }
 
-Histogram* Gui::addNewHistogram() {
+Histogram*
+Gui::addNewHistogram()
+{
     Histogram* h = new Histogram(this);
     QMutexLocker l(&_imp->_histogramsMutex);
     h->setObjectName("Histogram "+QString::number(_imp->_nextHistogramIndex));
@@ -1811,8 +1865,9 @@ Histogram* Gui::addNewHistogram() {
     return h;
 }
 
-void Gui::removeHistogram(Histogram* h) {
-    
+void
+Gui::removeHistogram(Histogram* h)
+{
     QMutexLocker l(&_imp->_histogramsMutex);
     std::list<Histogram*>::iterator it = std::find(_imp->_histograms.begin(),_imp->_histograms.end(),h);
     assert(it != _imp->_histograms.end());
@@ -1820,19 +1875,23 @@ void Gui::removeHistogram(Histogram* h) {
     _imp->_histograms.erase(it);
 }
 
-const std::list<Histogram*>& Gui::getHistograms() const {
-    QMutexLocker l(&_imp->_histogramsMutex);
-    return _imp->_histograms;
-}
-
-std::list<Histogram*> Gui::getHistograms_mt_safe() const {
-    QMutexLocker l(&_imp->_histogramsMutex);
-    return _imp->_histograms;
-}
-
-void Gui::removePane(TabWidget* pane)
+const std::list<Histogram*>&
+Gui::getHistograms() const
 {
-    
+    QMutexLocker l(&_imp->_histogramsMutex);
+    return _imp->_histograms;
+}
+
+std::list<Histogram*>
+Gui::getHistograms_mt_safe() const
+{
+    QMutexLocker l(&_imp->_histogramsMutex);
+    return _imp->_histograms;
+}
+
+void
+Gui::removePane(TabWidget* pane)
+{
     QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     if (found != _imp->_panes.end()) {
@@ -1848,7 +1907,9 @@ void Gui::removePane(TabWidget* pane)
     }
 }
 
-void Gui::registerPane(TabWidget* pane){
+void
+Gui::registerPane(TabWidget* pane)
+{
     QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
     if(found == _imp->_panes.end()){
@@ -1862,10 +1923,11 @@ void Gui::registerPane(TabWidget* pane){
             _imp->_viewersPane = _imp->_panes.front();
         }
     }
-    
 }
 
-void Gui::registerSplitter(Splitter* s) {
+void
+Gui::registerSplitter(Splitter* s)
+{
     QMutexLocker l(&_imp->_splittersMutex);
     std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
     if(found == _imp->_splitters.end()){
@@ -1873,7 +1935,9 @@ void Gui::registerSplitter(Splitter* s) {
     }
 }
 
-void Gui::removeSplitter(Splitter* s) {
+void
+Gui::removeSplitter(Splitter* s)
+{
     QMutexLocker l(&_imp->_splittersMutex);
     std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
     if(found != _imp->_splitters.end()){
@@ -1882,7 +1946,9 @@ void Gui::removeSplitter(Splitter* s) {
 }
 
 
-QWidget* Gui::findExistingTab(const std::string& name) const{
+QWidget*
+Gui::findExistingTab(const std::string& name) const
+{
     std::map<std::string,QWidget*>::const_iterator it = _imp->_registeredTabs.find(name);
     if (it != _imp->_registeredTabs.end()) {
         return it->second;
@@ -1890,7 +1956,10 @@ QWidget* Gui::findExistingTab(const std::string& name) const{
         return NULL;
     }
 }
-ToolButton* Gui::findExistingToolButton(const QString& label) const{
+
+ToolButton*
+Gui::findExistingToolButton(const QString& label) const
+{
     for(U32 i = 0; i < _imp->_toolButtons.size();++i){
         if(_imp->_toolButtons[i]->getLabel() == label){
             return _imp->_toolButtons[i];
@@ -1899,9 +1968,10 @@ ToolButton* Gui::findExistingToolButton(const QString& label) const{
     return NULL;
 }
 
-
-ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
-    for(U32 i = 0; i < _imp->_toolButtons.size();++i){
+ToolButton*
+Gui::findOrCreateToolButton(PluginGroupNode* plugin)
+{
+    for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
         if(_imp->_toolButtons[i]->getID() == plugin->getID()){
             return _imp->_toolButtons[i];
         }
@@ -1917,11 +1987,11 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     }
 
     QIcon icon;
-    if(!plugin->getIconPath().isEmpty() && QFile::exists(plugin->getIconPath())){
+    if (!plugin->getIconPath().isEmpty() && QFile::exists(plugin->getIconPath())) {
         icon.addFile(plugin->getIconPath());
-    }else{
+    } else {
         //add the default group icon only if it has no parent
-        if(!plugin->hasParent()){
+        if (!plugin->hasParent()) {
             QPixmap pix;
             getPixmapForGrouping(&pix, plugin->getLabel());
             icon.addPixmap(pix);
@@ -1929,25 +1999,22 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     }
     //if the tool-button has no children, this is a leaf, we must create an action
     bool isLeaf = false;
-    if(plugin->getChildren().empty()){
+    if (plugin->getChildren().empty()) {
         isLeaf = true;
         //if the plugin has no children and no parent, put it in the "others" group
-        if(!plugin->hasParent()){
+        if (!plugin->hasParent()) {
             ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
             PluginGroupNode* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT,PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH);
             othersToolButton->tryAddChild(plugin);
             
             //if the othersGroup doesn't exist, create it
-            if(!othersGroup){
+            if (!othersGroup) {
                 othersGroup = findOrCreateToolButton(othersToolButton);
             }
             parentToolButton = othersGroup;
         }
     }
     ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance,plugin,plugin->getID(),plugin->getLabel(),icon);
-    
-    
-   
 
     if (isLeaf) {
         QString label = pluginsToolButton->getLabel();
@@ -2005,7 +2072,8 @@ ToolButton* Gui::findOrCreateToolButton(PluginGroupNode* plugin){
     return pluginsToolButton;
 }
 
-std::list<ToolButton*> Gui::getToolButtonsOrdered() const
+std::list<ToolButton*>
+Gui::getToolButtonsOrdered() const
 {
     ///First-off find the tool buttons that should be ordered
     ///and put in another list the rest
@@ -2041,7 +2109,8 @@ std::list<ToolButton*> Gui::getToolButtonsOrdered() const
     return namedToolButtons;
 }
 
-void Gui::addToolButttonsToToolBar()
+void
+Gui::addToolButttonsToToolBar()
 {
     std::list<ToolButton*> orederedToolButtons = getToolButtonsOrdered();
     for (std::list<ToolButton*>::iterator it = orederedToolButtons.begin(); it!=orederedToolButtons.end(); ++it) {
@@ -2050,6 +2119,7 @@ void Gui::addToolButttonsToToolBar()
 
 }
 
+namespace {
 class AutoRaiseToolButton : public QToolButton
 {
     Gui* _gui;
@@ -2094,19 +2164,23 @@ private:
     }
     
 };
+} // anonymous namespace
 
-void Gui::setToolButtonMenuOpened(QToolButton* button)
+void
+Gui::setToolButtonMenuOpened(QToolButton* button)
 {
     _imp->_toolButtonMenuOpened = button;
 }
 
-QToolButton* Gui::getToolButtonMenuOpened() const
+QToolButton*
+Gui::getToolButtonMenuOpened() const
 {
     return _imp->_toolButtonMenuOpened;
 }
 
 
-void GuiPrivate::addToolButton(ToolButton* tool)
+void
+GuiPrivate::addToolButton(ToolButton* tool)
 {
     QToolButton* button = new AutoRaiseToolButton(_gui,_toolBox);
     button->setIcon(tool->getIcon());
@@ -2116,7 +2190,9 @@ void GuiPrivate::addToolButton(ToolButton* tool)
     _toolBox->addWidget(button);
 }
 
-void GuiPrivate::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
+void
+GuiPrivate::setUndoRedoActions(QAction* undoAction,QAction* redoAction)
+{
     if(_currentUndoAction){
         menuEdit->removeAction(_currentUndoAction);
     }
@@ -2128,10 +2204,16 @@ void GuiPrivate::setUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
     menuEdit->addAction(redoAction);
 }
-void Gui::newProject() {
+
+void
+Gui::newProject()
+{
     appPTR->newAppInstance();
 }
-void Gui::openProject() {
+
+void
+Gui::openProject()
+{
     std::vector<std::string> filters;
     filters.push_back(NATRON_PROJECT_FILE_EXT);
     std::string selectedFile =  popOpenFileDialog(false, filters, _imp->_lastLoadProjectOpenedDir.toStdString());
@@ -2139,10 +2221,10 @@ void Gui::openProject() {
     if (!selectedFile.empty()) {
         openProjectInternal(selectedFile);
     }
-    
 }
 
-void Gui::openProjectInternal(const std::string& absoluteFileName)
+void
+Gui::openProjectInternal(const std::string& absoluteFileName)
 {
     std::string fileUnPathed = absoluteFileName;
     std::string path = SequenceParsing::removePath(fileUnPathed);
@@ -2166,11 +2248,11 @@ void Gui::openProjectInternal(const std::string& absoluteFileName)
     
     settings.setValue("recentFileList", recentFiles);
     appPTR->updateAllRecentFileMenus();
-
 }
 
-bool Gui::saveProject(){
-    
+bool
+Gui::saveProject()
+{
     if(_imp->_appInstance->getProject()->hasProjectBeenSavedByUser()){
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
                                                 _imp->_appInstance->getProject()->getProjectName(),false);
@@ -2191,7 +2273,10 @@ bool Gui::saveProject(){
     }
     
 }
-bool Gui::saveProjectAs(){
+
+bool
+Gui::saveProjectAs()
+{
     std::vector<std::string> filter;
     filter.push_back(NATRON_PROJECT_FILE_EXT);
     std::string outFile = popSaveFileDialog(false, filter,_imp->_lastSaveProjectOpenedDir.toStdString());
@@ -2217,12 +2302,15 @@ bool Gui::saveProjectAs(){
     return false;
 }
 
-void Gui::createNewViewer()
+void
+Gui::createNewViewer()
 {
     (void)_imp->_appInstance->createNode(CreateNodeArgs("Viewer"));
 }
 
-boost::shared_ptr<Natron::Node> Gui::createReader(){
+boost::shared_ptr<Natron::Node>
+Gui::createReader()
+{
     boost::shared_ptr<Natron::Node> ret;
     std::map<std::string,std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -2263,7 +2351,9 @@ boost::shared_ptr<Natron::Node> Gui::createReader(){
     return ret;
 }
 
-boost::shared_ptr<Natron::Node> Gui::createWriter(){
+boost::shared_ptr<Natron::Node>
+Gui::createWriter()
+{
     boost::shared_ptr<Natron::Node> ret;
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
@@ -2302,8 +2392,11 @@ boost::shared_ptr<Natron::Node> Gui::createWriter(){
     return ret;
 }
 
-std::string Gui::popOpenFileDialog(bool sequenceDialog,
-                                                const std::vector<std::string>& initialfilters,const std::string& initialDir) {
+std::string
+Gui::popOpenFileDialog(bool sequenceDialog,
+                       const std::vector<std::string>& initialfilters,
+                       const std::string& initialDir)
+{
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir);
     if (dialog.exec()) {
         return dialog.selectedFiles();
@@ -2312,7 +2405,11 @@ std::string Gui::popOpenFileDialog(bool sequenceDialog,
     }
 }
 
-std::string Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::string>& initialfilters,const std::string& initialDir) {
+std::string
+Gui::popSaveFileDialog(bool sequenceDialog,
+                       const std::vector<std::string>& initialfilters,
+                       const std::string& initialDir)
+{
     SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir);
     if(dialog.exec()){
         return dialog.filesToSave();
@@ -2321,13 +2418,15 @@ std::string Gui::popSaveFileDialog(bool sequenceDialog,const std::vector<std::st
     }
 }
 
-void Gui::autoSave(){
+void
+Gui::autoSave()
+{
     _imp->_appInstance->getProject()->autoSave();
 }
 
-
-int Gui::saveWarning(){
-    
+int
+Gui::saveWarning()
+{
     if (!_imp->_appInstance->getProject()->isSaveUpToDate()) {
         Natron::StandardButton ret =  Natron::questionDialog(NATRON_APPLICATION_NAME,tr("Save changes to ").toStdString() +
                                _imp->_appInstance->getProject()->getProjectName().toStdString() + " ?",
@@ -2344,116 +2443,131 @@ int Gui::saveWarning(){
     
 }
 
-void Gui::loadProjectGui(boost::archive::xml_iarchive& obj) const {
+void
+Gui::loadProjectGui(boost::archive::xml_iarchive& obj) const
+{
     assert(_imp->_projectGui);
     _imp->_projectGui->load(obj);
 }
 
-void Gui::saveProjectGui(boost::archive::xml_oarchive& archive) {
+void
+Gui::saveProjectGui(boost::archive::xml_oarchive& archive)
+{
     assert(_imp->_projectGui);
     _imp->_projectGui->save(archive);
 }
 
-void Gui::errorDialog(const std::string& title,const std::string& text){
-    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-    {
-        QMutexLocker l(&_imp->aboutToCloseMutex);
-        if (_imp->_aboutToClose) {
-            return;
-        }
-    }
-    
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if (QThread::currentThread() != qApp->thread())
-    {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if (!_imp->abortedEngines.empty()) {
-            return;
-        }
-    }
-
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
-    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
-        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
-        _imp->_uiUsingMainThread = true;
-        locker.unlock();
-        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
-        locker.relock();
-        while(_imp->_uiUsingMainThread){
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
-        }
-    }else{
-        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
-    }
-}
-
-void Gui::warningDialog(const std::string& title,const std::string& text){
-    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-    {
-        QMutexLocker l(&_imp->aboutToCloseMutex);
-        if (_imp->_aboutToClose) {
-            return;
-        }
-    }
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if (QThread::currentThread() != qApp->thread())
-    {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if (!_imp->abortedEngines.empty()) {
-            return;
-        }
-    }
-
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
-    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
-        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
-        _imp->_uiUsingMainThread = true;
-        locker.unlock();
-        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
-        locker.relock();
-        while(_imp->_uiUsingMainThread){
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
-        }
-    }else{
-        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
-    }
-}
-
-void Gui::informationDialog(const std::string& title,const std::string& text){
-    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-    {
-        QMutexLocker l(&_imp->aboutToCloseMutex);
-        if (_imp->_aboutToClose) {
-            return;
-        }
-    }
-    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if (QThread::currentThread() != qApp->thread())
-    {
-        QMutexLocker l(&_imp->abortedEnginesMutex);
-        if (!_imp->abortedEngines.empty()) {
-            return;
-        }
-    }
-
-
-    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
-    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
-        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
-        _imp->_uiUsingMainThread = true;
-        locker.unlock();
-        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
-        locker.relock();
-        while(_imp->_uiUsingMainThread){
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
-        }
-    }else{
-        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
-    }
-}
-void Gui::onDoDialog(int type, const QString& title, const QString& content, Natron::StandardButtons buttons, int defaultB)
+void
+Gui::errorDialog(const std::string& title,
+                 const std::string& text)
 {
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
     
+    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
+    if (QThread::currentThread() != qApp->thread()) {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        if (!_imp->abortedEngines.empty()) {
+            return;
+        }
+    }
+
+    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+    }
+}
+
+void
+Gui::warningDialog(const std::string& title,
+                   const std::string& text)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
+    if (QThread::currentThread() != qApp->thread()) {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        if (!_imp->abortedEngines.empty()) {
+            return;
+        }
+    }
+
+    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+        locker.relock();
+        while (_imp->_uiUsingMainThread) {
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+    }
+}
+
+void
+Gui::informationDialog(const std::string& title,
+                       const std::string& text)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        if (_imp->_aboutToClose) {
+            return;
+        }
+    }
+    ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
+    if (QThread::currentThread() != qApp->thread()) {
+        QMutexLocker l(&_imp->abortedEnginesMutex);
+        if (!_imp->abortedEngines.empty()) {
+            return;
+        }
+    }
+
+
+    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = true;
+        locker.unlock();
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+        locker.relock();
+        while(_imp->_uiUsingMainThread){
+            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+        }
+    } else {
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
+    }
+}
+
+void
+Gui::onDoDialog(int type,
+                const QString& title,
+                const QString& content,
+                Natron::StandardButtons buttons,
+                int defaultB)
+{
     QString msg = Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -2479,11 +2593,14 @@ void Gui::onDoDialog(int type, const QString& title, const QString& content, Nat
     QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
     _imp->_uiUsingMainThread = false;
     _imp->_uiUsingMainThreadCond.wakeOne();
-    
 }
 
-Natron::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
-                                           Natron::StandardButton defaultButton) {
+Natron::StandardButton
+Gui::questionDialog(const std::string& title,
+                    const std::string& message,
+                    Natron::StandardButtons buttons,
+                    Natron::StandardButton defaultButton)
+{
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
@@ -2492,15 +2609,14 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
         }
     }
     ///we have no choice but to return waiting here would hand the application since the main thread is also waiting for that thread to finish.
-    if (QThread::currentThread() != qApp->thread())
-    {
+    if (QThread::currentThread() != qApp->thread()) {
         QMutexLocker l(&_imp->abortedEnginesMutex);
         if (!_imp->abortedEngines.empty()) {
             return Natron::No;
         }
     }
 
-    if(QThread::currentThread() != QCoreApplication::instance()->thread()){
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
@@ -2509,51 +2625,80 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
         while(_imp->_uiUsingMainThread){
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
-    }else{
+    } else {
         emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,(int)defaultButton);
     }
     return _imp->_lastQuestionDialogAnswer;
 }
 
 
-void Gui::selectNode(boost::shared_ptr<NodeGui> node)
+void
+Gui::selectNode(boost::shared_ptr<NodeGui> node)
 {
     _imp->_nodeGraphArea->selectNode(node,false); //< wipe current selection
 }
 
-void Gui::connectInput1(){
+void
+Gui::connectInput1()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(0);
 }
-void Gui::connectInput2(){
+
+void
+Gui::connectInput2()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(1);
 }
-void Gui::connectInput3(){
+
+void
+Gui::connectInput3(){
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(2);
 }
-void Gui::connectInput4(){
+
+void
+Gui::connectInput4()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(3);
 }
-void Gui::connectInput5(){
+
+void
+Gui::connectInput5()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(4);
 }
-void Gui::connectInput6(){
+
+void
+Gui::connectInput6()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(5);
 }
-void Gui::connectInput7(){
+
+void
+Gui::connectInput7()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(6);
 }
-void Gui::connectInput8(){
+
+void
+Gui::connectInput8()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(7);
 }
-void Gui::connectInput9(){
+
+void
+Gui::connectInput9()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(8);
 }
-void Gui::connectInput10(){
+
+void Gui::connectInput10()
+{
     _imp->_nodeGraphArea->connectCurrentViewerToSelection(9);
 }
 
-
-void GuiPrivate::restoreGuiGeometry(){
+void
+GuiPrivate::restoreGuiGeometry()
+{
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("MainWindow");
     
@@ -2576,8 +2721,7 @@ void GuiPrivate::restoreGuiGeometry(){
         if(fs)
             _gui->toggleFullScreen();
     }
-    
-    
+
     settings.endGroup();
     
     if (settings.contains("LastOpenProjectDialogPath")) {
@@ -2594,7 +2738,9 @@ void GuiPrivate::restoreGuiGeometry(){
     }
 }
 
-void GuiPrivate::saveGuiGeometry(){
+void
+GuiPrivate::saveGuiGeometry()
+{
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     
     settings.beginGroup("MainWindow");
@@ -2608,44 +2754,71 @@ void GuiPrivate::saveGuiGeometry(){
     settings.setValue("LastSaveProjectDialogPath", _lastSaveProjectOpenedDir);
     settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
     settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
-
-
-
 }
 
-
-void Gui::showView0(){
+void
+Gui::showView0()
+{
     _imp->_appInstance->setViewersCurrentView(0);
 }
-void Gui::showView1(){
+
+void
+Gui::showView1()
+{
     _imp->_appInstance->setViewersCurrentView(1);
 }
-void Gui::showView2(){
+
+void
+Gui::showView2()
+{
     _imp->_appInstance->setViewersCurrentView(2);
 }
-void Gui::showView3(){
+
+void
+Gui::showView3()
+{
     _imp->_appInstance->setViewersCurrentView(3);
 }
-void Gui::showView4(){
+
+void
+Gui::showView4()
+{
     _imp->_appInstance->setViewersCurrentView(4);
 }
-void Gui::showView5(){
+
+void
+Gui::showView5()
+{
     _imp->_appInstance->setViewersCurrentView(5);
 }
-void Gui::showView6(){
+
+void
+Gui::showView6()
+{
     _imp->_appInstance->setViewersCurrentView(6);
 }
-void Gui::showView7(){
+
+void
+Gui::showView7()
+{
     _imp->_appInstance->setViewersCurrentView(7);
 }
-void Gui::showView8(){
+
+void
+Gui::showView8()
+{
     _imp->_appInstance->setViewersCurrentView(8);
 }
-void Gui::showView9(){
+
+void
+Gui::showView9()
+{
     _imp->_appInstance->setViewersCurrentView(9);
 }
 
-void Gui::setCurveEditorOnTop(){
+void
+Gui::setCurveEditorOnTop()
+{
     QMutexLocker l(&_imp->_panesMutex);
     for(std::list<TabWidget*>::iterator it = _imp->_panes.begin();it!=_imp->_panes.end();++it){
         TabWidget* cur = (*it);
@@ -2659,11 +2832,15 @@ void Gui::setCurveEditorOnTop(){
     }
 }
 
-void Gui::showSettings(){
+void
+Gui::showSettings()
+{
     _imp->_settingsGui->show();
 }
 
-void Gui::registerNewUndoStack(QUndoStack* stack){
+void
+Gui::registerNewUndoStack(QUndoStack* stack)
+{
     _imp->_undoStacksGroup->addStack(stack);
     QAction* undo = stack->createUndoAction(stack);
     undo->setShortcut(QKeySequence::Undo);
@@ -2673,14 +2850,18 @@ void Gui::registerNewUndoStack(QUndoStack* stack){
 }
 
 
-void Gui::removeUndoStack(QUndoStack* stack){
+void
+Gui::removeUndoStack(QUndoStack* stack)
+{
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
     if(it != _imp->_undoStacksActions.end()){
         _imp->_undoStacksActions.erase(it);
     }
 }
 
-void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
+void
+Gui::onCurrentUndoStackChanged(QUndoStack* stack)
+{
     std::map<QUndoStack*,std::pair<QAction*,QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
     
     //the stack must have been registered first with registerNewUndoStack()
@@ -2689,7 +2870,9 @@ void Gui::onCurrentUndoStackChanged(QUndoStack* stack){
     }
 }
 
-void Gui::refreshAllPreviews() {
+void
+Gui::refreshAllPreviews()
+{
     int time = _imp->_appInstance->getTimeLine()->currentFrame();
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_appInstance->getActiveNodes(&nodes);
@@ -2700,7 +2883,9 @@ void Gui::refreshAllPreviews() {
     }
 }
 
-void Gui::forceRefreshAllPreviews() {
+void
+Gui::forceRefreshAllPreviews()
+{
     int time = _imp->_appInstance->getTimeLine()->currentFrame();
     std::vector<boost::shared_ptr<Natron::Node> > nodes;
     _imp->_appInstance->getActiveNodes(&nodes);
@@ -2711,12 +2896,16 @@ void Gui::forceRefreshAllPreviews() {
     }
 }
 
-void Gui::startDragPanel(QWidget* panel) {
+void
+Gui::startDragPanel(QWidget* panel)
+{
     assert(!_imp->_currentlyDraggedPanel);
     _imp->_currentlyDraggedPanel = panel;
 }
 
-QWidget* Gui::stopDragPanel() {
+QWidget*
+Gui::stopDragPanel()
+{
     assert(_imp->_currentlyDraggedPanel);
     QWidget* ret = _imp->_currentlyDraggedPanel;
     _imp->_currentlyDraggedPanel = 0;
@@ -2724,12 +2913,16 @@ QWidget* Gui::stopDragPanel() {
 }
 
 
-void Gui::showAbout() {
+void
+Gui::showAbout()
+{
     _imp->_aboutWindow->show();
     _imp->_aboutWindow->exec();
 }
 
-void Gui::openRecentFile() {
+void
+Gui::openRecentFile()
+{
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         QFileInfo f(action->data().toString());
@@ -2748,7 +2941,9 @@ void Gui::openRecentFile() {
     }
 }
 
-void Gui::updateRecentFileActions() {
+void
+Gui::updateRecentFileActions()
+{
     QSettings settings;
     QStringList files = settings.value("recentFileList").toStringList();
     
@@ -2766,7 +2961,9 @@ void Gui::updateRecentFileActions() {
     
 }
 
-QPixmap Gui::screenShot(QWidget* w) {
+QPixmap
+Gui::screenShot(QWidget* w)
+{
 #if QT_VERSION < 0x050000
     if (w->objectName() == "CurveEditor") {
         return QPixmap::grabWidget(w);
@@ -2777,23 +2974,30 @@ QPixmap Gui::screenShot(QWidget* w) {
 #endif
 }
 
-void Gui::onProjectNameChanged(const QString& name) {
+void
+Gui::onProjectNameChanged(const QString& name)
+{
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(name);
     setWindowTitle(text);
 }
 
-void Gui::setColorPickersColor(const QColor& c) {
+void
+Gui::setColorPickersColor(const QColor& c)
+{
     assert(_imp->_projectGui);
     _imp->_projectGui->setPickersColor(c);
 }
 
-void Gui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob) {
+void
+Gui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob)
+{
     assert(_imp->_projectGui);
     _imp->_projectGui->registerNewColorPicker(knob);
 }
 
-void Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
+void
+Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob) {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);
 }
@@ -2804,14 +3008,17 @@ bool Gui::hasPickers() const
     return _imp->_projectGui->hasPickers();
 }
 
-void Gui::updateViewersViewsMenu(int viewsCount) {
+void Gui::updateViewersViewsMenu(int viewsCount)
+{
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         (*it)->updateViewsMenu(viewsCount);
     }
 }
 
-void Gui::setViewersCurrentView(int view) {
+void
+Gui::setViewersCurrentView(int view)
+{
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         (*it)->setCurrentView(view);
@@ -2819,16 +3026,22 @@ void Gui::setViewersCurrentView(int view) {
 
 }
 
-const std::list<ViewerTab*>& Gui::getViewersList() const {
+const std::list<ViewerTab*>&
+Gui::getViewersList() const
+{
     return _imp->_viewerTabs;
 }
 
-std::list<ViewerTab*> Gui::getViewersList_mt_safe() const {
+std::list<ViewerTab*>
+Gui::getViewersList_mt_safe() const
+{
     QMutexLocker l(&_imp->_viewerTabsMutex);
     return _imp->_viewerTabs;
 }
 
-void Gui::activateViewerTab(ViewerInstance* viewer) {
+void
+Gui::activateViewerTab(ViewerInstance* viewer)
+{
     OpenGLViewerI* viewport = viewer->getUiContext();
     
     {
@@ -2843,7 +3056,9 @@ void Gui::activateViewerTab(ViewerInstance* viewer) {
     emit viewersChanged();
 }
 
-void Gui::deactivateViewerTab(ViewerInstance* viewer) {
+void
+Gui::deactivateViewerTab(ViewerInstance* viewer)
+{
     OpenGLViewerI* viewport = viewer->getUiContext();
     ViewerTab* v = 0;
     {
@@ -2860,7 +3075,9 @@ void Gui::deactivateViewerTab(ViewerInstance* viewer) {
     }
 }
 
-ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
+ViewerTab*
+Gui::getViewerTabForInstance(ViewerInstance* node) const
+{
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin();it!=_imp->_viewerTabs.end();++it) {
         if ((*it)->getInternalNode() == node) {
@@ -2870,73 +3087,144 @@ ViewerTab* Gui::getViewerTabForInstance(ViewerInstance* node) const {
     return NULL;
 }
 
-const std::list<boost::shared_ptr<NodeGui> >& Gui::getVisibleNodes() const {
+const std::list<boost::shared_ptr<NodeGui> >&
+Gui::getVisibleNodes() const
+{
     return  _imp->_nodeGraphArea->getAllActiveNodes();
-    
 }
 
-std::list<boost::shared_ptr<NodeGui> > Gui::getVisibleNodes_mt_safe() const {
+std::list<boost::shared_ptr<NodeGui> >
+Gui::getVisibleNodes_mt_safe() const
+{
     return _imp->_nodeGraphArea->getAllActiveNodes_mt_safe();
 }
 
 
-void Gui::deselectAllNodes() const {
+void
+Gui::deselectAllNodes() const
+{
     _imp->_nodeGraphArea->deselect();
 }
 
-void Gui::onProcessHandlerStarted(const QString& sequenceName,int firstFrame,int lastFrame,
-                                  const boost::shared_ptr<ProcessHandler>& process) {
+void
+Gui::onProcessHandlerStarted(const QString& sequenceName,
+                             int firstFrame,
+                             int lastFrame,
+                             const boost::shared_ptr<ProcessHandler>& process)
+{
     ///make the dialog which will show the progress
     RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,process,this);
     dialog->show();
 }
 
-void Gui::setLastSelectedViewer(ViewerTab* tab){ _imp->_lastSelectedViewer = tab; }
+void
+Gui::setLastSelectedViewer(ViewerTab* tab)
+{
+    _imp->_lastSelectedViewer = tab;
+}
 
-ViewerTab* Gui::getLastSelectedViewer() const { return _imp->_lastSelectedViewer; }
+ViewerTab*
+Gui::getLastSelectedViewer() const
+{
+    return _imp->_lastSelectedViewer;
+}
 
-void Gui::setNewViewerAnchor(TabWidget* where){ _imp->_nextViewerTabPlace = where; }
+void
+Gui::setNewViewerAnchor(TabWidget* where)
+{
+    _imp->_nextViewerTabPlace = where;
+}
 
-const std::vector<ToolButton*>& Gui::getToolButtons() const { return _imp->_toolButtons; }
+const std::vector<ToolButton*>&
+Gui::getToolButtons() const
+{
+    return _imp->_toolButtons;
+}
 
-GuiAppInstance* Gui::getApp() const { return _imp->_appInstance; }
+GuiAppInstance* Gui::getApp() const
+{
+    return _imp->_appInstance;
+}
 
-const std::list<TabWidget*>& Gui::getPanes() const { return _imp->_panes; }
+const std::list<TabWidget*>&
+Gui::getPanes() const
+{
+    return _imp->_panes;
+}
 
-std::list<TabWidget*> Gui::getPanes_mt_safe() const {
+std::list<TabWidget*>
+Gui::getPanes_mt_safe() const
+{
     QMutexLocker l(&_imp->_panesMutex);
     return _imp->_panes;
 }
 
-std::list<Splitter*> Gui::getSplitters() const {
+std::list<Splitter*>
+Gui::getSplitters() const
+{
     QMutexLocker l(&_imp->_splittersMutex);
     return _imp->_splitters;
 }
 
-void Gui::setUserScrubbingTimeline(bool b) { _imp->_isUserScrubbingTimeline = b; }
+void
+Gui::setUserScrubbingTimeline(bool b)
+{
+    _imp->_isUserScrubbingTimeline = b;
+}
 
-bool Gui::isUserScrubbingTimeline() const { return _imp->_isUserScrubbingTimeline; }
+bool
+Gui::isUserScrubbingTimeline() const
+{
+    return _imp->_isUserScrubbingTimeline;
+}
 
-bool Gui::isDraggingPanel() const { return _imp->_currentlyDraggedPanel!=NULL; }
+bool
+Gui::isDraggingPanel() const
+{
+    return _imp->_currentlyDraggedPanel!=NULL;
+}
 
-NodeGraph* Gui::getNodeGraph() const { return _imp->_nodeGraphArea; }
+NodeGraph*
+Gui::getNodeGraph() const
+{
+    return _imp->_nodeGraphArea;
+}
 
-CurveEditor* Gui::getCurveEditor() const { return _imp->_curveEditor; }
+CurveEditor*
+Gui::getCurveEditor() const
+{
+    return _imp->_curveEditor;
+}
 
-QScrollArea* Gui::getPropertiesScrollArea() const { return _imp->_propertiesScrollArea; }
+QScrollArea*
+Gui::getPropertiesScrollArea() const
+{
+    return _imp->_propertiesScrollArea;
+}
 
-QVBoxLayout* Gui::getPropertiesLayout() const { return _imp->_layoutPropertiesBin; }
+QVBoxLayout*
+Gui::getPropertiesLayout() const
+{
+    return _imp->_layoutPropertiesBin;
+}
 
-void Gui::appendTabToDefaultViewerPane(QWidget* tab)
+void
+Gui::appendTabToDefaultViewerPane(QWidget* tab)
 {
     assert(_imp->_viewersPane);
     _imp->_viewersPane->appendTab(tab);
 }
 
-const std::map<std::string,QWidget*>& Gui::getRegisteredTabs() const { return _imp->_registeredTabs; }
+const std::map<std::string,QWidget*>&
+Gui::getRegisteredTabs() const
+{
+    return _imp->_registeredTabs;
+}
 
-void Gui::debugImage(const Natron::Image* image,const QString& filename ) {
-    
+void
+Gui::debugImage(const Natron::Image* image,
+                const QString& filename )
+{
     if (image->getBitDepth() != Natron::IMAGE_FLOAT) {
         qDebug() << "Debug image only works on float images.";
         return;
@@ -2955,19 +3243,26 @@ void Gui::debugImage(const Natron::Image* image,const QString& filename ) {
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
     std::cout << "DEBUG: writing image: " << realFileName.toStdString() << std::endl;
     output.save(realFileName);
-
 }
 
-void Gui::updateLastSequenceOpenedPath(const QString& path) {
+void
+Gui::updateLastSequenceOpenedPath(const QString& path)
+{
     _imp->_lastLoadSequenceOpenedDir = path;
 }
 
-void Gui::updateLastSequenceSavedPath(const QString& path) {
+void
+Gui::updateLastSequenceSavedPath(const QString& path)
+{
     _imp->_lastSaveSequenceOpenedDir = path;
 }
 
-void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int lastFrame,
-                                Natron::OutputEffectInstance* writer) {
+void
+Gui::onWriterRenderStarted(const QString& sequenceName,
+                           int firstFrame,
+                           int lastFrame,
+                           Natron::OutputEffectInstance* writer)
+{
     RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
     VideoEngine* ve = writer->getVideoEngine().get();
@@ -2979,50 +3274,67 @@ void Gui::onWriterRenderStarted(const QString& sequenceName,int firstFrame,int l
 }
 
 
-void Gui::setGlewVersion(const QString& version) {
+void
+Gui::setGlewVersion(const QString& version)
+{
     _imp->_glewVersion = version;
     _imp->_aboutWindow->updateLibrariesVersions();
 }
 
-void Gui::setOpenGLVersion(const QString& version) {
+void
+Gui::setOpenGLVersion(const QString& version)
+{
     _imp->_openGLVersion = version;
     _imp->_aboutWindow->updateLibrariesVersions();
 }
 
-QString Gui::getGlewVersion() const {
+QString
+Gui::getGlewVersion() const
+{
     return _imp->_glewVersion;
 }
 
-QString Gui::getOpenGLVersion() const {
+QString
+Gui::getOpenGLVersion() const
+{
     return _imp->_openGLVersion;
 }
 
-QString Gui::getBoostVersion() const {
+QString
+Gui::getBoostVersion() const
+{
     return QString(BOOST_LIB_VERSION);
 }
 
-QString Gui::getQtVersion() const {
+QString
+Gui::getQtVersion() const
+{
     return QString(QT_VERSION_STR) + " / " + qVersion();
 }
 
-QString Gui::getCairoVersion() const
+QString
+Gui::getCairoVersion() const
 {
     return QString(CAIRO_VERSION_STRING) + " / " + QString(cairo_version_string());
 }
 
-void Gui::onNodeNameChanged(const QString& /*name*/) {
+void
+Gui::onNodeNameChanged(const QString& /*name*/)
+{
     NodeGui* node = qobject_cast<NodeGui*>(sender());
     if (node && node->getNode()->pluginID() == "Viewer") {
         emit viewersChanged();
     }
 }
 
-void Gui::renderAllWriters()
+void
+Gui::renderAllWriters()
 {
     _imp->_appInstance->startWritersRendering(QStringList());
 }
 
-void Gui::renderSelectedNode()
+void
+Gui::renderSelectedNode()
 {
     const std::list<boost::shared_ptr<NodeGui> >& selectedNodes = _imp->_nodeGraphArea->getSelectedNodes();
     if (selectedNodes.size() > 1) {
@@ -3045,11 +3357,14 @@ void Gui::renderSelectedNode()
     }
 }
 
-void Gui::setUndoRedoStackLimit(int limit) {
+void
+Gui::setUndoRedoStackLimit(int limit)
+{
     _imp->_nodeGraphArea->setUndoRedoStackLimit(limit);
 }
 
-void Gui::showOfxLog()
+void
+Gui::showOfxLog()
 {
     QString log = appPTR->getOfxLog_mt_safe();
     LogWindow lw(log,this);
@@ -3057,7 +3372,8 @@ void Gui::showOfxLog()
     lw.exec();
 }
 
-void Gui::createNewTrackerInterface(NodeGui* n)
+void
+Gui::createNewTrackerInterface(NodeGui* n)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
@@ -3065,15 +3381,18 @@ void Gui::createNewTrackerInterface(NodeGui* n)
     }
 }
 
-void Gui::removeTrackerInterface(NodeGui* n,bool permanantly)
+void
+Gui::removeTrackerInterface(NodeGui* n,
+                            bool permanently)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
-        (*it)->removeTrackerInterface(n, permanantly,false);
+        (*it)->removeTrackerInterface(n, permanently,false);
     }
 }
 
-void Gui::onRotoSelectedToolChanged(int tool)
+void
+Gui::onRotoSelectedToolChanged(int tool)
 {
     RotoGui* roto = qobject_cast<RotoGui*>(sender());
     if (!roto) {
@@ -3086,7 +3405,8 @@ void Gui::onRotoSelectedToolChanged(int tool)
 
 }
 
-void Gui::createNewRotoInterface(NodeGui* n)
+void
+Gui::createNewRotoInterface(NodeGui* n)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
@@ -3094,15 +3414,18 @@ void Gui::createNewRotoInterface(NodeGui* n)
     }
 }
 
-void Gui::removeRotoInterface(NodeGui* n,bool permanantly)
+void
+Gui::removeRotoInterface(NodeGui* n,
+                         bool permanently)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
-        (*it)->removeRotoInterface(n, permanantly,false);
+        (*it)->removeRotoInterface(n, permanently,false);
     }
 }
 
-void Gui::setRotoInterface(NodeGui* n)
+void
+Gui::setRotoInterface(NodeGui* n)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
@@ -3110,7 +3433,8 @@ void Gui::setRotoInterface(NodeGui* n)
     }
 }
 
-void Gui::onViewerRotoEvaluated(ViewerTab* viewer)
+void
+Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!= _imp->_viewerTabs.end(); ++it) {
@@ -3121,7 +3445,9 @@ void Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 
 }
 
-void Gui::startProgress(Natron::EffectInstance* effect,const std::string& message)
+void
+Gui::startProgress(Natron::EffectInstance* effect,
+                   const std::string& message)
 {
     
     if (!effect) {
@@ -3150,7 +3476,8 @@ void Gui::startProgress(Natron::EffectInstance* effect,const std::string& messag
     //dialog->exec();
 }
 
-void Gui::endProgress(Natron::EffectInstance* effect)
+void
+Gui::endProgress(Natron::EffectInstance* effect)
 {
     if (QThread::currentThread() != qApp->thread()) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
@@ -3167,7 +3494,9 @@ void Gui::endProgress(Natron::EffectInstance* effect)
     _imp->_progressBars.erase(found);
 }
 
-bool Gui::progressUpdate(Natron::EffectInstance* effect,double t)
+bool
+Gui::progressUpdate(Natron::EffectInstance* effect,
+                    double t)
 {
     if (QThread::currentThread() != qApp->thread()) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
@@ -3186,7 +3515,8 @@ bool Gui::progressUpdate(Natron::EffectInstance* effect,double t)
     return true;
 }
 
-void Gui::addVisibleDockablePanel(DockablePanel* panel)
+void
+Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
     assert(panel);
     int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
@@ -3198,7 +3528,8 @@ void Gui::addVisibleDockablePanel(DockablePanel* panel)
 
 }
 
-void Gui::removeVisibleDockablePanel(DockablePanel* panel)
+void
+Gui::removeVisibleDockablePanel(DockablePanel* panel)
 {
     std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(),_imp->openedPanels.end(),panel);
     if (it!=_imp->openedPanels.end()) {
@@ -3206,7 +3537,8 @@ void Gui::removeVisibleDockablePanel(DockablePanel* panel)
     }
 }
 
-void Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
+void
+Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
 {
     assert(maxPanels >= 0);
     if (maxPanels == 0) {
@@ -3219,12 +3551,14 @@ void Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
     _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
 }
 
-void Gui::onMaxPanelsSpinBoxValueChanged(double val)
+void
+Gui::onMaxPanelsSpinBoxValueChanged(double val)
 {
     appPTR->getCurrentSettings()->setMaxPanelsOpened((int)val);
 }
 
-void Gui::clearAllVisiblePanels()
+void
+Gui::clearAllVisiblePanels()
 {
     
     while (!_imp->openedPanels.empty()) {
@@ -3247,19 +3581,23 @@ void Gui::clearAllVisiblePanels()
     }
 }
 
-NodeBackDrop* Gui::createBackDrop(bool requestedByLoad,const NodeBackDropSerialization& serialization)
+NodeBackDrop*
+Gui::createBackDrop(bool requestedByLoad,
+                    const NodeBackDropSerialization& serialization)
 {
     return _imp->_nodeGraphArea->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
 }
 
 
-void Gui::registerVideoEngineBeingAborted(VideoEngine* engine)
+void
+Gui::registerVideoEngineBeingAborted(VideoEngine* engine)
 {
     QMutexLocker l(&_imp->abortedEnginesMutex);
     _imp->abortedEngines.push_back(engine);
 }
 
-void Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
+void
+Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
 {
     QMutexLocker l(&_imp->abortedEnginesMutex);
     std::list<VideoEngine*>::iterator it = std::find(_imp->abortedEngines.begin(),_imp->abortedEngines.end(),engine);
@@ -3267,7 +3605,8 @@ void Gui::unregisterVideoEngineBeingAborted(VideoEngine* engine)
     _imp->abortedEngines.erase(it);
 }
 
-void Gui::connectViewersToViewerCache()
+void
+Gui::connectViewersToViewerCache()
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
@@ -3275,7 +3614,8 @@ void Gui::connectViewersToViewerCache()
     }
 }
 
-void Gui::disconnectViewersFromViewerCache()
+void
+Gui::disconnectViewersFromViewerCache()
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
