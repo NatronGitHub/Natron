@@ -885,7 +885,9 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
     assert(effect_);
     
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    
+
+    // getRegionOfDefinition may be the first action with renderscale called on any effect.
+    // it may have to check for render scale support.
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
     if ((supportsRS == eSupportsNo) && !scaleIsOne) {
@@ -1024,14 +1026,12 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
-    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
-        qDebug() << "getRegionsOfInterest called with render scale != 1, but effect does not support render scale!";
-        assert(false);
-        throw std::logic_error("getRegionsOfInterest called with render scale != 1, but effect does not support render scale!");
+    {
+        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
     }
+
+    unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
     OfxStatus stat;
     
     ///before calling getRoIaction set the relevant infos on the clips
@@ -1197,6 +1197,9 @@ OfxEffectInstance::isIdentity(SequenceTime time,
     std::string inputclip;
     OfxTime inputTimeOfx = time;
 
+
+    // isIdentity may be the first action with renderscale called on any effect.
+    // it may have to check for render scale support.
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
     if ((supportsRS == eSupportsNo) && !scaleIsOne) {
@@ -1294,12 +1297,9 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
                                        bool isRenderResponseToUserInteraction,
                                        int view)
 {
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
-        qDebug() << "beginSequenceRender called with render scale != 1, but effect does not support render scale!";
-        assert(false);
-        throw std::logic_error("beginSequenceRender called with render scale != 1, but effect does not support render scale!");
+    {
+        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
     }
 
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
@@ -1344,12 +1344,9 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
                                      bool isRenderResponseToUserInteraction,
                                      int view)
 {
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
-        qDebug() << "endSequenceRender called with render scale != 1, but effect does not support render scale!";
-        assert(false);
-        throw std::logic_error("endSequenceRender called with render scale != 1, but effect does not support render scale!");
+    {
+        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
     }
 
     unsigned int mipmapLevel = Image::getLevelFromScale(scale.x);
@@ -1397,12 +1394,9 @@ OfxEffectInstance::render(SequenceTime time,
         return Natron::StatFailed;
     }
 
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-    if ((supportsRS == eSupportsNo) && !scaleIsOne) {
-        qDebug() << "render called with render scale != 1, but effect does not support render scale!";
-        assert(false);
-        throw std::logic_error("render called with render scale != 1, but effect does not support render scale!");
+    {
+        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
     }
 
     OfxRectI ofxRoI;

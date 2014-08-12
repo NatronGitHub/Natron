@@ -880,6 +880,8 @@ private:
      * hash() because the user might have changed something in the project (parameters...links..)
      * @param channelForAlpha This is passed here so that we can remember it later when converting the mask
      * which channel we wanted for the alpha channel.
+     * @param renderFullScaleThenDownscale means that rendering should be done at full resolution and then
+     * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatus renderRoIInternal(SequenceTime time,
@@ -895,7 +897,8 @@ private:
                                       bool isRenderMadeInResponseToUserInteraction,
                                       bool byPassCache,
                                       U64 nodeHash,
-                                      int channelForAlpha);
+                                      int channelForAlpha,
+                                      bool renderFullScaleThenDownscale);
     
     /**
      * @brief Must be implemented to evaluate a value change
@@ -932,6 +935,7 @@ private:
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     Natron::Status tiledRenderingFunctor(const RenderArgs& args,
+                                         bool renderFullScaleThenDownscale,
                                          const RectI& roi,
                                          const boost::shared_ptr<Natron::Image>& downscaledImage,
                                          const boost::shared_ptr<Natron::Image>& fullScaleImage,
