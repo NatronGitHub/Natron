@@ -135,7 +135,10 @@ unix {
      expat:     PKGCONFIG += expat
      cairo:     PKGCONFIG += cairo
      !macx {
-         LIBS +=  -lGLU -ldl
+         LIBS +=  -lGLU
+     }
+     linux {
+         LIBS += -ldl
      }
 } #unix
 

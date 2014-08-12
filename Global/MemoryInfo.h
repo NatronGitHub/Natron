@@ -37,7 +37,7 @@
 #  elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 #    include <fcntl.h>
 #    include <procfs.h>
-#  elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+#  elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
 #    include <stdio.h>
 #    include <unistd.h>
 #  endif
@@ -69,7 +69,7 @@ inline size_t getSystemTotalRAM() {
     GlobalMemoryStatusEx(&status);
     return status.ullTotalPhys;
     
-#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
     
     
     long pages = sysconf(_SC_PHYS_PAGES);

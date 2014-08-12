@@ -360,7 +360,7 @@ void Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::strin
     OFX::Host::PluginCache::getPluginCache()->addFileToPath(getStdOFXPluginPath("Nuke"));
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
 #endif
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FreeBSD__)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
 #endif
 #if defined(__APPLE__)

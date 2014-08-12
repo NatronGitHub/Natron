@@ -165,7 +165,7 @@ void Settings::initializeKnobs(){
                                                   ) + getStdOFXPluginPath("") +
                                       std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
 #endif
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FreeBSD__)
                                                   "/usr/OFX/Plugins"
 #endif
 #if defined(__APPLE__)
