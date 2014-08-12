@@ -940,16 +940,17 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
                 }
             }
         }
+        if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
+            return StatFailed;
+        }
+        
+        if (stat == kOfxStatReplyDefault) {
+            calcDefaultRegionOfDefinition(time, scale, rod);
+            return StatReplyDefault;
+        }
     }
     
-    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        return StatFailed;
-    }
-
-    if (stat == kOfxStatReplyDefault) {
-        calcDefaultRegionOfDefinition(time, scale, rod);
-        return StatReplyDefault;
-    }
+   
 
     ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     ///1 pixel large image
