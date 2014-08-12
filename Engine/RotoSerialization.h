@@ -23,7 +23,8 @@
 #include "Engine/KnobSerialization.h"
 
 #define ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING 2
-#define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING
+#define ROTO_DRAWABLE_ITEM_REMOVES_INVERTED 3
+#define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_REMOVES_INVERTED
 
 #define BEZIER_CP_INTRODUCES_OFFSET 2
 #define BEZIER_CP_VERSION BEZIER_CP_INTRODUCES_OFFSET
@@ -162,9 +163,13 @@ private:
         ar & boost::serialization::make_nvp("Opacity",_opacity);
         ar & boost::serialization::make_nvp("Feather",_feather);
         ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
+        if (version < ROTO_DRAWABLE_ITEM_REMOVES_INVERTED) {
+            KnobSerialization invertedSerialization;
+            ar & boost::serialization::make_nvp("Inverted",invertedSerialization);
 #ifdef NATRON_ROTO_INVERTIBLE
-        ar & boost::serialization::make_nvp("Inverted",_inverted);
+            _inverted = invertedSerialization;
 #endif
+        }
         if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
             _hasColorAndCompOp = true;
             ar & boost::serialization::make_nvp("Color",_color);
