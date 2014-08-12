@@ -15,6 +15,7 @@
 #include <string>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/version.hpp>
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
@@ -22,6 +23,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Rect.h"
 
+#define FORMAT_SERIALIZATION_CHANGES_TO_RECTD 2
+#define FORMAT_SERIALIZATION_VERSION FORMAT_SERIALIZATION_CHANGES_TO_RECTD
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the
@@ -33,9 +36,18 @@ class Format : public RectD { //!< project format is in canonical coordinates
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        boost::serialization::void_cast_register<Format,RectD>(static_cast<Format *>(NULL),
-                                                               static_cast<RectD *>(NULL));
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectD);
+        if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTD) {
+            RectI r;
+            ar & boost::serialization::make_nvp("RectI",r);
+            x1 = r.x1;
+            x2 = r.x2;
+            y1 = r.y1;
+            y2 = r.y2;
+        } else {
+            boost::serialization::void_cast_register<Format,RectD>(static_cast<Format *>(NULL),
+                                                                   static_cast<RectD *>(NULL));
+            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectD);
+        }
         ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_pixel_aspect);
         ar & boost::serialization::make_nvp("Name",_name);
         
