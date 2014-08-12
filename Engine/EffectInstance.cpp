@@ -1426,11 +1426,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///the getRegionsOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
         ///store it into the render args (thread-storage) so the getImage() function can retrieve the results.
-#pragma message WARN("of course, it should use the effect RoD instead of image->getRoD()!")
         {
             bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
             assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
         }
+#pragma message WARN("of course, the following line should use the effect RoD instead of image->getRoD()! is it accessible somewhere?")
         RoIMap inputsRoi = getRegionsOfInterest_public(time, scale, image->getRoD(), canonicalRectToRender, view);
         
         ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
@@ -1527,7 +1527,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                              inputPrefDepth,
                                                              channelForAlphaInput)); //< requested bitdepth
                         
-#pragma message WARN("TODO: if supportsMultiResolution is false, check that all inputs have the same rod and their (x1,y1) is at the origin")
                         if (inputImg) {
                             inputImages.push_back(inputImg);
                         }
@@ -1560,7 +1559,52 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             assert(mask);
             inputImages.push_back(mask);
         }
-        
+
+#ifdef NATRON_DEBUG
+        // check the dimensions of all input and output images
+        for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
+             it != inputImages.end();
+             ++it) {
+            const RectI& srcBounds = (*it)->getBounds();
+            const RectD& srcRodCanonical = (*it)->getRoD();
+            RectI srcRod;
+            srcRodCanonical.toPixelEnclosing(args._scale, &srcRod);
+            const RectI& dstBounds = renderMappedImage->getBounds();
+            const RectD& dstRodCanonical = renderMappedImage->getRoD();
+            RectI dstRod;
+            dstRodCanonical.toPixelEnclosing(args._scale, &dstRod);
+
+            if (!supportsTiles()) {
+                // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
+                //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
+                assert(srcRod.x1 == srcBounds.x1);
+                assert(srcRod.x2 == srcBounds.x2);
+                assert(srcRod.y1 == srcBounds.y1);
+                assert(srcRod.y2 == srcBounds.y2);
+                assert(dstRod.x1 == dstBounds.x1);
+                assert(dstRod.x2 == dstBounds.x2);
+                assert(dstRod.y1 == dstBounds.y1);
+                assert(dstRod.y2 == dstBounds.y2);
+            }
+            if (!supportsMultiResolution()) {
+                // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+                //   Multiple resolution images mean...
+                //    input and output images can be of any size
+                //    input and output images can be offset from the origin
+                assert(srcRod.x1 == 0);
+                assert(srcRod.y1 == 0);
+                assert(srcRod.x1 == dstRod.x1);
+                assert(srcRod.x2 == dstRod.x2);
+                assert(srcRod.y1 == dstRod.y1);
+                assert(srcRod.y2 == dstRod.y2);
+            }
+        }
+        if (supportsRenderScaleMaybe() == eSupportsNo) {
+            assert(args._mipMapLevel == 0);
+            assert(args._scale.x == 1. && args._scale.y == 1.);
+        }
+#endif
+
         ///notify the node we're starting a render
         _node->notifyRenderingStarted();
         
@@ -1955,11 +1999,8 @@ bool
 EffectInstance::supportsRenderScale() const
 {
     if (_imp->supportsRenderScale == eSupportsMaybe) {
-        qDebug() << "EffectInstance::supportsRenderScale not set";
-#pragma message WARN("EffectInstance::supportsRenderScale should be set before testing, or use supportsRenderScaleMaybe()")
-        // uncomment the following as soon as it is fixed:
+        qDebug() << "EffectInstance::supportsRenderScale should be set before calling supportsRenderScale(), or use supportsRenderScaleMaybe() instead";
         throw std::runtime_error("supportsRenderScale not set");
-        return true;
     }
     return _imp->supportsRenderScale == eSupportsYes;
 }
