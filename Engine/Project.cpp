@@ -353,7 +353,7 @@ void Project::triggerAutoSave() {
     ///Should only be called in the main-thread, that is upon user interaction.
     assert(QThread::currentThread() == qApp->thread());
     
-    if (appPTR->isBackground()) {
+    if (appPTR->isBackground() || !appPTR->isLoaded()) {
         return;
     }
     {
