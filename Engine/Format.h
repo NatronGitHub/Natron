@@ -111,6 +111,8 @@ private:
     std::string _name;
 };
 
+BOOST_CLASS_VERSION(Format, FORMAT_SERIALIZATION_VERSION)
+
 Q_DECLARE_METATYPE(Format);
 
 

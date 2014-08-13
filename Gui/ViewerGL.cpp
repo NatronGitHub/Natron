@@ -465,7 +465,24 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
                 return;
             }
         }
-        texRectClipped.intersect(rod, &texRectClipped);
+        RectD rectClippedToRoI;
+        texRectClipped.intersect(rod, &rectClippedToRoI);
+        
+        GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
+        texBottomTmp = (GLfloat)(rectClippedToRoI.y1 - texRectClipped.y1) /
+        (GLfloat) (texRectClipped.y2 - texRectClipped.y1) * (texTop - texBottom);
+        texTopTmp = (GLfloat)(rectClippedToRoI.y2 - texRectClipped.y1) /
+        (GLfloat) (texRectClipped.y2  - texRectClipped.y1) * (texTop - texBottom);
+        texLeftTmp = (GLfloat)(rectClippedToRoI.x1 - texRectClipped.x1) /
+        (GLfloat) (texRectClipped.x2 - texRectClipped.x1) * (texRight - texLeft);
+        texRightTmp = (GLfloat)(rectClippedToRoI.x2  - texRectClipped.x1) /
+        (GLfloat) (texRectClipped.x2  - texRectClipped.x1) * (texRight - texLeft);
+        texBottom = texBottomTmp;
+        texTop = texTopTmp;
+        texLeft = texLeftTmp;
+        texRight = texRightTmp;
+        
+        texRectClipped = rectClippedToRoI;
     }
     
     if (polygonMode != ALL_PLANE) {
