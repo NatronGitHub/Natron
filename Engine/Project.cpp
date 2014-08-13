@@ -965,6 +965,9 @@ void Project::reset() {
 
 void Project::setOrAddProjectFormat(const Format& frmt,bool skipAdd) {
 
+    if (frmt.isNull()) {
+        return;
+    }
     
     Format dispW;
     bool formatSet = false;
