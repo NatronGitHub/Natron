@@ -2375,11 +2375,10 @@ Gui::createWriter()
 
             const std::vector<boost::shared_ptr<KnobI> >& knobs = ret->getKnobs();
             for (U32 i = 0; i < knobs.size(); ++i) {
-                if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
-                    boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
-                    assert(fk);
-                    if(fk->isOutputImageFile()){
-                        fk->setValue(file,0);
+                OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>(knobs[i].get());
+                if (isOutputFile) {
+                    if(isOutputFile->isOutputImageFile()){
+                        isOutputFile->setValue(file,0);
                         break;
                     }
                 }

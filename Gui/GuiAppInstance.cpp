@@ -362,6 +362,7 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     
     
     ///validate the frame range to render
+    writer->getNode()->updateRenderInputs();
     int firstFrame,lastFrame;
     writer->getFrameRange_public(&firstFrame, &lastFrame);
     //if firstframe and lastframe are infinite clamp them to the timeline bounds
@@ -379,10 +380,11 @@ void GuiAppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* wr
     QString outputFileSequence;
     const std::vector< boost::shared_ptr<KnobI> >& knobs = writer->getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i]->typeName() == OutputFile_Knob::typeNameStatic()) {
-            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
-            if(fk->isOutputImageFile()){
-                outputFileSequence = fk->getValue().c_str();
+        OutputFile_Knob* isOutputFIle = dynamic_cast<OutputFile_Knob*>(knobs[i].get());
+        if (isOutputFIle) {
+            if(isOutputFIle->isOutputImageFile()){
+                outputFileSequence = isOutputFIle->getValue().c_str();
+                break;
             }
         }
     }
