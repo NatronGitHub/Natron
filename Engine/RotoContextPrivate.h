@@ -66,7 +66,7 @@
 #define kRotoInvertedParamName "Inverted"
 #define kRotoInvertedHint \
 "Controls whether the selected shape(s) should be inverted. When inverted everything " \
-"outside the shape will be set to 1 and everything inside the shape will be set to 0.
+"outside the shape will be set to 1 and everything inside the shape will be set to 0."
 #endif
 
 #define kRotoOverlayHint "Color of the display overlay for this curve. Doesn't affect output."
