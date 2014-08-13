@@ -2790,7 +2790,9 @@ EffectInstance::getClipThreadStorageData(SequenceTime time,
     ///we don't care if it fails
     Natron::Status stat = getRegionOfDefinition_public(time, scale, *view, outputRoD, &isProjectFormat);
     if (stat != StatOK && stat != StatReplyDefault) {
-        throw std::runtime_error("can't get region of definition");
+        //throw std::runtime_error("can't get region of definition");
+        outputRoD->x1 = outputRoD->y1 = 0;
+        outputRoD->x2 = outputRoD->y2 = 1;
     }
     assert(outputRoD->x2 >= outputRoD->x1 && outputRoD->y2 >= outputRoD->y1);
 }
