@@ -605,7 +605,6 @@ EffectInstance::getImage(int inputNb,
     const SupportsEnum supportsRS = supportsRenderScaleMaybe();
     const bool renderDownscaleThenUpscale = (supportsRS == eSupportsNo && inputImgMipMapLevel != 0);
     if (!dontUpscale && renderDownscaleThenUpscale) {
-#pragma message WARN("wrong: it should use the originial RoD of the full-res image, not an upscaled one (which may be larger)")
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         int mipMapLevel = 0;
         RectI bounds;
