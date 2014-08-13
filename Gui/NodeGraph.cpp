@@ -3073,7 +3073,7 @@ void NodeGraph::onTimeChanged(SequenceTime time,int reason)
                            false, //< seek timeline
                            false, //<refresh tree
                            true, //< forward
-                           false, // <same frame
+                           true, // <same frame
                            false); //< force preview
         }
     }
