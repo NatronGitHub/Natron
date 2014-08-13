@@ -1409,7 +1409,32 @@ OfxEffectInstance::render(SequenceTime time,
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     ///before calling render, set the render scale thread storage for each clip
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
+#ifdef NATRON_DEBUG
+    {
+        // check the dimensions of output images
+        const RectI& dstBounds = output->getBounds();
+        const RectD& dstRodCanonical = output->getRoD();
+        RectI dstRod;
+        dstRodCanonical.toPixelEnclosing(scale, &dstRod);
 
+        if (!supportsTiles()) {
+            // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
+            //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
+            assert(dstRod.x1 == dstBounds.x1);
+            assert(dstRod.x2 == dstBounds.x2);
+            assert(dstRod.y1 == dstBounds.y1);
+            assert(dstRod.y2 == dstBounds.y2);
+        }
+        if (!supportsMultiResolution()) {
+            // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+            //   Multiple resolution images mean...
+            //    input and output images can be of any size
+            //    input and output images can be offset from the origin
+            assert(dstRod.x1 == 0);
+            assert(dstRod.y1 == 0);
+        }
+    }
+#endif
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
