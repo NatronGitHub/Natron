@@ -517,7 +517,11 @@ EffectInstance::getImage(int inputNb,
             bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
             assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
         }
-        isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &inputNbIdentity);
+        try {
+            isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &inputNbIdentity);
+        } catch (...) {
+            return boost::shared_ptr<Image>();
+        }
     } else {
         isSequentialRender = _imp->renderArgs.localData()._isSequentialRender;
         isRenderUserInteraction = _imp->renderArgs.localData()._isRenderResponseToUserInteraction;
@@ -1017,7 +1021,12 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
             assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
         }
-        bool identity = isIdentity_public(args.time, renderMappedScale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
+        bool identity;
+        try {
+            identity = isIdentity_public(args.time, renderMappedScale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
+        } catch (...) {
+            return boost::shared_ptr<Natron::Image>();
+        }
         if (supportsRS == eSupportsMaybe && renderMappedMipMapLevel != 0) {
             // supportsRenderScaleMaybe may have changed, update it
             supportsRS = supportsRenderScaleMaybe();
@@ -1029,7 +1038,6 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         }
 
         if (identity) {
-            
             ///The effect is an identity but it has no inputs
             if (inputNbIdentity == -1) {
                 return boost::shared_ptr<Natron::Image>();
@@ -2541,7 +2549,12 @@ EffectInstance::isIdentity_public(SequenceTime time,
     } else {
         /// Don't call isIdentity if plugin is sequential only.
         if (getSequentialPreference() != Natron::EFFECT_ONLY_SEQUENTIAL) {
-            ret = isIdentity(time, scale, rod, view, inputTime, inputNb);
+            try {
+                ret = isIdentity(time, scale, rod, view, inputTime, inputNb);
+            } catch (...) {
+                decrementRecursionLevel();
+                throw;
+            }
         }
     }
     decrementRecursionLevel();
@@ -2837,16 +2850,21 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             if (roto) {
                 rotoAge = roto->getAge();
             }
-            
-            SequenceTime identityTime;
-            int identityNb;
+
+            // initialize to invalid values
+            SequenceTime identityTime = 0.;
+            int identityNb = -1;
 
             {
                 bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
                 assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
             }
-            bool isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);
-            
+            bool isIdentity = false;
+            try {
+                isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);
+            } catch (...) {
+                // ignore
+            }
             ///These args remain valid on the thread storage 'til it gets out of scope
             Implementation::ScopedInstanceChangedArgs args(&_imp->renderArgs,
                                                            time,
