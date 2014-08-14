@@ -39,17 +39,17 @@ public:
     
     virtual ~TimeLine(){}
 
-    SequenceTime firstFrame() const {return _firstFrame;}
+    SequenceTime firstFrame() const;
 
-    SequenceTime lastFrame() const {return _lastFrame;}
+    SequenceTime lastFrame() const;
 
-    SequenceTime currentFrame() const {return _currentFrame;}
+    SequenceTime currentFrame() const;
 
-    SequenceTime leftBound() const {return _leftBoundary;}
+    SequenceTime leftBound() const;
 
-    SequenceTime rightBound() const {return _rightBoundary;}
+    SequenceTime rightBound() const;
 
-    void setFrameRange(SequenceTime first,SequenceTime last);
+    void setFrameRange(SequenceTime first, SequenceTime last);
 
     void setBoundaries(SequenceTime leftBound,SequenceTime rightBound);
 
@@ -113,12 +113,14 @@ signals:
     void keyframeIndicatorsChanged();
 
 private:
+    mutable QMutex _lock; // protects the following SequenceTime members
     SequenceTime _firstFrame;
     SequenceTime _lastFrame;
     SequenceTime _currentFrame;
-    SequenceTime _leftBoundary,_rightBoundary; //these boundaries are within the interval [firstFrame,lastFrame]
+    SequenceTime _leftBoundary, _rightBoundary; //these boundaries are within the interval [firstFrame,lastFrame]
+
+    // not MT-safe
     std::list<SequenceTime> _keyframes;
-    mutable QMutex _lock;
     Natron::Project* _project;
 };
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

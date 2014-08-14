@@ -12,8 +12,8 @@
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 
-TimeLine::TimeLine(Natron::Project* project):
-_firstFrame(0)
+TimeLine::TimeLine(Natron::Project* project)
+: _firstFrame(0)
 , _lastFrame(0)
 , _currentFrame(0)
 , _leftBoundary(_firstFrame)
@@ -22,59 +22,159 @@ _firstFrame(0)
 , _project(project)
 {}
 
-void TimeLine::setFrameRange(SequenceTime first,SequenceTime last) {
-    SequenceTime oldFirst,oldLast;
+SequenceTime
+TimeLine::firstFrame() const
+{
+    QMutexLocker l(&_lock);
+    return _firstFrame;
+}
+
+SequenceTime
+TimeLine::lastFrame() const
+{
+    QMutexLocker l(&_lock);
+   return _lastFrame;
+}
+
+SequenceTime
+TimeLine::currentFrame() const
+{
+    QMutexLocker l(&_lock);
+    return _currentFrame;
+}
+
+SequenceTime
+TimeLine::leftBound() const
+{
+    QMutexLocker l(&_lock);
+    return _leftBoundary;
+}
+
+SequenceTime
+TimeLine::rightBound() const
+{
+    QMutexLocker l(&_lock);
+    return _rightBoundary;
+}
+
+void
+TimeLine::setFrameRange(SequenceTime first,
+                        SequenceTime last)
+{
+    bool changed = false;
     {
-        
         QMutexLocker l(&_lock);
-        oldFirst = _firstFrame;
-        oldLast = _lastFrame;
-        _firstFrame = first;
-        _lastFrame = last;
+        if (_firstFrame != first || _lastFrame != last) {
+            _firstFrame = first;
+            _lastFrame = last;
+            changed = true;
+        }
     }
-    if(first != oldFirst || last != oldLast){
+    if (changed) {
         emit frameRangeChanged(first, last);
         setBoundaries(first,last);
     }
-    
 }
 
-void TimeLine::seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller){
+void
+TimeLine::seekFrame(SequenceTime frame,
+                    Natron::OutputEffectInstance* caller)
+{
+    bool changed = false;
     {
         QMutexLocker l(&_lock);
-        _currentFrame = frame;
-        _project->setLastTimelineSeekCaller(caller);
+        if (_currentFrame != frame) {
+            _currentFrame = frame;
+            changed = true;
+        }
     }
-    emit frameChanged(_currentFrame,(int)Natron::PLAYBACK_SEEK);
+    if (changed) {
+        _project->setLastTimelineSeekCaller(caller);
+        emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
+    }
 }
 
-void TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller) { seekFrame(_currentFrame+1,caller); }
+void
+TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller)
+{
+    SequenceTime frame;
+    {
+        QMutexLocker l(&_lock);
+        ++_currentFrame;
+        frame = _currentFrame;
+    }
+    _project->setLastTimelineSeekCaller(caller);
+    emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
+}
 
-void TimeLine::decrementCurrentFrame(Natron::OutputEffectInstance* caller) { seekFrame(_currentFrame-1,caller); }
+void
+TimeLine::decrementCurrentFrame(Natron::OutputEffectInstance* caller)
+{
+    SequenceTime frame;
+    {
+        QMutexLocker l(&_lock);
+        --_currentFrame;
+        frame = _currentFrame;
+    }
+    _project->setLastTimelineSeekCaller(caller);
+    emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
+}
 
-void TimeLine::onFrameChanged(SequenceTime frame){
-    _currentFrame = frame;
-    /*This function is called in response to a signal emitted by a single timeline gui, but we also
-     need to sync all the other timelines potentially existing.*/
-    emit frameChanged(_currentFrame,(int)Natron::USER_SEEK);
+void
+TimeLine::onFrameChanged(SequenceTime frame)
+{
+    bool changed = false;
+    {
+        QMutexLocker l(&_lock);
+        if (_currentFrame != frame) {
+            _currentFrame = frame;
+            changed = true;
+        }
+    }
+    if (changed) {
+        /*This function is called in response to a signal emitted by a single timeline gui, but we also
+         need to sync all the other timelines potentially existing.*/
+        emit frameChanged(frame, (int)Natron::USER_SEEK);
+    }
 }
 
 
 
-void TimeLine::setBoundaries(SequenceTime leftBound,SequenceTime rightBound){
-    _leftBoundary = leftBound;
-    _rightBoundary = rightBound;
-    emit boundariesChanged(_leftBoundary,_rightBoundary,Natron::PLUGIN_EDITED);
+void
+TimeLine::setBoundaries(SequenceTime leftBound, SequenceTime rightBound)
+{
+    bool changed = false;
+    {
+        QMutexLocker l(&_lock);
+        if (_leftBoundary != leftBound || _rightBoundary != rightBound) {
+            _leftBoundary = leftBound;
+            _rightBoundary = rightBound;
+            changed = true;
+        }
+    }
+    emit boundariesChanged(leftBound, rightBound, Natron::PLUGIN_EDITED);
 
 }
 
-void TimeLine::onBoundariesChanged(SequenceTime left,SequenceTime right){
-    _leftBoundary = left;
-    _rightBoundary = right;
-     emit boundariesChanged(_leftBoundary,_rightBoundary,Natron::USER_EDITED);
+// the reason (last line) differs in this version
+void
+TimeLine::onBoundariesChanged(SequenceTime leftBound, SequenceTime rightBound)
+{
+    bool changed = false;
+    {
+        QMutexLocker l(&_lock);
+        if (_leftBoundary != leftBound || _rightBoundary != rightBound) {
+            _leftBoundary = leftBound;
+            _rightBoundary = rightBound;
+            changed = true;
+        }
+    }
+     emit boundariesChanged(leftBound, rightBound, Natron::USER_EDITED);
 }
 
-void TimeLine::removeAllKeyframesIndicators() {
+void
+TimeLine::removeAllKeyframesIndicators()
+{
     bool wasEmpty = _keyframes.empty();
     _keyframes.clear();
     if (!wasEmpty) {
@@ -82,19 +182,26 @@ void TimeLine::removeAllKeyframesIndicators() {
     }
 }
 
-void TimeLine::addKeyframeIndicator(SequenceTime time) {
+void
+TimeLine::addKeyframeIndicator(SequenceTime time)
+{
     _keyframes.push_back(time);
     emit keyframeIndicatorsChanged();
 }
 
-void TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys,bool emitSignal) {
+void
+TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys,
+                                             bool emitSignal)
+{
     _keyframes.insert(_keyframes.begin(),keys.begin(),keys.end());
     if (!keys.empty() && emitSignal) {
         emit keyframeIndicatorsChanged();
     }
 }
 
-void TimeLine::removeKeyFrameIndicator(SequenceTime time) {
+void
+TimeLine::removeKeyFrameIndicator(SequenceTime time)
+{
     std::list<SequenceTime>::iterator it = std::find(_keyframes.begin(), _keyframes.end(), time);
     if (it != _keyframes.end()) {
         _keyframes.erase(it);
@@ -103,7 +210,10 @@ void TimeLine::removeKeyFrameIndicator(SequenceTime time) {
     
 }
 
-void TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys,bool emitSignal) {
+void
+TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys,
+                                          bool emitSignal)
+{
     for (std::list<SequenceTime>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
         std::list<SequenceTime>::iterator it2 = std::find(_keyframes.begin(), _keyframes.end(), *it);
         if (it2 != _keyframes.end()) {
@@ -115,7 +225,8 @@ void TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& ke
     }
 }
 
-void TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes)
+void
+TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes)
 {
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
     ++next;
@@ -124,12 +235,14 @@ void TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes
     }
 }
 
-void TimeLine::addNodeKeyframesToTimeline(Natron::Node* node)
+void
+TimeLine::addNodeKeyframesToTimeline(Natron::Node* node)
 {
     node->showKeyframesOnTimeline(true);
 }
 
-void TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& nodes)
+void
+TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& nodes)
 {
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
     ++next;
@@ -139,29 +252,33 @@ void TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& 
 
 }
 
-void TimeLine::removeNodeKeyframesFromTimeline(Natron::Node* node)
+void
+TimeLine::removeNodeKeyframesFromTimeline(Natron::Node* node)
 {
     node->hideKeyframesFromTimeline(true);
 }
 
-void TimeLine::getKeyframes(std::list<SequenceTime>* keys) const
+void
+TimeLine::getKeyframes(std::list<SequenceTime>* keys) const
 {
     *keys = _keyframes;
 }
 
 
 
-void TimeLine::goToPreviousKeyframe()
+void
+TimeLine::goToPreviousKeyframe()
 {
     _keyframes.sort();
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if (lowerBound != _keyframes.begin()) {
         --lowerBound;
-         seekFrame(*lowerBound,NULL);
+        seekFrame(*lowerBound,NULL);
     }
 }
 
-void TimeLine::goToNextKeyframe()
+void
+TimeLine::goToNextKeyframe()
 {
     _keyframes.sort();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
