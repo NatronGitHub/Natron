@@ -1317,7 +1317,8 @@ QString TabWidget::objectName_mt_safe() const {
     return objectName();
 }
 
-QString TabWidget::getTabWidgetParentName(const QString& objectName,bool* isSplit,bool* horizontal)
+QString
+TabWidget::getTabWidgetParentName(const QString& objectName, bool* isSplit, bool* horizontal)
 {
     QString nameCpy = objectName;
     int indexOfVerticalTag = nameCpy.lastIndexOf(TabWidget::splitVerticallyTag);
@@ -1351,29 +1352,29 @@ QString TabWidget::getTabWidgetParentName(const QString& objectName,bool* isSpli
         if (horizontal) {
             *horizontal = false;
         }
+        *isSplit = true;
         return nameCpy;
 
-    } else {
-        if (indexOfHorizontalTag != -1)  {
-            //this is a horizontal split, find the parent widget and insert this widget as child
-            nameCpy = nameCpy.remove(indexOfHorizontalTag, TabWidget::splitVerticallyTag.size());
-            if (horizontal) {
-                *horizontal = true;
-            }
-            *isSplit = true;
-            return nameCpy;
-
+    } else if (indexOfHorizontalTag != -1)  {
+        //this is a horizontal split, find the parent widget and insert this widget as child
+        nameCpy = nameCpy.remove(indexOfHorizontalTag, TabWidget::splitVerticallyTag.size());
+        if (horizontal) {
+            *horizontal = true;
         }
+        *isSplit = true;
+        return nameCpy;
+        
+    } else {
+        *isSplit = false;
+        return objectName;
     }
-    *isSplit = false;
-    return objectName;
 }
 
 QString TabWidget::getParentName(bool* horizontal) const
 {
     bool isSplit;
     QString objectN = objectName_mt_safe();
-    QString ret = getTabWidgetParentName(objectN,&isSplit,horizontal);
+    QString ret = getTabWidgetParentName(objectN, &isSplit, horizontal);
     if (!isSplit) {
         return "";
     }

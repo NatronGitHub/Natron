@@ -157,8 +157,9 @@ TimeLine::setBoundaries(SequenceTime leftBound, SequenceTime rightBound)
             changed = true;
         }
     }
-    emit boundariesChanged(leftBound, rightBound, Natron::PLUGIN_EDITED);
-
+    if (changed) {
+        emit boundariesChanged(leftBound, rightBound, Natron::PLUGIN_EDITED);
+    }
 }
 
 // the reason (last line) differs in this version
@@ -174,7 +175,9 @@ TimeLine::onBoundariesChanged(SequenceTime leftBound, SequenceTime rightBound)
             changed = true;
         }
     }
-     emit boundariesChanged(leftBound, rightBound, Natron::USER_EDITED);
+    if (changed) {
+        emit boundariesChanged(leftBound, rightBound, Natron::USER_EDITED);
+    }
 }
 
 void
