@@ -174,7 +174,9 @@ void NodeBackDrop::initialize(const QString& name,bool requestedByLoad,const Nod
 
 NodeBackDrop::~NodeBackDrop()
 {
-    _imp->settingsPanel->setClosed(true);
+    if (_imp->graph->getGui()) {
+        _imp->settingsPanel->setClosed(true);
+    }
     _imp->settingsPanel->deleteLater();
 }
 
