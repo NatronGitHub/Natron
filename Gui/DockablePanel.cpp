@@ -957,6 +957,11 @@ void DockablePanel::setClosed(bool c)
     if (!_imp->_gui){
         return;
     }
+    if (!c) {
+        _imp->_gui->addVisibleDockablePanel(this);
+    } else {
+        _imp->_gui->removeVisibleDockablePanel(this);
+    }
     if (_imp->_floating) {
         floatPanel();
     }
@@ -999,11 +1004,7 @@ void DockablePanel::setClosed(bool c)
         }
 
     }
-    if (!c) {
-        _imp->_gui->addVisibleDockablePanel(this);
-    } else {
-        _imp->_gui->removeVisibleDockablePanel(this);
-    }
+    
 }
 
 void DockablePanel::closePanel() {
