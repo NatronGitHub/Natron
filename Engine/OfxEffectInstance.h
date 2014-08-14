@@ -78,9 +78,9 @@ public:
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string& context,const NodeSerialization* serialization) OVERRIDE FINAL;
 
-    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return effect_; }
+    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN { return _effect; }
 
-    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN { return effect_; }
+    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN { return _effect; }
 
     void setAsOutputNode() {_isOutput = true;}
     
@@ -88,11 +88,24 @@ public:
     
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
-    
-    /********OVERRIDEN FROM EFFECT INSTANCE*************/
-    virtual int majorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
 
-    virtual int minorVersion() const OVERRIDE  FINAL WARN_UNUSED_RETURN;
+    bool isCreated() const { return _created; }
+
+    bool isInitialized() const { return _initialized; }
+
+    const std::string& ofxGetOutputPremultiplication() const;
+
+    /**
+     * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
+     * call of the action will take place in the main-thread.
+     **/
+    void syncPrivateData_other_thread() { emit syncPrivateDataRequested(); }
+
+public:
+    /********OVERRIDEN FROM EFFECT INSTANCE*************/
+    virtual int majorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual int minorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -246,16 +259,6 @@ public:
     virtual Natron::ImagePremultiplication getOutputPremultiplication() const OVERRIDE FINAL;
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
-    const std::string& ofxGetOutputPremultiplication() const;
-
-    static Natron::ImagePremultiplication ofxPremultToNatronPremult(const std::string& str) ;
-
-    /**
-     * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
-     * call of the action will take place in the main-thread.
-     **/
-    void syncPrivateData_other_thread() { emit syncPrivateDataRequested(); }
-
 public slots:
 
     void onSyncPrivateDataRequested();
@@ -289,13 +292,14 @@ private:
     void initializeContextDependentParams();
 
 private:
-    Natron::OfxImageEffectInstance* effect_;
+    Natron::OfxImageEffectInstance* _effect;
     mutable std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     bool _isOutput;//if the OfxNode can output a file somehow
 
     bool _penDown; // true when the overlay trapped a penDow action
     Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
 
+    bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
     mutable EffectInstance::RenderSafety _renderSafety;

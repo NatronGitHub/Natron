@@ -213,8 +213,7 @@ AppInstance::createNodeInternal(const QString& pluginID,
     } else {
         node.reset(new InspectorNode(this,pluginBinary));
     }
-    
-    
+
     try {
         // load() calls OfxEffectInstance::createOFXImageEffectInstance()
         node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName);
@@ -236,7 +235,10 @@ AppInstance::createNodeInternal(const QString& pluginID,
     }
     
     _imp->_currentProject->addNodeToProject(node);
+
+    // createNodeGui also sets the filename parameter for reader or writers
     createNodeGui(node, multiInstanceParentName, requestedByLoad, openImageFileDialog, autoConnect, xPosHint, yPosHint);
+
     // once all the parameters have been loaded or set, we should finalize node creation
     // (on OFX effects, this means setting supportsRS)
 #pragma message WARN("TODO: after node creation, call a 'setup' or 'validate' method on the node, which sets supportsRenderScale on OFX effects")

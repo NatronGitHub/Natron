@@ -108,12 +108,9 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
             startFrame = _lastRenderArgs.localData().firstFrame;
             endFrame = _lastRenderArgs.localData().lastFrame;
         } else {
-#ifdef NATRON_DEBUG
-            if (n == _nodeInstance) {
-                qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getFrameRange. Please investigate this bug."
-                " If this is printed whilst the effect is in the createInstanceAction, ignore this.";
+            if (n == _nodeInstance && _nodeInstance->isCreated()) {
+                qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getFrameRange. Please investigate this bug.";
             }
-#endif
             SequenceTime first,last;
             n->getFrameRange_public(&first, &last);
             startFrame = first;
