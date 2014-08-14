@@ -8,6 +8,11 @@
 
 #include "TimeLine.h"
 
+#ifndef NDEBUG
+#include <QThread>
+#include <QCoreApplication>
+#endif
+
 #include <cassert>
 #include "Engine/Project.h"
 #include "Engine/Node.h"
@@ -175,6 +180,9 @@ TimeLine::onBoundariesChanged(SequenceTime leftBound, SequenceTime rightBound)
 void
 TimeLine::removeAllKeyframesIndicators()
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     bool wasEmpty = _keyframes.empty();
     _keyframes.clear();
     if (!wasEmpty) {
@@ -185,6 +193,9 @@ TimeLine::removeAllKeyframesIndicators()
 void
 TimeLine::addKeyframeIndicator(SequenceTime time)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     _keyframes.push_back(time);
     emit keyframeIndicatorsChanged();
 }
@@ -193,6 +204,9 @@ void
 TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys,
                                              bool emitSignal)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     _keyframes.insert(_keyframes.begin(),keys.begin(),keys.end());
     if (!keys.empty() && emitSignal) {
         emit keyframeIndicatorsChanged();
@@ -202,6 +216,9 @@ TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime>& keys
 void
 TimeLine::removeKeyFrameIndicator(SequenceTime time)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     std::list<SequenceTime>::iterator it = std::find(_keyframes.begin(), _keyframes.end(), time);
     if (it != _keyframes.end()) {
         _keyframes.erase(it);
@@ -214,6 +231,9 @@ void
 TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys,
                                           bool emitSignal)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     for (std::list<SequenceTime>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
         std::list<SequenceTime>::iterator it2 = std::find(_keyframes.begin(), _keyframes.end(), *it);
         if (it2 != _keyframes.end()) {
@@ -228,6 +248,9 @@ TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime>& keys,
 void
 TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
     ++next;
     for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it,++next) {
@@ -238,12 +261,18 @@ TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*>& nodes)
 void
 TimeLine::addNodeKeyframesToTimeline(Natron::Node* node)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     node->showKeyframesOnTimeline(true);
 }
 
 void
 TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& nodes)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
     ++next;
     for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it,++next) {
@@ -255,12 +284,18 @@ TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*>& nodes
 void
 TimeLine::removeNodeKeyframesFromTimeline(Natron::Node* node)
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     node->hideKeyframesFromTimeline(true);
 }
 
 void
 TimeLine::getKeyframes(std::list<SequenceTime>* keys) const
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     *keys = _keyframes;
 }
 
@@ -269,6 +304,9 @@ TimeLine::getKeyframes(std::list<SequenceTime>* keys) const
 void
 TimeLine::goToPreviousKeyframe()
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     _keyframes.sort();
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if (lowerBound != _keyframes.begin()) {
@@ -280,6 +318,9 @@ TimeLine::goToPreviousKeyframe()
 void
 TimeLine::goToNextKeyframe()
 {
+    ///runs only in the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
     _keyframes.sort();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if (upperBound != _keyframes.end()) {
