@@ -4,11 +4,14 @@
 #include <iostream>
 #include <cassert>
 #include <stdexcept>
+#include <vector>
+
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 
 #include "Engine/Hash64.h"
@@ -115,16 +118,23 @@ class Buffer {
 public:
     
     
-    Buffer():_path(),_size(0),_buffer(NULL),_backingFile(NULL),_storageMode(RAM){}
+    Buffer()
+    : _path()
+    , _buffer()
+    , _backingFile()
+    , _storageMode(RAM) {
+    }
     
-    ~Buffer(){deallocate();}
+    ~Buffer() {
+        deallocate();
+    }
     
     void allocate(U64 count, int cost, std::string path = std::string()) {
         
         /*allocate should be called only once.*/
         assert(_path.empty());
-        assert((!_buffer && !_backingFile) || (_buffer && !_backingFile) || (!_buffer && _backingFile));
-        if (_buffer || _backingFile) {
+        assert(((_buffer.size() == 0) && !_backingFile) || ((_buffer.size() != 0) && !_backingFile) || (!(_buffer.size() != 0) && _backingFile));
+        if ((_buffer.size() > 0) || _backingFile) {
             return;
         }
         
@@ -132,13 +142,12 @@ public:
             _storageMode = DISK;
             _path = path;
             try {
-                _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
+                _backingFile.reset(new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create));
             } catch(const std::runtime_error& r) {
                 std::cout << r.what() << std::endl;
                 
                 ///if opening the file mapping failed, just call allocate again, but this time on disk!
-                delete _backingFile;
-                _backingFile = 0;
+                _backingFile.reset();
                 _path.clear();
                 allocate(count,0,path);
                 return;
@@ -146,18 +155,11 @@ public:
             if (!path.empty() && count != 0) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
                 _backingFile->resize(count*sizeof(DataType));
-                if (!_backingFile->data()) {
-                    throw std::bad_alloc();
-                }
             }
         } else if(cost == 0) {
             _storageMode = RAM;
-            _buffer =  (DataType*)malloc(count * sizeof(DataType));
-            if (!_buffer) {
-                throw std::bad_alloc();
-            }
+            _buffer.resize(count);
         }
-        _size = count * sizeof(DataType);
     }
     
     /**
@@ -166,99 +168,86 @@ public:
      * 
      * Pre-condition: allocate(..) must have been called already.
      **/
-    void reallocate(U64 count)
-    {
-        _size = count * sizeof(DataType);
+    void reallocate(U64 count) {
         if (_storageMode == RAM) {
-            assert(_buffer);
-            _buffer = (DataType*)realloc((void*)_buffer,_size);
-            if (!_buffer) {
-                throw std::bad_alloc();
-            }
-
+            assert(_buffer.size() > 0); // could be 0 if we allocate 0...
+            _buffer.resize(count);
         } else if (_storageMode == DISK) {
             assert(_backingFile);
-            _backingFile->resize(_size);
-            if (!_backingFile->data()) {
-                throw std::bad_alloc();
-            }
+            _backingFile->resize(count * sizeof(DataType));
         }
     }
     
     void reOpenFileMapping() const {
         assert(!_backingFile && _storageMode == DISK);
         try{
-            _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
-        }catch(const std::runtime_error& r){
-            delete _backingFile;
-            _backingFile = NULL;
-            std::cout << r.what() << std::endl;
+            _backingFile.reset(new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create));
+        } catch (const std::exception& e) {
+            _backingFile.reset();
+            std::cout << e.what() << std::endl; //FIXME: why write to stdout?
             throw std::bad_alloc();
         }
     }
     
     void restoreBufferFromFile(const std::string& path)  {
-        try{
-            _backingFile  = new MemoryFile(path,Natron::if_exists_keep_if_dont_exists_create);
-        }catch(const std::runtime_error& /*r*/){
-            delete _backingFile;
-            _backingFile = NULL;
+        try {
+            _backingFile.reset(new MemoryFile(path,Natron::if_exists_keep_if_dont_exists_create));
+        } catch (const std::exception& e) {
+            _backingFile.reset();
             throw std::bad_alloc();
         }
         _path = path;
-        _size = _backingFile->size();
         _storageMode = DISK;
     }
     
     void deallocate() {
-        
         if (_storageMode == RAM) {
-            if (_buffer) {
-                free(_buffer);
-                _buffer = NULL;
-            }
-            
+            _buffer.clear();
         } else {
-            delete _backingFile;
-            _backingFile = NULL;
+            _backingFile.reset();
         }
     }
     
     void removeAnyBackingFile() const {
-        if(_storageMode == DISK){
+        if (_storageMode == DISK) {
             if(QFile::exists(_path.c_str())){
                 QFile::remove(_path.c_str());
             }
         }
-        
     }
     
     /**
      * @brief Returns the size of the buffer in bytes.
      **/
-    size_t size() const {return _size;}
-    
-    bool isAllocated() const {
-        return _buffer || (_backingFile && _backingFile->data()) ;
+    size_t size() const {
+        if (_storageMode == RAM) {
+            return _buffer.size() * sizeof(DataType);
+        } else {
+            return _backingFile ? _backingFile->size() : 0;
+        }
     }
     
-    DataType* writable() const {
+    bool isAllocated() const {
+        return (_buffer.size() > 0) || (_backingFile && _backingFile->data());
+    }
+    
+    DataType* writable() {
         if (_storageMode == DISK) {
-            if(_backingFile) {
+            if (_backingFile) {
                 return (DataType*)_backingFile->data();
             } else {
                 return NULL;
             }
         } else {
-            return _buffer;
+            return _buffer.data();
         }
     }
     
     const DataType* readable() const {
         if (_storageMode == DISK) {
-            return (DataType*)_backingFile->data();
+            return (const DataType*)_backingFile->data();
         } else {
-            return _buffer;
+            return _buffer.data();
         }
     }
     
@@ -267,12 +256,11 @@ public:
 private:
     
     std::string _path;
-    size_t _size; //< in bytes!
-    DataType* _buffer;
+    std::vector<DataType> _buffer;
     
     /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
      change the underlying data*/
-    mutable MemoryFile* _backingFile;
+    mutable boost::scoped_ptr<MemoryFile> _backingFile;
     
     Natron::StorageMode _storageMode;
 };
