@@ -202,12 +202,18 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
 #endif
 }
 
-void MemoryFile::resize(size_t new_size) {
-    if (new_size > capacity_) reserve(new_size);
+void
+MemoryFile::resize(size_t new_size)
+{
+    if (new_size > capacity_) {
+        reserve(new_size);
+    }
     size_ = new_size;
 }
 
-void MemoryFile::reserve(size_t new_capacity) {
+void
+MemoryFile::reserve(size_t new_capacity)
+{
     if (new_capacity <= capacity_) return;
 #if defined(__NATRON_UNIX__)
     ::munmap(data_, size_);
@@ -218,7 +224,9 @@ void MemoryFile::reserve(size_t new_capacity) {
     }
     data_ = static_cast<char*>(::mmap(
                                       0, new_capacity, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
-    if (data_ == MAP_FAILED) data_ = 0;
+    if (data_ == MAP_FAILED) {
+        data_ = 0;
+    }
     capacity_ = new_capacity;
 #elif defined(__NATRON_WIN32__)
     ::UnmapViewOfFile(data_);
@@ -229,6 +237,9 @@ void MemoryFile::reserve(size_t new_capacity) {
     data_ = static_cast<char*>(::MapViewOfFile(
                                                file_mapping_handle_, FILE_MAP_WRITE, 0, 0, 0));
 #endif
+    if (!data_) {
+        throw std::bad_alloc();
+    }
 }
 
 
