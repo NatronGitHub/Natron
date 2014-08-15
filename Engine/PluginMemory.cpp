@@ -12,6 +12,7 @@
 #include "PluginMemory.h"
 
 #include <stdexcept>
+#include <vector>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -22,6 +23,13 @@ CLANG_DIAG_ON(deprecated)
 
 struct PluginMemory::Implementation
 {
+    Implementation(Natron::EffectInstance* effect_)
+    : data()
+    , locked(0)
+    , mutex()
+    , effect(effect_) {
+    }
+
     std::vector<char> data;
     int     locked;
     QMutex  mutex;
@@ -29,9 +37,8 @@ struct PluginMemory::Implementation
 };
 
 PluginMemory::PluginMemory(Natron::EffectInstance* effect)
-: _imp(new Implementation)
+: _imp(new Implementation(effect))
 {
-    _imp->effect = effect;
     _imp->effect->addPluginMemoryPointer(this);
 }
 
@@ -45,13 +52,13 @@ bool
 PluginMemory::alloc(size_t nBytes)
 {
     QMutexLocker l(&_imp->mutex);
-    if (!_imp->locked){
+    if (_imp->locked) {
+        return false;
+    } else {
         _imp->data.resize(nBytes);
         _imp->effect->registerPluginMemory(_imp->data.size());
 
         return true;
-    } else {
-        return false;
     }
 }
 
@@ -68,6 +75,7 @@ void*
 PluginMemory::getPtr()
 {
     QMutexLocker l(&_imp->mutex);
+    assert(_imp->data.size() > 0 && _imp->data.data());
     return (void*)(_imp->data.data());
 }
 
