@@ -62,7 +62,7 @@ namespace Natron {
     public:
         Bitmap(const RectI& bounds)
         : _bounds(bounds)
-        , _map(new char[bounds.area()])
+        , _map(bounds.area())
         {
             //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -73,22 +73,22 @@ namespace Natron {
         
         Bitmap()
         : _bounds()
-        , _map(0)
+        , _map()
         {
             
         }
         
         void initialize(const RectI& bounds)
         {
-            assert(!_map);
+            assert(_map.size() == 0);
             _bounds = bounds;
-            _map = new char[bounds.area()];
+            _map.resize(_bounds.area());
             clear();
         }
         
-        ~Bitmap() { delete [] _map; }
+        ~Bitmap() {}
         
-        void clear() { std::fill(_map, _map+ _bounds.area(), 0); }
+        void clear() { std::fill(_map.begin(), _map.end(), 0); }
         
         const RectI& getBounds() const {return _bounds;}
         
@@ -98,9 +98,9 @@ namespace Natron {
 
         void markForRendered(const RectI& roi);
 
-        const char* getBitmap() const { return _map; }
+        const char* getBitmap() const { return _map.data(); }
         
-        char* getBitmap() { return _map; }
+        char* getBitmap() { return _map.data(); }
         
         const char* getBitmapAt(int x,int y) const;
         
@@ -108,7 +108,7 @@ namespace Natron {
 
     private:
         RectI _bounds;
-        char* _map;
+        std::vector<char> _map;
     };
     
 

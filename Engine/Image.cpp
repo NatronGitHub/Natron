@@ -85,7 +85,7 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
     roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
-        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        const char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
         if(!memchr(buf, 0, _bounds.width())){
             bbox.set_bottom(bbox.bottom()+1);
         } else {
@@ -95,7 +95,7 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
 
     //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
-        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        const char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
         if (!memchr(buf, 0, _bounds.width())) {
             bbox.set_top(bbox.top()-1);
         } else {
@@ -185,7 +185,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     RectI bboxA = bboxX;
     bboxA.set_top(bboxX.bottom());
     for (int i = bboxX.bottom(); i < bboxX.top();++i) {
-        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        const char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
         if (!memchr(buf, 1, _bounds.width())) {
             bboxX.set_bottom(bboxX.bottom()+1);
             bboxA.set_top(bboxX.bottom());
@@ -202,7 +202,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     RectI bboxB = bboxX;
     bboxB.set_bottom(bboxX.top());
     for (int i = bboxX.top()-1; i >= bboxX.bottom();--i) {
-        char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
+        const char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
         if (!memchr(buf, 1, _bounds.width())) {
             bboxX.set_top(bboxX.top()-1);
             bboxB.set_bottom(bboxX.top());
@@ -306,7 +306,7 @@ const char*
 Natron::Bitmap::getBitmapAt(int x, int y) const
 {
     if (x >= _bounds.left() && x < _bounds.right() && y >= _bounds.bottom() && y < _bounds.top()) {
-        return _map + (y - _bounds.bottom()) * _bounds.width() + (x - _bounds.left());
+        return &_map[(y - _bounds.bottom()) * _bounds.width() + (x - _bounds.left())];
     } else {
         return NULL;
     }
@@ -316,7 +316,7 @@ char*
 Natron::Bitmap::getBitmapAt(int x, int y)
 {
     if (x >= _bounds.left() && x < _bounds.right() && y >= _bounds.bottom() && y < _bounds.top()) {
-        return _map + (y - _bounds.bottom()) * _bounds.width() + (x - _bounds.left());
+        return &_map[(y - _bounds.bottom()) * _bounds.width() + (x - _bounds.left())];
     } else {
         return NULL;
     }
@@ -870,15 +870,12 @@ Image::downscaleMipMap(const RectI& roi,
     RectI dstRoI;
     roiCanonical.toPixelEnclosing(toLevel, &dstRoI);
 
-    Natron::Image* tmpImg = new Natron::Image(getComponents(), getRoD(), dstRoI, toLevel, getBitDepth());
+    std::auto_ptr<Natron::Image> tmpImg(new Natron::Image(getComponents(), getRoD(), dstRoI, toLevel, getBitDepth()));
     
-    buildMipMapLevel(roi, toLevel - fromLevel, tmpImg);
+    buildMipMapLevel(roi, toLevel - fromLevel, tmpImg.get());
   
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, false);
-        
-    ///clean-up
-    delete tmpImg;
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
