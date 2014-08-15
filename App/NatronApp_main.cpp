@@ -11,7 +11,7 @@
 #include <csignal>
 #include <cstdio>
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(Q_OS_UNIX)
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
@@ -25,16 +25,29 @@ void handleShutDownSignal(int signalId);
 
 int main(int argc, char *argv[])
 {	
-#if defined (Q_OS_UNIX)
+#if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
      Avoid 'Too many open files' on Unix.
+
      Increase the number of file descriptors that the process can open to the maximum allowed.
-    */
+     - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
+     - On Linux, the default limit is usually 1024.
+     */
     struct rlimit rl;
-    getrlimit(RLIMIT_NOFILE, &rl);
-    if (rl.rlim_max > rl.rlim_cur) {
-        rl.rlim_cur = rl.rlim_max;
-        setrlimit(RLIMIT_NOFILE, &rl);
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
+        if (rl.rlim_max > rl.rlim_cur) {
+            rl.rlim_cur = rl.rlim_max;
+            if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
+#             if defined(__APPLE__) && defined(OPEN_MAX)
+                // On Mac OS X, setrlimit(RLIMIT_NOFILE, &rl) fails to set
+                // rlim_cur above OPEN_MAX even if rlim_max > OPEN_MAX.
+                if (rl.rlim_cur > OPEN_MAX) {
+                    rl.rlim_cur = OPEN_MAX;
+                    setrlimit(RLIMIT_NOFILE, &rl);
+                }
+#             endif
+            }
+        }
     }
 #endif
 
