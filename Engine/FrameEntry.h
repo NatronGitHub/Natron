@@ -48,7 +48,7 @@ namespace Natron{
         
         void fillHash(Hash64* hash) const;
         
-        bool operator==(const FrameKey& other) const ;
+        bool operator==(const FrameKey& other) const;
 
         SequenceTime getTime() const WARN_UNUSED_RETURN { return _time; };
 
@@ -105,20 +105,23 @@ namespace Natron{
                                 int view,
                                 const TextureRect& textureRect,
                                 const RenderScale& scale,
-                                const std::string& inputName);
+                                const std::string& inputName) WARN_UNUSED_RETURN;
         
         static boost::shared_ptr<const FrameParams> makeParams(const RectI& rod,
                                                                int bitDepth,
                                                                int texW,
-                                                               int texH);
+                                                               int texH) WARN_UNUSED_RETURN;
         
-        U8* data() const
+        const U8* data() const WARN_UNUSED_RETURN
+        {
+            return _data.readable();
+        }
+
+        U8* data() WARN_UNUSED_RETURN
         {
             return _data.writable();
         }
     };
-    
-    
 }
 
 
