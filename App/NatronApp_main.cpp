@@ -11,6 +11,11 @@
 #include <csignal>
 #include <cstdio>
 
+#if defined(__linux__) || defined(__FreeBSD__)
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
+
 #include <QApplication>
 
 #include "Gui/GuiApplicationManager.h"
@@ -20,19 +25,17 @@ void handleShutDownSignal(int signalId);
 
 int main(int argc, char *argv[])
 {	
-#if defined (Q_OS_MAC)
+#if defined (Q_OS_UNIX)
     /*
-     Avoid 'Too many open files' on Mac
-
+     Avoid 'Too many open files' on Unix.
      Increase the number of file descriptors that the process can open to the maximum allowed.
-     By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
-     */
-    // see also https://qt.gitorious.org/qt-creator/qt-creator/commit/7f1f9e1
-    // increase maximum numbers of file descriptors
-	struct rlimit rl;
-	getrlimit(RLIMIT_NOFILE, &rl);
- 	rl.rlim_cur = qMin((rlim_t)OPEN_MAX, rl.rlim_max);
-	setrlimit(RLIMIT_NOFILE, &rl);
+    */
+    struct rlimit rl;
+    getrlimit(RLIMIT_NOFILE, &rl);
+    if (rl.rlim_max > rl.rlim_cur) {
+        rl.rlim_cur = rl.rlim_max;
+        setrlimit(RLIMIT_NOFILE, &rl);
+    }
 #endif
 
     bool isBackground;
