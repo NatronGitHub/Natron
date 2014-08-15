@@ -11,12 +11,12 @@
 #include <csignal>
 #include <cstdio>
 
+#include <QApplication>
+
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
-
-#include <QApplication>
 
 #include "Gui/GuiApplicationManager.h"
 

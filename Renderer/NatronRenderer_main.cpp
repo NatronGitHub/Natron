@@ -8,12 +8,12 @@
 *
 */
 
+#include <QCoreApplication>
+
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
-
-#include <QCoreApplication>
 
 #include "Engine/AppManager.h"
 
