@@ -19,35 +19,35 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 
-PluginMemory::PluginMemory(Natron::EffectInstance* effect)
-: _ptr(0)
-, _locked(0)
-, _nBytes(0)
-, _mutex(new QMutex)
-, _effect(effect)
+
+struct PluginMemory::Implementation
 {
-    _effect->addPluginMemoryPointer(this);
+    std::vector<char> data;
+    int     locked;
+    QMutex  mutex;
+    Natron::EffectInstance* effect;
+};
+
+PluginMemory::PluginMemory(Natron::EffectInstance* effect)
+: _imp(new Implementation)
+{
+    _imp->effect = effect;
+    _imp->effect->addPluginMemoryPointer(this);
 }
 
 
-PluginMemory::~PluginMemory() {
-    delete _mutex;
-    delete [] _ptr;
-    _effect->removePluginMemoryPointer(this);
+PluginMemory::~PluginMemory()
+{
+    _imp->effect->removePluginMemoryPointer(this);
 }
 
-bool PluginMemory::alloc(size_t nBytes) {
-    QMutexLocker l(_mutex);
-    if(!_locked){
-        _nBytes = nBytes;
-        if(_ptr)
-            freeMem();
-        _ptr = new char[nBytes];
-        if (!_ptr) {
-            throw std::bad_alloc();
-        }
-        
-        _effect->registerPluginMemory(nBytes);
+bool
+PluginMemory::alloc(size_t nBytes)
+{
+    QMutexLocker l(&_imp->mutex);
+    if (!_imp->locked){
+        _imp->data.resize(nBytes);
+        _imp->effect->registerPluginMemory(_imp->data.size());
 
         return true;
     } else {
@@ -55,30 +55,36 @@ bool PluginMemory::alloc(size_t nBytes) {
     }
 }
 
-void PluginMemory::freeMem() {
-    QMutexLocker l(_mutex);
-    _effect->unregisterPluginMemory(_nBytes);
-    _nBytes = 0;
-    delete [] _ptr;
-    _ptr = 0;
-    _locked = 0;
+void
+PluginMemory::freeMem()
+{
+    QMutexLocker l(&_imp->mutex);
+    _imp->effect->unregisterPluginMemory(_imp->data.size());
+    _imp->data.clear();
+    _imp->locked = 0;
 }
 
-void* PluginMemory::getPtr() {
-    QMutexLocker l(_mutex);
-    return _ptr;
+void*
+PluginMemory::getPtr()
+{
+    QMutexLocker l(&_imp->mutex);
+    return (void*)(_imp->data.data());
 }
 
-void PluginMemory::lock() {
-    QMutexLocker l(_mutex);
-    ++_locked;
+void
+PluginMemory::lock()
+{
+    QMutexLocker l(&_imp->mutex);
+    ++_imp->locked;
 }
 
-void PluginMemory::unlock() {
-    QMutexLocker l(_mutex);
+void
+PluginMemory::unlock()
+{
+    QMutexLocker l(&_imp->mutex);
     // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxImageEffectSuiteV1_imageMemoryUnlock
     // "Also note, if you unlock a completely unlocked handle, it has no effect (ie: the lock count can't be negative)."
-    if (_locked > 0) {
-        --_locked;
+    if (_imp->locked > 0) {
+        --_imp->locked;
     }
 }
