@@ -341,17 +341,16 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     }
     
     if (coordSystem == kOfxParamCoordinatesNormalised) {
-        Format projectFormat;
-        _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-#pragma message WARN("https://github.com/MrKepzie/Natron/issues/157 : wrong OFX >= 1.2 behaviour")
         // The defaults should be stored as is, not premultiplied by the project size.
         // The fact that the default value is normalized should be stored in Knob or Double_Knob.
 
         // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
         // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
-        def *= (double)projectFormat.width(); // WRONG!
+        _knob->setDefaultValuesNormalized(def);
+    } else {
+        _knob->setDefaultValue(def,0);
     }
-    _knob->setDefaultValue(def,0);
+    
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     if (!dimensionName.empty()) {
         _knob->setDimensionName(0, dimensionName);
@@ -1143,21 +1142,21 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Par
         }
 
     }
-    
-    if (coordSystem == kOfxParamCoordinatesNormalised) {
-        Format projectFormat;
-        _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-        def[0] *= (double)projectFormat.width();
-        def[1] *= (double)projectFormat.height();
-    }
-
     _knob->setMinimumsAndMaximums(minimum, maximum);
     setDisplayRange();
     _knob->setIncrement(increment);
     _knob->setDecimals(decimals);
-    _knob->setDefaultValue(def[0], 0);
-    _knob->setDefaultValue(def[1], 1);
+    
+    if (coordSystem == kOfxParamCoordinatesNormalised) {
+        _knob->setDefaultValuesNormalized(dims,def.get());
+    } else {
+        _knob->setDefaultValue(def[0], 0);
+        _knob->setDefaultValue(def[1], 1);
 
+    }
+
+    
+    
 }
 
 OfxStatus

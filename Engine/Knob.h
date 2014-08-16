@@ -861,13 +861,6 @@ protected:
      * Derived knobs can use it to refresh any data structure related to keyframes it may have.
      **/
     virtual void animationRemoved_virtual(int /*dimension*/) {}
-    
-    /** @brief This function is called right after a value has changed
-     * but before any signal notifying that it has changed. It can be useful
-     * to mainting some data structure along the values.
-     * e.g: The File_Knob parses the files list to create a pattern for the files list.
-     **/
-    virtual void processNewValue(Natron::ValueChangedReason /*reason*/){}
 
     void checkAnimationLevel(int dimension);
 

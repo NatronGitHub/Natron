@@ -1167,7 +1167,7 @@ void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason r
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    if (isEvaluationBlocked()) {
+    if (isEvaluationBlocked() || !_imp->knobsInitialized) {
         return;
     }
     ///Recursive action, must not call assertActionIsNotRecursive()
@@ -1335,7 +1335,6 @@ void AnimatingString_KnobHelper::setCustomInterpolation(customParamInterpolation
 void AnimatingString_KnobHelper::loadAnimation(const std::map<int,std::string>& keyframes)
 {
     _animation->load(keyframes);
-    processNewValue(Natron::PROJECT_LOADING);
 }
 
 void AnimatingString_KnobHelper::saveAnimation(std::map<int,std::string>* keyframes) const

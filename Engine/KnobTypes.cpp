@@ -273,6 +273,7 @@ Double_Knob::Double_Knob(KnobHolder* holder, const std::string &description, int
 , _decimals(dimension)
 , _disableSlider(false)
 , _normalizationXY()
+, _defaultStoredNormalized(false)
 
 {
     _normalizationXY.first = NORMALIZATION_NONE;
@@ -653,6 +654,21 @@ static void getInputRoD(EffectInstance* effect,double time,RectD& rod)
         effect->getRenderFormat(&f);
         rod = f;
     }
+}
+
+void Double_Knob::setDefaultValuesNormalized(int dims,double defaults[])
+{
+    assert(dims == getDimension());
+    _defaultStoredNormalized = true;
+    for (int i = 0; i < dims; ++i) {
+        setDefaultValue(defaults[i],i);
+    }
+
+}
+
+bool Double_Knob::areDefaultValuesNormalized() const
+{
+    return _defaultStoredNormalized;
 }
 
 void Double_Knob::denormalize(int dimension,double time,double* value) const

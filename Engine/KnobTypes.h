@@ -231,8 +231,40 @@ public:
         }
     }
     
+    /**
+     * @brief Normalize the default values, set the _defaultStoredNormalized to true and
+     * calls setDefaultValue with the good parameters.
+     * Later when restoring the default values, this flag will be used to know whether we need
+     * to denormalize the default stored values to the set the "live" values.
+     * Hence this SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters otherwise
+     * they would be denormalized before being passed to the plug-in.
+     **/
+    void setDefaultValuesNormalized(int dims,double defaults[]);
+    
+    /**
+     * @brief Same as setDefaultValuesNormalized but for 1 dimensional doubles
+     **/
+    void setDefaultValuesNormalized(double def) {
+        double d[1];
+        d[0] = def;
+        setDefaultValuesNormalized(1,d);
+    }
+    
+    /**
+     * @brief Returns whether the default values are stored normalized or not.
+     **/
+    bool areDefaultValuesNormalized() const;
+    
+    /**
+     * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
+     * WARNING: Can only be called once setNormalizedState has been called!
+     **/
     void denormalize(int dimension,double time,double* value) const;
     
+    /**
+     * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
+     * WARNING: Can only be called once setNormalizedState has been called!
+     **/
     void normalize(int dimension,double time,double* value) const;
     
     void addSlavedTrack(const boost::shared_ptr<BezierCP>& cp) { _slavedTracks.push_back(cp); }
@@ -270,6 +302,8 @@ signals:
     
 private:
     
+   
+    
     virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
 
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -288,6 +322,11 @@ private:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
     /// BY default they have NORMALIZATION_NONE
     std::pair<NormalizedState, NormalizedState> _normalizationXY;
+    
+    ///For double params respecting the kOfxParamCoordinatesNormalised
+    ///This tells us that only the default value is stored normalized.
+    ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
+    bool _defaultStoredNormalized;
     
     static const std::string _typeNameStr;
     
