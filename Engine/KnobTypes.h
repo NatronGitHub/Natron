@@ -238,6 +238,25 @@ public:
      * to denormalize the default stored values to the set the "live" values.
      * Hence this SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters otherwise
      * they would be denormalized before being passed to the plug-in.
+     *
+     * If *all* the following conditions hold:
+     * - this is a double value
+     * - this is a non normalised spatial double parameter, i.e. kOfxParamPropDoubleType is set to one of
+     *   - kOfxParamDoubleTypeX
+     *   - kOfxParamDoubleTypeXAbsolute
+     *   - kOfxParamDoubleTypeY
+     *   - kOfxParamDoubleTypeYAbsolute
+     *   - kOfxParamDoubleTypeXY
+     *   - kOfxParamDoubleTypeXYAbsolute
+     * - kOfxParamPropDefaultCoordinateSystem is set to kOfxParamCoordinatesNormalised
+     * Knob<T>::resetToDefaultValue should denormalize
+     * the default value, using the input size.
+     * Input size be defined as the first available of:
+     * - the RoD of the "Source" clip
+     * - the RoD of the first non-mask non-optional input clip (in case there is no "Source" clip) (note that if these clips are not connected, you get the current project window, which is the default value for GetRegionOfDefinition)
+
+     * see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+     * and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
      **/
     void setDefaultValuesNormalized(int dims,double defaults[]);
     
