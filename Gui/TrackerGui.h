@@ -43,20 +43,22 @@ public:
     QWidget* getButtonsBar() const;
     
     
-    void drawOverlays(double scaleX,double scaleY) const;
+    void drawOverlays(double scaleX, double scaleY) const;
     
-    bool penDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e);
+    bool penDown(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos,QMouseEvent* e);
     
-    bool penDoubleClicked(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool penDoubleClicked(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos);
     
-    bool penMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool penMotion(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos);
     
-    bool penUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool penUp(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos);
     
-    bool keyDown(double scaleX,double scaleY,QKeyEvent* e);
+    bool keyDown(double scaleX, double scaleY, QKeyEvent* e);
     
-    bool keyUp(double scaleX,double scaleY,QKeyEvent* e);
+    bool keyUp(double scaleX, double scaleY, QKeyEvent* e);
     
+    bool loseFocus(double scaleX, double scaleY);
+
 public slots:
     
     void onAddTrackClicked(bool clicked);

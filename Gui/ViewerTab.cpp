@@ -1314,7 +1314,6 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
         }
     }
 
-    
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
         if (_imp->_currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e)) {
             didSomething  = true;
@@ -1377,19 +1376,17 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos)) {
             return true;
         }
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos)) {
             didSomething = true;
         }
     }
-    
-    
-    
+
     return didSomething;
 }
 
@@ -1421,13 +1418,13 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->penUp(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos)) {
             return true;
         }
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penUp(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos)) {
             didSomething  =  true;
         }
     }
@@ -1464,14 +1461,14 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->keyDown(scaleX, scaleY,e)) {
+        if (_imp->_currentTracker.second->keyDown(scaleX, scaleY, e)) {
             return true;
         }
     }
 
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->keyDown(scaleX, scaleY,e)) {
+        if (_imp->_currentRoto.second->keyDown(scaleX, scaleY, e)) {
             didSomething = true;
         }
     }
@@ -1510,19 +1507,17 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->keyUp(scaleX, scaleY,e)) {
+        if (_imp->_currentTracker.second->keyUp(scaleX, scaleY, e)) {
             return true;
         }
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->keyUp(scaleX, scaleY,e)) {
+        if (_imp->_currentRoto.second->keyUp(scaleX, scaleY, e)) {
             didSomething = true;
         }
     }
-    
-    
-    
+
     return didSomething;
 }
 
@@ -1551,8 +1546,15 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
             }
         }
     }
+
+    //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+    //    if (_imp->_currentTracker.second->loseFocus(scaleX, scaleY,e)) {
+    //        return true;
+    //    }
+    //}
+
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->keyRepeat(scaleX, scaleY,e)) {
+        if (_imp->_currentRoto.second->keyRepeat(scaleX, scaleY, e)) {
             return  true;
         }
     }
@@ -1581,6 +1583,19 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
             }
         }
     }
+
+    //if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+    //    if (_imp->_currentTracker.second->gainFocus(scaleX, scaleY)) {
+    //        ret = true;
+    //    }
+    //}
+
+    //if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+    //    if (_imp->_currentRoto.second->gainFocus(scaleX, scaleY)) {
+    //        ret = true;
+    //    }
+    //}
+
     return ret;
 }
 
@@ -1605,6 +1620,19 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
             }
         }
     }
+
+    if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
+        if (_imp->_currentTracker.second->loseFocus(scaleX, scaleY)) {
+            return true;
+        }
+    }
+
+    //if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
+    //    if (_imp->_currentRoto.second->loseFocus(scaleX, scaleY)) {
+    //        didSomething = true;
+    //    }
+    //}
+
     return ret;
 }
 

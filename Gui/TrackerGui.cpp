@@ -58,7 +58,7 @@ struct TrackerGuiPrivate
     
     QRectF selectionRectangle;
     
-    bool controlDown;
+    int controlDown;
     
     TrackerGuiPrivate(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* parent)
     : panel(panel)
@@ -78,7 +78,7 @@ struct TrackerGuiPrivate
     , clickToAddTrackEnabled(false)
     , lastMousePos()
     , selectionRectangle()
-    , controlDown(false)
+    , controlDown(0)
     {
         
     }
@@ -358,14 +358,15 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
     }
     
     _imp->lastMousePos = pos;
+
     return didSomething;
 }
 
 bool TrackerGui::penDoubleClicked(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
 {
     bool didSomething = false;
-    return didSomething;
 
+    return didSomething;
 }
 
 bool TrackerGui::penMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
@@ -389,8 +390,8 @@ bool TrackerGui::penMotion(double scaleX,double scaleY,const QPointF& viewportPo
         didSomething = true;
     }
     _imp->lastMousePos = pos;
-    return didSomething;
 
+    return didSomething;
 }
 
 bool TrackerGui::penUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
@@ -409,7 +410,6 @@ bool TrackerGui::penUp(double scaleX,double scaleY,const QPointF& viewportPos,co
         }
     }
     return didSomething;
-
 }
 
 bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
@@ -417,7 +417,7 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
     bool didSomething = false;
     
     if (e->key() == Qt::Key_Control) {
-        _imp->controlDown = true;
+        ++_imp->controlDown;
     }
     bool controlHeld = e->modifiers().testFlag(Qt::ControlModifier);
     bool shiftHeld = e->modifiers().testFlag(Qt::ShiftModifier);
@@ -464,15 +464,16 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
     }
     
     return didSomething;
-
 }
 
-bool TrackerGui::keyUp(double scaleX,double scaleY,QKeyEvent* e)
+bool TrackerGui::keyUp(double scaleX, double scaleY, QKeyEvent* e)
 {
     bool didSomething = false;
     
     if (e->key() == Qt::Key_Control) {
-        _imp->controlDown = false;
+        if (_imp->controlDown > 0) {
+            --_imp->controlDown;
+        }
     }
     
     Natron::Key natronKey = QtEnumConvert::fromQtKey((Qt::Key)e->key());
@@ -496,8 +497,27 @@ bool TrackerGui::keyUp(double scaleX,double scaleY,QKeyEvent* e)
         _imp->addTrackButton->setChecked(false);
         didSomething = true;
     }
-    return didSomething;
 
+    return didSomething;
+}
+
+bool TrackerGui::loseFocus(double scaleX, double scaleY)
+{
+    bool didSomething = false;
+
+    _imp->controlDown = 0;
+
+    const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+        if (it->second && !it->first->isNodeDisabled()) {
+            Natron::EffectInstance* effect = it->first->getLiveInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays(_imp->viewer->getViewer());
+            didSomething |= effect->onOverlayFocusLost_public(scaleX, scaleY);
+        }
+    }
+    
+    return didSomething;
 }
 
 void TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
@@ -526,7 +546,7 @@ void TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         }
         
     }
-    _imp->panel->selectNodes(currentSelection,_imp->controlDown);
+    _imp->panel->selectNodes(currentSelection, (_imp->controlDown > 0));
 }
 
 void TrackerGui::onSelectionCleared()
