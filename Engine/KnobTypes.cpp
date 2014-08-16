@@ -23,6 +23,9 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/Image.h"
+#include "Engine/Format.h"
 using namespace Natron;
 using std::make_pair;
 using std::pair;
@@ -634,6 +637,51 @@ void Double_Knob::cloneExtraData(KnobI* other)
         }
     }
 }
+
+static void getInputRoD(EffectInstance* effect,double time,RectD& rod)
+{
+    int view = effect->getCurrentViewRecursive();
+    unsigned int mipmapLevel = (unsigned int)effect->getCurrentMipMapLevelRecursive();
+    RenderScale scale;
+    scale.x = Image::getScaleFromMipMapLevel(mipmapLevel);
+    scale.y = scale.x;
+    bool isProjectFormat;
+    
+    Status stat = effect->getRegionOfDefinition_public(time, scale, view, &rod, &isProjectFormat);
+    if (stat == StatFailed) {
+        Format f;
+        effect->getRenderFormat(&f);
+        rod = f;
+    }
+}
+
+void Double_Knob::denormalize(int dimension,double time,double* value) const
+{
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
+    assert(effect);
+    RectD rod;
+    getInputRoD(effect,time,rod);
+    if (dimension == 0) {
+        *value *= rod.width();
+    } else if (dimension == 1) {
+        *value *= rod.height();
+    }
+    
+}
+
+void Double_Knob::normalize(int dimension,double time,double* value) const
+{
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
+    assert(effect);
+    RectD rod;
+    getInputRoD(effect,time,rod);
+    if (dimension == 0) {
+        *value /= rod.width();
+    } else if (dimension == 1) {
+        *value /= rod.height();
+    }
+
+}
 /******************************BUTTON_KNOB**************************************/
 
 Button_Knob::Button_Knob(KnobHolder*  holder, const std::string &description, int dimension,bool declaredByPlugin):
@@ -998,7 +1046,6 @@ void
 Color_Knob::setValues(double r,double g,double b)
 {
     assert(getDimension() == 3);
-#pragma message WARN("BUG: blockEvaluation() does nothing!!!")
     blockEvaluation();
     setValue(r, 0);
     setValue(g, 1);
@@ -1010,19 +1057,6 @@ void
 Color_Knob::setValues(double r,double g,double b,double a)
 {
     assert(getDimension() == 4);
-#pragma message WARN("BUG: blockEvaluation() does nothing!!!")
-    // BUG: isEvaluationBlocked() is never tested, the two functions where it is tester are never called
-    // sample backtrace.
-    //frame #0: Color_KnobGui::expandAllDimensions(this=0x00006080003accc0) + 21 at KnobGuiTypes.cpp:1393
-    //frame #1: 0x000000010017801b Natron`Color_KnobGui::updateGUI(this=0x00006080003accc0, dimension=0) + 1051 at KnobGuiTypes.cpp:1579
-    //frame #2: 0x000000010013d0fc Natron`KnobGui::updateGuiInternal(this=0x00006080003accc0, dimension=0) + 76 at KnobGui.cpp:225
-    //frame #3: 0x0000000100147601 Natron`KnobGui::onInternalValueChanged(this=0x00006080003accc0, dimension=0, (null)=1) + 65 at KnobGui.cpp:850
-    //frame #4: 0x00000001003dcdec Natron`KnobGui::qt_static_metacall(_o=0x00006080003accc0, _c=InvokeMetaMethod, _id=8, _a=0x00007fff5fbfe040) + 348 at moc_KnobGui.cpp:143
-    //frame #5: 0x0000000102343e7d QtCore`QMetaObject::activate(QObject*, QMetaObject const*, int, void**) + 1693
-    //frame #6: 0x000000010077fec9 Natron`KnobSignalSlotHandler::valueChanged(this=0x0000600000224180, _t1=0, _t2=1) + 89 at moc_Knob.cpp:175
-    //frame #7: 0x000000010052afb1 Natron`KnobSignalSlotHandler::s_valueChanged(this=0x0000600000224180, dimension=0, reason=1) + 33 at Knob.h:549
-    //frame #8: 0x00000001005240d1 Natron`KnobHelper::evaluateValueChange(this=0x00006000003fe810, dimension=0, reason=PLUGIN_EDITED) + 801 at Knob.cpp:423
-    //frame #9: 0x0000000100536b88 Natron`Knob<double>::setValue(this=0x00006000003fe810, v=0x00007fff5fbfe480, dimension=0,
     blockEvaluation();
     setValue(r, 0);
     setValue(g, 1);

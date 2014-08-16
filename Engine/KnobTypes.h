@@ -231,6 +231,10 @@ public:
         }
     }
     
+    void denormalize(int dimension,double time,double* value) const;
+    
+    void normalize(int dimension,double time,double* value) const;
+    
     void addSlavedTrack(const boost::shared_ptr<BezierCP>& cp) { _slavedTracks.push_back(cp); }
     
     void removeSlavedTrack(const boost::shared_ptr<BezierCP>& cp);

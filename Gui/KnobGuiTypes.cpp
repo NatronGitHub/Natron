@@ -426,7 +426,7 @@ boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const { return _knob; }
  */
 void Double_KnobGui::valueAccordingToType(bool normalize,int dimension,double* value)
 {
-    if (_knob->getDimension() > 2 || _knob->getDimension() < 0 || (dimension != 0 && dimension != 1)) {
+    if (dimension != 0 && dimension != 1) {
         return;
     }
     
