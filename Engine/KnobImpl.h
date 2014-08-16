@@ -649,7 +649,27 @@ void Knob<T>::setDefaultValue(const T& v,int dimension)
 {
     assert(dimension < getDimension());
     _defaultValues[dimension] = v;
-    _values[dimension] = v;
+#pragma message WARN("https://github.com/MrKepzie/Natron/issues/157 : wrong OFX >= 1.2 behaviour")
+    // If *all* the following conditions hold:
+    // - this is a double value
+    // - this is a non normalised spatial double parameter, i.e. kOfxParamPropDoubleType is set to one of
+    //   - kOfxParamDoubleTypeX
+    //   - kOfxParamDoubleTypeXAbsolute
+    //   - kOfxParamDoubleTypeY
+    //   - kOfxParamDoubleTypeYAbsolute
+    //   - kOfxParamDoubleTypeXY
+    //   - kOfxParamDoubleTypeXYAbsolute
+    // - kOfxParamPropDefaultCoordinateSystem is set to kOfxParamCoordinatesNormalised
+    // Knob<T>::setDefaultValue, (or mzybe just a specialization Knob<double>::setDefaultValue)
+    // should denormalize
+    // the default value at this point, using the input size (not the project size!).
+    // Input size be defined as the first available of:
+    // - the RoD of the "Source" clip
+    // - the RoD of the first non-mask non-optional input clip (in case there is no "Source" clip) (note that if these clips are not connected, you get the current project window, which is the default value for GetRegionOfDefinition)
+
+    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+    // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
+    _values[dimension] = v; // WRONG! multiply by input size if in the above case!
     processNewValue(Natron::PLUGIN_EDITED);
 }
 

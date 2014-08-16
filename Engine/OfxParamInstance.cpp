@@ -343,7 +343,13 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param:
     if (coordSystem == kOfxParamCoordinatesNormalised) {
         Format projectFormat;
         _node->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-        def *= (double)projectFormat.width();
+#pragma message WARN("https://github.com/MrKepzie/Natron/issues/157 : wrong OFX >= 1.2 behaviour")
+        // The defaults should be stored as is, not premultiplied by the project size.
+        // The fact that the default value is normalized should be stored in Knob or Double_Knob.
+
+        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+        // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
+        def *= (double)projectFormat.width(); // WRONG!
     }
     _knob->setDefaultValue(def,0);
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
