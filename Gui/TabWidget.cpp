@@ -439,8 +439,7 @@ void TabWidget::closePane(bool calledFromFloatingWindow)
         assert(tabToTransferTo);
         
         ///Remove this as a split from the parent
-        bool ok = tabToTransferTo->removeSplit(this);
-        assert(ok);
+        tabToTransferTo->removeSplit(this);
     } else if (container) {
         ///Find another TabWidget recursively in the children
         getTabWidgetRecursively(this, container, tabToTransferTo);

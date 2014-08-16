@@ -1082,6 +1082,8 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
             } else {
                 _imp->updateViewerVideoEngine(params);
             }
+        } else {
+            _imp->updateViewerRunning = false;
         }
         if (usingRAMBuffer) {
             while (_imp->updateViewerRunning) {
