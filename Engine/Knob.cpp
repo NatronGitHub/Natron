@@ -342,7 +342,7 @@ void KnobHelper::removeAnimation(int dimension, Natron::ValueChangedReason reaso
     }
     
     
-    if (reason != Natron::USER_EDITED) {
+    if (_signalSlotHandler && reason != Natron::USER_EDITED) {
         _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
     }
     
