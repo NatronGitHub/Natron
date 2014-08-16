@@ -331,10 +331,6 @@ struct ViewerGL::Implementation {
     
     static void getPolygonTextureCoordinates(const QPolygonF& polygonPoints,
                                              const RectD& texRect, //!< in canonical coordinates
-                                             GLfloat bottom,
-                                             GLfloat top,
-                                             GLfloat left,
-                                             GLfloat right,
                                              QPolygonF& texCoords);
     
     void refreshSelectionRectangle(const QPointF& pos);
@@ -402,6 +398,29 @@ static const GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  |/  |/  |/  |
  12--13--14--15
  */
+
+static GLfloat
+clipTexCoord(const double clippedSize,const double size,const double texCoordRange)
+{
+    return clippedSize / size * texCoordRange;
+}
+
+/**
+ * @brief Clips texBottom,texTop,texLeft,texRight (which are tex coordinates expressed in normalized
+ * coordinates of "rect") against "clippedRect" which is a clipped portion of rect.
+ **/
+static void
+clipTexCoords(const RectD& rect,const RectD& clippedRect,
+                          GLfloat& texBottom,GLfloat& texTop,GLfloat& texLeft,GLfloat& texRight)
+{
+    const double texHeight = texTop - texBottom;
+    const double texWidth = texRight - texLeft;
+    texBottom = clipTexCoord(clippedRect.y1 - rect.y1,rect.height(),texHeight);
+    texTop = clipTexCoord(clippedRect.y2 - rect.y1,rect.height(),texHeight);
+    texLeft = clipTexCoord(clippedRect.x1 - rect.x1,rect.width(),texWidth);
+    texRight = clipTexCoord(clippedRect.x2 - rect.x1,rect.width(),texWidth);
+}
+
 void
 ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
                            int textureIndex,
@@ -434,9 +453,8 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         }
     }
     
-    ///texRectCLipped is at full res always, i.e. in canonical coordinates
-    RectD texRectClipped;
-    texRect.toCanonical(mipMapLevel, rod, &texRectClipped);
+    RectD canonicalTexRect;
+    texRect.toCanonical(mipMapLevel, rod, &canonicalTexRect);
     
     //if user RoI is enabled, clip the rod to that roi
     bool userRoiEnabled;
@@ -457,6 +475,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     GLfloat texLeft = 0;
     GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
 
+    RectD rectClippedToRoI(canonicalTexRect);
     if (userRoiEnabled) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
@@ -465,36 +484,21 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
                 return;
             }
         }
-        RectD rectClippedToRoI;
-        texRectClipped.intersect(rod, &rectClippedToRoI);
+        canonicalTexRect.intersect(rod, &rectClippedToRoI);
+        clipTexCoords(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
         
-        GLfloat texBottomTmp,texLeftTmp,texRightTmp,texTopTmp;
-        texBottomTmp = (GLfloat)(rectClippedToRoI.y1 - texRectClipped.y1) /
-        (GLfloat) (texRectClipped.y2 - texRectClipped.y1) * (texTop - texBottom);
-        texTopTmp = (GLfloat)(rectClippedToRoI.y2 - texRectClipped.y1) /
-        (GLfloat) (texRectClipped.y2  - texRectClipped.y1) * (texTop - texBottom);
-        texLeftTmp = (GLfloat)(rectClippedToRoI.x1 - texRectClipped.x1) /
-        (GLfloat) (texRectClipped.x2 - texRectClipped.x1) * (texRight - texLeft);
-        texRightTmp = (GLfloat)(rectClippedToRoI.x2  - texRectClipped.x1) /
-        (GLfloat) (texRectClipped.x2  - texRectClipped.x1) * (texRight - texLeft);
-        texBottom = texBottomTmp;
-        texTop = texTopTmp;
-        texLeft = texLeftTmp;
-        texRight = texRightTmp;
-        
-        texRectClipped = rectClippedToRoI;
     }
     
     if (polygonMode != ALL_PLANE) {
         /// draw only  the plane defined by the wipe handle
         QPolygonF polygonPoints,polygonTexCoords;
-        Implementation::WipePolygonType polyType = _imp->getWipePolygon(texRectClipped, polygonPoints, polygonMode == WIPE_RIGHT_PLANE);
+        Implementation::WipePolygonType polyType = _imp->getWipePolygon(rectClippedToRoI, polygonPoints, polygonMode == WIPE_RIGHT_PLANE);
         
         if (polyType == Implementation::POLYGON_EMPTY) {
             ///don't draw anything
             return;
         } else if (polyType == Implementation::POLYGON_PARTIAL) {
-            _imp->getPolygonTextureCoordinates(polygonPoints, texRectClipped, texBottom, texTop, texLeft, texRight, polygonTexCoords);
+            _imp->getPolygonTextureCoordinates(polygonPoints, canonicalTexRect, polygonTexCoords);
             
             glBegin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
@@ -515,20 +519,20 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left() ,(GLfloat)rod.top()  , //0
-            (GLfloat)texRectClipped.x1       , (GLfloat)rod.top()  , //1
-            (GLfloat)texRectClipped.x2 , (GLfloat)rod.top()  , //2
+            (GLfloat)rectClippedToRoI.x1       , (GLfloat)rod.top()  , //1
+            (GLfloat)rectClippedToRoI.x2 , (GLfloat)rod.top()  , //2
             (GLfloat)rod.right(),(GLfloat)rod.top()  , //3
-            (GLfloat)rod.left(), (GLfloat)texRectClipped.y2, //4
-            (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y2, //5
-            (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y2, //6
-            (GLfloat)rod.right(),(GLfloat)texRectClipped.y2, //7
-            (GLfloat)rod.left() ,(GLfloat)texRectClipped.y1      , //8
-            (GLfloat)texRectClipped.x1      ,  (GLfloat)texRectClipped.y1      , //9
-            (GLfloat)texRectClipped.x2,  (GLfloat)texRectClipped.y1      , //10
-            (GLfloat)rod.right(),(GLfloat)texRectClipped.y1      , //11
+            (GLfloat)rod.left(), (GLfloat)rectClippedToRoI.y2, //4
+            (GLfloat)rectClippedToRoI.x1      ,  (GLfloat)rectClippedToRoI.y2, //5
+            (GLfloat)rectClippedToRoI.x2,  (GLfloat)rectClippedToRoI.y2, //6
+            (GLfloat)rod.right(),(GLfloat)rectClippedToRoI.y2, //7
+            (GLfloat)rod.left() ,(GLfloat)rectClippedToRoI.y1      , //8
+            (GLfloat)rectClippedToRoI.x1      ,  (GLfloat)rectClippedToRoI.y1      , //9
+            (GLfloat)rectClippedToRoI.x2,  (GLfloat)rectClippedToRoI.y1      , //10
+            (GLfloat)rod.right(),(GLfloat)rectClippedToRoI.y1      , //11
             (GLfloat)rod.left(), (GLfloat)rod.bottom(), //12
-            (GLfloat)texRectClipped.x1      ,  (GLfloat)rod.bottom(), //13
-            (GLfloat)texRectClipped.x2,  (GLfloat)rod.bottom(), //14
+            (GLfloat)rectClippedToRoI.x1      ,  (GLfloat)rod.bottom(), //13
+            (GLfloat)rectClippedToRoI.x2,  (GLfloat)rod.bottom(), //14
             (GLfloat)rod.right(),(GLfloat)rod.bottom() //15
         };
         
@@ -600,18 +604,14 @@ ViewerGL::Implementation::getBaseTextureCoordinates(const RectI& r,
 void
 ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF& polygonPoints,
                                                        const RectD& texRect,
-                                                       GLfloat bottom,
-                                                       GLfloat top,
-                                                       GLfloat left,
-                                                       GLfloat right,
                                                        QPolygonF& texCoords)
 {
     texCoords.resize(polygonPoints.size());
     for (int i = 0; i < polygonPoints.size(); ++i) {
         const QPointF& polygonPoint = polygonPoints.at(i);
         QPointF texCoord;
-        texCoord.setX((polygonPoint.x() - texRect.x1) / (texRect.x2 - texRect.x1) * (right - left));
-        texCoord.setY((polygonPoint.y() - texRect.y1) / (texRect.y2 - texRect.y1) * (top - bottom));
+        texCoord.setX((polygonPoint.x() - texRect.x1) / texRect.width());// * (right - left));
+        texCoord.setY((polygonPoint.y() - texRect.y1) / texRect.height());// * (top - bottom));
         texCoords[i] = texCoord;
     }
 }
@@ -684,7 +684,10 @@ ViewerGL::Implementation::getWipePolygon(const RectD& texRectClipped,
         ++numIntersec;
     }
     
-    assert(numIntersec == 0 || numIntersec == 2);
+    if (numIntersec != 0 && numIntersec != 2) {
+        ///Don't bother drawing the polygon, it is most certainly not visible in this case
+        return ViewerGL::Implementation::POLYGON_EMPTY;
+    }
     
     ///determine the orientation of the planes
     double crossProd  = (secondPoint.x() - center.x()) * (texRectClipped.y1 - center.y())
