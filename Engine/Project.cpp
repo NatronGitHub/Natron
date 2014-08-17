@@ -161,7 +161,7 @@ void Project::refreshViewersAndPreviews() {
         const std::vector<boost::shared_ptr<Natron::Node> >& nodes = getCurrentNodes();
         for (U32 i = 0; i < nodes.size(); ++i) {
             assert(nodes[i]);
-            if (nodes[i]->pluginID() == "Viewer") {
+            if (nodes[i]->getPluginID() == "Viewer") {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                 assert(n);
                 n->getVideoEngine()->render(1,//< frame count
@@ -601,8 +601,8 @@ void Project::getProjectDefaultFormat(Format *f) const
 void Project::initNodeCountersAndSetName(Node* n) {
     assert(n);
     QMutexLocker l(&_imp->nodesLock);
-    std::map<std::string,int>::iterator it = _imp->nodeCounters.find(n->pluginID());
-    QString pluginLabel = n->pluginLabel().c_str();
+    std::map<std::string,int>::iterator it = _imp->nodeCounters.find(n->getPluginID());
+    QString pluginLabel = n->getPluginLabel().c_str();
     int foundOFX = pluginLabel.lastIndexOf("OFX");
     if (foundOFX != -1) {
         pluginLabel = pluginLabel.remove(foundOFX, 3);
@@ -612,7 +612,7 @@ void Project::initNodeCountersAndSetName(Node* n) {
 
         n->setName(pluginLabel + QString::number(it->second));
     }else{
-        _imp->nodeCounters.insert(make_pair(n->pluginID(), 1));
+        _imp->nodeCounters.insert(make_pair(n->getPluginID(), 1));
         n->setName(pluginLabel + QString::number(1));
     }
 }
@@ -1020,7 +1020,7 @@ bool Project::connectNodes(int inputNumber,boost::shared_ptr<Node> input,boost::
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
         assert(ok);
-        if (input->maximumInputs() > 0) {
+        if (input->getMaxInputCount() > 0) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             assert(ok);
         }
@@ -1043,7 +1043,7 @@ bool Project::disconnectNodes(boost::shared_ptr<Node> input,boost::shared_ptr<No
         return false;
     }
 
-    int inputsCount = input->maximumInputs();
+    int inputsCount = input->getMaxInputCount();
     if (inputsCount == 1) {
         inputToReconnectTo = input->input(0);
     }
@@ -1092,7 +1092,7 @@ bool Project::autoConnectNodes(boost::shared_ptr<Node> selected,boost::shared_pt
     bool connectAsInput = false;
 
     ///cannot connect 2 input nodes together: case 2-b)
-    if (selected->maximumInputs() == 0 && created->maximumInputs() == 0) {
+    if (selected->getMaxInputCount() == 0 && created->getMaxInputCount() == 0) {
         return false;
     }
     ///cannot connect 2 output nodes together: case 1-a)
@@ -1117,8 +1117,8 @@ bool Project::autoConnectNodes(boost::shared_ptr<Node> selected,boost::shared_pt
             connectAsInput = false;
         }
         ///case b)
-        else if (created->maximumInputs() == 0) {
-            assert(selected->maximumInputs() != 0);
+        else if (created->getMaxInputCount() == 0) {
+            assert(selected->getMaxInputCount() != 0);
             ///case 3-b): connect the created node as input of the selected node
             connectAsInput = true;
             

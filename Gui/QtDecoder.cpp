@@ -54,25 +54,25 @@ QtReader::~QtReader(){
 }
 
 std::string
-QtReader::pluginID() const
+QtReader::getPluginID() const
 {
     return "ReadQt";
 }
 
 std::string
-QtReader::pluginLabel() const
+QtReader::getPluginLabel() const
 {
     return "ReadQt";
 }
 
 void
-QtReader::pluginGrouping(std::list<std::string>* grouping) const
+QtReader::getPluginGrouping(std::list<std::string>* grouping) const
 {
     grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
 
 std::string
-QtReader::description() const
+QtReader::getDescription() const
 {
     return QObject::tr("A QImage (Qt) based image reader.").toStdString();
 }

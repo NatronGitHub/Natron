@@ -119,7 +119,7 @@ public:
     /**
      * @brief Returns the "real" hash of the node synchronized with the gui state
      **/
-    U64 hash() const WARN_UNUSED_RETURN;
+    U64 getHash() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
@@ -128,7 +128,7 @@ public:
      **/
     bool getRenderHash(U64* hash) const WARN_UNUSED_RETURN;
     
-    U64 knobsAge() const WARN_UNUSED_RETURN;
+    U64 getKnobsAge() const WARN_UNUSED_RETURN;
     
     /**
      * @brief Set the knobs age of this node to be 'age'. Note that this can be called
@@ -173,12 +173,12 @@ public:
     /**
      * @brief Must return the plugin's major version.
      **/
-    virtual int majorVersion() const WARN_UNUSED_RETURN = 0;
+    virtual int getMajorVersion() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Must return the plugin's minor version.
      **/
-    virtual int minorVersion() const WARN_UNUSED_RETURN = 0;
+    virtual int getMinorVersion() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Is this node an input node ? An input node means
@@ -217,7 +217,7 @@ public:
     /**
      * @brief How many input can we have at most. (i.e: how many input arrows)
      **/
-    virtual int maximumInputs() const WARN_UNUSED_RETURN = 0;
+    virtual int getMaxInputCount() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Is inputNb optional ? In which case the render can be made without it.
@@ -296,31 +296,31 @@ public:
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
      **/
-    virtual std::string inputLabel(int inputNb) const WARN_UNUSED_RETURN;
+    virtual std::string getInputLabel(int inputNb) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Must be implemented to give the plugin internal id(i.e: net.sf.openfx:invertPlugin)
      **/
-    virtual std::string pluginID() const WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief Must be implemented to give the plugin a label that will be used by the graphical
      * user interface.
      **/
-    virtual std::string pluginLabel() const WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginLabel() const WARN_UNUSED_RETURN = 0;
     
     /**
      * @brief The grouping of the plug-in. For instance Views/Stereo/MyStuff
      * Each string being one level of the grouping. The first one being the name
      * of one group that will appear in the user interface.
      **/
-    virtual void pluginGrouping(std::list<std::string>* grouping) const = 0;
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const = 0;
     
     /**
      * @brief Must be implemented to give a desription of the effect that this node does. This is typically
      * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
      **/
-    virtual std::string description() const WARN_UNUSED_RETURN = 0;
+    virtual std::string getDescription() const WARN_UNUSED_RETURN = 0;
     
     
     /**
@@ -877,7 +877,7 @@ private:
      * @param byPassCache Cache look-ups have been already handled by renderRoI(...) but we pass it here because
      * we need to call renderRoI() on the input effects with this parameter too.
      * @param nodeHash The hash of the node used to render. This might no longer be equal to the value returned by
-     * hash() because the user might have changed something in the project (parameters...links..)
+     * getHash() because the user might have changed something in the project (parameters...links..)
      * @param channelForAlpha This is passed here so that we can remember it later when converting the mask
      * which channel we wanted for the alpha channel.
      * @param renderFullScaleThenDownscale means that rendering should be done at full resolution and then

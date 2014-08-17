@@ -128,7 +128,7 @@ _project(project)
     const std::vector<boost::shared_ptr<Natron::Node> >& nodes = project->getCurrentNodes();
     
     for(U32 i = 0 ; i < nodes.size(); ++i){
-        if(nodes[i]->pluginID() == "Viewer"){
+        if(nodes[i]->getPluginID() == "Viewer"){
             _copyFromViewerCombo->addItem(nodes[i]->getName().c_str());
         }
     }
@@ -296,7 +296,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
         
         if (it->colorWasFound()) {
             std::list<std::string> grouping;
-            iseffect->pluginGrouping(&grouping);
+            iseffect->getPluginGrouping(&grouping);
             std::string majGroup = grouping.empty() ? "" : grouping.front();
             
             if (iseffect->isReader()) {
@@ -341,7 +341,7 @@ void ProjectGui::load(boost::archive::xml_iarchive& archive){
             }
         }
         
-        if (nGui->getNode()->pluginID() == "Viewer") {
+        if (nGui->getNode()->getPluginID() == "Viewer") {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if (found != viewersProjections.end()) {
                 ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(nGui->getNode()->getLiveInstance());

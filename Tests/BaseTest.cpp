@@ -103,7 +103,7 @@ void BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_
     } else {
         
         ///the call can only fail for those 2 reasons
-        EXPECT_TRUE(inputNumber > output->maximumInputs() || //< inputNumber is greater than the maximum input number
+        EXPECT_TRUE(inputNumber > output->getMaxInputCount() || //< inputNumber is greater than the maximum input number
                     output->input(inputNumber).get() != (Natron::Node*)NULL); //< input slot is already filled with another node
     }
     

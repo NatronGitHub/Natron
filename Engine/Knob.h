@@ -341,13 +341,13 @@ public:
     /**
      * @brief Call this to change the knob name. The name is not the text label displayed on
      * the GUI but what Natron uses internally to identify knobs from each other. By default the
-     * name is the same as the description(i.e: the text label).
+     * name is the same as the getDescription(i.e: the text label).
      */
     virtual void setName(const std::string& name) = 0;
     
     /**
      * @brief Returns the knob name. By default the
-     * name is the same as the description(i.e: the text label).
+     * name is the same as the getDescription(i.e: the text label).
      */
     virtual const std::string& getName() const = 0;
     

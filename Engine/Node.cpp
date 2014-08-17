@@ -625,7 +625,7 @@ int
 Node::getPreferredInputForConnection() const
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (maximumInputs() == 0) {
+    if (getMaxInputCount() == 0) {
         return -1;
     }
     
@@ -730,10 +730,10 @@ Node::initializeKnobs(const NodeSerialization& serialization)
     _imp->liveInstance->initializeKnobsPublic();
     
     ///If the effect has a mask, add additionnal mask controls
-    int inputsCount = maximumInputs();
+    int inputsCount = getMaxInputCount();
     for (int i = 0; i < inputsCount; ++i) {
         if (_imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i)) {
-            std::string maskName = _imp->liveInstance->inputLabel(i);
+            std::string maskName = _imp->liveInstance->getInputLabel(i);
             boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, maskName,1,false);
             _imp->enableMaskKnob.insert(std::make_pair(i,enableMaskKnob));
             enableMaskKnob->setDefaultValue(false, 0);
@@ -892,17 +892,17 @@ Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) co
 }
 
 int
-Node::majorVersion() const
+Node::getMajorVersion() const
 {
      ///Thread safe as it never changes
-    return _imp->liveInstance->majorVersion();
+    return _imp->liveInstance->getMajorVersion();
 }
 
 int
-Node::minorVersion() const
+Node::getMinorVersion() const
 {
      ///Thread safe as it never changes
-    return _imp->liveInstance->minorVersion();
+    return _imp->liveInstance->getMinorVersion();
 }
 
 void
@@ -912,7 +912,7 @@ Node::initializeInputs()
     assert(QThread::currentThread() == qApp->thread());
     
     int oldCount = (int)_imp->inputs.size();
-    int inputCount = maximumInputs();
+    int inputCount = getMaxInputCount();
     
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -922,7 +922,7 @@ Node::initializeInputs()
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         if (inputCount > oldCount) {
             for (int i = oldCount ; i < inputCount; ++i) {
-                _imp->inputLabels[i] = _imp->liveInstance->inputLabel(i);
+                _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
                 _imp->inputs[i].reset();
                 _imp->inputsQueue[i].reset();
             }
@@ -1166,7 +1166,7 @@ Node::switchInput0And1()
     ////Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
     assert(_imp->inputsInitialized);
-    int maxInputs = maximumInputs();
+    int maxInputs = getMaxInputCount();
     if (maxInputs < 2) {
         return;
     }
@@ -1771,7 +1771,7 @@ Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    QString name = pluginID().c_str();
+    QString name = getPluginID().c_str();
     return name.contains("roto",Qt::CaseInsensitive);
 }
 
@@ -1782,7 +1782,7 @@ bool
 Node::isRotoPaintingNode() const
 {
     ///Runs only in the main thread (checked by getName())
-    QString name = pluginID().c_str();
+    QString name = getPluginID().c_str();
     return name.contains("rotopaint",Qt::CaseInsensitive);
 }
 
@@ -1800,32 +1800,32 @@ Node::getKnobs() const
 }
 
 std::string
-Node::pluginID() const
+Node::getPluginID() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->pluginID();
+    return _imp->liveInstance->getPluginID();
 }
 
 std::string
-Node::pluginLabel() const
+Node::getPluginLabel() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->pluginLabel();
+    return _imp->liveInstance->getPluginLabel();
 }
 
 std::string
-Node::description() const
+Node::getDescription() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->description();
+    return _imp->liveInstance->getDescription();
 }
 
 int
-Node::maximumInputs() const
+Node::getMaxInputCount() const
 {
     ///MT-safe, never changes
     assert(_imp->liveInstance);
-    return _imp->liveInstance->maximumInputs();
+    return _imp->liveInstance->getMaxInputCount();
 }
 
 bool
@@ -2535,7 +2535,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string& nodeName) const
 bool
 Node::isTrackerNode() const
 {
-    return pluginID().find("Tracker") != std::string::npos;
+    return getPluginID().find("Tracker") != std::string::npos;
 }
 
 void

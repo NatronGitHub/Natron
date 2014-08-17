@@ -77,8 +77,8 @@ namespace Natron{
         
     public:
         
-        Plugin():
-        _binary(NULL)
+        Plugin()
+        : _binary(NULL)
         , _id()
         , _label()
         , _iconFilePath()
@@ -94,8 +94,8 @@ namespace Natron{
                QMutex* lock,
                int majorVersion,
                int minorVersion
-               ):
-        _binary(binary)
+               )
+        : _binary(binary)
         , _id(id)
         , _label(label)
         , _iconFilePath(iconFilePath)

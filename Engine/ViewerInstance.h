@@ -190,25 +190,25 @@ private:
     
     virtual bool isOutput() const OVERRIDE FINAL {return true;}
     
-    virtual int maximumInputs() const OVERRIDE FINAL;
+    virtual int getMaxInputCount() const OVERRIDE FINAL;
 
     virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL;
 
-    virtual int majorVersion() const OVERRIDE FINAL { return 1; }
+    virtual int getMajorVersion() const OVERRIDE FINAL { return 1; }
 
-    virtual int minorVersion() const OVERRIDE FINAL { return 0; }
+    virtual int getMinorVersion() const OVERRIDE FINAL { return 0; }
 
-    virtual std::string pluginID() const OVERRIDE FINAL {return "Viewer";}
+    virtual std::string getPluginID() const OVERRIDE FINAL {return "Viewer";}
 
-    virtual std::string pluginLabel() const OVERRIDE FINAL {return "Viewer";}
+    virtual std::string getPluginLabel() const OVERRIDE FINAL {return "Viewer";}
     
-    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     
-    virtual std::string description() const OVERRIDE FINAL {return "The Viewer node can display the output of a node graph.";}
+    virtual std::string getDescription() const OVERRIDE FINAL {return "The Viewer node can display the output of a node graph.";}
     
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
     
-    virtual std::string inputLabel(int inputNb) const OVERRIDE FINAL {
+    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL {
         return QString::number(inputNb+1).toStdString();
     }
     virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE FINAL {return Natron::EffectInstance::FULLY_SAFE;}

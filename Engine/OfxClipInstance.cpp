@@ -240,7 +240,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ///if there's only optional inputs connected, we return the last optional input
         int lastOptionalInput = -1;
         int inputNb = -1;
-        for (int i = associatedNode->maximumInputs() - 1; i >= 0; --i) {
+        for (int i = associatedNode->getMaxInputCount() - 1; i >= 0; --i) {
             bool optional = associatedNode->isInputOptional(i);
             if (!optional && associatedNode->getNode()->input_other_thread(i)) {
                 inputNb = i;
@@ -267,7 +267,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         U64 nodeHash;
         bool foundRenderHash = associatedNode->getRenderHash(&nodeHash);
         if (!foundRenderHash) {
-            nodeHash = associatedNode->hash();
+            nodeHash = associatedNode->getHash();
         }
         
         boost::shared_ptr<const ImageParams> cachedImgParams;

@@ -46,21 +46,21 @@ public:
     
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}
     
-    virtual int majorVersion() const OVERRIDE { return 1; }
+    virtual int getMajorVersion() const OVERRIDE { return 1; }
     
-    virtual int minorVersion() const OVERRIDE { return 0;}
+    virtual int getMinorVersion() const OVERRIDE { return 0;}
     
-    virtual std::string pluginID() const OVERRIDE;
+    virtual std::string getPluginID() const OVERRIDE;
     
-    virtual std::string pluginLabel() const OVERRIDE;
+    virtual std::string getPluginLabel() const OVERRIDE;
 
-    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
 
-    virtual std::string description() const OVERRIDE;
+    virtual std::string getDescription() const OVERRIDE;
     
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
-    virtual int maximumInputs() const OVERRIDE {return 1;}
+    virtual int getMaxInputCount() const OVERRIDE {return 1;}
     
     void knobChanged(KnobI* k, Natron::ValueChangedReason reason, const RectD& rod, int view, SequenceTime time) OVERRIDE FINAL;
 

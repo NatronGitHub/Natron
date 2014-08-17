@@ -52,17 +52,17 @@ public:
   
     virtual bool makePreviewByDefault() const OVERRIDE {return true;}
     
-    virtual int majorVersion() const OVERRIDE { return 1; }
+    virtual int getMajorVersion() const OVERRIDE { return 1; }
     
-    virtual int minorVersion() const OVERRIDE { return 0;}
+    virtual int getMinorVersion() const OVERRIDE { return 0;}
     
-    virtual std::string pluginID() const OVERRIDE;
+    virtual std::string getPluginID() const OVERRIDE;
     
-    virtual std::string pluginLabel() const OVERRIDE;
+    virtual std::string getPluginLabel() const OVERRIDE;
 
-    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
 
-    virtual std::string description() const OVERRIDE;
+    virtual std::string getDescription() const OVERRIDE;
     
     virtual Natron::Status getRegionOfDefinition(SequenceTime time,
                                                  const RenderScale& scale,
@@ -71,7 +71,7 @@ public:
 	
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
-    virtual int maximumInputs() const OVERRIDE {return 0;}
+    virtual int getMaxInputCount() const OVERRIDE {return 0;}
     
     virtual bool isGenerator() const OVERRIDE {return true;}
 

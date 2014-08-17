@@ -55,11 +55,11 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
         
         _pluginLabel = n->getName_mt_safe();
         
-        _pluginID = n->pluginID();
+        _pluginID = n->getPluginID();
         
-        _pluginMajorVersion = n->majorVersion();
+        _pluginMajorVersion = n->getMajorVersion();
         
-        _pluginMinorVersion = n->minorVersion();
+        _pluginMinorVersion = n->getMinorVersion();
         
         _inputs = n->getInputNames();
         

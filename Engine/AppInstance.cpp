@@ -334,7 +334,7 @@ AppInstance::checkViewersConnection()
     std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->pluginID() == "Viewer") {
+        if (nodes[i]->getPluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->updateTreeAndRender();
@@ -348,7 +348,7 @@ AppInstance::redrawAllViewers()
     std::vector<boost::shared_ptr<Natron::Node> > nodes = _imp->_currentProject->getCurrentNodes();
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->pluginID() == "Viewer") {
+        if (nodes[i]->getPluginID() == "Viewer") {
             ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->redrawViewer();
@@ -390,7 +390,7 @@ AppInstance::startWritersRendering(const QStringList& writers)
                     exc.append(" is not an output node! It cannot render anything.");
                     throw std::invalid_argument(exc);
                 }
-                if(node->pluginID() == "Viewer"){
+                if(node->getPluginID() == "Viewer"){
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 renderers.push_back(dynamic_cast<OutputEffectInstance*>(node->getLiveInstance()));
@@ -399,7 +399,7 @@ AppInstance::startWritersRendering(const QStringList& writers)
     } else {
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
-            if(projectNodes[j]->isOutputNode() && projectNodes[j]->pluginID() != "Viewer"){
+            if(projectNodes[j]->isOutputNode() && projectNodes[j]->getPluginID() != "Viewer"){
                 renderers.push_back(dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance()));
             }
         }

@@ -634,8 +634,8 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
                 behavior = 2;
             }
             ///case b)
-            else if (node->getNode()->maximumInputs() == 0) {
-                if (selected->getNode()->maximumInputs() == 0) {
+            else if (node->getNode()->getMaxInputCount() == 0) {
+                if (selected->getNode()->getMaxInputCount() == 0) {
                     ///case 2-b) just do default we don't know what else to do
                     behavior = 0;
                 } else {
@@ -1140,9 +1140,9 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
                 
                 ///for readers already connected don't show hint
-                if (internalNode->maximumInputs() == 0 && internalNode->hasOutputConnected()) {
+                if (internalNode->getMaxInputCount() == 0 && internalNode->hasOutputConnected()) {
                     doHints = false;
-                } else if (internalNode->maximumInputs() > 0 && internalNode->hasInputConnected() && internalNode->hasOutputConnected()) {
+                } else if (internalNode->getMaxInputCount() > 0 && internalNode->hasInputConnected() && internalNode->hasOutputConnected()) {
                     doHints = false;
                 }
                 
@@ -2709,7 +2709,7 @@ NodeGraph::cloneSelectedNodes()
             Natron::errorDialog(tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString());
             return;
         }
-        if ((*it)->getNode()->pluginID() == "Viewer") {
+        if ((*it)->getNode()->getPluginID() == "Viewer") {
             Natron::errorDialog(tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString());
             return;
         }

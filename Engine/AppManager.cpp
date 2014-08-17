@@ -626,16 +626,16 @@ void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
 
-        Natron::Plugin* plugin = new Natron::Plugin(binary,dotNode->pluginID().c_str(),dotNode->pluginLabel().c_str(),
-                                                    "",NULL,dotNode->majorVersion(),dotNode->minorVersion());
+        Natron::Plugin* plugin = new Natron::Plugin(binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
+                                                    "",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion());
         plugins->push_back(plugin);
         std::list<std::string> grouping;
-        dotNode->pluginGrouping(&grouping);
+        dotNode->getPluginGrouping(&grouping);
         QStringList qgrouping;
         
         for (std::list<std::string>::iterator it = grouping.begin(); it!=grouping.end();++it) qgrouping.push_back(it->c_str());
         
-        onPluginLoaded(qgrouping, dotNode->pluginID().c_str(),dotNode->pluginLabel().c_str(), "", "");
+        onPluginLoaded(qgrouping, dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(), "", "");
     }
 }
 

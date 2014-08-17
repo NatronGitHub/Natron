@@ -187,7 +187,7 @@ ViewerInstance::~ViewerInstance()
 }
 
 void
-ViewerInstance::pluginGrouping(std::list<std::string>* grouping) const
+ViewerInstance::getPluginGrouping(std::list<std::string>* grouping) const
 {
     grouping->push_back(PLUGIN_GROUP_IMAGE);
 }
@@ -256,13 +256,13 @@ ViewerInstance::activeInput() const
 }
 
 int
-ViewerInstance::maximumInputs() const
+ViewerInstance::getMaxInputCount() const
 {
     // runs in the VideoEngine thread or in the main thread
     //_imp->assertVideoEngine();
     // but is it really MT-SAFE?
 
-    return getNode()->maximumInputs();
+    return getNode()->getMaxInputCount();
 }
 
 void
@@ -375,7 +375,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         ///if there's only optional inputs connected, we return the last optional input
         int lastOptionalInput = -1;
         int inputNb = -1;
-        for (int i = activeInputToRender->maximumInputs() - 1; i >= 0; --i) {
+        for (int i = activeInputToRender->getMaxInputCount() - 1; i >= 0; --i) {
             bool optional = activeInputToRender->isInputOptional(i);
             if (!optional && activeInputToRender->getNode()->input_other_thread(i)) {
                 inputNb = i;
@@ -441,7 +441,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     
     emit imageFormatChanged(textureIndex,components, imageDepth);
     
-    U64 inputNodeHash = activeInputToRender->hash();
+    U64 inputNodeHash = activeInputToRender->getHash();
         
     Natron::ImageKey inputImageKey = Natron::Image::makeKey(inputNodeHash, time, mipMapLevel,view);
     RectD rod;
@@ -506,7 +506,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     while (inputIdentityNumber != -1 && isInputImgCached) {
         EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
         if (recursiveInput) {
-            inputImageKey = Natron::Image::makeKey(recursiveInput->hash(), inputIdentityTime, mipMapLevel,view);
+            inputImageKey = Natron::Image::makeKey(recursiveInput->getHash(), inputIdentityTime, mipMapLevel,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
             if (isInputImgCached) {
                 inputIdentityNumber = cachedImgParams->getInputNbIdentity();
@@ -670,7 +670,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
     }
 
     std::string inputToRenderName = activeInputToRender->getNode()->getName_mt_safe();
-    U64 nodeHash = hash();
+    U64 nodeHash = getHash();
     FrameKey key(time,
                  nodeHash,
                  gain,

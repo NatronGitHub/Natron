@@ -3321,7 +3321,7 @@ void
 Gui::onNodeNameChanged(const QString& /*name*/)
 {
     NodeGui* node = qobject_cast<NodeGui*>(sender());
-    if (node && node->getNode()->pluginID() == "Viewer") {
+    if (node && node->getNode()->getPluginID() == "Viewer") {
         emit viewersChanged();
     }
 }

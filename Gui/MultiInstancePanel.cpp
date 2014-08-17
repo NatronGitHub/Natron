@@ -510,7 +510,7 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal()
 {
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     
-    CreateNodeArgs args(mainInstance->pluginID().c_str(),
+    CreateNodeArgs args(mainInstance->getPluginID().c_str(),
                         mainInstance->getName(),
                         -1,-1,true,
                         (int)_imp->instances.size());

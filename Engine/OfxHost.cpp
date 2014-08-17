@@ -417,21 +417,23 @@ void Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector<std::strin
         const std::string& grouping = p->getDescriptor().getPluginGrouping();
         
         const std::string& bundlePath = p->getBinary()->getBundlePath();
-        const std::string& pluginLabel = OfxEffectInstance::getPluginLabel(p->getDescriptor().getShortLabel(),
-                                                                    p->getDescriptor().getLabel(),
-                                                                    p->getDescriptor().getLongLabel());
-     
-        
+        std::string pluginLabel = OfxEffectInstance::makePluginLabel(p->getDescriptor().getShortLabel(),
+                                                                     p->getDescriptor().getLabel(),
+                                                                     p->getDescriptor().getLongLabel());
+
+
         std::string pluginId = OfxEffectInstance::generateImageEffectClassName(p->getIdentifier(),
                                                                                p->getVersionMajor(),
                                                                                p->getVersionMinor(),
                                                                                p->getDescriptor().getShortLabel(),
                                                                                p->getDescriptor().getLabel(),
                                                                                p->getDescriptor().getLongLabel(),
-                                                                           grouping);
+                                                                               grouping);
 
        
-        QStringList groups = OfxEffectInstance::getPluginGrouping(p->getIdentifier(), p->getVersionMajor(), p->getVersionMinor(), pluginLabel, grouping);
+        QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
+                                                                   p->getVersionMajor(), p->getVersionMinor(),
+                                                                   pluginLabel, grouping);
         
         assert(p->getBinary());
         QString iconFilename = QString(bundlePath.c_str()) + "/Contents/Resources/";

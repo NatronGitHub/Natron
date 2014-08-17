@@ -147,7 +147,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
          (*it)->serialize(&state);
          _serializedNodes.push_back(state);
          
-         if ((*it)->getNode()->pluginID() == "Viewer") {
+         if ((*it)->getNode()->getPluginID() == "Viewer") {
              ViewerInstance* viewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
              assert(viewer);
              ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);

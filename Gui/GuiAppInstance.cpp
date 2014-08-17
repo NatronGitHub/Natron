@@ -172,7 +172,7 @@ void GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,const st
     _imp->_nodeMapping.insert(std::make_pair(node,nodegui));
     
     ///It needs to be here because we rely on the _nodeMapping member
-    bool isViewer = node->pluginID() == "Viewer";
+    bool isViewer = node->getPluginID() == "Viewer";
     if (isViewer) {
         _imp->_gui->createViewerGui(node);
     }

@@ -44,7 +44,7 @@ NoOpBase::isIdentity(SequenceTime time,
     return true;
 }
 
-std::string Dot::description() const
+std::string Dot::getDescription() const
 {
     return "Doesn't do anything to the input image, this is used in the node graph to make bends in the links.";
 }

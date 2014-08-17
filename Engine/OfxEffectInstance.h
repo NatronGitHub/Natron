@@ -51,11 +51,14 @@ public:
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               const std::string& context,const NodeSerialization* serialization) = 0;
     
-    static QStringList getPluginGrouping(const std::string& pluginIdentifier, int versionMajor, int versionMinor, const std::string& pluginLabel, const std::string& grouping) WARN_UNUSED_RETURN;
+    static QStringList makePluginGrouping(const std::string& pluginIdentifier,
+                                          int versionMajor, int versionMinor,
+                                          const std::string& pluginLabel,
+                                          const std::string& grouping) WARN_UNUSED_RETURN;
     
-    static std::string getPluginLabel(const std::string& shortLabel,
-                                      const std::string& label,
-                                      const std::string& longLabel) WARN_UNUSED_RETURN;
+    static std::string makePluginLabel(const std::string& shortLabel,
+                                       const std::string& label,
+                                       const std::string& longLabel) WARN_UNUSED_RETURN;
     
     static std::string generateImageEffectClassName(const std::string& pluginIdentifier,
                                                     int versionMajor,
@@ -103,9 +106,9 @@ public:
 
 public:
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
-    virtual int majorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual int minorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -121,17 +124,17 @@ public:
 
     virtual bool makePreviewByDefault() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual int maximumInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string pluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string pluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
 
-    virtual std::string description() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual std::string inputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
 

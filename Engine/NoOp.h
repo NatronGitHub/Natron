@@ -22,19 +22,19 @@ public:
     
     NoOpBase(boost::shared_ptr<Natron::Node> n);
     
-    virtual int majorVersion() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return 1; }
+    virtual int getMajorVersion() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return 1; }
     
-    virtual int minorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return 0; }
+    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return 0; }
     
-    virtual int maximumInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return 1; }
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return 1; }
     
-    virtual std::string pluginID() const  WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginID() const  WARN_UNUSED_RETURN = 0;
     
-    virtual std::string pluginLabel() const  WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginLabel() const  WARN_UNUSED_RETURN = 0;
     
-    virtual std::string description() const  WARN_UNUSED_RETURN = 0;
+    virtual std::string getDescription() const  WARN_UNUSED_RETURN = 0;
     
-    virtual void pluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL { grouping->push_back(PLUGIN_GROUP_OTHER); }
+    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL { grouping->push_back(PLUGIN_GROUP_OTHER); }
     
     virtual bool isInputOptional(int /*inputNb*/) const { return false; }
     
@@ -70,13 +70,13 @@ public:
     
     Dot(boost::shared_ptr<Natron::Node> n) : NoOpBase(n) {}
     
-    virtual std::string pluginID() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return "Dot"; }
+    virtual std::string getPluginID() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return "Dot"; }
     
-    virtual std::string pluginLabel() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return "Dot"; }
+    virtual std::string getPluginLabel() const  OVERRIDE FINAL WARN_UNUSED_RETURN { return "Dot"; }
     
-    virtual std::string description() const  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getDescription() const  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual std::string inputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN { return ""; }
+    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN { return ""; }
 };
 
 #endif // NOOP_H

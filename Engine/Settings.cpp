@@ -1098,7 +1098,7 @@ void Settings::onKnobValueChanged(KnobI* k,Natron::ValueChangedReason /*reason*/
             const std::vector<boost::shared_ptr<Node> > nodes = it->second.app->getProject()->getCurrentNodes();
             for (U32 i = 0; i < nodes.size(); ++i) {
                 assert(nodes[i]);
-                if (nodes[i]->pluginID() == "Viewer") {
+                if (nodes[i]->getPluginID() == "Viewer") {
                     ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
                     assert(n);
                     if(isFirstViewer){

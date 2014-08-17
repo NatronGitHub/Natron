@@ -137,12 +137,12 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    int majorVersion() const;
+    int getMajorVersion() const;
     
     /**
      * @brief Forwarded to the live effect instance
      **/
-    int minorVersion() const;
+    int getMinorVersion() const;
 
     
     /**
@@ -184,7 +184,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    virtual int maximumInputs() const ;
+    virtual int getMaxInputCount() const ;
 
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
@@ -347,17 +347,17 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    std::string pluginID() const;
+    std::string getPluginID() const;
     
     /**
      * @brief Forwarded to the live effect instance
      **/
-    std::string pluginLabel() const;
+    std::string getPluginLabel() const;
 
     /**
      * @brief Forwarded to the live effect instance
      **/
-    std::string description() const;
+    std::string getDescription() const;
     
     /*============================*/
 
@@ -771,7 +771,7 @@ public:
     
     virtual ~InspectorNode();
     
-    virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
+    virtual int getMaxInputCount() const OVERRIDE { return _inputsCount; }
     
     virtual bool connectInput(boost::shared_ptr<Node> input,int inputNumber) OVERRIDE;
     

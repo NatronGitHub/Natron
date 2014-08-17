@@ -686,7 +686,7 @@ void NodeGui::initializeInputs()
     }
     
     ///The actual numbers of inputs of the internal node
-    int inputnb = _internalNode->maximumInputs();
+    int inputnb = _internalNode->getMaxInputCount();
     
     ///Delete all un-necessary inputs that may exist (This is true for inspector nodes)
     while ((int)_inputEdges.size() > inputnb) {
@@ -719,7 +719,7 @@ void NodeGui::initializeInputs()
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>(_internalNode.get());
     if (isInspector) {
         ///if the node is an inspector and it has only 1 empty input, display it aside
-        if(emptyInputsCount == 1 && _internalNode->maximumInputs() > 1){
+        if(emptyInputsCount == 1 && _internalNode->getMaxInputCount() > 1){
             for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
                 if(!it->second->hasSource()){
                     it->second->setAngle(M_PI);
@@ -1859,7 +1859,7 @@ void NodeGui::setCurrentColor(const QColor& c)
 
 void NodeGui::onSwitchInputActionTriggered()
 {
-    if (_internalNode->maximumInputs() >= 2) {
+    if (_internalNode->getMaxInputCount() >= 2) {
         _internalNode->switchInput0And1();
         std::list<ViewerInstance* > viewers;
         _internalNode->hasViewersConnected(&viewers);

@@ -299,7 +299,7 @@ EffectInstance::EffectInstance(boost::shared_ptr<Node> node)
 EffectInstance::~EffectInstance()
 {
     if (_node) {
-        appPTR->removeAllImagesFromCacheWithMatchingKey(hash());
+        appPTR->removeAllImagesFromCacheWithMatchingKey(getHash());
     }
     clearPluginMemoryChunks();
 }
@@ -324,7 +324,7 @@ EffectInstance::clearPluginMemoryChunks()
 }
 
 U64
-EffectInstance::hash() const
+EffectInstance::getHash() const
 {
     return _node->getHashValue();
 }
@@ -355,7 +355,7 @@ EffectInstance::setAborted(bool b)
 }
 
 U64
-EffectInstance::knobsAge() const {
+EffectInstance::getKnobsAge() const {
     return _node->getKnobsAge();
 }
 
@@ -417,7 +417,7 @@ EffectInstance::input_other_thread(int n) const
 }
 
 std::string
-EffectInstance::inputLabel(int inputNb) const
+EffectInstance::getInputLabel(int inputNb) const
 {
     std::string out;
     out.append(1,(char)(inputNb+65));
@@ -654,7 +654,7 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
     }
 #endif
 
-    for (int i = 0; i < maximumInputs(); ++i) {
+    for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             RectD inputRod;
@@ -706,7 +706,7 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
         calcDefaultRegionOfDefinition(time, scale, &inputsUnion);
         bool firstInput = true;
-        for (int i = 0; i < maximumInputs(); ++i) {
+        for (int i = 0; i < getMaxInputCount(); ++i) {
             Natron::EffectInstance* input = input_other_thread(i);
             if (input) {
                 RectD inputRod;
@@ -780,7 +780,7 @@ EffectInstance::getRegionsOfInterest(SequenceTime /*time*/,
                                      int /*view*/)
 {
     RoIMap ret;
-    for (int i = 0; i < maximumInputs(); ++i) {
+    for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             ret.insert(std::make_pair(input, renderWindow));
@@ -797,7 +797,7 @@ EffectInstance::getFramesNeeded(SequenceTime time)
     defaultRange.min = defaultRange.max = time;
     std::vector<RangeD> ranges;
     ranges.push_back(defaultRange);
-    for (int i = 0; i < maximumInputs(); ++i) {
+    for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             ret.insert(std::make_pair(i, ranges));
@@ -812,7 +812,7 @@ EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last)
     // default is infinite if there are no non optional input clips
     *first = INT_MIN;
     *last = INT_MAX;
-    for (int i = 0; i < maximumInputs(); ++i) {
+    for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = input_other_thread(i);
         if (input) {
             SequenceTime inpFirst,inpLast;
@@ -857,7 +857,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
     
     ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
     ///through all the rendering of this frame.
-    U64 nodeHash = hash();
+    U64 nodeHash = getHash();
     if (hashUsed) {
         *hashUsed = nodeHash;
     }
@@ -1580,7 +1580,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 
                 ///Convert to pixel coords the RoI
                 if (foundInputRoI->second.isInfinite()) {
-                    throw std::runtime_error(std::string("Plugin ") + this->pluginLabel() + " asked for an infinite region of interest!");
+                    throw std::runtime_error(std::string("Plugin ") + this->getPluginLabel() + " asked for an infinite region of interest!");
                 }
 
                 RectI inputRoIPixelCoords;
@@ -1805,7 +1805,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
                 QMutexLocker l((safety == INSTANCE_SAFE) ? &getNode()->getRenderInstancesSharedMutex() :
                                ((safety == FULLY_SAFE) ? &getNode()->getFrameMutex(time) :
-                                appPTR->getMutexForPlugin(pluginID().c_str())));
+                                appPTR->getMutexForPlugin(getPluginID().c_str())));
 
                 renderStatus = tiledRenderingFunctor(args,
                                                      renderFullScaleThenDownscale,
@@ -2076,7 +2076,7 @@ EffectInstance::clearPersistentMessage()
 int
 EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const
 {
-    for (int i = 0; i < maximumInputs(); ++i) {
+    for (int i = 0; i < getMaxInputCount(); ++i) {
         if (input_other_thread(i) == inputEffect) {
             return i;
         }
@@ -2533,7 +2533,7 @@ EffectInstance::isIdentity_public(SequenceTime time,
         ///we forward this node to the last connected non-optional input
         ///if there's only optional inputs connected, we return the last optional input
         int lastOptionalInput = -1;
-        for (int i = maximumInputs() - 1; i >= 0; --i) {
+        for (int i = getMaxInputCount() - 1; i >= 0; --i) {
             bool optional = isInputOptional(i);
             if (!optional && _node->input_other_thread(i)) {
                 *inputNb = i;
@@ -2838,7 +2838,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
             scale.y = scale.x;
             
-            U64 nodeHash = hash();
+            U64 nodeHash = getHash();
             {
                 bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
                 assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
@@ -2996,7 +2996,7 @@ void
 OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController)
 {
     _renderController = renderController;
-    assert(pluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
+    assert(getPluginID() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
     getVideoEngine()->refreshTree();
     getVideoEngine()->render(-1, //< frame count
                              true, //< seek timeline

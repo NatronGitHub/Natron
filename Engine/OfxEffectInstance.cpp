@@ -334,7 +334,7 @@ OfxEffectInstance::initializeContextDependentParams()
 }
 
 std::string
-OfxEffectInstance::description() const
+OfxEffectInstance::getDescription() const
 {
     assert(_context != eContextNone);
     if (effectInstance()) {
@@ -569,16 +569,19 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& pluginIdentifier, int /*
 }
 
 QStringList
-AbstractOfxEffectInstance::getPluginGrouping(const std::string& pluginIdentifier, int versionMajor, int versionMinor, const std::string& pluginLabel, const std::string& grouping)
+AbstractOfxEffectInstance::makePluginGrouping(const std::string& pluginIdentifier,
+                                              int versionMajor, int versionMinor,
+                                              const std::string& pluginLabel,
+                                              const std::string& grouping)
 {
     //printf("%s,%s\n",pluginLabel.c_str(),grouping.c_str());
     return ofxExtractAllPartsOfGrouping(pluginIdentifier.c_str(), versionMajor, versionMinor, pluginLabel.c_str(),grouping.c_str());
 }
 
 std::string
-AbstractOfxEffectInstance::getPluginLabel(const std::string& shortLabel,
-                                          const std::string& label,
-                                          const std::string& longLabel)
+AbstractOfxEffectInstance::makePluginLabel(const std::string& shortLabel,
+                                           const std::string& label,
+                                           const std::string& longLabel)
 {
     std::string labelToUse = label;
     if (labelToUse.empty()) {
@@ -599,8 +602,8 @@ AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& plugi
                                                         const std::string& longLabel,
                                                         const std::string& grouping)
 {
-    std::string labelToUse = getPluginLabel(shortLabel, label, longLabel);
-    QStringList groups = getPluginGrouping(pluginIdentifier, versionMajor, versionMinor, labelToUse, grouping);
+    std::string labelToUse = makePluginLabel(shortLabel, label, longLabel);
+    QStringList groups = makePluginGrouping(pluginIdentifier, versionMajor, versionMinor, labelToUse, grouping);
 
     if (labelToUse == "Viewer") { // we don't want a plugin to have the same name as our viewer
         labelToUse =  groups[0].toStdString() + longLabel;
@@ -615,26 +618,28 @@ AbstractOfxEffectInstance::generateImageEffectClassName(const std::string& plugi
 }
 
 std::string
-OfxEffectInstance::pluginID() const
+OfxEffectInstance::getPluginID() const
 {
     assert(_context != eContextNone);
     return _natronPluginID;
 }
 
 std::string
-OfxEffectInstance::pluginLabel() const
+OfxEffectInstance::getPluginLabel() const
 {
     assert(_context != eContextNone);
     assert(_effect);
-    return getPluginLabel( _effect->getDescriptor().getShortLabel(),_effect->getDescriptor().getLabel(),_effect->getDescriptor().getLongLabel());
+    return makePluginLabel(_effect->getDescriptor().getShortLabel(),
+                           _effect->getDescriptor().getLabel(),
+                           _effect->getDescriptor().getLongLabel());
 }
 
 void
-OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
+OfxEffectInstance::getPluginGrouping(std::list<std::string>* grouping) const
 {
     assert(_context != eContextNone);
     std::string groupStr = effectInstance()->getPluginGrouping();
-    std::string label = pluginLabel();
+    std::string label = getPluginLabel();
     const OFX::Host::ImageEffect::ImageEffectPlugin *p = effectInstance()->getPlugin();
     QStringList groups = ofxExtractAllPartsOfGrouping(p->getIdentifier().c_str(), p->getVersionMajor(), p->getVersionMinor(), label.c_str(), groupStr.c_str());
     for (int i = 0; i < groups.size(); ++i) {
@@ -643,7 +648,7 @@ OfxEffectInstance::pluginGrouping(std::list<std::string>* grouping) const
 }
 
 std::string
-OfxEffectInstance::inputLabel(int inputNb) const
+OfxEffectInstance::getInputLabel(int inputNb) const
 {
     assert(_context != eContextNone);
 
@@ -651,7 +656,7 @@ OfxEffectInstance::inputLabel(int inputNb) const
     if (inputNb < (int)copy.size()) {
         return copy[copy.size()-1-inputNb]->getShortLabel();
     } else {
-        return EffectInstance::inputLabel(inputNb);
+        return EffectInstance::getInputLabel(inputNb);
     }
 }
 
@@ -684,7 +689,7 @@ OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 }
 
 int
-OfxEffectInstance::maximumInputs() const
+OfxEffectInstance::getMaxInputCount() const
 {
     assert(_context != eContextNone);
     const std::string& context = effectInstance()->getContext();
@@ -809,7 +814,7 @@ OfxEffectInstance::checkClipPrefs(double time,const RenderScale& scale, const st
     
     _effect->beginInstanceChangedAction(reason);
 
-    for (int i = 0; i < maximumInputs() ; ++i) {
+    for (int i = 0; i < getMaxInputCount() ; ++i) {
         OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(input(i));
         OfxClipInstance* clip = getClipCorrespondingToInput(i);
 
@@ -959,7 +964,7 @@ OfxEffectInstance::getRegionOfDefinition(SequenceTime time,
     ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     ///1 pixel large image
     if (ofxRod.x2 == 1. && ofxRod.y2 == 1. && ofxRod.x1 == 0. && ofxRod.y1 == 0.) {
-        int maxInputs = maximumInputs();
+        int maxInputs = getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
             if (clip && !clip->getConnected() && !clip->isOptional() && !clip->isMask()) {
@@ -1153,7 +1158,7 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
             *first = INT_MIN;
             *last = INT_MAX;
             
-            int inputsCount = maximumInputs();
+            int inputsCount = getMaxInputCount();
             
             ///Uncommented the isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
             ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
@@ -2087,13 +2092,13 @@ OfxEffectInstance::purgeCaches()
 }
 
 int
-OfxEffectInstance::majorVersion() const
+OfxEffectInstance::getMajorVersion() const
 {
     return effectInstance()->getPlugin()->getVersionMajor();
 }
 
 int
-OfxEffectInstance::minorVersion() const
+OfxEffectInstance::getMinorVersion() const
 {
     return effectInstance()->getPlugin()->getVersionMinor();
 }

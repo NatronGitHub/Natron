@@ -280,7 +280,7 @@ DockablePanel::DockablePanel(Gui* gui
             }
             if (iseffect) {
                 std::list<std::string> grouping;
-                iseffect->pluginGrouping(&grouping);
+                iseffect->getPluginGrouping(&grouping);
                 std::string majGroup = grouping.empty() ? "" : grouping.front();
                 
                 if (iseffect->isReader()) {
@@ -1205,7 +1205,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                DockablePanel::FULLY_FEATURED,
                false,
                NodeUi->getNode()->getName().c_str(),
-               NodeUi->getNode()->description().c_str(),
+               NodeUi->getNode()->getDescription().c_str(),
                false,
                "Settings",
                parent)
