@@ -2862,13 +2862,13 @@ ViewerGL::setRegionOfDefinition(const RectD& rod,
     }
 
     _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(rod.left()));
+    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(std::ceil(rod.left())));
     _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(rod.bottom()));
+    _imp->currentViewerInfos_btmLeftBBOXoverlay[textureIndex].append(QString::number(std::ceil(rod.bottom())));
     _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].clear();
-    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(QString::number(rod.right()));
+    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(QString::number(std::floor(rod.right())));
     _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(",");
-    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(QString::number(rod.top()));
+    _imp->currentViewerInfos_topRightBBOXoverlay[textureIndex].append(QString::number(std::floor(rod.top())));
 }
 
 
