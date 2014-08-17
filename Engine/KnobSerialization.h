@@ -210,9 +210,7 @@ struct ValueSerialization
             ///and deducing the pattern from it and setting it as a value instead
             if (convertOldFileKeyframesToPattern) {
                 SequenceParsing::FileNameContent content(v);
-                std::vector<int> indexes(1);
-                indexes[0] = content.getPotentialFrameNumbersCount() - 1;
-                content.generatePatternWithFrameNumberAtIndexes(indexes, &v);
+                content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1, &v);
             }
             isFile->setValue(v,_dimension);
         }

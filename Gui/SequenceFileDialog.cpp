@@ -765,7 +765,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     /*if we reach here, this is a valid file and we need to take actions*/
     SequenceParsing::FileNameContent fileContent(path.toStdString());
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
-        if (_frameSequences[i]->tryInsertFile(fileContent)) {
+        if (_frameSequences[i]->tryInsertFile(fileContent,false)) {
             ///don't accept the file in the proxy because it already belongs to a sequence
             return false;
         }
@@ -777,8 +777,9 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
 }
 
 QString SequenceDialogProxyModel::getUserFriendlyFileSequencePatternForFile(const QString& filename,quint64* sequenceSize) const {
+    std::string filenameStd = filename.toStdString();
     for (U32 i = 0; i < _frameSequences.size(); ++i) {
-        if (_frameSequences[i]->contains(filename.toStdString())) {
+        if (_frameSequences[i]->contains(filenameStd)) {
             *sequenceSize = _frameSequences[i]->getEstimatedTotalSize();
             return _frameSequences[i]->generateUserFriendlySequencePattern().c_str();
         }

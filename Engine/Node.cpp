@@ -725,6 +725,8 @@ void
 Node::initializeKnobs(const NodeSerialization& serialization)
 {
     ////Only called by the main-thread
+    _imp->liveInstance->blockEvaluation();
+    
     assert(QThread::currentThread() == qApp->thread());
     assert(!_imp->knobsInitialized);
     _imp->liveInstance->initializeKnobsPublic();
@@ -802,7 +804,7 @@ Node::initializeKnobs(const NodeSerialization& serialization)
     loadKnob(_imp->disableNodeKnob, serialization);
 
     _imp->knobsInitialized = true;
-
+    _imp->liveInstance->unblockEvaluation();
     emit knobsInitialized();
 }
 
