@@ -208,7 +208,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     try {
         _effect = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
         assert(_effect);
-        _effect->setOfxEffectInstancePointer(dynamic_cast<OfxEffectInstance*>(this));
+        _effect->setOfxEffectInstance(dynamic_cast<OfxEffectInstance*>(this));
         
         _natronPluginID = generateImageEffectClassName(_effect->getPlugin()->getIdentifier(),
                                                        _effect->getPlugin()->getVersionMajor(),

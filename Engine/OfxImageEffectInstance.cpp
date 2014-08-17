@@ -47,7 +47,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                const std::string& context,
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-, _node(NULL)
+, _ofxEffectInstance(NULL)
 , _parentingMap()
 {
 }
@@ -63,47 +63,49 @@ const std::string& OfxImageEffectInstance::getDefaultOutputFielding() const {
 }
 
 /// make a clip
-OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
-                                                                              OFX::Host::ImageEffect::ClipDescriptor* descriptor,
-                                                                              int index) {
+OFX::Host::ImageEffect::ClipInstance*
+OfxImageEffectInstance::newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
+                                        OFX::Host::ImageEffect::ClipDescriptor* descriptor,
+                                        int index)
+{
     (void)plugin;
-    return new OfxClipInstance(node(),this,index, descriptor);
+    return new OfxClipInstance(getOfxEffectInstance(), this, index, descriptor);
 }
 
-OfxStatus OfxImageEffectInstance::setPersistentMessage(const char* type,
-                               const char* /*id*/,
-                               const char* format,
-                               va_list args){
+OfxStatus
+OfxImageEffectInstance::setPersistentMessage(const char* type,
+                                             const char* /*id*/,
+                                             const char* format,
+                                             va_list args)
+{
     assert(type);
     assert(format);
     char buf[10000];
     sprintf(buf, format,args);
     std::string message(buf);
 
-    if(strcmp(type, kOfxMessageError) == 0) {
-        
-        _node->setPersistentMessage(Natron::ERROR_MESSAGE, message);
-        
-    }else if(strcmp(type, kOfxMessageWarning)){
-        
-        _node->setPersistentMessage(Natron::WARNING_MESSAGE, message);
-        
-    }else if(strcmp(type, kOfxMessageMessage)){
-        
-        _node->setPersistentMessage(Natron::INFO_MESSAGE, message);
-        
+    if (strcmp(type, kOfxMessageError) == 0) {
+        _ofxEffectInstance->setPersistentMessage(Natron::ERROR_MESSAGE, message);
+    } else if(strcmp(type, kOfxMessageWarning)) {
+        _ofxEffectInstance->setPersistentMessage(Natron::WARNING_MESSAGE, message);
+    } else if(strcmp(type, kOfxMessageMessage)) {
+        _ofxEffectInstance->setPersistentMessage(Natron::INFO_MESSAGE, message);
     }
     return kOfxStatOK;
 }
 
-OfxStatus OfxImageEffectInstance::clearPersistentMessage(){
-    _node->clearPersistentMessage();
+OfxStatus
+OfxImageEffectInstance::clearPersistentMessage()
+{
+    _ofxEffectInstance->clearPersistentMessage();
     return kOfxStatOK;
 }
-OfxStatus OfxImageEffectInstance::vmessage(const char* msgtype,
-                                           const char* /*id*/,
-                                           const char* format,
-                                           va_list args)
+
+OfxStatus
+OfxImageEffectInstance::vmessage(const char* msgtype,
+                                 const char* /*id*/,
+                                 const char* format,
+                                 va_list args)
 {
     assert(msgtype);
     assert(format);
@@ -115,13 +117,13 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* msgtype,
     if (type == kOfxMessageLog) {
         appPTR->writeToOfxLog_mt_safe(message.c_str());
     } else if (type == kOfxMessageFatal || type == kOfxMessageError) {
-        _node->message(Natron::ERROR_MESSAGE, message);
+        _ofxEffectInstance->message(Natron::ERROR_MESSAGE, message);
     } else if (type == kOfxMessageWarning) {
-        _node->message(Natron::WARNING_MESSAGE, message);
+        _ofxEffectInstance->message(Natron::WARNING_MESSAGE, message);
     } else if (type == kOfxMessageMessage) {
-        _node->message(Natron::INFO_MESSAGE, message);
+        _ofxEffectInstance->message(Natron::INFO_MESSAGE, message);
     } else if (type == kOfxMessageQuestion) {
-        if (_node->message(Natron::QUESTION_MESSAGE, message)) {
+        if (_ofxEffectInstance->message(Natron::QUESTION_MESSAGE, message)) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;
@@ -134,10 +136,12 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* msgtype,
 // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
 // project may be a PAL SD project, but only be a letter-box within that. The project size is
 // the size of this sub window.
-void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const
+void
+OfxImageEffectInstance::getProjectSize(double& xSize,
+                                       double& ySize) const
 {
     Format f;
-    _node->getRenderFormat(&f);
+    _ofxEffectInstance->getRenderFormat(&f);
     xSize = f.width();
     ySize = f.height();
 
@@ -148,10 +152,12 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const
 // of the project 'subwindow'. For example for a PAL SD project that is in letterbox form, the
 // project offset is the offset to the bottom left hand corner of the letter box. The project
 // offset is in canonical coordinates.
-void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const
+void
+OfxImageEffectInstance::getProjectOffset(double& xOffset,
+                                         double& yOffset) const
 {
     Format f;
-    _node->getRenderFormat(&f);
+    _ofxEffectInstance->getRenderFormat(&f);
     xOffset = f.left();
     yOffset = f.bottom();
 }
@@ -161,52 +167,64 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // for more infomation on the project extent. The extent is in canonical coordinates and only
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
-void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const
+void
+OfxImageEffectInstance::getProjectExtent(double& xSize,
+                                         double& ySize) const
 {
     Format f;
-    _node->getRenderFormat(&f);
+    _ofxEffectInstance->getRenderFormat(&f);
     xSize = f.right();
     ySize = f.top();
 }
 
 // The pixel aspect ratio of the current project
-double OfxImageEffectInstance::getProjectPixelAspectRatio() const
+double
+OfxImageEffectInstance::getProjectPixelAspectRatio() const
 {
-    assert(_node);
+    assert(_ofxEffectInstance);
     Format f;
-    _node->getRenderFormat(&f);
+    _ofxEffectInstance->getRenderFormat(&f);
     return f.getPixelAspect();
 }
 
 // The duration of the effect
 // This contains the duration of the plug-in effect, in frames.
-double OfxImageEffectInstance::getEffectDuration() const {
-    assert(node());
+double
+OfxImageEffectInstance::getEffectDuration() const
+{
+    assert(getOfxEffectInstance());
 #pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain ?")
     return 1.0;
 }
 
 // For an instance, this is the frame rate of the project the effect is in.
-double OfxImageEffectInstance::getFrameRate() const {
-    assert(node());
+double
+OfxImageEffectInstance::getFrameRate() const
+{
+    assert(getOfxEffectInstance());
 #pragma message WARN("Add a frame rate parameter to the project")
     return 25.0;
 }
 
 /// This is called whenever a param is changed by the plugin so that
 /// the recursive instanceChangedAction will be fed the correct frame
-double OfxImageEffectInstance::getFrameRecursive() const {
-    assert(node());
-    return node()->getCurrentFrameRecursive();
+double
+OfxImageEffectInstance::getFrameRecursive() const
+{
+    assert(getOfxEffectInstance());
+    return getOfxEffectInstance()->getCurrentFrameRecursive();
 }
 
 /// This is called whenever a param is changed by the plugin so that
 /// the recursive instanceChangedAction will be fed the correct
 /// renderScale
-void OfxImageEffectInstance::getRenderScaleRecursive(double &x, double &y) const {
-    assert(node());
+void
+OfxImageEffectInstance::getRenderScaleRecursive(double &x,
+                                                double &y) const
+{
+    assert(getOfxEffectInstance());
     std::list<ViewerInstance*> attachedViewers;
-    node()->getNode()->hasViewersConnected(&attachedViewers);
+    getOfxEffectInstance()->getNode()->hasViewersConnected(&attachedViewers);
     ///get the render scale of the 1st viewer
     if (!attachedViewers.empty()) {
         ViewerInstance* first = attachedViewers.front();
@@ -239,77 +257,77 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
 
     bool paramShouldBePersistant = true;
     if (descriptor.getType() == kOfxParamTypeInteger) {
-        OfxIntegerInstance *ret = new OfxIntegerInstance(node(), descriptor);
+        OfxIntegerInstance *ret = new OfxIntegerInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble) {
-        OfxDoubleInstance  *ret = new OfxDoubleInstance(node(), descriptor);
+        OfxDoubleInstance  *ret = new OfxDoubleInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeBoolean) {
-        OfxBooleanInstance *ret = new OfxBooleanInstance(node(), descriptor);
+        OfxBooleanInstance *ret = new OfxBooleanInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeChoice) {
-        OfxChoiceInstance *ret = new OfxChoiceInstance(node(), descriptor);
+        OfxChoiceInstance *ret = new OfxChoiceInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeRGBA) {
-        OfxRGBAInstance *ret = new OfxRGBAInstance(node(), descriptor);
+        OfxRGBAInstance *ret = new OfxRGBAInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeRGB) {
-        OfxRGBInstance *ret = new OfxRGBInstance(node(), descriptor);
+        OfxRGBInstance *ret = new OfxRGBInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble2D) {
-        OfxDouble2DInstance *ret = new OfxDouble2DInstance(node(), descriptor);
+        OfxDouble2DInstance *ret = new OfxDouble2DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger2D) {
-        OfxInteger2DInstance *ret = new OfxInteger2DInstance(node(), descriptor);
+        OfxInteger2DInstance *ret = new OfxInteger2DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
-        OfxDouble3DInstance *ret = new OfxDouble3DInstance(node(), descriptor);
+        OfxDouble3DInstance *ret = new OfxDouble3DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
-        OfxInteger3DInstance *ret = new OfxInteger3DInstance(node(), descriptor);
+        OfxInteger3DInstance *ret = new OfxInteger3DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeString) {
-        OfxStringInstance *ret = new OfxStringInstance(node(), descriptor);
+        OfxStringInstance *ret = new OfxStringInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
@@ -331,29 +349,29 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
         Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
         //throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
-        OfxCustomInstance *ret = new OfxCustomInstance(node(), descriptor);
+        OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>(knob.get())->getSignalSlotHandler();
         QObject::connect(handler.get(),SIGNAL(animationLevelChanged(int)),ret,SLOT(onKnobAnimationLevelChanged(int)));
         instance = ret;
 
     } else if (descriptor.getType() == kOfxParamTypeGroup) {
-        OfxGroupInstance *ret = new OfxGroupInstance(node(), descriptor);
+        OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePage) {
-        OfxPageInstance* ret = new OfxPageInstance(node(),descriptor);
+        OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(),descriptor);
         knob = ret->getKnob();
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePushButton) {
-        OfxPushButtonInstance *ret = new OfxPushButtonInstance(node(), descriptor);
+        OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
-        OfxParametricInstance* ret = new OfxParametricInstance(node(), descriptor);
+        OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
         if(stat == kOfxStatFailed){
             throw std::runtime_error("The parameter failed to create curves from their default\n"
@@ -389,7 +407,7 @@ OFX::Host::Param::Instance *OfxImageEffectInstance::newParam(const std::string &
     knob->setSpacingBetweenItems(descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == 1) {
-        (void)Natron::createKnob<Separator_Knob>(node(), knob->getDescription());
+        (void)Natron::createKnob<Separator_Knob>(getOfxEffectInstance(), knob->getDescription());
     }else if(layoutHint == 2){
         knob->turnOffNewLine();
     }
@@ -463,7 +481,7 @@ void OfxImageEffectInstance::addParamsToTheirParents(){
  */
 OfxStatus OfxImageEffectInstance::editBegin(const std::string& /*name*/)
 {
-    _node->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND);
+    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND);
     return kOfxStatOK;
 }
 
@@ -472,7 +490,7 @@ OfxStatus OfxImageEffectInstance::editBegin(const std::string& /*name*/)
 /// Client host code needs to implement this
 OfxStatus OfxImageEffectInstance::editEnd()
 {
-    _node->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_OFF);
+    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_OFF);
     return kOfxStatOK;
 }
 
@@ -484,13 +502,15 @@ OfxStatus OfxImageEffectInstance::editEnd()
 // overridden for Progress::ProgressI
 
 /// Start doing progress.
-void OfxImageEffectInstance::progressStart(const std::string& message) {
-    _node->getApp()->startProgress(_node, message);
+void
+OfxImageEffectInstance::progressStart(const std::string& message)
+{
+    _ofxEffectInstance->getApp()->startProgress(_ofxEffectInstance, message);
 }
 
 /// finish yer progress
 void OfxImageEffectInstance::progressEnd() {
-    _node->getApp()->endProgress(_node);
+    _ofxEffectInstance->getApp()->endProgress(_ofxEffectInstance);
 }
 
 /** @brief Indicate how much of the processing task has been completed and reports on any abort status.
@@ -500,8 +520,10 @@ void OfxImageEffectInstance::progressEnd() {
  \arg \e progress - a number between 0.0 and 1.0 indicating what proportion of the current task has been processed.
  \returns false if you should abandon processing, true to continue
 */
-bool OfxImageEffectInstance::progressUpdate(double t) {
-    return _node->getApp()->progressUpdate(_node, t);
+bool
+OfxImageEffectInstance::progressUpdate(double t)
+{
+    return _ofxEffectInstance->getApp()->progressUpdate(_ofxEffectInstance, t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -517,7 +539,7 @@ double
 OfxImageEffectInstance::timeLineGetTime()
 {
     
-    return _node->getApp()->getTimeLine()->currentFrame();
+    return _ofxEffectInstance->getApp()->getTimeLine()->currentFrame();
 }
 
 
@@ -525,18 +547,19 @@ OfxImageEffectInstance::timeLineGetTime()
 void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
-    _node->updateCurrentFrameRecursive((int)t);
-    _node->getApp()->getTimeLine()->seekFrame((int)t,NULL);
+    _ofxEffectInstance->updateCurrentFrameRecursive((int)t);
+    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame((int)t,NULL);
     
 }
 
 
 /// get the first and last times available on the effect's timeline
 void
-OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2)
+OfxImageEffectInstance::timeLineGetBounds(double &t1,
+                                          double &t2)
 {
-    t1 = _node->getApp()->getTimeLine()->leftBound();
-    t2 = _node->getApp()->getTimeLine()->rightBound();
+    t1 = _ofxEffectInstance->getApp()->getTimeLine()->leftBound();
+    t2 = _ofxEffectInstance->getApp()->getTimeLine()->rightBound();
 }
 
 
@@ -544,16 +567,16 @@ OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2)
 int
 OfxImageEffectInstance::abort()
 {
-    return (int)node()->aborted();
+    return (int)getOfxEffectInstance()->aborted();
 }
 
 OFX::Host::Memory::Instance*
 OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
 {
-    OfxMemory* ret = new OfxMemory(_node);
+    OfxMemory* ret = new OfxMemory(_ofxEffectInstance);
     bool allocated = ret->alloc(nBytes);
     if (!ret->getPtr() || !allocated) {
-        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), node()->getNode()->getName_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getName_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
     return ret;
 }
