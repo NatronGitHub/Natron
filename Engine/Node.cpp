@@ -1849,9 +1849,13 @@ bool
 Node::isPreviewEnabled() const
 {
     ///MT-safe from EffectInstance
-    assert(_imp->knobsInitialized);
-    assert(_imp->previewEnabledKnob);
-    return _imp->previewEnabledKnob->getValue();
+    if (!_imp->knobsInitialized) {
+        qDebug() << "Node::isPreviewEnabled(): knobs not initialized (including previewEnabledKnob)";
+    }
+    if (_imp->previewEnabledKnob) {
+        return _imp->previewEnabledKnob->getValue();
+    }
+    return false;
 }
 
 bool
