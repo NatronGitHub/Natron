@@ -293,7 +293,7 @@ private:
 
 private:
     Natron::OfxImageEffectInstance* _effect;
-    mutable std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
+    std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     bool _isOutput;//if the OfxNode can output a file somehow
 
     bool _penDown; // true when the overlay trapped a penDow action
