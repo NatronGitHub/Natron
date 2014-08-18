@@ -577,7 +577,6 @@ void SequenceFileDialog::createMenuActions(){
 }
 
 void SequenceFileDialog::enableSequenceMode(bool b){
-    _proxy->clear();
     if(!b){
         _nameMapping.clear();
     }
@@ -952,7 +951,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     }
     
     ///No mapping was found for this item
-    if (mappedName.isEmpty() || isDir) {
+    if (isDir) {
         std::string stdFileName = absoluteFileName.toStdString();
         SequenceParsing::removePath(stdFileName);
         mappedName = stdFileName.c_str();
@@ -961,6 +960,8 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
             mappedName.append('/');
         }
 #endif
+    } else if (mappedName.isEmpty()) {
+        return QStyledItemDelegate::paint(painter,option,index);
     }
     
     // get the proper subrect from the style

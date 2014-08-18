@@ -211,8 +211,6 @@ public:
     QString getUserFriendlyFileSequencePatternForFile(const QString& filename,quint64* sequenceSize) const;
         
     void getSequenceFromFilesForFole(const QString& file,SequenceParsing::SequenceFromFiles* sequence) const;
-
-    void clear() { _frameSequences.clear(); }
     
     void setFilter(const QString& filter);
     
