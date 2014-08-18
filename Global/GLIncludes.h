@@ -14,12 +14,8 @@
 #include <GL/glew.h>
 #define QT_NO_OPENGL_ES_2
 
-#ifndef NATRON_DEBUG
-#define glCheckErrorIgnoreOSXBug() ((void)0)
-#define glCheckError() ((void)0)
-#define glCheckErrorAssert() ((void)0)
-#define glCheckFramebufferError() ((void)0)
-#else
+#ifdef DEBUG
+#include <iostream>
 #define glCheckError()                                                  \
   {                                                                     \
     GLenum _glerror_ = glGetError();                                    \
@@ -75,6 +71,11 @@
       glCheckError();                                                  \
     }                                                                  \
   }
+#else // !DEBUG
+#define glCheckErrorIgnoreOSXBug() ((void)0)
+#define glCheckError() ((void)0)
+#define glCheckErrorAssert() ((void)0)
+#define glCheckFramebufferError() ((void)0)
 #endif
 
 #endif

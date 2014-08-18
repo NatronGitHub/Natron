@@ -2557,11 +2557,11 @@ bool
 Node::canOthersConnectToThisNode() const
 {
     ///In debug mode only allow connections to Writer nodes
-#ifndef NATRON_DEBUG
-    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL && !_imp->liveInstance->isWriter();
-#else
+# ifdef DEBUG
     return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL;
-#endif
+# else // !DEBUG
+    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL && !_imp->liveInstance->isWriter();
+# endif // !DEBUG
 }
 
 //////////////////////////////////

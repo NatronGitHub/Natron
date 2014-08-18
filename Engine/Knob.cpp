@@ -1205,7 +1205,7 @@ void KnobHolder::checkIfRenderNeeded()
 
 void KnobHolder::assertActionIsNotRecursive() const
 {
-#ifdef NATRON_DEBUG
+# ifdef DEBUG
     int recursionLvl = getRecursionLevel();
     
     if (getApp() && getApp()->isShowingDialog()) {
@@ -1214,8 +1214,7 @@ void KnobHolder::assertActionIsNotRecursive() const
     if (recursionLvl != 0) {
         qDebug() << "A non-recursive action has been called recursively.";
     }
-#endif
-    
+# endif // DEBUG
 }
 
 void KnobHolder::incrementRecursionLevel()

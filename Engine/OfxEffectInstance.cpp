@@ -1416,7 +1416,7 @@ OfxEffectInstance::render(SequenceTime time,
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     ///before calling render, set the render scale thread storage for each clip
     unsigned int mipMapLevel = Natron::Image::getLevelFromScale(scale.x);
-#ifdef NATRON_DEBUG
+# ifdef DEBUG
     {
         // check the dimensions of output images
         const RectI& dstBounds = output->getBounds();
@@ -1441,7 +1441,7 @@ OfxEffectInstance::render(SequenceTime time,
             assert(dstRod.y1 == 0);
         }
     }
-#endif
+# endif // DEBUG
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {

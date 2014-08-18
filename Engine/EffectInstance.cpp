@@ -1212,12 +1212,12 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             }
         }
         
-#ifdef NATRON_DEBUG
+#     ifdef DEBUG
         ///If the precomputed rod parameter was set, assert that it is the same than the image in cache.
         if (inputNbIdentity != -1 && !args.preComputedRoD.isNull()) {
             assert(args.preComputedRoD == cachedImgParams->getRoD());
         }
-#endif
+#     endif // DEBUG
 
         ///For effects that don't support the render scale we have to upscale this cached image,
         ///render the parts we are interested in and then downscale again
@@ -1647,7 +1647,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             inputImages.push_back(mask);
         }
 
-#ifdef NATRON_DEBUG
+#     ifdef DEBUG
         // check the dimensions of all input and output images
         for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
              it != inputImages.end();
@@ -1690,7 +1690,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             assert(renderMappedMipMapLevel == 0);
             assert(renderMappedScale.x == 1. && renderMappedScale.y == 1.);
         }
-#endif
+#     endif // DEBUG
 
         ///notify the node we're starting a render
         _node->notifyRenderingStarted();

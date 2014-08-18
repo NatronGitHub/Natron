@@ -399,17 +399,17 @@ public:
         if (_cache) {
             _cache->notifyEntryAllocated(getTime(),size());
         }
-#ifdef NATRON_DEBUG
+#     ifdef DEBUG
         onMemoryAllocated();
-#endif
+#     endif // DEBUG
     }
     
-#ifdef NATRON_DEBUG
+# ifdef DEBUG
     /**
      * @brief Called right away once the buffer is allocated. Used in debug mode to initialize image with a default color.
      **/
     virtual void onMemoryAllocated() {}
-#endif
+# endif // DEBUG
 
     
     const KeyType& getKey() const OVERRIDE FINAL {return _key;}
