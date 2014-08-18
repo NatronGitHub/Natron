@@ -11,6 +11,8 @@
 
 #include "RotoGui.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QString>
 #include <QToolBar>
 #include <QWidget>
@@ -21,6 +23,8 @@
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QDialogButtonBox>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"

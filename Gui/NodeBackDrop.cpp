@@ -7,6 +7,8 @@
 
 #include "NodeBackDrop.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QTextDocument>
 #include <QGraphicsTextItem>
@@ -15,6 +17,8 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QMenu>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"

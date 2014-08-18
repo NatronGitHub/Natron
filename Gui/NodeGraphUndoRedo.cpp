@@ -10,7 +10,11 @@
 
 #include "NodeGraphUndoRedo.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"

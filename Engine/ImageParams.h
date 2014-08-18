@@ -19,13 +19,11 @@ namespace Natron {
                 return 3;
             case ImageComponentRGBA:
                 return 4;
-            default:
-                ///unsupported components
-                assert(false);
-                break;
         }
+        assert(false);
+        return 0;
     }
-    
+
     inline int getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
     {
         switch (bitdepth) {
@@ -36,9 +34,10 @@ namespace Natron {
             case Natron::IMAGE_FLOAT:
                 return sizeof(float);
             case Natron::IMAGE_NONE:
-                assert(false);
                 break;
         }
+        assert(false);
+        return 0;
     }
     
 class ImageParams : public NonKeyParams

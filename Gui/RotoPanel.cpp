@@ -7,6 +7,8 @@
 
 #include "RotoPanel.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -26,6 +28,8 @@
 #include <QPainter>
 #include <QByteArray>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"

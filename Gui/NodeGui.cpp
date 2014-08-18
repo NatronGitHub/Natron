@@ -13,6 +13,8 @@
 #include <cassert>
 #include <boost/scoped_array.hpp>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QLayout>
 #include <QAction> 
 #include <QtConcurrentRun>
@@ -21,6 +23,8 @@
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QTextBlockFormat>
 #include <QTextCursor>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"

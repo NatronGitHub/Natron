@@ -13,9 +13,13 @@
 
 #include <stdexcept>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtGui/QImage>
 #include <QtGui/QColor>
 #include <QtGui/QImageReader>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
 #include "Engine/Image.h"

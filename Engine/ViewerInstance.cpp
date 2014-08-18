@@ -1418,8 +1418,9 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                     r = g = b = a;
                     a = 1.;
                     break;
-                default:
+                case Natron::ImageComponentNone:
                     assert(false);
+                    r = g = b = a = 0.;
                     break;
             }
             

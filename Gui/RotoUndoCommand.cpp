@@ -11,9 +11,14 @@
 
 
 #include "RotoUndoCommand.h"
-#include <QTreeWidgetItem>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QTreeWidgetItem>
 #include <QDebug>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Global/GlobalDefines.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"

@@ -12,7 +12,12 @@
 
 #include "NodeGuiSerialization.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QColor>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Gui/NodeGui.h"
 
 #include "Engine/Node.h"
