@@ -1733,10 +1733,12 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
     if (event->orientation() != Qt::Vertical) {
         return;
     }
+    QPointF newPos = mapToScene(event->pos());
 
     double scaleFactor = pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
-    if(factor < 0.07 || factor > 10)
+
+    qreal newZoomfactor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
+    if(newZoomfactor < 0.07 || newZoomfactor > 10)
         return;
     
     if (event->modifiers().testFlag(Qt::ControlModifier) && _imp->_magnifiedNode) {
@@ -1746,10 +1748,24 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
         }
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
+//        QPointF centerScene = visibleRect().center();
+//        QPointF deltaScene;
+//        deltaScene.rx() = newPos.x() - centerScene.x();
+//        deltaScene.ry() = newPos.y() - centerScene.y();
+//        QTransform t = transform();
+//        QTransform mapping;
+//        mapping.translate(-deltaScene.x(),-deltaScene.y());
+//        mapping.scale(scaleFactor,scaleFactor);
+//        mapping.translate(deltaScene.x(),deltaScene.y());
+//        t.translate(-deltaScene.x(),-deltaScene.y());
+//        t.scale(scaleFactor,scaleFactor);
+//        t.translate(deltaScene.x(),deltaScene.y());
+//        setTransform(t);
+//        centerScene = mapping.map(centerScene);
         scale(scaleFactor,scaleFactor);
+//        centerOn(centerScene);
         _imp->_refreshOverlays = true;
     }
-    QPointF newPos = mapToScene(event->pos());
     _imp->_lastScenePosClick = newPos;
 }
 
@@ -2318,10 +2334,13 @@ NodeGraph::dropEvent(QDropEvent* event)
         
         ///find a decoder for this file type
         std::string ext = sequence->fileExtension();
-        
-        std::map<std::string,std::string>::iterator found = readersForFormat.find(ext);
+        std::string extLower;
+        for (size_t j = 0; j < ext.size();++j) {
+            extLower.append(1,std::tolower(ext.at(j)));
+        }
+        std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
         if (found == readersForFormat.end()) {
-            errorDialog("Reader", "No plugin capable of decoding " + ext + " was found.");
+            errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
         } else {
             boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(CreateNodeArgs(found->second.c_str(),"",-1,-1,false));
             const std::vector<boost::shared_ptr<KnobI> >& knobs = n->getKnobs();
