@@ -514,7 +514,6 @@ bool Curve::getKeyFrameWithTime(double time, KeyFrame* k) const
 static void
 interParams(const KeyFrameSet &keyFrames,
             double t,
-#pragma message WARN("Unused parameter 't'")
             const KeyFrameSet::const_iterator &itup,
             double *tcur,
             double *vcur,
@@ -524,6 +523,7 @@ interParams(const KeyFrameSet &keyFrames,
             double *vnext,
             double *vnextDerivLeft,
             Natron::KeyframeType *interpNext)
+#pragma message WARN("Unused parameter 't'")
 {
     assert(itup == keyFrames.end() || t < itup->getTime());
     if (itup == keyFrames.begin()) {
