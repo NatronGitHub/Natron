@@ -19,7 +19,7 @@
 #include <set>
 #include <list>
 #include <boost/shared_ptr.hpp>
-
+#include <boost/scoped_ptr.hpp>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -300,7 +300,9 @@ public:
         return _model->rootPath();
     }
 
-    QFileSystemModel* getFileSystemModel() const {return _model;}
+    QFileSystemModel* getFileSystemModel() const {return _model.get();}
+    
+    QFileSystemModel* getFavoriteSystemModel() const {return _favoriteViewModel.get(); }
 
     SequenceDialogView* getSequenceView() const {return _view;}
 
@@ -349,7 +351,11 @@ public:
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir,QStringList* files);
     
-    void getMappedNameAndSizeForFile(const QString& absoluteFilePath,QString* mappedName,qint64* sequenceSize) const;
+    /**
+     * @brief Get the mapped name for a sequence. This shouldn't be called for directories.
+     **/
+    void getMappedNameAndSizeForFile(const QString& absoluteFileName,QString* mappedName,quint64* sequenceSize) const;
+    
 public slots:
 
     ///same as setDirectory but with a QModelIndex
@@ -365,11 +371,7 @@ public slots:
     void goToDirectory(const QString&);
 
     ///slot called when the selected directory changed, it updates the view with the (not yet fetched) directory.
-    ///Note that the directory will be refreshed once again when fetchSequencesAndRefreshView will be called.
     void updateView(const QString& currentDirectory);
-    
-    ///slot called when a directory has been fully loaded, it will refresh the view with good names.
-    void fetchSequencesAndRefreshView(const QString& currentDirectory);
     
     ////////
     ///////// Buttons slots
@@ -444,9 +446,6 @@ private:
 
     void createMenuActions();
     
-    /*parent in proxy indexes*/
-    void itemsToSequence(const QModelIndex &parent);
-    
     QModelIndex select(const QModelIndex& index);
     
     QString generateStringFromFilters();
@@ -458,14 +457,20 @@ private:
 private:
     // FIXME: PIMPL
     
-    NameMapping _nameMapping; // the item whose names must be changed
+    mutable NameMapping _nameMapping; // the item whose names must be changed. Mutable, this is a cache filled in getMappedNameAndSizeForFile()
 
     std::vector<std::string> _filters;
 
     SequenceDialogView* _view;
-    SequenceItemDelegate* _itemDelegate;
-    SequenceDialogProxyModel* _proxy;
-    QFileSystemModel* _model;
+    
+    boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
+    boost::scoped_ptr<SequenceDialogProxyModel> _proxy;
+    boost::scoped_ptr<QFileSystemModel> _model;
+    
+    ///The favorite view and the dialog view don't share the same model as they don't have
+    ///the same icon provider
+    boost::scoped_ptr<QFileSystemModel> _favoriteViewModel;
+    
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
 
