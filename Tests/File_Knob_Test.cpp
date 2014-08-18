@@ -488,8 +488,6 @@ TEST(FileNameContent,GeneralTest) {
     ASSERT_TRUE(file1Content.getPath() == "/Users/Test/");
     ASSERT_TRUE(file1Content.absoluteFileName() == file1);
     
-    ASSERT_TRUE(file1Content.hasSingleNumber());
-    ASSERT_FALSE(file1Content.isFileNameComposedOnlyOfDigits());
     ASSERT_TRUE(file1Content.getFilePattern() == "mysequence###0.jpg");
     std::string numberStr;
     ASSERT_TRUE(file1Content.getNumberByIndex(0, &numberStr));
@@ -499,9 +497,9 @@ TEST(FileNameContent,GeneralTest) {
     ///now attempt to match it to a second filename
     std::string file2("/Users/Test/mysequence002.jpg");
     FileNameContent file2Content(file2);
-    std::vector<int> frameNumberIndex;
+    int frameNumberIndex;
     ASSERT_TRUE(file1Content.matchesPattern(file2Content, &frameNumberIndex));
-    ASSERT_TRUE(frameNumberIndex.size() == 1 && frameNumberIndex[0] == 0);
+    ASSERT_TRUE(frameNumberIndex == 0);
     
     ///attempt to match it to a wrong second filename
     file2 = "/Users/Test/mysequence01.jpg";
