@@ -1473,7 +1473,7 @@ QStringList SequenceFileDialog::history() const{
 std::string SequenceFileDialog::selectedFiles() {
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     assert(indexes.count() <= 1);
-    if (sequenceModeEnabled()) {
+    if (sequenceModeEnabled()) { 
         if (indexes.count() == 1) {
             QModelIndex sequenceIndex = mapToSource(indexes.at(0));
             QString absoluteFileName = sequenceIndex.data(QFileSystemModel::FilePathRole).toString();
