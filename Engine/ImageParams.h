@@ -35,7 +35,7 @@ namespace Natron {
                 return sizeof(unsigned short);
             case Natron::IMAGE_FLOAT:
                 return sizeof(float);
-            default:
+            case Natron::IMAGE_NONE:
                 assert(false);
                 break;
         }

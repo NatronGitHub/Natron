@@ -82,8 +82,8 @@ struct ValueSerialization
         Path_Knob* isPath = dynamic_cast<Path_Knob*>(_knob.get());
         Color_Knob* isColor = dynamic_cast<Color_Knob*>(_knob.get());
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
+#pragma message WARN("Unused variable 'isParametric'")
 
-        
         ///Make sure the knob is one of these types
         assert(isInt || isBool || isDouble || isChoice || isString || isFile || isOutputFile || isPath || isColor || isParametric);
         
@@ -155,7 +155,8 @@ struct ValueSerialization
         Path_Knob* isPath = dynamic_cast<Path_Knob*>(_knob.get());
         Color_Knob* isColor = dynamic_cast<Color_Knob*>(_knob.get());
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
-        
+#pragma message WARN("Unused variable 'isParametric'")
+
         ///Make sure the knob is one of these types
         assert(isInt || isBool || isDouble || isChoice || isString || isFile || isOutputFile || isPath || isColor || isParametric);
         

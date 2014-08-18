@@ -514,6 +514,7 @@ bool Curve::getKeyFrameWithTime(double time, KeyFrame* k) const
 static void
 interParams(const KeyFrameSet &keyFrames,
             double t,
+#pragma message WARN("Unused parameter 't'")
             const KeyFrameSet::const_iterator &itup,
             double *tcur,
             double *vcur,

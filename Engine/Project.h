@@ -13,13 +13,15 @@
 
 #include <map>
 #include <vector>
-#include <QDateTime>
 #include <boost/noncopyable.hpp>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QDateTime>
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"

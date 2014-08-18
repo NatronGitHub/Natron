@@ -34,9 +34,8 @@ class ChannelSet{
     
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    void serialize(Archive & ar, const unsigned int /*version*/)
     {
-        (void)version;
         ar & mask;
         ar & _size;
     }

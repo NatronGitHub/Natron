@@ -1730,8 +1730,7 @@ void RotoPanel::onSettingsPanelClosed(bool closed) {
         for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
             Bezier* isBezier = dynamic_cast<Bezier*>(it->rotoItem.get());
             if (isBezier) {
-                ItemKeys::iterator it2 = _imp->keyframes.find(isBezier);
-                assert (it2 == _imp->keyframes.end());
+                assert (_imp->keyframes.find(isBezier) == _imp->keyframes.end());
                 std::set<int> keys;
                 isBezier->getKeyframeTimes(&keys);
                 std::list<SequenceTime> markers;

@@ -1637,8 +1637,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,QTreeWidgetItem* targ
     if (isBezier) {
         _mode = CopyToItem;
         assert(source.size() == 1 && _pastedItems.size() == 1);
-        PastedItem& front = _pastedItems.front();
-        assert(dynamic_cast<RotoDrawableItem*>(front.rotoItem.get()));
+        assert(dynamic_cast<RotoDrawableItem*>(_pastedItems.front().rotoItem.get()));
     } else {
         _mode = CopyToLayer;
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it!=_pastedItems.end(); ++it) {
@@ -1678,8 +1677,8 @@ void PasteItemUndoCommand::undo()
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoContext::OTHER);
     } else {
-        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(_targetItem.get());
-        assert(isLayer);
+        // check that it is a RotoLayer
+        assert(dynamic_cast<RotoLayer*>(_targetItem.get()));
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it!= _pastedItems.end(); ++it) {
             _roto->getContext()->removeItem(it->itemCopy.get(),RotoContext::OTHER);
         }

@@ -411,6 +411,8 @@ Natron::ImageBitDepth OfxClipInstance::ofxDepthToNatronDepth(const std::string& 
         return Natron::IMAGE_SHORT;
     } else if (depth == kOfxBitDepthFloat) {
         return Natron::IMAGE_FLOAT;
+    } else if (depth == kOfxBitDepthNone) {
+        return Natron::IMAGE_NONE;
     } else {
         throw std::runtime_error(depth+": unsupported bitdepth"); //< comp unsupported
     }
@@ -425,6 +427,8 @@ std::string OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
             return kOfxBitDepthShort;
         case Natron::IMAGE_FLOAT:
             return kOfxBitDepthFloat;
+        case Natron::IMAGE_NONE:
+            return kOfxBitDepthNone;
         default:
             assert(false);//< shouldve been caught earlier
             break;

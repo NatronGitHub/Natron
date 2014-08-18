@@ -1637,8 +1637,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case REMOVE_POINTS:
             if (nearbyCP.first) {
-                Bezier* curve = nearbyCP.first->getBezier();
-                assert(nearbyBezier && nearbyBezier.get() == curve);
+                assert(nearbyBezier && nearbyBezier.get() == nearbyCP.first->getBezier());
                 if (nearbyCP.first->isFeatherPoint()) {
                     pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second));
                 } else {

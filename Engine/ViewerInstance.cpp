@@ -1269,7 +1269,7 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                                 b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                             }
                             break;
-                        default:
+                        case Natron::IMAGE_NONE:
                             break;
                     }
 
@@ -1367,7 +1367,7 @@ scaleToTexture8bits(std::pair<int,int> yRange,
             scaleToTexture8bits_internal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset, nComps);
             break;
             
-        default:
+        case Natron::IMAGE_NONE:
             break;
     }
 }
@@ -1453,7 +1453,7 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                         b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                     }
                     break;
-                default:
+                case Natron::IMAGE_NONE:
                     break;
             }
 
@@ -1529,7 +1529,7 @@ scaleToTexture32bits(std::pair<int,int> yRange,
         case Natron::IMAGE_SHORT:
             scaleToTexture32bitsInternal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
             break;
-        default:
+        case Natron::IMAGE_NONE:
             break;
     }
     
@@ -1859,7 +1859,7 @@ ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinat
                                                   dstColorSpace,
                                                   r, g, b, a);
             break;
-        default:
+        case IMAGE_NONE:
             gotval = false;
             break;
     }
@@ -1974,7 +1974,7 @@ ViewerInstance::getColorAtRect(const RectD &rect, // rectangle in canonical coor
                                                           dstColorSpace,
                                                            &rPix, &gPix, &bPix, &aPix);
                     break;
-                default:
+                case IMAGE_NONE:
                     break;
             }
             if (gotval) {

@@ -35,7 +35,6 @@ class Format : public RectD { //!< project format is in canonical coordinates
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
-        (void)version;
         if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTD) {
             RectI r;
             ar & boost::serialization::make_nvp("RectI",r);

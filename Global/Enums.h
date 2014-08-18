@@ -278,7 +278,8 @@ namespace Natron{
     
     enum ImageBitDepth
     {
-        IMAGE_BYTE = 0,
+        IMAGE_NONE = 0,
+        IMAGE_BYTE,
         IMAGE_SHORT,
         IMAGE_FLOAT
     };
