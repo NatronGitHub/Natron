@@ -10,7 +10,12 @@
 
 
 #include "SequenceFileDialog.h"
-
+#if defined(Q_OS_UNIX)
+#include <pwd.h>
+#include <unistd.h> // for pathconf() on OS X
+#elif defined(Q_OS_WIN)
+#  include <QtCore/qt_windows.h>
+#endif
 #include <cassert>
 #include <locale>
 #include <algorithm>
@@ -108,6 +113,20 @@ namespace {
     };
 }
 
+static inline bool isCaseSensitiveFileSystem(const QString &path)
+{
+    Q_UNUSED(path)
+#if defined(Q_OS_WIN)
+    // Return case insensitive unconditionally, even if someone has a case sensitive
+    // file system mounted, wrongly capitalized drive letters will cause mismatches.
+    return false;
+#elif defined(Q_OS_OSX)
+    return pathconf(QFile::encodeName(path).constData(), _PC_CASE_SENSITIVE);
+#else
+    return true;
+#endif
+}
+
 #ifdef FILE_DIALOG_DISABLE_ICONS
 class EmptyIconProvider : public QFileIconProvider
 {
@@ -179,7 +198,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     setLayout(_mainLayout);
     /*Creating view and setting directory*/
     _view =  new SequenceDialogView(this);
-    
+    _view->setSortingEnabled(isCaseSensitiveFileSystem(rootPath()));
 #ifdef FILE_DIALOG_DISABLE_ICONS
     EmptyIconProvider* iconProvider = new EmptyIconProvider;
     _model->setIconProvider(iconProvider);
