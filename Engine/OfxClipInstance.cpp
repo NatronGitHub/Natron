@@ -284,7 +284,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ///Also don't use cached RoDs for identity effects as they contain garbage here (because identity effects allocates
         ///images with 0 bytes of data (rod null))
         if (isCached && (!cachedImgParams->isRodProjectFormat()
-            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f))) &&
+            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == static_cast<RectD&>(f))) &&
             cachedImgParams->getInputNbIdentity() == -1) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();

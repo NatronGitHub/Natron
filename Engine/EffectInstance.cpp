@@ -947,7 +947,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             ////just discard this entry
             Format projectFormat;
             getRenderFormat(&projectFormat);
-            if (dynamic_cast<RectI&>(projectFormat) != cachedImgParams->getRoD()) {
+            if (static_cast<RectD&>(projectFormat) != cachedImgParams->getRoD()) {
                 isCached = false;
                 appPTR->removeFromNodeCache(image);
                 cachedImgParams.reset();
@@ -2796,7 +2796,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     }
     
     _node->onEffectKnobValueChanged(k, reason);
-    if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
+    KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
+    assert(kh);
+    if (kh && kh->isDeclaredByPlugin()) {
 
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.

@@ -532,7 +532,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         //// We do this ONLY if the effect is not an identity, because otherwise the isRoDProjectFormat is meaningless
         //// because we fetched an image upstream anyway.
         if (inputIdentityNumber == -1 && cachedImgParams->isRodProjectFormat()) {
-            if (dynamic_cast<RectI&>(dispW) != cachedImgParams->getRoD()) {
+            if (static_cast<RectD&>(dispW) != cachedImgParams->getRoD()) {
                 isInputImgCached = false;
                 appPTR->removeFromNodeCache(inputImage);
                 inputImage.reset();

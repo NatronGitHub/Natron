@@ -1234,6 +1234,9 @@ Node::onInputNameChanged(const QString& name)
     assert(_imp->inputsInitialized);
     Natron::Node* inp = dynamic_cast<Natron::Node*>(sender());
     assert(inp);
+    if (!inp) {
+        return;
+    }
     int inputNb = -1;
     
     {
