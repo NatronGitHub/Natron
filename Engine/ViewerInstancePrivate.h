@@ -125,7 +125,7 @@ public:
 
     void assertVideoEngine()
     {
-#ifdef NATRON_DEBUG
+#     ifdef DEBUG
         int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
         if (nbThreads == -1) {
             assert(QThread::currentThread() == qApp->thread());
@@ -136,7 +136,7 @@ public:
             }
             assert(QThread::currentThread() == threadIdVideoEngine);
         }
-#endif
+#     endif // DEBUG
     }
 
     /// function that emits the signal to call updateViewer() from the main thread

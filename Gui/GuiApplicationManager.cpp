@@ -676,7 +676,7 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
     QStringList grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE); // Readers, Writers, and Generators are in the "Image" group in Nuke
     
-#ifdef NATRON_DEBUG
+# ifdef DEBUG
     {
         boost::shared_ptr<QtReader> reader(dynamic_cast<QtReader*>(QtReader::BuildEffect(boost::shared_ptr<Natron::Node>())));
         assert(reader);
@@ -731,10 +731,10 @@ void GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>*
         }
         
     }
-#else
+# else // !DEBUG
     (void)readersMap;
     (void)writersMap;
-#endif
+# endif // DEBUG
     
     {
         boost::shared_ptr<EffectInstance> viewer(ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node>()));

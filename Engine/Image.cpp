@@ -285,12 +285,12 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     }
 
 #endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
-#ifdef NATRON_DEBUG
+# ifdef DEBUG
     qDebug() << "render " << ret.size() << " rectangles";
     for (std::list<RectI>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
         qDebug() << "rect: " << "x1= "<<  it->x1 << " , x2= "<< it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
     }
-#endif
+# endif // DEBUG
     return ret;
 }
 
@@ -367,14 +367,14 @@ Image::Image(ImageComponents components,
     allocateMemory(false, "");
 }
 
-#ifdef NATRON_DEBUG
+#ifdef DEBUG
 void
 Image::onMemoryAllocated()
 {
     ///fill with red, to recognize unrendered pixels
     fill(_bounds,1.,0.,0.,1.);
 }
-#endif
+#endif // DEBUG
 
 ImageKey
 Image::makeKey(U64 nodeHashKey,

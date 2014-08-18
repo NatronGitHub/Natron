@@ -131,9 +131,9 @@ namespace Natron {
               Natron::ImageBitDepth bitdepth);
         
         virtual ~Image(){ deallocate(); }
-#ifdef NATRON_DEBUG
+#     ifdef DEBUG
         virtual void onMemoryAllocated() OVERRIDE FINAL;
-#endif
+#     endif // DEBUG
         static ImageKey makeKey(U64 nodeHashKey,
                                 SequenceTime time,
                                 unsigned int mipMapLevel,

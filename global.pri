@@ -24,7 +24,7 @@ log{
 
 CONFIG(debug, debug|release){
     message("Compiling in DEBUG mode.")
-    DEFINES *= NATRON_DEBUG DEBUG
+    DEFINES *= DEBUG
 } else {
     message("Compiling in RELEASE mode.")
     DEFINES *= NDEBUG
