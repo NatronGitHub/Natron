@@ -143,7 +143,7 @@ rm -rf $ofx/Plugins/Examples.debug
 mkdir -p $ofx/Plugins/Examples.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/Examples.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/Examples
 mkdir -p $ofx/Plugins.disabled/Examples
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/Examples
@@ -157,7 +157,7 @@ rm -rf $ofx/Plugins/Support.debug
 mkdir -p $ofx/Plugins/Support.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/Support.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/Support
 mkdir -p $ofx/Plugins.disabled/Support
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/Support
@@ -171,7 +171,7 @@ rm -rf $ofx/Plugins/PropTester.debug
 mkdir -p $ofx/Plugins/PropTester.debug
 mv *-${bits}-debug/*.ofx.bundle $ofx/Plugins/PropTester.debug
 rm *.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/PropTester
 mkdir -p $ofx/Plugins.disabled/PropTester
 mv *-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/PropTester
@@ -191,7 +191,7 @@ rm -rf $ofx/Plugins/yadif.debug
 mkdir -p $ofx/Plugins/yadif.debug
 mv *-${bits}-debug/*.ofx.bundle $ofx/Plugins/yadif.debug
 rm *.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/yadif
 mkdir -p $ofx/Plugins.disabled/yadif
 mv *-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/yadif
@@ -209,7 +209,7 @@ rm -rf $ofx/Plugins/opencv2fx.debug
 mkdir -p $ofx/Plugins/opencv2fx.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/opencv2fx.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/opencv2fx
 mkdir -p $ofx/Plugins.disabled/opencv2fx
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/opencv2fx
@@ -225,7 +225,7 @@ rm -rf $ofx/Plugins/io.debug
 mkdir -p $ofx/Plugins/io.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/io.debug
 rm *.o */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/io
 mkdir -p $ofx/Plugins.disabled/io
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/io
@@ -505,7 +505,7 @@ rm -rf $ofx/Plugins/Examples.debug
 mkdir -p $ofx/Plugins/Examples.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/Examples.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/Examples
 mkdir -p $ofx/Plugins.disabled/Examples
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/Examples
@@ -519,7 +519,7 @@ rm -rf $ofx/Plugins/Support.debug
 mkdir -p $ofx/Plugins/Support.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/Support.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/Support
 mkdir -p $ofx/Plugins.disabled/Support
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/Support
@@ -533,7 +533,7 @@ rm -rf $ofx/Plugins/PropTester.debug
 mkdir -p $ofx/Plugins/PropTester.debug
 mv *-${bits}-debug/*.ofx.bundle $ofx/Plugins/PropTester.debug
 rm *.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/PropTester
 mkdir -p $ofx/Plugins.disabled/PropTester
 mv *-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/PropTester
@@ -551,7 +551,7 @@ rm -rf $ofx/Plugins/yadif.debug
 mkdir -p $ofx/Plugins/yadif.debug
 mv *-${bits}-debug/*.ofx.bundle $ofx/Plugins/yadif.debug
 rm *.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/yadif
 mkdir -p $ofx/Plugins.disabled/yadif
 mv *-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/yadif
@@ -569,7 +569,7 @@ rm -rf $ofx/Plugins/opencv2fx.debug
 mkdir -p $ofx/Plugins/opencv2fx.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/opencv2fx.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/opencv2fx
 mkdir -p $ofx/Plugins.disabled/opencv2fx
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/opencv2fx
@@ -584,7 +584,7 @@ rm -rf $ofx/Plugins/io.debug
 mkdir -p $ofx/Plugins/io.debug
 mv */*-${bits}-debug/*.ofx.bundle $ofx/Plugins/io.debug
 rm */*.o
-make BITS=$bits DEBUGFLAG=-O3
+make BITS=$bits CONFIG=release
 rm -rf $ofx/Plugins.disabled/io
 mkdir -p $ofx/Plugins.disabled/io
 mv */*-${bits}-release/*.ofx.bundle $ofx/Plugins.disabled/io
