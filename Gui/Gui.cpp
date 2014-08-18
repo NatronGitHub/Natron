@@ -489,6 +489,7 @@ GuiPrivate::notifyGuiClosing()
     for (std::list<DockablePanel*>::iterator it = openedPanels.begin();it!=openedPanels.end(); ++it) {
         (*it)->onGuiClosing();
     }
+    _nodeGraphArea->discardGuiPointer();
 }
 
 bool

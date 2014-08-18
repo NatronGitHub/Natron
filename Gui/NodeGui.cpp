@@ -378,7 +378,7 @@ void NodeGui::togglePreview(){
 
 
 void NodeGui::removeUndoStack(){
-    if(getUndoStack()){
+    if(_graph->getGui() && getUndoStack()){
         _graph->getGui()->removeUndoStack(getUndoStack());
     }
 }
@@ -1081,6 +1081,9 @@ void NodeGui::activate() {
 
 void NodeGui::hideGui()
 {
+    if (!_graph->getGui()) {
+        return;
+    }
     hide();
     setActive(false);
     for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
@@ -1170,7 +1173,9 @@ void NodeGui::deactivate() {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
     _graph->moveToTrash(this);
-    _graph->getGui()->getCurveEditor()->removeNode(this);
+    if (_graph->getGui()) {
+        _graph->getGui()->getCurveEditor()->removeNode(this);
+    }
     
     
     if (!isMultiInstanceChild) {
