@@ -1249,9 +1249,12 @@ void KnobHolder::restoreDefaultValues()
 
     for (U32 i = 0; i < _imp->knobs.size() ;++i) {
         Button_Knob* isBtn = dynamic_cast<Button_Knob*>(_imp->knobs[i].get());
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->knobs[i].get());
+        Group_Knob* isGroup = dynamic_cast<Group_Knob*>(_imp->knobs[i].get());
+        Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>(_imp->knobs[i].get());
         
         ///Don't restore buttons and the node label
-        if (!isBtn && _imp->knobs[i]->getName() != "label_natron") {
+        if (!isBtn && !isPage && !isGroup && !isSeparator && _imp->knobs[i]->getName() != "label_natron") {
             _imp->knobs[i]->blockEvaluation();
             for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
                 _imp->knobs[i]->resetToDefaultValue(d);

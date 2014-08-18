@@ -467,9 +467,10 @@ public:
                                       Natron::ImageBitDepth depth,
                                       bool dontUpscale) WARN_UNUSED_RETURN;
     
+    virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
+
 protected:
     
-    virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
 
     
     /**

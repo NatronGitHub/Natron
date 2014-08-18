@@ -30,6 +30,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QPainter>
 #include <QImage>
 
+#include <ofxNatron.h>
+
+
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
@@ -53,6 +56,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/RotoPanel.h"
 #include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/KnobUndoCommand.h"
 
 using std::make_pair;
 using namespace Natron;
@@ -458,19 +462,41 @@ QSize DockablePanelTabWidget::minimumSizeHint() const
 
 void DockablePanel::onRestoreDefaultsButtonClicked() {
     
-    Natron::StandardButton reply = Natron::questionDialog(tr("Reset").toStdString(), tr("Are you sure you want to restore default settings for this operator ? "
-                                                          "This cannot be undone.").toStdString(),Natron::StandardButtons(Natron::Yes | Natron::No),
-                                                          Natron::Yes);
-    if (reply != Natron::Yes) {
-        return;
-    }
+    std::list<boost::shared_ptr<KnobI> > knobsList;
+    
     boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
     if (multiPanel) {
-        multiPanel->resetAllInstances();
-        return;
+        const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = multiPanel->getInstances();
+        for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+            const std::vector<boost::shared_ptr<KnobI> >& knobs = it->first->getKnobs();
+            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
+                Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it2->get());
+                Page_Knob* isPage = dynamic_cast<Page_Knob*>(it2->get());
+                Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it2->get());
+                Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>(it2->get());
+                if (!isBtn && !isPage && !isGroup && !isSeparator && (*it2)->getName() != "label_natron"  &&
+                    (*it2)->getName() != kOfxParamStringSublabelName) {
+                    knobsList.push_back(*it2);
+                }
+            }
+        }
+        multiPanel->clearSelection();
+    } else {
+
+        const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+            Button_Knob* isBtn = dynamic_cast<Button_Knob*>(it->get());
+            Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->get());
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->get());
+            Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>(it->get());
+            if (!isBtn && !isPage && !isGroup && !isSeparator && (*it)->getName() != "label_natron" &&
+                (*it)->getName() != kOfxParamStringSublabelName) {
+                knobsList.push_back(*it);
+            }
+        }
     }
-    _imp->_holder->restoreDefaultValues();
-   
+    pushUndoCommand(new RestoreDefaultsCommand(knobsList));
+
 }
 
 void DockablePanel::onLineEditNameEditingFinished() {

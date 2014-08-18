@@ -248,9 +248,8 @@ public:
     
     virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
     
-private:
+    static boost::shared_ptr<KnobI> createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob);
     
-    boost::shared_ptr<KnobI> createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob) const;
 };
 
 class PasteUndoCommand : public QUndoCommand
@@ -283,5 +282,19 @@ public:
     
 };
 
+
+class RestoreDefaultsCommand : public QUndoCommand
+{
+public:
+    
+    RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> >& knobs,
+                       QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    std::list<boost::shared_ptr<KnobI> > _knobs,_clones;
+};
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_

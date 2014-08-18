@@ -1237,12 +1237,18 @@ void KnobGui::onResetDefaultValuesActionTriggered() {
     }
 }
 
-void KnobGui::resetDefault(int dimension) {
+void KnobGui::resetDefault(int /*dimension*/) {
+    
     boost::shared_ptr<KnobI> knob = getKnob();
-    removeAllKeyframeMarkersOnTimeline(dimension);
-    ///this cannot be undone for now. it's kinda lots of effort to do it and frankly not much necessary.
-    if (knob->typeName() != Button_Knob::typeNameStatic()) {
-        knob->resetToDefaultValue(dimension);
+    Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knob.get());
+    Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
+    Group_Knob* isGroup = dynamic_cast<Group_Knob*>(knob.get());
+    Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>(knob.get());
+    
+    if (!isBtn && !isPage && !isGroup && !isSeparator) {
+        std::list<boost::shared_ptr<KnobI> > knobs;
+        knobs.push_back(knob);
+        pushUndoCommand(new RestoreDefaultsCommand(knobs));
     }
 }
 

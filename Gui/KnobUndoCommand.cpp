@@ -250,7 +250,7 @@ MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
     
 }
 
-boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob) const
+boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob)
 {
     const std::string& typeName = originalKnob->typeName();
     boost::shared_ptr<KnobI> copy;
@@ -437,6 +437,88 @@ bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
     
     knobs.insert(knobCommand->knobs.begin(), knobCommand->knobs.end());
     return true;
+}
+
+
+RestoreDefaultsCommand::RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> >& knobs, QUndoCommand *parent)
+: QUndoCommand(parent)
+, _knobs(knobs)
+{
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        _clones.push_back(MultipleKnobEditsUndoCommand::createCopyForKnob(*it));
+    }
+}
+
+void RestoreDefaultsCommand::undo()
+{
+    assert(_clones.size() == _knobs.size());
+    
+    std::list<SequenceTime> times;
+    const boost::shared_ptr<KnobI>& first = _knobs.front();
+    
+    boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
+    
+    std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it,++itClone) {
+        (*it)->clone(*itClone);
+        
+        if ((*it)->getHolder()->getApp()) {
+            int dim = (*it)->getDimension();
+            for (int i = 0; i < dim; ++i) {
+                KeyFrameSet kfs = (*it)->getCurve(i)->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+                    times.push_back(it->getTime());
+                }
+            }
+            
+        }
+
+    }
+    timeline->addMultipleKeyframeIndicatorsAdded(times,true);
+
+    _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    first->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    if (first->getHolder()->getApp()) {
+        first->getHolder()->getApp()->redrawAllViewers();
+    }
+
+    setText(QObject::tr("Restore default value(s)"));
+}
+
+void RestoreDefaultsCommand::redo()
+{
+    std::list<SequenceTime> times;
+    const boost::shared_ptr<KnobI>& first = _knobs.front();
+
+    boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+        
+        if ((*it)->getHolder()->getApp()) {
+            int dim = (*it)->getDimension();
+            for (int i = 0; i < dim; ++i) {
+                KeyFrameSet kfs = (*it)->getCurve(i)->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+                    times.push_back(it->getTime());
+                }
+            }
+            
+        }
+        
+        (*it)->blockEvaluation();
+        for (int d = 0; d < (*it)->getDimension(); ++d) {
+            (*it)->resetToDefaultValue(d);
+        }
+        (*it)->unblockEvaluation();
+        
+        
+    }
+    timeline->removeMultipleKeyframeIndicator(times,true);
+
+    first->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
+    if (first->getHolder()->getApp()) {
+        first->getHolder()->getApp()->redrawAllViewers();
+    }
+    setText(QObject::tr("Restore default value(s)"));
 }
 
 

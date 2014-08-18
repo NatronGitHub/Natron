@@ -649,7 +649,7 @@ static void getInputRoD(EffectInstance* effect,double time,RectD& rod)
     bool isProjectFormat;
     
     Status stat = effect->getRegionOfDefinition_public(time, scale, view, &rod, &isProjectFormat);
-    if (stat == StatFailed) {
+    if (stat == StatFailed || (rod.x1 == 0 && rod.y1 == 0 && rod.x2 == 1 && rod.y2 == 1)) {
         Format f;
         effect->getRenderFormat(&f);
         rod = f;

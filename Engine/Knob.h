@@ -1154,11 +1154,12 @@ public:
      **/
     void restoreDefaultValues();
     
+    virtual void aboutToRestoreDefaultValues() {}
+
 protected:
     
     bool isEvaluationBlocked() const;
     
-    virtual void aboutToRestoreDefaultValues() {}
     
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).

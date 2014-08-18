@@ -231,6 +231,8 @@ public slots:
     void unlink(int dimension);
     
     void onResetDefaultValuesActionTriggered();
+    
+    ///Actually restores all dimensions, the parameter is disregarded.
     void resetDefault(int dimension);
     
     void onKnobSlavedChanged(int dimension,bool b);
