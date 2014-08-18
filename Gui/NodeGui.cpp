@@ -1550,6 +1550,7 @@ void NodeGui::refreshOutputEdgeVisibility() {
 
 void NodeGui::deleteReferences()
 {
+    removeUndoStack();
     for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
         Edge* e = it->second;
         if(e){
