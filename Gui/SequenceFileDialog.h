@@ -198,6 +198,7 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
      */
     mutable QMutex _frameSequencesMutex; // protects _frameSequences
     mutable std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > _frameSequences;
+    mutable std::map<QString,bool> _filterCache;// used by filterAcceptsRow to avoid calling tryInsertFile()
     SequenceFileDialog* _fd;
     QString _filter;
     std::list<QRegExp> _regexps;
@@ -205,16 +206,13 @@ public:
 
     explicit SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
 
-    virtual ~SequenceDialogProxyModel(){
-        clear();
-    }
+    virtual ~SequenceDialogProxyModel() {}
     
     QString getUserFriendlyFileSequencePatternForFile(const QString& filename,quint64* sequenceSize) const;
         
     void getSequenceFromFilesForFole(const QString& file,SequenceParsing::SequenceFromFiles* sequence) const;
 
-    void clear(){_frameSequences.clear();}
-    
+    void clear() { _frameSequences.clear(); }
     
     void setFilter(const QString& filter);
     
@@ -350,6 +348,8 @@ public:
      * @brief Append all files in the current directory and all its sub-directories recursively.
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir,QStringList* files);
+    
+    void getMappedNameAndSizeForFile(const QString& absoluteFilePath,QString* mappedName,qint64* sequenceSize) const;
 public slots:
 
     ///same as setDirectory but with a QModelIndex
@@ -458,7 +458,6 @@ private:
 private:
     // FIXME: PIMPL
     
-    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
 
     std::vector<std::string> _filters;
@@ -525,14 +524,10 @@ private:
  */
 class SequenceItemDelegate : public QStyledItemDelegate {
 
-    int _maxW;
-    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
-    SequenceFileDialog::NameMapping _nameMapping;
     SequenceFileDialog* _fd;
+    
 public:
     explicit SequenceItemDelegate(SequenceFileDialog* fd);
-
-    void setNameMapping(const SequenceFileDialog::NameMapping& nameMapping);
 
 private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;

@@ -113,7 +113,6 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                                        FileDialogMode mode, // if it is an open or save dialog
                                        const std::string& currentDirectory) // the directory to show first
 : QDialog(parent)
-, _nameMappingMutex()
 , _nameMapping()
 , _filters(filters)
 , _view(0)
@@ -569,9 +568,7 @@ void SequenceFileDialog::createMenuActions(){
 void SequenceFileDialog::enableSequenceMode(bool b){
     _proxy->clear();
     if(!b){
-        QWriteLocker locker(&_nameMappingMutex);
         _nameMapping.clear();
-        _view->updateNameMapping(_nameMapping);
     }
     QString currentDir = _requestedDir;
     setDirectory(_model->myComputer().toString());
@@ -657,7 +654,6 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if (!directory.isEmpty() && newDirectory.isEmpty())
         return;
     _requestedDir = newDirectory;
-    //_proxy->clear(); //< clear already recorded frame sequences to speed-up filterAcceptsRow
     _model->setRootPath(newDirectory); // < calls filterAcceptsRow
     _createDirButton->setEnabled(_dialogMode != OPEN_DIALOG);
     if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
@@ -739,7 +735,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
 	}
     
     /*the full absolute file path of the item*/
-    QString path = item.data(QFileSystemModel::FilePathRole).toString();
+    QString absoluteFilePath = item.data(QFileSystemModel::FilePathRole).toString();
     
     /*if it is a directory, we accept it and don't consider it as a possible sequence item*/
     if (qobject_cast<QFileSystemModel*>(sourceModel())->isDir(item)) {
@@ -757,22 +753,30 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     }
 
     /*if the item does not match the filter regexp set by the user, discard it*/
-    if (!isAcceptedByUser(path)) {
+    if (!isAcceptedByUser(absoluteFilePath)) {
         return false;
     }
     
     
+    ///Store the result of tryInsertFile() in a map so that we don't need to call
+    ///any expensive parsing function.
+    std::map<QString,bool>::iterator foundInCache = _filterCache.find(absoluteFilePath);
+    if (foundInCache != _filterCache.end()) {
+        return foundInCache->second;
+    }
+    
     /*if we reach here, this is a valid file and we need to take actions*/
-    SequenceParsing::FileNameContent fileContent(path.toStdString());
-    for (U32 i = 0; i < _frameSequences.size(); ++i) {
+    SequenceParsing::FileNameContent fileContent(absoluteFilePath.toStdString());
+    for (int i = (int)_frameSequences.size() - 1; i >= 0 ; --i) {
         if (_frameSequences[i]->tryInsertFile(fileContent,false)) {
             ///don't accept the file in the proxy because it already belongs to a sequence
+            _filterCache.insert(std::make_pair(absoluteFilePath,false));
             return false;
         }
     }
     boost::shared_ptr<SequenceParsing::SequenceFromFiles> newSequence(new SequenceParsing::SequenceFromFiles(fileContent,true));
     _frameSequences.push_back(newSequence);
-    
+    _filterCache.insert(std::make_pair(absoluteFilePath,true));
     return true;
 }
 
@@ -818,37 +822,40 @@ void SequenceDialogProxyModel::setFilter(const QString& filter)
 
 }
 
-void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
-    _nameMapping.clear();
-    if(!sequenceModeEnabled()){
+void SequenceFileDialog::getMappedNameAndSizeForFile(const QString& absoluteFilePath,QString* mappedName,qint64* sequenceSize) const
+{
+    SequenceFileDialog::NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(),
+                                                                      NameMappingCompareFirstNoPath(absoluteFilePath));
+    if (it != _nameMapping.end()) { // probably a directory or a single image file
+        *mappedName = it->second.second;
+        *sequenceSize = it->second.first;
+    }
+}
+
+void SequenceFileDialog::itemsToSequence(const QModelIndex& parent) {
+    if (!sequenceModeEnabled()) {
+        _nameMapping.clear();
         return;
     }
   
     int rowCount = _model->rowCount(parent);
-    //QModelIndex proxyIndex = _proxy->mapFromSource(parent);
-    //int rowCount = _proxy->rowCount(proxyIndex);
     for(int c = 0 ; c < rowCount ; ++c) {
         QModelIndex item = _model->index(c,0,parent);
-        //QModelIndex item = _proxy->index(c, 0,proxyIndex);
+
         /*We skip directories*/
         QString name = item.data(QFileSystemModel::FilePathRole).toString();
-
+        
         if (!item.isValid() || _model->isDir(item)) {
             continue;
         }
         quint64 sequenceSize;
         QString mappedName = _proxy->getUserFriendlyFileSequencePatternForFile(name,&sequenceSize);
-        {
-            QWriteLocker locker(&_nameMappingMutex);
-            NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(name));
-            if (it == _nameMapping.end()) {
-                _nameMapping.push_back(make_pair(name,make_pair(sequenceSize,mappedName)));
-            }
+        
+        NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(name));
+        if (it == _nameMapping.end()) {
+            _nameMapping.push_back(make_pair(name,make_pair(sequenceSize,mappedName)));
         }
-
     }
-    QReadLocker locker(&_nameMappingMutex);
-    _view->updateNameMapping(_nameMapping);
 }
 void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
@@ -914,30 +921,9 @@ void SequenceDialogView::expandColumnsToFullWidth(int w ) {
     setColumnWidth(3, w * 0.15);
 }
 
-void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping){
-    dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
-}
-
-
-SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItemDelegate(),_maxW(200),_fd(fd){}
-
-void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping) {
-    _maxW = 200;
-    QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_6);
-    QFontMetrics metric(f);
-    {
-        QWriteLocker locker(&_nameMappingMutex);
-        _nameMapping.clear();
-        for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
-            const SequenceFileDialog::NameMappingElement& p = nameMapping[i];
-            _nameMapping.push_back(p);
-            int w = metric.width(p.second.second);
-            if(w > _maxW) _maxW = w;
-        }
-    }
-
-}
-
+SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd)
+: QStyledItemDelegate()
+, _fd(fd){}
 
 
 void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &option, const QModelIndex & index) const {
@@ -960,15 +946,14 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
 		}
         str = idx.data().toString();
     }
-    std::pair<qint64,QString> found_item;
-    {
-        QReadLocker locker(&_nameMappingMutex);
-        SequenceFileDialog::NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirstNoPath(str));
-        if (it == _nameMapping.end()) { // probably a directory or a single image file
-            return QStyledItemDelegate::paint(painter,option,index);
-        }
-        found_item = it->second;
+    
+    qint64 itemSize;
+    QString mappedName;
+    _fd->getMappedNameAndSizeForFile(str, &mappedName, &itemSize);
+    if (mappedName.isEmpty()) {
+        return QStyledItemDelegate::paint(painter,option,index);
     }
+    
     // get the proper subrect from the style
     QStyle *style = QApplication::style();
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
@@ -981,7 +966,6 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
         }
-        const QString& nameToPaint = found_item.second;
         int totalSize = geom.width();
         int iconWidth = option.decorationSize.width();
         int textSize = totalSize - iconWidth;
@@ -996,14 +980,14 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         painter->drawPixmap(iconRect,
                             icon.pixmap(iconSize),
                             r);
-        painter->drawText(textRect,Qt::TextSingleLine,nameToPaint,&r);
+        painter->drawText(textRect,Qt::TextSingleLine,mappedName,&r);
     } else if (index.column() == 1) {
         QRect r;
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
         }
-        QString nameToPaint(printAsRAM(found_item.first));
-        painter->drawText(geom,Qt::TextSingleLine|Qt::AlignRight,nameToPaint,&r);
+        QString nameToPaint(printAsRAM(itemSize));
+        painter->drawText(geom,Qt::TextSingleLine|Qt::AlignRight,mappedName,&r);
     }
 
 
@@ -2107,6 +2091,7 @@ void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringL
         }
     }
 }
+
 
 void SequenceFileDialog::onSelectionLineEditing(const QString& text) {
     
