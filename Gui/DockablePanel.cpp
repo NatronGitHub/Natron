@@ -819,7 +819,7 @@ KnobGui* DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI
                     tab = new QWidget(page->second.tabWidget);
                     tabLayout = new QFormLayout(tab);
                     tabLayout->setContentsMargins(0, 0, 0, 0);
-                    tabLayout->setSpacing(3);
+                    tabLayout->setSpacing(0);// unfortunately, this leaves extra space when parameters are hidden
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
                 
@@ -903,10 +903,8 @@ PageMap::iterator DockablePanelPrivate::addPage(const QString& name)
     QFormLayout *tabLayout = new QFormLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
-    //tabLayout->setVerticalSpacing(2); // unfortunately, this leaves extra space when parameters are hidden
-    tabLayout->setVerticalSpacing(3);
     tabLayout->setContentsMargins(3, 0, 0, 0);
-    tabLayout->setHorizontalSpacing(3);
+    tabLayout->setSpacing(0);// unfortunately, this leaves extra space when parameters are hidden
     tabLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     tabLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     tabLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
