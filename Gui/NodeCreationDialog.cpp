@@ -28,25 +28,26 @@ struct CompleterLineEditPrivate {
     QDialog* dialog;
     QListView* listView;
     QStringListModel* model;
-    QStringList words;
+    QStringList words,ids;
     bool quickExitEnabled;
     
-    CompleterLineEditPrivate(const QStringList& words,bool quickExit,QDialog* parent)
+    CompleterLineEditPrivate(const QStringList& displayWords,const QStringList& internalIds,bool quickExit,QDialog* parent)
     : dialog(parent)
     , listView(NULL)
     , model(NULL)
-    , words(words)
+    , words(displayWords)
+    , ids(internalIds)
     , quickExitEnabled(quickExit)
     {
-        
+        assert(displayWords.size() == internalIds.size());
     }
 };
 
 
 
-CompleterLineEdit::CompleterLineEdit(const QStringList& words,bool quickExit,QDialog* parent)
+CompleterLineEdit::CompleterLineEdit(const QStringList& displayWords,const QStringList& internalIds,bool quickExit,QDialog* parent)
 : LineEdit(parent)
-, _imp(new CompleterLineEditPrivate(words,quickExit,parent))
+, _imp(new CompleterLineEditPrivate(displayWords,internalIds,quickExit,parent))
 {
     _imp->listView = new QListView(this);
     _imp->model = new QStringListModel(this);
@@ -67,8 +68,8 @@ void CompleterLineEdit::filterText(const QString& txt)
     if (txt.isEmpty()) {
         sl = _imp->words;
     } else {
-        for (int i = 0; i < _imp->words.size(); ++i) {
-            if (_imp->words[i].contains(txt,Qt::CaseInsensitive)) {
+        for (int i = 0; i < _imp->ids.size(); ++i) {
+            if (_imp->ids[i].contains(txt,Qt::CaseInsensitive)) {
                 sl << _imp->words[i];
             }
         }
@@ -219,13 +220,15 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
 
     
     
-    QStringList strings;
+    QStringList ids;
+    QStringList names;
     for (unsigned int i = 0; i < _imp->items.size(); ++i) {
-        strings.push_back(_imp->items[i]->getPluginID());
+        ids.push_back(_imp->items[i]->getPluginID());
+        names.push_back(_imp->items[i]->getPluginLabel());
     }
-    strings.sort();
-    
-    _imp->textEdit = new CompleterLineEdit(strings,true,this);
+    ids.sort();
+    names.sort();
+    _imp->textEdit = new CompleterLineEdit(ids,names,true,this);
 
     QPoint global = QCursor::pos();
     QSize sizeH = sizeHint();

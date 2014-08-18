@@ -1075,7 +1075,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,QWidget* parent)
         //_imp->nodeSelectionCombo->addItem(name);
     }
     nodeNames.sort();
-    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,false,this);
+    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
     _imp->nodeSelectionCombo->setToolTip(tr("Input the name of a node in the current project."));
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
     

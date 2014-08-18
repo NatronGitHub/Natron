@@ -32,7 +32,7 @@ class CompleterLineEdit: public LineEdit
     Q_OBJECT
 public:
     
-    CompleterLineEdit(const QStringList& words,bool quickExit,QDialog* parent);
+    CompleterLineEdit(const QStringList& displayWords,const QStringList& internalIds,bool quickExit,QDialog* parent);
     
     virtual ~CompleterLineEdit();
     
