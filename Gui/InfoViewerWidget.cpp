@@ -245,10 +245,10 @@ InfoViewerWidget::setDataWindow(const RectD& r)
 {
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-    .arg(r.left())
-    .arg(r.bottom())
-    .arg(r.right())
-    .arg(r.top());
+    .arg(std::ceil(r.left()))
+    .arg(std::ceil(r.bottom()))
+    .arg(std::floor(r.right()))
+    .arg(std::floor(r.top()));
     
     coordDispWindow->setText(bbox);
 }
