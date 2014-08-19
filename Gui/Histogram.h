@@ -83,7 +83,7 @@ private:
     
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
