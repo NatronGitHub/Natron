@@ -19,7 +19,7 @@ sunkenStyle(false)
 }
 
 
-void ClickableLabel::mousePressEvent(QMouseEvent *e) {
+void ClickableLabel::mousePressEvent(QMouseEvent* e) {
     if (isEnabled()) {
         _toggled = !_toggled;
         emit clicked(_toggled);
