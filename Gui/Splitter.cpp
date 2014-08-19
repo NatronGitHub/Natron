@@ -61,7 +61,7 @@ void Splitter::setSizes_mt_safe(const QList<int> & list) {
     setSizes(list);
 }
 
-void Splitter::resizeEvent(QResizeEvent * e) {
+void Splitter::resizeEvent(QResizeEvent* e) {
     QMutexLocker l(&_lock);
     return QSplitter::resizeEvent(e);
 }
