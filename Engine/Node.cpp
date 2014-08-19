@@ -951,12 +951,13 @@ Node::input(int index) const
     ////Only called by the main-thread
     ////@see input_other_thread for the MT version
     assert(QThread::currentThread() == qApp->thread());
-    if (!_imp->inputsInitialized) {
-        qDebug() << "Node::input(): inputs not initialized";
-    }
+    
 
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->input(index);
+    }
+    if (!_imp->inputsInitialized) {
+        qDebug() << "Node::input(): inputs not initialized";
     }
     QMutexLocker l(&_imp->inputsMutex);
     if (index >= (int)_imp->inputsQueue.size() || index < 0) {
