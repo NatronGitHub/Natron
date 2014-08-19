@@ -31,6 +31,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/RotoContext.h"
+#include "Engine/TimeLine.h"
+#include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Image.h"
+#include "Engine/RotoContextPrivate.h" // for getCompositingOperators
+
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
 #include "Gui/ClickableLabel.h"
@@ -40,14 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/RotoUndoCommand.h"
 #include "Gui/ComboBox.h"
-
-#include "Engine/RotoContext.h"
-#include "Engine/TimeLine.h"
-#include "Engine/Node.h"
-#include "Engine/EffectInstance.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/Image.h"
-#include "Engine/RotoContextPrivate.h" // for getCompositingOperators
+#include "Gui/GuiMacros.h"
 
 #define COL_NAME 0
 #define COL_ACTIVATED 1
@@ -98,26 +99,26 @@ public:
     
 private:
     
-    virtual void mouseReleaseEvent(QMouseEvent* event) OVERRIDE FINAL
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        QModelIndex index = indexAt(event->pos());
-        QTreeWidgetItem* item = itemAt(event->pos());
+        QModelIndex index = indexAt(e->pos());
+        QTreeWidgetItem* item = itemAt(e->pos());
         QList<QTreeWidgetItem*> selection = selectedItems();
         
         if (index.isValid() && index.column() != 0 && selection.contains(item)) {
             emit itemClicked(item, index.column());
-        } else if (event->button() == Qt::RightButton && index.isValid()) {
-            _panel->showItemMenu(item,event->globalPos());
+        } else if (buttonIsRight(e) && index.isValid()) {
+            _panel->showItemMenu(item,e->globalPos());
         } else {
-            QTreeWidget::mouseReleaseEvent(event);
+            QTreeWidget::mouseReleaseEvent(e);
         }
     }
     
-    virtual void dragMoveEvent(QDragMoveEvent * event) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     
-    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
-    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     bool dragAndDropHandler(const QMimeData* mime,
                             const QPoint& pos,
@@ -1315,16 +1316,17 @@ static void isLayerAParent_recursive(RotoLayer* layer,RotoItem* item,bool* ret)
     }
 }
 
-void TreeWidget::dragMoveEvent(QDragMoveEvent * event)
+void
+TreeWidget::dragMoveEvent(QDragMoveEvent* e)
 {
-    const QMimeData* mime = event->mimeData();
+    const QMimeData* mime = e->mimeData();
     std::list<DroppedTreeItemPtr> droppedItems;
-    bool ret = dragAndDropHandler(mime, event->pos(), droppedItems);
+    bool ret = dragAndDropHandler(mime, e->pos(), droppedItems);
     
-    QTreeWidget::dragMoveEvent(event);
+    QTreeWidget::dragMoveEvent(e);
     
     if (!ret) {
-        event->setAccepted(ret);
+        e->setAccepted(ret);
     }
 }
 
@@ -1340,12 +1342,13 @@ static void checkIfTreatedRecursive(QTreeWidgetItem* matcher, QTreeWidgetItem* i
 }
 
 
-bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
-                                    const QPoint& pos,
-                                    std::list<DroppedTreeItemPtr>& dropped)
+bool
+TreeWidget::dragAndDropHandler(const QMimeData* mime,
+                               const QPoint& pos,
+                               std::list<DroppedTreeItemPtr>& dropped)
 {
-   
-    
+
+
     if (mime->hasFormat("application/x-qabstractitemmodeldatalist")) {
         QByteArray encoded = mime->data("application/x-qabstractitemmodeldatalist");
         QDataStream stream(&encoded,QIODevice::ReadOnly);
@@ -1492,13 +1495,13 @@ bool TreeWidget::dragAndDropHandler(const QMimeData* mime,
     return true;
 }
 
-void TreeWidget::dropEvent(QDropEvent* event)
+void
+TreeWidget::dropEvent(QDropEvent* e)
 {
-   
     std::list<DroppedTreeItemPtr> droppedItems;
-    const QMimeData* mime = event->mimeData();
-    bool accepted = dragAndDropHandler(mime,event->pos(), droppedItems);
-    event->setAccepted(accepted);
+    const QMimeData* mime = e->mimeData();
+    bool accepted = dragAndDropHandler(mime,e->pos(), droppedItems);
+    e->setAccepted(accepted);
     
     if (accepted) {
         _panel->pushUndoCommand(new DragItemsUndoCommand(_panel,droppedItems));
@@ -1506,58 +1509,64 @@ void TreeWidget::dropEvent(QDropEvent* event)
     
 }
 
-void TreeWidget::keyPressEvent(QKeyEvent* event)
+void
+TreeWidget::keyPressEvent(QKeyEvent* e)
 {
-    
     QList<QTreeWidgetItem*> selected = selectedItems();
     QTreeWidgetItem* item = selected.empty() ? 0 :  selected.front();
     
     if (item) {
         _panel->setLastRightClickedItem(item);
-        if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
             _panel->onRemoveItemButtonClicked();
-        } else if (event->key() == Qt::Key_C && event->modifiers().testFlag(Qt::ControlModifier)) {
+        } else if (e->key() == Qt::Key_C && modifierIsControl(e)) {
             _panel->onCopyItemActionTriggered();
-        } else if (event->key() == Qt::Key_V && event->modifiers().testFlag(Qt::ControlModifier)) {
+        } else if (e->key() == Qt::Key_V && modifierIsControl(e)) {
             _panel->onPasteItemActionTriggered();
-        } else if (event->key() == Qt::Key_X && event->modifiers().testFlag(Qt::ControlModifier)) {
+        } else if (e->key() == Qt::Key_X && modifierIsControl(e)) {
             _panel->onCutItemActionTriggered();
-        } else if (event->key() == Qt::Key_C && event->modifiers().testFlag(Qt::AltModifier)) {
+        } else if (e->key() == Qt::Key_C && modifierIsAlt(e)) {
             _panel->onDuplicateItemActionTriggered();
-        } else if (event->key() == Qt::Key_A && event->modifiers().testFlag(Qt::ControlModifier)) {
+        } else if (e->key() == Qt::Key_A && modifierIsControl(e)) {
             _panel->selectAll();
         } else {
-            QTreeWidget::keyPressEvent(event);
+            QTreeWidget::keyPressEvent(e);
         }
     } else {
-        QTreeWidget::keyPressEvent(event);
+        QTreeWidget::keyPressEvent(e);
     }
 }
 
-void RotoPanel::pushUndoCommand(QUndoCommand* cmd)
+void
+RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 {
     NodeSettingsPanel* panel = _imp->node->getSettingPanel();
     assert(panel);
     panel->pushUndoCommand(cmd);
 }
 
-std::string RotoPanel::getNodeName() const
+std::string
+RotoPanel::getNodeName() const
 {
     return _imp->node->getNode()->getName();
 }
 
-RotoContext* RotoPanel::getContext() const
+RotoContext*
+RotoPanel::getContext() const
 {
     return _imp->context;
 }
 
-void RotoPanel::clearSelection()
+void
+RotoPanel::clearSelection()
 {
     _imp->selectedItems.clear();
     _imp->context->clearSelection(RotoContext::SETTINGS_PANEL);
 }
 
-void RotoPanel::showItemMenu(QTreeWidgetItem* item,const QPoint& globalPos)
+void
+RotoPanel::showItemMenu(QTreeWidgetItem* item,
+                        const QPoint& globalPos)
 {
     TreeItems::iterator it = _imp->findItem(item);
     if (it == _imp->items.end()) {
@@ -1594,13 +1603,15 @@ void RotoPanel::showItemMenu(QTreeWidgetItem* item,const QPoint& globalPos)
     menu.exec(globalPos);
 }
 
-void RotoPanel::onAddLayerActionTriggered()
+void
+RotoPanel::onAddLayerActionTriggered()
 {
     assert(_imp->lastRightClickedItem);
     pushUndoCommand(new AddLayerUndoCommand(this));
 }
 
-void RotoPanel::onDeleteItemActionTriggered()
+void
+RotoPanel::onDeleteItemActionTriggered()
 {
     assert(_imp->lastRightClickedItem);
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
@@ -1608,7 +1619,8 @@ void RotoPanel::onDeleteItemActionTriggered()
 
 }
 
-void RotoPanel::onCutItemActionTriggered()
+void
+RotoPanel::onCutItemActionTriggered()
 {
     assert(_imp->lastRightClickedItem);
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
@@ -1617,13 +1629,15 @@ void RotoPanel::onCutItemActionTriggered()
 
 }
 
-void RotoPanel::onCopyItemActionTriggered()
+void
+RotoPanel::onCopyItemActionTriggered()
 {
     assert(_imp->lastRightClickedItem);
     _imp->clipBoard = _imp->tree->selectedItems();
 }
 
-void RotoPanel::onPasteItemActionTriggered()
+void
+RotoPanel::onPasteItemActionTriggered()
 {
     assert(!_imp->clipBoard.empty());
     
@@ -1652,18 +1666,21 @@ void RotoPanel::onPasteItemActionTriggered()
     pushUndoCommand(new PasteItemUndoCommand(this,_imp->lastRightClickedItem,_imp->clipBoard));
 }
 
-void RotoPanel::onDuplicateItemActionTriggered()
+void
+RotoPanel::onDuplicateItemActionTriggered()
 {
     pushUndoCommand(new DuplicateItemUndoCommand(this,_imp->lastRightClickedItem));
 }
 
-void RotoPanel::setLastRightClickedItem(QTreeWidgetItem* item)
+void
+RotoPanel::setLastRightClickedItem(QTreeWidgetItem* item)
 {
     assert(item);
     _imp->lastRightClickedItem = item;
 }
 
-void RotoPanel::selectAll()
+void
+RotoPanel::selectAll()
 {
     _imp->tree->blockSignals(true);
     for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
@@ -1673,7 +1690,8 @@ void RotoPanel::selectAll()
     onItemSelectionChanged();
 }
 
-bool RotoPanelPrivate::itemHasKey(RotoItem* item,int time) const
+bool
+RotoPanelPrivate::itemHasKey(RotoItem* item,int time) const
 {
     ItemKeys::const_iterator it = keyframes.find(item);
     if (it != keyframes.end()) {
@@ -1685,7 +1703,8 @@ bool RotoPanelPrivate::itemHasKey(RotoItem* item,int time) const
     return false;
 }
 
-void RotoPanelPrivate::setItemKey(RotoItem* item,int time)
+void
+RotoPanelPrivate::setItemKey(RotoItem* item,int time)
 {
     ItemKeys::iterator it = keyframes.find(item);
     if (it != keyframes.end()) {
@@ -1700,7 +1719,8 @@ void RotoPanelPrivate::setItemKey(RotoItem* item,int time)
     }
 }
 
-void RotoPanelPrivate::removeItemKey(RotoItem* item,int time)
+void
+RotoPanelPrivate::removeItemKey(RotoItem* item,int time)
 {
     ItemKeys::iterator it = keyframes.find(item);
     if (it != keyframes.end()) {
@@ -1712,7 +1732,9 @@ void RotoPanelPrivate::removeItemKey(RotoItem* item,int time)
     }
 }
 
-void RotoPanel::onSettingsPanelClosed(bool closed) {
+void
+RotoPanel::onSettingsPanelClosed(bool closed)
+{
     if (closed) {
         ///remove all keyframes from the structure kept
         for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
