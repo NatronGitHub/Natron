@@ -52,10 +52,12 @@ ScaleSliderQWidget::~ScaleSliderQWidget(){
     delete _font;
 }
 
-void ScaleSliderQWidget::mousePressEvent(QMouseEvent *event){
+void
+ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
+{
     
     if (!_readOnly) {
-        QPoint newClick =  event->pos();
+        QPoint newClick =  e->pos();
         
         _zoomCtx.oldClick = newClick;
         QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
@@ -63,14 +65,16 @@ void ScaleSliderQWidget::mousePressEvent(QMouseEvent *event){
         seekInternal(newClick_opengl.x());
 
     }
-    QWidget::mousePressEvent(event);
+    QWidget::mousePressEvent(e);
 }
 
 
-void ScaleSliderQWidget::mouseMoveEvent(QMouseEvent *event) {
+void
+ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
+{
     
     if (!_readOnly) {
-        QPoint newClick =  event->pos();
+        QPoint newClick =  e->pos();
         QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
         
         seekInternal(newClick_opengl.x());
@@ -78,14 +82,17 @@ void ScaleSliderQWidget::mouseMoveEvent(QMouseEvent *event) {
     
 }
 
-void ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent *event)
+void
+ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     emit editingFinished();
-    QWidget::mouseReleaseEvent(event);
+    QWidget::mouseReleaseEvent(e);
 }
 
 
-void ScaleSliderQWidget::seekScalePosition(double v){
+void
+ScaleSliderQWidget::seekScalePosition(double v)
+{
     if(v < _minimum)
         v = _minimum;
     if(v > _maximum)
@@ -100,22 +107,29 @@ void ScaleSliderQWidget::seekScalePosition(double v){
         update();
 }
 
-void ScaleSliderQWidget::seekInternal(double v){
-    
-    if(v < _minimum)
+void
+ScaleSliderQWidget::seekInternal(double v)
+{
+    if (v < _minimum) {
         v = _minimum;
-    if(v > _maximum)
+    }
+    if (v > _maximum) {
         v = _maximum;
-    if(v == _value){
+    }
+    if (v == _value) {
         return;
     }
     _value = v;
-    if(_initialized)
+    if (_initialized) {
         update();
+    }
     emit positionChanged(v);
 }
 
-QPointF ScaleSliderQWidget::toScaleCoordinates(double x,double y){
+QPointF
+ScaleSliderQWidget::toScaleCoordinates(double x,
+                                       double y)
+{
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx.bottom;
@@ -125,7 +139,10 @@ QPointF ScaleSliderQWidget::toScaleCoordinates(double x,double y){
     return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
 }
 
-QPointF ScaleSliderQWidget::toWidgetCoordinates(double x, double y){
+QPointF
+ScaleSliderQWidget::toWidgetCoordinates(double x,
+                                        double y)
+{
     double w = (double)width() ;
     double h = (double)height();
     double bottom = _zoomCtx.bottom;
@@ -136,13 +153,19 @@ QPointF ScaleSliderQWidget::toWidgetCoordinates(double x, double y){
 }
 
 
-void ScaleSliderQWidget::setMinimumAndMaximum(double min,double max){
+void
+ScaleSliderQWidget::setMinimumAndMaximum(double min,
+                                         double max)
+{
     _minimum = min;
     _maximum = max;
     centerOn(_minimum, _maximum);
 }
 
-void ScaleSliderQWidget::centerOn(double left,double right){
+void
+ScaleSliderQWidget::centerOn(double left,
+                             double right)
+{
     double scaleWidth = (right - left) * 1.1;
     double w = width();
     _zoomCtx.left = left - (right - left) * 0.05;;
@@ -151,7 +174,9 @@ void ScaleSliderQWidget::centerOn(double left,double right){
     update();
 }
 
-void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
+void
+ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
+{
     if(_mustInitializeSliderPosition){
         centerOn(_minimum, _maximum);
         _mustInitializeSliderPosition = false;
@@ -263,7 +288,9 @@ void ScaleSliderQWidget::paintEvent(QPaintEvent* /*event*/) {
 
 }
 
-void ScaleSliderQWidget::setReadOnly(bool ro) {
+void
+ScaleSliderQWidget::setReadOnly(bool ro)
+{
     _readOnly = ro;
     update();
 }
