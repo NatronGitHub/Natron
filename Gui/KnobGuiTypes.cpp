@@ -2913,8 +2913,8 @@ void Group_KnobGui::setChecked(bool b)
     }
 }
 
-bool Group_KnobGui::eventFilter(QObject */*target*/, QEvent */*event*/) {
-    //if(event->type() == QEvent::Paint){
+bool Group_KnobGui::eventFilter(QObject */*target*/, QEvent* /*event*/) {
+    //if(e->type() == QEvent::Paint){
         ///discard the paint event
         return true;
     // }

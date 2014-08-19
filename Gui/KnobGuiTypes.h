@@ -753,7 +753,7 @@ private:
     
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL {}
 
-    virtual bool eventFilter(QObject *target, QEvent *event) OVERRIDE FINAL;
+    virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     
     virtual void setReadOnly(bool /*readOnly*/,int /*dimension*/) OVERRIDE FINAL {}
 
