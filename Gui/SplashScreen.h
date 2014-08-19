@@ -38,7 +38,7 @@ public:
     
 private:
     
-    virtual void paintEvent(QPaintEvent* event);
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 
 #endif // SPLASHSCREEN_H
