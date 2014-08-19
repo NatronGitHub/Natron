@@ -64,9 +64,9 @@ private:
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void focusInEvent(QFocusEvent* event) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
-    virtual void focusOutEvent(QFocusEvent * event) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     
     bool validateText();
         

@@ -24,6 +24,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Settings.h"
 #include "Engine/AppManager.h"
 #include "Global/Macros.h"
+#include "Gui/GuiMacros.h"
 
 
 struct SpinBoxPrivate
@@ -230,7 +231,7 @@ SpinBoxPrivate::incrementAccordingToPosition(const QString& str,int cursorPos,do
 }
 
 void
-SpinBox::wheelEvent(QWheelEvent *e)
+SpinBox::wheelEvent(QWheelEvent* e)
 {
     setFocus();
     setCursorPosition(cursorPositionAt(e->pos()));
@@ -250,10 +251,10 @@ SpinBox::wheelEvent(QWheelEvent *e)
         if (!useCursorPositionIncr) {
             _imp->currentDelta += e->delta();
             inc = _imp->currentDelta * _imp->increment / 120.;
-            if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+            if (modifierIsShift(e)) {
                 inc *= 10.;
             }
-            if (e->modifiers().testFlag(Qt::ControlModifier)) {
+            if (modifierIsControl(e)) {
                 inc /= 10.;
             }
         } else {
@@ -291,14 +292,14 @@ SpinBox::wheelEvent(QWheelEvent *e)
 }
 
 void
-SpinBox::focusInEvent(QFocusEvent* event)
+SpinBox::focusInEvent(QFocusEvent* e)
 {
     _imp->valueWhenEnteringFocus = text().toDouble();
-    LineEdit::focusInEvent(event);
+    LineEdit::focusInEvent(e);
 }
 
 void
-SpinBox::focusOutEvent(QFocusEvent * event)
+SpinBox::focusOutEvent(QFocusEvent* e)
 {
     double newValue = text().toDouble();
     if (newValue != _imp->valueWhenEnteringFocus) {
@@ -306,12 +307,12 @@ SpinBox::focusOutEvent(QFocusEvent * event)
             emit valueChanged(value());
         }
     }
-    LineEdit::focusOutEvent(event);
+    LineEdit::focusOutEvent(e);
 
 }
 
 void
-SpinBox::keyPressEvent(QKeyEvent *e)
+SpinBox::keyPressEvent(QKeyEvent* e)
 {
     if (isEnabled() && !isReadOnly()) {
         bool ok;
@@ -334,10 +335,10 @@ SpinBox::keyPressEvent(QKeyEvent *e)
             double inc;
             if (!useCursorPositionIncr) {
                 inc = _imp->increment;
-                if (e->modifiers().testFlag(Qt::ShiftModifier)) {
+                if (modifierIsShift(e)) {
                     inc *= 10.;
                 }
-                if (e->modifiers().testFlag(Qt::ControlModifier)) {
+                if (modifierIsControl(e)) {
                     inc /= 10.;
                 }
             } else {
