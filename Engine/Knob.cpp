@@ -416,6 +416,7 @@ void KnobHelper::evaluateValueChange(int dimension,Natron::ValueChangedReason re
             
             bool significant = (reason != Natron::TIME_CHANGED) && _imp->EvaluateOnChange;
             _imp->holder->evaluate_public(this, significant, reason);
+     
         }
     }
     
@@ -1184,12 +1185,16 @@ void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueCha
     if (isEvaluationBlocked()) {
         return;
     }
-    _imp->evaluateQueue.isSignificant |= isSignificant;
+        _imp->evaluateQueue.isSignificant |= isSignificant;
     _imp->evaluateQueue.requester = knob;
     if (getRecursionLevel() == 0) {
         evaluate(knob, _imp->evaluateQueue.isSignificant,reason);
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
+        if (isSignificant && getApp()) {
+            getApp()->triggerAutoSave();
+        }
+
     }
 }
 
