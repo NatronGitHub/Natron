@@ -418,16 +418,18 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                      this, SLOT(pathChanged(QString)));
     createMenuActions();
     
-    if(_dialogMode == OPEN_DIALOG){
-        if(isSequenceDialog)
+    if (_dialogMode == OPEN_DIALOG) {
+        if (isSequenceDialog) {
             setWindowTitle(tr("Open Sequence"));
-        else
+        } else {
             setWindowTitle(tr("Open File"));
-    }else if(_dialogMode == SAVE_DIALOG){
-        if(isSequenceDialog)
+        }
+    } else if (_dialogMode == SAVE_DIALOG) {
+        if (isSequenceDialog) {
             setWindowTitle(tr("Save Sequence"));
-        else
+        } else {
             setWindowTitle(tr("Save File"));
+        }
     } else {
         setWindowTitle(tr("Select directory"));
     }
@@ -443,16 +445,22 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
         enableSequenceMode(false);
     }
 }
-SequenceFileDialog::~SequenceFileDialog(){
+
+SequenceFileDialog::~SequenceFileDialog()
+{
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.setValue(QLatin1String("FileDialog"), saveState());
 }
 
-void SequenceFileDialog::onFileExtensionComboChanged(int index) {
+void
+SequenceFileDialog::onFileExtensionComboChanged(int index)
+{
     setFileExtensionOnLineEdit(_fileExtensionCombo->itemText(index));
 }
 
-QByteArray SequenceFileDialog::saveState() const{
+QByteArray
+SequenceFileDialog::saveState() const
+{
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
     QList<QUrl> urls;
@@ -468,7 +476,9 @@ QByteArray SequenceFileDialog::saveState() const{
     return data;
 }
 
-bool SequenceFileDialog::restoreState(const QByteArray& state){
+bool
+SequenceFileDialog::restoreState(const QByteArray& state)
+{
     QByteArray sd = state;
     QDataStream stream(&sd, QIODevice::ReadOnly);
     if (stream.atEnd())
@@ -516,8 +526,9 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
 
 
 
-void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext) {
-    
+void
+SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext)
+{
     assert(_dialogMode == SAVE_DIALOG);
     
     QString str  = _selectionLineEdit->text();
@@ -555,7 +566,9 @@ void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext) {
     
 }
 
-void SequenceFileDialog::sequenceComboBoxSlot(int index){
+void
+SequenceFileDialog::sequenceComboBoxSlot(int index)
+{
     if(index == 1){
         enableSequenceMode(false);
     }else{
@@ -563,7 +576,9 @@ void SequenceFileDialog::sequenceComboBoxSlot(int index){
     }
 }
 
-void SequenceFileDialog::showContextMenu(const QPoint& position){
+void
+SequenceFileDialog::showContextMenu(const QPoint& position)
+{
     QMenu menu(_view);
     menu.addAction(_showHiddenAction);
     if (_createDirButton->isVisible()) {
@@ -573,7 +588,9 @@ void SequenceFileDialog::showContextMenu(const QPoint& position){
     menu.exec(_view->viewport()->mapToGlobal(position));
 }
 
-void SequenceFileDialog::createMenuActions(){
+void
+SequenceFileDialog::createMenuActions()
+{
     QAction *goHomeAction =  new QAction(this);
     goHomeAction->setShortcut(Qt::CTRL + Qt::Key_H + Qt::SHIFT);
     QObject::connect(goHomeAction, SIGNAL(triggered()), this, SLOT(goHome()));
@@ -595,7 +612,9 @@ void SequenceFileDialog::createMenuActions(){
     QObject::connect(_newFolderAction, SIGNAL(triggered()), this, SLOT(createDir()));
 }
 
-void SequenceFileDialog::enableSequenceMode(bool b){
+void
+SequenceFileDialog::enableSequenceMode(bool b)
+{
     if(!b){
         _nameMapping.clear();
     }
@@ -605,7 +624,9 @@ void SequenceFileDialog::enableSequenceMode(bool b){
     _view->viewport()->update();
 }
 
-void SequenceFileDialog::selectionChanged() {
+void
+SequenceFileDialog::selectionChanged()
+{
     QStringList allFiles;
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     assert(indexes.size() <= 1);
@@ -883,17 +904,20 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd):QTreeView(fd),_fd
     setAcceptDrops(true);
 }
 
-void SequenceDialogView::paintEvent(QPaintEvent *event)
+void
+SequenceDialogView::paintEvent(QPaintEvent* e)
 {
-	QTreeView::paintEvent(event);
+	QTreeView::paintEvent(e);
 }
 
-void SequenceDialogView::dropEvent(QDropEvent* event){
-    if(!event->mimeData()->hasUrls())
+void
+SequenceDialogView::dropEvent(QDropEvent* e)
+{
+    if(!e->mimeData()->hasUrls())
         return;
 
     QStringList filesList;
-    QList<QUrl> urls = event->mimeData()->urls();
+    QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if(urls.size() > 0){
         path = urls.at(0).path();
@@ -903,25 +927,35 @@ void SequenceDialogView::dropEvent(QDropEvent* event){
     }
 }
 
-void SequenceDialogView::dragEnterEvent(QDragEnterEvent *ev){
-    ev->accept();
-}
-
-void SequenceDialogView::dragMoveEvent(QDragMoveEvent* e){
+void
+SequenceDialogView::dragEnterEvent(QDragEnterEvent* e)
+{
     e->accept();
 }
 
-void SequenceDialogView::dragLeaveEvent(QDragLeaveEvent* e){
+void
+SequenceDialogView::dragMoveEvent(QDragMoveEvent* e)
+{
     e->accept();
 }
 
-void SequenceDialogView::resizeEvent(QResizeEvent* e) {
+void
+SequenceDialogView::dragLeaveEvent(QDragLeaveEvent* e)
+{
+    e->accept();
+}
+
+void
+SequenceDialogView::resizeEvent(QResizeEvent* e)
+{
     expandColumnsToFullWidth(e->size().width());
    // repaint(); //< seems to make Qt crash on windows
     QTreeView::resizeEvent(e);
 }
 
-void SequenceDialogView::expandColumnsToFullWidth(int w ) {
+void
+SequenceDialogView::expandColumnsToFullWidth(int w)
+{
     setColumnWidth(0,w * 0.65);
     setColumnWidth(1,w * 0.1);
     setColumnWidth(2, w * 0.1);
@@ -930,10 +964,16 @@ void SequenceDialogView::expandColumnsToFullWidth(int w ) {
 
 SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd)
 : QStyledItemDelegate()
-, _fd(fd){}
+, _fd(fd)
+{
+}
 
 
-void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &option, const QModelIndex & index) const {
+void
+SequenceItemDelegate::paint(QPainter * painter,
+                            const QStyleOptionViewItem &option,
+                            const QModelIndex & index) const
+{
 	assert(index.isValid());
     if((index.column() != 0 && index.column() != 1) || !index.isValid()) {
         return QStyledItemDelegate::paint(painter,option,index);
@@ -963,7 +1003,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         isDir = dir.exists();
     }
     
-    quint64 itemSize;
+    quint64 itemSize = 0;
     QString mappedName;
     if (!isDir) {
         _fd->getMappedNameAndSizeForFile(absoluteFileName, &mappedName, &itemSize);
@@ -1040,7 +1080,11 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
 
 }
 
-void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const{
+void
+FavoriteItemDelegate::paint(QPainter * painter,
+                            const QStyleOptionViewItem & option,
+                            const QModelIndex & index) const
+{
     if(index.column() == 0){
         QString str = index.data().toString();
         QFileInfo fileInfo(str);
@@ -1069,11 +1113,18 @@ void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         QStyledItemDelegate::paint(painter,option,index);
     }
 }
-bool SequenceFileDialog::isDirectory(const QString& name) const{
+
+bool
+SequenceFileDialog::isDirectory(const QString& name) const
+{
     QModelIndex index = _model->index(name);
     return index.isValid() && _model->isDir(index);
 }
-QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const {
+
+QSize
+SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option,
+                               const QModelIndex & index) const
+{
     if(index.column() != 0){
         return QStyledItemDelegate::sizeHint(option,index);
     }
@@ -1081,7 +1132,10 @@ QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const 
     QFontMetrics metric(option.font);
     return QSize(metric.width(str),metric.height());
 }
-bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const{
+
+bool
+SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const
+{
     if(!_filters.size())
         return true;
     for(unsigned int i = 0 ; i < _filters.size() ; ++i) {
@@ -1091,7 +1145,9 @@ bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const
     return false;
 }
 
-QString SequenceFileDialog::getFilePath(const QString& str) {
+QString
+SequenceFileDialog::getFilePath(const QString& str)
+{
     int slashPos = str.lastIndexOf(QDir::separator());
     if (slashPos != -1) {
         return str.left(slashPos);
@@ -1101,7 +1157,9 @@ QString SequenceFileDialog::getFilePath(const QString& str) {
 }
 
 
-void SequenceFileDialog::previousFolder(){
+void
+SequenceFileDialog::previousFolder()
+{
     if(!_history.isEmpty() && _currentHistoryLocation > 0){
         --_currentHistoryLocation;
         QString previousHistory = _history.at(_currentHistoryLocation);
@@ -1109,14 +1167,20 @@ void SequenceFileDialog::previousFolder(){
     }
 
 }
-void SequenceFileDialog::nextFolder(){
+
+void
+SequenceFileDialog::nextFolder()
+{
     if(!_history.isEmpty() && _currentHistoryLocation < _history.size()-1){
         ++_currentHistoryLocation;
         QString nextHistory = _history.at(_currentHistoryLocation);
         setDirectory(nextHistory);
     }
 }
-void SequenceFileDialog::parentFolder(){
+
+void
+SequenceFileDialog::parentFolder()
+{
     QDir dir(_model->rootDirectory());
     QString newDir;
     if(dir.isRoot()){
@@ -1128,7 +1192,9 @@ void SequenceFileDialog::parentFolder(){
     setDirectory(newDir);
 }
 
-void SequenceFileDialog::showHidden(){
+void
+SequenceFileDialog::showHidden()
+{
     QDir::Filters dirFilters = _model->filter();
     if (_showHiddenAction->isChecked())
         dirFilters |= QDir::Hidden;
@@ -1139,11 +1205,15 @@ void SequenceFileDialog::showHidden(){
     _showHiddenAction->setChecked((dirFilters & QDir::Hidden));
 }
 
-void SequenceFileDialog::goHome(){
+void
+SequenceFileDialog::goHome()
+{
     setDirectory(QDir::homePath());
 }
 
-void SequenceFileDialog::createDir(){
+void
+SequenceFileDialog::createDir()
+{
     _favoriteView->clearSelection();
     QString newFolderString;
     QInputDialog dialog(this);
@@ -1170,7 +1240,11 @@ void SequenceFileDialog::createDir(){
         }
     }
 }
-AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDialog(parent),_fd(fd){
+
+AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent)
+: QDialog(parent)
+, _fd(fd)
+{
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(5, 5, 0, 0);
@@ -1215,19 +1289,28 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
 
 }
 
-void AddFavoriteDialog::setLabelText(const QString& text){
+void
+AddFavoriteDialog::setLabelText(const QString& text)
+{
     _descriptionLabel->setText(text);
 }
 
-void AddFavoriteDialog::openDir(){
+void
+AddFavoriteDialog::openDir()
+{
     QString str = QFileDialog::getExistingDirectory(this,tr("Select a directory"),_fd->currentDirectory().path());
     _pathLineEdit->setText(str);
 }
 
-QString AddFavoriteDialog::textValue() const{
+QString
+AddFavoriteDialog::textValue() const
+{
     return _pathLineEdit->text();
 }
-void SequenceFileDialog::addFavorite(){
+
+void
+SequenceFileDialog::addFavorite()
+{
     AddFavoriteDialog dialog(this,this);
     dialog.setLabelText(tr("Folder path:"));
     QString newFavName,newFavPath;
@@ -1239,7 +1322,10 @@ void SequenceFileDialog::addFavorite(){
 
 }
 
-void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
+void
+SequenceFileDialog::addFavorite(const QString& name,
+                                const QString& path)
+{
     QDir d(path);
     if(!d.exists()){
         return;
@@ -1251,7 +1337,9 @@ void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
     }
 }
 
-void SequenceFileDialog::selectDirectory() {
+void
+SequenceFileDialog::selectDirectory()
+{
     QString str = _selectionLineEdit->text();
     if (isDirectory(str)) {
         setDirectory(str);
@@ -1259,7 +1347,9 @@ void SequenceFileDialog::selectDirectory() {
     }
 }
 
-void SequenceFileDialog::openSelectedFiles(){
+void
+SequenceFileDialog::openSelectedFiles()
+{
     QString str = _selectionLineEdit->text();
     if (_dialogMode != DIR_DIALOG) {
         if(!isDirectory(str)){
@@ -1320,10 +1410,16 @@ void SequenceFileDialog::openSelectedFiles(){
         }
     }
 }
-void SequenceFileDialog::cancelSlot(){
+
+void
+SequenceFileDialog::cancelSlot()
+{
     QDialog::reject();
 }
-void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
+
+void
+SequenceFileDialog::keyPressEvent(QKeyEvent* e)
+{
     if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter){
         QString str = _selectionLineEdit->text();
         if (!isDirectory(str)) {
@@ -1335,12 +1431,17 @@ void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
     }
     QDialog::keyPressEvent(e);
 }
-void SequenceFileDialog::resizeEvent(QResizeEvent* e){
+
+void
+SequenceFileDialog::resizeEvent(QResizeEvent* e)
+{
     QDialog::resizeEvent(e);
 }
 
 
-QStringList SequenceFileDialog::typedFiles() const{
+QStringList
+SequenceFileDialog::typedFiles() const
+{
     QStringList files;
     QString editText = _selectionLineEdit->text();
     if (!editText.contains(QLatin1Char('"'))) {
@@ -1374,7 +1475,10 @@ QStringList SequenceFileDialog::typedFiles() const{
     }
     return files;
 }
-void SequenceFileDialog::autoCompleteFileName(const QString& text){
+
+void
+SequenceFileDialog::autoCompleteFileName(const QString& text)
+{
     if (text.startsWith(QLatin1String("//")) || text.startsWith(QLatin1Char('\\'))) {
         _view->selectionModel()->clearSelection();
         return;
@@ -1405,7 +1509,10 @@ void SequenceFileDialog::autoCompleteFileName(const QString& text){
        
     }
 }
-void SequenceFileDialog::goToDirectory(const QString& path){
+
+void
+SequenceFileDialog::goToDirectory(const QString& path)
+{
     QModelIndex index = _lookInCombobox->model()->index(_lookInCombobox->currentIndex(),
                                                         _lookInCombobox->modelColumn(),
                                                         _lookInCombobox->rootModelIndex());
@@ -1424,7 +1531,9 @@ void SequenceFileDialog::goToDirectory(const QString& path){
         enterDirectory(index);
     }
 }
-QString SequenceFileDialog::getEnvironmentVariable(const QString &string)
+
+QString
+SequenceFileDialog::getEnvironmentVariable(const QString &string)
 {
 #ifdef Q_OS_UNIX
     if (string.size() > 1 && string.startsWith(QLatin1Char('$'))) {
@@ -1439,7 +1548,8 @@ QString SequenceFileDialog::getEnvironmentVariable(const QString &string)
 }
 
 
-void SequenceFileDialog::pathChanged(const QString &newPath)
+void
+SequenceFileDialog::pathChanged(const QString &newPath)
 {
     QDir dir(_model->rootDirectory());
     _upButton->setEnabled(dir.exists());
@@ -1457,11 +1567,15 @@ void SequenceFileDialog::pathChanged(const QString &newPath)
     _previousButton->setEnabled(_currentHistoryLocation > 0);
 }
 
-void SequenceFileDialog::setHistory(const QStringList &paths){
+void
+SequenceFileDialog::setHistory(const QStringList &paths)
+{
     _lookInCombobox->setHistory(paths);
 }
 
-QStringList SequenceFileDialog::history() const{
+QStringList
+SequenceFileDialog::history() const
+{
     QStringList currentHistory = _lookInCombobox->history();
     //On windows the popup display the "C:\", convert to nativeSeparators
     QString newHistory = QDir::toNativeSeparators(_view->rootIndex().data(QFileSystemModel::FilePathRole).toString());
@@ -1470,7 +1584,9 @@ QStringList SequenceFileDialog::history() const{
     return currentHistory;
 }
 
-std::string SequenceFileDialog::selectedFiles() {
+std::string
+SequenceFileDialog::selectedFiles()
+{
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     assert(indexes.count() <= 1);
     if (sequenceModeEnabled()) { 
@@ -1497,15 +1613,22 @@ std::string SequenceFileDialog::selectedFiles() {
 
 }
 
-std::string SequenceFileDialog::filesToSave() {
+std::string
+SequenceFileDialog::filesToSave()
+{
     assert(_dialogMode == SAVE_DIALOG);
     return _selectionLineEdit->text().toStdString();
 }
 
-QDir SequenceFileDialog::currentDirectory() const{
+QDir
+SequenceFileDialog::currentDirectory() const
+{
     return _requestedDir;
 }
-QModelIndex SequenceFileDialog::select(const QModelIndex& index){
+
+QModelIndex
+SequenceFileDialog::select(const QModelIndex& index)
+{
     QModelIndex ret = mapFromSource(index);
     if(ret.isValid() && !_view->selectionModel()->isSelected(ret)){
         _view->selectionModel()->select(ret, QItemSelectionModel::Select |QItemSelectionModel::Rows);
@@ -1513,7 +1636,9 @@ QModelIndex SequenceFileDialog::select(const QModelIndex& index){
     return ret;
 }
 
-void SequenceFileDialog::doubleClickOpen(const QModelIndex& /*index*/){
+void
+SequenceFileDialog::doubleClickOpen(const QModelIndex& /*index*/)
+{
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     for (int i = 0; i < indexes.count(); ++i) {
         if (_model->isDir(mapToSource(indexes.at(i)))){
@@ -1524,11 +1649,16 @@ void SequenceFileDialog::doubleClickOpen(const QModelIndex& /*index*/){
 
     openSelectedFiles();
 }
-void SequenceFileDialog::seekUrl(const QUrl& url){
+
+void
+SequenceFileDialog::seekUrl(const QUrl& url)
+{
     setDirectory(url.toLocalFile());
 }
 
-void SequenceFileDialog::showFilterMenu(){
+void
+SequenceFileDialog::showFilterMenu()
+{
     QPoint position(_filterLineEdit->mapToGlobal(_filterLineEdit->pos()));
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
@@ -1558,7 +1688,10 @@ void SequenceFileDialog::showFilterMenu(){
         menu.exec(position);
     }
 }
-QString SequenceFileDialog::generateStringFromFilters(){
+
+QString
+SequenceFileDialog::generateStringFromFilters()
+{
     QString ret;
     for (U32 i = 0 ; i < _filters.size(); ++i) {
         ret.append("*");
@@ -1569,43 +1702,59 @@ QString SequenceFileDialog::generateStringFromFilters(){
     }
     return ret;
 }
-void SequenceFileDialog::defaultFiltersSlot(){
+
+void
+SequenceFileDialog::defaultFiltersSlot()
+{
     QString filter = generateStringFromFilters();
     _filterLineEdit->setText(filter);
     applyFilter(filter);
 }
-void SequenceFileDialog::dotStarFilterSlot(){
+
+void
+SequenceFileDialog::dotStarFilterSlot()
+{
     QString filter(".*");
     _filterLineEdit->setText(filter) ;
     applyFilter(filter);
 }
 
-void SequenceFileDialog::starSlashFilterSlot(){
+void
+SequenceFileDialog::starSlashFilterSlot()
+{
     QString filter("*/");
     _filterLineEdit->setText(filter) ;
     applyFilter(filter);
 }
 
-void SequenceFileDialog::emptyFilterSlot(){
+void
+SequenceFileDialog::emptyFilterSlot()
+{
     QString filter("*");
     _filterLineEdit->setText(filter) ;
     applyFilter(filter);
 }
 
-void SequenceFileDialog::applyFilter(QString filter){
+void
+SequenceFileDialog::applyFilter(QString filter)
+{
     _proxy->setFilter(filter);
     QString currentDir = _requestedDir;
     setDirectory(_model->myComputer().toString());
     setDirectory(currentDir);
 }
 
-UrlModel::UrlModel(QObject *parent) : QStandardItemModel(parent), fileSystemModel(0)
+UrlModel::UrlModel(QObject *parent)
+: QStandardItemModel(parent)
+, fileSystemModel(0)
 {
-
 }
 
 
-bool UrlModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool
+UrlModel::setData(const QModelIndex &index,
+                  const QVariant &value,
+                  int role)
 {
     if (value.type() == QVariant::Url) {
         QUrl url = value.toUrl();
@@ -1620,7 +1769,10 @@ bool UrlModel::setData(const QModelIndex &index, const QVariant &value, int role
     return QStandardItemModel::setData(index, value, role);
 }
 
-void UrlModel::setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex)
+void
+UrlModel::setUrl(const QModelIndex &index,
+                 const QUrl &url,
+                 const QModelIndex &dirIndex)
 {
     setData(index, url, UrlRole);
     if (url.path().isEmpty()) {
@@ -1664,14 +1816,18 @@ void UrlModel::setUrl(const QModelIndex &index, const QUrl &url, const QModelInd
     }
 }
 
-void UrlModel::setUrls(const std::vector<QUrl> &urls)
+void
+UrlModel::setUrls(const std::vector<QUrl> &urls)
 {
     removeRows(0, rowCount());
     invalidUrls.clear();
     watching.clear();
     addUrls(urls, 0);
 }
-void UrlModel::addUrls(const std::vector<QUrl> &list, int row, bool move)
+void
+UrlModel::addUrls(const std::vector<QUrl> &list,
+                  int row,
+                  bool move)
 {
     if (row == -1)
         row = rowCount();
@@ -1709,7 +1865,8 @@ void UrlModel::addUrls(const std::vector<QUrl> &list, int row, bool move)
 }
 
 
-std::vector<QUrl> UrlModel::urls() const
+std::vector<QUrl>
+UrlModel::urls() const
 {
     std::vector<QUrl> list;
     for (int i = 0; i < rowCount(); ++i)
@@ -1717,7 +1874,8 @@ std::vector<QUrl> UrlModel::urls() const
     return list;
 }
 
-void UrlModel::setFileSystemModel(QFileSystemModel *model)
+void
+UrlModel::setFileSystemModel(QFileSystemModel *model)
 {
     if (model == fileSystemModel)
         return;
@@ -1742,7 +1900,9 @@ void UrlModel::setFileSystemModel(QFileSystemModel *model)
     insertColumns(0, 1);
 }
 
-void UrlModel::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+void
+UrlModel::dataChanged(const QModelIndex &topLeft,
+                      const QModelIndex &bottomRight)
 {
     QModelIndex parent = topLeft.parent();
     for (int i = 0; i < (int)watching.size(); ++i) {
@@ -1757,7 +1917,8 @@ void UrlModel::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottom
     }
 }
 
-void UrlModel::layoutChanged()
+void
+UrlModel::layoutChanged()
 {
     QStringList paths;
     for (int i = 0; i < (int)watching.size(); ++i)
@@ -1771,7 +1932,9 @@ void UrlModel::layoutChanged()
             changed(path);
     }
 }
-void UrlModel::changed(const QString &path)
+
+void
+UrlModel::changed(const QString &path)
 {
     for (int i = 0; i < rowCount(); ++i) {
         QModelIndex idx = index(i, 0);
@@ -1789,7 +1952,9 @@ FavoriteView::FavoriteView(QWidget *parent)
     // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
 
-void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls)
+void
+FavoriteView::setModelAndUrls(QFileSystemModel *model,
+                              const std::vector<QUrl> &newUrls)
 {
     setIconSize(QSize(24,24));
     setUniformItemSizes(true);
@@ -1820,12 +1985,14 @@ FavoriteView::~FavoriteView()
 }
 
 
-QSize FavoriteView::sizeHint() const
+QSize
+FavoriteView::sizeHint() const
 {
     return QSize(150,QListView::sizeHint().height());//QListView::sizeHint();
 }
 
-void FavoriteView::selectUrl(const QUrl &url)
+void
+FavoriteView::selectUrl(const QUrl &url)
 {
     disconnect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
                this, SLOT(clicked(QModelIndex)));
@@ -1841,6 +2008,7 @@ void FavoriteView::selectUrl(const QUrl &url)
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
             this, SLOT(clicked(QModelIndex)));
 }
+
 void FavoriteView::removeEntry()
 {
     QList<QModelIndex> idxs = selectionModel()->selectedIndexes();
@@ -1853,7 +2021,8 @@ void FavoriteView::removeEntry()
             model()->removeRow(indexes.at(i).row());
 }
 
-void FavoriteView::rename(){
+void FavoriteView::rename()
+{
     QModelIndex index;
     QList<QModelIndex> idxs = selectionModel()->selectedIndexes();
     QList<QPersistentModelIndex> indexes;
@@ -1874,11 +2043,16 @@ void FavoriteView::rename(){
     rename(index,newName);
 }
 
-void FavoriteView::rename(const QModelIndex& index,const QString& name){
+void
+FavoriteView::rename(const QModelIndex& index,
+                     const QString& name)
+{
     model()->setData(index,name,Qt::EditRole);
 }
 
-void FavoriteView::editUrl(){
+void
+FavoriteView::editUrl()
+{
     QModelIndex index;
     QList<QModelIndex> idxs = selectionModel()->selectedIndexes();
     QList<QPersistentModelIndex> indexes;
@@ -1908,14 +2082,16 @@ void FavoriteView::editUrl(){
     myurlModel->setUrl(index, url, idx);
 }
 
-void FavoriteView::clicked(const QModelIndex &index)
+void
+FavoriteView::clicked(const QModelIndex &index)
 {
     QUrl url = model()->index(index.row(), 0).data(UrlModel::UrlRole).toUrl();
     emit urlRequested(url);
     selectUrl(url);
 }
 
-void FavoriteView::showMenu(const QPoint &position)
+void
+FavoriteView::showMenu(const QPoint &position)
 {
     QList<QAction *> actions;
     if (indexAt(position).isValid()) {
@@ -1938,18 +2114,24 @@ void FavoriteView::showMenu(const QPoint &position)
         menu.exec(mapToGlobal(position));
     }
 }
-void FavoriteView::keyPressEvent(QKeyEvent *event){
-    if(event->key() == Qt::Key_Backspace){
+
+void
+FavoriteView::keyPressEvent(QKeyEvent* e)
+{
+    if(e->key() == Qt::Key_Backspace){
         removeEntry();
     }
-    QListView::keyPressEvent(event);
+    QListView::keyPressEvent(e);
 }
 
-QStringList UrlModel::mimeTypes() const{
+QStringList
+UrlModel::mimeTypes() const
+{
     return QStringList(QLatin1String("text/uri-list"));
 }
 
-Qt::ItemFlags UrlModel::flags(const QModelIndex &index) const
+Qt::ItemFlags
+UrlModel::flags(const QModelIndex &index) const
 {
     Qt::ItemFlags flags = QStandardItemModel::flags(index);
     if (index.isValid()) {
@@ -1964,7 +2146,9 @@ Qt::ItemFlags UrlModel::flags(const QModelIndex &index) const
     return flags;
 }
 
-QMimeData *UrlModel::mimeData(const QModelIndexList &indexes) const{
+QMimeData*
+UrlModel::mimeData(const QModelIndexList &indexes) const
+{
     QList<QUrl> list;
     for (int i = 0; i < indexes.count(); ++i) {
         if (indexes.at(i).column() == 0)
@@ -1974,11 +2158,14 @@ QMimeData *UrlModel::mimeData(const QModelIndexList &indexes) const{
     data->setUrls(list);
     return data;
 }
-bool UrlModel::canDrop(QDragEnterEvent *event){
-    if (!event->mimeData()->formats().contains(mimeTypes().first()))
+
+bool
+UrlModel::canDrop(QDragEnterEvent* e)
+{
+    if (!e->mimeData()->formats().contains(mimeTypes().first()))
         return false;
 
-    const QList<QUrl> list = event->mimeData()->urls();
+    const QList<QUrl> list = e->mimeData()->urls();
     for (int i = 0; i < list.count(); ++i) {
         QModelIndex idx = fileSystemModel->index(list.at(0).toLocalFile());
         if (!fileSystemModel->isDir(idx))
@@ -1987,7 +2174,13 @@ bool UrlModel::canDrop(QDragEnterEvent *event){
     return true;
 }
 
-bool UrlModel::dropMimeData(const QMimeData *data, Qt::DropAction , int row, int , const QModelIndex &){
+bool
+UrlModel::dropMimeData(const QMimeData *data,
+                       Qt::DropAction,
+                       int row,
+                       int,
+                       const QModelIndex &)
+{
     if (!data->formats().contains(mimeTypes().first()))
         return false;
     std::vector<QUrl> urls;
@@ -1998,19 +2191,25 @@ bool UrlModel::dropMimeData(const QMimeData *data, Qt::DropAction , int row, int
     return true;
 }
 
-void FavoriteView::dragEnterEvent(QDragEnterEvent *event){
-    if (urlModel->canDrop(event))
-        QListView::dragEnterEvent(event);
+void
+FavoriteView::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (urlModel->canDrop(e))
+        QListView::dragEnterEvent(e);
 }
 
-void FileDialogComboBox::setFileDialogPointer(SequenceFileDialog *p){
+void
+FileDialogComboBox::setFileDialogPointer(SequenceFileDialog *p)
+{
     dialog = p;
     urlModel = new UrlModel(this);
     urlModel->setFileSystemModel(p->getFavoriteSystemModel());
     setModel(urlModel);
 }
 
-void FileDialogComboBox::showPopup(){
+void
+FileDialogComboBox::showPopup()
+{
     if (model()->rowCount() > 1)
         QComboBox::showPopup();
 
@@ -2057,7 +2256,9 @@ void FileDialogComboBox::showPopup(){
     QComboBox::showPopup();
 }
 
-void FileDialogComboBox::setHistory(const QStringList &paths){
+void
+FileDialogComboBox::setHistory(const QStringList &paths)
+{
     m_history = paths;
     // Only populate the first item, showPopup will populate the rest if needed
     std::vector<QUrl> list;
@@ -2068,7 +2269,10 @@ void FileDialogComboBox::setHistory(const QStringList &paths){
         list.push_back(url);
     urlModel->setUrls(list);
 }
-void FileDialogComboBox::paintEvent(QPaintEvent *){
+
+void
+FileDialogComboBox::paintEvent(QPaintEvent* /*e*/)
+{
     QStylePainter painter(this);
     QColor c(255,255,255,255);
     painter.setPen(c);
@@ -2087,8 +2291,10 @@ void FileDialogComboBox::paintEvent(QPaintEvent *){
 }
 
 
-std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes){
-    
+std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >
+SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,
+                                               const QStringList& supportedFileTypes)
+{
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
 
     for (int i = 0; i < files.size(); ++i) {
@@ -2114,7 +2320,10 @@ std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > SequenceFil
     return sequences;
 }
 
-void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringList* files){
+void
+SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,
+                                                  QStringList* files)
+{
     QStringList entries = currentDir->entryList();
     for (int i = 0; i < entries.size(); ++i) {
         const QString& e = entries.at(i);
@@ -2140,8 +2349,9 @@ void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringL
 }
 
 
-void SequenceFileDialog::onSelectionLineEditing(const QString& text) {
-    
+void
+SequenceFileDialog::onSelectionLineEditing(const QString& text)
+{
     if (_dialogMode != SAVE_DIALOG) {
         return;
     }
