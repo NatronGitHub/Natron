@@ -1262,7 +1262,7 @@ TabWidget::isWithinWidget(const QPoint& globalPos) const
 void
 TabWidget::keyPressEvent (QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space && e->modifiers() == Qt::NoModifier) {
+    if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
         if (_fullScreen) {
             _fullScreen = false;
             _gui->minimize();
