@@ -536,9 +536,8 @@ void NodeGraph::paintEvent(QPaintEvent* event){
         double navWidth = NATRON_NAVIGATOR_BASE_WIDTH * width();
         double navHeight = NATRON_NAVIGATOR_BASE_HEIGHT * height();
         
-        int lineWidth = _imp->_navigator->getLineWidth();
         QPoint btmRightWidget = visibleWidget.bottomRight();
-        QPoint navTopLeftWidget = btmRightWidget - QPoint(navWidth + lineWidth ,navHeight +lineWidth);
+        QPoint navTopLeftWidget = btmRightWidget - QPoint(navWidth  ,navHeight );
         
         QPointF navTopLeftScene = mapToScene(navTopLeftWidget);
         
@@ -2081,7 +2080,15 @@ QImage NodeGraph::getFullSceneScreenShot()
     scene()->addItem(_imp->_navigator);
     scene()->addItem(_imp->_cacheSizeText);
     
+   
     painter.fillRect(scaledViewRect, QColor(200,200,200,100));
+    QPen p;
+    p.setWidth(2);
+    p.setBrush(Qt::yellow);
+    painter.setPen(p);
+    ///Make sure the border is visible
+    scaledViewRect.adjust(2, 2, -2, -2);
+    painter.drawRect(scaledViewRect);
 
     ///Now make an image of the size of the navigator and center the render image into it
     QImage img(std::ceil(navWidth), std::ceil(navHeight), QImage::Format_ARGB32_Premultiplied);
@@ -2091,13 +2098,13 @@ QImage NodeGraph::getFullSceneScreenShot()
     int yOffset = (img.height() - renderImage.height()) / 2;
     assert((xOffset + renderImage.width()) <= img.width() && (yOffset + renderImage.height()) <= img.height());
     
-    int ySource = 0;
-    for (int y = yOffset; y < (img.height() - yOffset - 1);++y,++ySource) {
-        QRgb* dst_pixels = (QRgb*)img.scanLine(y);
-        const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(ySource);
-        int xSource = 0;
-        for (int x = xOffset; x < (img.width() - xOffset - 1);++x,++xSource) {
-            dst_pixels[x] = src_pixels[xSource];
+    int yDest = yOffset;
+    for (int y = 0; y < renderImage.height();++y,++yDest) {
+        QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
+        const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
+        int xDest = xOffset;
+        for (int x = 0; x < renderImage.width();++x,++xDest) {
+            dst_pixels[xDest] = src_pixels[x];
         }
     }
     return img;
