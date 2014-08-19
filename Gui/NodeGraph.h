@@ -195,33 +195,33 @@ private:
      **/
     void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n);
 
-    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
 
-    virtual void leaveEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 
-    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual bool event(QEvent* event) OVERRIDE FINAL;
+    virtual bool event(QEvent* e) OVERRIDE FINAL;
 
-    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseDoubleClickEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     
-    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
-    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
 
-    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
-    virtual void dragEnterEvent(QDragEnterEvent *ev) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
     
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     
