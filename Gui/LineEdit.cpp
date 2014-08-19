@@ -42,7 +42,9 @@ LineEdit::~LineEdit()
 {
 }
     
-void LineEdit::paintEvent(QPaintEvent* e) {
+void
+LineEdit::paintEvent(QPaintEvent* e)
+{
     QPalette p = this->palette();
     QColor c(200,200,200,255);
     p.setColor( QPalette::Highlight, c );
@@ -51,11 +53,13 @@ void LineEdit::paintEvent(QPaintEvent* e) {
     QLineEdit::paintEvent(e);
 }
 
-void LineEdit::dropEvent(QDropEvent* event) {
-    if(!event->mimeData()->hasUrls())
+void
+LineEdit::dropEvent(QDropEvent* e)
+{
+    if(!e->mimeData()->hasUrls())
         return;
 
-    QList<QUrl> urls = event->mimeData()->urls();
+    QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
         path = urls.at(0).path();
@@ -67,30 +71,42 @@ void LineEdit::dropEvent(QDropEvent* event) {
 
 }
 
-void LineEdit::onEditingFinished() {
+void
+LineEdit::onEditingFinished()
+{
     clearFocus();
 }
 
-void LineEdit::dragEnterEvent(QDragEnterEvent *ev) {
-    ev->accept();
-}
-
-void LineEdit::dragMoveEvent(QDragMoveEvent* e) {
+void
+LineEdit::dragEnterEvent(QDragEnterEvent* e)
+{
     e->accept();
 }
 
-void LineEdit::dragLeaveEvent(QDragLeaveEvent* e) {
+void
+LineEdit::dragMoveEvent(QDragMoveEvent* e)
+{
     e->accept();
 }
 
-void LineEdit::setAnimation(int v) {
+void
+LineEdit::dragLeaveEvent(QDragLeaveEvent* e)
+{
+    e->accept();
+}
+
+void
+LineEdit::setAnimation(int v)
+{
     animation = v;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
 }
 
-void LineEdit::setDirty(bool b){
+void
+LineEdit::setDirty(bool b)
+{
     dirty = b;
     style()->unpolish(this);
     style()->polish(this);
