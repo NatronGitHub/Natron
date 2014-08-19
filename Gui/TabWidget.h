@@ -68,9 +68,9 @@ signals:
     
 private:
     
-    virtual void moveEvent(QMoveEvent* event) OVERRIDE FINAL;
+    virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     
-    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     
@@ -109,11 +109,11 @@ public:
     // void dragTargetChanged(QWidget* target);
     
 private:
-    virtual void mousePressEvent(QMouseEvent* event);
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
 
-    virtual void mouseMoveEvent(QMouseEvent* event);
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseReleaseEvent(QMouseEvent* event);
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     QPixmap makePixmapForDrag(int index);
     
@@ -293,11 +293,11 @@ public slots:
 private:
     
     
-    virtual void dropEvent(QDropEvent* event) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
-    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     
-    virtual void keyPressEvent (QKeyEvent *event) OVERRIDE FINAL;
+    virtual void keyPressEvent (QKeyEvent* e) OVERRIDE FINAL;
     
     bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 

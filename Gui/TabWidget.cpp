@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/ViewerTab.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
+#include "Gui/GuiMacros.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
 
@@ -60,7 +61,9 @@ FloatingWidget::FloatingWidget(QWidget* parent)
     setLayout(_layout);
     
 }
-void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
+void
+FloatingWidget::setWidget(const QSize& widgetSize,
+                          QWidget* w)
 {
     assert(w);
     if (_embeddedWidget) {
@@ -76,7 +79,9 @@ void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
     show();
 }
 
-void FloatingWidget::removeWidget() {
+void
+FloatingWidget::removeWidget()
+{
     if (!_embeddedWidget) {
         return;
     }
@@ -87,7 +92,9 @@ void FloatingWidget::removeWidget() {
     hide();
 }
 
-void FloatingWidget::closeEvent(QCloseEvent* e) {
+void
+FloatingWidget::closeEvent(QCloseEvent* e)
+{
     TabWidget* embedded = dynamic_cast<TabWidget*>(_embeddedWidget);
     emit closed();
     if (embedded) {
@@ -180,19 +187,22 @@ TabWidget::~TabWidget()
 
 }
 
-void TabWidget::notifyGuiAboutRemoval()
+void
+TabWidget::notifyGuiAboutRemoval()
 {
     _gui->removePane(this);
 }
 
-void TabWidget::setClosable(bool closable)
+void
+TabWidget::setClosable(bool closable)
 {
     _closeButton->setEnabled(closable);
     _floatButton->setEnabled(closable);
 }
 
-void TabWidget::destroyTabs() {
-    
+void
+TabWidget::destroyTabs()
+{
     for (U32 i = 0; i < _tabs.size(); ++i) {
         bool mustDelete = destroyTab(_tabs[i]);
         if (mustDelete) {
@@ -202,7 +212,9 @@ void TabWidget::destroyTabs() {
     }
 }
 
-bool TabWidget::destroyTab(QWidget* tab) {
+bool
+TabWidget::destroyTab(QWidget* tab)
+{
     /*special care is taken if this is a viewer: we also
      need to delete the viewer node.*/
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
@@ -218,7 +230,9 @@ bool TabWidget::destroyTab(QWidget* tab) {
     return false; // must not be deleted
 }
 
-void TabWidget::createMenu(){
+void
+TabWidget::createMenu()
+{
     QMenu *menu = new QMenu(_gui);
     menu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
     QPixmap pixV,pixM,pixH,pixC;
@@ -257,7 +271,9 @@ void TabWidget::createMenu(){
     menu->exec(_leftCornerButton->mapToGlobal(QPoint(0,0)));
 }
 
-void TabWidget::closeFloatingPane(){
+void
+TabWidget::closeFloatingPane()
+{
     {
         QMutexLocker l(&_tabWidgetStateMutex);
         if (!_isFloating) {
@@ -268,7 +284,10 @@ void TabWidget::closeFloatingPane(){
     p->close();
 }
 
-bool TabWidget::removeSplit(TabWidget* tab,bool* orientation){
+bool
+TabWidget::removeSplit(TabWidget* tab,
+                       bool* orientation)
+{
     QMutexLocker l(&_tabWidgetStateMutex);
     for (std::list<std::pair<TabWidget*,bool> > ::iterator it =  _userSplits.begin();it!=_userSplits.end();++it) {
         if (it->first == tab) {
@@ -283,7 +302,9 @@ bool TabWidget::removeSplit(TabWidget* tab,bool* orientation){
     return false;
 }
 
-static void getOtherTabWidget(Splitter* parentSplitter,TabWidget* thisWidget,QWidget*& other)
+static void getOtherTabWidget(Splitter* parentSplitter,
+                              TabWidget* thisWidget,
+                              QWidget*& other)
 {
     for (int i = 0; i < parentSplitter->count(); ++i) {
         QWidget* w = parentSplitter->widget(i);
@@ -297,7 +318,10 @@ static void getOtherTabWidget(Splitter* parentSplitter,TabWidget* thisWidget,QWi
 }
 
 
-static void getTabWidgetRecursively(const TabWidget* caller,Splitter* parentSplitter,TabWidget*& tab) {
+static void getTabWidgetRecursively(const TabWidget* caller,
+                                    Splitter* parentSplitter,
+                                    TabWidget*& tab)
+{
     bool found = false;
     for (int i = 0; i < parentSplitter->count(); ++i) {
         QWidget* w = parentSplitter->widget(i);
@@ -325,7 +349,9 @@ static void getTabWidgetRecursively(const TabWidget* caller,Splitter* parentSpli
 }
 
 
-void TabWidget::removeTagNameRecursively(TabWidget* widget, bool horizontal)
+void
+TabWidget::removeTagNameRecursively(TabWidget* widget,
+                                    bool horizontal)
 {
     QString name = widget->objectName();
     QString toRemove = horizontal ? TabWidget::splitHorizontallyTag : TabWidget::splitVerticallyTag;
@@ -353,7 +379,8 @@ void TabWidget::removeTagNameRecursively(TabWidget* widget, bool horizontal)
     }
 }
 
-int TabWidget::countSplitsForOrientation(bool vertical) const
+int
+TabWidget::countSplitsForOrientation(bool vertical) const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
     int splitsCount = 0;
@@ -368,7 +395,8 @@ int TabWidget::countSplitsForOrientation(bool vertical) const
     return splitsCount;
 }
 
-void TabWidget::closePane(bool calledFromFloatingWindow)
+void
+TabWidget::closePane(bool calledFromFloatingWindow)
 {
     /*If it is floating we do not need to re-arrange the splitters containing the tab*/
     if (isFloating() && !calledFromFloatingWindow) {
@@ -558,11 +586,15 @@ void TabWidget::closePane(bool calledFromFloatingWindow)
 
 }
 
-void TabWidget::closePane() {
+void
+TabWidget::closePane()
+{
     closePane(false);
 }
 
-void TabWidget::floatPane(QPoint* position){
+void
+TabWidget::floatPane(QPoint* position)
+{
     {
         QMutexLocker l(&_tabWidgetStateMutex);
         _isFloating = true;
@@ -579,22 +611,30 @@ void TabWidget::floatPane(QPoint* position){
     
 }
 
-void TabWidget::addNewViewer(){
+void
+TabWidget::addNewViewer()
+{
     _gui->setNewViewerAnchor(this);
     _gui->getApp()->createNode(CreateNodeArgs("Viewer"));
 }
 
-void TabWidget::moveNodeGraphHere(){
+void
+TabWidget::moveNodeGraphHere()
+{
     QWidget* what = dynamic_cast<QWidget*>(_gui->getNodeGraph());
     moveTab(what,this);
 }
 
-void TabWidget::moveCurveEditorHere(){
+void
+TabWidget::moveCurveEditorHere()
+{
     QWidget* what = dynamic_cast<QWidget*>(_gui->getCurveEditor());
     moveTab(what,this);
 }
 
-void TabWidget::newHistogramHere() {
+void
+TabWidget::newHistogramHere()
+{
     Histogram* h = _gui->addNewHistogram();
     appendTab(h);
     
@@ -602,16 +642,23 @@ void TabWidget::newHistogramHere() {
 }
 
 /*Get the header name of the tab at index "index".*/
-QString TabWidget::getTabName(int index) const {
+QString
+TabWidget::getTabName(int index) const
+{
     if(index >= _tabBar->count()) return "";
     return _tabBar->tabText(index);
 }
 
-QString TabWidget::getTabName(QWidget* tab) const{
+QString
+TabWidget::getTabName(QWidget* tab) const
+{
     return tab->objectName();
 }
 
-void TabWidget::setTabName(QWidget* tab,const QString& name) {
+void
+TabWidget::setTabName(QWidget* tab,
+                      const QString& name)
+{
     QMutexLocker l(&_tabWidgetStateMutex);
     tab->setObjectName(name);
     for (U32 i = 0; i < _tabs.size(); ++i) {
@@ -621,7 +668,9 @@ void TabWidget::setTabName(QWidget* tab,const QString& name) {
     }
 }
 
-void TabWidget::floatCurrentWidget(){
+void
+TabWidget::floatCurrentWidget()
+{
     if(!_currentWidget || _isFloating)
         return;
     
@@ -666,7 +715,9 @@ void TabWidget::floatCurrentWidget(){
     }
 }
 
-void TabWidget::closeCurrentWidget(){
+void
+TabWidget::closeCurrentWidget()
+{
     if(!_currentWidget) {
         return;
     }
@@ -677,7 +728,10 @@ void TabWidget::closeCurrentWidget(){
         _currentWidget = NULL;
     }
 }
-void TabWidget::closeTab(int index){
+
+void
+TabWidget::closeTab(int index)
+{
     assert(index < (int)_tabs.size());
     QWidget *tab = _tabs[index];
     assert(_tabs[index]);
@@ -690,14 +744,16 @@ void TabWidget::closeTab(int index){
     _gui->getApp()->triggerAutoSave();
 }
 
-void TabWidget::movePropertiesBinHere(){
+void
+TabWidget::movePropertiesBinHere()
+{
     QWidget* what = dynamic_cast<QWidget*>(_gui->getPropertiesScrollArea());
     moveTab(what, this);
 }
 
-TabWidget* TabWidget::splitHorizontally(bool autoSave)
+TabWidget*
+TabWidget::splitHorizontally(bool autoSave)
 {
-    
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if (!container) {
         return NULL;
@@ -752,8 +808,9 @@ TabWidget* TabWidget::splitHorizontally(bool autoSave)
     return newTab;
 }
 
-TabWidget* TabWidget::splitVertically(bool autoSave) {
-        
+TabWidget*
+TabWidget::splitVertically(bool autoSave)
+{
     Splitter* container = dynamic_cast<Splitter*>(parentWidget());
     if (!container)
         return NULL;
@@ -808,10 +865,16 @@ TabWidget* TabWidget::splitVertically(bool autoSave) {
 }
 
 
-bool TabWidget::appendTab(QWidget* widget) {
+bool
+TabWidget::appendTab(QWidget* widget)
+{
     return appendTab(QIcon(),widget);
 }
-bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
+
+bool
+TabWidget::appendTab(const QIcon& icon,
+                     QWidget* widget)
+{
     {
         QMutexLocker l(&_tabWidgetStateMutex);
         
@@ -846,8 +909,11 @@ bool TabWidget::appendTab(const QIcon& icon,QWidget* widget){
 
 
 
-void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget) {
-    
+void
+TabWidget::insertTab(int index,
+                     const QIcon& icon,
+                     QWidget* widget)
+{
     QMutexLocker l(&_tabWidgetStateMutex);
     QString title = widget->objectName();
     if ((U32)index < _tabs.size()) {
@@ -866,11 +932,14 @@ void TabWidget::insertTab(int index,const QIcon& icon,QWidget* widget) {
     
 }
 
-void TabWidget::insertTab(int index,QWidget* widget){
+void
+TabWidget::insertTab(int index,QWidget* widget)
+{
     insertTab(index, QIcon(), widget);
 }
 
-QWidget*  TabWidget::removeTab(int index) {
+QWidget*
+TabWidget::removeTab(int index) {
     QMutexLocker l(&_tabWidgetStateMutex);
     if (index < 0 || index >= (int)_tabs.size()) {
         return NULL;
@@ -899,8 +968,9 @@ QWidget*  TabWidget::removeTab(int index) {
     return tab;
 }
 
-void TabWidget::removeTab(QWidget* widget){
-    
+void
+TabWidget::removeTab(QWidget* widget)
+{
     int index = -1;
     
     {
@@ -920,8 +990,9 @@ void TabWidget::removeTab(QWidget* widget){
 }
 
 
-void TabWidget::makeCurrentTab(int index){
-
+void
+TabWidget::makeCurrentTab(int index)
+{
     if (_modifyingTabBar) {
         return;
     }
@@ -948,9 +1019,9 @@ void TabWidget::makeCurrentTab(int index){
     _modifyingTabBar = false;
 }
 
-
-
-void TabWidget::paintEvent(QPaintEvent* event){
+void
+TabWidget::paintEvent(QPaintEvent* e)
+{
     if (_drawDropRect) {
         
         QColor c(243,149,0,255);
@@ -958,12 +1029,14 @@ void TabWidget::paintEvent(QPaintEvent* event){
         palette->setColor(QPalette::Foreground,c);
         setPalette(*palette);
     }
-    QFrame::paintEvent(event);
+    QFrame::paintEvent(e);
 }
 
-void TabWidget::dropEvent(QDropEvent* event){
-    event->accept();
-    QString name(event->mimeData()->data("Tab"));
+void
+TabWidget::dropEvent(QDropEvent* e)
+{
+    e->accept();
+    QString name(e->mimeData()->data("Tab"));
     QWidget* w = _gui->findExistingTab(name.toStdString());
     if(w){
         moveTab(w, this);
@@ -985,23 +1058,27 @@ TabBar::TabBar(TabWidget* tabWidget,QWidget* parent)
     QObject::connect(this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)));
 }
 
-void TabBar::mousePressEvent(QMouseEvent* event){
-    if (event->button() == Qt::LeftButton)
-        _dragPos = event->pos();
-    QTabBar::mousePressEvent(event);
+void
+TabBar::mousePressEvent(QMouseEvent* e)
+{
+    if (buttonIsLeft(e))
+        _dragPos = e->pos();
+    QTabBar::mousePressEvent(e);
 }
 
-void TabBar::mouseMoveEvent(QMouseEvent* event){
+void
+TabBar::mouseMoveEvent(QMouseEvent* e)
+{
     // If the left button isn't pressed anymore then return
-    if (!(event->buttons() & Qt::LeftButton))
+    if (!buttonIsLeft(e))
         return;
     // If the distance is too small then return
-    if ((event->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
+    if ((e->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
         return;
     
     if (_tabWidget->getGui()->isDraggingPanel()) {
         
-        const QPoint& globalPos = event->globalPos();
+        const QPoint& globalPos = e->globalPos();
         const std::list<TabWidget*> panes = _tabWidget->getGui()->getPanes();
         for (std::list<TabWidget*>::const_iterator it = panes.begin(); it!=panes.end(); ++it) {
             if ((*it)->isWithinWidget(globalPos)) {
@@ -1011,26 +1088,28 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
             }
         }
         _dragPix->update(globalPos);
-        QTabBar::mouseMoveEvent(event);
+        QTabBar::mouseMoveEvent(e);
         return;
     }
-    int selectedTabIndex = tabAt(event->pos());
+    int selectedTabIndex = tabAt(e->pos());
     if(selectedTabIndex != -1){
         
         QPixmap pixmap = makePixmapForDrag(selectedTabIndex);
         
         _tabWidget->startDragTab(selectedTabIndex);
         
-        _dragPix = new DragPixmap(pixmap,event->pos());
-        _dragPix->update(event->globalPos());
+        _dragPix = new DragPixmap(pixmap,e->pos());
+        _dragPix->update(e->globalPos());
         _dragPix->show();
         grabMouse();
     }
-    QTabBar::mouseMoveEvent(event);
+    QTabBar::mouseMoveEvent(e);
     
 }
 
-QPixmap TabBar::makePixmapForDrag(int index) {
+QPixmap
+TabBar::makePixmapForDrag(int index)
+{
     std::vector< std::pair<QString,QIcon > > tabs;
     for (int i = 0; i < count(); ++i) {
         tabs.push_back(std::make_pair(tabText(i),tabIcon(i)));
@@ -1088,10 +1167,12 @@ QPixmap TabBar::makePixmapForDrag(int index) {
     return QPixmap::fromImage(ret);
 }
 
-void TabBar::mouseReleaseEvent(QMouseEvent* event) {
+void
+TabBar::mouseReleaseEvent(QMouseEvent* e)
+{
     if (_tabWidget->getGui()->isDraggingPanel()) {
         releaseMouse();
-        const QPoint& p = event->globalPos();
+        const QPoint& p = e->globalPos();
         _tabWidget->stopDragTab(p);
         _dragPix->hide();
         delete _dragPix;
@@ -1103,12 +1184,13 @@ void TabBar::mouseReleaseEvent(QMouseEvent* event) {
         }
         
     }
-    QTabBar::mouseReleaseEvent(event);
+    QTabBar::mouseReleaseEvent(e);
     
 }
 
-void TabWidget::stopDragTab(const QPoint& globalPos) {
-    
+void
+TabWidget::stopDragTab(const QPoint& globalPos)
+{
     if (_isFloating && count() == 0) {
         closeFloatingPane();
     }
@@ -1131,10 +1213,11 @@ void TabWidget::stopDragTab(const QPoint& globalPos) {
         floatPane(&windowPos);
         
     }
-    
 }
 
-void TabWidget::startDragTab(int index){
+void
+TabWidget::startDragTab(int index)
+{
     if (index >= count()) {
         return;
     }
@@ -1147,11 +1230,11 @@ void TabWidget::startDragTab(int index){
     
     removeTab(selectedTab);
     selectedTab->hide();
-    
-    
 }
 
-void TabWidget::setDrawDropRect(bool draw) {
+void
+TabWidget::setDrawDropRect(bool draw)
+{
     
     if (draw == _drawDropRect) {
         return;
@@ -1166,7 +1249,9 @@ void TabWidget::setDrawDropRect(bool draw) {
     repaint();
 }
 
-bool TabWidget::isWithinWidget(const QPoint& globalPos) const {
+bool
+TabWidget::isWithinWidget(const QPoint& globalPos) const
+{
     QPoint p = mapToGlobal(QPoint(0,0));
     QRect bbox(p.x(),p.y(),width(),height());
     return bbox.contains(globalPos);
@@ -1174,24 +1259,27 @@ bool TabWidget::isWithinWidget(const QPoint& globalPos) const {
 
 
 
-void TabWidget::keyPressEvent ( QKeyEvent * event ){
-    if(event->key() == Qt::Key_Space && event->modifiers() == Qt::NoModifier){
-        if(_fullScreen){
+void
+TabWidget::keyPressEvent (QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Space && e->modifiers() == Qt::NoModifier) {
+        if (_fullScreen) {
             _fullScreen = false;
             _gui->minimize();
-        }else{
+        } else {
             _fullScreen = true;
             _gui->maximize(this);
         }
-    }else{
-        event->ignore();
+    } else {
+        e->ignore();
     }
 }
 
 
-bool TabWidget::moveTab(QWidget* what,TabWidget *where){
+bool
+TabWidget::moveTab(QWidget* what, TabWidget *where)
+{
     TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
-    
 
     if (from == where) {
         /*We check that even if it is the same TabWidget, it really exists.*/
@@ -1217,54 +1305,63 @@ bool TabWidget::moveTab(QWidget* what,TabWidget *where){
     if (!where->getGui()->getApp()->getProject()->isLoadingProject()) {
         where->getGui()->getApp()->triggerAutoSave();
     }
+
     return true;
 }
 
-void FloatingWidget::moveEvent(QMoveEvent* event)
+void
+FloatingWidget::moveEvent(QMoveEvent* e)
 {
-    QWidget::moveEvent(event);
+    QWidget::moveEvent(e);
     TabWidget* isTab = dynamic_cast<TabWidget*>(_embeddedWidget);
     if (isTab) {
         isTab->setWindowPos(pos());
     }
 }
 
-void FloatingWidget::resizeEvent(QResizeEvent* event)
+void
+FloatingWidget::resizeEvent(QResizeEvent* e)
 {
-    QWidget::resizeEvent(event);
+    QWidget::resizeEvent(e);
     TabWidget* isTab = dynamic_cast<TabWidget*>(_embeddedWidget);
     if (isTab) {
         isTab->setWindowSize(width(), height());
     }
 }
 
-QPoint TabWidget::getWindowPos_mt_safe() const
+QPoint
+TabWidget::getWindowPos_mt_safe() const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
     return _mtSafeWindowPos;
 }
 
-void TabWidget::getWindowSize_mt_safe(int& w,int& h) const
+void
+TabWidget::getWindowSize_mt_safe(int &w,
+                                 int &h) const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
     w = _mtSafeWindowWidth;
     h = _mtSafeWindowHeight;
 }
 
-void TabWidget::setWindowPos(const QPoint& globalPos)
+void
+TabWidget::setWindowPos(const QPoint& globalPos)
 {
     QMutexLocker l(&_tabWidgetStateMutex);
     _mtSafeWindowPos = globalPos;
 }
 
-void TabWidget::setWindowSize(int w,int h)
+void
+TabWidget::setWindowSize(int w, int h)
 {
     QMutexLocker l(&_tabWidgetStateMutex);
     _mtSafeWindowWidth = w;
     _mtSafeWindowHeight = h;
 }
 
-DragPixmap::DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse)
+DragPixmap::DragPixmap(const QPixmap& pixmap,
+                       const QPoint& offsetFromMouse)
 : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
 , _pixmap(pixmap)
 , _offset(offsetFromMouse)
@@ -1275,7 +1372,9 @@ DragPixmap::DragPixmap(const QPixmap& pixmap,const QPoint& offsetFromMouse)
 }
 
 
-void DragPixmap::update(const QPoint& globalPos) {
+void
+DragPixmap::update(const QPoint& globalPos)
+{
     move(globalPos - _offset);
 }
 
@@ -1286,7 +1385,9 @@ void DragPixmap::paintEvent(QPaintEvent*)
 }
 
 
-QStringList TabWidget::getTabNames() const {
+QStringList
+TabWidget::getTabNames() const
+{
     QMutexLocker l(&_tabWidgetStateMutex);
     QStringList ret;
     for (U32 i = 0; i < _tabs.size(); ++i) {
@@ -1295,7 +1396,8 @@ QStringList TabWidget::getTabNames() const {
     return ret;
 }
 
-int TabWidget::activeIndex() const
+int
+TabWidget::activeIndex() const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
     for (U32 i = 0; i < _tabs.size(); ++i) {
@@ -1306,12 +1408,16 @@ int TabWidget::activeIndex() const
     return -1;
 }
 
-void TabWidget::setObjectName_mt_safe(const QString& str) {
+void
+TabWidget::setObjectName_mt_safe(const QString& str)
+{
     QMutexLocker l(&_tabWidgetStateMutex);
     setObjectName(str);
 }
 
-QString TabWidget::objectName_mt_safe() const {
+QString
+TabWidget::objectName_mt_safe() const
+{
     QMutexLocker l(&_tabWidgetStateMutex);
     return objectName();
 }
@@ -1369,7 +1475,8 @@ TabWidget::getTabWidgetParentName(const QString& objectName, bool* isSplit, bool
     }
 }
 
-QString TabWidget::getParentName(bool* horizontal) const
+QString
+TabWidget::getParentName(bool* horizontal) const
 {
     bool isSplit;
     QString objectN = objectName_mt_safe();
