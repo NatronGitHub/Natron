@@ -773,12 +773,10 @@ QRectF NodeGui::boundingRect() const{
 QRectF NodeGui::boundingRectWithEdges() const{
     QRectF ret;
     QRectF bbox = boundingRect();
-    ret = ret.united(mapToScene(bbox).boundingRect());
+    ret = mapToScene(bbox).boundingRect();
     for (InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         ret = ret.united(it->second->mapToScene(it->second->boundingRect()).boundingRect());
     }
-    ret.setTopLeft(ret.topLeft() - QPointF(50,50));
-    ret.setBottomRight(ret.bottomRight() + QPointF(50,50));
     return ret;
 }
 

@@ -67,7 +67,8 @@ public:
     void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
     
     ///The visible portion of the graph, in scene coordinates.
-    QRectF visibleRect();
+    QRectF visibleSceneRect();
+    QRect visibleWidgetRect();
     
     void deselect();
     
@@ -75,6 +76,9 @@ public:
     
     bool areAllNodesVisible();
     
+    /**
+     * @brief Repaint the navigator
+     **/
     void updateNavigator();
     
     const std::list<boost::shared_ptr<NodeGui> >& getAllActiveNodes() const;
