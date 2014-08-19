@@ -62,6 +62,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/ViewerTab.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ZoomContext.h"
+#include "Gui/GuiMacros.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -870,14 +871,16 @@ ViewerGL::~ViewerGL()
     delete _imp->textFont;
 }
 
-QSize ViewerGL::sizeHint() const
+QSize
+ViewerGL::sizeHint() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     return QSize(1920,1080);
 }
 
-const QFont& ViewerGL::textFont() const
+const QFont&
+ViewerGL::textFont() const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1823,8 +1826,6 @@ ViewerGL::getImageRectangleDisplayed(const RectI& imageRoDPixel, // in pixel coo
     return ret;
 }
 
-
-
 int
 ViewerGL::isExtensionSupported(const char *extension)
 {
@@ -2071,21 +2072,21 @@ ViewerGL::supportsGLSL() const
 #endif
 
 void
-ViewerGL::mousePressEvent(QMouseEvent *event)
+ViewerGL::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (event->button() == Qt::LeftButton) {
+    if (buttonIsLeft(e)) {
         _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
     }
 
-    _imp->oldClick = event->pos();
-    _imp->lastMousePosition = event->pos();
+    _imp->oldClick = e->pos();
+    _imp->lastMousePosition = e->pos();
     QPointF zoomPos;
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        zoomPos = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+        zoomPos = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
@@ -2105,13 +2106,12 @@ ViewerGL::mousePressEvent(QMouseEvent *event)
         wipeSelectionTol = 8. / _imp->zoomCtx.factor();
     }
     
-    if (event->button() == Qt::MiddleButton || (event->button() == Qt::LeftButton  && event->modifiers().testFlag(Qt::AltModifier)
-                                                && !event->modifiers().testFlag(Qt::ControlModifier)) ) {
+    if (buttonIsMiddle(e)) {
         _imp->ms = DRAGGING_IMAGE;
         overlaysCaught = true;
     } else if (_imp->ms == UNDEFINED && _imp->overlay) {
         unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel,1 << mipMapLevel,QMouseEventLocalPos(event),zoomPos,event);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2121,76 +2121,70 @@ ViewerGL::mousePressEvent(QMouseEvent *event)
     if (!overlaysCaught) {
         bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
         
-        if (_imp->pickerState != PICKER_INACTIVE && event->button() == Qt::LeftButton &&
-            !event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-            displayingImage()) {
+        if (_imp->pickerState != PICKER_INACTIVE && buttonIsLeft(e) && displayingImage()) {
             _imp->pickerState = PICKER_INACTIVE;
             mustRedraw = true;
             overlaysCaught = true;
-        } else if (hasPickers && event->button() == Qt::LeftButton &&
-                   event->modifiers().testFlag(Qt::ControlModifier) && !event->modifiers().testFlag(Qt::ShiftModifier) &&
-                   displayingImage()) {
+        } else if (hasPickers && buttonIsRight(e) && displayingImage()) {
             _imp->pickerState = PICKER_POINT;
-            if (pickColor(event->x(),event->y())) {
+            if (pickColor(e->x(),e->y())) {
                 _imp->ms = PICKING_COLOR;
                 mustRedraw = true;
                 overlaysCaught = true;
             }
-        } else if (hasPickers && event->button() == Qt::LeftButton &&
-                   event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier) &&
-                   displayingImage()) {
+        } else if (hasPickers && buttonIsRightShift(e) && displayingImage()) {
             _imp->pickerState = PICKER_RECTANGLE;
             _imp->pickerRect.setTopLeft(zoomPos);
             _imp->pickerRect.setBottomRight(zoomPos);
             _imp->ms = BUILDING_PICKER_RECTANGLE;
             mustRedraw = true;
             overlaysCaught = true;
-        } else if (event->button() == Qt::LeftButton &&
+        } else if (buttonIsLeft(e) &&
                    isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_BOTTOM_EDGE;
             overlaysCaught = true;
-        } else if(event->button() == Qt::LeftButton &&
+        } else if(buttonIsLeft(e) &&
                   isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_LEFT_EDGE;
             overlaysCaught = true;
-        } else if(event->button() == Qt::LeftButton &&
+        } else if(buttonIsLeft(e) &&
                   isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_RIGHT_EDGE;
             overlaysCaught = true;
-        } else if(event->button() == Qt::LeftButton &&
+        } else if(buttonIsLeft(e) &&
                   isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_TOP_EDGE;
             overlaysCaught = true;
-        } else if(event->button() == Qt::LeftButton &&
+        } else if(buttonIsLeft(e) &&
                   isNearByUserRoIMiddleHandle(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_CROSS;
             overlaysCaught = true;
-        } else if(event->button() == Qt::LeftButton &&
+        } else if(buttonIsLeft(e) &&
                   isNearByUserRoITopLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_TOP_LEFT;
             overlaysCaught = true;
-        } else if(event->button() == Qt::LeftButton &&
+        } else if(buttonIsLeft(e) &&
                   isNearByUserRoITopRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_TOP_RIGHT;
             overlaysCaught = true;
-        }  else if(event->button() == Qt::LeftButton &&
+        }  else if(buttonIsLeft(e) &&
                    isNearByUserRoIBottomLeft(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_BOTTOM_LEFT;
             overlaysCaught = true;
-        }  else if(event->button() == Qt::LeftButton &&
+        }  else if(buttonIsLeft(e) &&
                    isNearByUserRoIBottomRight(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             _imp->ms = DRAGGING_ROI_BOTTOM_RIGHT;
             overlaysCaught = true;
         } else if (_imp->overlay && isWipeHandleVisible() &&
-             event->button() == Qt::LeftButton && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
+                   buttonIsLeft(e) && _imp->isNearbyWipeCenter(zoomPos, wipeSelectionTol)) {
             _imp->ms = DRAGGING_WIPE_CENTER;
             overlaysCaught = true;
         } else if (_imp->overlay &&  isWipeHandleVisible() &&
-                   event->button() == Qt::LeftButton && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
+                   buttonIsLeft(e) && _imp->isNearbyWipeMixHandle(zoomPos, wipeSelectionTol)) {
             _imp->ms = DRAGGING_WIPE_MIX_HANDLE;
             overlaysCaught = true;
         } else if (_imp->overlay &&  isWipeHandleVisible() &&
-                   event->button() == Qt::LeftButton && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
+                   buttonIsLeft(e) && _imp->isNearbyWipeRotateBar(zoomPos, wipeSelectionTol)) {
             _imp->ms = ROTATING_WIPE_HANDLE;
             overlaysCaught = true;
         }
@@ -2199,15 +2193,15 @@ ViewerGL::mousePressEvent(QMouseEvent *event)
     }
 
     if (!overlaysCaught) {
-        if (event->button() == Qt::RightButton) {
-            _imp->menu->exec(mapToGlobal(event->pos()));
-        } else if (event->button() == Qt::LeftButton) {
+        if (buttonIsRight(e)) {
+            _imp->menu->exec(mapToGlobal(e->pos()));
+        } else if (buttonIsLeft(e)) {
             ///build selection rectangle
             _imp->selectionRectangle.setTopLeft(zoomPos);
             _imp->selectionRectangle.setBottomRight(zoomPos);
             _imp->lastDragStartPos = zoomPos;
             _imp->ms = SELECTING;
-            if (!event->modifiers().testFlag(Qt::ControlModifier)) {
+            if (!modifierIsControl(e)) {
                 emit selectionCleared();
             }
         }
@@ -2220,7 +2214,7 @@ ViewerGL::mousePressEvent(QMouseEvent *event)
 }
 
 void
-ViewerGL::mouseReleaseEvent(QMouseEvent *event)
+ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -2239,10 +2233,10 @@ ViewerGL::mouseReleaseEvent(QMouseEvent *event)
     QPointF zoomPos;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        zoomPos = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+        zoomPos = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
     }
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-    if (_imp->viewerTab->notifyOverlaysPenUp(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
+    if (_imp->viewerTab->notifyOverlaysPenUp(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e)) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2251,7 +2245,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent *event)
 }
 
 void
-ViewerGL::mouseMoveEvent(QMouseEvent *event)
+ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -2274,14 +2268,14 @@ ViewerGL::mouseMoveEvent(QMouseEvent *event)
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        zoomPos = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+        zoomPos = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     Format dispW = getDisplayWindow();
     for (int i = 0; i< 2; ++i) {
         RectD rod = getRoD(i);
-        updateInfoWidgetColorPicker(zoomPos, event->pos(), width(), height(), rod, dispW, i);
+        updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, dispW, i);
     }
     //update the cursor if it is hovering an overlay and we're not dragging the image
     bool userRoIEnabled;
@@ -2350,7 +2344,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent *event)
         mustRedraw = true;
     }
     
-    QPoint newClick = event->pos();
+    QPoint newClick = e->pos();
     QPoint oldClick = _imp->oldClick;
 
     QPointF newClick_opengl, oldClick_opengl, oldPosition_opengl;
@@ -2539,7 +2533,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent *event)
         }; break;
         default: {
             if (_imp->overlay &&
-                _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), zoomPos)) {
+                _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e)) {
                 mustRedraw = true;
             }
         } break;
@@ -2559,23 +2553,25 @@ ViewerGL::mouseMoveEvent(QMouseEvent *event)
 
 
 void
-ViewerGL::mouseDoubleClickEvent(QMouseEvent* event)
+ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
 {
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
     QPointF pos_opengl;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        pos_opengl = _imp->zoomCtx.toZoomCoordinates(event->x(),event->y());
+        pos_opengl = _imp->zoomCtx.toZoomCoordinates(e->x(),e->y());
     }
-    if (_imp->viewerTab->notifyOverlaysPenDoubleClick(1 << mipMapLevel, 1 << mipMapLevel,QMouseEventLocalPos(event), pos_opengl)) {
+    if (_imp->viewerTab->notifyOverlaysPenDoubleClick(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), pos_opengl, e)) {
         updateGL();
     }
-    QGLWidget::mouseDoubleClickEvent(event);
+    QGLWidget::mouseDoubleClickEvent(e);
 }
 
 // used to update the information bar at the bottom of the viewer (not for the ctrl-click color picker)
 void
-ViewerGL::updateColorPicker(int textureIndex, int x, int y)
+ViewerGL::updateColorPicker(int textureIndex,
+                            int x,
+                            int y)
 {
     if (_imp->pickerState != PICKER_INACTIVE) {
         return;
@@ -2650,11 +2646,11 @@ ViewerGL::updateColorPicker(int textureIndex, int x, int y)
 }
 
 void
-ViewerGL::wheelEvent(QWheelEvent *event)
+ViewerGL::wheelEvent(QWheelEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (event->orientation() != Qt::Vertical) {
+    if (e->orientation() != Qt::Vertical) {
         return;
     }
     
@@ -2663,10 +2659,10 @@ ViewerGL::wheelEvent(QWheelEvent *event)
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
     double zoomFactor;
-    double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {
             zoomFactor = zoomFactor_min;
@@ -2910,7 +2906,8 @@ ViewerGL::onProjectFormatChanged(const Format& format)
     }
 }
 
-void ViewerGL::setClipToDisplayWindow(bool b)
+void
+ViewerGL::setClipToDisplayWindow(bool b)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -2925,7 +2922,8 @@ void ViewerGL::setClipToDisplayWindow(bool b)
     }
 }
 
-bool ViewerGL::isClippingImageToProjectWindow() const
+bool
+ViewerGL::isClippingImageToProjectWindow() const
 {
     // MT-SAFE
     QMutexLocker l(&_imp->clipToDisplayWindowMutex);
@@ -2933,7 +2931,8 @@ bool ViewerGL::isClippingImageToProjectWindow() const
 }
 
 /*display black in the viewer*/
-void ViewerGL::clearViewer()
+void
+ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -2943,7 +2942,8 @@ void ViewerGL::clearViewer()
 }
 
 /*overload of QT enter/leave/resize events*/
-void ViewerGL::focusInEvent(QFocusEvent *event)
+void
+ViewerGL::focusInEvent(QFocusEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -2955,10 +2955,11 @@ void ViewerGL::focusInEvent(QFocusEvent *event)
     if(_imp->viewerTab->notifyOverlaysFocusGained(scale,scale)){
         updateGL();
     }
-    QGLWidget::focusInEvent(event);
+    QGLWidget::focusInEvent(e);
 }
 
-void ViewerGL::focusOutEvent(QFocusEvent *event)
+void
+ViewerGL::focusOutEvent(QFocusEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -2971,74 +2972,80 @@ void ViewerGL::focusOutEvent(QFocusEvent *event)
     if(_imp->viewerTab->notifyOverlaysFocusLost(scale,scale)){
         updateGL();
     }
-    QGLWidget::focusOutEvent(event);
+    QGLWidget::focusOutEvent(e);
 }
 
-void ViewerGL::enterEvent(QEvent *event)
+void
+ViewerGL::enterEvent(QEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     setFocus();
-    QGLWidget::enterEvent(event);
+    QGLWidget::enterEvent(e);
 }
 
-void ViewerGL::leaveEvent(QEvent *event)
+void
+ViewerGL::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     _imp->infoViewer[0]->hideColorAndMouseInfo();
     _imp->infoViewer[1]->hideColorAndMouseInfo();
-    QGLWidget::leaveEvent(event);
+    QGLWidget::leaveEvent(e);
 }
 
-void ViewerGL::resizeEvent(QResizeEvent* event)
+void
+ViewerGL::resizeEvent(QResizeEvent* e)
 { // public to hack the protected field
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    QGLWidget::resizeEvent(event);
+    QGLWidget::resizeEvent(e);
 }
 
-void ViewerGL::keyPressEvent(QKeyEvent* event)
+void
+ViewerGL::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
-    if (event->key() == Qt::Key_O) {
+    if (e->key() == Qt::Key_O) {
         toggleOverlays();
     }
     
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
     bool accept = false;
-    if(event->isAutoRepeat()){
-        if(_imp->viewerTab->notifyOverlaysKeyRepeat(scale,scale,event)){
+    if(e->isAutoRepeat()){
+        if(_imp->viewerTab->notifyOverlaysKeyRepeat(scale, scale, e)){
             accept = true;
             updateGL();
         }
     }else{
-        if(_imp->viewerTab->notifyOverlaysKeyDown(scale,scale,event)){
+        if(_imp->viewerTab->notifyOverlaysKeyDown(scale, scale, e)){
             accept = true;
             updateGL();
         }
     }
     if (accept) {
-        event->accept();
+        e->accept();
     } else {
-        event->ignore();
+        e->ignore();
     }
 }
 
 
-void ViewerGL::keyReleaseEvent(QKeyEvent* event)
+void
+ViewerGL::keyReleaseEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
     unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
-    if(_imp->viewerTab->notifyOverlaysKeyUp(scale,scale,event)){
+    if(_imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e)){
         updateGL();
     }
 }
 
 
-OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const
+OpenGLViewerI::BitDepth
+ViewerGL::getBitDepth() const
 {
     // MT-SAFE
     ///supportsGLSL is set on the main thread only once on startup, it doesn't need to be protected.
@@ -3051,9 +3058,8 @@ OpenGLViewerI::BitDepth ViewerGL::getBitDepth() const
     }
 }
 
-
-
-void ViewerGL::populateMenu()
+void
+ViewerGL::populateMenu()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3065,11 +3071,12 @@ void ViewerGL::populateMenu()
     _imp->menu->addAction(displayOverlaysAction);
 }
 
-void ViewerGL::renderText(double x,
-                          double y,
-                          const QString &string,
-                          const QColor& color,
-                          const QFont& font)
+void
+ViewerGL::renderText(double x,
+                     double y,
+                     const QString &string,
+                     const QColor& color,
+                     const QFont& font)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3102,7 +3109,9 @@ void ViewerGL::renderText(double x,
     glMatrixMode(GL_MODELVIEW);
 }
 
-void ViewerGL::setPersistentMessage(int type,const QString& message)
+void
+ViewerGL::setPersistentMessage(int type,
+                               const QString& message)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3112,12 +3121,14 @@ void ViewerGL::setPersistentMessage(int type,const QString& message)
     updateGL();
 }
 
-const QString& ViewerGL::getCurrentPersistentMessage() const
+const QString&
+ViewerGL::getCurrentPersistentMessage() const
 {
     return _imp->persistentMessage;
 }
 
-void ViewerGL::clearPersistentMessage()
+void
+ViewerGL::clearPersistentMessage()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3129,7 +3140,11 @@ void ViewerGL::clearPersistentMessage()
     updateGL();
 }
 
-void ViewerGL::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomPAR) const
+void
+ViewerGL::getProjection(double *zoomLeft,
+                        double *zoomBottom,
+                        double *zoomFactor,
+                        double *zoomPAR) const
 {
     // MT-SAFE
     QMutexLocker l(&_imp->zoomCtxMutex);
@@ -3139,7 +3154,11 @@ void ViewerGL::getProjection(double *zoomLeft, double *zoomBottom, double *zoomF
     *zoomPAR = _imp->zoomCtx.par();
 }
 
-void ViewerGL::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomPAR)
+void
+ViewerGL::setProjection(double zoomLeft,
+                        double zoomBottom,
+                        double zoomFactor,
+                        double zoomPAR)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3147,7 +3166,8 @@ void ViewerGL::setProjection(double zoomLeft, double zoomBottom, double zoomFact
     _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomPAR);
 }
 
-void ViewerGL::setUserRoIEnabled(bool b)
+void
+ViewerGL::setUserRoIEnabled(bool b)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3161,10 +3181,11 @@ void ViewerGL::setUserRoIEnabled(bool b)
     update();
 }
 
-bool ViewerGL::isNearByUserRoITopEdge(const RectD& roi,
-                                      const QPointF& zoomPos,
-                                      double zoomScreenPixelWidth,
-                                      double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoITopEdge(const RectD& roi,
+                                 const QPointF& zoomPos,
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3177,10 +3198,11 @@ bool ViewerGL::isNearByUserRoITopEdge(const RectD& roi,
     return r.contains(zoomPos.x(), zoomPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIRightEdge(const RectD& roi,
-                                        const QPointF& zoomPos,
-                                        double zoomScreenPixelWidth,
-                                        double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoIRightEdge(const RectD& roi,
+                                   const QPointF& zoomPos,
+                                   double zoomScreenPixelWidth,
+                                   double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3192,10 +3214,11 @@ bool ViewerGL::isNearByUserRoIRightEdge(const RectD& roi,
     return r.contains(zoomPos.x(), zoomPos.y());
 }
 
-bool ViewerGL::isNearByUserRoILeftEdge(const RectD& roi,
-                                       const QPointF& zoomPos,
-                                       double zoomScreenPixelWidth,
-                                       double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoILeftEdge(const RectD& roi,
+                                  const QPointF& zoomPos,
+                                  double zoomScreenPixelWidth,
+                                  double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3208,10 +3231,11 @@ bool ViewerGL::isNearByUserRoILeftEdge(const RectD& roi,
     return r.contains(zoomPos.x(), zoomPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIBottomEdge(const RectD& roi,
-                                         const QPointF& zoomPos,
-                                         double zoomScreenPixelWidth,
-                                         double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoIBottomEdge(const RectD& roi,
+                                    const QPointF& zoomPos,
+                                    double zoomScreenPixelWidth,
+                                    double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3223,10 +3247,11 @@ bool ViewerGL::isNearByUserRoIBottomEdge(const RectD& roi,
     return r.contains(zoomPos.x(), zoomPos.y());
 }
 
-bool ViewerGL::isNearByUserRoIMiddleHandle(const RectD& roi,
-                                           const QPointF& zoomPos,
-                                           double zoomScreenPixelWidth,
-                                           double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoIMiddleHandle(const RectD& roi,
+                                      const QPointF& zoomPos,
+                                      double zoomScreenPixelWidth,
+                                      double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3237,10 +3262,11 @@ bool ViewerGL::isNearByUserRoIMiddleHandle(const RectD& roi,
     return r.contains(zoomPos.x(), zoomPos.y());
 }
 
-bool ViewerGL::isNearByUserRoITopLeft(const RectD& roi,
-                                      const QPointF& zoomPos,
-                                      double zoomScreenPixelWidth,
-                                      double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoITopLeft(const RectD& roi,
+                                 const QPointF& zoomPos,
+                                 double zoomScreenPixelWidth,
+                                 double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3251,10 +3277,11 @@ bool ViewerGL::isNearByUserRoITopLeft(const RectD& roi,
     return r.contains(zoomPos.x(), zoomPos.y());
 }
 
-bool ViewerGL::isNearByUserRoITopRight(const RectD& roi,
-                                       const QPointF& zoomPos,
-                                       double zoomScreenPixelWidth,
-                                       double zoomScreenPixelHeight)
+bool
+ViewerGL::isNearByUserRoITopRight(const RectD& roi,
+                                  const QPointF& zoomPos,
+                                  double zoomScreenPixelWidth,
+                                  double zoomScreenPixelHeight)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -3564,7 +3591,8 @@ ViewerGL::updateRectangleColorPicker()
     }
 }
 
-void ViewerGL::resetWipeControls()
+void
+ViewerGL::resetWipeControls()
 {
     RectD rod;
     if (_imp->activeTextures[1]) {
