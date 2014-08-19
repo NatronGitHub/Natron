@@ -736,7 +736,7 @@ void Knob<T>::evaluateAnimationChange()
     blockEvaluation();
     int dims = getDimension();
     bool hasEvaluatedOnce = false;
-    for (int i = 0; i < dims;++i) {
+    for (int i = 0; i < dims; ++i) {
         if (i == dims - 1) {
             unblockEvaluation();
         }
@@ -944,7 +944,7 @@ void Knob<T>::clone(KnobI* other)
 {
     int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
-    for (int i = 0; i < dimMin;++i) {
+    for (int i = 0; i < dimMin; ++i) {
         getCurve(i)->clone(*other->getCurve(i));
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
@@ -972,10 +972,10 @@ void Knob<T>::cloneAndUpdateGui(KnobI* other)
 {
     int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
-    for (int i = 0; i < dimMin;++i) {
+    for (int i = 0; i < dimMin; ++i) {
         if (_signalSlotHandler) {
             int nKeys = getKeyFramesCount(i);
-            for (int k = 0; k < nKeys;++k) {
+            for (int k = 0; k < nKeys; ++k) {
                 double time;
                 bool ok = getKeyFrameTime(k, i, &time);
                 assert(ok);
@@ -987,7 +987,7 @@ void Knob<T>::cloneAndUpdateGui(KnobI* other)
         getCurve(i)->clone(*other->getCurve(i));
         if (_signalSlotHandler) {
             int nKeys = getKeyFramesCount(i);
-            for (int k = 0; k < nKeys;++k) {
+            for (int k = 0; k < nKeys; ++k) {
                 double time;
                 bool ok = getKeyFrameTime(k, i, &time);
                 assert(ok);

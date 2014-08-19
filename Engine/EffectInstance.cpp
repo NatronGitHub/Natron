@@ -2006,7 +2006,9 @@ EffectInstance::evaluate(KnobI* knob,
     std::list<ViewerInstance* > viewers;
     _node->hasViewersConnected(&viewers);
     bool forcePreview = getApp()->getProject()->isAutoPreviewEnabled();
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+         it!=viewers.end();
+         ++it) {
         if (isSignificant) {
             if (button) {
                 ///if the parameter is a button, force an update of the tree since it could be an analysis

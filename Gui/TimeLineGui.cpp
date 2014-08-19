@@ -29,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TextRenderer.h"
 #include "Gui/ticks.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiMacros.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -539,7 +540,7 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
     _imp->_lastMouseEventWidgetCoord = e->pos();
     double t = toTimeLineCoordinates(e->x(),0).x();
     SequenceTime tseq = std::floor(t + 0.5);
-    if (e->modifiers().testFlag(Qt::ControlModifier)) {
+    if (modifierIsControl(e)) {
         _imp->_state = DRAGGING_BOUNDARY;
         int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound()-1,0).x();
         int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound()+1,0).x();
@@ -557,7 +558,8 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
     }
 }
 
-void TimeLineGui::mouseMoveEvent(QMouseEvent* e)
+void
+TimeLineGui::mouseMoveEvent(QMouseEvent* e)
 {
     _imp->_lastMouseEventWidgetCoord = e->pos();
     double t = toTimeLineCoordinates(e->x(),0).x();
@@ -634,19 +636,19 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 }
 
 void
-TimeLineGui::wheelEvent(QWheelEvent *event)
+TimeLineGui::wheelEvent(QWheelEvent* e)
 {
-    if (event->orientation() != Qt::Vertical) {
+    if (e->orientation() != Qt::Vertical) {
         return;
     }
-    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    const double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     double newZoomFactor = _imp->_zoomCtx.zoomFactor * scaleFactor;
     if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
     } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
-    QPointF zoomCenter = toTimeLineCoordinates(event->x(), event->y());
+    QPointF zoomCenter = toTimeLineCoordinates(e->x(), e->y());
     double zoomRatio =   _imp->_zoomCtx.zoomFactor / newZoomFactor;
     _imp->_zoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->_zoomCtx.left)*zoomRatio ;
     _imp->_zoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->_zoomCtx.bottom)*zoomRatio;
@@ -676,16 +678,19 @@ TimeLineGui::setBoundaries(SequenceTime first,
     }
 }
 
-void TimeLineGui::onBoundariesChanged(SequenceTime,
-                                      SequenceTime,
-                                      int reason)
+void
+TimeLineGui::onBoundariesChanged(SequenceTime,
+                                 SequenceTime,
+                                 int reason)
 {
     if(reason == Natron::PLUGIN_EDITED){
         update();
     }
 }
 
-void TimeLineGui::centerOn(SequenceTime left,SequenceTime right)
+void
+TimeLineGui::centerOn(SequenceTime left,
+                      SequenceTime right)
 {
     double curveWidth = right - left + 10;
     double w = width();
@@ -774,7 +779,8 @@ TimeLineGui::connectSlotsToViewerCache()
     QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()));
 }
 
-void TimeLineGui::disconnectSlotsFromViewerCache()
+void
+TimeLineGui::disconnectSlotsFromViewerCache()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -785,16 +791,20 @@ void TimeLineGui::disconnectSlotsFromViewerCache()
     QObject::disconnect(emitter, SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
                         SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)));
     QObject::disconnect(emitter, SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()));
-    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()));}
+    QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()));
+}
 
-void TimeLineGui::onCachedFrameAdded(SequenceTime time)
+void
+TimeLineGui::onCachedFrameAdded(SequenceTime time)
 {
     _imp->cachedFrames.insert(CachedFrame(time,RAM));
 }
 
-void TimeLineGui::onCachedFrameRemoved(SequenceTime time,int /*storage*/)
+void
+TimeLineGui::onCachedFrameRemoved(SequenceTime time,
+                                  int /*storage*/)
 {
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it!=_imp->cachedFrames.end(); ++it) {
         if (it->time == time) {
             _imp->cachedFrames.erase(it);
             break;
@@ -803,9 +813,12 @@ void TimeLineGui::onCachedFrameRemoved(SequenceTime time,int /*storage*/)
     update();
 }
 
-void TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,int /*oldStorage*/,int newStorage)
+void
+TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,
+                                         int /*oldStorage*/,
+                                         int newStorage)
 {
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it!=_imp->cachedFrames.end(); ++it) {
         if (it->time == time) {
             _imp->cachedFrames.erase(it);
             _imp->cachedFrames.insert(CachedFrame(time,(StorageMode)newStorage));
@@ -814,10 +827,11 @@ void TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,int /*oldStorage
     }
 }
 
-void TimeLineGui::onMemoryCacheCleared()
+void
+TimeLineGui::onMemoryCacheCleared()
 {
     CachedFrames copy;
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it!=_imp->cachedFrames.end(); ++it) {
         if (it->mode == DISK) {
             copy.insert(*it);
         }
@@ -826,10 +840,11 @@ void TimeLineGui::onMemoryCacheCleared()
     update();
 }
 
-void TimeLineGui::onDiskCacheCleared()
+void
+TimeLineGui::onDiskCacheCleared()
 {
     CachedFrames copy;
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin();it!=_imp->cachedFrames.end();++it) {
+    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it!=_imp->cachedFrames.end(); ++it) {
         if (it->mode == RAM) {
             copy.insert(*it);
         }
@@ -838,7 +853,8 @@ void TimeLineGui::onDiskCacheCleared()
     update();
 }
 
-void TimeLineGui::clearCachedFrames()
+void
+TimeLineGui::clearCachedFrames()
 {
     _imp->cachedFrames.clear();
     update();

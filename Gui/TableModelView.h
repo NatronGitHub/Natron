@@ -199,9 +199,9 @@ signals:
     
 private:
     
-    virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<TableViewPrivate> _imp;
 };

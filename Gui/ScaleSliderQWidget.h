@@ -81,15 +81,15 @@ private:
         
     void centerOn(double left,double right);
     
-    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     virtual QSize sizeHint() const OVERRIDE FINAL;
     
-    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     
     
     

@@ -334,8 +334,7 @@ class KnobSerialization
                  isDouble && isDouble->getName() == "center" && isDouble->getDimension() == 2) {
             int count ;
             ar & boost::serialization::make_nvp("SlavePtsNo",count);
-            for (int i = 0; i < count;++i) {
-                
+            for (int i = 0; i < count; ++i) {
                 Double_Knob::SerializedTrack t;
                 ar & boost::serialization::make_nvp("SlavePtNodeName",t.rotoNodeName);
                 ar & boost::serialization::make_nvp("SlavePtBezier",t.bezierName);

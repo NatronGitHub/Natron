@@ -790,17 +790,17 @@ public:
     
 protected:
     
-    bool event(QEvent *);
+    bool event(QEvent* e);
 
 };
 
-bool Application::event(QEvent *event)
+bool Application::event(QEvent* e)
 {
-    switch (event->type()) {
+    switch (e->type()) {
         case QEvent::FileOpen:
         {
             assert(_app);
-            QString file =  static_cast<QFileOpenEvent*>(event)->file();
+            QString file =  static_cast<QFileOpenEvent*>(e)->file();
 #ifdef Q_OS_UNIX
             if (!file.isEmpty()) {
                 file = AppManager::qt_tildeExpansion(file);
@@ -809,7 +809,7 @@ bool Application::event(QEvent *event)
             _app->setFileToOpen(file);
         }   return true;
         default:
-            return QApplication::event(event);
+            return QApplication::event(e);
     }
 }
 

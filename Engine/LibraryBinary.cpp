@@ -36,7 +36,9 @@ LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
 #ifdef __NATRON_UNIX__
     _functions = functions;
 #else
-    for(std::map<std::string, void *>::const_iterator it = functions.begin();it!=functions.end();++it){
+    for (std::map<std::string, void *>::const_iterator it = functions.begin();
+         it!=functions.end();
+         ++it) {
         _functions.insert(std::make_pair(it->first,(HINSTANCE)it->second));
     }
 #endif

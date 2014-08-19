@@ -21,27 +21,32 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QMimeData>
 CLANG_DIAG_ON(deprecated)
 
-#include "Gui/KnobGui.h"
 #include "Engine/Project.h"
 #include "Engine/Knob.h"
 #include "Engine/AppManager.h"
 
-void AnimationButton::mousePressEvent(QMouseEvent* event){
-    if (event->button() == Qt::LeftButton) {
-        _dragPos = event->pos();
+#include "Gui/KnobGui.h"
+#include "Gui/GuiMacros.h"
+
+void
+AnimationButton::mousePressEvent(QMouseEvent* e)
+{
+    if (buttonIsLeft(e)) {
+        _dragPos = e->pos();
         _dragging = true;
     }
-    QPushButton::mousePressEvent(event);
+    QPushButton::mousePressEvent(e);
 }
 
-void AnimationButton::mouseMoveEvent(QMouseEvent* event){
-    
+void
+AnimationButton::mouseMoveEvent(QMouseEvent* e)
+{
     if(_dragging){
         // If the left button isn't pressed anymore then return
-        if (!(event->buttons() & Qt::LeftButton))
+        if (!buttonIsLeft(e))
             return;
         // If the distance is too small then return
-        if ((event->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
+        if ((e->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
             return;
         
         // initiate Drag
@@ -70,25 +75,28 @@ void AnimationButton::mouseMoveEvent(QMouseEvent* event){
         setDown(false);
         drag->exec();
     }else{
-        QPushButton::mouseMoveEvent(event);
+        QPushButton::mouseMoveEvent(e);
     }
 }
 
-void AnimationButton::mouseReleaseEvent(QMouseEvent* event) {
+void
+AnimationButton::mouseReleaseEvent(QMouseEvent* e)
+{
     _dragging = false;
-    QPushButton::mouseReleaseEvent(event);
+    QPushButton::mouseReleaseEvent(e);
     emit animationMenuRequested();
 }
 
-void AnimationButton::dragEnterEvent(QDragEnterEvent* event){
-    
-    if(event->source() == this){
+void
+AnimationButton::dragEnterEvent(QDragEnterEvent* e)
+{
+    if(e->source() == this){
         return;
     }
-    QStringList formats = event->mimeData()->formats();
+    QStringList formats = e->mimeData()->formats();
     if (formats.contains("Animation")) {
         setCursor(Qt::DragCopyCursor);
-        event->acceptProposedAction();
+        e->acceptProposedAction();
     }
 }
 
@@ -96,30 +104,37 @@ void AnimationButton::dragLeaveEvent(QDragLeaveEvent* /*event*/){
 
 }
 
-void AnimationButton::dropEvent(QDropEvent* event){
-    event->accept();
-    QStringList formats = event->mimeData()->formats();
+void
+AnimationButton::dropEvent(QDropEvent* e)
+{
+    e->accept();
+    QStringList formats = e->mimeData()->formats();
     if (formats.contains("Animation")) {
         _knob->onPasteAnimationActionTriggered();
-        event->acceptProposedAction();
+        e->acceptProposedAction();
     }
 }
 
-void AnimationButton::dragMoveEvent(QDragMoveEvent* event) {
-    
-    QStringList formats = event->mimeData()->formats();
+void
+AnimationButton::dragMoveEvent(QDragMoveEvent* e)
+{
+    QStringList formats = e->mimeData()->formats();
     if (formats.contains("Animation")) {
-        event->acceptProposedAction();
+        e->acceptProposedAction();
     }
 }
 
-void AnimationButton::enterEvent(QEvent* /*event*/){
+void
+AnimationButton::enterEvent(QEvent* /*e*/)
+{
     if (cursor().shape() != Qt::OpenHandCursor) {
         setCursor(Qt::OpenHandCursor);
     }
 }
 
-void AnimationButton::leaveEvent(QEvent* /*event*/){
+void
+AnimationButton::leaveEvent(QEvent* /*e*/)
+{
     if (cursor().shape() == Qt::OpenHandCursor) {
         setCursor(Qt::ArrowCursor);
     }

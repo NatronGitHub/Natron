@@ -242,17 +242,17 @@ private:
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
-    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
 
-    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
 
-    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
 
-    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
 
-    virtual void keyPressEvent(QKeyEvent *event) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 

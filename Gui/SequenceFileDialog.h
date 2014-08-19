@@ -78,7 +78,7 @@ public:
     
     QStringList mimeTypes() const;
     virtual QMimeData *mimeData(const QModelIndexList &indexes) const;
-    bool canDrop(QDragEnterEvent *event);
+    bool canDrop(QDragEnterEvent* e);
     virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) OVERRIDE FINAL;
 
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL;
@@ -149,12 +149,12 @@ public slots:
     void editUrl();
 
 private:
-    virtual void keyPressEvent(QKeyEvent *event);
-    virtual void dragEnterEvent(QDragEnterEvent *event);
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
     
-    virtual void focusInEvent(QFocusEvent *event)
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL
     {
-        QAbstractScrollArea::focusInEvent(event);
+        QAbstractScrollArea::focusInEvent(e);
         viewport()->update();
     }
 private:
@@ -175,17 +175,17 @@ public:
 
     void expandColumnsToFullWidth(int w);
     
-    void dropEvent(QDropEvent* event);
+    void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
-    void dragEnterEvent(QDragEnterEvent *ev);
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
     
-    void dragMoveEvent(QDragMoveEvent* e);
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     
-    void dragLeaveEvent(QDragLeaveEvent* e);
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     
-    void resizeEvent(QResizeEvent* e);
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 
-	void paintEvent(QPaintEvent *event);
+	virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 
 
@@ -234,7 +234,7 @@ public:
     void showPopup();
     void setHistory(const QStringList &paths);
     QStringList history() const { return m_history; }
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent* e);
 
 private:
     UrlModel *urlModel;
@@ -438,7 +438,7 @@ public slots:
 
 private:
     
-    virtual void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 

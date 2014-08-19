@@ -36,6 +36,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ViewerGL.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
+#include "Gui/GuiMacros.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -1030,7 +1031,8 @@ void HistogramPrivate::renderHistogram(Histogram::DisplayMode channel)
 
 #endif
 
-void Histogram::paintGL()
+void
+Histogram::paintGL()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1080,7 +1082,8 @@ void Histogram::paintGL()
     glCheckError();
 }
 
-void Histogram::resizeGL(int width, int height)
+void
+Histogram::resizeGL(int width, int height)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1097,32 +1100,34 @@ void Histogram::resizeGL(int width, int height)
     }
 }
 
-void Histogram::mousePressEvent(QMouseEvent* event)
+void
+Histogram::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     ////
     // middle button: scroll view
-    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
+    if (buttonIsMiddle(e)) {
         _imp->state = DRAGGING_VIEW;
-        _imp->oldClick = event->pos();
-    } else if (event->button() == Qt::RightButton) {
-        _imp->showMenu(event->globalPos());
+        _imp->oldClick = e->pos();
+    } else if (buttonIsRight(e)) {
+        _imp->showMenu(e->globalPos());
     }
     
 }
 
-void Histogram::mouseMoveEvent(QMouseEvent* event)
+void
+Histogram::mouseMoveEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates(event->x(),event->y());
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates(e->x(),e->y());
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates(_imp->oldClick.x(),_imp->oldClick.y());
     
 
-    _imp->oldClick = event->pos();
+    _imp->oldClick = e->pos();
     _imp->drawCoordinates = true;
 
     double dx = (oldClick_opengl.x() - newClick_opengl.x());
@@ -1143,7 +1148,8 @@ void Histogram::mouseMoveEvent(QMouseEvent* event)
     
 }
 
-void HistogramPrivate::updatePicker(double x)
+void
+HistogramPrivate::updatePicker(double x)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1181,7 +1187,8 @@ void HistogramPrivate::updatePicker(double x)
     }
 }
 
-void Histogram::mouseReleaseEvent(QMouseEvent* /*event*/)
+void
+Histogram::mouseReleaseEvent(QMouseEvent* /*e*/)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1189,13 +1196,14 @@ void Histogram::mouseReleaseEvent(QMouseEvent* /*event*/)
     _imp->state = NONE;
 }
 
-void Histogram::wheelEvent(QWheelEvent *event)
+void
+Histogram::wheelEvent(QWheelEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
-    if (event->orientation() != Qt::Vertical) {
+    if (e->orientation() != Qt::Vertical) {
         return;
     }
     const double zoomFactor_min = 0.000001;
@@ -1205,10 +1213,10 @@ void Histogram::wheelEvent(QWheelEvent *event)
 
     double zoomFactor;
     double par;
-    double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
-    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(event->x(), event->y());
+    double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
 
-    if (event->modifiers().testFlag(Qt::ControlModifier) && event->modifiers().testFlag(Qt::ShiftModifier)) {
+    if (modifierIsControlShift(e)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {
@@ -1227,7 +1235,7 @@ void Histogram::wheelEvent(QWheelEvent *event)
             scaleFactor = par / _imp->zoomCtx.factor();
         }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-    } else if (event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (modifierIsControl(e)) {
         // Alt + Wheel: zoom time only, keep point under mouse
         par = _imp->zoomCtx.par() * scaleFactor;
         if (par <= par_min) {
@@ -1257,13 +1265,14 @@ void Histogram::wheelEvent(QWheelEvent *event)
     
 }
 
-void Histogram::keyPressEvent(QKeyEvent *e)
+void
+Histogram::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
     if (e->key() == Qt::Key_Space) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
     } else if (e->key() == Qt::Key_F) {
         _imp->hasBeenModifiedSinceResize = false;
@@ -1272,7 +1281,8 @@ void Histogram::keyPressEvent(QKeyEvent *e)
     }
 }
 
-void Histogram::enterEvent(QEvent* e)
+void
+Histogram::enterEvent(QEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1281,7 +1291,8 @@ void Histogram::enterEvent(QEvent* e)
     QGLWidget::enterEvent(e);
 }
 
-void Histogram::leaveEvent(QEvent* e)
+void
+Histogram::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1290,7 +1301,8 @@ void Histogram::leaveEvent(QEvent* e)
     QGLWidget::leaveEvent(e);
 }
 
-void Histogram::showEvent(QShowEvent* e)
+void
+Histogram::showEvent(QShowEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1301,7 +1313,8 @@ void Histogram::showEvent(QShowEvent* e)
     }
 }
 
-void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
+void
+Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1333,7 +1346,8 @@ void Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
-void Histogram::onCPUHistogramComputed()
+void
+Histogram::onCPUHistogramComputed()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1349,7 +1363,8 @@ void Histogram::onCPUHistogramComputed()
 
 #endif
 
-void HistogramPrivate::drawScale()
+void
+HistogramPrivate::drawScale()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1451,7 +1466,8 @@ void HistogramPrivate::drawScale()
     glCheckError();
 }
 
-void HistogramPrivate::drawPicker()
+void
+HistogramPrivate::drawPicker()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1582,7 +1598,8 @@ int main(int argc, char**argv)
 #endif
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
-void HistogramPrivate::drawHistogramCPU()
+void
+HistogramPrivate::drawHistogramCPU()
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -1669,7 +1686,12 @@ void HistogramPrivate::drawHistogramCPU()
 }
 #endif
 
-void Histogram::renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const
+void
+Histogram::renderText(double x,
+                      double y,
+                      const QString& text,
+                      const QColor& color,
+                      const QFont& font) const
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());

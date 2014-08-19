@@ -70,7 +70,7 @@ public:
         }
         QMutexLocker locker(&_lock);
         _stream->operator <<("********************************************************************************\n");
-        for(int i = 0 ; i < _beginsCount;++i){
+        for (int i = 0; i < _beginsCount; ++i) {
             _stream->operator <<("    ");
         }
         _stream->operator <<("START ");
@@ -85,11 +85,11 @@ public:
     void print(const std::string& log){
         QMutexLocker locker(&_lock);
         assert(_file);
-        for(int i = 0 ; i < _beginsCount;++i){
+        for (int i = 0; i < _beginsCount; ++i) {
             _stream->operator <<("    ");
         }
         QString str(log.c_str());
-        for (int i = 0; i < str.size();++i) {
+        for (int i = 0; i < str.size(); ++i) {
             _stream->operator <<(str.at(i).toAscii());
             if (i%80 == 0 && i!=0) { // format to 80 columns
                 /*Find closest word end and insert a new line*/
@@ -99,7 +99,7 @@ public:
                     ++i;
                 }
                 _stream->operator <<('\n');
-                for(int i = 0 ; i < _beginsCount;++i){
+                for (int i = 0; i < _beginsCount; ++i) {
                     _stream->operator <<("    ");
                 }
             }
@@ -109,10 +109,10 @@ public:
         _stream->flush();
     }
 
-    void endFunction(const std::string& callerName,const std::string& function){
+    void endFunction(const std::string& callerName,const std::string& function) {
         QMutexLocker locker(&_lock);
         --_beginsCount;
-        for(int i = 0 ; i < _beginsCount;++i){
+        for (int i = 0; i < _beginsCount; ++i) {
             _stream->operator <<("    ");
         }
         _stream->operator <<("STOP ");

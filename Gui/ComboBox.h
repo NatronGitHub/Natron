@@ -128,7 +128,7 @@ signals:
     
 private:
         
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent* e);
     void mousePressEvent(QMouseEvent* e);
     void mouseReleaseEvent(QMouseEvent* e);
     

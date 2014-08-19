@@ -57,23 +57,23 @@ signals:
     
 private:
     
-    virtual void mousePressEvent(QMouseEvent* event);
+    virtual void mousePressEvent(QMouseEvent* e);
     
-    virtual void mouseMoveEvent(QMouseEvent* event);
+    virtual void mouseMoveEvent(QMouseEvent* e);
     
-    virtual void mouseReleaseEvent(QMouseEvent* event);
+    virtual void mouseReleaseEvent(QMouseEvent* e);
     
-    virtual void dragEnterEvent(QDragEnterEvent* event);
+    virtual void dragEnterEvent(QDragEnterEvent* e);
     
-    virtual void dragMoveEvent(QDragMoveEvent* event);
+    virtual void dragMoveEvent(QDragMoveEvent* e);
     
-    virtual void dragLeaveEvent(QDragLeaveEvent* event);
+    virtual void dragLeaveEvent(QDragLeaveEvent* e);
     
-    virtual void dropEvent(QDropEvent* event);
+    virtual void dropEvent(QDropEvent* e);
  
-    virtual void enterEvent(QEvent* event);
+    virtual void enterEvent(QEvent* e);
     
-    virtual void leaveEvent(QEvent* event);
+    virtual void leaveEvent(QEvent* e);
     
     QPoint _dragPos;
     bool _dragging;

@@ -113,7 +113,7 @@ public:
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
      *It calls QGLWidget::resizeEvent(QResizeEvent*).
      **/
-    virtual void resizeEvent(QResizeEvent* event) OVERRIDE FINAL;
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     
     /**
      *@returns Returns the height of the frame with the scale factor applied to it.
@@ -331,27 +331,27 @@ private:
      **/
     virtual void paintGL() OVERRIDE FINAL;
     
-    virtual void mousePressEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseDoubleClickEvent(QMouseEvent* event) OVERRIDE FINAL;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseReleaseEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     
-    virtual void wheelEvent(QWheelEvent *event) OVERRIDE FINAL;
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     
-    virtual void focusInEvent(QFocusEvent *event) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     
-    virtual void focusOutEvent(QFocusEvent *event) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
-    virtual void enterEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
 
-    virtual void leaveEvent(QEvent *event) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 
-    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
-    virtual void keyReleaseEvent(QKeyEvent* event) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     /**
      *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.

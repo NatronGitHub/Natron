@@ -157,14 +157,16 @@ public:
         assert(!_key_tracker.empty());
         // Identify least recently used key
         const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
-        for(typename std::list<V>::iterator it2 = it->second.first.begin();it2!=it->second.first.end();++it2){
-            if((*it2).use_count() == 1){
+        for (typename std::list<V>::iterator it2 = it->second.first.begin();
+             it2 != it->second.first.end();
+             ++it2) {
+            if ((*it2).use_count() == 1) {
                 std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
-                if(it->second.first.size() == 1){
+                if (it->second.first.size() == 1) {
                     // Erase both elements to completely purge record
                     _key_to_value.erase(it);
                     _key_tracker.pop_front();
-                }else{
+                } else {
                     it->second.first.erase(it2);
                 }
                 return ret;
@@ -248,14 +250,15 @@ public:
     
     std::pair<key_type,V> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        while(it != _container.right.end()){
-            for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
-                if((*it2).use_count() == 1){
+        while (it != _container.right.end()) {
+            for (typename std::list<V>::iterator it2 = it->first.begin();
+                 it2 != it->first.end();
+                 ++it2) {
+                if ((*it2).use_count() == 1) {
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
-                    if(it->first.size() == 1){
+                    if (it->first.size() == 1) {
                         _container.right.erase(it);
-                    }
-                    else{
+                    } else {
                         it->first.erase(it2);
                     }
                     return ret;
@@ -345,7 +348,9 @@ public:
         assert(!_key_tracker.empty());
         // Identify least recently used key
         const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
-        for(typename std::list<V>::iterator it2 = it->second.first.begin();it2!=it->second.first.end();++it2){
+        for (typename std::list<V>::iterator it2 = it->second.first.begin();
+             it2!=it->second.first.end();
+             ++it2) {
             if((*it2).use_count() == 1){
                 std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
                 if(it->second.first.size() == 1){

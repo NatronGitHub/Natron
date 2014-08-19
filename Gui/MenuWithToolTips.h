@@ -18,7 +18,7 @@ class MenuWithToolTips : public QMenu {
 public:
     MenuWithToolTips(QWidget* parent);
     
-    bool event(QEvent * e);
+    bool event(QEvent* e);
 };
 
 #endif // NATRON_GUI_MENUWITHTOOLTIPS_H_

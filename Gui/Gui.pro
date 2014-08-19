@@ -113,6 +113,7 @@ HEADERS += \
     FromQtEnums.h \
     GroupBoxLabel.h \
     Gui.h \
+    GuiMacros.h \
     GuiApplicationManager.h \
     GuiAppInstance.h \
     Histogram.h \

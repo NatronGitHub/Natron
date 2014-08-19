@@ -465,7 +465,9 @@ Natron::Key QtEnumConvert::fromQtKey(Qt::Key k) {
     }
 }
 
-Natron::KeyboardModifier QtEnumConvert::fromQtModifier(Qt::KeyboardModifier m) {
+Natron::KeyboardModifier
+QtEnumConvert::fromQtModifier(Qt::KeyboardModifier m)
+{
     switch (m) {
         case Qt::NoModifier :
             return Natron::NoModifier;
@@ -497,7 +499,9 @@ Natron::KeyboardModifier QtEnumConvert::fromQtModifier(Qt::KeyboardModifier m) {
     }
 }
 
-Natron::KeyboardModifiers QtEnumConvert::fromQtModifiers(Qt::KeyboardModifiers m) {
+Natron::KeyboardModifiers
+QtEnumConvert::fromQtModifiers(Qt::KeyboardModifiers m)
+{
     Natron::KeyboardModifiers ret;
     if (m.testFlag(Qt::NoModifier)) {
         ret |= fromQtModifier(Qt::NoModifier);
@@ -665,7 +669,9 @@ QMessageBox::StandardButton QtEnumConvert::toQtStandardButton(Natron::StandardBu
 
 
 
-QMessageBox::StandardButtons QtEnumConvert::toQtStandarButtons(Natron::StandardButtons buttons) {
+QMessageBox::StandardButtons
+QtEnumConvert::toQtStandarButtons(Natron::StandardButtons buttons)
+{
     QMessageBox::StandardButtons ret;
     if (buttons.testFlag(Natron::NoButton)) {
         ret |= QMessageBox::NoButton;

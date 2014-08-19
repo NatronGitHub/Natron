@@ -81,6 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeBackDropSerialization.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeCreationDialog.h"
+#include "Gui/GuiMacros.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -374,7 +375,9 @@ struct NodeGraphPrivate
     
 };
 
-NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent)
+NodeGraph::NodeGraph(Gui* gui,
+                     QGraphicsScene* scene,
+                     QWidget *parent)
     : QGraphicsView(scene,parent)
     , _imp(new NodeGraphPrivate(gui,this))
 {
@@ -457,14 +460,19 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent)
 
 }
 
-NodeGraph::~NodeGraph() {
-    
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+NodeGraph::~NodeGraph()
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();
+         it!=_imp->_nodes.end();
+         ++it) {
         (*it)->discardGraphPointer();
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin();
+         it!=_imp->_nodesTrash.end();
+         ++it) {
         (*it)->discardGraphPointer();
     }
+
     QGraphicsScene* scene = _imp->_hintInputEdge->scene();
     if (scene) {
         scene->removeItem(_imp->_hintInputEdge);
@@ -483,21 +491,41 @@ NodeGraph::~NodeGraph() {
     _imp->_nodeCreationShortcutEnabled = false;
 
     onProjectNodesCleared();
-
 }
 
-void NodeGraph::setPropertyBinPtr(QScrollArea* propertyBin) { _imp->_propertyBin = propertyBin; }
+void
+NodeGraph::setPropertyBinPtr(QScrollArea* propertyBin)
+{
+    _imp->_propertyBin = propertyBin;
+}
 
-const std::list< boost::shared_ptr<NodeGui> >& NodeGraph::getSelectedNodes() const { return _imp->_selection.nodes; }
+const std::list< boost::shared_ptr<NodeGui> >&
+NodeGraph::getSelectedNodes() const
+{
+    return _imp->_selection.nodes;
+}
 
-QGraphicsItem* NodeGraph::getRootItem() const { return _imp->_root; }
+QGraphicsItem*
+NodeGraph::getRootItem() const
+{
+    return _imp->_root;
+}
 
-Gui* NodeGraph::getGui() const { return _imp->_gui; }
+Gui*
+NodeGraph::getGui() const
+{
+    return _imp->_gui;
+}
 
-void NodeGraph::discardGuiPointer() { _imp->_gui = 0; }
+void
+NodeGraph::discardGuiPointer()
+{
+    _imp->_gui = 0;
+}
 
-void NodeGraph::onProjectNodesCleared() {
-    
+void
+NodeGraph::onProjectNodesCleared()
+{
     _imp->_selection.nodes.clear();
     {
         QMutexLocker l(&_imp->_nodesMutex);
@@ -519,11 +547,16 @@ void NodeGraph::onProjectNodesCleared() {
     _imp->_backdrops.clear();
 }
 
-void NodeGraph::resizeEvent(QResizeEvent* event){
+void
+NodeGraph::resizeEvent(QResizeEvent* e)
+{
     _imp->_refreshOverlays = true;
-    QGraphicsView::resizeEvent(event);
+    QGraphicsView::resizeEvent(e);
 }
-void NodeGraph::paintEvent(QPaintEvent* event){
+
+void
+NodeGraph::paintEvent(QPaintEvent* e)
+{
     if (_imp->_refreshOverlays) {
         
         ///The visible portion of the scene, in scene coordinates
@@ -545,10 +578,12 @@ void NodeGraph::paintEvent(QPaintEvent* event){
         updateNavigator();
         _imp->_refreshOverlays = false;
     }
-    QGraphicsView::paintEvent(event);
+    QGraphicsView::paintEvent(e);
 }
 
-QRectF NodeGraph::visibleSceneRect() {
+QRectF
+NodeGraph::visibleSceneRect()
+{
     return mapToScene(visibleWidgetRect()).boundingRect();
 }
 
@@ -557,9 +592,13 @@ QRect NodeGraph::visibleWidgetRect()
     return viewport()->rect();
 }
 
-boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node>& node,
-                                                    bool requestedByLoad,double xPosHint,double yPosHint){
-  
+boost::shared_ptr<NodeGui>
+NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
+                         const boost::shared_ptr<Natron::Node>& node,
+                         bool requestedByLoad,
+                         double xPosHint,
+                         double yPosHint)
+{
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>(node->getLiveInstance());
     if (!isDot) {
@@ -598,9 +637,11 @@ boost::shared_ptr<NodeGui> NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,c
     
 }
 
-void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
+void
+NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
+{
     QRectF viewPos = visibleSceneRect();
-    
+
     ///3 possible values:
     /// 0 = default , i.e: we pop the node in the middle of the graph's current view
     /// 1 = pop the node above the selected node and move the inputs of the selected node a little
@@ -744,17 +785,19 @@ void NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node) {
 
 
 
-void NodeGraph::mousePressEvent(QMouseEvent *event) {
-    
-    assert(event);
-    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
+void
+NodeGraph::mousePressEvent(QMouseEvent* e)
+{
+    assert(e);
+
+    if (buttonIsMiddle(e)) {
         _imp->_evtState = MOVING_AREA;
         return;
     }
-    
+
     bool didSomething = false;
     
-    _imp->_lastScenePosClick = mapToScene(event->pos());
+    _imp->_lastScenePosClick = mapToScene(e->pos());
     
     boost::shared_ptr<NodeGui> selected ;
     Edge* selectedEdge = 0;
@@ -789,23 +832,20 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     if (selected) {
         didSomething = true;
-        if (event->button() == Qt::LeftButton) {
+        if (buttonIsLeft(e)) {
             _imp->_magnifiedNode = selected;
             if (!selected->isSelected()) {
-                selectNode(selected,event->modifiers().testFlag(Qt::ShiftModifier));
-            } else {
-                if (event->modifiers().testFlag(Qt::ShiftModifier)) {
-                    std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_selection.nodes.begin(),
-                                                                                    _imp->_selection.nodes.end(),selected);
-                    if (it != _imp->_selection.nodes.end()) {
-                        (*it)->setSelected(false);
-                    }
-                }  
+                selectNode(selected, modifierIsShift(e));
+            } else if (modifierIsShift(e)) {
+                std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_selection.nodes.begin(),
+                                                                                _imp->_selection.nodes.end(),selected);
+                if (it != _imp->_selection.nodes.end()) {
+                    (*it)->setSelected(false);
+                }
             }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();
-        }
-        else if (event->button() == Qt::RightButton) {
+        } else if (buttonIsRight(e)) {
             if (!selected->isSelected()) {
                 selectNode(selected,true); ///< don't wipe the selection
             }
@@ -848,7 +888,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
         QPointF pos = dotNodeGui->mapToParent(dotNodeGui->mapFromScene(_imp->_lastScenePosClick));
         dotNodeGui->refreshPosition(pos.x(), pos.y());
         if (!dotNodeGui->isSelected()) {
-            selectNode(dotNodeGui,event->modifiers().testFlag(Qt::ShiftModifier));
+            selectNode(dotNodeGui, modifierIsShift(e));
         }
         _imp->_evtState = NODE_DRAGGING;
         _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
@@ -865,9 +905,9 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ShiftModifier));
+                    selectBackDrop(*it, modifierIsShift(e));
                 }
-                if (event->button() == Qt::LeftButton) {
+                if (buttonIsLeft(e)) {
                     _imp->_evtState = BACKDROP_DRAGGING;
                 }
                 break;
@@ -875,9 +915,9 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
                 didSomething = true;
                 _imp->_backdropResized = *it;
                 if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, event->modifiers().testFlag(Qt::ShiftModifier));
+                    selectBackDrop(*it, modifierIsShift(e));
                 }
-                if (event->button() == Qt::LeftButton) {
+                if (buttonIsLeft(e)) {
                     _imp->_evtState = BACKDROP_RESIZING;
                 }
                 break;
@@ -890,13 +930,13 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
         _imp->_backdropResized = NULL;
     }
     
-    if (event->button() == Qt::RightButton) {
-        showMenu(mapToGlobal(event->pos()));
+    if (buttonIsRight(e)) {
+        showMenu(mapToGlobal(e->pos()));
         didSomething = true;
     }
     if (!didSomething) {
-        if (event->button() == Qt::LeftButton) {
-            if (!event->modifiers().testFlag(Qt::ShiftModifier)) {
+        if (buttonIsLeft(e)) {
+            if (!modifierIsShift(e)) {
                 deselect();
             }
             _imp->_evtState = SELECTION_RECT;
@@ -904,18 +944,18 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
-        } else if (event->button() == Qt::MiddleButton ||
-                   (event->button() == Qt::LeftButton &&  event->modifiers().testFlag(Qt::AltModifier))) {
+        } else if (buttonIsMiddle(e)) {
             _imp->_evtState = MOVING_AREA;
-            QGraphicsView::mousePressEvent(event);
+            QGraphicsView::mousePressEvent(e);
         }
     }
     
     
 }
 
-void NodeGraph::deselect() {
-    
+void
+NodeGraph::deselect()
+{
     {
         QMutexLocker l(&_imp->_nodesMutex);
         for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();it!=_imp->_selection.nodes.end();++it) {
@@ -936,7 +976,8 @@ void NodeGraph::deselect() {
     
 }
 
-void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
+void
+NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 {
     EVENT_STATE state = _imp->_evtState;
     _imp->_firstMove = true;
@@ -950,7 +991,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
         assert(nodeHoldingEdge);
         
         std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
-        QPointF ep = mapToScene(event->pos());
+        QPointF ep = mapToScene(e->pos());
 
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();it!=_imp->_nodes.end();++it) {
             boost::shared_ptr<NodeGui>& n = *it;
@@ -1051,18 +1092,20 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
         }
     } else if (state == SELECTION_RECT) {
         _imp->_selectionRect->hide();
-        _imp->editSelectionFromSelectionRectangle(event->modifiers().testFlag(Qt::ShiftModifier));
+        _imp->editSelectionFromSelectionRectangle(modifierIsShift(e));
     }
     scene()->update();
     update();
     setCursor(QCursor(Qt::ArrowCursor));
 }
-void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
-    
-    QPointF newPos = mapToScene(event->pos());
+
+void
+NodeGraph::mouseMoveEvent(QMouseEvent* e)
+{
+    QPointF newPos = mapToScene(e->pos());
     double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
-    
+
     if (_imp->_evtState != SELECTION_RECT) {
         ///set cursor
         boost::shared_ptr<NodeGui> selected;
@@ -1120,7 +1163,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event) {
                 }
                 //= _imp->_selection.nodes;
 
-                if ((_imp->_evtState == BACKDROP_DRAGGING && !event->modifiers().testFlag(Qt::ControlModifier)) ||
+                if ((_imp->_evtState == BACKDROP_DRAGGING && !modifierIsControl(e)) ||
                     _imp->_evtState == NODE_DRAGGING) {
                     ///For all backdrops also move all the nodes contained within it
                     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
@@ -1338,8 +1381,6 @@ NodeGraphPrivate::resetSelection()
 void
 NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 {
-    
-    
     if (!addToSelection) {
         resetSelection();
     }
@@ -1360,11 +1401,11 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
             (*it)->setSelected(true);
         }
     }
-    
 }
 
-void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
-    
+void
+NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
+{
     std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin();it!=nodes.end();++it) {
         QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
@@ -1394,9 +1435,11 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *) {
 
 
 
-bool NodeGraph::event(QEvent* event){
-    if ( event->type() == QEvent::KeyPress ) {
-        QKeyEvent *ke = static_cast<QKeyEvent*>(event);
+bool
+NodeGraph::event(QEvent* e)
+{
+    if ( e->type() == QEvent::KeyPress ) {
+        QKeyEvent* ke = static_cast<QKeyEvent*>(e);
         if (ke &&  ke->key() == Qt::Key_Tab && _imp->_nodeCreationShortcutEnabled ) {
             NodeCreationDialog nodeCreation(this);
             
@@ -1424,85 +1467,66 @@ bool NodeGraph::event(QEvent* event){
             return true;
         }
     }
-    return QGraphicsView::event(event);
+    return QGraphicsView::event(e);
 }
 
-void NodeGraph::keyPressEvent(QKeyEvent *e){
-    
-    if (e->key() == Qt::Key_Space) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+void
+NodeGraph::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
+        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
-    } else if (e->key() == Qt::Key_R && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_R && modifierIsNone(e)) {
         _imp->_gui->createReader();
-    } else if (e->key() == Qt::Key_W && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_W && modifierIsNone(e)) {
         _imp->_gui->createWriter();
-    } else if ((e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if ((e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) && modifierIsNone(e)) {
         deleteSelection();
-    } else if (e->key() == Qt::Key_P && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_P && modifierIsNone(e)) {
         forceRefreshAllPreviews();
-    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_C && modifierIsControl(e)) {
         copySelectedNodes();
-    } else if (e->key() == Qt::Key_V && e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_V && modifierIsControl(e)) {
         pasteNodeClipBoards();
-    } else if (e->key() == Qt::Key_X && e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_X && modifierIsControl(e)) {
         cutSelectedNodes();
-    } else if (e->key() == Qt::Key_C && e->modifiers().testFlag(Qt::AltModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)) {
+
+    } else if (e->key() == Qt::Key_C && modifierIsAlt(e)) {
         duplicateSelectedNodes();
-    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)) {
+
+    } else if (e->key() == Qt::Key_K && modifierIsAlt(e)) {
         cloneSelectedNodes();
-    } else if (e->key() == Qt::Key_K && e->modifiers().testFlag(Qt::AltModifier)
-               && e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)) {
+
+    } else if (e->key() == Qt::Key_K && modifierIsAltShift(e)) {
         decloneSelectedNodes();
-    } else if (e->key() == Qt::Key_F && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_F && modifierIsNone(e)) {
         centerOnAllNodes();
-    } else if (e->key() == Qt::Key_H && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_H && modifierIsNone(e)) {
         toggleConnectionHints();
-    } else if (e->key() == Qt::Key_X && e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)) {
-        
+
+    } else if (e->key() == Qt::Key_X && modifierIsShift(e)) {
         ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
         switchInputs1and2ForSelectedNodes();
         
-    }
-    else if (e->key() == Qt::Key_A && !e->modifiers().testFlag(Qt::ShiftModifier)
-            && e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (e->key() == Qt::Key_A && modifierIsControl(e)) {
         selectAllNodes(false);
-    }
-    else if (e->key() == Qt::Key_A && e->modifiers().testFlag(Qt::ShiftModifier)
-             && e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_A && modifierIsControlShift(e)) {
         selectAllNodes(true);
-    }
-    else if (e->key() == Qt::Key_Control) {
+
+    } else if (e->key() == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
-    }
-    else if (e->key() == Qt::Key_Up && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Up && (modifierIsControlShift(e) || modifierIsControlAltShift(e))) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if (!_imp->_selection.nodes.empty()) {
@@ -1510,15 +1534,13 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
             const std::map<int,Edge*>& inputs = lastSelected->getInputsArrows();
             for (std::map<int,Edge*>::const_iterator it = inputs.begin();it!=inputs.end();++it) {
                 if (it->second->hasSource()) {
-                    selectNode(it->second->getSource(), e->modifiers().testFlag(Qt::ShiftModifier));
+                    selectNode(it->second->getSource(), modifierIsControlAltShift(e));
                     break;
                 }
             }
         }
-        
-    }
-    else if (e->key() == Qt::Key_Down && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Down && (modifierIsNone(e) || modifierIsShift(e))) {
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if (!_imp->_selection.nodes.empty()) {
@@ -1527,96 +1549,73 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
             if (!outputs.empty()) {
                 boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui(outputs.front());
                 assert(output);
-                selectNode(output, e->modifiers().testFlag(Qt::ShiftModifier));
+                selectNode(output, modifierIsShift(e));
             }
         }
         
-    }
-    else if (e->key() == Qt::Key_Left && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-            && !e->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (e->key() == Qt::Key_Left && modifierIsNone(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->previousFrame();
         }
-    }
-    else if (e->key() == Qt::Key_Right && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsNone(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->nextFrame();
         }
-    }
-    else if (e->key() == Qt::Key_Left && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Left && modifierIsControl(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->firstFrame();
         }
-    }
-    else if (e->key() == Qt::Key_Right && !e->modifiers().testFlag(Qt::ShiftModifier)
-             && e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsControl(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->lastFrame();
         }
-    }
-    else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Left && modifierIsShift(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->previousIncrement();
         }
-    }
-    else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::ShiftModifier)
-             && !e->modifiers().testFlag(Qt::ControlModifier)
-             && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsShift(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->nextIncrement();
         }
-    }
-    else if (e->key() == Qt::Key_Left && e->modifiers().testFlag(Qt::ShiftModifier)
-                && e->modifiers().testFlag(Qt::ControlModifier)) {
+
+    } else if (e->key() == Qt::Key_Left && modifierIsControlShift(e)) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
-    }
-    else if (e->key() == Qt::Key_Right && e->modifiers().testFlag(Qt::ShiftModifier)
-                && e->modifiers().testFlag(Qt::ControlModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsControlShift(e)) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
-    } else if (e->key() == Qt::Key_T && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_T && modifierIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]","",-1,-1,true,-1,true,hint.x(),hint.y()));
-    } else if (e->key() == Qt::Key_O && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_O && modifierIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]","",-1,-1,true,-1,true,hint.x(),hint.y()));
-    } else if (e->key() == Qt::Key_M && !e->modifiers().testFlag(Qt::ShiftModifier)
-                && !e->modifiers().testFlag(Qt::ControlModifier)
-                && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_M && modifierIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]","",-1,-1,true,-1,true,hint.x(),hint.y()));
-    } else if (e->key() == Qt::Key_G && !e->modifiers().testFlag(Qt::ShiftModifier)
-                && !e->modifiers().testFlag(Qt::ControlModifier)
-                && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_G && modifierIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
-    } else if (e->key() == Qt::Key_C && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_C && modifierIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
-    } else if (e->key() == Qt::Key_L && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_L && modifierIsNone(e)) {
         _imp->rearrangeSelectedNodes();
-    } else if (e->key() == Qt::Key_D && !e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_D && modifierIsNone(e)) {
         _imp->toggleSelectedNodesEnabled();
-    } else if (e->key() == Qt::Key_E && e->modifiers().testFlag(Qt::ShiftModifier)
-               && !e->modifiers().testFlag(Qt::ControlModifier)
-               && !e->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_E && modifierIsShift(e)) {
         toggleKnobLinksVisible();
     }
     
@@ -1740,33 +1739,38 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     
 }
 
-void NodeGraph::enterEvent(QEvent *event)
+void
+NodeGraph::enterEvent(QEvent* e)
 {
-    QGraphicsView::enterEvent(event);
+    QGraphicsView::enterEvent(e);
     _imp->_nodeCreationShortcutEnabled = true;
     setFocus();
 }
-void NodeGraph::leaveEvent(QEvent *event)
+
+void
+NodeGraph::leaveEvent(QEvent* e)
 {
-    QGraphicsView::leaveEvent(event);
+    QGraphicsView::leaveEvent(e);
     _imp->_nodeCreationShortcutEnabled = false;
     setFocus();
 }
 
 
-void NodeGraph::wheelEvent(QWheelEvent *event){
-    if (event->orientation() != Qt::Vertical) {
+void
+NodeGraph::wheelEvent(QWheelEvent* e)
+{
+    if (e->orientation() != Qt::Vertical) {
         return;
     }
-    QPointF newPos = mapToScene(event->pos());
+    QPointF newPos = mapToScene(e->pos());
 
-    double scaleFactor = pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
+    double scaleFactor = pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
 
     qreal newZoomfactor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if(newZoomfactor < 0.07 || newZoomfactor > 10)
         return;
     
-    if (event->modifiers().testFlag(Qt::ControlModifier) && _imp->_magnifiedNode) {
+    if (modifierIsControl(e) && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
             _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode->scale();
@@ -1794,7 +1798,8 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
     _imp->_lastScenePosClick = newPos;
 }
 
-void NodeGraph::keyReleaseEvent(QKeyEvent* e)
+void
+NodeGraph::keyReleaseEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         if (_imp->_magnifOn) {
@@ -1807,7 +1812,8 @@ void NodeGraph::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
-void NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
+void
+NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
 {
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getNode()->getKnobs();
     for (U32 i = 0; i < knobs.size();++i) {
@@ -1846,7 +1852,8 @@ void NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
     _imp->_undoStack->push(new RemoveMultipleNodesCommand(this,nodesToRemove,bds));
 }
 
-void NodeGraph::deleteSelection()
+void
+NodeGraph::deleteSelection()
 {
     
     if (!_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty()) {
@@ -1921,8 +1928,9 @@ void NodeGraph::deleteSelection()
     }
 }
 
-void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection) {
-    
+void
+NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection)
+{
     if (!n->isActive() || !n->isVisible()) {
         return;
     }
@@ -1974,7 +1982,9 @@ void NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelecti
     
 }
 
-void NodeGraph::selectBackDrop(NodeBackDrop* bd,bool addToSelection)
+void
+NodeGraph::selectBackDrop(NodeBackDrop* bd,
+                          bool addToSelection)
 {
     bool alreadyInSelection = std::find(_imp->_selection.bds.begin(),_imp->_selection.bds.end(),bd) != _imp->_selection.bds.end();
     assert(bd);
@@ -1999,7 +2009,8 @@ void NodeGraph::selectBackDrop(NodeBackDrop* bd,bool addToSelection)
 }
 
 
-void NodeGraph::updateNavigator()
+void
+NodeGraph::updateNavigator()
 {
     if (!areAllNodesVisible()) {
         _imp->_navigator->setPixmap(QPixmap::fromImage(getFullSceneScreenShot()));
@@ -2008,7 +2019,10 @@ void NodeGraph::updateNavigator()
         _imp->_navigator->hide();
     }
 }
-bool NodeGraph::areAllNodesVisible(){
+
+bool
+NodeGraph::areAllNodesVisible()
+{
     QRectF rect = visibleSceneRect();
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();it!=_imp->_nodes.end();++it) {
@@ -2026,9 +2040,9 @@ bool NodeGraph::areAllNodesVisible(){
     return true;
 }
 
-QImage NodeGraph::getFullSceneScreenShot()
+QImage
+NodeGraph::getFullSceneScreenShot()
 {
-    
     ///The bbox of all nodes in the nodegraph
     QRectF sceneR = _imp->calcNodesBoundingRect();
     
@@ -2079,8 +2093,7 @@ QImage NodeGraph::getFullSceneScreenShot()
     ///Add the overlays back
     scene()->addItem(_imp->_navigator);
     scene()->addItem(_imp->_cacheSizeText);
-    
-   
+
     painter.fillRect(scaledViewRect, QColor(200,200,200,100));
     QPen p;
     p.setWidth(2);
@@ -2099,27 +2112,32 @@ QImage NodeGraph::getFullSceneScreenShot()
     assert((xOffset + renderImage.width()) <= img.width() && (yOffset + renderImage.height()) <= img.height());
     
     int yDest = yOffset;
-    for (int y = 0; y < renderImage.height();++y,++yDest) {
+    for (int y = 0; y < renderImage.height(); ++y,++yDest) {
         QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
         const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
         int xDest = xOffset;
-        for (int x = 0; x < renderImage.width();++x,++xDest) {
+        for (int x = 0; x < renderImage.width(); ++x,++xDest) {
             dst_pixels[xDest] = src_pixels[x];
         }
     }
     return img;
 }
 
-const std::list<boost::shared_ptr<NodeGui> >& NodeGraph::getAllActiveNodes() const {
+const std::list<boost::shared_ptr<NodeGui> >&
+NodeGraph::getAllActiveNodes() const
+{
     return _imp->_nodes;
 }
 
-std::list<boost::shared_ptr<NodeGui> > NodeGraph::getAllActiveNodes_mt_safe() const {
+std::list<boost::shared_ptr<NodeGui> >
+NodeGraph::getAllActiveNodes_mt_safe() const
+{
     QMutexLocker l(&_imp->_nodesMutex);
     return _imp->_nodes;
 }
 
-void NodeGraph::moveToTrash(NodeGui* node) {
+void
+NodeGraph::moveToTrash(NodeGui* node) {
     assert(node);
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();it!=_imp->_nodes.end();++it) {
@@ -2131,7 +2149,8 @@ void NodeGraph::moveToTrash(NodeGui* node) {
     }
 }
 
-void NodeGraph::restoreFromTrash(NodeGui* node) {
+void NodeGraph::restoreFromTrash(NodeGui* node)
+{
     assert(node);
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin();it!=_imp->_nodesTrash.end();++it) {
@@ -2348,13 +2367,13 @@ NodeGraph::showMenu(const QPoint& pos)
 
 
 void
-NodeGraph::dropEvent(QDropEvent* event)
+NodeGraph::dropEvent(QDropEvent* e)
 {
-    if(!event->mimeData()->hasUrls())
+    if(!e->mimeData()->hasUrls())
         return;
     
     QStringList filesList;
-    QList<QUrl> urls = event->mimeData()->urls();
+    QList<QUrl> urls = e->mimeData()->urls();
     for(int i = 0; i < urls.size() ; ++i){
         const QUrl& rl = urls.at(i);
         QString path = rl.path();
@@ -2420,21 +2439,16 @@ NodeGraph::dropEvent(QDropEvent* event)
                         }
                         break;
                     }
-                    
                 }
             }
-
         }
-        
-        
     }
-    
 }
 
 void
-NodeGraph::dragEnterEvent(QDragEnterEvent *ev)
+NodeGraph::dragEnterEvent(QDragEnterEvent* e)
 {
-    ev->accept();
+    e->accept();
 }
 
 void
@@ -2452,23 +2466,22 @@ NodeGraph::dragMoveEvent(QDragMoveEvent* e)
 void
 NodeGraph::togglePreviewsForSelectedNodes()
 {
-   
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();it!=_imp->_selection.nodes.end();++it) {
-            (*it)->togglePreview();
-        }
+    QMutexLocker l(&_imp->_nodesMutex);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
+         it!=_imp->_selection.nodes.end();
+         ++it) {
+        (*it)->togglePreview();
     }
 }
 
 void
 NodeGraph::switchInputs1and2ForSelectedNodes()
 {
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();it!=_imp->_selection.nodes.end();++it) {
-            (*it)->onSwitchInputActionTriggered();
-        }
+    QMutexLocker l(&_imp->_nodesMutex);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
+         it!=_imp->_selection.nodes.end();
+         ++it) {
+        (*it)->onSwitchInputActionTriggered();
     }
 }
 

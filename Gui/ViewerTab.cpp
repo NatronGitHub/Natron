@@ -57,6 +57,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/RotoGui.h"
 #include "Gui/TrackerGui.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/GuiMacros.h"
 
 using namespace Natron;
 
@@ -1024,144 +1025,127 @@ ViewerTab::isPlayingBackward() const
 }
 
 void
-ViewerTab::keyPressEvent(QKeyEvent * event)
+ViewerTab::keyPressEvent(QKeyEvent* e)
 {
-    if (event->key() == Qt::Key_Space) {
+    if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
         if (parentWidget()) {
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
-    } else if (event->key() == Qt::Key_Y && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Y && modifierIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(0);
         }
-    } else if (event->key() == Qt::Key_R && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_R && modifierIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 2) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(2);
         }
-    } else if (event->key() == Qt::Key_G && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_G && modifierIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 3) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(3);
         }
-    } else if (event->key() == Qt::Key_B  && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_B  && modifierIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 4) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(4);
         }
-    } else if (event->key() == Qt::Key_A && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_A && modifierIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 5) {
             _imp->_viewerChannels->setCurrentIndex(1);
         } else {
             _imp->_viewerChannels->setCurrentIndex(5);
         }
-    } else if (event->key() == Qt::Key_Left && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                         && !event->modifiers().testFlag(Qt::ControlModifier)
-             && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Left && modifierIsNone(e)) {
         previousFrame();
-    } else if (event->key() == Qt::Key_J && !event->modifiers().testFlag(Qt::ShiftModifier)
-             && !event->modifiers().testFlag(Qt::ControlModifier)
-             && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_J && modifierIsNone(e)) {
         startBackward(!_imp->play_Backward_Button->isDown());
-    } else if (event->key() == Qt::Key_K && !event->modifiers().testFlag(Qt::ShiftModifier)
-             && !event->modifiers().testFlag(Qt::ControlModifier)
-             && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_K && modifierIsNone(e)) {
         abortRendering();
-    } else if (event->key() == Qt::Key_L && !event->modifiers().testFlag(Qt::ShiftModifier)
-             && !event->modifiers().testFlag(Qt::ControlModifier)
-             && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_L && modifierIsNone(e)) {
         startPause(!_imp->play_Forward_Button->isDown());
         
-    } else if (event->key() == Qt::Key_Right  && !event->modifiers().testFlag(Qt::ShiftModifier)
-                                            && !event->modifiers().testFlag(Qt::ControlModifier)
-             && !event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if (e->key() == Qt::Key_Right && modifierIsNone(e)) {
         nextFrame();
-    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::ControlModifier)) {
+    } else if (e->key() == Qt::Key_Left && modifierIsShift(e)) {
         //prev incr
         previousIncrement();
-    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ShiftModifier)
-             && !event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsShift(e)) {
         //next incr
         nextIncrement();
-    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)
-               && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Left && modifierIsControl(e)) {
         //first frame
         firstFrame();
-    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)
-               && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsControl(e)) {
         //last frame
         lastFrame();
-    } else if (event->key() == Qt::Key_Left && event->modifiers().testFlag(Qt::ControlModifier)
-            && event->modifiers().testFlag(Qt::ShiftModifier)
-             && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if (e->key() == Qt::Key_Left && modifierIsControlShift(e)) {
         //prev key
         _imp->app->getTimeLine()->goToPreviousKeyframe();
-    } else if (event->key() == Qt::Key_Right && event->modifiers().testFlag(Qt::ControlModifier)
-            &&  event->modifiers().testFlag(Qt::ShiftModifier)) {
+
+    } else if (e->key() == Qt::Key_Right && modifierIsControlShift(e)) {
         //next key
         _imp->app->getTimeLine()->goToNextKeyframe();
-    } else if(event->key() == Qt::Key_F && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+
+    } else if(e->key() == Qt::Key_F && modifierIsNone(e)) {
         centerViewer();
         
-    } else if(event->key() == Qt::Key_C && !event->modifiers().testFlag(Qt::ControlModifier)
-              && event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
+    } else if(e->key() == Qt::Key_C && modifierIsShift(e)) {
         onClipToProjectButtonToggle(!_imp->_clipToProjectFormatButton->isDown());
-    } else if(event->key() == Qt::Key_U) {
-        refresh();
-    } else if(event->key() == Qt::Key_W && event->modifiers().testFlag(Qt::ShiftModifier)
-              && !event->modifiers().testFlag(Qt::ControlModifier)
-              && !event->modifiers().testFlag(Qt::AltModifier)) {
-        onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
-    } else if (event->key() == Qt::Key_P && event->modifiers().testFlag(Qt::ControlModifier)
-               && !event->modifiers().testFlag(Qt::ShiftModifier)
-               && !event->modifiers().testFlag(Qt::AltModifier)) {
-        onRenderScaleButtonClicked(!_imp->_renderScaleActive);
-    } else if (event->key() == Qt::Key_1 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->_renderScaleCombo->setCurrentIndex(0);
-    } else if (event->key() == Qt::Key_2 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->_renderScaleCombo->setCurrentIndex(1);
-    } else if (event->key() == Qt::Key_3 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->_renderScaleCombo->setCurrentIndex(2);
-    } else if (event->key() == Qt::Key_4 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->_renderScaleCombo->setCurrentIndex(3);
-    } else if (event->key() == Qt::Key_5 && event->modifiers().testFlag(Qt::AltModifier)
-               && !event->modifiers().testFlag(Qt::ControlModifier)) {
-        _imp->_renderScaleCombo->setCurrentIndex(4);
-    }
 
-    
+    } else if(e->key() == Qt::Key_U && modifierIsNone(e)) {
+        refresh();
+
+    } else if(e->key() == Qt::Key_W && modifierIsShift(e)) {
+        onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
+
+    } else if (e->key() == Qt::Key_P && modifierIsControl(e)) {
+        onRenderScaleButtonClicked(!_imp->_renderScaleActive);
+
+    } else if (e->key() == Qt::Key_1 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+        // On some keyboards (e.g. French AZERTY), the number keys are shifted
+        _imp->_renderScaleCombo->setCurrentIndex(0);
+
+    } else if (e->key() == Qt::Key_2 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+        // On some keyboards (e.g. French AZERTY), the number keys are shifted
+        _imp->_renderScaleCombo->setCurrentIndex(1);
+
+    } else if (e->key() == Qt::Key_3 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+        // On some keyboards (e.g. French AZERTY), the number keys are shifted
+        _imp->_renderScaleCombo->setCurrentIndex(2);
+
+    } else if (e->key() == Qt::Key_4 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+        // On some keyboards (e.g. French AZERTY), the number keys are shifted
+      _imp->_renderScaleCombo->setCurrentIndex(3);
+
+    } else if (e->key() == Qt::Key_5 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+        // On some keyboards (e.g. French AZERTY), the number keys are shifted
+       _imp->_renderScaleCombo->setCurrentIndex(4);
+    }
 }
 
 
@@ -1215,15 +1199,15 @@ ViewerTab::onViewerChannelsChanged(int i)
 }
 
 bool
-ViewerTab::eventFilter(QObject *target, QEvent *event)
+ViewerTab::eventFilter(QObject *target, QEvent* e)
 {
-    if (event->type() == QEvent::MouseButtonPress) {
+    if (e->type() == QEvent::MouseButtonPress) {
         if (_imp->_gui && _imp->app) {
             _imp->_gui->selectNode(_imp->app->getNodeGui(_imp->_viewerNode->getNode()));
         }
         
     }
-    return QWidget::eventFilter(target, event);
+    return QWidget::eventFilter(target, e);
 }
 
 void
@@ -1328,20 +1312,21 @@ bool
 ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
                                         double scaleY,
                                         const QPointF& viewportPos,
-                                        const QPointF& pos)
+                                        const QPointF& pos,
+                                        QMouseEvent* e)
 {
     if (!_imp->app || _imp->app->isClosing()) {
         return false;
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penDoubleClicked(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentRoto.second->penDoubleClicked(scaleX, scaleY, viewportPos, pos, e)) {
             return true;
         }
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->penDoubleClicked(scaleX, scaleY,viewportPos,pos)) {
+        if (_imp->_currentTracker.second->penDoubleClicked(scaleX, scaleY, viewportPos, pos, e)) {
             return true;
         }
     }
@@ -1353,7 +1338,8 @@ bool
 ViewerTab::notifyOverlaysPenMotion(double scaleX,
                                    double scaleY,
                                    const QPointF& viewportPos,
-                                   const QPointF& pos)
+                                   const QPointF& pos,
+                                   QMouseEvent* e)
 {
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
@@ -1377,13 +1363,13 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos)) {
+        if (_imp->_currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e)) {
             return true;
         }
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos)) {
+        if (_imp->_currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e)) {
             didSomething = true;
         }
     }
@@ -1395,7 +1381,8 @@ bool
 ViewerTab::notifyOverlaysPenUp(double scaleX,
                                double scaleY,
                                const QPointF& viewportPos,
-                               const QPointF& pos)
+                               const QPointF& pos,
+                               QMouseEvent* e)
 {
     bool didSomething = false;
     if (!_imp->app || _imp->app->isClosing()) {
@@ -1419,13 +1406,13 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     }
     
     if (_imp->_currentTracker.second && _imp->_currentTracker.first->isSettingsPanelVisible()) {
-        if (_imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos)) {
+        if (_imp->_currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e)) {
             return true;
         }
     }
     
     if (_imp->_currentRoto.second && _imp->_currentRoto.first->isSettingsPanelVisible()) {
-        if (_imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos)) {
+        if (_imp->_currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e)) {
             didSomething  =  true;
         }
     }
@@ -1446,7 +1433,9 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     Natron::Key natronKey = QtEnumConvert::fromQtKey((Qt::Key)e->key());
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
     const std::list<boost::shared_ptr<NodeGui> >& nodes = getGui()->getNodeGraph()->getAllActiveNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();it!=nodes.end();++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin();
+         it!=nodes.end();
+         ++it) {
         if ((*it)->shouldDrawOverlay()) {
             Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);

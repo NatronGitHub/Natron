@@ -94,14 +94,11 @@ struct AppManagerPrivate {
         ,_ofxLog()
     
     {
-        
     }
     
     void initProcessInputChannel(const QString& mainProcessServerName);
-
     
     void loadBuiltinFormats();
-    
     
     void saveCaches();
     
@@ -114,7 +111,9 @@ struct AppManagerPrivate {
 };
 
 
-void AppManager::printBackGroundWelcomeMessage(){
+void
+AppManager::printBackGroundWelcomeMessage()
+{
     std::cout << "================================================================================" << std::endl;
     std::cout << NATRON_APPLICATION_NAME << "    " << QObject::tr(" version: ").toStdString() << NATRON_VERSION_STRING << std::endl;
     std::cout << QObject::tr(">>>Running in background mode (off-screen rendering only).<<<").toStdString() << std::endl;
@@ -124,7 +123,9 @@ void AppManager::printBackGroundWelcomeMessage(){
                  "and then re-try using the background mode.").toStdString() << std::endl;
 }
 
-void AppManager::printUsage() {
+void
+AppManager::printUsage()
+{
     std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
     std::cout << "./" NATRON_APPLICATION_NAME << QObject::tr("    <project file path>").toStdString() << std::endl;
     std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown.").toStdString() << std::endl;
@@ -134,12 +135,14 @@ void AppManager::printUsage() {
 
 }
 
-bool AppManager::parseCmdLineArgs(int argc,char* argv[],
-                                  bool* isBackground,
-                                  QString& projectFilename,
-                                  QStringList& writers,
-                                  QString& mainProcessServerName) {
-    
+bool
+AppManager::parseCmdLineArgs(int argc,
+                             char* argv[],
+                             bool* isBackground,
+                             QString& projectFilename,
+                             QStringList& writers,
+                             QString& mainProcessServerName)
+{
     if (!argv) {
         return false;
     }
@@ -149,7 +152,7 @@ bool AppManager::parseCmdLineArgs(int argc,char* argv[],
     bool expectPipeFileNameOnNextArg = false;
     
     QStringList args;
-    for(int i = 0; i < argc ;++i){
+    for(int i = 0; i < argc; ++i){
         args.push_back(QString(argv[i]));
     }
     
@@ -209,8 +212,13 @@ AppManager::AppManager()
     
 }
 
-bool AppManager::load(int &argc, char *argv[],const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
-    
+bool
+AppManager::load(int &argc,
+                 char *argv[],
+                 const QString& projectFilename,
+                 const QStringList& writers,
+                 const QString& mainProcessServerName)
+{
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
     bool hadArgs = true;
@@ -238,11 +246,11 @@ bool AppManager::load(int &argc, char *argv[],const QString& projectFilename,con
     return loadInternal(projectFilename,writers,mainProcessServerName);
 }
 
-AppManager::~AppManager(){
-    
+AppManager::~AppManager()
+{
     assert(_imp->_appInstances.empty());
     
-    for(U32 i = 0; i < _imp->_plugins.size();++i){
+    for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
         delete _imp->_plugins[i];
     }
     foreach(Format* f,_imp->_formats){
@@ -263,7 +271,8 @@ AppManager::~AppManager(){
 	}
 }
 
-void AppManager::quit(AppInstance* instance)
+void
+AppManager::quit(AppInstance* instance)
 {
 	instance->aboutToQuit();
     std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find(instance->getAppID());
@@ -280,11 +289,18 @@ void AppManager::quit(AppInstance* instance)
 }
 
 
-void AppManager::initializeQApp(int &argc, char **argv) {
+void
+AppManager::initializeQApp(int &argc,
+                           char **argv)
+{
     new QCoreApplication(argc,argv);
 }
 
-bool AppManager::loadInternal(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName) {
+bool
+AppManager::loadInternal(const QString& projectFilename,
+                         const QStringList& writers,
+                         const QString& mainProcessServerName)
+{
     assert(!_imp->_loaded);
 
     _imp->_binaryPath = QCoreApplication::applicationDirPath();
@@ -377,7 +393,10 @@ bool AppManager::loadInternal(const QString& projectFilename,const QStringList& 
     }
 }
 
-AppInstance* AppManager::newAppInstance(const QString& projectName,const QStringList& writers){
+AppInstance*
+AppManager::newAppInstance(const QString& projectName,
+                           const QStringList& writers)
+{
     AppInstance* instance = makeNewInstance(_imp->_availableID);
     try {
         instance->load(projectName,writers);
@@ -399,7 +418,9 @@ AppInstance* AppManager::newAppInstance(const QString& projectName,const QString
     return instance;
 }
 
-AppInstance* AppManager::getAppInstance(int appID) const{
+AppInstance*
+AppManager::getAppInstance(int appID) const
+{
     std::map<int,AppInstanceRef>::const_iterator it;
     it = _imp->_appInstances.find(appID);
     if(it != _imp->_appInstances.end()){
@@ -409,11 +430,15 @@ AppInstance* AppManager::getAppInstance(int appID) const{
     }
 }
 
-const std::map<int,AppInstanceRef>&  AppManager::getAppInstances() const{
+const std::map<int,AppInstanceRef>&
+AppManager::getAppInstances() const
+{
     return _imp->_appInstances;
 }
 
-void AppManager::removeInstance(int appID){
+void
+AppManager::removeInstance(int appID)
+{
     _imp->_appInstances.erase(appID);
     if(!_imp->_appInstances.empty()) {
         setAsTopLevelInstance(_imp->_appInstances.begin()->first);
@@ -421,11 +446,15 @@ void AppManager::removeInstance(int appID){
 
 }
 
-AppManager::AppType AppManager::getAppType() const {
+AppManager::AppType
+AppManager::getAppType() const
+{
     return _imp->_appType;
 }
 
-void AppManager::clearPlaybackCache(){
+void
+AppManager::clearPlaybackCache()
+{
     _imp->_viewerCache->clearInMemoryPortion();
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         it->second.app->clearViewersLastRenderedTexture();
@@ -433,7 +462,9 @@ void AppManager::clearPlaybackCache(){
 }
 
 
-void AppManager::clearDiskCache(){
+void
+AppManager::clearDiskCache()
+{
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         it->second.app->clearViewersLastRenderedTexture();
     }
@@ -442,18 +473,24 @@ void AppManager::clearDiskCache(){
 }
 
 
-void AppManager::clearNodeCache(){
+void
+AppManager::clearNodeCache()
+{
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
         it->second.app->clearAllLastRenderedImages();
     }
     _imp->_nodeCache->clear();
 }
 
-void AppManager::clearPluginsLoadedCache() {
+void
+AppManager::clearPluginsLoadedCache()
+{
     _imp->ofxHost->clearPluginsLoadedCache();
 }
 
-void AppManager::clearAllCaches() {
+void
+AppManager::clearAllCaches()
+{
     clearDiskCache();
     clearNodeCache();
     
@@ -463,7 +500,9 @@ void AppManager::clearAllCaches() {
     }
 }
 
-std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
+std::vector<LibraryBinary*>
+AppManager::loadPlugins(const QString &where)
+{
     std::vector<LibraryBinary*> ret;
     QDir d(where);
     if (d.isReadable())
@@ -493,8 +532,10 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
     return ret;
 }
 
-std::vector<Natron::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(const QString& where,
-                                                                            const std::vector<std::string>& functions){
+std::vector<Natron::LibraryBinary*>
+AppManager::loadPluginsAndFindFunctions(const QString& where,
+                                        const std::vector<std::string>& functions)
+{
     std::vector<LibraryBinary*> ret;
     std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
     for (U32 i = 0; i < loadedLibraries.size(); ++i) {
@@ -505,7 +546,9 @@ std::vector<Natron::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(cons
     return ret;
 }
 
-AppInstance* AppManager::getTopLevelInstance () const{
+AppInstance*
+AppManager::getTopLevelInstance () const
+{
     std::map<int,AppInstanceRef>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
     if(it == _imp->_appInstances.end()){
         return NULL;
@@ -516,21 +559,29 @@ AppInstance* AppManager::getTopLevelInstance () const{
 
 
 
-bool AppManager::isLoaded() const {
+bool
+AppManager::isLoaded() const
+{
     return _imp->_loaded;
 }
 
 
-void AppManagerPrivate::initProcessInputChannel(const QString& mainProcessServerName) {
+void
+AppManagerPrivate::initProcessInputChannel(const QString& mainProcessServerName)
+{
     _backgroundIPC = new ProcessInputChannel(mainProcessServerName);
 }
 
-bool AppManager::hasAbortAnyProcessingBeenCalled() const {
+bool
+AppManager::hasAbortAnyProcessingBeenCalled() const
+{
     QMutexLocker l(&_imp->_wasAbortCalledMutex);
     return _imp->_wasAbortAnyProcessingCalled;
 }
 
-void AppManager::abortAnyProcessing() {
+void
+AppManager::abortAnyProcessing()
+{
     
     {
         QMutexLocker l(&_imp->_wasAbortCalledMutex);
@@ -545,7 +596,9 @@ void AppManager::abortAnyProcessing() {
     }
 }
 
-bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage) {
+bool
+AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage)
+{
     if(!_imp->_backgroundIPC) {
         if (_imp->_appType == APP_BACKGROUND_AUTO_RUN) {
             qDebug() << "Pipe between Gui process and render process is broken, progress report is not functionnal.";
@@ -557,14 +610,17 @@ bool AppManager::writeToOutputPipe(const QString& longMessage,const QString& sho
     return true;
 }
 
-void AppManager::registerAppInstance(AppInstance* app){
+void
+AppManager::registerAppInstance(AppInstance* app)
+{
     AppInstanceRef ref;
     ref.app = app;
     ref.status = Natron::APP_ACTIVE;
     _imp->_appInstances.insert(std::make_pair(app->getAppID(),ref));
 }
 
-void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
+void AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
+{
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
@@ -574,7 +630,9 @@ void AppManager::setApplicationsCachesMaximumMemoryPercent(double p){
     
 }
 
-void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
+void
+AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
+{
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
     _imp->_viewerCache->setMaximumCacheSize(size);
@@ -582,7 +640,8 @@ void AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size){
     
 }
 
-void AppManager::setPlaybackCacheMaximumSize(double p)
+void
+AppManager::setPlaybackCacheMaximumSize(double p)
 {
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * p;
@@ -593,7 +652,8 @@ void AppManager::setPlaybackCacheMaximumSize(double p)
     
 }
 
-void AppManager::loadAllPlugins()
+void
+AppManager::loadAllPlugins()
 {
     assert(_imp->_plugins.empty());
     assert(_imp->_formats.empty());
@@ -611,13 +671,14 @@ void AppManager::loadAllPlugins()
     
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
-    
+
 }
 
 
-void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                        std::map<std::string,std::vector<std::string> >* /*readersMap*/,
-                                        std::map<std::string,std::vector<std::string> >* /*writersMap*/)
+void
+AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
+                                   std::map<std::string,std::vector<std::string> >* /*readersMap*/,
+                                   std::map<std::string,std::vector<std::string> >* /*writersMap*/)
 {
     {
         boost::shared_ptr<EffectInstance> dotNode(Dot::BuildEffect(boost::shared_ptr<Natron::Node>()));
@@ -633,21 +694,24 @@ void AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         dotNode->getPluginGrouping(&grouping);
         QStringList qgrouping;
         
-        for (std::list<std::string>::iterator it = grouping.begin(); it!=grouping.end();++it) qgrouping.push_back(it->c_str());
-        
+        for (std::list<std::string>::iterator it = grouping.begin(); it!=grouping.end(); ++it) {
+            qgrouping.push_back(it->c_str());
+        }
+
         onPluginLoaded(qgrouping, dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(), "", "");
     }
 }
 
-void AppManager::registerPlugin(const QStringList& groups,
-                    const QString& pluginID,
-                    const QString& pluginLabel,
-                    const QString& pluginIconPath,
-                    const QString& groupIconPath,
-                    Natron::LibraryBinary* binary,
-                    bool mustCreateMutex,
-                    int major,
-                    int minor)
+void
+AppManager::registerPlugin(const QStringList& groups,
+                           const QString& pluginID,
+                           const QString& pluginLabel,
+                           const QString& pluginIconPath,
+                           const QString& groupIconPath,
+                           Natron::LibraryBinary* binary,
+                           bool mustCreateMutex,
+                           int major,
+                           int minor)
 {
     QMutex* pluginMutex = 0;
     if (mustCreateMutex) {
@@ -660,7 +724,9 @@ void AppManager::registerPlugin(const QStringList& groups,
 }
 
 
-void AppManagerPrivate::loadBuiltinFormats(){
+void
+AppManagerPrivate::loadBuiltinFormats()
+{
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
     formatNames.push_back("PC_Video");
@@ -716,7 +782,7 @@ void AppManagerPrivate::loadBuiltinFormats(){
     resolutions.push_back(square2K);
     
     assert(formatNames.size() == resolutions.size());
-    for(U32 i =0;i<formatNames.size();++i) {
+    for (U32 i =0; i<formatNames.size(); ++i) {
         const std::vector<double>& v = resolutions[i];
         assert(v.size() >= 3);
         Format* _frmt = new Format(0, 0, (int)v[0], (int)v[1], formatNames[i], v[2]);
@@ -728,9 +794,10 @@ void AppManagerPrivate::loadBuiltinFormats(){
 
 
 
-Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const {
-    
-    for(U32 i =0;i< _imp->_formats.size();++i) {
+Format*
+AppManager::findExistingFormat(int w, int h, double pixel_aspect) const
+{
+    for (U32 i =0; i< _imp->_formats.size(); ++i) {
         Format* frmt = _imp->_formats[i];
         assert(frmt);
         if(frmt->width() == w && frmt->height() == h && frmt->getPixelAspect() == pixel_aspect){
@@ -748,7 +815,9 @@ void AppManager::setAsTopLevelInstance(int appID){
         return;
     }
     _imp->_topLevelInstanceID = appID;
-    for(std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin();it!=_imp->_appInstances.end();++it){
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin();
+         it!=_imp->_appInstances.end();
+         ++it) {
         if (it->first != _imp->_topLevelInstanceID) {
             if(!isBackground())
                 it->second.app->disconnectViewersFromViewerCache();

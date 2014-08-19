@@ -56,7 +56,7 @@ signals:
     void clicked(bool);
 
 private:
-    virtual void mousePressEvent(QMouseEvent *) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     

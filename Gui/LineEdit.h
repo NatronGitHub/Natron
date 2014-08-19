@@ -52,9 +52,9 @@ public slots:
 private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     
-    void dropEvent(QDropEvent* event);
+    void dropEvent(QDropEvent* e);
 
-    void dragEnterEvent(QDragEnterEvent *ev);
+    void dragEnterEvent(QDragEnterEvent* e);
 
     void dragMoveEvent(QDragMoveEvent* e);
 

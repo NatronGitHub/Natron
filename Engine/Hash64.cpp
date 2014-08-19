@@ -21,8 +21,9 @@
 
 using namespace Natron;
 
-void Hash64::computeHash() {
-
+void
+Hash64::computeHash()
+{
     if (node_values.empty() ) {
         return;
     }
@@ -33,14 +34,18 @@ void Hash64::computeHash() {
     hash = crc_64();
 }
 
-void Hash64::reset(){
+void
+Hash64::reset()
+{
     node_values.clear();
     hash=0;
 }
 
 
-void Hash64_appendQString(Hash64* hash, const QString& str) {
-    for(int i =0 ; i< str.size();++i) {
+void
+Hash64_appendQString(Hash64* hash, const QString& str)
+{
+    for (int i =0 ; i< str.size(); ++i) {
         hash->append<unsigned short>(str.at(i).unicode());
     }
 }

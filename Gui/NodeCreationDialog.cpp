@@ -256,7 +256,7 @@ QString NodeCreationDialog::getNodeName() const
     return _imp->textEdit->text();
 }
 
-void NodeCreationDialog::keyPressEvent(QKeyEvent *e) {
+void NodeCreationDialog::keyPressEvent(QKeyEvent* e) {
     if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
         accept();
     } else if (e->key() == Qt::Key_Escape) {

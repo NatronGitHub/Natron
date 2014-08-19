@@ -567,7 +567,7 @@ Gui::toggleFullScreen()
 }
 
 void
-Gui::closeEvent(QCloseEvent *e)
+Gui::closeEvent(QCloseEvent* e)
 {
     assert(e);
 	if (_imp->_appInstance->isClosing()) {
@@ -632,22 +632,23 @@ Gui::createGui()
     setupUi();
     
     ///post a fake event so the qt handlers are called and the proper widget receives the focus
-    QMouseEvent e(QEvent::MouseMove,QCursor::pos(),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
+    QMouseEvent e(QEvent::MouseMove, QCursor::pos(), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     qApp->sendEvent(this, &e);
     
 }
 
 bool
-Gui::eventFilter(QObject *target, QEvent *event)
+Gui::eventFilter(QObject *target,
+                 QEvent* e)
 {
     assert(_imp->_appInstance);
-    if (dynamic_cast<QInputEvent*>(event)) {
+    if (dynamic_cast<QInputEvent*>(e)) {
         /*Make top level instance this instance since it receives all
          user inputs.*/
         appPTR->setAsTopLevelInstance(_imp->_appInstance->getAppID());
     }
     
-    return QMainWindow::eventFilter(target, event);
+    return QMainWindow::eventFilter(target, e);
 }
 
 void
@@ -2137,22 +2138,22 @@ public:
     
 private:
     
-    virtual void mousePressEvent(QMouseEvent* event) {
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL {
         _menuOpened = !_menuOpened;
         if (_menuOpened) {
             _gui->setToolButtonMenuOpened(this);
         } else {
             _gui->setToolButtonMenuOpened(NULL);
         }
-        QToolButton::mousePressEvent(event);
+        QToolButton::mousePressEvent(e);
     }
     
-    virtual void mouseReleaseEvent(QMouseEvent* event) {
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL {
         _gui->setToolButtonMenuOpened(NULL);
-        QToolButton::mouseReleaseEvent(event);
+        QToolButton::mouseReleaseEvent(e);
     }
 
-    virtual void enterEvent(QEvent* event) {
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL {
         AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>(_gui->getToolButtonMenuOpened());
         if (btn && btn != this && btn->menu()->isActiveWindow()) {
             btn->menu()->close();
@@ -2161,7 +2162,7 @@ private:
             _menuOpened = true;
             showMenu();
         }
-        QToolButton::enterEvent(event);
+        QToolButton::enterEvent(e);
     }
     
 };

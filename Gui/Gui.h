@@ -94,7 +94,7 @@ public:
     
     ViewerTab* getLastSelectedViewer() const;
     
-    bool eventFilter(QObject *target, QEvent *event);
+    bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
     
@@ -358,7 +358,7 @@ public slots:
    ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
     void toggleFullScreen();
-    void closeEvent(QCloseEvent *e);
+    void closeEvent(QCloseEvent* e);
     void newProject();
     void openProject();
     bool saveProject();
@@ -461,8 +461,5 @@ private:
     boost::scoped_ptr<GuiPrivate> _imp;
     
 };
-
-
-
 
 #endif // NATRON_GUI_GUI_H_

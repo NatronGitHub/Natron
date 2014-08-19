@@ -84,7 +84,7 @@ Bitmap::minimalNonMarkedBbox(const RectI& roi) const
     RectI bbox;
     roi.intersect(_bounds, &bbox); // be safe
     //find bottom
-    for (int i = bbox.bottom(); i < bbox.top();++i) {
+    for (int i = bbox.bottom(); i < bbox.top(); ++i) {
         const char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
         if(!memchr(buf, 0, _bounds.width())){
             bbox.set_bottom(bbox.bottom()+1);
@@ -184,7 +184,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
     RectI bboxX = bboxM;
     RectI bboxA = bboxX;
     bboxA.set_top(bboxX.bottom());
-    for (int i = bboxX.bottom(); i < bboxX.top();++i) {
+    for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
         const char* buf = &_map[(i-_bounds.bottom())*_bounds.width()];
         if (!memchr(buf, 1, _bounds.width())) {
             bboxX.set_bottom(bboxX.bottom()+1);
@@ -296,7 +296,7 @@ Bitmap::minimalNonMarkedRects(const RectI& roi) const
 
 void
 Natron::Bitmap::markForRendered(const RectI& roi){
-    for (int i = roi.bottom(); i < roi.top();++i) {
+    for (int i = roi.bottom(); i < roi.top(); ++i) {
         char* buf = &_map[(i-_bounds.bottom())*_bounds.width() + (roi.left() - _bounds.left())];
         memset(buf, 1, roi.width());
     }
@@ -822,7 +822,7 @@ Image::halve1DImageForDepth(const RectI& roi,
         PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
         assert(src && dst);
         for (int y = 0; y < halfHeight; ++y) {
-            for (int k = 0; k < components;++k) {
+            for (int k = 0; k < components; ++k) {
                 *dst++ = PIX((float)(*src + (*src + rowSize)) / 2.);
                 ++src;
             }
@@ -1101,7 +1101,7 @@ Image::scaleBoxForDepth(const RectI& roi,
                 for(int m = lowy_int + 1; m < highy_int; ++m) {
                     left += rowSize;
                     right += rowSize;
-                    for (k = 0; k < components;++k, ++left, ++right) {
+                    for (k = 0; k < components; ++k, ++left, ++right) {
                         totals[k] += *left * (1 - lowx_float) + *right * highx_float;
                     }
                 }
@@ -1111,18 +1111,18 @@ Image::scaleBoxForDepth(const RectI& roi,
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
                 int k;
-                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 for(int m = lowy_int + 1; m < highy_int; ++m) {
                     temp += rowSize;
-                    for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                         totals[k] += *temp_index * x_percent;
                     }
                 }
                 percent = x_percent * highy_float;
                 temp += rowSize;
-                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
             } else if (highx_int > lowx_int) {
@@ -1132,18 +1132,18 @@ Image::scaleBoxForDepth(const RectI& roi,
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
                 
-                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 for (int l = lowx_int + 1; l < highx_int; ++l) {
                     temp += components;
-                    for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                         totals[k] += *temp_index * y_percent;
                     }
                 }
                 temp += components;
                 percent = y_percent * highx_float;
-                for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
             } else {
@@ -1167,7 +1167,7 @@ Image::scaleBoxForDepth(const RectI& roi,
                     int k;
                     const PIX *temp_index;
                     
-                    for (k = 0, temp_index = temp; k < components;++k, ++temp_index) {
+                    for (k = 0, temp_index = temp; k < components; ++k, ++temp_index) {
                         totals[k] += *temp_index;
                     }
                     temp += components;
@@ -1407,7 +1407,7 @@ void convertToFormatInternal_sameComps(const RectI& renderWindow,const Image& sr
         srcLut = dstLut = 0;
     }
     
-    for (int y = 0; y < intersection.height();++y) {
+    for (int y = 0; y < intersection.height(); ++y) {
         
         int start = rand() % intersection.width();
         

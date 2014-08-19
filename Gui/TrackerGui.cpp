@@ -27,6 +27,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/GuiMacros.h"
 
 
 #define POINT_SIZE 5
@@ -188,12 +189,14 @@ TrackerGui::~TrackerGui()
     
 }
 
-QWidget* TrackerGui::getButtonsBar() const
+QWidget*
+TrackerGui::getButtonsBar() const
 {
     return _imp->buttonsBar;
 }
  
-void TrackerGui::onAddTrackClicked(bool clicked)
+void
+TrackerGui::onAddTrackClicked(bool clicked)
 {
     _imp->clickToAddTrackEnabled = !_imp->clickToAddTrackEnabled;
     _imp->addTrackButton->setDown(clicked);
@@ -202,7 +205,9 @@ void TrackerGui::onAddTrackClicked(bool clicked)
 }
 
 
-void TrackerGui::drawOverlays(double scaleX,double scaleY) const
+void
+TrackerGui::drawOverlays(double scaleX,
+                         double scaleY) const
 {
     double pixelScaleX, pixelScaleY;
     _imp->viewer->getViewer()->getPixelScale(pixelScaleX, pixelScaleY);
@@ -308,7 +313,12 @@ void TrackerGui::drawOverlays(double scaleX,double scaleY) const
 
 }
 
-bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e)
+bool
+TrackerGui::penDown(double scaleX,
+                    double scaleY,
+                    const QPointF& viewportPos,
+                    const QPointF& pos,
+                    QMouseEvent* e)
 {
     std::pair<double,double> pixelScale;
     _imp->viewer->getViewer()->getPixelScale(pixelScale.first, pixelScale.second);
@@ -336,9 +346,8 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
         
         if (pos.x() >= (x - selectionTol) && pos.x() <= (x + selectionTol) &&
             pos.y() >= (y - selectionTol) && pos.y() <= (y + selectionTol)) {
-            bool controlHeld = e->modifiers().testFlag(Qt::ControlModifier);
             if (!it->second) {
-                _imp->panel->selectNode(it->first, controlHeld);
+                _imp->panel->selectNode(it->first, modifierIsControl(e));
             }
             didSomething = true;
         }
@@ -357,7 +366,7 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
         didSomething = true;
     }
     
-    if (!didSomething && !e->modifiers().testFlag(Qt::ControlModifier)) {
+    if (!didSomething && !modifierIsControl(e)) {
         _imp->panel->clearSelection();
     }
     
@@ -366,14 +375,24 @@ bool TrackerGui::penDown(double scaleX,double scaleY,const QPointF& viewportPos,
     return didSomething;
 }
 
-bool TrackerGui::penDoubleClicked(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewportPos*/,const QPointF& /*pos*/)
+bool
+TrackerGui::penDoubleClicked(double /*scaleX*/,
+                             double /*scaleY*/,
+                             const QPointF& /*viewportPos*/,
+                             const QPointF& /*pos*/,
+                             QMouseEvent* /*e*/)
 {
     bool didSomething = false;
 
     return didSomething;
 }
 
-bool TrackerGui::penMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
+bool
+TrackerGui::penMotion(double scaleX,
+                      double scaleY,
+                      const QPointF& viewportPos,
+                      const QPointF& pos,
+                      QMouseEvent* /*e*/)
 {
     bool didSomething = false;
     
@@ -398,7 +417,12 @@ bool TrackerGui::penMotion(double scaleX,double scaleY,const QPointF& viewportPo
     return didSomething;
 }
 
-bool TrackerGui::penUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos)
+bool
+TrackerGui::penUp(double scaleX,
+                  double scaleY,
+                  const QPointF& viewportPos,
+                  const QPointF& pos,
+                  QMouseEvent* /*e*/)
 {
     bool didSomething = false;
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
@@ -416,17 +440,17 @@ bool TrackerGui::penUp(double scaleX,double scaleY,const QPointF& viewportPos,co
     return didSomething;
 }
 
-bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
+bool
+TrackerGui::keyDown(double scaleX,
+                    double scaleY,
+                    QKeyEvent* e)
 {
     bool didSomething = false;
     
     if (e->key() == Qt::Key_Control) {
         ++_imp->controlDown;
     }
-    bool controlHeld = e->modifiers().testFlag(Qt::ControlModifier);
-    bool shiftHeld = e->modifiers().testFlag(Qt::ShiftModifier);
-    bool altHeld = e->modifiers().testFlag(Qt::AltModifier);
-    
+
     Natron::Key natronKey = QtEnumConvert::fromQtKey((Qt::Key)e->key());
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(e->modifiers());
     const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& instances = _imp->panel->getInstances();
@@ -442,35 +466,44 @@ bool TrackerGui::keyDown(double scaleX,double scaleY,QKeyEvent* e)
         }
     }
     
-    if (controlHeld && altHeld && (e->key() == Qt::Key_Control || e->key() == Qt::Key_Alt)) {
+    if (modifierIsControlAlt(e) && (e->key() == Qt::Key_Control || e->key() == Qt::Key_Alt)) {
         _imp->clickToAddTrackEnabled = true;
         _imp->addTrackButton->setDown(true);
         _imp->addTrackButton->setChecked(true);
         didSomething = true;
-    } else if (controlHeld && !shiftHeld && !altHeld && e->key() == Qt::Key_A) {
+
+    } else if (modifierIsControl(e) && e->key() == Qt::Key_A) {
         _imp->panel->onSelectAllButtonClicked();
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
-    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
+
+    } else if (modifierIsNone(e) && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
         _imp->panel->onDeleteKeyPressed();
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
-    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_Z)) {
+
+    } else if (modifierIsNone(e) && (e->key() == Qt::Key_Z)) {
         didSomething = _imp->panel->trackBackward();
-    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_X)) {
+
+    } else if (modifierIsNone(e) && (e->key() == Qt::Key_X)) {
         didSomething = _imp->panel->trackPrevious();
-    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_C)) {
+
+    } else if (modifierIsNone(e) && (e->key() == Qt::Key_C)) {
         didSomething = _imp->panel->trackNext();
-    } else if (!controlHeld && !shiftHeld && !altHeld && (e->key() == Qt::Key_V)) {
+
+    } else if (modifierIsNone(e) && (e->key() == Qt::Key_V)) {
         didSomething = _imp->panel->trackForward();
     }
     
     return didSomething;
 }
 
-bool TrackerGui::keyUp(double scaleX, double scaleY, QKeyEvent* e)
+bool
+TrackerGui::keyUp(double scaleX,
+                  double scaleY,
+                  QKeyEvent* e)
 {
     bool didSomething = false;
     
@@ -505,7 +538,9 @@ bool TrackerGui::keyUp(double scaleX, double scaleY, QKeyEvent* e)
     return didSomething;
 }
 
-bool TrackerGui::loseFocus(double scaleX, double scaleY)
+bool
+TrackerGui::loseFocus(double scaleX,
+                      double scaleY)
 {
     bool didSomething = false;
 
@@ -524,7 +559,8 @@ bool TrackerGui::loseFocus(double scaleX, double scaleY)
     return didSomething;
 }
 
-void TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
+void
+TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
 {
     if (!onRelease) {
         return;
@@ -553,49 +589,58 @@ void TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     _imp->panel->selectNodes(currentSelection, (_imp->controlDown > 0));
 }
 
-void TrackerGui::onSelectionCleared()
+void
+TrackerGui::onSelectionCleared()
 {
     _imp->panel->clearSelection();
 }
 
-void TrackerGui::onTrackBwClicked()
+void
+TrackerGui::onTrackBwClicked()
 {
     _imp->panel->trackBackward();
 }
 
-void TrackerGui::onTrackPrevClicked()
+void
+TrackerGui::onTrackPrevClicked()
 {
     _imp->panel->trackPrevious();
 }
 
-void TrackerGui::onTrackNextClicked()
+void
+TrackerGui::onTrackNextClicked()
 {
     _imp->panel->trackNext();
 }
 
-void TrackerGui::onTrackFwClicked()
+void
+TrackerGui::onTrackFwClicked()
 {
     _imp->panel->trackForward();
 }
 
-void TrackerGui::onUpdateViewerClicked(bool clicked)
+void
+TrackerGui::onUpdateViewerClicked(bool clicked)
 {
     _imp->panel->setUpdateViewerOnTracking(clicked);
     _imp->updateViewerButton->setDown(clicked);
     _imp->updateViewerButton->setChecked(clicked);
 }
 
-void TrackerGui::onClearAllAnimationClicked()
+void
+TrackerGui::onClearAllAnimationClicked()
 {
     _imp->panel->clearAllAnimationForSelection();
 }
 
-void TrackerGui::onClearBwAnimationClicked()
+void
+TrackerGui::onClearBwAnimationClicked()
 {
     _imp->panel->clearBackwardAnimationForSelection();
 }
 
-void TrackerGui::onClearFwAnimationClicked()
+void
+TrackerGui::onClearFwAnimationClicked()
 {
     _imp->panel->clearForwardAnimationForSelection();
 }
