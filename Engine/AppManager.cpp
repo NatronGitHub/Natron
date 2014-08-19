@@ -815,7 +815,9 @@ void AppManager::setAsTopLevelInstance(int appID){
         return;
     }
     _imp->_topLevelInstanceID = appID;
-    for(std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin();it!=_imp->_appInstances.end();++it){
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin();
+         it!=_imp->_appInstances.end();
+         ++it) {
         if (it->first != _imp->_topLevelInstanceID) {
             if(!isBackground())
                 it->second.app->disconnectViewersFromViewerCache();

@@ -1247,7 +1247,7 @@ void KnobHolder::restoreDefaultValues()
 {
     aboutToRestoreDefaultValues();
 
-    for (U32 i = 0; i < _imp->knobs.size() ;++i) {
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         Button_Knob* isBtn = dynamic_cast<Button_Knob*>(_imp->knobs[i].get());
         Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->knobs[i].get());
         Group_Knob* isGroup = dynamic_cast<Group_Knob*>(_imp->knobs[i].get());

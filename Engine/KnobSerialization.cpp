@@ -97,7 +97,7 @@ void KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI>& knob,co
             ///now that we have the master node, find the corresponding knob
             const std::vector< boost::shared_ptr<KnobI> >& otherKnobs = masterNode->getKnobs();
             bool found = false;
-            for (U32 j = 0 ; j < otherKnobs.size();++j) {
+            for (U32 j = 0 ; j < otherKnobs.size(); ++j) {
                 if (otherKnobs[j]->getName() == it->masterKnobName && otherKnobs[j]->getIsPersistant()) {
                     knob->slaveTo(i, otherKnobs[j], it->masterDimension);
                     found = true;

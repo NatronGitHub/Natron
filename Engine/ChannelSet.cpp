@@ -172,7 +172,7 @@ void ChannelSet::operator+=(const ChannelSet& source) {
         return;
     }
     *this += z;
-    for(unsigned i = 1; i < source.size();++i) {
+    for (unsigned i = 1; i < source.size(); ++i) {
         z=source.next(z);
         if (z == Channel_black) {
             return;
@@ -222,7 +222,7 @@ void ChannelSet::operator-=(const ChannelSet& source) {
     }
     assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
     *this-=z;
-    for(unsigned i = 0; i < source.size();++i) {
+    for (unsigned i = 0; i < source.size(); ++i) {
         z = source.next(z);
         if (z == Channel_black) { // end of channels
             return;
