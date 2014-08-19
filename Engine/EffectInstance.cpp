@@ -1831,7 +1831,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     assert(fullScaleMappedImage->getBounds() == fullScaleImage->getBounds());
     Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
     const SequenceTime time = args._time;
-    const RenderScale scale = args._scale;
+    //const RenderScale& scale = args._scale;
     int mipMapLevel = args._mipMapLevel;
     const int view = args._view;
     const bool isSequentialRender = args._isSequentialRender;
