@@ -28,9 +28,9 @@ MenuWithToolTips::MenuWithToolTips(QWidget* parent)
     setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
 }
 
-bool MenuWithToolTips::event (QEvent * e)
+bool MenuWithToolTips::event (QEvent* e)
 {
-    const QHelpEvent *helpEvent = static_cast <QHelpEvent *>(e);
+    const QHelpEvent* helpEvent = static_cast <QHelpEvent*>(e);
     if (helpEvent->type() == QEvent::ToolTip) {
         QAction* action = activeAction();
         if(!action){
