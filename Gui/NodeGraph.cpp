@@ -2013,8 +2013,16 @@ bool NodeGraph::areAllNodesVisible(){
     QRectF rect = visibleSceneRect();
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();it!=_imp->_nodes.end();++it) {
-        if(!rect.contains((*it)->boundingRectWithEdges()))
+        if ((*it)->isVisible()) {
+            if(!rect.contains((*it)->boundingRectWithEdges()))
+                return false;
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
+        QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+        if (!rect.contains(bbox)) {
             return false;
+        }
     }
     return true;
 }
@@ -2174,7 +2182,12 @@ NodeGraphPrivate::calcNodesBoundingRect()
     QRectF ret;
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
-        ret = ret.united((*it)->boundingRectWithEdges());
+        if ((*it)->isVisible()) {
+            ret = ret.united((*it)->boundingRectWithEdges());
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin();it!=_backdrops.end();++it) {
+        ret = ret.united((*it)->mapToScene((*it)->boundingRect()).boundingRect());
     }
     return ret;
 }
