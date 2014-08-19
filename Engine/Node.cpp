@@ -951,7 +951,9 @@ Node::input(int index) const
     ////Only called by the main-thread
     ////@see input_other_thread for the MT version
     assert(QThread::currentThread() == qApp->thread());
-    if (!_imp->inputsInitialized);
+    if (!_imp->inputsInitialized) {
+        qDebug() << "Node::input(): inputs not initialized";
+    }
 
     if (_imp->multiInstanceParent) {
         return _imp->multiInstanceParent->input(index);
@@ -1232,6 +1234,9 @@ Node::onInputNameChanged(const QString& name)
     assert(_imp->inputsInitialized);
     Natron::Node* inp = dynamic_cast<Natron::Node*>(sender());
     assert(inp);
+    if (!inp) {
+        return;
+    }
     int inputNb = -1;
     
     {
@@ -1537,11 +1542,11 @@ Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRest
             if (outputHasInput) {
                 bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
                 assert(ok);
+                (void)ok;
             }
             
             ///and connect the output to this node
             it->first->connectInput(thisShared, it->second);
-            
         }
     }
     
@@ -1735,7 +1740,7 @@ Node::makePreviewImage(SequenceTime time,
         case Natron::IMAGE_FLOAT: {
             renderPreview<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
         } break;
-        default:
+        case Natron::IMAGE_NONE:
             break;
     }
     
@@ -2473,12 +2478,18 @@ Node::getBitDepth() const
     bool foundShort = false;
     bool foundByte = false;
     for (std::list<ImageBitDepth>::const_iterator it = _imp->supportedDepths.begin(); it!= _imp->supportedDepths.end(); ++it) {
-        if (*it == Natron::IMAGE_FLOAT) {
-            return Natron::IMAGE_FLOAT;
-        } else if (*it == Natron::IMAGE_BYTE) {
-            foundByte = true;
-        } else if (*it == Natron::IMAGE_SHORT) {
-            foundShort = true;
+        switch (*it) {
+            case Natron::IMAGE_FLOAT:
+                return Natron::IMAGE_FLOAT;
+                break;
+            case Natron::IMAGE_BYTE:
+                foundByte = true;
+                break;
+            case Natron::IMAGE_SHORT:
+                foundShort = true;
+                break;
+            case Natron::IMAGE_NONE:
+                break;
         }
     }
     
@@ -2489,6 +2500,7 @@ Node::getBitDepth() const
     } else {
         ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
         assert(false);
+        return Natron::IMAGE_NONE;
     }
 }
 

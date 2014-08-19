@@ -382,19 +382,23 @@ namespace Natron {
 
     template <typename SRCPIX,typename DSTPIX>
     DSTPIX convertPixelDepth(SRCPIX pix);
-    
+
     template <typename PIX>
     PIX clamp(PIX v);
 
     template <typename PIX,int maxVal>
     PIX clampInternal(PIX v) {
-        if (v > maxVal) return maxVal;
-        if (v < 0) return 0;
+        if (v > maxVal) {
+            return maxVal;
+        }
+        if (v < 0) {
+            return 0;
+        }
         return v;
     }
 
-    template <> inline unsigned char clamp(unsigned char v) { return clampInternal<unsigned char, 255>(v); }
-    template <> inline unsigned short clamp(unsigned short v) { return clampInternal<unsigned short, 65535>(v); }
+    //template <> inline unsigned char clamp(unsigned char v) { return v; }
+    //template <> inline unsigned short clamp(unsigned short v) { return v; }
     template <> inline float clamp(float v) { return clampInternal<float, 1>(v); }
     template <> inline double clamp(double v) { return clampInternal<double, 1>(v); }
 }//namespace Natron

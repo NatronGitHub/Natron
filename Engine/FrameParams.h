@@ -36,7 +36,7 @@ public:
 private:
     
     virtual bool isEqualToVirtual(const NonKeyParams& other) const OVERRIDE FINAL {
-        const FrameParams& imgParams = dynamic_cast<const FrameParams&>(other);
+        const FrameParams& imgParams = static_cast<const FrameParams&>(other);
         return _rod == imgParams._rod;
     }
        

@@ -13,13 +13,16 @@
 
 #include <cmath>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QProgressBar>
 #include <QFrame>
 #include <QTextBrowser>
-
 #include <QString>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ProcessHandler.h"
 

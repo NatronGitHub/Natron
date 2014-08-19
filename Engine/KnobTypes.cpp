@@ -675,6 +675,9 @@ void Double_Knob::denormalize(int dimension,double time,double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
     assert(effect);
+    if (!effect) {
+        return;
+    }
     RectD rod;
     getInputRoD(effect,time,rod);
     if (dimension == 0) {
@@ -689,6 +692,9 @@ void Double_Knob::normalize(int dimension,double time,double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>(getHolder());
     assert(effect);
+    if (!effect) {
+        return;
+    }
     RectD rod;
     getInputRoD(effect,time,rod);
     if (dimension == 0) {

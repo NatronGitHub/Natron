@@ -10,11 +10,15 @@
 
 #include "PreferencesPanel.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QDesktopWidget>
 #include <QApplication>
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QDialogButtonBox>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Settings.h"
 #include "Gui/DockablePanel.h"

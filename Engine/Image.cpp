@@ -474,7 +474,7 @@ Image::pasteFrom(const Natron::Image& src,
         case IMAGE_FLOAT:
             pasteFromForDepth<float>(src, srcRoi, copyBitmap);
             break;
-        default:
+        case IMAGE_NONE:
             break;
     }
 }
@@ -531,8 +531,7 @@ Image::fill(const RectI& roi,
         case IMAGE_FLOAT:
             fillForDepth<float, 1>(roi, r, g, b, a);
             break;
-
-        default:
+        case IMAGE_NONE:
             break;
     }
 }
@@ -643,7 +642,7 @@ Image::getDepthString(Natron::ImageBitDepth depth)
         case Natron::IMAGE_FLOAT:
             s += "32f";
             break;
-        default:
+        case Natron::IMAGE_NONE:
             break;
     }
     return s;
@@ -777,7 +776,7 @@ Image::halveRoI(const RectI& roi,
         case IMAGE_FLOAT:
             halveRoIForDepth<float,1>(roi, output);
             break;
-        default:
+        case IMAGE_NONE:
             break;
     }
 }
@@ -848,7 +847,7 @@ Image::halve1DImage(const RectI& roi,
         case IMAGE_FLOAT:
             halve1DImageForDepth<float, 1>(roi, output);
             break;
-        default:
+        case IMAGE_NONE:
             break;
     }
 }
@@ -969,7 +968,7 @@ Image::upscaleMipMap(const RectI& roi,
         case IMAGE_FLOAT:
             upscaleMipMapForDepth<float,1>(roi, fromLevel, toLevel, output);
             break;
-        default:
+        case IMAGE_NONE:
             break;
     }
 }
@@ -1218,7 +1217,7 @@ Image::scaleBox(const RectI& roi,
         case IMAGE_FLOAT:
             scaleBoxForDepth<float>(roi, output);
             break;
-        default:
+        case IMAGE_NONE:
             break;
     }
     
@@ -1227,15 +1226,11 @@ Image::scaleBox(const RectI& roi,
 // code proofread and fixed by @devernay on 8/8/2014
 void Image::buildMipMapLevel(const RectI& roi, unsigned int level, Natron::Image* output) const
 {
-    ///The output image data window
-    const RectI& dstRoD = output->getBounds();
-
-    
     ///The last mip map level we will make with closestPo2
     RectI lastLevelRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
     
     ///The output image must contain the last level roi
-    assert(dstRoD.contains(lastLevelRoI));
+    assert(output->getBounds().contains(lastLevelRoI));
     
     assert(output->getComponents() == getComponents());
 
@@ -1684,10 +1679,11 @@ Image::convertToFormat(const RectI& renderWindow,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,invert,copyBitmap);
                         break;
-                    default:
+                    case IMAGE_NONE:
                         break;
                 }
             } break;
+
             case IMAGE_SHORT: {
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
@@ -1706,10 +1702,11 @@ Image::convertToFormat(const RectI& renderWindow,
                                                                                            srcColorSpace,
                                                                                            dstColorSpace,invert,copyBitmap);
                         break;
-                    default:
+                    case IMAGE_NONE:
                         break;
                 }
             } break;
+
             case IMAGE_FLOAT: {
                 switch (getBitDepth()) {
                     case IMAGE_BYTE:
@@ -1728,12 +1725,12 @@ Image::convertToFormat(const RectI& renderWindow,
                                                                               srcColorSpace,
                                                                               dstColorSpace,invert,copyBitmap);
                         break;
-                    default:
+                    case IMAGE_NONE:
                         break;
                 }
             } break;
                 
-            default:
+            case IMAGE_NONE:
                 break;
         }
     } else {
@@ -1761,7 +1758,7 @@ Image::convertToFormat(const RectI& renderWindow,
                                                                               channelForAlpha,
                                                                               invert,copyBitmap);
                         break;
-                    default:
+                    case IMAGE_NONE:
                         break;
                 }
             } break;
@@ -1786,7 +1783,7 @@ Image::convertToFormat(const RectI& renderWindow,
                                                                                  channelForAlpha,
                                                                                  invert,copyBitmap);
                         break;
-                    default:
+                    case IMAGE_NONE:
                         break;
                 }
             } break;
@@ -1810,7 +1807,7 @@ Image::convertToFormat(const RectI& renderWindow,
                                                                     dstColorSpace, channelForAlpha,
                                                                     invert,copyBitmap);
                         break;
-                    default:
+                    case IMAGE_NONE:
                         break;
                 }
             } break;

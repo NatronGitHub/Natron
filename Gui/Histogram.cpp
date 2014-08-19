@@ -1341,7 +1341,9 @@ void Histogram::onCPUHistogramComputed()
     int mode;
     bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode,&_imp->vmin,&_imp->vmax);
     assert(success);
-    update();
+    if (success) {
+        update();
+    }
 }
 
 

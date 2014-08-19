@@ -29,9 +29,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 
 template<class Archive>
-void Curve::serialize(Archive & ar, const unsigned int version)
+void Curve::serialize(Archive & ar, const unsigned int /*version*/)
 {
-    (void)version;
     QReadLocker l(&_imp->_lock);
     ar & boost::serialization::make_nvp("KeyFrameSet",_imp->keyFrames);
 }

@@ -7,6 +7,8 @@
 
 #include "NodeCreationDialog.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QStringList>
 #include <QKeyEvent>
@@ -17,6 +19,8 @@
 #include <QDesktopWidget>
 #include <QApplication>
 #include <QStringListModel>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"

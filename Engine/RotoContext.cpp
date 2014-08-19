@@ -4786,7 +4786,7 @@ RotoContext::renderMask(const RectI& roi,
         case Natron::IMAGE_SHORT:
             convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod);
             break;
-        default:
+        case Natron::IMAGE_NONE:
             assert(false);
             break;
     }

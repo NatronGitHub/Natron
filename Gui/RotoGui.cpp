@@ -11,6 +11,8 @@
 
 #include "RotoGui.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QString>
 #include <QToolBar>
 #include <QWidget>
@@ -21,6 +23,8 @@
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QDialogButtonBox>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
@@ -1637,8 +1641,7 @@ bool RotoGui::penDown(double /*scaleX*/,double /*scaleY*/,const QPointF& /*viewp
             break;
         case REMOVE_POINTS:
             if (nearbyCP.first) {
-                Bezier* curve = nearbyCP.first->getBezier();
-                assert(nearbyBezier && nearbyBezier.get() == curve);
+                assert(nearbyBezier && nearbyBezier.get() == nearbyCP.first->getBezier());
                 if (nearbyCP.first->isFeatherPoint()) {
                     pushUndoCommand(new RemovePointUndoCommand(this,nearbyBezier,nearbyCP.second));
                 } else {

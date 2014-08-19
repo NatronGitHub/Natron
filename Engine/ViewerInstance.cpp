@@ -532,7 +532,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
         //// We do this ONLY if the effect is not an identity, because otherwise the isRoDProjectFormat is meaningless
         //// because we fetched an image upstream anyway.
         if (inputIdentityNumber == -1 && cachedImgParams->isRodProjectFormat()) {
-            if (dynamic_cast<RectI&>(dispW) != cachedImgParams->getRoD()) {
+            if (static_cast<RectD&>(dispW) != cachedImgParams->getRoD()) {
                 isInputImgCached = false;
                 appPTR->removeFromNodeCache(inputImage);
                 inputImage.reset();
@@ -1269,7 +1269,7 @@ void scaleToTexture8bits_internal(const std::pair<int,int>& yRange,
                                 b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                             }
                             break;
-                        default:
+                        case Natron::IMAGE_NONE:
                             break;
                     }
 
@@ -1367,7 +1367,7 @@ scaleToTexture8bits(std::pair<int,int> yRange,
             scaleToTexture8bits_internal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset, nComps);
             break;
             
-        default:
+        case Natron::IMAGE_NONE:
             break;
     }
 }
@@ -1418,8 +1418,9 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                     r = g = b = a;
                     a = 1.;
                     break;
-                default:
+                case Natron::ImageComponentNone:
                     assert(false);
+                    r = g = b = a = 0.;
                     break;
             }
             
@@ -1453,7 +1454,7 @@ void scaleToTexture32bitsInternal(const std::pair<int,int>& yRange,
                         b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                     }
                     break;
-                default:
+                case Natron::IMAGE_NONE:
                     break;
             }
 
@@ -1529,7 +1530,7 @@ scaleToTexture32bits(std::pair<int,int> yRange,
         case Natron::IMAGE_SHORT:
             scaleToTexture32bitsInternal<unsigned short, 65535>(yRange, args, output, rOffset, gOffset, bOffset,nComps);
             break;
-        default:
+        case Natron::IMAGE_NONE:
             break;
     }
     
@@ -1859,7 +1860,7 @@ ViewerInstance::getColorAt(double x, double y, // x and y in canonical coordinat
                                                   dstColorSpace,
                                                   r, g, b, a);
             break;
-        default:
+        case IMAGE_NONE:
             gotval = false;
             break;
     }
@@ -1974,7 +1975,7 @@ ViewerInstance::getColorAtRect(const RectD &rect, // rectangle in canonical coor
                                                           dstColorSpace,
                                                            &rPix, &gPix, &bPix, &aPix);
                     break;
-                default:
+                case IMAGE_NONE:
                     break;
             }
             if (gotval) {

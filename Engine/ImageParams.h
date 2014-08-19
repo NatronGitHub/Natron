@@ -19,13 +19,11 @@ namespace Natron {
                 return 3;
             case ImageComponentRGBA:
                 return 4;
-            default:
-                ///unsupported components
-                assert(false);
-                break;
         }
+        assert(false);
+        return 0;
     }
-    
+
     inline int getSizeOfForBitDepth(Natron::ImageBitDepth bitdepth)
     {
         switch (bitdepth) {
@@ -35,10 +33,11 @@ namespace Natron {
                 return sizeof(unsigned short);
             case Natron::IMAGE_FLOAT:
                 return sizeof(float);
-            default:
-                assert(false);
+            case Natron::IMAGE_NONE:
                 break;
         }
+        assert(false);
+        return 0;
     }
     
 class ImageParams : public NonKeyParams
@@ -120,7 +119,7 @@ public:
 private:
         
     virtual bool isEqualToVirtual(const NonKeyParams& other) const OVERRIDE FINAL {
-        const ImageParams& imgParams = dynamic_cast<const ImageParams&>(other);
+        const ImageParams& imgParams = static_cast<const ImageParams&>(other);
         if (imgParams._framesNeeded.size() != _framesNeeded.size()) {
             return false;
         }

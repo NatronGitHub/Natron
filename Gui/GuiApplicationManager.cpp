@@ -14,6 +14,7 @@
 ///gui
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QPixmapCache>
 #include <QBitmap>
 #include <QImage>
@@ -22,6 +23,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QIcon>
 #include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 //core
 #include <QDebug>

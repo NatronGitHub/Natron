@@ -1234,8 +1234,8 @@ void CurveWidgetPrivate::moveSelectedTangent(const QPointF& pos)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    SelectedKeys::iterator existingKey = std::find(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),_selectedDerivative.second);
-    assert(existingKey != _selectedKeyFrames.end());
+    // the key should exist
+    assert(std::find(_selectedKeyFrames.begin(),_selectedKeyFrames.end(),_selectedDerivative.second) != _selectedKeyFrames.end());
     
     KeyPtr& key = _selectedDerivative.second;
     KeyFrameSet keys = key->curve->getInternalCurve()->getKeyFrames_mt_safe();

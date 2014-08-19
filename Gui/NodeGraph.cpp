@@ -2868,6 +2868,7 @@ NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) const
     }
     ///it must either be in the trash or in the active nodes
     assert(false);
+    return boost::shared_ptr<NodeGui>();
 }
 
 void

@@ -11,14 +11,16 @@
 
 #include <fstream>
 
-
-
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSplitter>
 #include <QDebug>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"

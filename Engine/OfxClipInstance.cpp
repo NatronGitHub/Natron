@@ -284,7 +284,7 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ///Also don't use cached RoDs for identity effects as they contain garbage here (because identity effects allocates
         ///images with 0 bytes of data (rod null))
         if (isCached && (!cachedImgParams->isRodProjectFormat()
-            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == dynamic_cast<RectI&>(f))) &&
+            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == static_cast<RectD&>(f))) &&
             cachedImgParams->getInputNbIdentity() == -1) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
@@ -411,6 +411,8 @@ Natron::ImageBitDepth OfxClipInstance::ofxDepthToNatronDepth(const std::string& 
         return Natron::IMAGE_SHORT;
     } else if (depth == kOfxBitDepthFloat) {
         return Natron::IMAGE_FLOAT;
+    } else if (depth == kOfxBitDepthNone) {
+        return Natron::IMAGE_NONE;
     } else {
         throw std::runtime_error(depth+": unsupported bitdepth"); //< comp unsupported
     }
@@ -425,6 +427,8 @@ std::string OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
             return kOfxBitDepthShort;
         case Natron::IMAGE_FLOAT:
             return kOfxBitDepthFloat;
+        case Natron::IMAGE_NONE:
+            return kOfxBitDepthNone;
         default:
             assert(false);//< shouldve been caught earlier
             break;

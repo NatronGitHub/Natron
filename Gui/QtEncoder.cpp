@@ -15,8 +15,13 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtGui/QImage>
 #include <QtGui/QImageWriter>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"

@@ -12,6 +12,8 @@
 
 #include <cfloat>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QStyle>
@@ -29,6 +31,8 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
 #include <QFontComboBox>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Curve.h"

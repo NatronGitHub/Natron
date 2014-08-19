@@ -11,6 +11,8 @@
 
 #include "LineEdit.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QLineEdit>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -22,6 +24,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QUrl>
 #include <QMimeData>
 #include <QStyle>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 class QPaintEvent;
 

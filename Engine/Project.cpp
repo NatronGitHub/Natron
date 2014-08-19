@@ -1222,7 +1222,7 @@ Natron::ViewerColorSpace Project::getDefaultColorSpaceForBitDepth(Natron::ImageB
             return (Natron::ViewerColorSpace)_imp->colorSpace16bits->getValue();
         case Natron::IMAGE_FLOAT:
             return (Natron::ViewerColorSpace)_imp->colorSpace32bits->getValue();
-        default:
+        case Natron::IMAGE_NONE:
             assert(false);
             break;
     }

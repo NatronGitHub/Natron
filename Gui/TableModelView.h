@@ -11,9 +11,14 @@
 
 #include <boost/scoped_ptr.hpp>
 
+#include "Global/Macros.h"
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QTreeView>
 #include <QAbstractItemModel>
-#include "Global/Macros.h"
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 class TableView;
 class TableModel;

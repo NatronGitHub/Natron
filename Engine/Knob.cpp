@@ -1006,6 +1006,7 @@ KnobHolder::~KnobHolder()
 {
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelper* helper = dynamic_cast<KnobHelper*>(_imp->knobs[i].get());
+        assert(helper);
         helper->_imp->holder = 0;
     }
 }

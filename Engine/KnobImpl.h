@@ -979,7 +979,9 @@ void Knob<T>::cloneAndUpdateGui(KnobI* other)
                 double time;
                 bool ok = getKeyFrameTime(k, i, &time);
                 assert(ok);
-                _signalSlotHandler->s_keyFrameRemoved(time, i);
+                if (ok) {
+                    _signalSlotHandler->s_keyFrameRemoved(time, i);
+                }
             }
         }
         getCurve(i)->clone(*other->getCurve(i));
@@ -989,7 +991,9 @@ void Knob<T>::cloneAndUpdateGui(KnobI* other)
                 double time;
                 bool ok = getKeyFrameTime(k, i, &time);
                 assert(ok);
-                _signalSlotHandler->s_keyFrameSet(time, i,true);
+                if (ok) {
+                    _signalSlotHandler->s_keyFrameSet(time, i,true);
+                }
             }
             _signalSlotHandler->s_valueChanged(i,Natron::PLUGIN_EDITED);
         }

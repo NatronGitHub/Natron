@@ -11,6 +11,8 @@
 
 #include "MultiInstancePanel.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QPixmap>
 #include <QDebug>
@@ -21,6 +23,8 @@
 #include <QUndoCommand>
 #include <QPainter>
 #include <QLabel>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"

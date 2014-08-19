@@ -11,6 +11,7 @@
 #include "ViewerTab.h"
 
 #include <cassert>
+#include <QDebug>
 #include <QApplication>
 #include <QSlider>
 #include <QComboBox>
@@ -1864,6 +1865,11 @@ ViewerTab::createTrackerInterface(NodeGui* n)
     TrackerGui* tracker = new TrackerGui(trackPanel,this);
     std::pair<std::map<NodeGui*,TrackerGui*>::iterator,bool> ret = _imp->_trackerNodes.insert(std::make_pair(n,tracker));
     assert(ret.second);
+    if (!ret.second) {
+        qDebug() << "ViewerTab::createTrackerInterface() failed";
+        delete tracker;
+        return;
+    }
     QObject::connect(n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)));
     if (n->isSettingsPanelVisible()) {
         setTrackerInterface(n);
@@ -1950,7 +1956,6 @@ ViewerTab::removeTrackerInterface(NodeGui* n,bool permanently,bool removeAndDont
                     setTrackerInterface(newTracker->first);
                 }
             }
-            
         }
         
         if (permanently) {
@@ -1968,6 +1973,11 @@ ViewerTab::createRotoInterface(NodeGui* n)
     QObject::connect(roto,SIGNAL(selectedToolChanged(int)),_imp->_gui,SLOT(onRotoSelectedToolChanged(int)));
     std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->_rotoNodes.insert(std::make_pair(n,roto));
     assert(ret.second);
+    if (!ret.second) {
+        qDebug() << "ViewerTab::createRotoInterface() failed";
+        delete roto;
+        return;
+    }
     QObject::connect(n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onRotoNodeGuiSettingsPanelClosed(bool)));
     if (n->isSettingsPanelVisible()) {
         setRotoInterface(n);

@@ -498,7 +498,7 @@ EffectInstance::getImage(int inputNb,
         if (!optionalBounds) {
             ///// We cannot recover the RoI, we just assume the plug-in wants to render the full RoD.
             optionalBounds = rod;
-            (void)ifInfiniteApplyHeuristic(time, scale, view, &optionalBounds);
+            ifInfiniteApplyHeuristic(time, scale, view, &optionalBounds);
 
 
             /// If the region parameter is not set to NULL, then it will be clipped to the clip's
@@ -513,10 +513,7 @@ EffectInstance::getImage(int inputNb,
             inputsRoI = getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0);
         }
 
-        {
-            bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-        }
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.)));
         try {
             isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &inputNbIdentity);
         } catch (...) {
@@ -641,10 +638,7 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
     bool firstInput = true;
     RenderScale renderMappedScale = scale;
 #if 1
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-    }
+    assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.)));
 #pragma message WARN("remove dead code below if no crash with plugins that don't support renderscale")
 #else
     const SupportsEnum supportsRS = supportsRenderScaleMaybe();
@@ -883,20 +877,14 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
     }
     RenderScale renderMappedScale;
     renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
-    {
-        bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-        assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
-    }
+    assert(!((supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
 
     ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
     if (!args.preComputedRoD.isNull()) {
         rod = args.preComputedRoD;
     } else {
         ///before allocating it we must fill the RoD of the image we want to render
-        {
-            bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-            assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
-        }
+        assert(!((supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
         Status stat = getRegionOfDefinition_public(args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
 
         ///The rod might be NULL for a roto that has no beziers and no input
@@ -959,7 +947,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             ////just discard this entry
             Format projectFormat;
             getRenderFormat(&projectFormat);
-            if (dynamic_cast<RectI&>(projectFormat) != cachedImgParams->getRoD()) {
+            if (static_cast<RectD&>(projectFormat) != cachedImgParams->getRoD()) {
                 isCached = false;
                 appPTR->removeFromNodeCache(image);
                 cachedImgParams.reset();
@@ -1017,10 +1005,7 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
         int inputNbIdentity;
         FramesNeededMap framesNeeded;
 
-        {
-            bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-            assert(!((supportsRS == eSupportsNo) && !scaleIsOne));
-        }
+        assert(!((supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
         bool identity;
         try {
             identity = isIdentity_public(args.time, renderMappedScale, rod, args.view, &inputTimeIdentity, &inputNbIdentity);
@@ -1513,10 +1498,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///the getRegionsOfInterest call will not be cached because it would be unnecessary
         ///To put that information (which depends on the RoI) into the cache. That's why we
         ///store it into the render args (thread-storage) so the getImage() function can retrieve the results.
-        {
-            bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-        }
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
 
         RoIMap inputsRoi = getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRectToRender, view);
         
@@ -1709,10 +1691,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             }
         }
         if (callBegin) {
-            {
-                bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-                assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-            }
+            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
             if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
                                            isRenderMadeInResponseToUserInteraction, view) == StatFailed) {
                 renderStatus = StatFailed;
@@ -1771,10 +1750,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                     }
                 }
                 if (callEndRender) {
-                    {
-                        bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-                        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-                    }
+                    assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
                     if (endSequenceRender_public(time, time, time, false, renderMappedScale,
                                                  isSequentialRender,
                                                  isRenderMadeInResponseToUserInteraction,
@@ -1855,7 +1831,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     assert(fullScaleMappedImage->getBounds() == fullScaleImage->getBounds());
     Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,args);
     const SequenceTime time = args._time;
-    const RenderScale scale = args._scale;
+    //const RenderScale& scale = args._scale;
     int mipMapLevel = args._mipMapLevel;
     const int view = args._view;
     const bool isSequentialRender = args._isSequentialRender;
@@ -1863,7 +1839,9 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     const int channelForAlpha = args._channelForAlpha;
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
+# ifndef NDEBUG
     const RectI& renderBounds = renderMappedImage->getBounds();
+# endif
     assert(renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
            renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
 
@@ -1887,10 +1865,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs& args,
     if (!renderRectToRender.isNull()) {
         RenderScale renderMappedScale;
         renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedImage->getMipMapLevel());
-        {
-            bool scaleIsOne = (renderMappedScale.x == 1. && renderMappedScale.y == 1.);
-            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-        }
+        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.)));
         Natron::Status st = render_public(time, renderMappedScale, renderRectToRender, view,
                                           isSequentialRender,
                                           isRenderResponseToUserInteraction,
@@ -2142,6 +2117,7 @@ EffectInstance::newMemoryInstance(size_t nBytes)
     PluginMemory* ret = new PluginMemory(_node->getLiveInstance()); //< hack to get "this" as a shared ptr
     bool wasntLocked = ret->alloc(nBytes);
     assert(wasntLocked);
+    (void)wasntLocked;
     return ret;
 }
 
@@ -2513,10 +2489,7 @@ EffectInstance::isIdentity_public(SequenceTime time,
                                   int* inputNb)
 {
 #if 1
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-    }
+    assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.)));
 #pragma message WARN("remove dead code below if no crash with plugins that don't support renderscale")
 #else
     if (supportsRenderScaleMaybe() == eSupportsNo && (scale.x != 1. || scale.y != 1.)) {
@@ -2823,7 +2796,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     }
     
     _node->onEffectKnobValueChanged(k, reason);
-    if (dynamic_cast<KnobHelper*>(k)->isDeclaredByPlugin()) {
+    KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
+    assert(kh);
+    if (kh && kh->isDeclaredByPlugin()) {
 
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
@@ -2839,10 +2814,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             scale.y = scale.x;
             
             U64 nodeHash = getHash();
-            {
-                bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-                assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-            }
+            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.)));
             RoIMap inputRois = getRegionsOfInterest_public(time, scale, rod, rod, view);
             
             boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
@@ -2855,10 +2827,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             SequenceTime identityTime = 0.;
             int identityNb = -1;
 
-            {
-                bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-                assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne));
-            }
+            assert(!((supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.)));
             bool isIdentity = false;
             try {
                 isIdentity = isIdentity_public(time, scale, rod, view, &identityTime, &identityNb);

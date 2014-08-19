@@ -7,11 +7,15 @@
 
 #include "TrackerGui.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QTextEdit>
 #include <QKeyEvent>
 #include <QPixmap>
 #include <QIcon>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"

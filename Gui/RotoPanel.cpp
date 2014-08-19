@@ -7,6 +7,8 @@
 
 #include "RotoPanel.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -26,6 +28,8 @@
 #include <QPainter>
 #include <QByteArray>
 #include <QTextDocument> // for Qt::convertFromPlainText
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
@@ -1730,8 +1734,7 @@ void RotoPanel::onSettingsPanelClosed(bool closed) {
         for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
             Bezier* isBezier = dynamic_cast<Bezier*>(it->rotoItem.get());
             if (isBezier) {
-                ItemKeys::iterator it2 = _imp->keyframes.find(isBezier);
-                assert (it2 == _imp->keyframes.end());
+                assert (_imp->keyframes.find(isBezier) == _imp->keyframes.end());
                 std::set<int> keys;
                 isBezier->getKeyframeTimes(&keys);
                 std::list<SequenceTime> markers;

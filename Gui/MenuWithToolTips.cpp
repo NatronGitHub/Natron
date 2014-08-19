@@ -11,11 +11,16 @@
 #include "MenuWithToolTips.h"
 
 #include "Global/Macros.h"
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QToolTip>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QHelpEvent>
 CLANG_DIAG_ON(unused-private-field)
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 MenuWithToolTips::MenuWithToolTips(QWidget* parent)
 : QMenu(parent)
