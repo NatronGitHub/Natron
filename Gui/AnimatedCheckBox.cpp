@@ -11,14 +11,18 @@ CLANG_DIAG_OFF(unused-private-field)
 #include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
 
-void AnimatedCheckBox::setAnimation(int i)
+#include "Gui/GuiMacros.h"
+
+void
+AnimatedCheckBox::setAnimation(int i)
 {
     animation = i;
     style()->unpolish(this);
     style()->polish(this);
 }
 
-void AnimatedCheckBox::setReadOnly(bool readOnly)
+void
+AnimatedCheckBox::setReadOnly(bool readOnly)
 {
     this->readOnly = readOnly;
     style()->unpolish(this);
@@ -26,7 +30,8 @@ void AnimatedCheckBox::setReadOnly(bool readOnly)
     repaint();
 }
 
-void AnimatedCheckBox::setDirty(bool b)
+void
+AnimatedCheckBox::setDirty(bool b)
 {
     dirty = b;
     style()->unpolish(this);
@@ -34,9 +39,10 @@ void AnimatedCheckBox::setDirty(bool b)
     repaint();
 }
 
-void AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
+void
+AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (readOnly && e->buttons().testFlag(Qt::LeftButton)) {
+    if (readOnly && buttonIsLeft(e)) {
         return;
     } else {
         QCheckBox::mousePressEvent(e);
