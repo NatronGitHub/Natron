@@ -45,13 +45,13 @@ public:
     
     void drawOverlays(double scaleX, double scaleY) const;
     
-    bool penDown(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos,QMouseEvent* e);
+    bool penDown(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
-    bool penDoubleClicked(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos);
+    bool penDoubleClicked(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
-    bool penMotion(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos);
+    bool penMotion(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
-    bool penUp(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos);
+    bool penUp(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
     bool keyDown(double scaleX, double scaleY, QKeyEvent* e);
     
