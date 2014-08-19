@@ -382,9 +382,14 @@ void NodeGui::togglePreview(){
 
 
 void NodeGui::removeUndoStack(){
-    if(_graph->getGui() && getUndoStack()){
+    if(_graph && _graph->getGui() && getUndoStack()){
         _graph->getGui()->removeUndoStack(getUndoStack());
     }
+}
+
+void NodeGui::discardGraphPointer()
+{
+    _graph = 0;
 }
 
 void NodeGui::removeSettingsPanel(){

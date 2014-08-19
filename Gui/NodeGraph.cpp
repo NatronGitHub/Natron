@@ -459,6 +459,12 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent)
 
 NodeGraph::~NodeGraph() {
     
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+        (*it)->discardGraphPointer();
+    }
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+        (*it)->discardGraphPointer();
+    }
     QGraphicsScene* scene = _imp->_hintInputEdge->scene();
     if (scene) {
         scene->removeItem(_imp->_hintInputEdge);
