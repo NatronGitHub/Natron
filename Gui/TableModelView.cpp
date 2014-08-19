@@ -599,48 +599,57 @@ TableView::~TableView()
     
 }
 
-void TableView::setTableModel(TableModel* model)
+void
+TableView::setTableModel(TableModel* model)
 {
     _imp->model = model;
     setModel(model);
 }
 
-void TableView::setRowCount(int rows)
+void
+TableView::setRowCount(int rows)
 {
     _imp->model->setRowCount(rows);
 }
 
-int TableView::rowCount() const
+int
+TableView::rowCount() const
 {
     return _imp->model->rowCount();
 }
 
-void TableView::setColumnCount(int columns)
+void
+TableView::setColumnCount(int columns)
 {
     _imp->model->setColumnCount(columns);
 }
 
-int TableView::columnCount() const
+int
+TableView::columnCount() const
 {
     return _imp->model->columnCount();
 }
 
-int TableView::row(const TableItem *item) const
+int
+TableView::row(const TableItem *item) const
 {
     return _imp->model->index(item).row();
 }
 
-int TableView::column(const TableItem *item) const
+int
+TableView::column(const TableItem *item) const
 {
     return _imp->model->index(item).column();
 }
 
-TableItem *TableView::item(int row, int column) const
+TableItem*
+TableView::item(int row, int column) const
 {
     return _imp->model->item(row, column);
 }
 
-void TableView::setItem(int row, int column, TableItem *item)
+void
+TableView::setItem(int row, int column, TableItem *item)
 {
     if (item) {
         if (item->view != 0) {
@@ -654,7 +663,8 @@ void TableView::setItem(int row, int column, TableItem *item)
     }
 }
 
-TableItem *TableView::takeItem(int row, int column)
+TableItem*
+TableView::takeItem(int row, int column)
 {
     TableItem* item =  _imp->model->takeItem(row, column);
     if (item)
@@ -662,7 +672,8 @@ TableItem *TableView::takeItem(int row, int column)
     return item;
 }
 
-void TableView::setHorizontalHeaderLabels(const QStringList &labels)
+void
+TableView::setHorizontalHeaderLabels(const QStringList &labels)
 {
     TableItem *item = 0;
     for (int i = 0; i < _imp->model->columnCount() && i < labels.count(); ++i) {
@@ -675,12 +686,14 @@ void TableView::setHorizontalHeaderLabels(const QStringList &labels)
     }
 }
 
-TableItem *TableView::horizontalHeaderItem(int column) const
+TableItem*
+TableView::horizontalHeaderItem(int column) const
 {
     return _imp->model->horizontalHeaderItem(column);
 }
 
-TableItem *TableView::takeHorizontalHeaderItem(int column)
+TableItem*
+TableView::takeHorizontalHeaderItem(int column)
 {
     TableItem *itm = _imp->model->takeHorizontalHeaderItem(column);
     if (itm)
@@ -688,7 +701,8 @@ TableItem *TableView::takeHorizontalHeaderItem(int column)
     return itm;
 }
 
-void TableView::setHorizontalHeaderItem(int column, TableItem *item)
+void
+TableView::setHorizontalHeaderItem(int column, TableItem *item)
 {
     if (item) {
         item->view = this;
@@ -698,14 +712,16 @@ void TableView::setHorizontalHeaderItem(int column, TableItem *item)
     }
 }
 
-void TableView::editItem(TableItem *item)
+void
+TableView::editItem(TableItem *item)
 {
     if (!item)
         return;
     edit(_imp->model->index(item));
 }
 
-void TableView::openPersistentEditor(TableItem *item)
+void
+TableView::openPersistentEditor(TableItem *item)
 {
     if (!item)
         return;
@@ -713,7 +729,8 @@ void TableView::openPersistentEditor(TableItem *item)
     QAbstractItemView::openPersistentEditor(index);
 }
 
-void TableView::closePersistentEditor(TableItem *item)
+void
+TableView::closePersistentEditor(TableItem *item)
 {
     if (!item)
         return;
@@ -721,34 +738,40 @@ void TableView::closePersistentEditor(TableItem *item)
     QAbstractItemView::closePersistentEditor(index);
 }
 
-QWidget *TableView::cellWidget(int row, int column) const
+QWidget*
+TableView::cellWidget(int row, int column) const
 {
     QModelIndex index = model()->index(row, column, QModelIndex());
     return QAbstractItemView::indexWidget(index);
 }
 
-void TableView::setCellWidget(int row, int column, QWidget *widget)
+void
+TableView::setCellWidget(int row, int column, QWidget *widget)
 {
     QModelIndex index = model()->index(row, column, QModelIndex());
     QAbstractItemView::setIndexWidget(index, widget);
 }
 
-void TableView::removeCellWidget(int row, int column)
+void
+TableView::removeCellWidget(int row, int column)
 {
     setCellWidget(row, column, 0);
 }
 
-TableItem *TableView::itemAt(const QPoint &p) const
+TableItem*
+TableView::itemAt(const QPoint &p) const
 {
     return _imp->model->item(indexAt(p));
 }
 
-inline TableItem *TableView::itemAt(int x, int y) const
+TableItem*
+TableView::itemAt(int x, int y) const
 {
     return itemAt(QPoint(x,y));
 }
 
-QRect TableView::visualItemRect(const TableItem *item) const
+QRect
+TableView::visualItemRect(const TableItem *item) const
 {
     if (!item)
         return QRect();
@@ -757,22 +780,24 @@ QRect TableView::visualItemRect(const TableItem *item) const
     return visualRect(index);
 }
 
-void TableView::mousePressEvent(QMouseEvent* event)
+void
+TableView::mousePressEvent(QMouseEvent* e)
 {
-    TableItem* item = itemAt(event->pos());
+    TableItem* item = itemAt(e->pos());
     if (!item) {
         selectionModel()->clear();
     } else {
-        QTreeView::mousePressEvent(event);
+        QTreeView::mousePressEvent(e);
     }
 }
 
-void TableView::keyPressEvent(QKeyEvent* event)
+void
+TableView::keyPressEvent(QKeyEvent* e)
 {
-    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+    if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
         emit deleteKeyPressed();
-        event->accept();
+        e->accept();
     }
     
-    QTreeView::keyPressEvent(event);
+    QTreeView::keyPressEvent(e);
 }
