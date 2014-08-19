@@ -182,6 +182,7 @@ class ProjectGuiSerialization {
     unsigned int _version;
     
     friend class boost::serialization::access;
+    
     template<class Archive>
     void save(Archive & ar,const unsigned int version) const
     {
@@ -194,7 +195,6 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
     }
     
-    friend class boost::serialization::access;
     template<class Archive>
     void load(Archive & ar,const unsigned int version)
     {
