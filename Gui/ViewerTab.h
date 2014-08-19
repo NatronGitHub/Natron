@@ -72,13 +72,13 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double scaleX,double scaleY) const;
     
-    bool notifyOverlaysPenDown(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos,QMouseEvent* e);
+    bool notifyOverlaysPenDown(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
-    bool notifyOverlaysPenDoubleClick(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenDoubleClick(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
-    bool notifyOverlaysPenUp(double scaleX,double scaleY,const QPointF& viewportPos,const QPointF& pos);
+    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
     
     bool notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e);
     
@@ -254,7 +254,7 @@ private:
     
     void manageSlotsForInfoWidget(int textureIndex,bool connect);
     
-    bool eventFilter(QObject *target, QEvent *event);
+    virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
