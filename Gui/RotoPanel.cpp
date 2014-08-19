@@ -300,30 +300,30 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, &removePix);
     
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
+    _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->prevKeyframe->setToolTip(tr("Go to the previous keyframe"));
     _imp->prevKeyframe->setEnabled(false);
-    _imp->prevKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
     
     _imp->nextKeyframe = new Button(QIcon(nextPix),"",_imp->splineContainer);
+    _imp->nextKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->nextKeyframe->setToolTip(tr("Go to the next keyframe"));
     _imp->nextKeyframe->setEnabled(false);
-    _imp->nextKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
     
     _imp->addKeyframe = new Button(QIcon(addPix),"",_imp->splineContainer);
+    _imp->addKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addKeyframe->setToolTip(tr("Add keyframe at the current timeline's time"));
     _imp->addKeyframe->setEnabled(false);
-    _imp->addKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->addKeyframe);
     
     _imp->removeKeyframe = new Button(QIcon(removePix),"",_imp->splineContainer);
+    _imp->removeKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->removeKeyframe->setToolTip(tr("Remove keyframe at the current timeline's time"));
     _imp->removeKeyframe->setEnabled(false);
-    _imp->removeKeyframe->setFixedSize(20,20);
     QObject::connect(_imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()));
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     _imp->splineLayout->addStretch();

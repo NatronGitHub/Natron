@@ -737,6 +737,7 @@ void Button_KnobGui::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     if (pix.load(iconFilePath.c_str())) {
         _button = new Button(QIcon(pix),"",layout->parentWidget());
+        _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     } else {
         _button = new Button(label,layout->parentWidget());
     }
@@ -1335,6 +1336,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &buttonPix);
     
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
+    _colorDialogButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()));
     colorLayout->addWidget(_colorDialogButton);
     

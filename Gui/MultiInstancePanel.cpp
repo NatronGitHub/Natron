@@ -427,22 +427,20 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
     _imp->addButton->setToolTip("Add new");
     _imp->buttonsLayout->addWidget(_imp->addButton);
-    _imp->addButton->setFixedSize(18,18);
     QObject::connect(_imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()));
     
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
     _imp->removeButton->setToolTip(tr("Remove selection"));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
-    _imp->removeButton->setFixedSize(18,18);
     QObject::connect(_imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()));
     
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
     
     _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
+    _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAll->setToolTip(tr("Select all"));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
-    _imp->selectAll->setFixedSize(18,18);
     QObject::connect(_imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()));
     
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);

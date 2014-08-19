@@ -1267,7 +1267,6 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent)
 
     _openDirButton = new Button(_secondLine);
     _openDirButton->setIcon(QIcon(pix));
-    _openDirButton->setFixedSize(20, 20);
     QObject::connect(_openDirButton, SIGNAL(clicked()), this, SLOT(openDir()));
     _secondLineLayout->addWidget(_openDirButton);
 

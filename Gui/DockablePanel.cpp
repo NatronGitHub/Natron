@@ -196,7 +196,7 @@ struct DockablePanelPrivate
 
 static QPixmap getColorButtonDefaultPixmap()
 {
-    QImage img(15,15,QImage::Format_ARGB32);
+    QImage img(32,32,QImage::Format_ARGB32);
     QColor gray(Qt::gray);
     img.fill(gray.rgba());
     QPainter p(&img);
@@ -204,7 +204,7 @@ static QPixmap getColorButtonDefaultPixmap()
     pen.setColor(Qt::black);
     pen.setWidth(2);
     p.setPen(pen);
-    p.drawLine(0, 0, 14, 14);
+    p.drawLine(0, 0, 31, 31);
     return QPixmap::fromImage(img);
 }
 
@@ -242,10 +242,10 @@ DockablePanel::DockablePanel(Gui* gui
         QPixmap pixHelp ;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
+        _imp->_helpButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         if (!helpToolTip.isEmpty()) {
             _imp->_helpButton->setToolTip(Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal));
         }
-        _imp->_helpButton->setFixedSize(15, 15);
         QObject::connect(_imp->_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
         
         
@@ -259,17 +259,17 @@ DockablePanel::DockablePanel(Gui* gui
         appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &pixF);
         
         _imp->_minimize=new Button(QIcon(pixM),"",_imp->_headerWidget);
-        _imp->_minimize->setFixedSize(15,15);
+        _imp->_minimize->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_minimize->setCheckable(true);
         QObject::connect(_imp->_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
         
         _imp->_floatButton = new Button(QIcon(pixF),"",_imp->_headerWidget);
-        _imp->_floatButton->setFixedSize(15, 15);
+        _imp->_floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         QObject::connect(_imp->_floatButton,SIGNAL(clicked()),this,SLOT(floatPanel()));
         
         
         _imp->_cross=new Button(QIcon(pixC),"",_imp->_headerWidget);
-        _imp->_cross->setFixedSize(15,15);
+        _imp->_cross->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         QObject::connect(_imp->_cross,SIGNAL(clicked()),this,SLOT(closePanel()));
         
         if (headerMode != READ_ONLY_NAME) {
@@ -323,12 +323,12 @@ DockablePanel::DockablePanel(Gui* gui
             }
             _imp->_currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
             _imp->_colorButton = new Button(QIcon(getColorButtonDefaultPixmap()),"",_imp->_headerWidget);
+            _imp->_colorButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
             _imp->_colorButton->setToolTip(Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                     "By default the color of the node is the one set in the "
                                                                     "preferences of %1").arg(NATRON_APPLICATION_NAME)
                                                                     ,Qt::WhiteSpaceNormal));
             QObject::connect(_imp->_colorButton,SIGNAL(clicked()),this,SLOT(onColorButtonClicked()));
-            _imp->_colorButton->setFixedSize(15,15);
             
             if (iseffect && !iseffect->getNode()->isMultiInstance()) {
                 ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
@@ -344,9 +344,9 @@ DockablePanel::DockablePanel(Gui* gui
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
+        _imp->_undoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_undoButton->setToolTip(Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal));
         _imp->_undoButton->setEnabled(false);
-        _imp->_undoButton->setFixedSize(20, 20);
         
         QPixmap pixRedo ;
         appPTR->getIcon(NATRON_PIXMAP_REDO,&pixRedo);
@@ -356,18 +356,18 @@ DockablePanel::DockablePanel(Gui* gui
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
+        _imp->_redoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_redoButton->setToolTip(Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal));
         _imp->_redoButton->setEnabled(false);
-        _imp->_redoButton->setFixedSize(20, 20);
         
         QPixmap pixRestore;
-        appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS, &pixRestore);
+        appPTR->getIcon(NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, &pixRestore);
         QIcon icRestore;
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
+        _imp->_restoreDefaultsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
         _imp->_restoreDefaultsButton->setToolTip(Qt::convertFromPlainText(tr("Restore default values for this operator."
                                                                     " This cannot be undone!"),Qt::WhiteSpaceNormal));
-        _imp->_restoreDefaultsButton->setFixedSize(20, 20);
         QObject::connect(_imp->_restoreDefaultsButton,SIGNAL(clicked()),this,SLOT(onRestoreDefaultsButtonClicked()));
     
         
@@ -1243,8 +1243,8 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     QPixmap pixC;
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixC);
     _centerNodeButton = new Button(QIcon(pixC),"",getHeaderWidget());
+    _centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _centerNodeButton->setToolTip(tr("Centers the node graph on this node."));
-    _centerNodeButton->setFixedSize(15, 15);
     QObject::connect(_centerNodeButton,SIGNAL(clicked()),this,SLOT(centerNode()));
     insertHeaderWidget(0, _centerNodeButton);
     QObject::connect(this,SIGNAL(closeChanged(bool)),NodeUi.get(),SLOT(onSettingsPanelClosedChanged(bool)));

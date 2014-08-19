@@ -31,7 +31,7 @@ public:
    
 private:
     
-    void setFont_internal();
+    void initInternal();
 };
 
 #endif

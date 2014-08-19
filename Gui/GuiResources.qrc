@@ -44,7 +44,6 @@
         <file>Resources/Images/GroupingIcons/Set3/time_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/toolsets_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/transform_grouping_3.png</file>
-        <file>Resources/Images/RGBAchannels.png</file>
         <file>Resources/Images/addKF.png</file>
         <file>Resources/Images/addPoints.png</file>
         <file>Resources/Images/autoKeyingDisabled.png</file>
@@ -74,7 +73,6 @@
         <file>Resources/Images/clearAnimation.png</file>
         <file>Resources/Images/clearAnimationBw.png</file>
         <file>Resources/Images/clearAnimationFw.png</file>
-        <file>Resources/Images/cliptoproject.png</file>
         <file>Resources/Images/close.png</file>
         <file>Resources/Images/closePanel.png</file>
         <file>Resources/Images/color_picker.png</file>
@@ -94,7 +92,6 @@
         <file>Resources/Images/groupbox_unfolded.png</file>
         <file>Resources/Images/help.png</file>
         <file>Resources/Images/inverted.png</file>
-        <file>Resources/Images/ioGroupingIcon.png</file>
         <file>Resources/Images/italic_checked.png</file>
         <file>Resources/Images/italic_unchecked.png</file>
         <file>Resources/Images/lastFrame.png</file>
@@ -124,7 +121,6 @@
         <file>Resources/Images/removePoints.png</file>
         <file>Resources/Images/renderScale.png</file>
         <file>Resources/Images/renderScale_checked.png</file>
-        <file>Resources/Images/restoreDefaults.png</file>
         <file>Resources/Images/rewind.png</file>
         <file>Resources/Images/rippleEditDisabled.png</file>
         <file>Resources/Images/rippleEditEnabled.png</file>
@@ -151,9 +147,14 @@
         <file>Resources/Images/unvisible.png</file>
         <file>Resources/Images/updateViewerDisabled.png</file>
         <file>Resources/Images/updateViewerEnabled.png</file>
-        <file>Resources/Images/viewer_roi.png</file>
         <file>Resources/Images/visible.png</file>
         <file>Resources/Images/writeImage.png</file>
         <file>Resources/Stylesheets/mainstyle.qss</file>
+        <file>Resources/Images/cliptoprojectDisabled.png</file>
+        <file>Resources/Images/cliptoprojectEnabled.png</file>
+        <file>Resources/Images/restoreDefaultDisabled.png</file>
+        <file>Resources/Images/restoreDefaultEnabled.png</file>
+        <file>Resources/Images/viewer_roiDisabled.png</file>
+        <file>Resources/Images/viewer_roiEnabled.png</file>
     </qresource>
 </RCC>

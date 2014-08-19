@@ -1101,6 +1101,7 @@ GuiPrivate::createPropertiesBinGui()
     QPixmap closePanelPix;
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix),"",propertiesAreaButtonsContainer);
+    _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _clearAllPanelsButton->setMaximumSize(15, 15);
     _clearAllPanelsButton->setToolTip(Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                      Qt::WhiteSpaceNormal));
