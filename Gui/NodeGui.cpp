@@ -382,9 +382,14 @@ void NodeGui::togglePreview(){
 
 
 void NodeGui::removeUndoStack(){
-    if(_graph->getGui() && getUndoStack()){
+    if(_graph && _graph->getGui() && getUndoStack()){
         _graph->getGui()->removeUndoStack(getUndoStack());
     }
+}
+
+void NodeGui::discardGraphPointer()
+{
+    _graph = 0;
 }
 
 void NodeGui::removeSettingsPanel(){
@@ -777,12 +782,10 @@ QRectF NodeGui::boundingRect() const{
 QRectF NodeGui::boundingRectWithEdges() const{
     QRectF ret;
     QRectF bbox = boundingRect();
-    ret = ret.united(mapToScene(bbox).boundingRect());
+    ret = mapToScene(bbox).boundingRect();
     for (InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         ret = ret.united(it->second->mapToScene(it->second->boundingRect()).boundingRect());
     }
-    ret.setTopLeft(ret.topLeft() - QPointF(50,50));
-    ret.setBottomRight(ret.bottomRight() + QPointF(50,50));
     return ret;
 }
 

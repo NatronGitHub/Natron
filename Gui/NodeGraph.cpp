@@ -25,6 +25,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QScrollBar>
 #include <QVBoxLayout>
 #include <QGraphicsLineItem>
+#include <QGraphicsPixmapItem>
 #include <QUndoStack>
 #include <QMenu>
 #include <QThread>
@@ -89,6 +90,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_NODE_DUPLICATE_X_OFFSET 50
 
+///These are percentages of the size of the NodeGraph in widget coordinates.
+#define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
+#define NATRON_NAVIGATOR_BASE_WIDTH 0.2
+
 using namespace Natron;
 using std::cout; using std::endl;
 
@@ -127,18 +132,70 @@ namespace
         std::list<NodeBackDrop*> bds;
     };
     
-    class NodeGraphNavigator : public QLabel
+    class Navigator : public QGraphicsPixmapItem
     {
-        int _w,_h;
+        QGraphicsLineItem* _navLeftEdge;
+        QGraphicsLineItem* _navBottomEdge;
+        QGraphicsLineItem* _navRightEdge;
+        QGraphicsLineItem* _navTopEdge;
+
+        
     public:
         
-        explicit NodeGraphNavigator(QWidget* parent = 0);
+        Navigator(QGraphicsItem* parent = 0)
+        : QGraphicsPixmapItem(parent)
+        , _navLeftEdge(NULL)
+        , _navBottomEdge(NULL)
+        , _navRightEdge(NULL)
+        , _navTopEdge(NULL)
+        {
+            QPen p;
+            p.setBrush(QColor(200,200,200));
+            p.setWidth(2);
+            
+            _navLeftEdge = new QGraphicsLineItem(this);
+            _navLeftEdge->setPen(p);
+            
+            _navBottomEdge = new QGraphicsLineItem(this);
+            _navBottomEdge->setPen(p);
+            
+            _navRightEdge = new QGraphicsLineItem(this);
+            _navRightEdge->setPen(p);
+            
+            _navTopEdge = new QGraphicsLineItem(this);
+            _navTopEdge->setPen(p);
         
-        void setImage(const QImage& img);
+        }
         
-        virtual QSize sizeHint() const OVERRIDE FINAL {return QSize(_w,_h);};
+        virtual ~Navigator() {}
         
-        virtual ~NodeGraphNavigator(){}
+        int getLineWidth() const { return _navLeftEdge->pen().width(); }
+        
+        void refreshPosition(const QPointF& navTopLeftScene,double width,double height)
+        {
+           
+            setPos(navTopLeftScene);
+            
+            _navLeftEdge->setLine(0,
+                                  height,
+                                  0,
+                                  0);
+            
+            _navTopEdge->setLine(0,
+                                 0,
+                                 width,
+                                 0);
+            
+            _navRightEdge->setLine(width ,
+                                   0,
+                                   width ,
+                                   height);
+            
+            _navBottomEdge->setLine(width ,
+                                    height,
+                                    0,
+                                    height);
+        }
     };
     
     class SelectionRectangle : public QGraphicsRectItem
@@ -201,14 +258,7 @@ struct NodeGraphPrivate
     
     QTimer _refreshCacheTextTimer;
     
-    NodeGraphNavigator* _navigator;
-    
-    QGraphicsLineItem* _navLeftEdge;
-    QGraphicsLineItem* _navBottomEdge;
-    QGraphicsLineItem* _navRightEdge;
-    QGraphicsLineItem* _navTopEdge;
-    
-    QGraphicsProxyWidget* _navigatorProxy;
+    Navigator* _navigator;
     
     QUndoStack* _undoStack;
     
@@ -261,11 +311,6 @@ struct NodeGraphPrivate
     , _cacheSizeText(NULL)
     , _refreshCacheTextTimer()
     , _navigator(NULL)
-    , _navLeftEdge(NULL)
-    , _navBottomEdge(NULL)
-    , _navRightEdge(NULL)
-    , _navTopEdge(NULL)
-    , _navigatorProxy(NULL)
     , _undoStack(NULL)
     , _menu(NULL)
     , _tL(NULL)
@@ -355,40 +400,11 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_selectionRect->setZValue(1);
     _imp->_selectionRect->hide();
     
-    _imp->_navigator = new NodeGraphNavigator();
-    _imp->_navigatorProxy = new QGraphicsProxyWidget(0);
-    _imp->_navigatorProxy->setWidget(_imp->_navigator);
-     scene->addItem(_imp->_navigatorProxy);
-    _imp->_navigatorProxy->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    _imp->_navigatorProxy->hide();
+    _imp->_navigator = new Navigator(0);
+     scene->addItem(_imp->_navigator);
+    _imp->_navigator->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _imp->_navigator->hide();
     
-    QPen p;
-    p.setBrush(QColor(200,200,200));
-    p.setWidth(2);
-    
-    _imp->_navLeftEdge = new QGraphicsLineItem(0);
-    _imp->_navLeftEdge->setPen(p);
-    scene->addItem(_imp->_navLeftEdge);
-    _imp->_navLeftEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    _imp->_navLeftEdge->hide();
-    
-    _imp->_navBottomEdge = new QGraphicsLineItem(0);
-    _imp->_navBottomEdge->setPen(p);
-    scene->addItem(_imp->_navBottomEdge);
-    _imp->_navBottomEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    _imp->_navBottomEdge->hide();
-    
-    _imp->_navRightEdge = new QGraphicsLineItem(0);
-    _imp->_navRightEdge->setPen(p);
-    scene->addItem(_imp->_navRightEdge);
-    _imp->_navRightEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    _imp->_navRightEdge->hide();
-    
-    _imp->_navTopEdge = new QGraphicsLineItem(0);
-    _imp->_navTopEdge->setPen(p);
-    scene->addItem(_imp->_navTopEdge);
-    _imp->_navTopEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    _imp->_navTopEdge->hide();
     
     _imp->_cacheSizeText = new QGraphicsTextItem(0);
     scene->addItem(_imp->_cacheSizeText);
@@ -446,6 +462,17 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();
+         it!=_imp->_nodes.end();
+         ++it) {
+        (*it)->discardGraphPointer();
+    }
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin();
+         it!=_imp->_nodesTrash.end();
+         ++it) {
+        (*it)->discardGraphPointer();
+    }
+
     QGraphicsScene* scene = _imp->_hintInputEdge->scene();
     if (scene) {
         scene->removeItem(_imp->_hintInputEdge);
@@ -531,42 +558,38 @@ void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
     if (_imp->_refreshOverlays) {
-        QRectF visible = visibleRect();
-        //cout << visible.topLeft().x() << " " << visible.topLeft().y() << " " << visible.width() << " " << visible.height() << endl;
-        _imp->_cacheSizeText->setPos(visible.topLeft());
-        QSize navSize = _imp->_navigator->sizeHint();
-        QPointF navPos = visible.bottomRight() - QPoint(navSize.width(),navSize.height());
-        //   cout << navPos.x() << " " << navPos.y() << endl;
-        _imp->_navigatorProxy->setPos(navPos);
-        _imp->_navLeftEdge->setLine(navPos.x(),
-                              navPos.y() + navSize.height(),
-                              navPos.x(),
-                              navPos.y());
-        _imp->_navLeftEdge->setPos(navPos);
-        _imp->_navTopEdge->setLine(navPos.x(),
-                             navPos.y(),
-                             navPos.x() + navSize.width(),
-                             navPos.y());
-        _imp->_navTopEdge->setPos(navPos);
-        _imp->_navRightEdge->setLine(navPos.x() + navSize.width() ,
-                               navPos.y(),
-                               navPos.x() + navSize.width() ,
-                               navPos.y() + navSize.height());
-        _imp->_navRightEdge->setPos(navPos);
-        _imp->_navBottomEdge->setLine(navPos.x() + navSize.width() ,
-                                navPos.y() + navSize.height(),
-                                navPos.x(),
-                                navPos.y() + navSize.height());
-        _imp->_navBottomEdge->setPos(navPos);
+        
+        ///The visible portion of the scene, in scene coordinates
+        QRectF visibleScene = visibleSceneRect();
+        QRect visibleWidget = visibleWidgetRect();
+        
+        ///Set the cache size overlay to be in the top left corner of the view
+        _imp->_cacheSizeText->setPos(visibleScene.topLeft());
+        
+        double navWidth = NATRON_NAVIGATOR_BASE_WIDTH * width();
+        double navHeight = NATRON_NAVIGATOR_BASE_HEIGHT * height();
+        
+        QPoint btmRightWidget = visibleWidget.bottomRight();
+        QPoint navTopLeftWidget = btmRightWidget - QPoint(navWidth  ,navHeight );
+        
+        QPointF navTopLeftScene = mapToScene(navTopLeftWidget);
+        
+        _imp->_navigator->refreshPosition(navTopLeftScene,navWidth,navHeight);
+        updateNavigator();
         _imp->_refreshOverlays = false;
     }
     QGraphicsView::paintEvent(e);
 }
 
 QRectF
-NodeGraph::visibleRect()
+NodeGraph::visibleSceneRect()
 {
-    return mapToScene(viewport()->rect()).boundingRect();
+    return mapToScene(visibleWidgetRect()).boundingRect();
+}
+
+QRect NodeGraph::visibleWidgetRect()
+{
+    return viewport()->rect();
 }
 
 boost::shared_ptr<NodeGui>
@@ -617,8 +640,8 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 void
 NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node)
 {
-    QRectF viewPos = visibleRect();
-    
+    QRectF viewPos = visibleSceneRect();
+
     ///3 possible values:
     /// 0 = default , i.e: we pop the node in the middle of the graph's current view
     /// 1 = pop the node above the selected node and move the inputs of the selected node a little
@@ -1114,6 +1137,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         }
     }
     
+    bool mustUpdateNavigator = false;
     ///Apply actions
     switch (_imp->_evtState) {
         case ARROW_DRAGGING: {
@@ -1164,6 +1188,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                         }
                     }
                 }
+                mustUpdateNavigator = true;
                 _imp->_undoStack->push(new MoveMultipleNodesCommand(nodesToMove,
                                                                     _imp->_selection.bds,
                                                                     newPos.x() - _imp->_lastScenePosClick.x(),
@@ -1303,10 +1328,12 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
         } break;
         case MOVING_AREA: {
+            mustUpdateNavigator = true;
             _imp->_root->moveBy(dx, dy);
             setCursor(QCursor(Qt::SizeAllCursor));
         } break;
         case BACKDROP_RESIZING: {
+            mustUpdateNavigator = true;
             assert(_imp->_backdropResized);
             _imp->_undoStack->setActive();
             QPointF p = _imp->_backdropResized->scenePos();
@@ -1328,10 +1355,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
 
     _imp->_lastScenePosClick = newPos;
-    update();
     
-    /*Now update navigator*/
-    //updateNavigator();
+    if (mustUpdateNavigator) {
+        _imp->_refreshOverlays = true;
+    }
+    
+    update();
+
 }
 
 void
@@ -1625,7 +1655,7 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
 {
     _imp->resetSelection();
     if (onlyInVisiblePortion) {
-        QRectF r = visibleRect();
+        QRectF r = visibleSceneRect();
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
             QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
             if (r.intersects(bbox) && (*it)->isActive() && (*it)->isVisible()) {
@@ -1747,7 +1777,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
         }
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
-//        QPointF centerScene = visibleRect().center();
+//        QPointF centerScene = visibleSceneRect().center();
 //        QPointF deltaScene;
 //        deltaScene.rx() = newPos.x() - centerScene.x();
 //        deltaScene.ry() = newPos.y() - centerScene.y();
@@ -1983,30 +2013,29 @@ void
 NodeGraph::updateNavigator()
 {
     if (!areAllNodesVisible()) {
-        _imp->_navigator->setImage(getFullSceneScreenShot());
+        _imp->_navigator->setPixmap(QPixmap::fromImage(getFullSceneScreenShot()));
         _imp->_navigator->show();
-        _imp->_navLeftEdge->show();
-        _imp->_navBottomEdge->show();
-        _imp->_navRightEdge->show();
-        _imp->_navTopEdge->show();
-
     } else {
         _imp->_navigator->hide();
-        _imp->_navLeftEdge->hide();
-        _imp->_navTopEdge->hide();
-        _imp->_navRightEdge->hide();
-        _imp->_navBottomEdge->hide();
     }
 }
 
 bool
 NodeGraph::areAllNodesVisible()
 {
-    QRectF rect = visibleRect();
+    QRectF rect = visibleSceneRect();
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();it!=_imp->_nodes.end();++it) {
-        if(!rect.contains((*it)->boundingRectWithEdges()))
+        if ((*it)->isVisible()) {
+            if(!rect.contains((*it)->boundingRectWithEdges()))
+                return false;
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
+        QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+        if (!rect.contains(bbox)) {
             return false;
+        }
     }
     return true;
 }
@@ -2014,57 +2043,84 @@ NodeGraph::areAllNodesVisible()
 QImage
 NodeGraph::getFullSceneScreenShot()
 {
-    const QTransform& currentTransform = transform();
-    setTransform(currentTransform.inverted());
+    ///The bbox of all nodes in the nodegraph
     QRectF sceneR = _imp->calcNodesBoundingRect();
-    QRectF viewRect = visibleRect();
-    sceneR = sceneR.united(viewRect);
-    QImage img((int)sceneR.width(), (int)sceneR.height(), QImage::Format_ARGB32_Premultiplied);
-    img.fill(QColor(71,71,71,255));
+    
+    ///The visible portion of the nodegraph
+    QRectF viewRect = visibleSceneRect();
+    
+    ///Make sure the visible rect is included in the scene rect
+    viewRect = viewRect.intersect(sceneR);
+    
+    double navWidth = width() * NATRON_NAVIGATOR_BASE_WIDTH;
+    double navHeight = height() * NATRON_NAVIGATOR_BASE_HEIGHT;
+    
+    ///Make sceneR and viewRect keep the same aspect ratio as the navigator
+    
+    double xScale = navWidth / sceneR.width();
+    double yScale =  navHeight / sceneR.height();
+    double scaleFactor = std::min(xScale,yScale);
+    
+    QRectF renderRect(0,0,sceneR.width() * scaleFactor, sceneR.height() * scaleFactor);
+    
+    ///Render the scene in an image with the same aspect ratio  as the scene rect
+    QImage renderImage(renderRect.width(),renderRect.height(),QImage::Format_ARGB32_Premultiplied);
+    ///Fill the background
+    renderImage.fill(QColor(71,71,71,255));
+    
+    ///Offset the visible rect corner as an offset relative to the scene rect corner
     viewRect.setX(viewRect.x() - sceneR.x());
     viewRect.setY(viewRect.y() - sceneR.y());
-    QPainter painter(&img);
-    painter.save();
-    QPen p;
-    p.setColor(Qt::yellow);
-    p.setWidth(10);
-    painter.setPen(p);
-    painter.drawRect(viewRect);
-    painter.restore();
-    scene()->removeItem(_imp->_navLeftEdge);
-    scene()->removeItem(_imp->_navBottomEdge);
-    scene()->removeItem(_imp->_navTopEdge);
-    scene()->removeItem(_imp->_navRightEdge);
-    scene()->removeItem(_imp->_cacheSizeText);
-    scene()->removeItem(_imp->_navigatorProxy);
-    scene()->render(&painter,QRectF(),sceneR);
-    scene()->addItem(_imp->_navigatorProxy);
-    scene()->addItem(_imp->_cacheSizeText);
-    scene()->addItem(_imp->_navLeftEdge);
-    scene()->addItem(_imp->_navBottomEdge);
-    scene()->addItem(_imp->_navTopEdge);
-    scene()->addItem(_imp->_navRightEdge);
-    p.setColor(QColor(200,200,200,255));
-    painter.setPen(p);
-    painter.fillRect(viewRect, QColor(200,200,200,100));
-    setTransform(currentTransform);
-    return img;
-}
-
-NodeGraphNavigator::NodeGraphNavigator(QWidget* parent )
-: QLabel(parent)
-, _w(120)
-, _h(70)
-{
+    viewRect.setWidth(viewRect.width() - sceneR.x());
+    viewRect.setHeight(viewRect.height() - sceneR.y());
     
-}
+    QRectF scaledViewRect = viewRect;
+    scaledViewRect.setLeft(viewRect.left() * scaleFactor);
+    scaledViewRect.setBottom(viewRect.bottom() * scaleFactor);
+    scaledViewRect.setRight(viewRect.right() * scaleFactor);
+    scaledViewRect.setTop(viewRect.top() * scaleFactor);
+    
+    ///Paint the visible portion with a highlight
+    QPainter painter(&renderImage);
+    
+    ///Remove the overlays from the scene before rendering it
+    scene()->removeItem(_imp->_cacheSizeText);
+    scene()->removeItem(_imp->_navigator);
+    
+    ///Render into the QImage with downscaling
+    scene()->render(&painter,renderImage.rect(),sceneR,Qt::KeepAspectRatio);
+    
+    ///Add the overlays back
+    scene()->addItem(_imp->_navigator);
+    scene()->addItem(_imp->_cacheSizeText);
 
-void
-NodeGraphNavigator::setImage(const QImage& img)
-{
-    QPixmap pix = QPixmap::fromImage(img);
-    pix = pix.scaled(_w, _h);
-    setPixmap(pix);
+    painter.fillRect(scaledViewRect, QColor(200,200,200,100));
+    QPen p;
+    p.setWidth(2);
+    p.setBrush(Qt::yellow);
+    painter.setPen(p);
+    ///Make sure the border is visible
+    scaledViewRect.adjust(2, 2, -2, -2);
+    painter.drawRect(scaledViewRect);
+
+    ///Now make an image of the size of the navigator and center the render image into it
+    QImage img(std::ceil(navWidth), std::ceil(navHeight), QImage::Format_ARGB32_Premultiplied);
+    img.fill(QColor(71,71,71,255));
+    
+    int xOffset = (img.width() - renderImage.width()) / 2;
+    int yOffset = (img.height() - renderImage.height()) / 2;
+    assert((xOffset + renderImage.width()) <= img.width() && (yOffset + renderImage.height()) <= img.height());
+    
+    int yDest = yOffset;
+    for (int y = 0; y < renderImage.height(); ++y,++yDest) {
+        QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
+        const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
+        int xDest = xOffset;
+        for (int x = 0; x < renderImage.width(); ++x,++xDest) {
+            dst_pixels[xDest] = src_pixels[x];
+        }
+    }
+    return img;
 }
 
 const std::list<boost::shared_ptr<NodeGui> >&
@@ -2152,7 +2208,12 @@ NodeGraphPrivate::calcNodesBoundingRect()
     QRectF ret;
     QMutexLocker l(&_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
-        ret = ret.united((*it)->boundingRectWithEdges());
+        if ((*it)->isVisible()) {
+            ret = ret.united((*it)->boundingRectWithEdges());
+        }
+    }
+    for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin();it!=_backdrops.end();++it) {
+        ret = ret.united((*it)->mapToScene((*it)->boundingRect()).boundingRect());
     }
     return ret;
 }
@@ -3003,7 +3064,7 @@ NodeBackDrop* NodeGraph::createBackDrop(QVBoxLayout *dockContainer,bool requeste
             bd->setPos(bbox.x() - border, bbox.y() - border);
             bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
         } else {
-            QRectF viewPos = visibleRect();
+            QRectF viewPos = visibleSceneRect();
             QPointF mapped = bd->mapFromScene(QPointF((viewPos.bottomRight().x() + viewPos.topLeft().x()) / 2.,
                                         (viewPos.topLeft().y() + viewPos.bottomRight().y()) / 2.));
             mapped = bd->mapToParent(mapped);

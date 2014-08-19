@@ -177,6 +177,8 @@ SpinBox::interpretReturn()
 void
 SpinBox::mousePressEvent(QMouseEvent* e)
 {
+    setFocus();
+    setCursorPosition(cursorPositionAt(e->pos()));
     LineEdit::mousePressEvent(e);
 }
 
@@ -219,7 +221,7 @@ SpinBoxPrivate::incrementAccordingToPosition(const QString& str,int cursorPos,do
                 inc = 1;
             } else {
                 if (dotPos != -1) {
-                    inc = std::pow(10.,(double)(dotPos - cursorPos));
+                    inc = std::pow(10.,(double)(dotPos - cursorPos - 1));
                 } else {
                     inc = std::pow(10.,(double)str.size() - 1 - cursorPos);
                 }
@@ -234,7 +236,6 @@ void
 SpinBox::wheelEvent(QWheelEvent* e)
 {
     setFocus();
-    setCursorPosition(cursorPositionAt(e->pos()));
     if (e->orientation() != Qt::Vertical) {
         return;
     }
@@ -258,9 +259,42 @@ SpinBox::wheelEvent(QWheelEvent* e)
                 inc /= 10.;
             }
         } else {
-            _imp->incrementAccordingToPosition(str,cursorPosition(),inc);
-            if (e->delta() < 0) {
+            int cursorPos = cursorPosition();
+            _imp->incrementAccordingToPosition(str,cursorPos,inc);
+            
+            bool incrementing = e->delta() > 0;
+            if (incrementing) {
+                bool shiftCursor = true;
+                for (int i = 0; i <= cursorPos; ++i) {
+                    if (str.at(i) != QChar('9')) {
+                        shiftCursor = false;
+                        break;
+                    }
+                }
+                if (shiftCursor) {
+                    ///this will add another digit
+                    ///we hence move the cursor one step on the right so the user is still modifying
+                    ///the same digit, it avoids overflowing quickly a value.
+                    setCursorPosition(cursorPos + 1);
+                }
+            } else {
                 inc = -inc;
+                bool shiftCursor = false;
+                shiftCursor = str.at(0) == QChar('1');
+                if (shiftCursor) {
+                    for (int i = 1; i <= cursorPos; ++i) {
+                        if (str.at(i) != QChar('0')) {
+                            shiftCursor = false;
+                            break;
+                        }
+                    }
+                }
+                if (shiftCursor) {
+                    ///this will add another digit
+                    ///we hence move the cursor one step on the right so the user is still modifying
+                    ///the same digit, it avoids overflowing quickly a value.
+                    setCursorPosition(cursorPos - 1);
+                }
             }
             
         }
@@ -333,6 +367,9 @@ SpinBox::keyPressEvent(QKeyEvent* e)
         if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
             bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
             double inc;
+            int cursorPos = cursorPosition();
+            QString txt = text();
+
             if (!useCursorPositionIncr) {
                 inc = _imp->increment;
                 if (modifierIsShift(e)) {
@@ -342,18 +379,49 @@ SpinBox::keyPressEvent(QKeyEvent* e)
                     inc /= 10.;
                 }
             } else {
-                int cursorPos = cursorPosition();
-                QString txt = text();
                 _imp->incrementAccordingToPosition(txt, cursorPos, inc);
+                
             }
             if (e->key() == Qt::Key_Up) {
                 if (cur + inc <= maxiD) {
                     cur += inc;
                 }
+                
+                bool shiftCursor = true;
+                for (int i = 0; i <= cursorPos; ++i) {
+                    if (txt.at(i) != QChar('9')) {
+                        shiftCursor = false;
+                        break;
+                    }
+                }
+                if (shiftCursor) {
+                    ///this will add another digit
+                    ///we hence move the cursor one step on the right so the user is still modifying
+                    ///the same digit, it avoids overflowing quickly a value.
+                    setCursorPosition(cursorPos + 1);
+                }
             } else {
                 if (cur - inc >= miniD) {
                     cur -= inc;
                 }
+                bool shiftCursor = false;
+                shiftCursor = txt.at(0) == QChar('1');
+                if (shiftCursor) {
+                    for (int i = 1; i <= cursorPos; ++i) {
+                        if (txt.at(i) != QChar('0')) {
+                            shiftCursor = false;
+                            break;
+                        }
+                    }
+                }
+                if (shiftCursor) {
+                    ///this will add another digit
+                    ///we hence move the cursor one step on the right so the user is still modifying
+                    ///the same digit, it avoids overflowing quickly a value.
+                    setCursorPosition(cursorPos - 1);
+                }
+
+
             }
             if (cur < miniD || cur > maxiD) {
                 return;

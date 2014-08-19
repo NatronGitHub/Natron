@@ -236,6 +236,7 @@ public:
     
     void removeUndoStack();
     
+    void discardGraphPointer();
     /**
      * @brief Given the rectangle r, move the node down so it doesn't belong
      * to this rectangle and call the same function with the new bounding box of this node

@@ -248,7 +248,6 @@ MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui>& node)
 
 MultiInstancePanel::~MultiInstancePanel()
 {
-    delete _imp->model;
 }
 
 ////////////// TableView delegate
