@@ -24,6 +24,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/GuiMacros.h"
 
 using namespace Natron;
 
@@ -66,7 +67,7 @@ ComboBox::ComboBox(QWidget* parent)
 
 
 
-void ComboBox::paintEvent(QPaintEvent *e)
+void ComboBox::paintEvent(QPaintEvent* e)
 {
 //    QStyleOption opt;
 //    opt.init(this);
@@ -76,9 +77,10 @@ void ComboBox::paintEvent(QPaintEvent *e)
 
 }
 
-void ComboBox::mousePressEvent(QMouseEvent* e){
-    
-    if (!e->buttons().testFlag(Qt::RightButton) && e->buttons().testFlag(Qt::LeftButton) && _currentText->isEnabled()) {
+void
+ComboBox::mousePressEvent(QMouseEvent* e)
+{
+    if (buttonIsLeft(e) && _currentText->isEnabled()) {
         QPixmap pixC;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
         _dropDownIcon->setPixmap(pixC);
