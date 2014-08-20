@@ -29,7 +29,7 @@
 (e)->modifiers().testFlag(Qt::ShiftModifier) && \
 (e)->modifiers().testFlag(Qt::AltModifier))
 
-#define modifierIsAlt(e)             ((!e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+#define modifierIsAlt(e)             (!(e)->modifiers().testFlag(Qt::ControlModifier) &&  \
 !(e)->modifiers().testFlag(Qt::ShiftModifier) && \
 (e)->modifiers().testFlag(Qt::AltModifier))
 
