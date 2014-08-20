@@ -9,7 +9,10 @@
 #ifndef Gui_GuiMacros_h
 #define Gui_GuiMacros_h
 
-#define modifierIsNone(e)            ((e)->modifiers() == Qt::NoModifier)
+#define modifierIsNone(e)            (!(e)->modifiers().testFlag(Qt::ShiftModifier) &&  \
+!(e)->modifiers().testFlag(Qt::ControlModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
+
 #define modifierIsControl(e)         ((e)->modifiers() == Qt::ControlModifier)
 #define modifierIsControlShift(e)    ((e)->modifiers() == (Qt::ControlModifier|Qt::ShiftModifier))
 #define modifierIsControlAlt(e)      ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier))
