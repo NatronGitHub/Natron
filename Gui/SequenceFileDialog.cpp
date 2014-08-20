@@ -1037,7 +1037,7 @@ SequenceItemDelegate::paint(QPainter * painter,
         }
         int totalSize = geom.width();
 #ifdef FILE_DIALOG_DISABLE_ICONS
-        QRect textRect(geom.x(),geom.y(),totalSize,geom.height());
+        QRect textRect(geom.x() + 5,geom.y(),totalSize - 5,geom.height());
         QFont f = painter->font();
         if (isDir) {
             //change the font to bold
