@@ -453,7 +453,6 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsLayout->addStretch();
     ///finally insert the main instance in the table
     _imp->addTableRow(_imp->getMainInstance());
-    
     _imp->guiCreated = true;
 }
 

@@ -1891,14 +1891,16 @@ void ColorPickerLabel::setColor(const QColor& color){
     _currentColor = color;
     
     if(_pickingEnabled){
-        QImage img(128, 128, QImage::Format_ARGB32);
-        img.fill(color.rgb());
-        
         
         //draw the picker on top of the label
         QPixmap pickerIcon;
         appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_PICKER, &pickerIcon);
         QImage pickerImg = pickerIcon.toImage();
+        
+
+        QImage img(pickerIcon.width(), pickerIcon.height(), QImage::Format_ARGB32);
+        img.fill(color.rgb());
+        
         
         
         for (int i = 0; i < pickerIcon.height(); ++i) {
@@ -1910,11 +1912,11 @@ void ColorPickerLabel::setColor(const QColor& color){
                 }
             }
         }
-        QPixmap pix = QPixmap::fromImage(img).scaled(20, 20);
+        QPixmap pix = QPixmap::fromImage(img) ;//.scaled(20, 20);
         setPixmap(pix);
         
     }else{
-        QImage img(20, 20, QImage::Format_ARGB32);
+        QImage img(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE, QImage::Format_ARGB32);
         img.fill(color.rgb());
         QPixmap pix = QPixmap::fromImage(img);
         setPixmap(pix);
