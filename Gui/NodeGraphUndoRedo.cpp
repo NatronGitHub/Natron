@@ -883,7 +883,10 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     
     ///now offset all trees to be top aligned at the same level
     for (TreeList::iterator it = trees.begin(); it!=trees.end(); ++it) {
-        const QPointF& treeTop = (*it)->getTopLevelNodeCenter();
+        QPointF treeTop = (*it)->getTopLevelNodeCenter();
+        if (treeTop.y() == INT_MAX) {
+            treeTop.setY(topLevelPos.y());
+        }
         QPointF delta(0,topLevelPos.y() - treeTop.y());
         if (delta.x() != 0 || delta.y() != 0) {
             (*it)->moveAllTree(delta);
