@@ -2080,6 +2080,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     if (buttonIsLeft(e)) {
         _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
     }
