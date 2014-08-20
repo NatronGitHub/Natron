@@ -452,9 +452,8 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     appendButtons(_imp->buttonsLayout);
     _imp->buttonsLayout->addStretch();
     
+    ///Deactivate the main-instance since this is more convenient this way for the user.
     _imp->getMainInstance()->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,false,false);
-    ///finally insert the main instance in the table
-    ///_imp->addTableRow(_imp->getMainInstance());
     _imp->guiCreated = true;
 }
 
