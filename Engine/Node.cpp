@@ -1370,7 +1370,8 @@ void
 Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect,
                  bool disconnectAll,
                  bool reconnect,
-                 bool hideGui)
+                 bool hideGui,
+                 bool triggerRender)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1493,7 +1494,7 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDi
     }
     
     if (hideGui) {
-        emit deactivated();
+        emit deactivated(triggerRender);
     }
     {
         QMutexLocker l(&_imp->activatedMutex);
@@ -1504,7 +1505,7 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDi
 
 void
 Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore,
-               bool restoreAll)
+               bool restoreAll,bool triggerRender)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
@@ -1555,7 +1556,7 @@ Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRest
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
     }
-    emit activated();
+    emit activated(triggerRender);
 }
 
 

@@ -155,8 +155,8 @@ void NodeGui::initialize(NodeGraph* dag,
     QObject::connect(_internalNode.get(), SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
     QObject::connect(_internalNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
     QObject::connect(_internalNode.get(), SIGNAL(previewRefreshRequested(int)), this, SLOT(forceComputePreview(int)));
-    QObject::connect(_internalNode.get(), SIGNAL(deactivated()),this,SLOT(deactivate()));
-    QObject::connect(_internalNode.get(), SIGNAL(activated()), this, SLOT(activate()));
+    QObject::connect(_internalNode.get(), SIGNAL(deactivated(bool)),this,SLOT(deactivate(bool)));
+    QObject::connect(_internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)));
     QObject::connect(_internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
     QObject::connect(_internalNode.get(), SIGNAL(persistentMessageChanged(int,QString)),this,SLOT(onPersistentMessageChanged(int,QString)));
     QObject::connect(_internalNode.get(), SIGNAL(persistentMessageCleared()), this, SLOT(onPersistentMessageCleared()));
@@ -1055,7 +1055,7 @@ void NodeGui::showGui()
     
 }
 
-void NodeGui::activate() {
+void NodeGui::activate(bool triggerRender) {
     
     ///first activate all child instance if any
     if (_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
@@ -1084,6 +1084,13 @@ void NodeGui::activate() {
     _graph->restoreFromTrash(this);
     _graph->getGui()->getCurveEditor()->addNode(_graph->getNodeGuiSharedPtr(this));
 
+    if (!isMultiInstanceChild && triggerRender) {
+        std::list<ViewerInstance* > viewers;
+        getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {
+            (*it)->updateTreeAndRender();
+        }
+    }
 }
 
 void NodeGui::hideGui()
@@ -1152,7 +1159,7 @@ void NodeGui::hideGui()
     }
 }
 
-void NodeGui::deactivate() {
+void NodeGui::deactivate(bool triggerRender) {
     ///first deactivate all child instance if any
     if (_internalNode->isMultiInstance() && _internalNode->getParentMultiInstanceName().empty()) {
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
@@ -1185,7 +1192,7 @@ void NodeGui::deactivate() {
     }
     
     
-    if (!isMultiInstanceChild) {
+    if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it) {

@@ -722,9 +722,11 @@ public:
     
     virtual void undo() OVERRIDE FINAL
     {
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        std::list<boost::shared_ptr<Natron::Node> >::iterator next = _nodes.begin();
+        ++next;
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it,++next) {
             _panel->addRow(*it);
-            (*it)->activate(std::list<boost::shared_ptr<Natron::Node> >(),false);
+            (*it)->activate(std::list<boost::shared_ptr<Natron::Node> >(),false,next == _nodes.end());
         }
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
@@ -734,12 +736,15 @@ public:
     virtual void redo() OVERRIDE FINAL
     {
         boost::shared_ptr<Node> mainInstance = _panel->getMainInstance();
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        
+        std::list<boost::shared_ptr<Natron::Node> >::iterator next = _nodes.begin();
+        ++next;
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it,++next) {
             int index = _panel->getNodeIndex(*it);
             assert(index != -1);
             _panel->removeRow(index);
             bool isMainInstance = (*it) == mainInstance;
-            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance);
+            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance,next == _nodes.end());
         }
         
         mainInstance->getApp()->triggerAutoSave();
