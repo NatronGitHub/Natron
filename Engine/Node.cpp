@@ -1375,6 +1375,10 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDi
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    
+    if (!_imp->liveInstance) {
+        return;
+    }
 
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage();
@@ -1509,7 +1513,9 @@ Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRest
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    
+    if (!_imp->liveInstance) {
+        return;
+    }
     boost::shared_ptr<Natron::Node> thisShared = getApp()->getProject()->getNodePointer(this);
     assert(thisShared);
     

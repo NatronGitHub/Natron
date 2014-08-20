@@ -13,13 +13,33 @@
 !(e)->modifiers().testFlag(Qt::ControlModifier) && \
 !(e)->modifiers().testFlag(Qt::AltModifier))
 
-#define modifierIsControl(e)         ((e)->modifiers() == Qt::ControlModifier)
-#define modifierIsControlShift(e)    ((e)->modifiers() == (Qt::ControlModifier|Qt::ShiftModifier))
-#define modifierIsControlAlt(e)      ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier))
-#define modifierIsControlAltShift(e) ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier|Qt::ShiftModifier))
-#define modifierIsAlt(e)             ((e)->modifiers() == Qt::AltModifier)
-#define modifierIsAltShift(e)        ((e)->modifiers() == (Qt::AltModifier|Qt::ShiftModifier))
-#define modifierIsShift(e)           ((e)->modifiers() == Qt::ShiftModifier)
+#define modifierIsControl(e)         ((e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+!(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsControlShift(e)    ((e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsControlAlt(e)      ((e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+!(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsControlAltShift(e) ((e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsAlt(e)             ((!e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+!(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsAltShift(e)        (!(e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsShift(e)           (!(e)->modifiers().testFlag(Qt::ControlModifier) &&  \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
 
 ///From Qt Doc:
 /*
