@@ -1374,7 +1374,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
-
+    
+    bool tilesSupported = supportsTiles();
     
     ///We check what is left to render.
     
@@ -1392,7 +1393,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///if the effect doesn't support tiles and it has something left to render, just render the rod again
     ///note that it should NEVER happen because if it doesn't support tiles in the first place, it would
     ///have rendered the rod already.
-    if (!supportsTiles() && !rectsToRender.empty()) {
+    if (!tilesSupported && !rectsToRender.empty()) {
         ///if the effect doesn't support tiles, just render the whole rod again even though
         rectsToRender.clear();
         rectsToRender.push_back(downscaledImage->getBounds());
@@ -1643,7 +1644,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             RectI dstRod;
             dstRodCanonical.toPixelEnclosing(args._scale, &dstRod);
 
-            if (!supportsTiles()) {
+            if (!tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
                 //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
                 assert(srcRod.x1 == srcBounds.x1);
@@ -1708,8 +1709,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///Just fall back to Fully_safe
         int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
         if (safety == FULLY_SAFE_FRAME) {
-            
-            if (nbThreads == -1 || nbThreads == 1 || (nbThreads == 0 && QThread::idealThreadCount() == 1) ||
+            ///If the plug-in is FULLY_SAFE_FRAME that means it wants the host to perform SMP aka slice up the RoI into chunks
+            ///but if the effect doesn't support tiles it won't work.
+            ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
+            if (!tilesSupported || nbThreads == -1 || nbThreads == 1 || (nbThreads == 0 && QThread::idealThreadCount() == 1) ||
                 QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount()) {
                 safety = FULLY_SAFE;
             } else {
