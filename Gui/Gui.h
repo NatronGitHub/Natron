@@ -346,6 +346,9 @@ public:
     
     ///Close the application instance, asking questions to the user
     bool closeInstance();
+    
+    void aboutToSave();
+    void saveFinished();
 signals:
     
     void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);

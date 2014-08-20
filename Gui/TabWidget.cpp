@@ -1257,17 +1257,29 @@ TabWidget::isWithinWidget(const QPoint& globalPos) const
     return bbox.contains(globalPos);
 }
 
-
+bool
+TabWidget::isFullScreen() const
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    return _fullScreen;
+}
 
 void
 TabWidget::keyPressEvent (QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
-        if (_fullScreen) {
-            _fullScreen = false;
+        bool fullScreen;
+        {
+            QMutexLocker l(&_tabWidgetStateMutex);
+            fullScreen = _fullScreen;
+        }
+        {
+            QMutexLocker l(&_tabWidgetStateMutex);
+            _fullScreen = !_fullScreen;
+        }
+        if (fullScreen) {
             _gui->minimize();
         } else {
-            _fullScreen = true;
             _gui->maximize(this);
         }
     } else {

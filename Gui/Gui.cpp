@@ -326,6 +326,8 @@ struct GuiPrivate {
     
     mutable QMutex abortedEnginesMutex;
     std::list<VideoEngine*> abortedEngines;
+    
+    TabWidget* fullScreenWidgetDuringSave;
 
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
@@ -421,6 +423,7 @@ struct GuiPrivate {
     , _aboutToClose(false)
     , abortedEnginesMutex()
     , abortedEngines()
+    , fullScreenWidgetDuringSave(0)
     {
         
     }
@@ -2253,12 +2256,49 @@ Gui::openProjectInternal(const std::string& absoluteFileName)
     appPTR->updateAllRecentFileMenus();
 }
 
+void
+Gui::aboutToSave()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    ///If a tab is fullscreen, minimize it otherwise the splitter's state wouldn't be saved correctly
+    std::list<TabWidget*> panesCpy;
+    {
+        QMutexLocker l(&_imp->_panesMutex);
+        panesCpy = _imp->_panes;
+    }
+    for (std::list<TabWidget*>::iterator it = panesCpy.begin();it!=panesCpy.end();++it) {
+        if ((*it)->isFullScreen()) {
+            _imp->fullScreenWidgetDuringSave = *it;
+            minimize();
+            QCoreApplication::processEvents();
+            break;
+        }
+    }
+}
+
+void
+Gui::saveFinished()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    ///fullscreen again the tab
+    if (_imp->fullScreenWidgetDuringSave) {
+        maximize(_imp->fullScreenWidgetDuringSave);
+        _imp->fullScreenWidgetDuringSave = 0;
+    }
+}
+
 bool
 Gui::saveProject()
 {
-    if(_imp->_appInstance->getProject()->hasProjectBeenSavedByUser()){
+    if(_imp->_appInstance->getProject()->hasProjectBeenSavedByUser()) {
+        
+        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
                                                 _imp->_appInstance->getProject()->getProjectName(),false);
+        saveFinished();
+       
+        
         ///update the open recents
         QString file = _imp->_appInstance->getProject()->getProjectPath() + _imp->_appInstance->getProject()->getProjectName();
         QSettings settings;
@@ -2288,7 +2328,9 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
+        aboutToSave();
         _imp->_appInstance->getProject()->saveProject(path.c_str(),outFile.c_str(),false);
+        saveFinished();
         
         std::string filePath = path + outFile;
         QSettings settings;

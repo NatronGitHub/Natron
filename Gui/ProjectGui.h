@@ -82,7 +82,7 @@ public:
      **/
     std::list<boost::shared_ptr<NodeGui> > getVisibleNodes() const;
     
-    const Gui* getGui() const { return _gui; }
+    Gui* getGui() const { return _gui; }
     
 public slots:
     

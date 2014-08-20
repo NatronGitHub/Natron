@@ -388,7 +388,9 @@ void Project::onAutoSaveTimerTriggered()
     }
     
     if (canAutoSave) {
+        getApp()->aboutToAutoSave();
         QtConcurrent::run(this,&Project::autoSave);
+        getApp()->autoSaveFinished();
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
         ///We don't use the user-provided timeout interval here because it could be an inapropriate value.

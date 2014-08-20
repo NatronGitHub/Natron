@@ -147,7 +147,7 @@ public:
     
     GuiLayoutSerialization() {}
     
-    void initialize(const Gui* gui);
+    void initialize(Gui* gui);
     
     ///widget name, pane layout
     std::map<std::string,PaneLayout> _layout;

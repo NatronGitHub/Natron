@@ -212,6 +212,9 @@ public:
      **/
     virtual void clearNodeGuiMapping() {}
     
+    virtual void aboutToAutoSave() {}
+    virtual void autoSaveFinished() {}
+    
 public slots:
     
     void quit();
