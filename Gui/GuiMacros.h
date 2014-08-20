@@ -21,9 +21,17 @@
 #define modifierIsAltShift(e)        ((e)->modifiers() == (Qt::AltModifier|Qt::ShiftModifier))
 #define modifierIsShift(e)           ((e)->modifiers() == Qt::ShiftModifier)
 
-#define buttonIsLeft(e)              ((e)->button() == Qt::LeftButton && modifierIsNone(e))
-#define buttonIsMiddle(e)            (((e)->button() == Qt::MiddleButton && modifierIsNone(e)) || (e->button() == Qt::LeftButton && modifierIsAlt(e)))
-#define buttonIsRight(e)             (((e)->button() == Qt::RightButton && modifierIsNone(e)) || (e->button() == Qt::LeftButton && modifierIsControl(e)))
-#define buttonIsRightShift(e)             (((e)->button() == Qt::RightButton && modifierIsShift(e)) || (e->button() == Qt::LeftButton && modifierIsControlShift(e)))
+///From Qt Doc:
+/*
+ Qt::MouseButton QMouseEvent::button() const
+ Returns the button that caused the event.
+ Note that the returned value is always Qt::NoButton for mouse move events.
+ 
+ Hence calling e->button() is not suitable for mouseMoveEvents, it's better checking e->buttons() instead
+ */
+#define buttonIsLeft(e)              ((e)->buttons().testFlag(Qt::LeftButton) && modifierIsNone(e))
+#define buttonIsMiddle(e)            (((e)->buttons().testFlag(Qt::MiddleButton) && modifierIsNone(e)) || (e->buttons().testFlag(Qt::LeftButton) && modifierIsAlt(e)))
+#define buttonIsRight(e)             (((e)->buttons().testFlag(Qt::RightButton) && modifierIsNone(e)) || (e->buttons().testFlag(Qt::LeftButton) && modifierIsControl(e)))
+#define buttonIsRightShift(e)             (((e)->buttons().testFlag(Qt::RightButton) && modifierIsShift(e)) || (e->buttons().testFlag(Qt::LeftButton) && modifierIsControlShift(e)))
 
 #endif
