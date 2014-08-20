@@ -1178,11 +1178,11 @@ bool Project::autoConnectNodes(boost::shared_ptr<Node> selected,boost::shared_pt
     }
 
     ///update the render trees
-//    std::list<ViewerInstance* > viewers;
-//    created->hasViewersConnected(&viewers);
-//    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
-//        (*it)->updateTreeAndRender();
-//    }
+    std::list<ViewerInstance* > viewers;
+    created->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance* >::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->updateTreeAndRender();
+    }
     return ret;
 
 }

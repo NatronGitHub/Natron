@@ -162,22 +162,32 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
 void AddMultipleNodesCommand::undo() {
     
     _isUndone = true;
-    
+    std::list<ViewerInstance*> viewersToRefresh;
+
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->deactivate();
     }
     
-    std::list<boost::shared_ptr<NodeGui> >::const_iterator next = _nodes.begin();
-    ++next;
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it,++next) {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
         (*it)->getNode()->deactivate(std::list< boost::shared_ptr<Natron::Node> >(), //outputs to disconnect
                                      true, //disconnect all nodes, disregarding the first parameter.
                                      true, //reconnect outputs to inputs of this node?
                                      true, //hide nodeGui?
-                                     next == _nodes.end()); // triggerRender
+                                     false); // triggerRender
+        std::list<ViewerInstance* > viewers;
+        (*it)->getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin();it2!=viewers.end();++it2) {
+            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+            if (foundViewer == viewersToRefresh.end()) {
+                viewersToRefresh.push_back(*it2);
+            }
+        }
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->checkViewersConnection();
+
+    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin();it!=viewersToRefresh.end();++it) {
+        (*it)->updateTreeAndRender();
+    }
     
     
     setText(QObject::tr("Add node"));
@@ -186,23 +196,37 @@ void AddMultipleNodesCommand::undo() {
 void AddMultipleNodesCommand::redo() {
     
     _isUndone = false;
+    std::list<ViewerInstance*> viewersToRefresh;
     if (_firstRedoCalled) {
         
         for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
             (*it)->activate();
         }
         
-        std::list<boost::shared_ptr<NodeGui> >::const_iterator next = _nodes.begin();
-        ++next;
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it,++next) {
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
             (*it)->getNode()->activate(std::list< boost::shared_ptr<Natron::Node> >(), //inputs to restore
                                        true, //restore all inputs ?
-                                       next == _nodes.end()); //triggerRender
+                                       false); //triggerRender
+            
+        }
+        
+    }
+    _graph->getGui()->getApp()->triggerAutoSave();
+
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        std::list<ViewerInstance* > viewers;
+        (*it)->getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin();it2!=viewers.end();++it2) {
+            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+            if (foundViewer == viewersToRefresh.end()) {
+                viewersToRefresh.push_back(*it2);
+            }
         }
     }
     
-    _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->checkViewersConnection();
+    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin();it!=viewersToRefresh.end();++it) {
+        (*it)->updateTreeAndRender();
+    }
 
     
     _firstRedoCalled = true;
