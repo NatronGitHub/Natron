@@ -10,19 +10,44 @@
 #define Gui_GuiMacros_h
 
 // macros to test if the modifiers are exactly the given combination: we don't allow any other modifier
-#define modifierIsNone(e)            ((e)->modifiers() == (Qt::NoModifier))
-#define modifierIsControl(e)         ((e)->modifiers() == (Qt::ControlModifier))
-#define modifierIsControlShift(e)    ((e)->modifiers() == (Qt::ControlModifier|Qt::ShiftModifier))
-#define modifierIsControlAlt(e)      ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier))
-#define modifierIsControlAltShift(e) ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier|Qt::ShiftModifier))
-#define modifierIsAlt(e)             ((e)->modifiers() == (Qt::AltModifier))
-#define modifierIsAltShift(e)        ((e)->modifiers() == (Qt::AltModifier|Qt::ShiftModifier))
-#define modifierIsShift(e)           ((e)->modifiers() == (Qt::ShiftModifier))
+//We can test equality of eg: e->modifiers() == Qt::ControlModifier because in practise some other modifiers are held
+//like the KeyPadModifier. The idea here is to get rid of anything that is not ControlModifier,ShiftModifier and AltModifier.
+#define modifierIsControl(e)         ((e)->modifiers().testFlag(Qt::ControlModifier) && \
+!(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsControlShift(e)    ((e)->modifiers().testFlag(Qt::ControlModifier) && \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsControlAlt(e)      ((e)->modifiers().testFlag(Qt::ControlModifier) && \
+!(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsControlAltShift(e) ((e)->modifiers().testFlag(Qt::ControlModifier) && \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsAlt(e)             (!(e)->modifiers().testFlag(Qt::ControlModifier) && \
+!(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsAltShift(e)        (!(e)->modifiers().testFlag(Qt::ControlModifier) && \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+(e)->modifiers().testFlag(Qt::AltModifier))
+
+#define modifierIsShift(e)           (!(e)->modifiers().testFlag(Qt::ControlModifier) && \
+(e)->modifiers().testFlag(Qt::ShiftModifier) && \
+!(e)->modifiers().testFlag(Qt::AltModifier))
 
 // macros to test if the modifier is present (but there may be other modifiers too)
 #define modifierHasControl(e)         ((e)->modifiers().testFlag(Qt::ControlModifier))
 #define modifierHasAlt(e)             ((e)->modifiers().testFlag(Qt::AltModifier))
 #define modifierHasShift(e)           ((e)->modifiers().testFlag(Qt::ShiftModifier))
+
+//This is the convenient way for checking that effectively no modifier are held, in practise modifierIsNone doesn't work
+//because some modifier are always held, like KeyPadModifier
+#define modifierIsNone(e) (!modifierHasControl(e) && !modifierHasAlt(e) && !modifierHasShift(e))
 
 // macros to test if a button is pressed, or a single-button compatibility combination
 #define buttonControlAlt(e)          ((e)->modifiers() & (Qt::ControlModifier|Qt::AltModifier))
