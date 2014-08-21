@@ -1027,49 +1027,51 @@ EffectInstance::renderRoI(const RenderRoIArgs& args,
             if (inputNbIdentity == -1) {
                 return boost::shared_ptr<Natron::Image>();
             } else if (inputNbIdentity == -2) {
-                ///This special value of -2 indicates that the plugin is identity of itself at another time
-                RenderRoIArgs argCpy = args;
-                argCpy.time = inputTimeIdentity;
-                return renderRoI(argCpy);
-                
+                // there was at least one crash if you set the first frame to a negative value
+                assert(inputTimeIdentity != args.time);
+                if (inputTimeIdentity != args.time) { // be safe in release mode!
+                    ///This special value of -2 indicates that the plugin is identity of itself at another time
+                    RenderRoIArgs argCpy = args;
+                    argCpy.time = inputTimeIdentity;
+                    return renderRoI(argCpy);
+                }
+            }
+            RectD canonicalRoI;
+            args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
+            RoIMap inputsRoI;
+            inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), canonicalRoI));
+            Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
+                                                        inputsRoI,
+                                                        rod,
+                                                        args.time,
+                                                        args.view,
+                                                        args.scale,
+                                                        args.mipMapLevel,
+                                                        args.isSequentialRender,
+                                                        args.isRenderUserInteraction,
+                                                        byPassCache,
+                                                        nodeHash,
+                                                        0,
+                                                        args.channelForAlpha,
+                                                        identity,
+                                                        inputTimeIdentity,
+                                                        inputNbIdentity);
+            Natron::ImageComponents inputPrefComps;
+            Natron::ImageBitDepth inputPrefDepth;
+            Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
+            if (inputEffectIdentity) {
+                inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
+                ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
+                image = getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                ///Clear input images pointer because getImage has stored the image .
+                _imp->clearInputImagePointers();
             } else {
-                RectD canonicalRoI;
-                args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
-                RoIMap inputsRoI;
-                inputsRoI.insert(std::make_pair(input_other_thread(inputNbIdentity), canonicalRoI));
-                Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
-                                                            inputsRoI,
-                                                            rod,
-                                                            args.time,
-                                                            args.view,
-                                                            args.scale,
-                                                            args.mipMapLevel,
-                                                            args.isSequentialRender,
-                                                            args.isRenderUserInteraction,
-                                                            byPassCache,
-                                                            nodeHash,
-                                                            0,
-                                                            args.channelForAlpha,
-                                                            identity,
-                                                            inputTimeIdentity,
-                                                            inputNbIdentity);
-                Natron::ImageComponents inputPrefComps;
-                Natron::ImageBitDepth inputPrefDepth;
-                Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
-                if (inputEffectIdentity) {
-                    inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
-                    ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                    image = getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
-                    ///Clear input images pointer because getImage has stored the image .
-                    _imp->clearInputImagePointers();
-                } else {
-                    return image;
-                }
-                
-                ///if we bypass the cache, don't cache the result of isIdentity
-                if (byPassCache) {
-                    return image;
-                }
+                return image;
+            }
+
+            ///if we bypass the cache, don't cache the result of isIdentity
+            if (byPassCache) {
+                return image;
             }
         } else {
             ///set it to -1 so the cache knows it's not an identity
