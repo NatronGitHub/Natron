@@ -142,7 +142,9 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
         }
         str = str.left(i + 1);
     }
-    
+
+    // The following removes leading zeroes, but this is not necessary
+    /*
     int i = 0;
     bool skipFirst = false;
     if (str.at(0) == '-') {
@@ -152,9 +154,10 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
     while (i < str.size() && i == '0') {
         ++i;
     }
-    str = str.remove(skipFirst ? 1 : 0, i);
-
-    //qDebug() << "setValue_internal setting text to "<<str;
+    if (i > int(skipFirst)) {
+        str = str.remove(int(skipFirst), i - int(skipFirst));
+    }
+     */
     setText(str, pos);
 }
 
