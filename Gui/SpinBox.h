@@ -81,7 +81,7 @@ public slots:
     
     void setValue(double d);
     
-    void setValue(int d){setValue((double)d);}
+    void setValue(int d);
     
     /*Used internally when the user pressed enter*/
     void interpretReturn();
