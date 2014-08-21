@@ -917,8 +917,11 @@ ViewerGL::resizeGL(int width, int height)
     }
     glViewport (0, 0, width, height);
     bool zoomSinceLastFit;
+    int oldWidth,oldHeight;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
+        oldWidth = _imp->zoomCtx.screenWidth();
+        oldHeight = _imp->zoomCtx.screenHeight();
         _imp->zoomCtx.setScreenSize(width, height);
         zoomSinceLastFit = _imp->zoomOrPannedSinceLastFit;
     }
@@ -931,7 +934,8 @@ ViewerGL::resizeGL(int width, int height)
         fitImageToFormat();
     }
     if (viewer->getUiContext() && _imp->viewerTab->getGui() &&
-        !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject()) {
+        !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
+        (oldWidth != width || oldHeight != height)) {
         viewer->refreshAndContinueRender(false,true);
         updateGL();
     }
@@ -2076,6 +2080,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     if (buttonIsLeft(e)) {
         _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
     }

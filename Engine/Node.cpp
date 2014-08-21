@@ -454,7 +454,14 @@ Node::loadKnob(const boost::shared_ptr<KnobI>& knob,
         if((*it)->getName() == knob->getName()){
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             if (knob->getIsPersistant()) {
-                knob->clone((*it)->getKnob());
+                boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
+                knob->clone(serializedKnob);
+                knob->setSecret(serializedKnob->getIsSecret());
+                if (knob->getDimension() == serializedKnob->getDimension()) {
+                    for (int i = 0; i < knob->getDimension();++i) {
+                        knob->setEnabled(i, serializedKnob->isEnabled(i));
+                    }
+                }
             }
             break;
         }
@@ -1372,10 +1379,15 @@ void
 Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect,
                  bool disconnectAll,
                  bool reconnect,
-                 bool hideGui)
+                 bool hideGui,
+                 bool triggerRender)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    
+    if (!_imp->liveInstance) {
+        return;
+    }
 
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage();
@@ -1495,7 +1507,7 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDi
     }
     
     if (hideGui) {
-        emit deactivated();
+        emit deactivated(triggerRender);
     }
     {
         QMutexLocker l(&_imp->activatedMutex);
@@ -1506,11 +1518,13 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDi
 
 void
 Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore,
-               bool restoreAll)
+               bool restoreAll,bool triggerRender)
 {
     ///Only called by the main-thread
     assert(QThread::currentThread() == qApp->thread());
-    
+    if (!_imp->liveInstance) {
+        return;
+    }
     boost::shared_ptr<Natron::Node> thisShared = getApp()->getProject()->getNodePointer(this);
     assert(thisShared);
     
@@ -1557,7 +1571,7 @@ Node::activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRest
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
     }
-    emit activated();
+    emit activated(triggerRender);
 }
 
 

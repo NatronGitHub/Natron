@@ -376,7 +376,8 @@ public:
     void deactivate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToDisconnect = std::list< boost::shared_ptr<Natron::Node> >()
                     , bool disconnectAll = true
                     , bool reconnect = true
-                    , bool hideGui = true);
+                    , bool hideGui = true
+                    , bool triggerRender = true);
     
     /* @brief Make this node active. It will appear
      again on the node graph.
@@ -388,7 +389,8 @@ public:
      * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
     void activate(const std::list< boost::shared_ptr<Natron::Node> >& outputsToRestore = std::list< boost::shared_ptr<Natron::Node> >(),
-                  bool restoreAll = true);
+                  bool restoreAll = true,
+                  bool triggerRender = true);
     
     /**
      * @brief Forwarded to the live effect instance
@@ -659,9 +661,9 @@ signals:
     
     void outputsChanged();
 
-    void activated();
+    void activated(bool triggerRender);
     
-    void deactivated();
+    void deactivated(bool triggerRender);
     
     void canUndoChanged(bool);
     

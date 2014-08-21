@@ -48,7 +48,7 @@ ComboBox::ComboBox(QWidget* parent)
     _currentText->setObjectName("ComboBoxLabel");
     setCurrentIndex(-1);
     _mainLayout->addWidget(_currentText);
-    _currentText->setFixedHeight(fontMetrics().height() + 8);
+    _currentText->setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
 
     
     _dropDownIcon = new ClickableLabel("",this);

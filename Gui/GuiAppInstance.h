@@ -98,6 +98,9 @@ public:
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
 
     virtual void clearNodeGuiMapping() OVERRIDE FINAL;
+    
+    virtual void aboutToAutoSave() OVERRIDE FINAL;
+    virtual void autoSaveFinished() OVERRIDE FINAL;
 public slots:
         
     void onProcessFinished();

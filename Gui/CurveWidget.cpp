@@ -3113,7 +3113,6 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,const std::
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _fileBrowseButton->setIcon(QIcon(pix));
-    _fileBrowseButton->setFixedSize(20, 20);
     QObject::connect(_fileBrowseButton, SIGNAL(clicked()), this, SLOT(open_file()));
     _fileLayout->addWidget(_fileBrowseButton);
     _mainLayout->addWidget(_fileContainer);

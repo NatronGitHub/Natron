@@ -66,11 +66,10 @@ void File_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect(_lineEdit, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()));
 
     _openFileButton = new Button(layout->parentWidget());
-
+    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
-    _openFileButton->setFixedSize(20, 20);
     QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()));
 
 
@@ -213,11 +212,10 @@ void OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
     
     _openFileButton = new Button(layout->parentWidget());
-
+    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
-    _openFileButton->setFixedSize(20, 20);
     QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()));
 
 
@@ -344,11 +342,11 @@ void Path_KnobGui::createWidget(QHBoxLayout* layout)
     enableRightClickMenu(_lineEdit, 0);
     
     _openFileButton = new Button(layout->parentWidget());
+    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _openFileButton->setToolTip(tr("Click to select a path to append to/replace this variable."));
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon(QIcon(pix));
-    _openFileButton->setFixedSize(20, 20);
     QObject::connect(_openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()));
     
     

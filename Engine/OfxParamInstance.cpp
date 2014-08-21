@@ -1972,7 +1972,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::D
     bool richText = mode == kOfxParamStringIsRichTextFormat;
     if (mode == kOfxParamStringIsFilePath) {
         
-        int fileIsImage = (node->isReader() || node->isWriter()) && (getScriptName() == "filename");
+        int fileIsImage = (node->isReader() || node->isWriter()) && (getScriptName() == "filename" || getScriptName() == "proxy");
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
         int filePathSupportsImageSequences = getCanAnimate();
         

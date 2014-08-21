@@ -274,7 +274,7 @@ public:
     
     
     void setKnobLinksVisible(bool visible);
-    
+        
 public slots:
     
     void setDefaultGradientColor(const QColor& color);
@@ -318,9 +318,9 @@ public slots:
     
     void initializeKnobs();
     
-    void activate();
+    void activate(bool triggerRender);
     
-    void deactivate();
+    void deactivate(bool triggerRender);
     
     void hideGui();
     

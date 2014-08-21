@@ -405,10 +405,9 @@ RotoGui::RotoGui(NodeGui* node,
     autoKeyIc.addPixmap(pixAutoKeyingEnabled,QIcon::Normal,QIcon::On);
     autoKeyIc.addPixmap(pixAutoKeyingDisabled,QIcon::Normal,QIcon::Off);
     
-    QSize buttonSize(25,25);
     
     _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
-    _imp->autoKeyingEnabled->setFixedSize(buttonSize);
+    _imp->autoKeyingEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->autoKeyingEnabled->setCheckable(true);
     _imp->autoKeyingEnabled->setChecked(_imp->context->isAutoKeyingEnabled());
     _imp->autoKeyingEnabled->setDown(_imp->context->isAutoKeyingEnabled());
@@ -420,7 +419,7 @@ RotoGui::RotoGui(NodeGui* node,
     featherLinkIc.addPixmap(pixFeatherLinkEnabled,QIcon::Normal,QIcon::On);
     featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
     _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
-    _imp->featherLinkEnabled->setFixedSize(buttonSize);
+    _imp->featherLinkEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->featherLinkEnabled->setCheckable(true);
     _imp->featherLinkEnabled->setChecked(_imp->context->isFeatherLinkEnabled());
     _imp->featherLinkEnabled->setDown(_imp->context->isFeatherLinkEnabled());
@@ -433,6 +432,7 @@ RotoGui::RotoGui(NodeGui* node,
     enableFeatherIC.addPixmap(pixFeatherEnabled,QIcon::Normal,QIcon::On);
     enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
     _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
+    _imp->displayFeatherEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->displayFeatherEnabled->setCheckable(true);
     _imp->displayFeatherEnabled->setChecked(true);
     _imp->displayFeatherEnabled->setDown(true);
@@ -444,7 +444,7 @@ RotoGui::RotoGui(NodeGui* node,
     stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
     stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
     _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
-    _imp->stickySelectionEnabled->setFixedSize(buttonSize);
+    _imp->stickySelectionEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->stickySelectionEnabled->setCheckable(true);
     _imp->stickySelectionEnabled->setChecked(false);
     _imp->stickySelectionEnabled->setDown(false);
@@ -457,7 +457,7 @@ RotoGui::RotoGui(NodeGui* node,
     rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
     rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
     _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
-    _imp->rippleEditEnabled->setFixedSize(buttonSize);
+    _imp->rippleEditEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->rippleEditEnabled->setCheckable(true);
     _imp->rippleEditEnabled->setChecked(_imp->context->isRippleEditEnabled());
     _imp->rippleEditEnabled->setDown(_imp->context->isRippleEditEnabled());
@@ -468,19 +468,19 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
     
     _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
-    _imp->addKeyframeButton->setFixedSize(buttonSize);
+    _imp->addKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->addKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onAddKeyFrameClicked()));
     _imp->addKeyframeButton->setToolTip(tr("Set a keyframe at the current time for the selected shape(s), if any."));
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
     _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
-    _imp->removeKeyframeButton->setFixedSize(buttonSize);
+    _imp->removeKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->removeKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyFrameClicked()));
     _imp->removeKeyframeButton->setToolTip("Remove a keyframe at the current time for the selected shape(s), if any.");
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
     _imp->selectionButtonsBarLayout->addStretch();
     
-    QSize rotoToolSize(30,30);
+    QSize rotoToolSize(NATRON_LARGE_BUTTON_SIZE,NATRON_LARGE_BUTTON_SIZE);
     
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setFixedSize(rotoToolSize);

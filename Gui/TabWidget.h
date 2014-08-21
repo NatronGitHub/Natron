@@ -255,6 +255,9 @@ public:
     
     void closePane(bool calledFromFloatingWindow);
     
+    ///MT-Safe
+    bool isFullScreen() const;
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
@@ -340,7 +343,7 @@ private:
     bool _fullScreen;
     std::list< std::pair<TabWidget*,bool> > _userSplits;//< for each split, whether the user pressed split vertically (true) or horizontally (false)
     
-    ///Protects _mtSafePos, _mtSafeWidth,_mtSafeHeight, _isFloating, _userSplits
+    ///Protects _mtSafePos, _mtSafeWidth,_mtSafeHeight, _isFloating, _userSplits, _fullScreen
     mutable QMutex _tabWidgetStateMutex;
     
     QPoint _mtSafeWindowPos;

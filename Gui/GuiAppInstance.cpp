@@ -506,3 +506,13 @@ void GuiAppInstance::disconnectViewersFromViewerCache()
 {
     _imp->_gui->disconnectViewersFromViewerCache();
 }
+
+void GuiAppInstance::aboutToAutoSave()
+{
+    
+}
+
+void GuiAppInstance::autoSaveFinished()
+{
+    
+}

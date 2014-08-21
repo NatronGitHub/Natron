@@ -248,27 +248,32 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     _imp->_firstRowLayout->addWidget(_imp->_zoomCombobox);
     
     _imp->_centerViewerButton = new Button(_imp->_firstSettingsRow);
+    _imp->_centerViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->_firstRowLayout->addWidget(_imp->_centerViewerButton);
     
     
     _imp->_clipToProjectFormatButton = new Button(_imp->_firstSettingsRow);
+    _imp->_clipToProjectFormatButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->_clipToProjectFormatButton->setCheckable(true);
     _imp->_clipToProjectFormatButton->setChecked(true);
     _imp->_clipToProjectFormatButton->setDown(true);
     _imp->_firstRowLayout->addWidget(_imp->_clipToProjectFormatButton);
     
     _imp->_enableViewerRoI = new Button(_imp->_firstSettingsRow);
+    _imp->_enableViewerRoI->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->_enableViewerRoI->setCheckable(true);
     _imp->_enableViewerRoI->setChecked(false);
     _imp->_enableViewerRoI->setDown(false);
     _imp->_firstRowLayout->addWidget(_imp->_enableViewerRoI);
     
     _imp->_refreshButton = new Button(_imp->_firstSettingsRow);
+    _imp->_refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->_refreshButton->setToolTip(tr("Forces a new render of the current frame.")+
                                      "<p><b>" + tr("Keyboard shortcut") + ": U</b></p>");
     _imp->_firstRowLayout->addWidget(_imp->_refreshButton);
     
     _imp->_activateRenderScale = new Button(_imp->_firstSettingsRow);
+    _imp->_activateRenderScale->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence rsKs(Qt::CTRL + Qt::Key_P);
     _imp->_activateRenderScale->setToolTip("<p><b>" + tr("Proxy mode") + "</b></p>" + tr(
                                            "Activates the downscaling by the amount indicated by the value on the right. \n"
@@ -428,6 +433,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     _imp->_playerLayout->addStretch();
     
     _imp->firstFrame_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->firstFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
     QString tooltip = "First frame";
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -438,6 +444,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->previousKeyFrame_Button=new Button(_imp->_playerButtonsContainer);
+    _imp->previousKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
     tooltip = tr("Previous keyframe");
     tooltip.append(tr("<p><b>Keyboard shortcut: "));
@@ -447,6 +454,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->play_Backward_Button=new Button(_imp->_playerButtonsContainer);
+    _imp->play_Backward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence playbackFrameKey(Qt::Key_J);
     tooltip = tr("Play backward");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -458,6 +466,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->previousFrame_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->previousFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence previousFrameKey(Qt::Key_Left);
     tooltip = tr("Previous frame");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -468,6 +477,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->stop_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->stop_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence stopKey(Qt::Key_K);
     tooltip = tr("Stop");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -478,6 +488,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->nextFrame_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->nextFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence nextFrameKey(Qt::Key_Right);
     tooltip = tr("Next frame");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -488,6 +499,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->play_Forward_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->play_Forward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence playKey(Qt::Key_L);
     tooltip = tr("Play forward");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -499,6 +511,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->nextKeyFrame_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->nextKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
     tooltip = tr("Next keyframe");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -508,6 +521,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->lastFrame_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->lastFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
     tooltip = tr("Last frame");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -525,6 +539,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     _imp->_playerLayout->addStretch();
     
     _imp->previousIncrement_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->previousIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
     tooltip = tr("Previous increment");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -543,6 +558,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     
     
     _imp->nextIncrement_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->nextIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
     tooltip = tr("Next increment");
     tooltip.append("<p><b>" + tr("Keyboard shortcut: "));
@@ -552,6 +568,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     _imp->_playerLayout->addWidget(_imp->nextIncrement_Button);
     
     _imp->loopMode_Button = new Button(_imp->_playerButtonsContainer);
+    _imp->loopMode_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->loopMode_Button->setCheckable(true);
     _imp->loopMode_Button->setChecked(true);
     _imp->loopMode_Button->setDown(true);
@@ -581,6 +598,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     rangeLockedIC.addPixmap(pixRangeLocked,QIcon::Normal,QIcon::On);
     rangeLockedIC.addPixmap(pixRangeUnlocked,QIcon::Normal,QIcon::Off);
     _imp->lockFrameRangeButton = new Button(rangeLockedIC,"",_imp->_playerButtonsContainer);
+    _imp->lockFrameRangeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->lockFrameRangeButton->setCheckable(true);
     _imp->lockFrameRangeButton->setChecked(true);
     _imp->lockFrameRangeButton->setDown(true);
@@ -620,8 +638,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     QPixmap pixRefresh ;
     QPixmap pixCenterViewer ;
     QPixmap pixLoopMode;
-    QPixmap pixClipToProject ;
-    QPixmap pixViewerRoI;
+    QPixmap pixClipToProjectEnabled ;
+    QPixmap pixClipToProjectDisabled ;
+    QPixmap pixViewerRoIEnabled;
+    QPixmap pixViewerRoIDisabled;
     QPixmap pixViewerRs;
     QPixmap pixViewerRsChecked;
     
@@ -639,8 +659,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH,&pixRefresh);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenterViewer);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE,&pixLoopMode);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT,&pixClipToProject);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI,&pixViewerRoI);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_ENABLED,&pixClipToProjectEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_DISABLED,&pixClipToProjectDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_ENABLED,&pixViewerRoIEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_DISABLED,&pixViewerRoIDisabled);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_RENDER_SCALE,&pixViewerRs);
     appPTR->getIcon(NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED,&pixViewerRsChecked);
     
@@ -658,8 +680,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*>& existingRotoNodes,
     _imp->_refreshButton->setIcon(QIcon(pixRefresh));
     _imp->_centerViewerButton->setIcon(QIcon(pixCenterViewer));
     _imp->loopMode_Button->setIcon(QIcon(pixLoopMode));
-    _imp->_clipToProjectFormatButton->setIcon(QIcon(pixClipToProject));
-    _imp->_enableViewerRoI->setIcon(QIcon(pixViewerRoI));
+    
+    QIcon icClip;
+    icClip.addPixmap(pixClipToProjectEnabled,QIcon::Normal,QIcon::On);
+    icClip.addPixmap(pixClipToProjectDisabled,QIcon::Normal,QIcon::Off);
+    _imp->_clipToProjectFormatButton->setIcon(icClip);
+    
+    QIcon icRoI;
+    icRoI.addPixmap(pixViewerRoIEnabled,QIcon::Normal,QIcon::On);
+    icRoI.addPixmap(pixViewerRoIDisabled,QIcon::Normal,QIcon::Off);
+    _imp->_enableViewerRoI->setIcon(icRoI);
     
     QIcon icViewerRs;
     icViewerRs.addPixmap(pixViewerRs,QIcon::Normal,QIcon::Off);

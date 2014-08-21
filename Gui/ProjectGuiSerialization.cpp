@@ -81,9 +81,10 @@ static void createParenting(std::map<std::string,PaneLayout>& layout,std::map<st
     }
 }
 
-static void saveLayout(const Gui* gui,std::map<std::string,PaneLayout>& layout,std::map<std::string,std::string>& splittersState)
+static void saveLayout(Gui* gui,std::map<std::string,PaneLayout>& layout,std::map<std::string,std::string>& splittersState)
 {
     std::list<TabWidget*> tabWidgets = gui->getPanes_mt_safe();
+    
     for (std::list<TabWidget*>::const_iterator it = tabWidgets.begin(); it!= tabWidgets.end(); ++it) {
         QString widgetName = (*it)->objectName_mt_safe();
         if(widgetName.isEmpty()){
@@ -128,12 +129,12 @@ static void saveLayout(const Gui* gui,std::map<std::string,PaneLayout>& layout,s
         }
     }
     
+    
     ///save application's splitters states
     std::list<Splitter*> splitters = gui->getSplitters();
     for (std::list<Splitter*>::const_iterator it = splitters.begin(); it!= splitters.end(); ++it) {
         QString ba = (*it)->serializeNatron();
         splittersState.insert(std::make_pair((*it)->objectName_mt_safe().toStdString(),ba.toStdString()));
-        
     }
 
 }
@@ -204,7 +205,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
     
 }
 
-void GuiLayoutSerialization::initialize(const Gui* gui)
+void GuiLayoutSerialization::initialize(Gui* gui)
 {
     saveLayout(gui, _layout, _splittersStates);
 }

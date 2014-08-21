@@ -162,16 +162,32 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
 void AddMultipleNodesCommand::undo() {
     
     _isUndone = true;
-    
+    std::list<ViewerInstance*> viewersToRefresh;
+
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->deactivate();
     }
     
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
-        (*it)->getNode()->deactivate();
+        (*it)->getNode()->deactivate(std::list< boost::shared_ptr<Natron::Node> >(), //outputs to disconnect
+                                     true, //disconnect all nodes, disregarding the first parameter.
+                                     true, //reconnect outputs to inputs of this node?
+                                     true, //hide nodeGui?
+                                     false); // triggerRender
+        std::list<ViewerInstance* > viewers;
+        (*it)->getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin();it2!=viewers.end();++it2) {
+            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+            if (foundViewer == viewersToRefresh.end()) {
+                viewersToRefresh.push_back(*it2);
+            }
+        }
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->checkViewersConnection();
+
+    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin();it!=viewersToRefresh.end();++it) {
+        (*it)->updateTreeAndRender();
+    }
     
     
     setText(QObject::tr("Add node"));
@@ -180,6 +196,7 @@ void AddMultipleNodesCommand::undo() {
 void AddMultipleNodesCommand::redo() {
     
     _isUndone = false;
+    std::list<ViewerInstance*> viewersToRefresh;
     if (_firstRedoCalled) {
         
         for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
@@ -187,12 +204,29 @@ void AddMultipleNodesCommand::redo() {
         }
         
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
-            (*it)->getNode()->activate();
+            (*it)->getNode()->activate(std::list< boost::shared_ptr<Natron::Node> >(), //inputs to restore
+                                       true, //restore all inputs ?
+                                       false); //triggerRender
+            
+        }
+        
+    }
+    _graph->getGui()->getApp()->triggerAutoSave();
+
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it!=_nodes.end(); ++it) {
+        std::list<ViewerInstance* > viewers;
+        (*it)->getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin();it2!=viewers.end();++it2) {
+            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+            if (foundViewer == viewersToRefresh.end()) {
+                viewersToRefresh.push_back(*it2);
+            }
         }
     }
     
-    _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->checkViewersConnection();
+    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin();it!=viewersToRefresh.end();++it) {
+        (*it)->updateTreeAndRender();
+    }
 
     
     _firstRedoCalled = true;
@@ -251,18 +285,33 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 
 void RemoveMultipleNodesCommand::undo() {
     
+    std::list<ViewerInstance*> viewersToRefresh;
     std::list<SequenceTime> allKeysToAdd;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
     ++next;
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it,++next) {
-        it->node->getNode()->activate(it->outputsToRestore,false);
+        it->node->getNode()->activate(it->outputsToRestore,false,false);
         if (it->node->isSettingsPanelVisible()) {
             it->node->getNode()->showKeyframesOnTimeline(next == _nodes.end());
+        }
+        std::list<ViewerInstance* > viewers;
+        it->node->getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin();it2!=viewers.end();++it2) {
+            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+            if (foundViewer == viewersToRefresh.end()) {
+                viewersToRefresh.push_back(*it2);
+            }
         }
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->activate();
     }
+    
+    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin();it!=viewersToRefresh.end();++it) {
+        (*it)->updateTreeAndRender();
+    }
+    _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->redrawAllViewers();
     
     _isRedone = false;
     _graph->scene()->update();
@@ -275,6 +324,8 @@ void RemoveMultipleNodesCommand::redo() {
     
     _isRedone = true;
     
+    std::list<ViewerInstance*> viewersToRefresh;
+    
     std::list<NodeToRemove>::iterator next = _nodes.begin();
     ++next;
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it!=_nodes.end(); ++it,++next) {
@@ -283,7 +334,17 @@ void RemoveMultipleNodesCommand::redo() {
         ///Make a copy before calling deactivate which will modify the list
         std::list<boost::shared_ptr<Natron::Node> > outputs = it->node->getNode()->getOutputs();
 
-        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1);
+        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
+        
+        std::list<ViewerInstance* > viewers;
+        it->node->getNode()->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin();it2!=viewers.end();++it2) {
+            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+            if (foundViewer == viewersToRefresh.end()) {
+                viewersToRefresh.push_back(*it2);
+            }
+        }
+
         
         if (_nodes.size() == 1) {
             ///If we're deleting a single node and there's a viewer in output,reconnect the viewer to another connected input it has
@@ -303,6 +364,13 @@ void RemoveMultipleNodesCommand::redo() {
                         for (U32 i = 0; i < inputs.size() ;++i) {
                             if (inputs[i]) {
                                 inspector->setActiveInputAndRefresh(i);
+                                ///make sure we don't refresh it a second time
+                                std::list<ViewerInstance*>::iterator foundViewer =
+                                std::find(viewersToRefresh.begin(), viewersToRefresh.end(),
+                                          dynamic_cast<ViewerInstance*>(inspector->getLiveInstance()));
+                                if (foundViewer != viewersToRefresh.end()) {
+                                    viewersToRefresh.erase(foundViewer);
+                                }
                                 break;
                             }
                         }
@@ -314,10 +382,15 @@ void RemoveMultipleNodesCommand::redo() {
         if (it->node->isSettingsPanelVisible()) {
             it->node->getNode()->hideKeyframesFromTimeline(next == _nodes.end());
         }
-
+        
+      
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it!= _bds.end(); ++it) {
         (*it)->deactivate();
+    }
+    
+    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin();it!=viewersToRefresh.end();++it) {
+        (*it)->updateTreeAndRender();
     }
     
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -810,7 +883,10 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<boost::shared_ptr<N
     
     ///now offset all trees to be top aligned at the same level
     for (TreeList::iterator it = trees.begin(); it!=trees.end(); ++it) {
-        const QPointF& treeTop = (*it)->getTopLevelNodeCenter();
+        QPointF treeTop = (*it)->getTopLevelNodeCenter();
+        if (treeTop.y() == INT_MAX) {
+            treeTop.setY(topLevelPos.y());
+        }
         QPointF delta(0,topLevelPos.y() - treeTop.y());
         if (delta.x() != 0 || delta.y() != 0) {
             (*it)->moveAllTree(delta);

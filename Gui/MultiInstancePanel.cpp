@@ -427,22 +427,20 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
     _imp->addButton->setToolTip("Add new");
     _imp->buttonsLayout->addWidget(_imp->addButton);
-    _imp->addButton->setFixedSize(18,18);
     QObject::connect(_imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()));
     
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
     _imp->removeButton->setToolTip(tr("Remove selection"));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
-    _imp->removeButton->setFixedSize(18,18);
     QObject::connect(_imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()));
     
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
     
     _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
+    _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAll->setToolTip(tr("Select all"));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
-    _imp->selectAll->setFixedSize(18,18);
     QObject::connect(_imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()));
     
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
@@ -453,9 +451,9 @@ void MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     layout->addWidget(_imp->buttonsContainer);
     appendButtons(_imp->buttonsLayout);
     _imp->buttonsLayout->addStretch();
-    ///finally insert the main instance in the table
-    _imp->addTableRow(_imp->getMainInstance());
     
+    ///Deactivate the main-instance since this is more convenient this way for the user.
+    _imp->getMainInstance()->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,false,false);
     _imp->guiCreated = true;
 }
 
@@ -724,9 +722,11 @@ public:
     
     virtual void undo() OVERRIDE FINAL
     {
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        std::list<boost::shared_ptr<Natron::Node> >::iterator next = _nodes.begin();
+        ++next;
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it,++next) {
             _panel->addRow(*it);
-            (*it)->activate(std::list<boost::shared_ptr<Natron::Node> >(),false);
+            (*it)->activate(std::list<boost::shared_ptr<Natron::Node> >(),false,next == _nodes.end());
         }
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
@@ -736,12 +736,15 @@ public:
     virtual void redo() OVERRIDE FINAL
     {
         boost::shared_ptr<Node> mainInstance = _panel->getMainInstance();
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it) {
+        
+        std::list<boost::shared_ptr<Natron::Node> >::iterator next = _nodes.begin();
+        ++next;
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _nodes.begin();it!=_nodes.end();++it,++next) {
             int index = _panel->getNodeIndex(*it);
             assert(index != -1);
             _panel->removeRow(index);
             bool isMainInstance = (*it) == mainInstance;
-            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance);
+            (*it)->deactivate(std::list<boost::shared_ptr<Natron::Node> >(),false,false,!isMainInstance,next == _nodes.end());
         }
         
         mainInstance->getApp()->triggerAutoSave();

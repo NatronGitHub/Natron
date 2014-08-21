@@ -34,12 +34,16 @@
 #    include <mach/task.h>
 #    include <mach/task_info.h>
 #    include <sys/sysctl.h>
+#    include <sys/statvfs.h>
+#    include <stdexcept>
+#    include <sys/errno.h>
 #  elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 #    include <fcntl.h>
 #    include <procfs.h>
 #  elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
 #    include <stdio.h>
 #    include <unistd.h>
+#    include <sys/sysinfo.h>
 #  endif
 #else
 #  error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
@@ -64,6 +68,8 @@ inline size_t getSystemTotalRAM() {
     return value;
     
 #elif defined(_WIN32)
+    ///On Windows, but not Cygwin, the new GlobalMemoryStatusEx( ) function fills a 64-bit
+    ///safe MEMORYSTATUSEX struct with information about physical and virtual memory. Structure fields include:
     MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);
     GlobalMemoryStatusEx(&status);
@@ -206,6 +212,38 @@ inline size_t getCurrentRSS( )
 #else
 	/* AIX, BSD, Solaris, and Unknown OS ------------------------ */
 	return (size_t)0L;			/* Unsupported. */
+#endif
+}
+
+
+
+inline size_t getAmountFreePhysicalRAM()
+{
+#if defined(_WIN32)
+    ///On Windows, but not Cygwin, the new GlobalMemoryStatusEx( ) function fills a 64-bit
+    ///safe MEMORYSTATUSEX struct with information about physical and virtual memory. Structure fields include:
+    MEMORYSTATUSEX statex;
+    statex.dwLength = sizeof (statex);
+    GlobalMemoryStatusEx (&statex);
+    return statex.ullAvailPhys;
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
+    struct sysinfo memInfo;
+    sysinfo (&memInfo);
+    long long totalAvailableRAM = memInfo.freeram;
+    totalAvailableRAM *= memInfo.mem_unit;
+    return totalAvailableRAM;
+#elif defined(__APPLE__) && defined(__MACH__)
+    mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
+    vm_statistics_data_t vmstat;
+    host_name_port_t hostName = mach_host_self();
+    if (KERN_SUCCESS != host_statistics(hostName, HOST_VM_INFO, (host_info_t)&vmstat, &count)) {
+        throw std::runtime_error("Unable to get amount of free physical RAM");
+    }
+    size_t pageSize;
+    if (KERN_SUCCESS != host_page_size(hostName, &pageSize)) {
+        throw std::runtime_error("Unable to get amount of free physical RAM");
+    }
+    return vmstat.free_count * pageSize;
 #endif
 }
 
