@@ -872,7 +872,13 @@ Image::downscaleMipMap(const RectI& roi,
     std::auto_ptr<Natron::Image> tmpImg(new Natron::Image(getComponents(), getRoD(), dstRoI, toLevel, getBitDepth()));
     
     buildMipMapLevel(roi, toLevel - fromLevel, tmpImg.get());
-  
+
+    // check that the downscaled mipmap fits exactly in the output image (may not be always true?)
+    assert(dstRoI.x1 == output->getBounds().x1);
+    assert(dstRoI.x2 == output->getBounds().x2);
+    assert(dstRoI.y1 == output->getBounds().y1);
+    assert(dstRoI.y2 == output->getBounds().y2);
+
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, false);
 }
