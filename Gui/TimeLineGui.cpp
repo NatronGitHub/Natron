@@ -540,7 +540,7 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
     _imp->_lastMouseEventWidgetCoord = e->pos();
     double t = toTimeLineCoordinates(e->x(),0).x();
     SequenceTime tseq = std::floor(t + 0.5);
-    if (modifierIsControl(e)) {
+    if (modCASIsControl(e)) {
         _imp->_state = DRAGGING_BOUNDARY;
         int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound()-1,0).x();
         int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound()+1,0).x();

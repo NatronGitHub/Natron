@@ -1057,13 +1057,13 @@ ViewerTab::isPlayingBackward() const
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
+    if (e->key() == Qt::Key_Space && modCASIsNone(e)) {
         if (parentWidget()) {
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
 
-    } else if (e->key() == Qt::Key_Y && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Y && modCASIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1071,7 +1071,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(0);
         }
 
-    } else if (e->key() == Qt::Key_R && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_R && modCASIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 2) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1079,7 +1079,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(2);
         }
 
-    } else if (e->key() == Qt::Key_G && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_G && modCASIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 3) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1087,7 +1087,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(3);
         }
 
-    } else if (e->key() == Qt::Key_B  && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_B  && modCASIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 4) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1095,7 +1095,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(4);
         }
 
-    } else if (e->key() == Qt::Key_A && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_A && modCASIsNone(e)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 5) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1103,76 +1103,76 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(5);
         }
 
-    } else if (e->key() == Qt::Key_Left && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsNone(e)) {
         previousFrame();
 
-    } else if (e->key() == Qt::Key_J && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_J && modCASIsNone(e)) {
         startBackward(!_imp->play_Backward_Button->isDown());
 
-    } else if (e->key() == Qt::Key_K && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_K && modCASIsNone(e)) {
         abortRendering();
 
-    } else if (e->key() == Qt::Key_L && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_L && modCASIsNone(e)) {
         startPause(!_imp->play_Forward_Button->isDown());
         
-    } else if (e->key() == Qt::Key_Right && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsNone(e)) {
         nextFrame();
-    } else if (e->key() == Qt::Key_Left && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsShift(e)) {
         //prev incr
         previousIncrement();
 
-    } else if (e->key() == Qt::Key_Right && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsShift(e)) {
         //next incr
         nextIncrement();
 
-    } else if (e->key() == Qt::Key_Left && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsControl(e)) {
         //first frame
         firstFrame();
 
-    } else if (e->key() == Qt::Key_Right && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsControl(e)) {
         //last frame
         lastFrame();
 
-    } else if (e->key() == Qt::Key_Left && modifierIsControlShift(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsControlShift(e)) {
         //prev key
         _imp->app->getTimeLine()->goToPreviousKeyframe();
 
-    } else if (e->key() == Qt::Key_Right && modifierIsControlShift(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsControlShift(e)) {
         //next key
         _imp->app->getTimeLine()->goToNextKeyframe();
 
-    } else if(e->key() == Qt::Key_F && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_F && modCASIsNone(e)) {
         centerViewer();
         
-    } else if(e->key() == Qt::Key_C && modifierIsShift(e)) {
+    } else if(e->key() == Qt::Key_C && modCASIsShift(e)) {
         onClipToProjectButtonToggle(!_imp->_clipToProjectFormatButton->isDown());
 
-    } else if(e->key() == Qt::Key_U && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_U && modCASIsNone(e)) {
         refresh();
 
-    } else if(e->key() == Qt::Key_W && modifierIsShift(e)) {
+    } else if(e->key() == Qt::Key_W && modCASIsShift(e)) {
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
 
-    } else if (e->key() == Qt::Key_P && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_P && modCASIsControl(e)) {
         onRenderScaleButtonClicked(!_imp->_renderScaleActive);
 
-    } else if (e->key() == Qt::Key_1 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+    } else if (e->key() == Qt::Key_1 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(0);
 
-    } else if (e->key() == Qt::Key_2 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+    } else if (e->key() == Qt::Key_2 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(1);
 
-    } else if (e->key() == Qt::Key_3 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+    } else if (e->key() == Qt::Key_3 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(2);
 
-    } else if (e->key() == Qt::Key_4 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+    } else if (e->key() == Qt::Key_4 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
       _imp->_renderScaleCombo->setCurrentIndex(3);
 
-    } else if (e->key() == Qt::Key_5 && (modifierIsAlt(e) || modifierIsAltShift(e))) {
+    } else if (e->key() == Qt::Key_5 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
        _imp->_renderScaleCombo->setCurrentIndex(4);
     }

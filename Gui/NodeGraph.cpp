@@ -835,8 +835,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         if (buttonIsLeft(e)) {
             _imp->_magnifiedNode = selected;
             if (!selected->isSelected()) {
-                selectNode(selected, modifierIsShift(e));
-            } else if (modifierIsShift(e)) {
+                selectNode(selected, modCASIsShift(e));
+            } else if (modCASIsShift(e)) {
                 std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_selection.nodes.begin(),
                                                                                 _imp->_selection.nodes.end(),selected);
                 if (it != _imp->_selection.nodes.end()) {
@@ -888,7 +888,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         QPointF pos = dotNodeGui->mapToParent(dotNodeGui->mapFromScene(_imp->_lastScenePosClick));
         dotNodeGui->refreshPosition(pos.x(), pos.y());
         if (!dotNodeGui->isSelected()) {
-            selectNode(dotNodeGui, modifierIsShift(e));
+            selectNode(dotNodeGui, modCASIsShift(e));
         }
         _imp->_evtState = NODE_DRAGGING;
         _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
@@ -905,7 +905,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
                 didSomething = true;
                 if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, modifierIsShift(e));
+                    selectBackDrop(*it, modCASIsShift(e));
                 }
                 if (buttonIsLeft(e)) {
                     _imp->_evtState = BACKDROP_DRAGGING;
@@ -915,7 +915,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 didSomething = true;
                 _imp->_backdropResized = *it;
                 if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, modifierIsShift(e));
+                    selectBackDrop(*it, modCASIsShift(e));
                 }
                 if (buttonIsLeft(e)) {
                     _imp->_evtState = BACKDROP_RESIZING;
@@ -936,7 +936,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     }
     if (!didSomething) {
         if (buttonIsLeft(e)) {
-            if (!modifierIsShift(e)) {
+            if (!modCASIsShift(e)) {
                 deselect();
             }
             _imp->_evtState = SELECTION_RECT;
@@ -1092,7 +1092,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         }
     } else if (state == SELECTION_RECT) {
         _imp->_selectionRect->hide();
-        _imp->editSelectionFromSelectionRectangle(modifierIsShift(e));
+        _imp->editSelectionFromSelectionRectangle(modCASIsShift(e));
     }
     scene()->update();
     update();
@@ -1163,7 +1163,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 }
                 //= _imp->_selection.nodes;
 
-                if ((_imp->_evtState == BACKDROP_DRAGGING && !modifierIsControl(e)) ||
+                if ((_imp->_evtState == BACKDROP_DRAGGING && !modCASIsControl(e)) ||
                     _imp->_evtState == NODE_DRAGGING) {
                     ///For all backdrops also move all the nodes contained within it
                     for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
@@ -1473,60 +1473,60 @@ NodeGraph::event(QEvent* e)
 void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
+    if (e->key() == Qt::Key_Space && modCASIsNone(e)) {
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
         QCoreApplication::postEvent(parentWidget(),ev);
 
-    } else if (e->key() == Qt::Key_R && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_R && modCASIsNone(e)) {
         _imp->_gui->createReader();
 
-    } else if (e->key() == Qt::Key_W && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_W && modCASIsNone(e)) {
         _imp->_gui->createWriter();
 
-    } else if ((e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) && modifierIsNone(e)) {
+    } else if ((e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) && modCASIsNone(e)) {
         deleteSelection();
 
-    } else if (e->key() == Qt::Key_P && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_P && modCASIsNone(e)) {
         forceRefreshAllPreviews();
 
-    } else if (e->key() == Qt::Key_C && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_C && modCASIsControl(e)) {
         copySelectedNodes();
 
-    } else if (e->key() == Qt::Key_V && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_V && modCASIsControl(e)) {
         pasteNodeClipBoards();
 
-    } else if (e->key() == Qt::Key_X && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_X && modCASIsControl(e)) {
         cutSelectedNodes();
 
-    } else if (e->key() == Qt::Key_C && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_C && modCASIsAlt(e)) {
         duplicateSelectedNodes();
 
-    } else if (e->key() == Qt::Key_K && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_K && modCASIsAlt(e)) {
         cloneSelectedNodes();
 
-    } else if (e->key() == Qt::Key_K && modifierIsAltShift(e)) {
+    } else if (e->key() == Qt::Key_K && modCASIsAltShift(e)) {
         decloneSelectedNodes();
 
-    } else if (e->key() == Qt::Key_F && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_F && modCASIsNone(e)) {
         centerOnAllNodes();
 
-    } else if (e->key() == Qt::Key_H && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_H && modCASIsNone(e)) {
         toggleConnectionHints();
 
-    } else if (e->key() == Qt::Key_X && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_X && modCASIsShift(e)) {
         ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
         switchInputs1and2ForSelectedNodes();
         
-    } else if (e->key() == Qt::Key_A && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_A && modCASIsControl(e)) {
         selectAllNodes(false);
 
-    } else if (e->key() == Qt::Key_A && modifierIsControlShift(e)) {
+    } else if (e->key() == Qt::Key_A && modCASIsControlShift(e)) {
         selectAllNodes(true);
 
     } else if (e->key() == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
 
-    } else if (e->key() == Qt::Key_Up && (modifierIsControlShift(e) || modifierIsControlAltShift(e))) {
+    } else if (e->key() == Qt::Key_Up && (modCASIsControlShift(e) || modCASIsControlAltShift(e))) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if (!_imp->_selection.nodes.empty()) {
@@ -1534,13 +1534,13 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             const std::map<int,Edge*>& inputs = lastSelected->getInputsArrows();
             for (std::map<int,Edge*>::const_iterator it = inputs.begin();it!=inputs.end();++it) {
                 if (it->second->hasSource()) {
-                    selectNode(it->second->getSource(), modifierIsControlAltShift(e));
+                    selectNode(it->second->getSource(), modCASIsControlAltShift(e));
                     break;
                 }
             }
         }
 
-    } else if (e->key() == Qt::Key_Down && (modifierIsNone(e) || modifierIsShift(e))) {
+    } else if (e->key() == Qt::Key_Down && (modCASIsNone(e) || modCASIsShift(e))) {
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if (!_imp->_selection.nodes.empty()) {
@@ -1549,73 +1549,73 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             if (!outputs.empty()) {
                 boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui(outputs.front());
                 assert(output);
-                selectNode(output, modifierIsShift(e));
+                selectNode(output, modCASIsShift(e));
             }
         }
         
-    } else if (e->key() == Qt::Key_Left && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsNone(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->previousFrame();
         }
 
-    } else if (e->key() == Qt::Key_Right && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsNone(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->nextFrame();
         }
 
-    } else if (e->key() == Qt::Key_Left && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsControl(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->firstFrame();
         }
 
-    } else if (e->key() == Qt::Key_Right && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsControl(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->lastFrame();
         }
 
-    } else if (e->key() == Qt::Key_Left && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsShift(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->previousIncrement();
         }
 
-    } else if (e->key() == Qt::Key_Right && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsShift(e)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->nextIncrement();
         }
 
-    } else if (e->key() == Qt::Key_Left && modifierIsControlShift(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsControlShift(e)) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
 
-    } else if (e->key() == Qt::Key_Right && modifierIsControlShift(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsControlShift(e)) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
 
-    } else if (e->key() == Qt::Key_T && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_T && modCASIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_O && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_O && modCASIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_M && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_M && modCASIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_G && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_G && modCASIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_C && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_C && modCASIsNone(e)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_L && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_L && modCASIsNone(e)) {
         _imp->rearrangeSelectedNodes();
 
-    } else if (e->key() == Qt::Key_D && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_D && modCASIsNone(e)) {
         _imp->toggleSelectedNodesEnabled();
 
-    } else if (e->key() == Qt::Key_E && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_E && modCASIsShift(e)) {
         toggleKnobLinksVisible();
     }
     
@@ -1770,7 +1770,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     if(newZoomfactor < 0.07 || newZoomfactor > 10)
         return;
     
-    if (modifierIsControl(e) && _imp->_magnifiedNode) {
+    if (modCASIsControl(e) && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
             _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode->scale();

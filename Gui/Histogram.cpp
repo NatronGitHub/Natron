@@ -1216,7 +1216,7 @@ Histogram::wheelEvent(QWheelEvent* e)
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
 
-    if (modifierIsControlShift(e)) {
+    if (modCASIsControlShift(e)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {
@@ -1235,7 +1235,7 @@ Histogram::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.factor();
         }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-    } else if (modifierIsControl(e)) {
+    } else if (modCASIsControl(e)) {
         // Alt + Wheel: zoom time only, keep point under mouse
         par = _imp->zoomCtx.par() * scaleFactor;
         if (par <= par_min) {

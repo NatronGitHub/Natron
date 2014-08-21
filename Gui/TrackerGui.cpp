@@ -354,7 +354,7 @@ TrackerGui::penDown(double scaleX,
         if (pos.x() >= (x - selectionTol) && pos.x() <= (x + selectionTol) &&
             pos.y() >= (y - selectionTol) && pos.y() <= (y + selectionTol)) {
             if (!it->second) {
-                _imp->panel->selectNode(it->first, modifierIsControl(e));
+                _imp->panel->selectNode(it->first, modCASIsControl(e));
             }
             didSomething = true;
         }
@@ -373,7 +373,7 @@ TrackerGui::penDown(double scaleX,
         didSomething = true;
     }
     
-    if (!didSomething && !modifierIsControl(e)) {
+    if (!didSomething && !modCASIsControl(e)) {
         _imp->panel->clearSelection();
     }
     
@@ -473,34 +473,34 @@ TrackerGui::keyDown(double scaleX,
         }
     }
     
-    if (modifierIsControlAlt(e) && (e->key() == Qt::Key_Control || e->key() == Qt::Key_Alt)) {
+    if (modCASIsControlAlt(e) && (e->key() == Qt::Key_Control || e->key() == Qt::Key_Alt)) {
         _imp->clickToAddTrackEnabled = true;
         _imp->addTrackButton->setDown(true);
         _imp->addTrackButton->setChecked(true);
         didSomething = true;
 
-    } else if (modifierIsControl(e) && e->key() == Qt::Key_A) {
+    } else if (modCASIsControl(e) && e->key() == Qt::Key_A) {
         _imp->panel->onSelectAllButtonClicked();
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
 
-    } else if (modifierIsNone(e) && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
+    } else if (modCASIsNone(e) && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
         _imp->panel->onDeleteKeyPressed();
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
 
-    } else if (modifierIsNone(e) && (e->key() == Qt::Key_Z)) {
+    } else if (modCASIsNone(e) && (e->key() == Qt::Key_Z)) {
         didSomething = _imp->panel->trackBackward();
 
-    } else if (modifierIsNone(e) && (e->key() == Qt::Key_X)) {
+    } else if (modCASIsNone(e) && (e->key() == Qt::Key_X)) {
         didSomething = _imp->panel->trackPrevious();
 
-    } else if (modifierIsNone(e) && (e->key() == Qt::Key_C)) {
+    } else if (modCASIsNone(e) && (e->key() == Qt::Key_C)) {
         didSomething = _imp->panel->trackNext();
 
-    } else if (modifierIsNone(e) && (e->key() == Qt::Key_V)) {
+    } else if (modCASIsNone(e) && (e->key() == Qt::Key_V)) {
         didSomething = _imp->panel->trackForward();
     }
     

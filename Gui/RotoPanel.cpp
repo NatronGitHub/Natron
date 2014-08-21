@@ -1519,15 +1519,15 @@ TreeWidget::keyPressEvent(QKeyEvent* e)
         _panel->setLastRightClickedItem(item);
         if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
             _panel->onRemoveItemButtonClicked();
-        } else if (e->key() == Qt::Key_C && modifierIsControl(e)) {
+        } else if (e->key() == Qt::Key_C && modCASIsControl(e)) {
             _panel->onCopyItemActionTriggered();
-        } else if (e->key() == Qt::Key_V && modifierIsControl(e)) {
+        } else if (e->key() == Qt::Key_V && modCASIsControl(e)) {
             _panel->onPasteItemActionTriggered();
-        } else if (e->key() == Qt::Key_X && modifierIsControl(e)) {
+        } else if (e->key() == Qt::Key_X && modCASIsControl(e)) {
             _panel->onCutItemActionTriggered();
-        } else if (e->key() == Qt::Key_C && modifierIsAlt(e)) {
+        } else if (e->key() == Qt::Key_C && modCASIsAlt(e)) {
             _panel->onDuplicateItemActionTriggered();
-        } else if (e->key() == Qt::Key_A && modifierIsControl(e)) {
+        } else if (e->key() == Qt::Key_A && modCASIsControl(e)) {
             _panel->selectAll();
         } else {
             QTreeWidget::keyPressEvent(e);

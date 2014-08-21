@@ -2044,7 +2044,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = DRAGGING_KEYS;
         setCursor(QCursor(Qt::CrossCursor));
 
-        if (!modifierIsControl(e)) {
+        if (!modCASIsControl(e)) {
             _imp->_selectedKeyFrames.clear();
         }
         KeyPtr selected (new SelectedKey(selectedKey.first,selectedKey.second));
@@ -2103,7 +2103,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     ////
     // default behaviour: unselect selected keyframes, if any, and start a new selection
     _imp->_drawSelectedKeyFramesBbox = false;
-    if (!modifierIsControl(e)) {
+    if (!modCASIsControl(e)) {
         _imp->_selectedKeyFrames.clear();
     }
     _imp->_state = SELECTING;
@@ -2327,7 +2327,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
 
-    if (modifierIsControlShift(e)) {
+    if (modCASIsControlShift(e)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {
@@ -2346,7 +2346,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.factor();
         }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-    } else if (modifierIsControl(e)) {
+    } else if (modCASIsControl(e)) {
         // Alt + Wheel: zoom time only, keep point under mouse
         par = _imp->zoomCtx.par() * scaleFactor;
         if (par <= par_min) {
@@ -2464,33 +2464,33 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     }
     else if(e->key() == Qt::Key_Backspace) {
         deleteSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_K && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_K && modCASIsNone(e)) {
         constantInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_L && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_L && modCASIsNone(e)) {
         linearInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_Z && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_Z && modCASIsNone(e)) {
         smoothForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_R && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_R && modCASIsNone(e)) {
         catmullromInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_C && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_C && modCASIsNone(e)) {
         cubicInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_H && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_H && modCASIsNone(e)) {
         horizontalInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_X && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_X && modCASIsNone(e)) {
         breakDerivativesForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_F && modifierIsNone(e)) {
+    } else if(e->key() == Qt::Key_F && modCASIsNone(e)) {
         frameSelectedCurve();
-    } else if(e->key() == Qt::Key_A && modifierIsControl(e)) {
+    } else if(e->key() == Qt::Key_A && modCASIsControl(e)) {
         selectAllKeyFrames();
-    } else if(e->key() == Qt::Key_C && modifierIsControl(e)) {
+    } else if(e->key() == Qt::Key_C && modCASIsControl(e)) {
         copySelectedKeyFrames();
-    } else if(e->key() == Qt::Key_V && modifierIsControl(e)) {
+    } else if(e->key() == Qt::Key_V && modCASIsControl(e)) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
-    }  else if (e->key() == Qt::Key_Left && modifierIsControlShift(e)) {
+    }  else if (e->key() == Qt::Key_Left && modCASIsControlShift(e)) {
         if (_imp->_timeline) {
             _imp->_timeline->goToPreviousKeyframe();
         }
-    }  else if (e->key() == Qt::Key_Right && modifierIsControlShift(e)) {
+    }  else if (e->key() == Qt::Key_Right && modCASIsControlShift(e)) {
         if (_imp->_timeline) {
             _imp->_timeline->goToNextKeyframe();
         }

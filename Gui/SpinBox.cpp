@@ -460,10 +460,10 @@ SpinBox::wheelEvent(QWheelEvent* e)
     }
     setFocus();
     int delta = e->delta();
-    if (modifierIsShift(e)) {
+    if (modCASIsShift(e)) {
         delta *= 10;
     }
-    if (modifierIsControl(e)) {
+    if (modCASIsControl(e)) {
         delta /= 10;
     }
     increment(delta);
@@ -497,10 +497,10 @@ SpinBox::keyPressEvent(QKeyEvent* e)
     if (isEnabled() && !isReadOnly()) {
         if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
             int delta = (e->key() == Qt::Key_Up) ? 120 : -120;
-            if (modifierIsShift(e)) {
+            if (modCASIsShift(e)) {
                 delta *= 10;
             }
-            if (modifierIsControl(e)) {
+            if (modCASIsControl(e)) {
                 delta /= 10;
             }
             increment(delta);

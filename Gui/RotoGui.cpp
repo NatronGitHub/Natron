@@ -1418,7 +1418,7 @@ RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezier>& 
     if (found == rotoData->selectedBeziers.end()) {
         
         ///clear previous selection if the SHIFT modifier isn't held
-        if (!modifierIsShift(e)) {
+        if (!modCASIsShift(e)) {
             clearBeziersSelection();
         }
         rotoData->selectedBeziers.push_back(curve);
@@ -1443,7 +1443,7 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
     
     if (foundCP == rotoData->selectedCps.end()) {
         ///clear previous selection if the SHIFT modifier isn't held
-        if (!modifierIsShift(e)) {
+        if (!modCASIsShift(e)) {
             rotoData->selectedCps.clear();
         }
         rotoData->selectedCps.push_back(p);
@@ -1785,7 +1785,7 @@ RotoGui::penDown(double /*scaleX*/,
             break;
         case DRAW_ELLIPSE:
         {
-            bool fromCenter = modifierIsControl(e);
+            bool fromCenter = modCASIsControl(e);
             pushUndoCommand(new MakeEllipseUndoCommand(this,true,fromCenter,pos.x(),pos.y(),time));
             if (fromCenter) {
                 _imp->state = BULDING_ELLIPSE_CENTER;
@@ -2026,7 +2026,7 @@ RotoGui::penMotion(double /*scaleX*/,
         {
             assert(_imp->rotoData->tangentBeingDragged);
             pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->rotoData->tangentBeingDragged,true,
-                                                       modifierIsControl(e)));
+                                                       modCASIsControl(e)));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
@@ -2034,7 +2034,7 @@ RotoGui::penMotion(double /*scaleX*/,
         {
             assert(_imp->rotoData->tangentBeingDragged);
             pushUndoCommand(new MoveTangentUndoCommand(this,dx,dy,time,_imp->rotoData->tangentBeingDragged,false,
-                                                       modifierIsControl(e)));
+                                                       modCASIsControl(e)));
             _imp->evaluateOnPenUp = true;
             didSomething = true;
         }   break;
@@ -2219,7 +2219,7 @@ RotoGui::keyDown(double /*scaleX*/,
 {
     bool didSomething = false;
 
-    if (modifierIsControl(e)) {
+    if (modCASIsControl(e)) {
         if (!_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && e->key() == Qt::Key_Control) {
             _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
             ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
@@ -2227,7 +2227,7 @@ RotoGui::keyDown(double /*scaleX*/,
         }
     }
     
-    if ((e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) && modifierIsNone(e)) {
+    if ((e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) && modCASIsNone(e)) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->rotoData->selectedCps.empty()) {
             pushUndoCommand(new RemovePointUndoCommand(this,_imp->rotoData->selectedCps));
@@ -2237,7 +2237,7 @@ RotoGui::keyDown(double /*scaleX*/,
             didSomething = true;
         }
         
-    } else if ((e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) && modifierIsNone(e)) {
+    } else if ((e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) && modCASIsNone(e)) {
         if (_imp->selectedTool == DRAW_BEZIER && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished()) {
             pushUndoCommand(new OpenCloseUndoCommand(this,_imp->rotoData->builtBezier));
             _imp->rotoData->builtBezier.reset();
@@ -2247,7 +2247,7 @@ RotoGui::keyDown(double /*scaleX*/,
             didSomething = true;
         }
 
-    } else if (e->key() == Qt::Key_A && modifierIsControl(e)) {
+    } else if (e->key() == Qt::Key_A && modCASIsControl(e)) {
         _imp->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
         if (_imp->rotoData->selectedBeziers.empty()) {
@@ -2273,38 +2273,38 @@ RotoGui::keyDown(double /*scaleX*/,
         }
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Q && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Q && modCASIsNone(e)) {
         _imp->selectTool->handleSelection();
 
-    } else if (e->key() == Qt::Key_V && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_V && modCASIsNone(e)) {
         _imp->bezierEditionTool->handleSelection();
 
-    } else if (e->key() == Qt::Key_D && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_D && modCASIsNone(e)) {
         _imp->pointsEditionTool->handleSelection();
 
-    } else if (e->key() == Qt::Key_Right && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Right && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(1,0);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Left && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(-1,0);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Up && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Up && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(0,1);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Down && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Down && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(0,-1);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Z && modifierIsNone(e)) {
+    } else if (e->key() == Qt::Key_Z && modCASIsNone(e)) {
         smoothSelectedCurve();
 
-    } else if (e->key() == Qt::Key_Z && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_Z && modCASIsShift(e)) {
         cuspSelectedCurve();
 
-    } else if (e->key() == Qt::Key_E && modifierIsShift(e)) {
+    } else if (e->key() == Qt::Key_E && modCASIsShift(e)) {
         removeFeatherForSelectedCurve();
     }
     
@@ -2317,16 +2317,16 @@ RotoGui::keyRepeat(double /*scaleX*/,
                    QKeyEvent* e)
 {
     bool didSomething = false;
-    if (e->key() == Qt::Key_Right && modifierIsAlt(e)) {
+    if (e->key() == Qt::Key_Right && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(1,0);
         didSomething = true;
-    } else if (e->key() == Qt::Key_Left && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Left && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(-1,0);
         didSomething = true;
-    } else if (e->key() == Qt::Key_Up && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Up && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(0,1);
         didSomething = true;
-    } else if (e->key() == Qt::Key_Down && modifierIsAlt(e)) {
+    } else if (e->key() == Qt::Key_Down && modCASIsAlt(e)) {
         moveSelectedCpsWithKeyArrows(0,-1);
         didSomething = true;
     }
@@ -2337,7 +2337,7 @@ bool RotoGui::keyUp(double /*scaleX*/, double /*scaleY*/, QKeyEvent* e)
 {
     bool didSomething = false;
 
-    if (!modifierIsControl(e)) {
+    if (!modCASIsControl(e)) {
         if (!_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && e->key() == Qt::Key_Control) {
             _imp->rotoData->transformMode = (_imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
             ROTATE_AND_SKEW : TRANSLATE_AND_SCALE);

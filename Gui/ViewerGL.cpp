@@ -2229,7 +2229,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             _imp->selectionRectangle.setBottomRight(zoomPos);
             _imp->lastDragStartPos = zoomPos;
             _imp->ms = SELECTING;
-            if (!modifierIsControl(e)) {
+            if (!modCASIsControl(e)) {
                 emit selectionCleared();
             }
         }

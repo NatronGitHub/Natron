@@ -1267,7 +1267,7 @@ TabWidget::isFullScreen() const
 void
 TabWidget::keyPressEvent (QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space && modifierIsNone(e)) {
+    if (e->key() == Qt::Key_Space && modCASIsNone(e)) {
         bool fullScreen;
         {
             QMutexLocker l(&_tabWidgetStateMutex);
