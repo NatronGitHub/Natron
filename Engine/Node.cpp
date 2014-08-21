@@ -677,7 +677,9 @@ Node::getOutputsConnectedToThisNode(std::map<boost::shared_ptr<Node>,int>* outpu
         assert(*it);
         int indexOfThis = (*it)->inputIndex(this);
         assert(indexOfThis != -1);
-        outputs->insert(std::make_pair(*it, indexOfThis));
+        if (indexOfThis >= 0) {
+            outputs->insert(std::make_pair(*it, indexOfThis));
+        }
     }
 }
 
