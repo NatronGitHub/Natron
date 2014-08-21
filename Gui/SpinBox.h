@@ -56,7 +56,10 @@ public:
     ///For the stylesheet: it controls whether the background should be paint in black or not.
     void setDirty(bool d) ;
     bool getDirty() const { return dirty; }
+
 private:
+
+    void increment(int delta);
     
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     
@@ -87,6 +90,8 @@ public slots:
 private:
     
     void setValue_internal(double d,bool ignoreDecimals);
+
+    void setText(const QString &str, int cursorPos);
 
     ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value

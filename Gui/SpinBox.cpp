@@ -19,6 +19,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QDoubleValidator>
 #include <QtGui/QIntValidator>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QDebug>
 
 #include "Engine/Variant.h"
 #include "Engine/Settings.h"
@@ -61,8 +62,6 @@ struct SpinBoxPrivate
     {
         
     }
-    
-    void incrementAccordingToPosition(const QString& str,int cursorPos,double& inc);
     
     QString setNum(double cur);
 };
@@ -113,7 +112,6 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
 {
     _imp->valueWhenEnteringFocus = d;
     int pos = cursorPosition();
-    clear();
     QString str;
     switch (_imp->type) {
         case DOUBLE_SPINBOX:
@@ -130,10 +128,10 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
     assert(!str.isEmpty());
     
     ///Remove trailing 0s by hand...
-    int decimalPtPos = str.indexOf(QChar('.'));
+    int decimalPtPos = str.indexOf('.');
     if (decimalPtPos != -1) {
         int i = str.size() - 1;
-        while (i > decimalPtPos && str.at(i) == QChar('0')) {
+        while (i > decimalPtPos && str.at(i) == '0') {
             --i;
         }
         ///let 1 trailing 0
@@ -145,17 +143,23 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
     
     int i = 0;
     bool skipFirst = false;
-    if (str.at(0) == QChar('-')) {
+    if (str.at(0) == '-') {
         skipFirst = true;
         ++i;
     }
-    while (i < str.size() && i == QChar('0')) {
+    while (i < str.size() && i == '0') {
         ++i;
     }
     str = str.remove(skipFirst ? 1 : 0, i);
     
-    insert(str);
-    setCursorPosition(pos);
+    setText(str, pos);
+}
+
+void
+SpinBox::setText(const QString &str, int cursorPos)
+{
+    QLineEdit::setText(str);
+    setCursorPosition(cursorPos);
     _imp->hasChangedSinceLastValidation = false;
     _imp->valueAfterLastValidation = value();
 }
@@ -194,135 +198,232 @@ SpinBoxPrivate::setNum(double cur)
     }
 }
 
+// common function for wheel up/down and key up/down
+// delta is in wheel units: a delta of 120 means to increment by 1
 void
-SpinBoxPrivate::incrementAccordingToPosition(const QString& str,int cursorPos,double& inc)
+SpinBox::increment(int delta)
 {
-    ///Try to find a '.' to handle digits after the decimal point
-    int dotPos = str.indexOf('.');
-    bool incSet = false;
-    
-    if (dotPos != -1 && cursorPos >= dotPos) {
-        ///Handle digits after decimal point
-        ///when cursor == dotPos the cursor is actually on the left of the dot
-        if (cursorPos == dotPos) {
-            ++cursorPos;
-        }
-        inc = 1. / std::pow(10.,(double)(cursorPos - dotPos));
-        incSet = true;
-        
+    bool ok;
+    QString str = text();
+    const double oldVal = str.toDouble(&ok);
+    if (!ok) {
+        // not a valid double value, don't do anything
+        return;
     }
-    
-    if (!incSet) {
-        ///if the character prior to the dot is '-' then increment the first digit after the dot
-        if (cursorPos == dotPos - 1 && str.at(cursorPos) == QChar('-')) {
-            inc = type == SpinBox::DOUBLE_SPINBOX ? 0.1 : 1; //< we don't want INT_SPINBOX being incremented by lower than 1
-        } else {
-            if (cursorPos == dotPos -1) {
-                inc = 1;
-            } else {
-                if (dotPos != -1) {
-                    inc = std::pow(10.,(double)(dotPos - cursorPos - 1));
-                } else {
-                    inc = std::pow(10.,(double)str.size() - 1 - cursorPos);
-                }
+
+    bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
+
+    if (!useCursorPositionIncr) {
+        double val = oldVal;
+        _imp->currentDelta += delta;
+        double inc = _imp->currentDelta * _imp->increment / 120.;
+        double maxiD = 0.;
+        double miniD = 0.;
+        switch (_imp->type) {
+            case DOUBLE_SPINBOX: {
+                maxiD = _imp->maxi.toDouble();
+                miniD = _imp->mini.toDouble();
+                val += inc;
+                _imp->currentDelta = 0;
+            }   break;
+            case INT_SPINBOX: {
+                maxiD = _imp->maxi.toInt();
+                miniD = _imp->mini.toInt();
+                val += (int)inc; // round towards zero
+                // update the current delta, which contains the accumulated error
+                _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
+                assert(std::abs(_imp->currentDelta) < 120);
+            }   break;
+        }
+        val = std::max(miniD, std::min(val, maxiD));
+        if (val != oldVal) {
+            setValue(val);
+            emit valueChanged(val);
+        }
+        return;
+    }
+
+    if (str.indexOf('e') != -1 || str.indexOf('E') != -1) {
+        // sorry, we don't handle numbers with an exponent, although these are valid doubles
+        return;
+    }
+
+    _imp->currentDelta += delta;
+    int inc_int = _imp->currentDelta / 120; // the number of integert increments
+    // update the current delta, which contains the accumulated error
+    _imp->currentDelta -= inc_int * 120;
+
+    if (inc_int != 0) {
+        // we modify:
+        // - if there is no selection, the first digit right after the cursor (or if it is an int and the cursor is at the end, the last digit)
+        // - if there is a selection, the first digit after the start of the selection
+        int len = str.size(); // used for chopping spurious characters
+        // the position in str of the digit to modify in str() (may be equal to str.size())
+        int pos = hasSelectedText() ? selectionStart() : cursorPosition();
+        // the position of the decimal dot
+        int dot = str.indexOf('.');
+        if (dot == -1) {
+            dot = str.size();
+        }
+
+        // now, chop trailing and leading whitespace (and update len, pos and dot)
+
+        // leading whitespace
+        while (len > 0 && str[0].isSpace()) {
+            str.remove(0, 1);
+            --len;
+            if (pos > 0) {
+                --pos;
+            }
+            --dot;
+            assert(dot >= 0);
+            assert(len > 0);
+        }
+        // trailing whitespace
+        while (len > 0 && str[len-1].isSpace()) {
+            str.remove(len-1, 1);
+            --len;
+            if (pos > len) {
+                --pos;
+            }
+            if (dot > len) {
+                --dot;
+            }
+            assert(len > 0);
+        }
+        assert(oldVal == str.toDouble()); // check that the value hasn't changed due to whitespace manipulation
+
+        QString noDotStr = str;
+        int noDotLen = len;
+        if (dot != len) {
+            // remove the dot
+            noDotStr.remove(dot, 1);
+            --noDotLen;
+        }
+        assert(noDotLen >= dot);
+        double val = oldVal;
+
+        qlonglong llval = noDotStr.toLongLong();
+        int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
+        assert(llpowerOfTen <= 0);
+        // check that val and llval*10^llPowerOfTen are close enough
+        assert(std::fabs(val * std::pow(10,-llpowerOfTen) - llval) < 1e-8);
+
+        assert(0 <= pos && pos <= str.size());
+        while (pos < str.size() &&
+               (pos == dot || str[pos] == '+' || str[pos] == '-')) {
+            ++pos;
+        }
+        assert(len >= pos);
+
+        // if pos is at the end
+        if (pos == str.size()) {
+            switch (_imp->type) {
+                case DOUBLE_SPINBOX:
+                    if (dot == str.size()) {
+                        str += ".0";
+                        len += 2;
+                        ++pos;
+                    } else {
+                        str += "0";
+                        ++len;
+                    }
+                    break;
+                case INT_SPINBOX:
+                    // take the character before
+                    --pos;
+                    break;
             }
         }
-    }
-    
-   
+
+        // compute the full value of the increment
+        assert(pos != dot);
+        assert(0 <= pos && pos < str.size() && str[pos].isDigit());
+
+        int powerOfTen = dot - pos - (pos < dot); // the power of ten
+        assert((_imp->type == DOUBLE_SPINBOX) || (powerOfTen >= 0 && dot == str.size()));
+
+        double inc = inc_int * std::pow(10., (double)powerOfTen);
+        val += inc;
+        if (powerOfTen >= llpowerOfTen) {
+            llval += inc_int * std::pow(10, powerOfTen - llpowerOfTen);
+        } else {
+            llval *= std::pow(10, llpowerOfTen - powerOfTen);
+            llpowerOfTen -= llpowerOfTen - powerOfTen;
+            llval += inc_int;
+        }
+        // check that val and llval*10^llPowerOfTen are still close enough
+        assert(std::fabs(val * std::pow(10,-llpowerOfTen) - llval) < 1e-8);
+
+        QString newStr;
+        newStr.setNum(llval);
+        bool newStrHasSign = newStr[0] == '+' || newStr[0] == '-';
+        // the position of the decimal dot
+        int newDot = newStr.size() + llpowerOfTen;
+        // add leading zeroes if newDot is not a valid position (beware of sign!)
+        while (newDot <= int(newStrHasSign)) {
+            newStr.insert(int(newStrHasSign), '0');
+            ++newDot;
+        }
+        assert(0 <= newDot && newDot <= newStr.size());
+        assert(newDot == newStr.size() || newStr[newDot].isDigit());
+        newStr.insert(newDot, '.');
+        // check that the backed string is close to the wanted value
+        assert((newStr.toDouble() - val) * std::pow(10,-llpowerOfTen) < 1e-8);
+        // the new cursor position
+        int newPos = newDot + (pos - dot);
+
+        assert(0 <= newDot && newDot <= newStr.size());
+
+        // now, add leading and trailing zeroes so that newPos is a valid digit position
+        // (beware of the sign!)
+
+        while (newPos >= newStr.size()) {
+            // add trailing zero, maybe preceded by a dot
+            if (newPos == newDot) {
+                newStr.append('.');
+            } else {
+                assert(newPos > newDot);
+                newStr.append('0');
+            }
+            assert(newPos >= (newStr.size() - 1));
+        }
+
+        while (newPos < 0 || (newPos == 0 && (newStr[0] == '-' || newStr[0] == '+'))) {
+            // add leading zero
+            bool hasSign = (newStr[0] == '-' || newStr[0] == '+');
+            newStr.insert(hasSign ? 1 : 0, '0');
+            ++newPos;
+            ++newDot;
+        }
+
+        assert(0 <= newPos && newPos < newStr.size() && newStr[newPos].isDigit());
+
+        // set the text and cursor position
+        setText(newStr, newPos);
+        // set the selection
+        setSelection(newPos, 1);
+    } // if (inc_int != 0)
 }
 
 void
 SpinBox::wheelEvent(QWheelEvent* e)
 {
-    setFocus();
-    if (e->orientation() != Qt::Vertical) {
+    if (e->orientation() != Qt::Vertical ||
+        e->delta() == 0 ||
+        !isEnabled() ||
+        isReadOnly()) {
         return;
     }
-    if (isEnabled() && !isReadOnly()) {
-        QString str = text();
-        double cur = str.toDouble();
-        double maxiD = 0.;
-        double miniD = 0.;
-        double inc;
-        double old = cur;
-        
-        bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
-        
-        if (!useCursorPositionIncr) {
-            _imp->currentDelta += e->delta();
-            inc = _imp->currentDelta * _imp->increment / 120.;
-            if (modifierIsShift(e)) {
-                inc *= 10.;
-            }
-            if (modifierIsControl(e)) {
-                inc /= 10.;
-            }
-        } else {
-            int cursorPos = cursorPosition();
-            _imp->incrementAccordingToPosition(str,cursorPos,inc);
-            
-            bool incrementing = e->delta() > 0;
-            if (incrementing) {
-                bool shiftCursor = true;
-                for (int i = 0; i <= cursorPos; ++i) {
-                    if (str.at(i) != QChar('9')) {
-                        shiftCursor = false;
-                        break;
-                    }
-                }
-                if (shiftCursor) {
-                    ///this will add another digit
-                    ///we hence move the cursor one step on the right so the user is still modifying
-                    ///the same digit, it avoids overflowing quickly a value.
-                    setCursorPosition(cursorPos + 1);
-                }
-            } else {
-                inc = -inc;
-                bool shiftCursor = false;
-                shiftCursor = str.at(0) == QChar('1');
-                if (shiftCursor) {
-                    for (int i = 1; i <= cursorPos; ++i) {
-                        if (str.at(i) != QChar('0')) {
-                            shiftCursor = false;
-                            break;
-                        }
-                    }
-                }
-                if (shiftCursor) {
-                    ///this will add another digit
-                    ///we hence move the cursor one step on the right so the user is still modifying
-                    ///the same digit, it avoids overflowing quickly a value.
-                    setCursorPosition(cursorPos - 1);
-                }
-            }
-            
-        }
-        switch (_imp->type) {
-            case DOUBLE_SPINBOX:
-                maxiD = _imp->maxi.toDouble();
-                miniD = _imp->mini.toDouble();
-                cur += inc;
-                if (!useCursorPositionIncr) {
-                    _imp->currentDelta = 0;
-                }
-                break;
-            case INT_SPINBOX:
-                maxiD = _imp->maxi.toInt();
-                miniD = _imp->mini.toInt();
-                cur += (int)inc;
-                if (!useCursorPositionIncr) {
-                    _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
-                    assert(std::abs(_imp->currentDelta) < 120);
-                }
-                break;
-        }
-        cur = std::max(miniD, std::min(cur,maxiD));
-        if (cur != old) {
-            setValue(cur);
-            emit valueChanged(cur);
-        }
+    setFocus();
+    int delta = e->delta();
+    if (modifierIsShift(e)) {
+        delta *= 10;
     }
+    if (modifierIsControl(e)) {
+        delta /= 10;
+    }
+    increment(delta);
 }
 
 void
@@ -349,92 +450,21 @@ void
 SpinBox::keyPressEvent(QKeyEvent* e)
 {
     if (isEnabled() && !isReadOnly()) {
-        bool ok;
-        double cur = text().toDouble(&ok);
-        double old = cur;
-        double maxiD,miniD;
-        switch (_imp->type) {
-            case INT_SPINBOX:
-                maxiD = _imp->maxi.toInt();
-                miniD = _imp->mini.toInt();
-                break;
-            case DOUBLE_SPINBOX:
-            default:
-                maxiD = _imp->maxi.toDouble();
-                miniD = _imp->mini.toDouble();
-                break;
-        }
         if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
-            bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
-            double inc;
-            int cursorPos = cursorPosition();
-            QString txt = text();
-
-            if (!useCursorPositionIncr) {
-                inc = _imp->increment;
-                if (modifierIsShift(e)) {
-                    inc *= 10.;
-                }
-                if (modifierIsControl(e)) {
-                    inc /= 10.;
-                }
-            } else {
-                _imp->incrementAccordingToPosition(txt, cursorPos, inc);
-                
+            int delta = (e->key() == Qt::Key_Up) ? 120 : -120;
+            if (modifierIsShift(e)) {
+                delta *= 10;
             }
-            if (e->key() == Qt::Key_Up) {
-                if (cur + inc <= maxiD) {
-                    cur += inc;
-                }
-                
-                bool shiftCursor = true;
-                for (int i = 0; i <= cursorPos; ++i) {
-                    if (txt.at(i) != QChar('9')) {
-                        shiftCursor = false;
-                        break;
-                    }
-                }
-                if (shiftCursor) {
-                    ///this will add another digit
-                    ///we hence move the cursor one step on the right so the user is still modifying
-                    ///the same digit, it avoids overflowing quickly a value.
-                    setCursorPosition(cursorPos + 1);
-                }
-            } else {
-                if (cur - inc >= miniD) {
-                    cur -= inc;
-                }
-                bool shiftCursor = false;
-                shiftCursor = txt.at(0) == QChar('1');
-                if (shiftCursor) {
-                    for (int i = 1; i <= cursorPos; ++i) {
-                        if (txt.at(i) != QChar('0')) {
-                            shiftCursor = false;
-                            break;
-                        }
-                    }
-                }
-                if (shiftCursor) {
-                    ///this will add another digit
-                    ///we hence move the cursor one step on the right so the user is still modifying
-                    ///the same digit, it avoids overflowing quickly a value.
-                    setCursorPosition(cursorPos - 1);
-                }
-
-
+            if (modifierIsControl(e)) {
+                delta /= 10;
             }
-            if (cur < miniD || cur > maxiD) {
-                return;
-            }
-
-            if (cur != old) {
-                setValue(cur);
-                emit valueChanged(cur);
-            }
+            increment(delta);
         } else {
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
         }
+    } else {
+        QLineEdit::keyPressEvent(e);
     }
 }
 
