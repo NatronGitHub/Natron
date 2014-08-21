@@ -442,7 +442,7 @@ void Settings::initializeKnobs(){
     _maxRAMPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxRAMPercent);
     
-    _maxRAMLabel = Natron::createKnob<String_Knob>(this, "which represents");
+    _maxRAMLabel = Natron::createKnob<String_Knob>(this, " = ");
     _maxRAMLabel->setName("maxRamLabel");
     _maxRAMLabel->setIsPersistant(false);
     _maxRAMLabel->setAsLabel();
@@ -460,13 +460,34 @@ void Settings::initializeKnobs(){
     _maxPlayBackPercent->turnOffNewLine();
     _cachingTab->addKnob(_maxPlayBackPercent);
     
-    _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, "which represents");
+    _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, " = ");
     _maxPlaybackLabel->setName("maxPlaybackLabel");
     _maxPlaybackLabel->setIsPersistant(false);
     _maxPlaybackLabel->setAsLabel();
     _maxPlaybackLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxPlaybackLabel);
 
+    _unreachableRAMPercent = Natron::createKnob<Int_Knob>(this, "System RAM to keep free (% system total RAM)");
+    _unreachableRAMPercent->setAnimationEnabled(false);
+    _unreachableRAMPercent->setMinimum(0);
+    _unreachableRAMPercent->setMaximum(90);
+    _unreachableRAMPercent->setHintToolTip("This determines how much system's RAM Natron's caches should keep free. "
+                                           "This overrides completely the 2 settings above in a sense that when falling "
+                                           "under that threshold Natron's caches will start recycling memory instead of growing "
+                                           "regardless of their size limit. "
+                                           "A reasonable value should be set for it allowing the caches to stay in physical RAM "
+                                           "and avoid being swapped-out on disk. This value should reflect the amount of memory "
+                                           "you want to keep available on your computer for other usage. "
+                                           "Failing to supply a good value will result in caches being swapped on disk "
+                                           "hence bad performances.");
+    _unreachableRAMPercent->turnOffNewLine();
+    _cachingTab->addKnob(_unreachableRAMPercent);
+    _unreachableRAMLabel = Natron::createKnob<String_Knob>(this, " = ");
+    _unreachableRAMLabel->setName("unreachableRAMLabel");
+    _unreachableRAMLabel->setIsPersistant(false);
+    _unreachableRAMLabel->setAsLabel();
+    _unreachableRAMLabel->setAnimationEnabled(false);
+    _cachingTab->addKnob(_unreachableRAMLabel);
     
     _maxDiskCacheGB = Natron::createKnob<Int_Knob>(this, "Maximum disk cache size (GB)");
     _maxDiskCacheGB->setAnimationEnabled(false);
@@ -497,9 +518,12 @@ void Settings::setCachingLabels()
     int maxPlaybackPercent = _maxPlayBackPercent->getValue();
     int maxTotalRam = _maxRAMPercent->getValue();
     
-    U64 maxRAM = (U64)(((double)maxTotalRam / 100.) * getSystemTotalRAM());
+    U64 systemTotalRam = getSystemTotalRAM();
+    U64 maxRAM = (U64)(((double)maxTotalRam / 100.) * systemTotalRam);
     _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString(), 0);
     _maxPlaybackLabel->setValue(printAsRAM((U64)(maxRAM * ((double)maxPlaybackPercent / 100.))).toStdString(), 0);
+    
+    _unreachableRAMLabel->setValue(printAsRAM((double)systemTotalRam * ((double)_unreachableRAMPercent->getValue() / 100.)).toStdString(), 0);
 }
 
 void Settings::setDefaultValues() {
@@ -526,6 +550,7 @@ void Settings::setDefaultValues() {
     _powerOf2Tiling->setDefaultValue(8,0);
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
+    _unreachableRAMPercent->setDefaultValue(10);
     _maxDiskCacheGB->setDefaultValue(10,0);
     setCachingLabels();
     _defaultNodeColor->setDefaultValue(0.6,0);
@@ -648,6 +673,7 @@ void Settings::saveSettings(){
     settings.setValue("MaximumRAMUsagePercentage", _maxRAMPercent->getValue());
     settings.setValue("MaximumPlaybackRAMUsage", _maxPlayBackPercent->getValue());
     settings.setValue("MaximumDiskSizeUsage", _maxDiskCacheGB->getValue());
+    settings.setValue("UnreachableRAMPercentage", _unreachableRAMPercent->getValue());
     settings.endGroup();
     
     settings.beginGroup("Viewers");
@@ -817,6 +843,9 @@ void Settings::restoreSettings(){
     }
     if(settings.contains("MaximumDiskSizeUsage")){
         _maxDiskCacheGB->setValue(settings.value("MaximumDiskSizeUsage").toInt(),0);
+    }
+    if (settings.contains("UnreachableRAMPercentage")) {
+        _unreachableRAMPercent->setValue(settings.value("UnreachableRAMPercentage").toInt(), 0);
     }
     settings.endGroup();
     
@@ -1167,6 +1196,13 @@ double Settings::getRamPlaybackMaximumPercent() const{
 U64 Settings::getMaximumDiskCacheSize() const {
     return ((U64)(_maxDiskCacheGB->getValue()) * std::pow(1024.,3.));
 }
+
+double Settings::getUnreachableRamPercent() const
+{
+    return (double)_unreachableRAMPercent->getValue() / 100.;
+}
+
+
 bool Settings::getColorPickerLinear() const {
     return _linearPickers->getValue();
 }

@@ -38,7 +38,7 @@ public:
     
     NonKeyParams(const NonKeyParams& other);
     
-    ///the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
+    ///the number of elements the associated cache entry should allocate the first time (relative to the datatype of the entry)
     U64 getElementsCount() const;
     
     int getCost() const;

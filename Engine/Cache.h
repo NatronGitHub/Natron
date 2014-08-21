@@ -20,6 +20,7 @@
 #include <cstddef>
 
 #include "Global/GlobalDefines.h"
+#include "Global/MemoryInfo.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
@@ -39,6 +40,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/export.hpp>
 
+#include "Engine/AppManager.h" //for access to settings
+#include "Engine/Settings.h"
 #include "Engine/ImageSerialization.h"
 #include "Engine/ImageParamsSerialization.h"
 #include "Engine/FrameEntrySerialization.h"
@@ -208,6 +211,8 @@ namespace Natron {
              be const somehow .*/
         mutable CacheSignalEmitter* _signalEmitter;
 
+        ///Store the system physical total RAM in a member
+        std::size_t _maxPhysicalRAM;
     public:
 
 
@@ -226,6 +231,7 @@ namespace Natron {
             ,_cacheName(cacheName)
             ,_version(version)
             ,_signalEmitter(NULL)
+            ,_maxPhysicalRAM(getSystemTotalRAM())
         {
         }
 
@@ -711,6 +717,19 @@ namespace Natron {
                     qDebug() << "WARNING: serialized hash key different than the restored one";
                 }
                 EntryType* value = NULL;
+                
+                ///Before allocating the memory check that there's enough space to fit in memory
+                size_t systemRAMToKeepFree = _maxPhysicalRAM * appPTR->getCurrentSettings()->getUnreachableRamPercent();
+                size_t totalFreeRAM = getAmountFreePhysicalRAM();
+                size_t entryDataSize = it->params->getElementsCount() * sizeof(data_t);
+                
+                while ((_memoryCacheSize + entryDataSize >= _maximumInMemorySize) || totalFreeRAM <= systemRAMToKeepFree) {
+                    if (!tryEvictEntry()) {
+                        break;
+                    }
+                    totalFreeRAM = getAmountFreePhysicalRAM();
+                }
+                
                 try {
                     value = new EntryType(it->key,it->params,this);
                     value->allocateMemory(true,QString(getCachePath()+QDir::separator()).toStdString());
@@ -724,6 +743,7 @@ namespace Natron {
                 sealEntry(cachedValue);
             }
             
+            
         }
     private:
 
@@ -736,6 +756,22 @@ namespace Natron {
         EntryTypePtr newEntry(const typename EntryType::key_type& key,const NonKeyParamsPtr& params) const {
             assert(!_lock.tryLock()); // must be locked
             EntryTypePtr entryptr;
+            
+            ///Before allocating the memory check that there's enough space to fit in memory
+            size_t systemRAMToKeepFree = _maxPhysicalRAM * appPTR->getCurrentSettings()->getUnreachableRamPercent();
+            size_t totalFreeRAM = getAmountFreePhysicalRAM();
+            size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
+            
+            while ((_memoryCacheSize + entryDataSize >= _maximumInMemorySize) || totalFreeRAM <= systemRAMToKeepFree) {
+                if (!tryEvictEntry()) {
+                    break;
+                }
+                totalFreeRAM = getAmountFreePhysicalRAM();
+            }
+            
+            ///At this point there could be nothing in the cache but the condition totalFreeRAM <= systemRAMToKeepFree would still be
+            ///true. This is likely because the other cache is taking all the memory.
+            // We still allocate the entry because otherwise we would never be able to continue the render.
             try {
                 entryptr.reset(new EntryType(key,params,this));
                 entryptr->allocateMemory(false , QString(getCachePath()+QDir::separator()).toStdString());
@@ -746,21 +782,17 @@ namespace Natron {
             cachedValue.entry = entryptr;
             cachedValue.params = params;
             sealEntry(cachedValue);
+            
             return entryptr;
-
+            
         }
-
+        
         /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
          * function. This is called directly by newEntry() if the allocation was successful
          **/
         void sealEntry(const CachedValue& entry) const {
+ 
             assert(!_lock.tryLock()); // must be locked
-            /*If the cache size exceeds the maximum size allowed, try to make some space*/
-            while (_memoryCacheSize+entry.entry->size() >= _maximumInMemorySize) {
-                if (!tryEvictEntry()) {
-                    break;
-                }
-            }
             typename EntryType::hash_type hash = entry.entry->getHashKey();
             /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
             CacheIterator existingEntry = _memoryCache(hash);

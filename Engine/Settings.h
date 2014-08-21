@@ -61,6 +61,8 @@ public:
     
     U64 getMaximumDiskCacheSize() const;
     
+    double getUnreachableRamPercent() const;
+    
     bool getColorPickerLinear() const;
     
     int getNumberOfThreads() const;
@@ -184,13 +186,28 @@ private:
     boost::shared_ptr<File_Knob> _customOcioConfigFile;
     
     boost::shared_ptr<Page_Knob> _cachingTab;
+    
+    ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
     boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
     boost::shared_ptr<String_Knob> _maxPlaybackLabel;
     
+    ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
+    ///by _unreachableRamPercent that determines how much RAM should be left free for other use on the computer
     boost::shared_ptr<Int_Knob> _maxRAMPercent;
     boost::shared_ptr<String_Knob> _maxRAMLabel;
     
+    ///The percentage of the system total's RAM you want to keep free from cache usage
+    ///When the cache grows and reaches a point where it is about to cross that threshold
+    ///it starts freeing the LRU entries regardless of the _maxRAMPercent and _maxPlaybackPercent
+    ///A reasonable value should be set for it, allowing Natron's caches to always stay in RAM and
+    ///avoid being swapped-out on disk. Assuming the user isn't using many applications at the same time,
+    ///10% seems a reasonable value.
+    boost::shared_ptr<Int_Knob> _unreachableRAMPercent;
+    boost::shared_ptr<String_Knob> _unreachableRAMLabel;
+    
+    ///The total disk space allowed for all Natron's caches
     boost::shared_ptr<Int_Knob> _maxDiskCacheGB;
+    
     
     boost::shared_ptr<Page_Knob> _viewersTab;
     boost::shared_ptr<Choice_Knob> _texturesMode;
