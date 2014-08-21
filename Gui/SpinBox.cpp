@@ -110,8 +110,12 @@ SpinBox::~SpinBox()
 }
 
 void
-SpinBox::setValue_internal(double d, bool ignoreDecimals)
+SpinBox::setValue_internal(double d, bool ignoreDecimals, bool reformat)
 {
+    if (d == text().toDouble() && !reformat) {
+        // the value is already OK
+        return;
+    }
     _imp->valueWhenEnteringFocus = d;
     int pos = cursorPosition();
     QString str;
@@ -174,7 +178,7 @@ SpinBox::setText(const QString &str, int cursorPos)
 void
 SpinBox::setValue(double d)
 {
-    setValue_internal(d,false);
+    setValue_internal(d, false, false);
 }
 
 void
@@ -187,6 +191,7 @@ void
 SpinBox::interpretReturn()
 {
     if (validateText()) {
+        setValue_internal(text().toDouble(), true, true); // force a reformat
         emit valueChanged(value());
     }
 }
@@ -268,191 +273,195 @@ SpinBox::increment(int delta)
     // update the current delta, which contains the accumulated error
     _imp->currentDelta -= inc_int * 120;
 
-    if (inc_int != 0) {
-        // we modify:
-        // - if there is no selection, the first digit right after the cursor (or if it is an int and the cursor is at the end, the last digit)
-        // - if there is a selection, the first digit after the start of the selection
-        int len = str.size(); // used for chopping spurious characters
-        // the position in str of the digit to modify in str() (may be equal to str.size())
-        int pos = hasSelectedText() ? selectionStart() : cursorPosition();
-        // the position of the decimal dot
-        int dot = str.indexOf('.');
-        if (dot == -1) {
-            dot = str.size();
+    if (inc_int == 0) {
+        // nothing is changed, just return
+        return;
+    }
+
+    // Within the value, we modify:
+    // - if there is no selection, the first digit right after the cursor (or if it is an int and the cursor is at the end, the last digit)
+    // - if there is a selection, the first digit after the start of the selection
+    int len = str.size(); // used for chopping spurious characters
+    // the position in str of the digit to modify in str() (may be equal to str.size())
+    int pos = hasSelectedText() ? selectionStart() : cursorPosition();
+    // the position of the decimal dot
+    int dot = str.indexOf('.');
+    if (dot == -1) {
+        dot = str.size();
+    }
+
+    // now, chop trailing and leading whitespace (and update len, pos and dot)
+
+    // leading whitespace
+    while (len > 0 && str[0].isSpace()) {
+        str.remove(0, 1);
+        --len;
+        if (pos > 0) {
+            --pos;
         }
-
-        // now, chop trailing and leading whitespace (and update len, pos and dot)
-
-        // leading whitespace
-        while (len > 0 && str[0].isSpace()) {
-            str.remove(0, 1);
-            --len;
-            if (pos > 0) {
-                --pos;
-            }
+        --dot;
+        assert(dot >= 0);
+        assert(len > 0);
+    }
+    // trailing whitespace
+    while (len > 0 && str[len-1].isSpace()) {
+        str.remove(len-1, 1);
+        --len;
+        if (pos > len) {
+            --pos;
+        }
+        if (dot > len) {
             --dot;
-            assert(dot >= 0);
-            assert(len > 0);
         }
-        // trailing whitespace
-        while (len > 0 && str[len-1].isSpace()) {
-            str.remove(len-1, 1);
-            --len;
-            if (pos > len) {
-                --pos;
-            }
-            if (dot > len) {
-                --dot;
-            }
-            assert(len > 0);
-        }
-        assert(oldVal == str.toDouble()); // check that the value hasn't changed due to whitespace manipulation
+        assert(len > 0);
+    }
+    assert(oldVal == str.toDouble()); // check that the value hasn't changed due to whitespace manipulation
 
-        // on int types, there should not be any dot
-        if (_imp->type == INT_SPINBOX && len > dot) {
-            // remove anything after the dot, including the dot
-            str.resize(dot);
-            len = dot;
-            //qDebug() << "trimmed dot, text is now "<<str;
-        }
+    // on int types, there should not be any dot
+    if (_imp->type == INT_SPINBOX && len > dot) {
+        // remove anything after the dot, including the dot
+        str.resize(dot);
+        len = dot;
+        //qDebug() << "trimmed dot, text is now "<<str;
+    }
 
-        QString noDotStr = str;
-        int noDotLen = len;
-        if (dot != len) {
-            // remove the dot
-            noDotStr.remove(dot, 1);
-            --noDotLen;
-        }
-        assert((_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot);
-        double val = oldVal;
+    QString noDotStr = str;
+    int noDotLen = len;
+    if (dot != len) {
+        // remove the dot
+        noDotStr.remove(dot, 1);
+        --noDotLen;
+    }
+    assert((_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot);
+    double val = oldVal;
 
-        qlonglong llval = noDotStr.toLongLong();
-        int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
-        assert(llpowerOfTen <= 0);
-        // check that val and llval*10^llPowerOfTen are close enough
-        assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
+    qlonglong llval = noDotStr.toLongLong();
+    int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
+    assert(llpowerOfTen <= 0);
+    // check that val and llval*10^llPowerOfTen are close enough
+    assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
 
-        assert(0 <= pos && pos <= str.size());
-        while (pos < str.size() &&
-               (pos == dot || str[pos] == '+' || str[pos] == '-')) {
-            ++pos;
-        }
-        assert(len >= pos);
+    assert(0 <= pos && pos <= str.size());
+    while (pos < str.size() &&
+           (pos == dot || str[pos] == '+' || str[pos] == '-')) {
+        ++pos;
+    }
+    assert(len >= pos);
 
-        // if pos is at the end
-        if (pos == str.size()) {
-            switch (_imp->type) {
-                case DOUBLE_SPINBOX:
-                    if (dot == str.size()) {
-                        str += ".0";
-                        len += 2;
-                        ++pos;
-                    } else {
-                        str += "0";
-                        ++len;
-                    }
-                    break;
-                case INT_SPINBOX:
-                    // take the character before
-                    --pos;
-                    break;
-            }
-        }
-
-        // compute the full value of the increment
-        assert(pos != dot);
-        assert(0 <= pos && pos < str.size() && str[pos].isDigit());
-
-        int powerOfTen = dot - pos - (pos < dot); // the power of ten
-        assert((_imp->type == DOUBLE_SPINBOX) || (powerOfTen >= 0 && dot == str.size()));
-
-        double inc = inc_int * std::pow(10., (double)powerOfTen);
-
-        // check that we are within the authorized range
-        double maxiD,miniD;
+    // if pos is at the end
+    if (pos == str.size()) {
         switch (_imp->type) {
-            case INT_SPINBOX:
-                maxiD = _imp->maxi.toInt();
-                miniD = _imp->mini.toInt();
-                break;
             case DOUBLE_SPINBOX:
-            default:
-                maxiD = _imp->maxi.toDouble();
-                miniD = _imp->mini.toDouble();
+                if (dot == str.size()) {
+                    str += ".0";
+                    len += 2;
+                    ++pos;
+                } else {
+                    str += "0";
+                    ++len;
+                }
+                break;
+            case INT_SPINBOX:
+                // take the character before
+                --pos;
                 break;
         }
-        val += inc;
-        if (val < miniD || maxiD < val) {
-            // out of the authorized range, don't do anything
-            return;
-        }
+    }
 
-        // adjust llval so that the increment becomes an int, and avoid rounding errors
-        if (powerOfTen >= llpowerOfTen) {
-            llval += inc_int * std::pow(10., powerOfTen - llpowerOfTen);
+    // compute the full value of the increment
+    assert(pos != dot);
+    assert(0 <= pos && pos < str.size() && str[pos].isDigit());
+
+    int powerOfTen = dot - pos - (pos < dot); // the power of ten
+    assert((_imp->type == DOUBLE_SPINBOX) || (powerOfTen >= 0 && dot == str.size()));
+
+    double inc = inc_int * std::pow(10., (double)powerOfTen);
+
+    // check that we are within the authorized range
+    double maxiD,miniD;
+    switch (_imp->type) {
+        case INT_SPINBOX:
+            maxiD = _imp->maxi.toInt();
+            miniD = _imp->mini.toInt();
+            break;
+        case DOUBLE_SPINBOX:
+        default:
+            maxiD = _imp->maxi.toDouble();
+            miniD = _imp->mini.toDouble();
+            break;
+    }
+    val += inc;
+    if (val < miniD || maxiD < val) {
+        // out of the authorized range, don't do anything
+        return;
+    }
+
+    // adjust llval so that the increment becomes an int, and avoid rounding errors
+    if (powerOfTen >= llpowerOfTen) {
+        llval += inc_int * std::pow(10., powerOfTen - llpowerOfTen);
+    } else {
+        llval *= std::pow(10., llpowerOfTen - powerOfTen);
+        llpowerOfTen -= llpowerOfTen - powerOfTen;
+        llval += inc_int;
+    }
+    // check that val and llval*10^llPowerOfTen are still close enough
+    assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
+
+    QString newStr;
+    newStr.setNum(llval);
+    bool newStrHasSign = newStr[0] == '+' || newStr[0] == '-';
+    // the position of the decimal dot
+    int newDot = newStr.size() + llpowerOfTen;
+    // add leading zeroes if newDot is not a valid position (beware of sign!)
+    while (newDot <= int(newStrHasSign)) {
+        newStr.insert(int(newStrHasSign), '0');
+        ++newDot;
+    }
+    assert(0 <= newDot && newDot <= newStr.size());
+    assert(newDot == newStr.size() || newStr[newDot].isDigit());
+    if (newDot != newStr.size()) {
+        assert(_imp->type == DOUBLE_SPINBOX);
+        newStr.insert(newDot, '.');
+    }
+    // check that the backed string is close to the wanted value
+    assert((newStr.toDouble() - val) * std::pow(10.,-llpowerOfTen) < 1e-8);
+    // the new cursor position
+    int newPos = newDot + (pos - dot);
+
+    assert(0 <= newDot && newDot <= newStr.size());
+
+    // now, add leading and trailing zeroes so that newPos is a valid digit position
+    // (beware of the sign!)
+
+    while (newPos >= newStr.size()) {
+        assert(_imp->type == DOUBLE_SPINBOX);
+        // add trailing zero, maybe preceded by a dot
+        if (newPos == newDot) {
+            newStr.append('.');
         } else {
-            llval *= std::pow(10., llpowerOfTen - powerOfTen);
-            llpowerOfTen -= llpowerOfTen - powerOfTen;
-            llval += inc_int;
+            assert(newPos > newDot);
+            newStr.append('0');
         }
-        // check that val and llval*10^llPowerOfTen are still close enough
-        assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
+        assert(newPos >= (newStr.size() - 1));
+    }
 
-        QString newStr;
-        newStr.setNum(llval);
-        bool newStrHasSign = newStr[0] == '+' || newStr[0] == '-';
-        // the position of the decimal dot
-        int newDot = newStr.size() + llpowerOfTen;
-        // add leading zeroes if newDot is not a valid position (beware of sign!)
-        while (newDot <= int(newStrHasSign)) {
-            newStr.insert(int(newStrHasSign), '0');
-            ++newDot;
-        }
-        assert(0 <= newDot && newDot <= newStr.size());
-        assert(newDot == newStr.size() || newStr[newDot].isDigit());
-        if (newDot != newStr.size()) {
-            assert(_imp->type == DOUBLE_SPINBOX);
-            newStr.insert(newDot, '.');
-        }
-        // check that the backed string is close to the wanted value
-        assert((newStr.toDouble() - val) * std::pow(10.,-llpowerOfTen) < 1e-8);
-        // the new cursor position
-        int newPos = newDot + (pos - dot);
+    while (newPos < 0 || (newPos == 0 && (newStr[0] == '-' || newStr[0] == '+'))) {
+        // add leading zero
+        bool hasSign = (newStr[0] == '-' || newStr[0] == '+');
+        newStr.insert(hasSign ? 1 : 0, '0');
+        ++newPos;
+        ++newDot;
+    }
 
-        assert(0 <= newDot && newDot <= newStr.size());
+    assert(0 <= newPos && newPos < newStr.size() && newStr[newPos].isDigit());
 
-        // now, add leading and trailing zeroes so that newPos is a valid digit position
-        // (beware of the sign!)
-
-        while (newPos >= newStr.size()) {
-            assert(_imp->type == DOUBLE_SPINBOX);
-            // add trailing zero, maybe preceded by a dot
-            if (newPos == newDot) {
-                newStr.append('.');
-            } else {
-                assert(newPos > newDot);
-                newStr.append('0');
-            }
-            assert(newPos >= (newStr.size() - 1));
-        }
-
-        while (newPos < 0 || (newPos == 0 && (newStr[0] == '-' || newStr[0] == '+'))) {
-            // add leading zero
-            bool hasSign = (newStr[0] == '-' || newStr[0] == '+');
-            newStr.insert(hasSign ? 1 : 0, '0');
-            ++newPos;
-            ++newDot;
-        }
-
-        assert(0 <= newPos && newPos < newStr.size() && newStr[newPos].isDigit());
-
-        // set the text and cursor position
-        //qDebug() << "increment setting text to " << newStr;
-        setText(newStr, newPos);
-        // set the selection
-        assert(newPos+1 <= newStr.size());
-        setSelection(newPos + 1, -1);
-    } // if (inc_int != 0)
+    // set the text and cursor position
+    //qDebug() << "increment setting text to " << newStr;
+    setText(newStr, newPos);
+    // set the selection
+    assert(newPos+1 <= newStr.size());
+    setSelection(newPos + 1, -1);
+    emit valueChanged(value());
 }
 
 void
@@ -499,6 +508,7 @@ SpinBox::focusOutEvent(QFocusEvent* e)
     double newValue = text().toDouble();
     if (newValue != _imp->valueWhenEnteringFocus) {
         if (validateText()) {
+            setValue_internal(text().toDouble(), true, true); // force a reformat
             emit valueChanged(value());
         }
     }
@@ -554,11 +564,13 @@ SpinBox::validateText()
             int tmp;
             QValidator::State st = _imp->doubleValidator->validate(txt,tmp);
             double val = txt.toDouble();
-            if(st == QValidator::Invalid || val < miniD || val > maxiD){
-                setValue_internal(_imp->valueAfterLastValidation, true);
+            if ((st == QValidator::Invalid) ||
+                (val < miniD) ||
+                (val > maxiD)) {
+                setValue_internal(_imp->valueAfterLastValidation, true, true);
                 return false;
             } else {
-                setValue_internal(val, true);
+                setValue_internal(val, true, false);
                 return true;
             }
         } break;
@@ -568,10 +580,10 @@ SpinBox::validateText()
             QValidator::State st = _imp->intValidator->validate(txt,tmp);
             int val = txt.toInt();
             if(st == QValidator::Invalid || val < miniD || val > maxiD){
-                setValue(_imp->valueAfterLastValidation);
+                setValue_internal(_imp->valueAfterLastValidation, false, true);
                 return false;
             } else {
-                setValue(val);
+                setValue_internal(val, false, false);
                 return true;
             }
 
