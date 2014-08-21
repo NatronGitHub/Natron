@@ -151,7 +151,8 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
         ++i;
     }
     str = str.remove(skipFirst ? 1 : 0, i);
-    
+
+    qDebug() << "setValue_internal setting text to "<<str;
     setText(str, pos);
 }
 
@@ -159,6 +160,7 @@ void
 SpinBox::setText(const QString &str, int cursorPos)
 {
     QLineEdit::setText(str);
+    qDebug() << "text:" << str;
     setCursorPosition(cursorPos);
     _imp->hasChangedSinceLastValidation = false;
     _imp->valueAfterLastValidation = value();
@@ -168,6 +170,12 @@ void
 SpinBox::setValue(double d)
 {
     setValue_internal(d,false);
+}
+
+void
+SpinBox::setValue(int d)
+{
+    setValue((double)d);
 }
 
 void
@@ -344,7 +352,27 @@ SpinBox::increment(int delta)
         assert((_imp->type == DOUBLE_SPINBOX) || (powerOfTen >= 0 && dot == str.size()));
 
         double inc = inc_int * std::pow(10., (double)powerOfTen);
+
+        // check that we are within the authorized range
+        double maxiD,miniD;
+        switch (_imp->type) {
+            case INT_SPINBOX:
+                maxiD = _imp->maxi.toInt();
+                miniD = _imp->mini.toInt();
+                break;
+            case DOUBLE_SPINBOX:
+            default:
+                maxiD = _imp->maxi.toDouble();
+                miniD = _imp->mini.toDouble();
+                break;
+        }
         val += inc;
+        if (val < miniD || maxiD < val) {
+            // out of the authorized range, don't do anything
+            return;
+        }
+
+        // adjust llval so that the increment becomes an int, and avoid rounding errors
         if (powerOfTen >= llpowerOfTen) {
             llval += inc_int * std::pow(10, powerOfTen - llpowerOfTen);
         } else {
@@ -400,6 +428,7 @@ SpinBox::increment(int delta)
         assert(0 <= newPos && newPos < newStr.size() && newStr[newPos].isDigit());
 
         // set the text and cursor position
+        qDebug() << "increment setting text to "<<str;
         setText(newStr, newPos);
         // set the selection
         setSelection(newPos, 1);
