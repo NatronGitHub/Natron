@@ -462,35 +462,11 @@ private:
                                    double zoomScreenPixelWidth,
                                    double zoomScreenPixelHeight);
 
-    
-    bool isNearByUserRoIMiddleHandle(const RectD& roi,
-                                     const QPointF& zoomPos,
-                                     double zoomScreenPixelWidth,
-                                     double zoomScreenPixelHeight);
-
-    bool isNearByUserRoITopLeft(const RectD& roi,
-                                const QPointF& zoomPos,
-                                double zoomScreenPixelWidth,
-                                double zoomScreenPixelHeight);
-
-    
-    bool isNearByUserRoITopRight(const RectD& roi,
-                                 const QPointF& zoomPos,
-                                 double zoomScreenPixelWidth,
-                                 double zoomScreenPixelHeight);
-
-    
-    bool isNearByUserRoIBottomRight(const RectD& roi,
-                                    const QPointF& zoomPos,
-                                    double zoomScreenPixelWidth,
-                                    double zoomScreenPixelHeight);
-
-    
-    bool isNearByUserRoIBottomLeft(const RectD& roi,
-                                   const QPointF& zoomPos,
-                                   double zoomScreenPixelWidth,
-                                   double zoomScreenPixelHeight);
-
+    bool isNearByUserRoI(double x,
+                         double y,
+                         const QPointF& zoomPos,
+                         double zoomScreenPixelWidth,
+                         double zoomScreenPixelHeight);
 
     void updateInfoWidgetColorPicker(const QPointF& imgPos,
                                      const QPoint& widgetPos,

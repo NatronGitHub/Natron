@@ -9,18 +9,31 @@
 #ifndef Gui_GuiMacros_h
 #define Gui_GuiMacros_h
 
-#define modifierIsNone(e)            ((e)->modifiers() == Qt::NoModifier)
-#define modifierIsControl(e)         ((e)->modifiers() == Qt::ControlModifier)
+// macros to test if the modifiers are exactly the given combination
+#define modifierIsNone(e)            ((e)->modifiers() == (Qt::NoModifier))
+#define modifierIsControl(e)         ((e)->modifiers() == (Qt::ControlModifier))
 #define modifierIsControlShift(e)    ((e)->modifiers() == (Qt::ControlModifier|Qt::ShiftModifier))
 #define modifierIsControlAlt(e)      ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier))
 #define modifierIsControlAltShift(e) ((e)->modifiers() == (Qt::ControlModifier|Qt::AltModifier|Qt::ShiftModifier))
-#define modifierIsAlt(e)             ((e)->modifiers() == Qt::AltModifier)
+#define modifierIsAlt(e)             ((e)->modifiers() == (Qt::AltModifier))
 #define modifierIsAltShift(e)        ((e)->modifiers() == (Qt::AltModifier|Qt::ShiftModifier))
-#define modifierIsShift(e)           ((e)->modifiers() == Qt::ShiftModifier)
+#define modifierIsShift(e)           ((e)->modifiers() == (Qt::ShiftModifier))
 
-#define buttonIsLeft(e)              ((e)->button() == Qt::LeftButton && modifierIsNone(e))
-#define buttonIsMiddle(e)            (((e)->button() == Qt::MiddleButton && modifierIsNone(e)) || (e->button() == Qt::LeftButton && modifierIsAlt(e)))
-#define buttonIsRight(e)             (((e)->button() == Qt::RightButton && modifierIsNone(e)) || (e->button() == Qt::LeftButton && modifierIsControl(e)))
-#define buttonIsRightShift(e)             (((e)->button() == Qt::RightButton && modifierIsShift(e)) || (e->button() == Qt::LeftButton && modifierIsControlShift(e)))
+// macros to test if the modifier is present
+#define modifierHasControl(e)         ((e)->modifiers().testFlag(Qt::ControlModifier))
+#define modifierHasAlt(e)             ((e)->modifiers().testFlag(Qt::AltModifier))
+#define modifierHasShift(e)           ((e)->modifiers().testFlag(Qt::ShiftModifier))
+
+// macros to test if a button is pressed, or a single-button compatibility combination
+#define buttonControlAlt(e)          ((e)->modifiers() & (Qt::ControlModifier|Qt::AltModifier))
+#define buttonIsLeft(e)              (((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::NoModifier))
+#define buttonIsMiddle(e)            (((e)->button() == Qt::MiddleButton && buttonControlAlt(e) == Qt::NoModifier) || \
+                                      ((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier))
+#define buttonIsRight(e)             (((e)->button() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier) || \
+                                      ((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier))
+// macros to test
+#define buttonModifier(e)            ((e)->modifiers() & (Qt::KeyboardModifierMask & ~(Qt::ControlModifier|Qt::AltModifier)))
+#define buttonModifierIsNone(e)      (buttonModifier(e) == Qt::NoModifier)
+#define buttonModifierIsShift(e)     (buttonModifier(e) == Qt::ShiftModifier)
 
 #endif
