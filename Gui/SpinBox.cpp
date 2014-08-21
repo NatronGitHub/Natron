@@ -19,6 +19,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QDoubleValidator>
 #include <QtGui/QIntValidator>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QApplication>
 #include <QDebug>
 
 #include "Engine/Variant.h"
@@ -93,6 +94,7 @@ SpinBox::SpinBox(QWidget* parent, SPINBOX_TYPE type)
     setMaximumWidth(50);
     setMinimumWidth(35);
     decimals(_imp->decimals);
+    setFocusPolicy(Qt::WheelFocus); // mouse wheel gives focus too - see also SpinBox::focusInEvent()
 }
 
 SpinBox::~SpinBox()
@@ -186,13 +188,14 @@ SpinBox::interpretReturn()
     }
 }
 
+/*
 void
 SpinBox::mousePressEvent(QMouseEvent* e)
 {
-    setFocus();
-    setCursorPosition(cursorPositionAt(e->pos()));
+    //setCursorPosition(cursorPositionAt(e->pos())); // LineEdit::mousePressEvent(e) does this already
     LineEdit::mousePressEvent(e);
 }
+*/
 
 QString
 SpinBoxPrivate::setNum(double cur)
@@ -455,10 +458,10 @@ SpinBox::wheelEvent(QWheelEvent* e)
     if (e->orientation() != Qt::Vertical ||
         e->delta() == 0 ||
         !isEnabled() ||
-        isReadOnly()) {
+        isReadOnly() ||
+        !hasFocus()) { // wheel is only effective when the widget has focus (click it first, then wheel)
         return;
     }
-    setFocus();
     int delta = e->delta();
     if (modCASIsShift(e)) {
         delta *= 10;
@@ -473,6 +476,15 @@ void
 SpinBox::focusInEvent(QFocusEvent* e)
 {
     //qDebug() << "focusin";
+
+    // don't give focus if this is a wheelEvent
+    if (e->reason() == Qt::MouseFocusReason) {
+        Qt::MouseButtons buttons = QApplication::mouseButtons();
+        if (!(buttons & Qt::LeftButton)) {
+            this->clearFocus();
+            return;
+        }
+    }
     _imp->valueWhenEnteringFocus = text().toDouble();
     LineEdit::focusInEvent(e);
 }

@@ -65,7 +65,7 @@ private:
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    //virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
