@@ -315,7 +315,7 @@ SpinBox::increment(int delta)
         int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
         assert(llpowerOfTen <= 0);
         // check that val and llval*10^llPowerOfTen are close enough
-        assert(std::fabs(val * std::pow(10,-llpowerOfTen) - llval) < 1e-8);
+        assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
 
         assert(0 <= pos && pos <= str.size());
         while (pos < str.size() &&
@@ -374,14 +374,14 @@ SpinBox::increment(int delta)
 
         // adjust llval so that the increment becomes an int, and avoid rounding errors
         if (powerOfTen >= llpowerOfTen) {
-            llval += inc_int * std::pow(10, powerOfTen - llpowerOfTen);
+            llval += inc_int * std::pow(10., powerOfTen - llpowerOfTen);
         } else {
-            llval *= std::pow(10, llpowerOfTen - powerOfTen);
+            llval *= std::pow(10., llpowerOfTen - powerOfTen);
             llpowerOfTen -= llpowerOfTen - powerOfTen;
             llval += inc_int;
         }
         // check that val and llval*10^llPowerOfTen are still close enough
-        assert(std::fabs(val * std::pow(10,-llpowerOfTen) - llval) < 1e-8);
+        assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
 
         QString newStr;
         newStr.setNum(llval);
@@ -397,7 +397,7 @@ SpinBox::increment(int delta)
         assert(newDot == newStr.size() || newStr[newDot].isDigit());
         newStr.insert(newDot, '.');
         // check that the backed string is close to the wanted value
-        assert((newStr.toDouble() - val) * std::pow(10,-llpowerOfTen) < 1e-8);
+        assert((newStr.toDouble() - val) * std::pow(10.,-llpowerOfTen) < 1e-8);
         // the new cursor position
         int newPos = newDot + (pos - dot);
 
