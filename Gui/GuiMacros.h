@@ -45,8 +45,7 @@
 #define modifierHasAlt(e)             ((e)->modifiers().testFlag(Qt::AltModifier))
 #define modifierHasShift(e)           ((e)->modifiers().testFlag(Qt::ShiftModifier))
 
-//This is the convenient way for checking that effectively no modifier are held, in practise modifierIsNone doesn't work
-//because some modifier are always held, like KeyPadModifier
+//This is the convenient way for checking that effectively no modifier are held
 #define modifierIsNone(e) (!modifierHasControl(e) && !modifierHasAlt(e) && !modifierHasShift(e))
 
 // macros to test if a button is pressed, or a single-button compatibility combination
