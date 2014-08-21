@@ -1,6 +1,6 @@
 /* -*- mode: css -*- */
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
-/*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text */
+/*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) */
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -139,8 +139,9 @@ QScrollBar::sub-line:horizontal {
 
 
 QTreeView,QListView,QHeaderView {
-    background-color: %3;
     color: %5;
+    background-color: %3;
+    selection-color: %8;
     selection-background-color: %1;
 }
 
@@ -170,11 +171,11 @@ QTreeWidget::branch:open:has-children:has-siblings  {
     image: url(:/Resources/Images/groupbox_unfolded.png);
 }
 
-QHeaderView:section{
-    background-color: %2;
+QHeaderView:section {
     color: %5;
-    selection-background-color : %1;
+    background-color: %2;
     selection-color: %1;
+    selection-background-color : %1; /* same as selection-color??? */
 }
 
 ComboBox {
@@ -251,10 +252,10 @@ QPushButton:!enabled {
 }
 
 QHeaderView:section {
-    background-color: %2;
     color: %5;
-    selection-background-color : %1;
+    background-color: %2;
     selection-color: %1;
+    selection-background-color : %1; /* same as selection-color ??? */
 }
 
 QDialog {
@@ -319,16 +320,20 @@ QComboBox {
 QComboBox QAbstractItemView  {
     border-radius:0px;
     border:0px;
-    selection-background-color: %3;
-    background: %3;
+    /*background: %3; ??? */ 
     color: %5;
+    background-color: %3;
+    selection-color: %1;
+    selection-background-color: %3;
 }
 
 QDockWidget::title {
-    background: %3;
+    /*background: %3; ????*/
 }
+
 QDockWidget {
     color: %5;
+    /* no background-color? */
 }
 
 QTabWidget::pane {
@@ -336,26 +341,27 @@ QTabWidget::pane {
 }
 
 QLineEdit {
-    border:1px solid;
-    border-radius:1;
-    padding:1px;
+    border: 1px solid;
+    border-radius: 1px;
+    padding: 1px;
+    color: %5;
     background-color : %3;
+    selection-color: %8;
+    selection-background-color: %1;
 }
-QLineEdit {
-    color:%5;
-}
+
 QLineEdit:focus {
-    selection-color: %1;
     border: 2px groove %1;
-    border-radius: 4px;
-    padding: 2px 4px;
+    border-radius: 2px;
+    /*padding: 2px 4px;*/
 }
 QLineEdit:!enabled {
-    color:%8;
+    color: %8;
+    background-color : %3;
 }
 QLineEdit:read-only {
-    background-color:%3;
-    color:%8;
+    color: %8;
+    background-color: %3;
 }
 
 QSplitter::handle:horizontal {
@@ -488,6 +494,8 @@ AnimatingTextEdit[dirty="true"] {
 QTextEdit{
     color: %5;
     background-color: %3;
+    selection-color: %8;
+    selection-background-color: %1;
 }
 QTextEdit:!enabled{
     color: %8;
@@ -496,7 +504,6 @@ QTextEdit:read-only{
     color: %8;
 }
 QTextEdit:focus {
-    selection-color: %1;
     border: 2px groove %1;
     border-radius: 4px;
     padding: 2px 4px;
