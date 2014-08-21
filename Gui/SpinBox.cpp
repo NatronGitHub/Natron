@@ -152,7 +152,7 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals)
     }
     str = str.remove(skipFirst ? 1 : 0, i);
 
-    qDebug() << "setValue_internal setting text to "<<str;
+    //qDebug() << "setValue_internal setting text to "<<str;
     setText(str, pos);
 }
 
@@ -160,7 +160,7 @@ void
 SpinBox::setText(const QString &str, int cursorPos)
 {
     QLineEdit::setText(str);
-    qDebug() << "text:" << str;
+    //qDebug() << "text:" << str << " cursorpos: " << cursorPos;
     setCursorPosition(cursorPos);
     _imp->hasChangedSinceLastValidation = false;
     _imp->valueAfterLastValidation = value();
@@ -213,6 +213,7 @@ SpinBox::increment(int delta)
 {
     bool ok;
     QString str = text();
+    //qDebug() << "increment from " << str;
     const double oldVal = str.toDouble(&ok);
     if (!ok) {
         // not a valid double value, don't do anything
@@ -301,6 +302,14 @@ SpinBox::increment(int delta)
         }
         assert(oldVal == str.toDouble()); // check that the value hasn't changed due to whitespace manipulation
 
+        // on int types, there should not be any dot
+        if (_imp->type == INT_SPINBOX && len > dot) {
+            // remove anything after the dot, including the dot
+            str.resize(dot);
+            len = dot;
+            //qDebug() << "trimmed dot, text is now "<<str;
+        }
+
         QString noDotStr = str;
         int noDotLen = len;
         if (dot != len) {
@@ -308,7 +317,7 @@ SpinBox::increment(int delta)
             noDotStr.remove(dot, 1);
             --noDotLen;
         }
-        assert(noDotLen >= dot);
+        assert((_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot);
         double val = oldVal;
 
         qlonglong llval = noDotStr.toLongLong();
@@ -395,7 +404,10 @@ SpinBox::increment(int delta)
         }
         assert(0 <= newDot && newDot <= newStr.size());
         assert(newDot == newStr.size() || newStr[newDot].isDigit());
-        newStr.insert(newDot, '.');
+        if (newDot != newStr.size()) {
+            assert(_imp->type == DOUBLE_SPINBOX);
+            newStr.insert(newDot, '.');
+        }
         // check that the backed string is close to the wanted value
         assert((newStr.toDouble() - val) * std::pow(10.,-llpowerOfTen) < 1e-8);
         // the new cursor position
@@ -407,6 +419,7 @@ SpinBox::increment(int delta)
         // (beware of the sign!)
 
         while (newPos >= newStr.size()) {
+            assert(_imp->type == DOUBLE_SPINBOX);
             // add trailing zero, maybe preceded by a dot
             if (newPos == newDot) {
                 newStr.append('.');
@@ -428,10 +441,11 @@ SpinBox::increment(int delta)
         assert(0 <= newPos && newPos < newStr.size() && newStr[newPos].isDigit());
 
         // set the text and cursor position
-        qDebug() << "increment setting text to "<<str;
+        //qDebug() << "increment setting text to " << newStr;
         setText(newStr, newPos);
         // set the selection
-        setSelection(newPos, 1);
+        assert(newPos+1 <= newStr.size());
+        setSelection(newPos + 1, -1);
     } // if (inc_int != 0)
 }
 
@@ -458,6 +472,7 @@ SpinBox::wheelEvent(QWheelEvent* e)
 void
 SpinBox::focusInEvent(QFocusEvent* e)
 {
+    //qDebug() << "focusin";
     _imp->valueWhenEnteringFocus = text().toDouble();
     LineEdit::focusInEvent(e);
 }
@@ -465,6 +480,7 @@ SpinBox::focusInEvent(QFocusEvent* e)
 void
 SpinBox::focusOutEvent(QFocusEvent* e)
 {
+    //qDebug() << "focusout";
     double newValue = text().toDouble();
     if (newValue != _imp->valueWhenEnteringFocus) {
         if (validateText()) {
@@ -472,12 +488,12 @@ SpinBox::focusOutEvent(QFocusEvent* e)
         }
     }
     LineEdit::focusOutEvent(e);
-
 }
 
 void
 SpinBox::keyPressEvent(QKeyEvent* e)
 {
+    //qDebug() << "keypress";
     if (isEnabled() && !isReadOnly()) {
         if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
             int delta = (e->key() == Qt::Key_Up) ? 120 : -120;
