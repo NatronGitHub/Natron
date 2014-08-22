@@ -34,7 +34,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS 2
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET 3
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET
+#define KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL 4
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL
 
 struct MasterSerialization
 {
@@ -106,7 +107,9 @@ struct ValueSerialization
         }
         else if (isChoice) {
             int v = isChoice->getValue(_dimension);
-            ar & boost::serialization::make_nvp("Value",v);
+            std::string label = isChoice->getEntries()[v];
+            ar & boost::serialization::make_nvp("Value", v);
+            ar & boost::serialization::make_nvp("Label", label);
         }
         else if (isString) {
             std::string v = isString->getValue(_dimension);
@@ -137,7 +140,7 @@ struct ValueSerialization
     }
     
     template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
+    void load(Archive & ar, const unsigned int version)
     {
         
         Int_Knob* isInt = dynamic_cast<Int_Knob*>(_knob.get());
@@ -185,8 +188,28 @@ struct ValueSerialization
         }
         else if (isChoice) {
             int v;
-            ar & boost::serialization::make_nvp("Value",v);
-            isChoice->setValue(v,_dimension);
+            ar & boost::serialization::make_nvp("Value", v);
+            assert(v >= 0);
+            if (version < KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
+                isChoice->setValue(v, _dimension);
+            } else {
+                std::string label;
+                ar & boost::serialization::make_nvp("Label", label);
+                const std::vector<std::string> &entries = isChoice->getEntries();
+                if ((v < (int)entries.size()) && entries[v] == label) {
+                    // we're lucky, entry hasn't changed
+                    isChoice->setValue(v, _dimension);
+                } else {
+                    // try to find the same label at some other index
+                    std::vector<std::string>::const_iterator it = std::find(entries.begin(), entries.end(), label);
+                    if (it != entries.end()) {
+                        isChoice->setValue(std::distance(entries.begin(), it), _dimension);
+                    } else {
+                        // unlucky
+                        isChoice->setValue(v, _dimension);
+                    }
+                }
+            }
         }
         else if (isString) {
             std::string v;
