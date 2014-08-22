@@ -953,7 +953,7 @@ RotoDrawableItem::RotoDrawableItem(RotoContext* context,const std::string& name,
     QObject::connect(this, SIGNAL(overlayColorChanged()), context, SIGNAL(refreshViewerOverlays()));
     QObject::connect(_imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SIGNAL(shapeColorChanged()));
     QObject::connect(_imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this,
-                     SIGNAL(compositingOperatorChanged()));
+                     SIGNAL(compositingOperatorChanged(int,int)));
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -3549,12 +3549,6 @@ RotoContext::getColorKnob() const
     return _imp->colorKnob;
 }
 
-boost::shared_ptr<Choice_Knob>
-RotoContext::getOperatorKnob() const
-{
-    return _imp->compOperator;
-}
-
 void
 RotoContext::setAutoKeyingEnabled(bool enabled)
 {
@@ -4079,7 +4073,6 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->inverted->clone(inverted.get());
 #endif
         _imp->colorKnob->clone(colorknob.get());
-        _imp->compOperator->clone(compOp.get());
         
         ///link this bezier knobs to the context
         activated->slaveTo(0, _imp->activated, 0);
@@ -4092,7 +4085,6 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         for (int i = 0; i < colorknob->getDimension();++i) {
             colorknob->slaveTo(i, _imp->colorKnob, i);
         }
-        compOp->slaveTo(0, _imp->compOperator, 0);
         
     } else if (isLayer) {
         const RotoItems& children = isLayer->getItems();
@@ -4111,7 +4103,6 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->inverted->setAllDimensionsEnabled(true);
 #endif
         _imp->colorKnob->setAllDimensionsEnabled(true);
-        _imp->compOperator->setAllDimensionsEnabled(true);
     }
     
     ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
@@ -4125,7 +4116,6 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem>& item)
         _imp->inverted->setDirty(true);
 #endif
         _imp->colorKnob->setDirty(true);
-        _imp->compOperator->setDirty(true);
     }
     
     
@@ -4203,7 +4193,6 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
 #ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->setDirty(false);
 #endif
-        _imp->compOperator->setDirty(false);
         _imp->colorKnob->setDirty(false);
     }
     
@@ -4216,7 +4205,6 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
 #ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->setAllDimensionsEnabled(false);
 #endif
-        _imp->compOperator->setAllDimensionsEnabled(false);
         _imp->colorKnob->setAllDimensionsEnabled(false);
     }
     

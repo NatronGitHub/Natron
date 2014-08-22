@@ -609,34 +609,34 @@ Double_Knob::~Double_Knob()
 
 void Double_Knob::cloneExtraData(KnobI* other)
 {
-    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other);
-    if (!isDouble) {
-        return;
-    }
-    
-    
-    boost::shared_ptr<Double_Knob> thisShared;
-    if (!isDouble->_slavedTracks.empty()) {
-        ///get a shared_ptr to this
-        assert(getHolder());
-        const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
-        for (U32 i = 0; i< knobs.size(); ++i) {
-            if (knobs[i].get() == this) {
-                thisShared = boost::dynamic_pointer_cast<Double_Knob>(knobs[i]);
-                break;
-            }
-        }
-        assert(thisShared);
-    }
-    if (getHolder() && getHolder()->getApp()) {
-        SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
-        for (std::list< boost::shared_ptr<BezierCP> >::iterator it = isDouble->_slavedTracks.begin();
-             it!=isDouble->_slavedTracks.end(); ++it) {
-            (*it)->unslave();
-            (*it)->slaveTo(time,thisShared);
-            _slavedTracks.push_back(*it);
-        }
-    }
+//    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(other);
+//    if (!isDouble) {
+//        return;
+//    }
+//    
+//    
+//    boost::shared_ptr<Double_Knob> thisShared;
+//    if (!isDouble->_slavedTracks.empty()) {
+//        ///get a shared_ptr to this
+//        assert(getHolder());
+//        const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
+//        for (U32 i = 0; i< knobs.size(); ++i) {
+//            if (knobs[i].get() == this) {
+//                thisShared = boost::dynamic_pointer_cast<Double_Knob>(knobs[i]);
+//                break;
+//            }
+//        }
+//        assert(thisShared);
+//    }
+//    if (getHolder() && getHolder()->getApp()) {
+//        SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
+//        for (std::list< boost::shared_ptr<BezierCP> >::iterator it = isDouble->_slavedTracks.begin();
+//             it!=isDouble->_slavedTracks.end(); ++it) {
+//            (*it)->unslave();
+//            (*it)->slaveTo(time,thisShared);
+//            _slavedTracks.push_back(*it);
+//        }
+//    }
 }
 
 static void getInputRoD(EffectInstance* effect,double time,RectD& rod)

@@ -478,7 +478,9 @@ bool Knob<std::string>::setValueAtTime(int time,const std::string& v,int dimensi
 template<typename T>
 void Knob<T>::unSlave(int dimension,Natron::ValueChangedReason reason,bool copyState)
 {
-    assert(isSlave(dimension));
+    if (!isSlave(dimension)) {
+        return;
+    }
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
 
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);

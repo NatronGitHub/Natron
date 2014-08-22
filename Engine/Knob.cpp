@@ -692,15 +692,18 @@ bool KnobHelper::slaveTo(int dimension,
         QObject::connect(helper->_signalSlotHandler.get(), SIGNAL(updateSlaves(int)), _signalSlotHandler.get(), SLOT(onMasterChanged(int)));
     }
     if (_signalSlotHandler) {
+        ///Notify we want to refresh
         _signalSlotHandler->s_valueChanged(dimension,reason);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
+        
+        ///Animation might have changed since we're now slaved to someone else
         checkAnimationLevel(dimension);
-    }
-    if (getHolder() && _signalSlotHandler) {
-        ///hackish way to get a shared ptr to this knob
-        getHolder()->onKnobSlaved(_signalSlotHandler->getKnob(),dimension,true, other->getHolder());
+        if (getHolder()) {
+            ///hackish way to get a shared ptr to this knob
+            getHolder()->onKnobSlaved(_signalSlotHandler->getKnob(),dimension,true, other->getHolder());
+        }
     }
     
     ///Register this as a listener of the master

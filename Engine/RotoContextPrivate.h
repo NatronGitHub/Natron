@@ -516,7 +516,6 @@ struct RotoContextPrivate
     boost::shared_ptr<Bool_Knob> inverted;
 #endif
     boost::shared_ptr<Color_Knob> colorKnob;
-    boost::shared_ptr<Choice_Knob> compOperator;
     
     ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
     ////to give a unique default name to each shape
@@ -594,16 +593,7 @@ struct RotoContextPrivate
         colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         colorKnob->setAllDimensionsEnabled(false);
         colorKnob->setIsPersistant(false);
-        
-        compOperator = Natron::createKnob<Choice_Knob>(effect, kRotoCompOperatorParamName, 1, false);
-        compOperator->setHintToolTip(kRotoCompOperatorHint);
-        compOperator->setAllDimensionsEnabled(false);
-        compOperator->setIsPersistant(false);
-        std::vector<std::string> operators;
-        std::vector<std::string> tooltips;
-        getCompositingOperators(&operators, &tooltips);
-        compOperator->populateChoices(operators,tooltips);
-        compOperator->setDefaultValue((int)CAIRO_OPERATOR_OVER);
+
     }
     
     /**

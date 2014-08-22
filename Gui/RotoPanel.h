@@ -102,7 +102,7 @@ public slots:
     void onRotoItemShapeColorChanged();
     
     ///An item had its compositing operator changed
-    void onRotoItemCompOperatorChanged();
+    void onRotoItemCompOperatorChanged(int dim,int reason);
     
     void onCurrentItemCompOperatorChanged(int index);
     
@@ -145,6 +145,7 @@ public slots:
     void onItemColorDialogEdited(const QColor& color);
 private:
     
+    ///Called when the selection changes from another reason than settings panel interaction
     void onSelectionChangedInternal();
     
     boost::scoped_ptr<RotoPanelPrivate> _imp;

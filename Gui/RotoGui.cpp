@@ -793,8 +793,9 @@ RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             std::list< Point > points;
             (*it)->evaluateAtTime_DeCasteljau(time,0, 100, &points, NULL);
             
+            bool locked = (*it)->isLockedRecursive();
             double curveColor[4];
-            if (!(*it)->isLockedRecursive()) {
+            if (!locked) {
                 (*it)->getOverlayColor(curveColor);
             } else {
                 curveColor[0] = 0.8;curveColor[1] = 0.8;curveColor[2] = 0.8;curveColor[3] = 1.;
@@ -839,7 +840,7 @@ RotoGui::drawOverlays(double /*scaleX*/,double /*scaleY*/) const
             std::list< boost::shared_ptr<Bezier> >::const_iterator selected =
             std::find(_imp->rotoData->selectedBeziers.begin(),_imp->rotoData->selectedBeziers.end(),*it);
             
-            if (selected != _imp->rotoData->selectedBeziers.end()) {
+            if (selected != _imp->rotoData->selectedBeziers.end() && !locked) {
                 const std::list< boost::shared_ptr<BezierCP> >& cps = (*selected)->getControlPoints();
                 const std::list< boost::shared_ptr<BezierCP> >& featherPts = (*selected)->getFeatherPoints();
                 assert(cps.size() == featherPts.size());

@@ -367,7 +367,7 @@ signals:
     
     void shapeColorChanged();
     
-    void compositingOperatorChanged();
+    void compositingOperatorChanged(int,int);
     
 private:
     
@@ -963,7 +963,6 @@ public:
 #endif
     boost::shared_ptr<Color_Knob> getColorKnob() const;
     
-    boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     
     void setLastItemLocked(const boost::shared_ptr<RotoItem>& item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
