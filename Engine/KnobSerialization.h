@@ -37,6 +37,9 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL 4
 #define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL
 
+#define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL
+
 struct MasterSerialization
 {
     int masterDimension;
@@ -190,7 +193,7 @@ struct ValueSerialization
             int v;
             ar & boost::serialization::make_nvp("Value", v);
             assert(v >= 0);
-            if (version < KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
+            if (version < VALUE_SERIALIZATION_VERSION) {
                 isChoice->setValue(v, _dimension);
             } else {
                 std::string label;
@@ -253,6 +256,9 @@ struct ValueSerialization
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
+
+BOOST_CLASS_VERSION(ValueSerialization, VALUE_SERIALIZATION_VERSION)
+
 
 class KnobSerialization
 {

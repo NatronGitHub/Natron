@@ -104,9 +104,6 @@ public:
     
     virtual ~TabBar(){}
 
-    //public slots:
-    
-    // void dragTargetChanged(QWidget* target);
     
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
