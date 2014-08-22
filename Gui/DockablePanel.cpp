@@ -1184,9 +1184,11 @@ void DockablePanel::onColorDialogColorChanged(const QColor& color)
 void DockablePanel::onColorButtonClicked()
 {
     QColorDialog dialog(this);
+    QColor oldColor;
     {
         QMutexLocker locker(&_imp->_currentColorMutex);
         dialog.setCurrentColor(_imp->_currentColor);
+        oldColor = _imp->_currentColor;
     }
     QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onColorDialogColorChanged(QColor)));
     if (dialog.exec()) {
@@ -1197,6 +1199,8 @@ void DockablePanel::onColorButtonClicked()
         }
 
         emit colorChanged(c);
+    } else {
+        onColorDialogColorChanged(oldColor);
     }
 }
 
