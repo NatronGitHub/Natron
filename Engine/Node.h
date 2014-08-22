@@ -612,6 +612,13 @@ public:
     };
     void getKnobsLinks(std::list<KnobLink>& links) const;
     
+    /*Initialises inputs*/
+    void initializeInputs();
+    
+    /**
+     * @brief Forwarded to the live effect instance
+     **/
+    void initializeKnobs(const NodeSerialization& serialization);
 public slots:
     
     void setKnobsAge(U64 newAge) ;
@@ -722,8 +729,6 @@ protected:
      **/
     void computeHash();
     
-    /*Initialises inputs*/
-    void initializeInputs();
 
 private:
     
@@ -734,10 +739,6 @@ private:
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    void initializeKnobs(const NodeSerialization& serialization);
     
     void loadKnob(const boost::shared_ptr<KnobI>& knob,const NodeSerialization& serialization);
     

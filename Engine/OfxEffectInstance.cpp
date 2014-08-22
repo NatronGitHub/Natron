@@ -237,6 +237,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         
         getNode()->createRotoContextConditionnally();
         
+        getNode()->initializeInputs();
+        getNode()->initializeKnobs(serialization ? *serialization : NodeSerialization(getApp()));
+        
         ///before calling the createInstanceAction, load values
         if (serialization && !serialization->isNull()) {
             getNode()->loadKnobs(*serialization);

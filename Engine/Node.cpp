@@ -276,6 +276,9 @@ Node::load(const std::string& pluginID,
         _imp->liveInstance = func.second(thisShared);
         assert(_imp->liveInstance);
         createRotoContextConditionnally();
+        initializeInputs();
+        initializeKnobs(serialization);
+
     } else { //ofx plugin
         _imp->liveInstance = appPTR->createOFXEffect(pluginID,thisShared,&serialization);
         assert(_imp->liveInstance);
@@ -290,9 +293,7 @@ Node::load(const std::string& pluginID,
         throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
     }
     
-    initializeInputs();
-    initializeKnobs(serialization);
-
+    
     ///Special case for trackers: set as multi instance
     if (isTrackerNode()) {
         _imp->isMultiInstance = true;
