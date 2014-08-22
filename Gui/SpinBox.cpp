@@ -47,6 +47,7 @@ struct SpinBoxPrivate
     double valueWhenEnteringFocus;
     bool hasChangedSinceLastValidation;
     double valueAfterLastValidation;
+    bool valueInitialized; //< false when setValue has never been called yet.
     
     SpinBoxPrivate(SpinBox::SPINBOX_TYPE type)
     : type(type)
@@ -60,6 +61,7 @@ struct SpinBoxPrivate
     , valueWhenEnteringFocus(0)
     , hasChangedSinceLastValidation(false)
     , valueAfterLastValidation(0)
+    , valueInitialized(false)
     {
         
     }
@@ -112,7 +114,7 @@ SpinBox::~SpinBox()
 void
 SpinBox::setValue_internal(double d, bool ignoreDecimals, bool reformat)
 {
-    if (d == text().toDouble() && !reformat) {
+    if (d == text().toDouble() && !reformat && _imp->valueInitialized) {
         // the value is already OK
         return;
     }
@@ -163,6 +165,7 @@ SpinBox::setValue_internal(double d, bool ignoreDecimals, bool reformat)
     }
      */
     setText(str, pos);
+    _imp->valueInitialized = true;
 }
 
 void
