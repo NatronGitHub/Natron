@@ -223,23 +223,25 @@ SpinBoxPrivate::setNum(double cur)
 // common function for wheel up/down and key up/down
 // delta is in wheel units: a delta of 120 means to increment by 1
 void
-SpinBox::increment(int delta)
+SpinBox::increment(int delta,
+                   int shift) // shift = 1 means to increment * 10, shift = -1 means / 10
 {
     bool ok;
     QString str = text();
     //qDebug() << "increment from " << str;
     const double oldVal = str.toDouble(&ok);
     if (!ok) {
-        // not a valid double value, don't do anything
+        // Not a valid double value, don't do anything
         return;
     }
 
     bool useCursorPositionIncr = appPTR->getCurrentSettings()->useCursorPositionIncrements();
 
+    // First, treat the standard case: use the Knob increment
     if (!useCursorPositionIncr) {
         double val = oldVal;
         _imp->currentDelta += delta;
-        double inc = _imp->currentDelta * _imp->increment / 120.;
+        double inc = std::pow(10., shift) * _imp->currentDelta * _imp->increment / 120.;
         double maxiD = 0.;
         double miniD = 0.;
         switch (_imp->type) {
@@ -253,7 +255,7 @@ SpinBox::increment(int delta)
                 maxiD = _imp->maxi.toInt();
                 miniD = _imp->mini.toInt();
                 val += (int)inc; // round towards zero
-                // update the current delta, which contains the accumulated error
+                // Update the current delta, which contains the accumulated error
                 _imp->currentDelta -= ((int)inc) * 120. / _imp->increment;
                 assert(std::abs(_imp->currentDelta) < 120);
             }   break;
@@ -266,18 +268,20 @@ SpinBox::increment(int delta)
         return;
     }
 
+    // From here on, we treat the positin-based increment.
+
     if (str.indexOf('e') != -1 || str.indexOf('E') != -1) {
-        // sorry, we don't handle numbers with an exponent, although these are valid doubles
+        // Sorry, we don't handle numbers with an exponent, although these are valid doubles
         return;
     }
 
     _imp->currentDelta += delta;
     int inc_int = _imp->currentDelta / 120; // the number of integert increments
-    // update the current delta, which contains the accumulated error
+    // Update the current delta, which contains the accumulated error
     _imp->currentDelta -= inc_int * 120;
 
     if (inc_int == 0) {
-        // nothing is changed, just return
+        // Nothing is changed, just return
         return;
     }
 
@@ -285,17 +289,23 @@ SpinBox::increment(int delta)
     // - if there is no selection, the first digit right after the cursor (or if it is an int and the cursor is at the end, the last digit)
     // - if there is a selection, the first digit after the start of the selection
     int len = str.size(); // used for chopping spurious characters
-    // the position in str of the digit to modify in str() (may be equal to str.size())
-    int pos = hasSelectedText() ? selectionStart() : cursorPosition();
-    // the position of the decimal dot
+    if (len <= 0) {
+        return; // should never happen
+    }
+    // The position in str of the digit to modify in str() (may be equal to str.size())
+    int pos = (hasSelectedText() ? selectionStart() : cursorPosition());
+    //if (pos == len) { // select the last character?
+    //    pos = len - 1;
+    //}
+    // The position of the decimal dot
     int dot = str.indexOf('.');
     if (dot == -1) {
         dot = str.size();
     }
 
-    // now, chop trailing and leading whitespace (and update len, pos and dot)
+    // Now, chop trailing and leading whitespace (and update len, pos and dot)
 
-    // leading whitespace
+    // Leading whitespace
     while (len > 0 && str[0].isSpace()) {
         str.remove(0, 1);
         --len;
@@ -306,7 +316,7 @@ SpinBox::increment(int delta)
         assert(dot >= 0);
         assert(len > 0);
     }
-    // trailing whitespace
+    // Trailing whitespace
     while (len > 0 && str[len-1].isSpace()) {
         str.remove(len-1, 1);
         --len;
@@ -320,30 +330,14 @@ SpinBox::increment(int delta)
     }
     assert(oldVal == str.toDouble()); // check that the value hasn't changed due to whitespace manipulation
 
-    // on int types, there should not be any dot
+    // On int types, there should not be any dot
     if (_imp->type == INT_SPINBOX && len > dot) {
-        // remove anything after the dot, including the dot
+        // Remove anything after the dot, including the dot
         str.resize(dot);
         len = dot;
-        //qDebug() << "trimmed dot, text is now "<<str;
     }
 
-    QString noDotStr = str;
-    int noDotLen = len;
-    if (dot != len) {
-        // remove the dot
-        noDotStr.remove(dot, 1);
-        --noDotLen;
-    }
-    assert((_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot);
-    double val = oldVal;
-
-    qlonglong llval = noDotStr.toLongLong();
-    int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
-    assert(llpowerOfTen <= 0);
-    // check that val and llval*10^llPowerOfTen are close enough
-    assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
-
+    // Adjust pos so that it doesn't point to a dot or a sign
     assert(0 <= pos && pos <= str.size());
     while (pos < str.size() &&
            (pos == dot || str[pos] == '+' || str[pos] == '-')) {
@@ -351,7 +345,64 @@ SpinBox::increment(int delta)
     }
     assert(len >= pos);
 
-    // if pos is at the end
+    // Set the shift (may have to be done twice due to the dot)
+    pos -= shift;
+    if (pos == dot) {
+        pos -= shift;
+    }
+
+    // Now, add leading and trailing zeroes so that pos is a valid digit position
+    // (beware of the sign!)
+    // Trailing zeroes:
+    // (No trailing zeroes on int, of course)
+    assert(len == str.size());
+    if (_imp->type == INT_SPINBOX && pos >= len) {
+        // Can't add decimals to an int: do nothing
+        return;
+    }
+    while (pos >= str.size()) {
+        assert(_imp->type == DOUBLE_SPINBOX);
+        // Add trailing zero, maybe preceded by a dot
+        if (pos == dot) {
+            str.append('.');
+            ++len;
+        } else {
+            assert(pos > dot);
+            str.append('0');
+            ++len;
+        }
+        assert(pos >= (str.size() - 1));
+    }
+    // Leading zeroes:
+    bool hasSign = (str[0] == '-' || str[0] == '+');
+    while (pos < 0 || (pos == 0 && (str[0] == '-' || str[0] == '+'))) {
+        // Add leading zero
+        str.insert(hasSign ? 1 : 0, '0');
+        ++pos;
+        ++dot;
+        ++len;
+    }
+    assert(len == str.size());
+    assert(0 <= pos && pos < str.size() && str[pos].isDigit());
+
+    QString noDotStr = str;
+    int noDotLen = len;
+    if (dot != len) {
+        // Remove the dot
+        noDotStr.remove(dot, 1);
+        --noDotLen;
+    }
+    assert((_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot);
+    double val = oldVal; // The value, as a double
+
+    qlonglong llval = noDotStr.toLongLong(); // The value, as a long long int
+    int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
+    assert(llpowerOfTen <= 0);
+    // check that val and llval*10^llPowerOfTen are close enough
+    assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
+
+
+    // If pos is at the end
     if (pos == str.size()) {
         switch (_imp->type) {
             case DOUBLE_SPINBOX:
@@ -371,16 +422,17 @@ SpinBox::increment(int delta)
         }
     }
 
-    // compute the full value of the increment
+    // Compute the full value of the increment
+    assert(len == str.size());
     assert(pos != dot);
-    assert(0 <= pos && pos < str.size() && str[pos].isDigit());
+    assert(0 <= pos && pos < len && str[pos].isDigit());
 
     int powerOfTen = dot - pos - (pos < dot); // the power of ten
     assert((_imp->type == DOUBLE_SPINBOX) || (powerOfTen >= 0 && dot == str.size()));
 
     double inc = inc_int * std::pow(10., (double)powerOfTen);
 
-    // check that we are within the authorized range
+    // Check that we are within the authorized range
     double maxiD,miniD;
     switch (_imp->type) {
         case INT_SPINBOX:
@@ -399,7 +451,7 @@ SpinBox::increment(int delta)
         return;
     }
 
-    // adjust llval so that the increment becomes an int, and avoid rounding errors
+    // Adjust llval so that the increment becomes an int, and avoid rounding errors
     if (powerOfTen >= llpowerOfTen) {
         llval += inc_int * std::pow(10., powerOfTen - llpowerOfTen);
     } else {
@@ -407,7 +459,7 @@ SpinBox::increment(int delta)
         llpowerOfTen -= llpowerOfTen - powerOfTen;
         llval += inc_int;
     }
-    // check that val and llval*10^llPowerOfTen are still close enough
+    // Check that val and llval*10^llPowerOfTen are still close enough
     assert(std::fabs(val * std::pow(10.,-llpowerOfTen) - llval) < 1e-8);
 
     QString newStr;
@@ -426,19 +478,25 @@ SpinBox::increment(int delta)
         assert(_imp->type == DOUBLE_SPINBOX);
         newStr.insert(newDot, '.');
     }
-    // check that the backed string is close to the wanted value
+    // Check that the backed string is close to the wanted value
     assert((newStr.toDouble() - val) * std::pow(10.,-llpowerOfTen) < 1e-8);
-    // the new cursor position
+    // The new cursor position
     int newPos = newDot + (pos - dot);
+    // Remove the shift (may have to be done twice due to the dot)
+    newPos += shift;
+    if (newPos == newDot) {
+        // adjust newPos
+        newPos += shift;
+    }
 
     assert(0 <= newDot && newDot <= newStr.size());
 
-    // now, add leading and trailing zeroes so that newPos is a valid digit position
+    // Now, add leading and trailing zeroes so that newPos is a valid digit position
     // (beware of the sign!)
-
+    // Trailing zeroes:
     while (newPos >= newStr.size()) {
         assert(_imp->type == DOUBLE_SPINBOX);
-        // add trailing zero, maybe preceded by a dot
+        // Add trailing zero, maybe preceded by a dot
         if (newPos == newDot) {
             newStr.append('.');
         } else {
@@ -447,22 +505,21 @@ SpinBox::increment(int delta)
         }
         assert(newPos >= (newStr.size() - 1));
     }
-
+    // Leading zeroes:
+    bool newHasSign = (newStr[0] == '-' || newStr[0] == '+');
     while (newPos < 0 || (newPos == 0 && (newStr[0] == '-' || newStr[0] == '+'))) {
         // add leading zero
-        bool hasSign = (newStr[0] == '-' || newStr[0] == '+');
-        newStr.insert(hasSign ? 1 : 0, '0');
+        newStr.insert(newHasSign ? 1 : 0, '0');
         ++newPos;
         ++newDot;
     }
-
     assert(0 <= newPos && newPos < newStr.size() && newStr[newPos].isDigit());
 
-    // set the text and cursor position
+    // Set the text and cursor position
     //qDebug() << "increment setting text to " << newStr;
     setText(newStr, newPos);
-    // set the selection
-    assert(newPos+1 <= newStr.size());
+    // Set the selection
+    assert(newPos + 1 <= newStr.size());
     setSelection(newPos + 1, -1);
     emit valueChanged(value());
 }
@@ -478,13 +535,14 @@ SpinBox::wheelEvent(QWheelEvent* e)
         return;
     }
     int delta = e->delta();
+    int shift = 0;
     if (modCASIsShift(e)) {
-        delta *= 10;
+        shift = 1;
     }
     if (modCASIsControl(e)) {
-        delta /= 10;
+        shift = -1;
     }
-    increment(delta);
+    increment(delta, shift);
 }
 
 void
@@ -525,13 +583,14 @@ SpinBox::keyPressEvent(QKeyEvent* e)
     if (isEnabled() && !isReadOnly()) {
         if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {
             int delta = (e->key() == Qt::Key_Up) ? 120 : -120;
+            int shift = 0;
             if (modCASIsShift(e)) {
-                delta *= 10;
+                shift = 1;
             }
             if (modCASIsControl(e)) {
-                delta /= 10;
+                shift = -1;
             }
-            increment(delta);
+            increment(delta, shift);
         } else {
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);

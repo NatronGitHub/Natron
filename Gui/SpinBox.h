@@ -59,7 +59,7 @@ public:
 
 private:
 
-    void increment(int delta);
+    void increment(int delta, int shift);
     
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     
