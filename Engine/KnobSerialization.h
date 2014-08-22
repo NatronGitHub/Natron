@@ -189,7 +189,7 @@ struct ValueSerialization
         else if (isChoice) {
             int v;
             ar & boost::serialization::make_nvp("Value", v);
-            assert(v > 0);
+            assert(v >= 0);
             if (version < KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
                 isChoice->setValue(v, _dimension);
             } else {
