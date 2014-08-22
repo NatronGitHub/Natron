@@ -429,7 +429,7 @@ Node::loadKnobs(const NodeSerialization& serialization)
 {
     ///Only called from the main thread
     assert(QThread::currentThread() == qApp->thread());
-    assert(!_imp->knobsInitialized);
+    assert(_imp->knobsInitialized);
 
     const std::vector< boost::shared_ptr<KnobI> >& nodeKnobs = getKnobs();
     ///for all knobs of the node
@@ -448,7 +448,6 @@ void
 Node::loadKnob(const boost::shared_ptr<KnobI>& knob,
                const NodeSerialization& serialization)
 {
-    assert(!_imp->knobsInitialized);
     const NodeSerialization::KnobValues& knobsValues = serialization.getKnobsValues();
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it!=knobsValues.end();++it) {
