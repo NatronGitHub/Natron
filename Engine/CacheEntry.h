@@ -142,7 +142,7 @@ public:
             _storageMode = DISK;
             _path = path;
             try {
-                _backingFile.reset(new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create));
+                _backingFile.reset(new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create));
             } catch(const std::runtime_error& r) {
                 std::cout << r.what() << std::endl;
                 
@@ -181,17 +181,16 @@ public:
     void reOpenFileMapping() const {
         assert(!_backingFile && _storageMode == DISK);
         try{
-            _backingFile.reset(new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create));
+            _backingFile.reset(new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create));
         } catch (const std::exception& e) {
             _backingFile.reset();
-            std::cout << e.what() << std::endl; //FIXME: why write to stdout?
             throw std::bad_alloc();
         }
     }
     
     void restoreBufferFromFile(const std::string& path)  {
         try {
-            _backingFile.reset(new MemoryFile(path,Natron::if_exists_keep_if_dont_exists_create));
+            _backingFile.reset(new MemoryFile(path,MemoryFile::if_exists_keep_if_dont_exists_create));
         } catch (const std::exception& e) {
             _backingFile.reset();
             throw std::bad_alloc();
@@ -204,14 +203,21 @@ public:
         if (_storageMode == RAM) {
             _buffer.clear();
         } else {
-            _backingFile.reset();
+            if (_backingFile) {
+                bool flushOk = _backingFile->flush();
+                _backingFile.reset();
+                if (!flushOk) {
+                    throw std::runtime_error("Failed to flush RAM data to backing file.");
+                }
+            }
         }
     }
     
     void removeAnyBackingFile() const {
         if (_storageMode == DISK) {
-            if(QFile::exists(_path.c_str())){
-                QFile::remove(_path.c_str());
+            if (_backingFile) {
+                _backingFile->remove();
+                _backingFile.reset();
             }
         }
     }
@@ -486,7 +492,6 @@ public:
      * @brief An entry stored on disk is effectively destroyed when its backing file is removed.
      **/
     void removeAnyBackingFile() const {
-        assert(!_data.isAllocated());
         _data.removeAnyBackingFile();
         _cache->notifyEntryDestroyed(getTime(), size(),Natron::DISK);
     }

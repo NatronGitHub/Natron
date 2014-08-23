@@ -12,100 +12,128 @@
 #ifndef NATRON_ENGINE_MEMORYFILE_H_
 #define NATRON_ENGINE_MEMORYFILE_H_
 
-// (C) Copyright 2008 CodeRage, LLC (turkanis at coderage dot com)
-// (C) Copyright 2004-2007 Jonathan Turkanis
-// (C) Copyright Craig Henderson 2002 'boost/memmap.hpp' from sandbox
-// (C) Copyright Jonathan Graehl 2004.
-
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.)
 
 #include <string>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Global/Enums.h"
 
-/*
- Read/write memory-mapped file wrapper.
- A memory-mapped file is a disk file that is mapped into the process
- virtual address space (i.e: RAM). Closing the mapped-file is equivalen
- It handles only files that can be wholly loaded
- into the address space of the process.
- The constructor attemps to create the file if the file
- doesn't exist alredy  and opens the mapping of the (created) file into the RAM.
- The destructor closes the mapping, effectively removing the RAM portion but not the file.
- The "data" function returns a pointer to the beginning of the file,
- if the file has been successfully opened, otherwise it returns 0.
- The "size" function returns the initial length of the file in bytes,
- if the file has been successfully opened, otherwise it returns 0.
- Afterwards it returns the size of the physical file if the mapping is closed.
- The "resize" function changes the number of bytes of the significant
- part of the file. The resulting size can be retrieved
- using the "size" function.
- The "reserve" grows the phisical file to the specified number of bytes.
- The size of the resulting file can be retrieved using "capacity".
- The capacity  cannot be shrinked with reserve;
- a value smaller than the current capacity is ignored.
- The "capacity()" function return the size the physical file has at this time.
- The "flush" function ensure that the disk is updated
- with the data written in memory.
- */
+struct MemoryFilePrivate;
+
+/**
+ * @brief A memory file wrapper that maps a file to the virtual memory of the process.
+ * This is not MT-safe.
+ **/
 class MemoryFile {
+    
 public:
-    MemoryFile(const std::string& pathname, Natron::MMAPfile_mode open_mode);
+    
+    enum FileOpenMode {
+        if_exists_fail_if_not_exists_create = 0,
+        
+        if_exists_keep_if_dont_exists_fail,
+        
+        if_exists_keep_if_dont_exists_create,
+        
+        if_exists_truncate_if_not_exists_fail,
+        
+        if_exists_truncate_if_not_exists_create
+    };
+    
+    /**
+     * @brief Creates an empty object. No file is created/opened and no mapping is effective yet.
+     * You can then call open(...) to open a file and then resize(...) it as needed.
+     **/
+    MemoryFile();
+    
+    /**
+     * @brief The constructor attemps to create the file if the file
+     * doesn't exist already. If the file is empty, this function doesn't create the mapping 
+     * (i.e: data() will return NULL).
+     * To open the file mapping if the file didn't exist already, call resize() or call the other constructor.
+     * The constructor might throw an exception upon failure to open the file.
+     *
+     * Note: if a constructor finishes by throwing an exception, 
+     * the memory associated with the object itself is cleaned up — there is no memory leak.
+     * http://www.parashift.com/c++-faq-lite/ctors-can-throw.html
+     **/
+    MemoryFile(const std::string& filepath, FileOpenMode open_mode);
+    
+    /**
+     * @brief The constructor attemps to create the file if the file
+     * doesn't exist already and creates the file mapping to the memory. The file size will be
+     * resized to 'size' bytes.
+     * This is equivalent to calling the other constructor and then calling resize(size)
+     * The constructor might throw an exception upon failure to open the file.
+     *
+     * Note: if a constructor finishes by throwing an exception,
+     * the memory associated with the object itself is cleaned up — there is no memory leak.
+     * http://www.parashift.com/c++-faq-lite/ctors-can-throw.html
+     **/
+    MemoryFile(const std::string& filepath, size_t size,FileOpenMode open_mode);
+    
+    /**
+     * @brief The destructor closes the mapping, effectively removing the RAM portion but not the file.
+     **/
     ~MemoryFile();
-    char* data() const { return data_; }
+    
+    /**
+     * @brief Attemps to create the file if the file didn't exist already.
+     * If the file did exist, this function will also map the file to memory and the data
+     * can be read using the pointer returned by data(). Otherwise data() returns NULL and you
+     * explicitly need to call resize(...) to create the file mapping.
+     * 
+     * WARNING: Calling this function whilst the mapping is already opened has no effect
+     * This function might throw an exception upon failure to open the file.
+     **/
+    void open(const std::string& filepath,FileOpenMode open_mode);
+    
+    /**
+     * @brief Returns a pointer to the beginning of the file,
+     * if the file has been successfully opened, otherwise it returns 0.
+     **/
+    char* data() const;
+    
+    /**
+     * @brief Changes the number of bytes of the significant
+     * part of the file. The resulting size can be retrieved
+     * using the "size" function.
+     *
+     * WARNING: Any pointer held to data() previously to calling resize()
+     * will be garbage after calling this.
+     *
+     * This function might throw an exception upon failure to map the file or truncate the file.
+     **/
     void resize(size_t new_size);
-    void reserve(size_t new_capacity);
-    size_t size() const { return size_; }
-    size_t capacity() const { return capacity_; }
+    
+    /**
+     * @brief Returns the size of the file in bytes.
+     **/
+    size_t size() const;
+    
+    /**
+     * @brief Ensures that the backing file is in sync. with the data in memory
+     **/
     bool flush();
-    std::string path() const {return _path;}
+    
+    /**
+     * @brief Returns the filepath of the backing file.
+     **/
+    std::string path() const;
+    
+    /**
+     * @brief Removes the backing file and closes the mapping to the virtual memory.
+     * After that you could re-use the object calling the open(...) function again.
+     **/
+    void remove();
+    
 private:
-    std::string _path;
-    char* data_;
-    size_t size_;
-    size_t capacity_;
-#if defined(__NATRON_UNIX__)
-    int file_handle_;
-#elif defined(__NATRON_WIN32__)
-    HANDLE file_handle_;
-    HANDLE file_mapping_handle_;
-#else
-#error Only Posix or Windows systems can use memory-mapped files.
-#endif
+    
+    MemoryFilePrivate* _imp;
+    
 };
 
 
-/*
- Read-only memory-mapped file wrapper.
- It handles only files that can be wholly loaded
- into the address space of the process.
- The constructor opens the file, the destructor closes it.
- The "data" function returns a pointer to the beginning of the file,
- if the file has been successfully opened, otherwise it returns 0.
- The "size" function returns the length of the file in bytes,
- if the file has been successfully opened, otherwise it returns 0.
- */
-class InputMemoryFile {
-public:
-    InputMemoryFile(const char *pathname);
-    ~InputMemoryFile();
-    const char* data() const { return data_; }
-    size_t size() const { return size_; }
-private:
-    const char* data_;
-    size_t size_;
-#if defined(__NATRON_UNIX__)
-    int file_handle_;
-#elif defined(_WIN32)
-    HANDLE file_handle_;
-    HANDLE file_mapping_handle_;
-#else
-#error Only Posix or Windows systems can use memory-mapped files.
-#endif
-};
 
 
 

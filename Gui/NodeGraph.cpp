@@ -3151,7 +3151,9 @@ void NodeGraph::removeBackDrop(NodeBackDrop* bd)
 void NodeGraph::onTimeChanged(SequenceTime time,int reason)
 {
     std::vector<ViewerInstance* > viewers;
-    
+    if (!_imp->_gui) {
+        return;
+    }
     boost::shared_ptr<Natron::Project> project = _imp->_gui->getApp()->getProject();
     
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin() ;it!=_imp->_nodes.end();++it) {

@@ -59,11 +59,7 @@ namespace Natron{
     };
 
     
-    enum MMAPfile_mode{if_exists_fail_if_not_exists_create,
-        if_exists_keep_if_dont_exists_fail,
-        if_exists_keep_if_dont_exists_create,
-        if_exists_truncate_if_not_exists_fail,
-        if_exists_truncate_if_not_exists_create};
+   
     
     enum Status{
         StatOK = 0,

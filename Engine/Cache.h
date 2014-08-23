@@ -409,7 +409,6 @@ namespace Natron {
             //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
             //we'll let the user of these entries purge the extra entries left in the cache later on
             while (evictedFromDisk.second.entry) {
-                evictedFromDisk.second.entry->deallocate();
                 evictedFromDisk.second.entry->removeAnyBackingFile();
                 evictedFromDisk = _diskCache.evict();
             }
@@ -643,7 +642,6 @@ namespace Natron {
                 for (typename std::list<CachedValue>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                     if(it->entry->getKey() == entry->getKey()){
                         if (it->entry->isStoredOnDisk()) {
-                            it->entry->deallocate();
                             it->entry->removeAnyBackingFile();
                         }
                         ret.erase(it);
@@ -660,7 +658,6 @@ namespace Natron {
                     for (typename std::list<CachedValue>::iterator it = ret.begin(); it!=ret.end(); ++it) {
                         if (it->entry->getKey() == entry->getKey()) {
                             if (it->entry->isStoredOnDisk()) {
-                                it->entry->deallocate();
                                 it->entry->removeAnyBackingFile();
                             }
                             ret.erase(it);
