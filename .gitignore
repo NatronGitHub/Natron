@@ -4,7 +4,7 @@
 *_moc.cpp
 moc*.cpp
 *moc
-build*
+build
 *html*
 *latex*
 DerivedData
