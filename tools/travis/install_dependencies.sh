@@ -43,9 +43,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
-    'echo ''boost: LIBS += -lboost_serialization'' > config.pri'
-    'echo ''expat: LIBS += -lexpat'' >> config.pri'
-    'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
+    echo 'boost: LIBS += -lboost_serialization' > config.pri
+    echo 'expat: LIBS += -lexpat' >> config.pri
+    echo 'expat: PKGCONFIG -= expat' >> config.pri
 
     # build OpenFX-IO
     if [ "$CC" = "gcc" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
