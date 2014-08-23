@@ -58,6 +58,7 @@ private:
 struct NodeCreationDialogPrivate;
 class NodeCreationDialog : public QDialog
 {
+    Q_OBJECT
 public:
     
     explicit NodeCreationDialog(QWidget* parent);
@@ -67,7 +68,8 @@ public:
     QString getNodeName() const;
     
 private:
-
+    
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     

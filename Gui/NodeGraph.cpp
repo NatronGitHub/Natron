@@ -1441,10 +1441,33 @@ NodeGraph::event(QEvent* e)
     if ( e->type() == QEvent::KeyPress ) {
         QKeyEvent* ke = static_cast<QKeyEvent*>(e);
         if (ke &&  ke->key() == Qt::Key_Tab && _imp->_nodeCreationShortcutEnabled ) {
-            NodeCreationDialog nodeCreation(this);
+            NodeCreationDialog* nodeCreation = new NodeCreationDialog(this);
             
-            if (nodeCreation.exec()) {
-                QString res = nodeCreation.getNodeName();
+            ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
+            ///it closes it.
+            QObject::connect(nodeCreation,SIGNAL(accepted()),this,SLOT(onNodeCreationDialogFinished()));
+            QObject::connect(nodeCreation,SIGNAL(rejected()),this,SLOT(onNodeCreationDialogFinished()));
+            nodeCreation->show();
+            
+            
+            ke->accept();
+            return true;
+        }
+    }
+    return QGraphicsView::event(e);
+}
+
+
+void
+NodeGraph::onNodeCreationDialogFinished()
+{
+    NodeCreationDialog* dialog = qobject_cast<NodeCreationDialog*>(sender());
+    if (dialog) {
+        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
+        switch (ret) {
+            case QDialog::Accepted:
+            {
+                QString res = dialog->getNodeName();
                 const std::vector<Natron::Plugin*>& allPlugins = appPTR->getPluginsList();
                 for (U32 i = 0; i < allPlugins.size(); ++i) {
                     if (allPlugins[i]->getPluginID() == res) {
@@ -1461,13 +1484,13 @@ NodeGraph::event(QEvent* e)
                         break;
                     }
                 }
-            }
-            setFocus(Qt::ActiveWindowFocusReason);
-            ke->accept();
-            return true;
+            }   break;
+            case QDialog::Rejected:
+            default:
+                break;
         }
+        dialog->deleteLater();
     }
-    return QGraphicsView::event(e);
 }
 
 void

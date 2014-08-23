@@ -185,8 +185,8 @@ public slots:
     
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
-    
-
+        
+    void onNodeCreationDialogFinished();
 private:
     
     

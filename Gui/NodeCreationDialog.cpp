@@ -219,6 +219,7 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
     setWindowTitle(tr("Node creation tool"));
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     setObjectName("nodeCreationDialog");
+    setAttribute(Qt::WA_DeleteOnClose,false);
     _imp->layout = new QVBoxLayout(this);
     _imp->layout->setContentsMargins(0, 0, 0, 0);
 
@@ -247,7 +248,6 @@ NodeCreationDialog::NodeCreationDialog(QWidget* parent)
 
 NodeCreationDialog::~NodeCreationDialog()
 {
-    
 }
 
 
@@ -265,3 +265,15 @@ void NodeCreationDialog::keyPressEvent(QKeyEvent* e) {
         QDialog::keyPressEvent(e);
     }
 }
+
+void NodeCreationDialog::changeEvent(QEvent* e)
+{
+    if (e->type() == QEvent::ActivationChange) {
+        if (!isActiveWindow()) {
+            reject();
+            return;
+        }
+    }
+    QDialog::changeEvent(e);
+}
+
