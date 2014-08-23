@@ -321,9 +321,6 @@ signals:
     
 private:
     
-   
-    
-    virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     

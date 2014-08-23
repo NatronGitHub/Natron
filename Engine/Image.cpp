@@ -39,10 +39,10 @@ ImageKey::ImageKey(U64 nodeHashKey,
 : KeyHelper<U64>()
 , _nodeHashKey(nodeHashKey)
 , _time(time)
+, _mipMapLevel(mipMapLevel)
 , _view(view)
 , _pixelAspect(pixelAspect)
 {
-    _mipMapLevel = mipMapLevel;
 }
 
 void
