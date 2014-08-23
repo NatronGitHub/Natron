@@ -9,10 +9,13 @@ compiler:
   - gcc
   - clang
 
+# Travis CI has 1.5 cores per VM, take advantage of it
+env:
+  - CONFIG="coverage debug" MAKEFLAGSPARALLEL="-j 2"
+
 before_script:
   - date -u
   - uname -a
-  - export J='-j3'
   - tools/travis/install_dependencies.sh
 
 script:

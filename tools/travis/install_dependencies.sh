@@ -41,8 +41,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
     if [ "$CC" = "gcc" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; git clone -b "RB-1.2" git://github.com/OpenImageIO/oiio.git oiio; cd oiio; make $MAKEFLAGSPARALLEL USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $MAKEFLAGSPARALLEL dist_dir=.; cd ..; fi
     if [ "$CC" = "gcc" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
-    # Ubuntu 12.04 precise doesn't have a pkg-config file (expat.pc)
     # config.pri
+    # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
     'echo ''boost: LIBS += -lboost_serialization'' > config.pri'
     'echo ''expat: LIBS += -lexpat'' >> config.pri'
     'echo ''expat: PKGCONFIG -= expat'' >> config.pri'
