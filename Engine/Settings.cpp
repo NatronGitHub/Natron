@@ -550,7 +550,7 @@ void Settings::setDefaultValues() {
     _powerOf2Tiling->setDefaultValue(8,0);
     _maxRAMPercent->setDefaultValue(50,0);
     _maxPlayBackPercent->setDefaultValue(25,0);
-    _unreachableRAMPercent->setDefaultValue(10);
+    _unreachableRAMPercent->setDefaultValue(5);
     _maxDiskCacheGB->setDefaultValue(10,0);
     setCachingLabels();
     _defaultNodeColor->setDefaultValue(0.6,0);
