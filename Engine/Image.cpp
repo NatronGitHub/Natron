@@ -875,7 +875,7 @@ Image::downscaleMipMap(const RectI& roi,
     
     buildMipMapLevel(roi, toLevel - fromLevel, tmpImg.get());
 
-    // check that the downscaled mipmap fits exactly in the output image (may not be always true?)
+    // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->getBounds().x1);
     assert(dstRoI.x2 <= output->getBounds().x2);
     assert(dstRoI.y1 >= output->getBounds().y1);
