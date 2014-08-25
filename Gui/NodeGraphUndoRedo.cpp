@@ -312,6 +312,7 @@ void RemoveMultipleNodesCommand::undo() {
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     _graph->getGui()->getApp()->redrawAllViewers();
+    _graph->updateNavigator();
     
     _isRedone = false;
     _graph->scene()->update();
@@ -395,6 +396,7 @@ void RemoveMultipleNodesCommand::redo() {
     
     _graph->getGui()->getApp()->triggerAutoSave();
     _graph->getGui()->getApp()->redrawAllViewers();
+    _graph->updateNavigator();
     
     _graph->scene()->update();
     setText(QObject::tr("Remove node"));
