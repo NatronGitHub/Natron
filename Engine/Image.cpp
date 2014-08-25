@@ -795,10 +795,12 @@ Image::halve1DImageForDepth(const RectI& roi,
     const RectI& srcBounds = getBounds();
     const RectI& dstBounds = output->getBounds();
     assert(dstBounds.x1*2 == roi.x1 &&
-           dstBounds.x2*2 == roi.x2 &&
            dstBounds.y1*2 == roi.y1 &&
-           dstBounds.y2*2 == roi.y2);
-
+           (
+            dstBounds.x2*2 == roi.x2 || // we halve in only 1 dimension
+            dstBounds.y2*2 == roi.y2)
+           );
+    
     int components = getElementsCountForComponents(getComponents());
     int halfWidth = width / 2;
     int halfHeight = height / 2;
