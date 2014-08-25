@@ -81,8 +81,8 @@ void MoveControlPointsUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
     for (SelectedCpList::iterator it = _pointsToDrag.begin(); it!=_pointsToDrag.end(); ++it,++cpIt) {
-        it->first->getBezier()->clonePoint(*(it->first),*(cpIt->first));
-        it->second->getBezier()->clonePoint(*(it->second),*(cpIt->second));
+        it->first->clone(*cpIt->first);
+        it->second->clone(*cpIt->second);
     }
     
     _roto->evaluate(true);
@@ -195,8 +195,8 @@ void TransformUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it!=_selectedPoints.end(); ++it,++cpIt) {
-        it->first->getBezier()->clonePoint(*(it->first),*(cpIt->first));
-        it->second->getBezier()->clonePoint(*(it->second),*(cpIt->second));
+        it->first->clone(*cpIt->first);
+        it->second->clone(*cpIt->second);
     }
     
     _roto->evaluate(true);
@@ -574,12 +574,12 @@ void MoveTangentUndoCommand::undo()
     boost::shared_ptr<BezierCP> counterPart;
     if (_tangentBeingDragged->isFeatherPoint()) {
         counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
-        _oldCp->getBezier()->clonePoint(*counterPart,*_oldCp);
-        _oldFp->getBezier()->clonePoint(*_tangentBeingDragged,*_oldFp);
+        counterPart->clone(*_oldCp);
+        _tangentBeingDragged->clone(*_oldFp);
     } else {
         counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
-        _oldCp->getBezier()->clonePoint(*_tangentBeingDragged,*_oldCp);
-        _oldFp->getBezier()->clonePoint(*counterPart,*_oldFp);
+        counterPart->clone(*_oldFp);
+        _tangentBeingDragged->clone(*_oldCp);
     }
     
     if (_firstRedoCalled) {
@@ -599,12 +599,12 @@ void MoveTangentUndoCommand::redo()
     boost::shared_ptr<BezierCP> counterPart;
     if (_tangentBeingDragged->isFeatherPoint()) {
         counterPart = _tangentBeingDragged->getBezier()->getControlPointForFeatherPoint(_tangentBeingDragged);
-        _oldCp->getBezier()->clonePoint(*_oldCp, *counterPart);
-        _oldFp->getBezier()->clonePoint(*_oldFp, *_tangentBeingDragged);
+        _oldCp->clone(*counterPart);
+        _oldFp->clone(*_tangentBeingDragged);
     } else {
         counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
-        _oldCp->getBezier()->clonePoint(*_oldCp, *_tangentBeingDragged);
-        _oldFp->getBezier()->clonePoint(*_oldFp, *counterPart);
+        _oldCp->clone(*_tangentBeingDragged);
+        _oldFp->clone(*counterPart);
     }
     
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
@@ -675,9 +675,8 @@ MoveFeatherBarUndoCommand::~MoveFeatherBarUndoCommand()
     
 void MoveFeatherBarUndoCommand::undo()
 {
-    
-    _curve->clonePoint(*_newPoint.first, *_oldPoint.first);
-    _curve->clonePoint(*_newPoint.second, *_oldPoint.second);
+    _newPoint.first->clone(*_oldPoint.first);
+    _newPoint.second->clone(*_oldPoint.second);
 
     _roto->evaluate(true);
     _roto->setSelection(_curve, _newPoint);
@@ -688,8 +687,8 @@ void MoveFeatherBarUndoCommand::undo()
 void MoveFeatherBarUndoCommand::redo()
 {
     
-    _curve->clonePoint(*_oldPoint.first, *_newPoint.first);
-    _curve->clonePoint(*_oldPoint.second, *_newPoint.second);
+    _oldPoint.first->clone(*_newPoint.first);
+    _oldPoint.second->clone(*_newPoint.second);
     
     boost::shared_ptr<BezierCP> p = _newPoint.first->isFeatherPoint() ?
     _newPoint.second : _newPoint.first;
@@ -829,8 +828,7 @@ void RemoveFeatherUndoCommand::undo()
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
              itNew != it->newPoints.end(); ++itNew,++itOld) {
-
-            it->curve->clonePoint(**itNew, **itOld);
+            (*itNew)->clone(**itOld);
         }
     }
     _roto->evaluate(true);
@@ -845,8 +843,7 @@ void RemoveFeatherUndoCommand::redo()
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
              itNew != it->newPoints.end(); ++itNew,++itOld) {
-            
-            it->curve->clonePoint(**itOld, **itNew);
+            (*itOld)->clone(**itNew);
             try {
                 it->curve->removeFeatherAtIndex(it->curve->getFeatherPointIndex(*itNew));
             } catch (...) {
@@ -941,8 +938,8 @@ void SmoothCuspUndoCommand::undo()
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
              itNew!= it->newPoints.end(); ++itNew,++itOld) {
-            it->curve->clonePoint(*(*itNew).first, *(*itOld).first);
-            it->curve->clonePoint(*(*itNew).second, *(*itOld).second);
+            itNew->first->clone(*itOld->first);
+            itNew->second->clone(*itOld->second);
             
         }
     }
@@ -962,8 +959,9 @@ void SmoothCuspUndoCommand::redo()
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
              itNew!= it->newPoints.end(); ++itNew,++itOld) {
-            it->curve->clonePoint(*(*itOld).first, *(*itNew).first);
-            it->curve->clonePoint(*(*itOld).second, *(*itNew).second);
+            itOld->first->clone(*itNew->first);
+            itOld->second->clone(*itNew->second);
+
             for (int i = 0; i < _count; ++i) {
                 int index = it->curve->getControlPointIndex((*itNew).first->isFeatherPoint() ? (*itNew).second : (*itNew).first);
                 assert(index != -1);

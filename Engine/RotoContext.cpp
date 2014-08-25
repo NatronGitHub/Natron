@@ -75,6 +75,7 @@ BezierCP::getPositionAtTime(int time,double* x,double* y,bool skipMasterOrRelati
             *x = _imp->curveX.getValueAt(time);
             *y = _imp->curveY.getValueAt(time);
         } catch (const std::exception& e) {
+            QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->x;
             *y = _imp->y;
         }
@@ -135,6 +136,7 @@ BezierCP::setStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->staticPositionMutex);
     _imp->x = x;
     _imp->y = y;
 }
@@ -144,6 +146,7 @@ BezierCP::setLeftBezierStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->staticPositionMutex);
     _imp->leftX = x;
     _imp->leftY = y;
 }
@@ -153,6 +156,7 @@ BezierCP::setRightBezierStaticPosition(double x,double y)
 {
     ///only called on the main-thread
     assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker l(&_imp->staticPositionMutex);
     _imp->rightX = x;
     _imp->rightY = y;
 }
@@ -175,6 +179,7 @@ BezierCP::getLeftBezierPointAtTime(int time,double* x,double* y,bool skipMasterO
             *x = _imp->curveLeftBezierX.getValueAt(time);
             *y = _imp->curveLeftBezierY.getValueAt(time);
         } catch (const std::exception& e) {
+            QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->leftX;
             *y = _imp->leftY;
         }
@@ -220,6 +225,7 @@ BezierCP::getRightBezierPointAtTime(int time,double *x,double *y,bool skipMaster
             *x = _imp->curveRightBezierX.getValueAt(time);
             *y = _imp->curveRightBezierY.getValueAt(time);
         } catch (const std::exception& e) {
+            QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->rightX;
             *y = _imp->rightY;
         }
@@ -306,6 +312,7 @@ BezierCP::removeKeyframe(int time)
 
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
     if (_imp->curveX.getKeyFramesCount() == 1) {
+        QMutexLocker l(&_imp->staticPositionMutex);
         _imp->x = _imp->curveX.getValueAt(time);
         _imp->y = _imp->curveY.getValueAt(time);
         _imp->leftX = _imp->curveLeftBezierX.getValueAt(time);
@@ -601,15 +608,21 @@ BezierCP::clone(const BezierCP& other)
     _imp->curveRightBezierX.clone(other._imp->curveRightBezierX);
     _imp->curveRightBezierY.clone(other._imp->curveRightBezierY);
     
-    _imp->x = other._imp->x;
-    _imp->y = other._imp->y;
-    _imp->leftX = other._imp->leftX;
-    _imp->leftY = other._imp->leftY;
-    _imp->rightX = other._imp->rightX;
-    _imp->rightY = other._imp->rightY;
+    {
+        QMutexLocker l(&_imp->staticPositionMutex);
+        _imp->x = other._imp->x;
+        _imp->y = other._imp->y;
+        _imp->leftX = other._imp->leftX;
+        _imp->leftY = other._imp->leftY;
+        _imp->rightX = other._imp->rightX;
+        _imp->rightY = other._imp->rightY;
+    }
     
-    _imp->masterTrack = other._imp->masterTrack;
-    _imp->offsetTime = other._imp->offsetTime;
+    {
+        QWriteLocker l(&_imp->masterMutex);
+        _imp->masterTrack = other._imp->masterTrack;
+        _imp->offsetTime = other._imp->offsetTime;
+    }
 }
 
 bool
@@ -2607,15 +2620,6 @@ Bezier::movePointLeftAndRightIndex(BezierCP& p,
     if (keySet) {
         emit keyframeSet(time);
     }
-}
-
-#pragma message WARN("crazy function! lock an internal mutex to modify an external object!! every use of this function is a misuse. There MUST be another solution")
-void
-Bezier::clonePoint(BezierCP& p,
-                   const BezierCP& to) const
-{
-    QMutexLocker l(&itemMutex);
-    p.clone(to);
 }
 
 void

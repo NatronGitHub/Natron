@@ -93,7 +93,10 @@ struct BezierCPPrivate
     double x,y; //< used when there is no keyframe
     
     ///the animation curves for the derivatives
+    ///They do not need to be protected as Curve is a thread-safe class.
     Curve curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
+    
+    mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
     
     mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
@@ -110,6 +113,7 @@ struct BezierCPPrivate
     , curveRightBezierX()
     , curveLeftBezierY()
     , curveRightBezierY()
+    , staticPositionMutex()
     , leftX(0)
     , rightX(0)
     , leftY(0)
@@ -410,6 +414,7 @@ struct RotoDrawableItemPrivate
 #endif
     boost::shared_ptr<Color_Knob> color;
     boost::shared_ptr<Choice_Knob> compOperator;
+    
     RotoDrawableItemPrivate()
     : opacity(new Double_Knob(NULL, kRotoOpacityParamName, 1, false))
     , feather(new Double_Knob(NULL, kRotoFeatherParamName, 1, false))

@@ -157,12 +157,12 @@ void ProcessHandler::onInputPipeConnectionMade() {
 void ProcessHandler::onStandardOutputBytesWritten(){
 
     QString str(_process->readAllStandardOutput().data());
-    _processLog.append("stdout: " + str) + '\n';
+    _processLog.append("Message(stdout): " + str) + '\n';
 }
 
 void ProcessHandler::onStandardErrorBytesWritten() {
     QString str(_process->readAllStandardError().data());
-    _processLog.append("stderr: " + str) + '\n';
+    _processLog.append("Error(stderr): " + str) + '\n';
 }
 
 void ProcessHandler::onProcessCanceled(){

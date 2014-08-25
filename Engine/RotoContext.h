@@ -91,12 +91,8 @@ public:
     
     virtual ~BezierCP();
     
-    
-    //////Non const functions, meant to be called by the Bezier class which is MT-safe
-private:
-    
     void clone(const BezierCP& other);
-    
+
     void setPositionAtTime(int time,double x,double y);
     
     void setLeftBezierPointAtTime(int time,double x,double y);
@@ -110,16 +106,13 @@ private:
     void setRightBezierStaticPosition(double x,double y);
     
     void removeKeyframe(int time);
-
+    
     ///returns true if a keyframe was set
     bool cuspPoint(int time,bool autoKeying,bool rippleEdit);
     
     ///returns true if a keyframe was set
     bool smoothPoint(int time,bool autoKeying,bool rippleEdit);
     
-    //////Const functions, fine if called by another class than the Bezier class, as long
-    //////as it remains on the main-thread (the setter thread).
-public:
     
     virtual bool isFeatherPoint() const { return false; }
 
@@ -141,7 +134,10 @@ public:
 
     int getControlPointsCount() const;
 
-#pragma message WARN("BUG: returning a reference to what seems to be a mutex-protected member!")
+    /**
+     * @brief Pointer to the bezier holding this control point. This is not protected by a mutex
+     * since it never changes.
+     **/
     Bezier* getBezier() const;
     
     /**
@@ -263,8 +259,26 @@ protected:
     
     RotoContext* getContext() const;
 
-#pragma message WARN("what does the following mutex protect? it is used... sometimes...")
-    // and if you want a really strange use of this mutex, check out Bezier::clonePoint()!!!!
+    ///This mutex protects every-member this class and the derived class might have.
+    ///That is for the RotoItem class:
+    ///  - name
+    ///  - globallyActivated
+    ///  - locked
+    ///  - parentLayer
+    ///
+    ///For the RotoDrawableItem:
+    ///  - overlayColor
+    ///
+    ///For the RotoLayer class:
+    ///  - items
+    ///
+    ///For the Bezier class:
+    ///  - points
+    ///  - featherPoints
+    ///  - finished
+    ///  - pointsAtDistance
+    ///  - featherPointsAtDistance
+    ///  - featherPointsAtDistanceVal
     mutable QMutex itemMutex;
     
 private:
@@ -572,7 +586,6 @@ public:
      **/
     void movePointLeftAndRightIndex(BezierCP& p,int time,double lx,double ly,double rx,double ry);
     
-    void clonePoint(BezierCP& p,const BezierCP& to) const;
     
     /**
      * @brief Removes the feather point at the given index by making it equal the "true" control point.
