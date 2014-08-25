@@ -218,6 +218,8 @@ public:
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
+            } else {
+                ::remove(_path.c_str());
             }
         }
     }
