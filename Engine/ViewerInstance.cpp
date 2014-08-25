@@ -816,7 +816,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
         ///If the plug-in doesn't support the render scale and we found an image cached but which still
         ///contains some stuff to render we don't want to use it, instead we need to upscale the image
-
+#pragma message WARN("Call setSupportsRenderScaleMaybe before as it wasn't set already here")
         if (!activeInputToRender->supportsRenderScale() && isInputImgCached && mipMapLevel != 0) {
 
             /// If the list is empty then we already rendered it all
