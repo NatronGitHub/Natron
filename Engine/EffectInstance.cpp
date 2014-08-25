@@ -612,7 +612,8 @@ EffectInstance::getImage(int inputNb,
         inputImg->getRoD().toPixelEnclosing(mipMapLevel, &bounds);
         boost::shared_ptr<Natron::Image> upscaledImg(new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
                                                                        bounds, mipMapLevel, bitdepth));
-        inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
+        //inputImg->upscaleMipMap(inputImg->getBounds(), inputImgMipMapLevel, mipMapLevel, upscaledImg.get());
+        inputImg->scaleBox(inputImg->getBounds(), upscaledImg.get());
         return upscaledImg;
     } else {
         _imp->addInputImageTempPointer(inputImg);
