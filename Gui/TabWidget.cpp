@@ -1061,7 +1061,7 @@ TabBar::TabBar(TabWidget* tabWidget,QWidget* parent)
 void
 TabBar::mousePressEvent(QMouseEvent* e)
 {
-    if (buttonIsLeft(e))
+    if (buttonDownIsLeft(e))
         _dragPos = e->pos();
     QTabBar::mousePressEvent(e);
 }
@@ -1070,7 +1070,7 @@ void
 TabBar::mouseMoveEvent(QMouseEvent* e)
 {
     // If the left button isn't pressed anymore then return
-    if (!buttonIsLeft(e))
+    if (!buttonDownIsLeft(e))
         return;
     // If the distance is too small then return
     if ((e->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())

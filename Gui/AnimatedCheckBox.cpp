@@ -42,7 +42,7 @@ AnimatedCheckBox::setDirty(bool b)
 void
 AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (readOnly && buttonIsLeft(e)) {
+    if (readOnly && buttonDownIsLeft(e)) {
         return;
     } else {
         QCheckBox::mousePressEvent(e);

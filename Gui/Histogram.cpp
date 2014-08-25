@@ -1108,10 +1108,10 @@ Histogram::mousePressEvent(QMouseEvent* e)
 
     ////
     // middle button: scroll view
-    if (buttonIsMiddle(e)) {
+    if (buttonDownIsMiddle(e)) {
         _imp->state = DRAGGING_VIEW;
         _imp->oldClick = e->pos();
-    } else if (buttonIsRight(e)) {
+    } else if (buttonDownIsRight(e)) {
         _imp->showMenu(e->globalPos());
     }
     

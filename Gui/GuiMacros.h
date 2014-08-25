@@ -26,13 +26,22 @@
 #define modifierHasAlt(e)             ((e)->modifiers().testFlag(Qt::AltModifier))
 #define modifierHasShift(e)           ((e)->modifiers().testFlag(Qt::ShiftModifier))
 
-// macros to test if a button is pressed, or a single-button compatibility combination
+// macros to test if a button is held down (pressed), or a single-button compatibility combination
 #define buttonControlAlt(e)          ((e)->modifiers() & (Qt::ControlModifier|Qt::AltModifier))
-#define buttonIsLeft(e)              (((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::NoModifier))
-#define buttonIsMiddle(e)            (((e)->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::NoModifier) || \
+#define buttonDownIsLeft(e)              (((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::NoModifier))
+#define buttonDownIsMiddle(e)            (((e)->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::NoModifier) || \
                                       ((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier))
-#define buttonIsRight(e)             (((e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier) || \
+#define buttonDownIsRight(e)             (((e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier) || \
                                       ((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier))
+
+// macros to test the button that triggered the event
+#define triggerButtonisLeft(e) ((e)->button() == Qt::LeftButton)
+#define triggerButtonisMiddle(e) ((e)->button() == Qt::MiddleButton || \
+((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier))
+
+#define triggerButtonisRight(e) ((e)->button() == Qt::RightButton || \
+((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier))
+
 // macros to test
 #define buttonModifier(e)            ((e)->modifiers() & (Qt::KeyboardModifierMask & ~(Qt::ControlModifier|Qt::AltModifier)))
 #define buttonModifierIsNone(e)      (buttonModifier(e) == Qt::NoModifier)

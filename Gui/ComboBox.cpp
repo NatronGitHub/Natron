@@ -80,7 +80,7 @@ void ComboBox::paintEvent(QPaintEvent* e)
 void
 ComboBox::mousePressEvent(QMouseEvent* e)
 {
-    if (buttonIsLeft(e) && _currentText->isEnabled()) {
+    if (buttonDownIsLeft(e) && _currentText->isEnabled()) {
         QPixmap pixC;
         appPTR->getIcon(NATRON_PIXMAP_COMBOBOX_PRESSED, &pixC);
         _dropDownIcon->setPixmap(pixC);

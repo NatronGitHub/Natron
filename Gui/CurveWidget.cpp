@@ -2004,7 +2004,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
     ////
     // right button: popup menu
-    if (buttonIsRight(e)) {
+    if (buttonDownIsRight(e)) {
         _imp->createMenu();
         _imp->_rightClickMenu->exec(mapToGlobal(e->pos()));
         // no need to set _imp->_oldClick
@@ -2014,7 +2014,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     }
     ////
     // middle button: scroll view
-    if (buttonIsMiddle(e)) {
+    if (buttonDownIsMiddle(e)) {
         _imp->_state = DRAGGING_VIEW;
         _imp->_oldClick = e->pos();
         // no need to set _imp->_dragStartPoint

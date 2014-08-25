@@ -299,9 +299,9 @@ RotoToolButton::mousePressEvent(QMouseEvent* /*e*/)
 void
 RotoToolButton::mouseReleaseEvent(QMouseEvent* e)
 {
-    if (buttonIsLeft(e)) {
+    if (buttonDownIsLeft(e)) {
         handleSelection();
-    } else if (buttonIsRight(e)) {
+    } else if (buttonDownIsRight(e)) {
         showMenu();
     } else {
         QToolButton::mousePressEvent(e);
@@ -1606,7 +1606,7 @@ RotoGui::penDown(double /*scaleX*/,
                 if (nearbyCP.first) {
                     _imp->handleControlPointSelection(nearbyCP, e);
                     _imp->handleBezierSelection(nearbyBezier, e);
-                    if (buttonIsRight(e)) {
+                    if (buttonDownIsRight(e)) {
                         _imp->state = NONE;
                         showMenuForControlPoint(nearbyBezier,nearbyCP);
                     }
@@ -1628,7 +1628,7 @@ RotoGui::penDown(double /*scaleX*/,
                     if (found == _imp->rotoData->selectedBeziers.end()) {
                         _imp->handleBezierSelection(nearbyBezier, e);
                     }
-                    if (buttonIsRight(e)) {
+                    if (buttonDownIsRight(e)) {
                         showMenuForCurve(nearbyBezier);
                     }
                     didSomething = true;
@@ -1661,7 +1661,7 @@ RotoGui::penDown(double /*scaleX*/,
                 if (found == _imp->rotoData->selectedBeziers.end()) {
                     _imp->handleBezierSelection(nearbyBezier, e);
                 }
-                if (buttonIsRight(e)) {
+                if (buttonDownIsRight(e)) {
                     showMenuForCurve(nearbyBezier);
                 }
             }

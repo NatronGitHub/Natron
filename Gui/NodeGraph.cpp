@@ -790,7 +790,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
 
-    if (buttonIsMiddle(e)) {
+    if (buttonDownIsMiddle(e)) {
         _imp->_evtState = MOVING_AREA;
         return;
     }
@@ -832,7 +832,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     
     if (selected) {
         didSomething = true;
-        if (buttonIsLeft(e)) {
+        if (buttonDownIsLeft(e)) {
             _imp->_magnifiedNode = selected;
             if (!selected->isSelected()) {
                 selectNode(selected, modCASIsShift(e));
@@ -845,7 +845,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();
-        } else if (buttonIsRight(e)) {
+        } else if (buttonDownIsRight(e)) {
             if (!selected->isSelected()) {
                 selectNode(selected,true); ///< don't wipe the selection
             }
@@ -907,7 +907,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 if (!(*it)->isSelected()) {
                     selectBackDrop(*it, modCASIsShift(e));
                 }
-                if (buttonIsLeft(e)) {
+                if (buttonDownIsLeft(e)) {
                     _imp->_evtState = BACKDROP_DRAGGING;
                 }
                 break;
@@ -917,7 +917,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 if (!(*it)->isSelected()) {
                     selectBackDrop(*it, modCASIsShift(e));
                 }
-                if (buttonIsLeft(e)) {
+                if (buttonDownIsLeft(e)) {
                     _imp->_evtState = BACKDROP_RESIZING;
                 }
                 break;
@@ -930,12 +930,12 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         _imp->_backdropResized = NULL;
     }
     
-    if (buttonIsRight(e)) {
+    if (buttonDownIsRight(e)) {
         showMenu(mapToGlobal(e->pos()));
         didSomething = true;
     }
     if (!didSomething) {
-        if (buttonIsLeft(e)) {
+        if (buttonDownIsLeft(e)) {
             if (!modCASIsShift(e)) {
                 deselect();
             }
@@ -944,7 +944,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
-        } else if (buttonIsMiddle(e)) {
+        } else if (buttonDownIsMiddle(e)) {
             _imp->_evtState = MOVING_AREA;
             QGraphicsView::mousePressEvent(e);
         }
