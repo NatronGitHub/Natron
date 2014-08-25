@@ -440,8 +440,9 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstanc
 , _bitDepth(OfxImage::eBitDepthFloat)
 , _floatImage(internalImage)
 {
+    unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
-    scale.x = Natron::Image::getScaleFromMipMapLevel(internalImage->getMipMapLevel());
+    scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
@@ -459,10 +460,12 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstanc
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
     // Natron::Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
-    setIntProperty(kOfxImagePropRegionOfDefinition, std::ceil(rod.left()*scale.x), 0);
-    setIntProperty(kOfxImagePropRegionOfDefinition, std::ceil(rod.bottom()*scale.y), 1);
-    setIntProperty(kOfxImagePropRegionOfDefinition, std::floor(rod.right()*scale.x), 2);
-    setIntProperty(kOfxImagePropRegionOfDefinition, std::floor(rod.top()*scale.y), 3);
+    RectI pixelRod;
+    rod.toPixelEnclosing(mipMapLevel, &pixelRod);
+    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
+    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
+    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
+    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
     // row bytes
     setIntProperty(kOfxImagePropRowBytes, bounds.width() *
                    Natron::getElementsCountForComponents(internalImage->getComponents()) *
