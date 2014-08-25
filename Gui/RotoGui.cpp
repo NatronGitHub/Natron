@@ -2597,7 +2597,20 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
             hence in this loop we compute the polygon for each bezier.
          */
-        
+#pragma message WARN("pointInPolygon should not be used, see comment")
+        /*
+         The pointInPolygon function should not be used.
+         The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+         To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+         to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+         pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+         the same point (the starting point of the polygon, in this case.
+         The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+         should be stored with the polygon.
+         Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+         should follow this orientation.
+         */
+
         const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
         const std::list<boost::shared_ptr<BezierCP> >& cps = (*it)->getControlPoints();
         int cpCount = (int)cps.size();

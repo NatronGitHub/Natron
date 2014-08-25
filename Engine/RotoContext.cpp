@@ -3335,6 +3335,19 @@ void point_line_intersection(const Point &p1, const Point &p2, const Point &pos,
 }
 
 
+#pragma message WARN("pointInPolygon should not be used, see comment")
+/*
+ The pointInPolygon function should not be used.
+ The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+ To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+ to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+ pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+ the same point (the starting point of the polygon, in this case.
+ The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+ should be stored with the polygon.
+ Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+ should follow this orientation.
+ */
 bool
 Bezier::pointInPolygon(const Point& p,const std::list<Point>& polygon,
                        const RectD& featherPolyBBox,FillRule rule)
@@ -3431,7 +3444,20 @@ Bezier::expandToFeatherDistance(const Point& cp, //< the point
             Point extent;
             extent.x = cp.x + ret.x;
             extent.y = cp.y + ret.y;
-            
+
+#pragma message WARN("pointInPolygon should not be used, see comment")
+            /*
+             The pointInPolygon function should not be used.
+             The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+             To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+             to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+             pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+             the same point (the starting point of the polygon, in this case.
+             The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+             should be stored with the polygon.
+             Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+             should follow this orientation.
+             */
             bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::OddEvenFill);
             if ((!inside && featherDistance > 0) || (inside && featherDistance < 0)) {
                 //*fp = extent;
@@ -4912,6 +4938,19 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         p1.y = cur->y + dy;
 
 
+#pragma message WARN("pointInPolygon should not be used, see comment")
+        /*
+         The pointInPolygon function should not be used.
+         The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+         To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+         to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+         pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+         the same point (the starting point of the polygon, in this case.
+         The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+         should be stored with the polygon.
+         Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+         should follow this orientation.
+         */
         bool inside = Bezier::pointInPolygon(p1, featherPolygon,featherPolyBBox,Bezier::OddEvenFill);
         if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
             p1.x = cur->x - dx * absFeatherDist;
@@ -4964,6 +5003,19 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                 p2.x = cur->x + dx;
                 p2.y = cur->y + dy;
 
+#pragma message WARN("pointInPolygon should not be used, see comment")
+                /*
+                 The pointInPolygon function should not be used.
+                 The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+                 To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+                 to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+                 pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+                 the same point (the starting point of the polygon, in this case.
+                 The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+                 should be stored with the polygon.
+                 Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+                 should follow this orientation.
+                 */
                 inside = Bezier::pointInPolygon(p2, featherPolygon, featherPolyBBox,Bezier::OddEvenFill);
                 if ((!inside && featherDist < 0) || (inside && featherDist > 0)) {
                     p2.x = cur->x - dx * absFeatherDist;
@@ -4998,11 +5050,15 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
             cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
             ///Set the 4 corners color
             ///inner is full color
-#pragma message WARN("the two sqrt below are probably due to a cairo bug, please read comments")
-            //the two sqrt below are probably due to a cairo bug.
-            // to check wether the bug is present, make any shape with a very large feather and set
+
+            // IMPORTANT NOTE:
+            // The two sqrt below are due to a probable cairo bug.
+            // To check wether the bug is present is a given cairo version,
+            // make any shape with a very large feather and set
             // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-            // and approximately equal to 0.5
+            // and approximately equal to 0.5.
+            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+            // older Cairo versions.
             cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
                                                      std::sqrt(inverted ? 1. - opacity : opacity));
             ///outter is faded
