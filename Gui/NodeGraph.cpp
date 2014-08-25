@@ -2072,8 +2072,9 @@ NodeGraph::getFullSceneScreenShot()
     ///The visible portion of the nodegraph
     QRectF viewRect = visibleSceneRect();
     
+    sceneR = sceneR.united(viewRect);
     ///Make sure the visible rect is included in the scene rect
-    viewRect = viewRect.intersect(sceneR);
+    //viewRect = viewRect.intersect(sceneR);
     
     double navWidth = width() * NATRON_NAVIGATOR_BASE_WIDTH;
     double navHeight = height() * NATRON_NAVIGATOR_BASE_HEIGHT;
