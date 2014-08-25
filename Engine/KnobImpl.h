@@ -944,6 +944,9 @@ void Knob<std::string>::cloneValues(KnobI* other)
 template<typename T>
 void Knob<T>::clone(KnobI* other)
 {
+    if (other == this) {
+        return;
+    }
     int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
     for (int i = 0; i < dimMin; ++i) {
@@ -958,6 +961,9 @@ void Knob<T>::clone(KnobI* other)
 template<typename T>
 void Knob<T>::clone(KnobI* other, SequenceTime offset, const RangeD* range)
 {
+    if (other == this) {
+        return;
+    }
     cloneValues(other);
     int dimMin = std::min(getDimension() , other->getDimension());
     for (int i = 0; i < dimMin; ++i) {
@@ -972,6 +978,9 @@ void Knob<T>::clone(KnobI* other, SequenceTime offset, const RangeD* range)
 template<typename T>
 void Knob<T>::cloneAndUpdateGui(KnobI* other)
 {
+    if (other == this) {
+        return;
+    }
     int dimMin = std::min(getDimension() , other->getDimension());
     cloneValues(other);
     for (int i = 0; i < dimMin; ++i) {

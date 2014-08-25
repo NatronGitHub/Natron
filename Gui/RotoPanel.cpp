@@ -1582,6 +1582,7 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
     _imp->lastRightClickedItem = item;
     
     QMenu menu(this);
+    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
     menu.setShortcutEnabled(false);
     QAction* addLayerAct = menu.addAction(tr("Add layer"));
     QObject::connect(addLayerAct, SIGNAL(triggered()), this, SLOT(onAddLayerActionTriggered()));
@@ -1645,14 +1646,27 @@ void
 RotoPanel::onPasteItemActionTriggered()
 {
     assert(!_imp->clipBoard.empty());
+    RotoDrawableItem* drawable;
+    {
+        TreeItems::iterator it = _imp->findItem(_imp->lastRightClickedItem);
+        if (it == _imp->items.end()) {
+            return;
+        }
+        drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+    }
+        
     
-    TreeItems::iterator it = _imp->findItem(_imp->lastRightClickedItem);
-    if (it == _imp->items.end()) {
-        return;
+    ///make sure that if the item copied is only a bezier that we do not paste it on the same bezier.
+    if (_imp->clipBoard.size() == 1) {
+        TreeItems::iterator it = _imp->findItem(_imp->clipBoard.front());
+        if (it == _imp->items.end()) {
+            return;
+        }
+        if (it->rotoItem.get() == drawable) {
+            return;
+        }
     }
     
-    
-    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(_imp->lastRightClickedItem);
     if (drawable) {
         
         ///cannot paste multiple items on a drawable item

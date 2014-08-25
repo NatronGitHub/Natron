@@ -111,7 +111,7 @@ public:
     virtual void clone(const boost::shared_ptr<KnobI>& other) { clone(other.get()); }
     
     /**
-     * @brief Performs the same as clone but also refresh any gui it has
+     * @brief Performs the same as clone but also refresh any gui it has.
      **/
     virtual void cloneAndUpdateGui(KnobI* other) = 0;
 

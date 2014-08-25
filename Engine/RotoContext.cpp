@@ -978,7 +978,6 @@ void
 RotoDrawableItem::clone(const RotoDrawableItem& other)
 {
     {
-        QMutexLocker l(&itemMutex);
         _imp->activated->clone(other._imp->activated.get());
         _imp->feather->clone(other._imp->feather.get());
         _imp->featherFallOff->clone(other._imp->featherFallOff.get());
@@ -986,6 +985,7 @@ RotoDrawableItem::clone(const RotoDrawableItem& other)
 #ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->clone(other._imp->inverted.get());
 #endif
+        QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, other._imp->overlayColor, sizeof(double)*4);
     }
     RotoItem::clone(other);
