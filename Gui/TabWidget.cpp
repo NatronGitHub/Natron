@@ -1504,7 +1504,5 @@ TabWidget::getParentName(bool* horizontal) const
         }
     }
     
-    ///The parent doesn't seem to be registered in the Gui object...there's an issue here.
-    assert(false);
     return "";
 }
