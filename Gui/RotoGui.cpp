@@ -2588,13 +2588,22 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
     double acceptance = 10 * pixelScale.second;
     
     for (SelectedBeziers::const_iterator it = rotoData->selectedBeziers.begin(); it!=rotoData->selectedBeziers.end(); ++it) {
+        
+        /*
+            For each selected bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
+            The feather bar of a control point is only displayed is the feather point is equal to the bezier control point.
+            In order to give it the  correc direction we use the derivative of the bezier curve at the control point and then use
+            the pointInPolygon function to make sure the feather bar is always oriented on the outter part of the polygon.
+            The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
+            hence in this loop we compute the polygon for each bezier.
+         */
+        
         const std::list<boost::shared_ptr<BezierCP> >& fps = (*it)->getFeatherPoints();
         const std::list<boost::shared_ptr<BezierCP> >& cps = (*it)->getControlPoints();
         int cpCount = (int)cps.size();
         if (cpCount <= 1) {
             continue;
         }
-#pragma message WARN("please explain this algorithm: why do you need to evaluate 49 points?")
         std::list<Point> polygon;
         RectD polygonBBox(std::numeric_limits<double>::infinity(),
                           std::numeric_limits<double>::infinity(),
@@ -2626,6 +2635,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
                                              polygonBBox, time, prevF, itF, nextF);
             assert(featherPoint.x != controlPoint.x || featherPoint.y != controlPoint.y);
             
+            ///Now test if the user mouse click is on the line using bounding box and cross product.
             if (((pos.y() >= (controlPoint.y - acceptance) && pos.y() <= (featherPoint.y + acceptance)) ||
                  (pos.y() >= (featherPoint.y - acceptance) && pos.y() <= (controlPoint.y + acceptance))) &&
                 ((pos.x() >= (controlPoint.x - acceptance) && pos.x() <= (featherPoint.x + acceptance)) ||
