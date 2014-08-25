@@ -751,7 +751,7 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         treeItem->setTooltip(COL_INVERTED, Qt::convertFromPlainText(kRotoInvertedHint, Qt::WhiteSpaceNormal));
 #endif
 
-        publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
+        publicInterface->makeCustomWidgetsForItem(drawable,treeItem);
 #ifdef NATRON_ROTO_INVERTIBLE
         QObject::connect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
 #endif
@@ -770,6 +770,16 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
 
 void RotoPanel::makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem)
 {
+    //If NULL was passed to treeItem,find it ourselves
+    if (!treeItem) {
+        TreeItems::iterator found = _imp->findItem(item);
+        if (found == _imp->items.end()) {
+            return;
+        }
+        treeItem = found->treeItem;
+    }
+    
+    
     int time = _imp->context->getTimelineCurrentTime();
     ComboBox* cb = new ComboBox;
     QObject::connect(cb,SIGNAL(currentIndexChanged(int)),this,SLOT(onCurrentItemCompOperatorChanged(int)));
@@ -833,11 +843,8 @@ void RotoPanelPrivate::insertItemInternal(int reason,int time,const boost::share
         }
     }
     if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
-        TreeItems::iterator found = findItem(item.get());
-        if (found != items.end()) {
-            RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
-            publicInterface->makeCustomWidgetsForItem(drawable, found->treeItem);
-        }
+        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
+        publicInterface->makeCustomWidgetsForItem(drawable);
         return;
     }
     assert(item);

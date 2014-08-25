@@ -1544,6 +1544,21 @@ DragItemsUndoCommand::~DragItemsUndoCommand()
     
 }
 
+static void createCustomWidgetRecursively(RotoPanel* panel,RotoItem* item)
+{
+    RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(item);
+    if (isDrawable) {
+        panel->makeCustomWidgetsForItem(isDrawable);
+    }
+    RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item);
+    if (isLayer) {
+        const std::list<boost::shared_ptr<RotoItem> >& children = isLayer->getItems();
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it!=children.end(); ++it) {
+            createCustomWidgetRecursively(panel, it->get());
+        }
+    }
+}
+
 void DragItemsUndoCommand::undo()
 {
     for (std::list<Item>::iterator it = _items.begin(); it!=_items.end(); ++it) {
@@ -1552,10 +1567,9 @@ void DragItemsUndoCommand::undo()
         it->dropped->newParentLayer->removeItem(it->dropped->droppedRotoItem.get());
         if (it->oldParentItem) {
             it->oldParentItem->insertChild(it->indexInOldLayer, it->dropped->dropped);
-            RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->dropped->droppedRotoItem.get());
-            if (isDrawable) {
-                _roto->makeCustomWidgetsForItem(isDrawable, it->dropped->dropped);
-            }
+            
+            createCustomWidgetRecursively(_roto,it->dropped->droppedRotoItem.get());
+
             assert(it->oldParentLayer);
             it->dropped->droppedRotoItem->setParentLayer(it->oldParentLayer);
             _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoContext::SETTINGS_PANEL);
@@ -1568,6 +1582,7 @@ void DragItemsUndoCommand::undo()
     setText(QObject::tr("Re-organize items of %2").arg(_roto->getNodeName().c_str()));
 }
 
+
 void DragItemsUndoCommand::redo()
 {
     for (std::list<Item>::iterator it = _items.begin(); it!=_items.end(); ++it) {
@@ -1577,10 +1592,9 @@ void DragItemsUndoCommand::redo()
         }
         assert(it->dropped->newParentItem);
         it->dropped->newParentItem->insertChild(it->dropped->insertIndex,it->dropped->dropped);
-        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->dropped->droppedRotoItem.get());
-        if (isDrawable) {
-            _roto->makeCustomWidgetsForItem(isDrawable, it->dropped->dropped);
-        }
+        
+        createCustomWidgetRecursively(_roto,it->dropped->droppedRotoItem.get());
+
         it->dropped->newParentItem->setExpanded(true);
         it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
         it->dropped->droppedRotoItem->setParentLayer(it->dropped->newParentLayer);

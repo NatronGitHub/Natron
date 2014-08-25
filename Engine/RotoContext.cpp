@@ -377,7 +377,6 @@ BezierCP::getControlPointsCount() const
 }
 
 
-#pragma message WARN("Roto: the following function should not exist: return a pointer to a mutex-protected member?")
 Bezier*
 BezierCP::getBezier() const
 {

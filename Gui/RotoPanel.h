@@ -58,7 +58,7 @@ public:
     
     void setLastRightClickedItem(QTreeWidgetItem* item);
     
-    void makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem);
+    void makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem = NULL);
     
 public slots:
     
