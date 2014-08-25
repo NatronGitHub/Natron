@@ -407,7 +407,7 @@ bool NodeBackDrop::getIsSelected() const
     return _imp->isSelected;
 }
 
-void NodeBackDrop::setSelected(bool selected)
+void NodeBackDrop::setUserSelected(bool selected)
 {
     {
         QMutexLocker l(&_imp->selectedMutex);

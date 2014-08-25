@@ -834,19 +834,20 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         didSomething = true;
         if (buttonDownIsLeft(e)) {
             _imp->_magnifiedNode = selected;
-            if (!selected->isSelected()) {
+            if (!selected->getIsSelected()) {
                 selectNode(selected, modCASIsShift(e));
             } else if (modCASIsShift(e)) {
                 std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_selection.nodes.begin(),
                                                                                 _imp->_selection.nodes.end(),selected);
                 if (it != _imp->_selection.nodes.end()) {
-                    (*it)->setSelected(false);
+                    (*it)->setUserSelected(false);
+                    _imp->_selection.nodes.erase(it);
                 }
             }
             _imp->_evtState = NODE_DRAGGING;
             _imp->_lastNodeDragStartPoint = selected->pos();
         } else if (buttonDownIsRight(e)) {
-            if (!selected->isSelected()) {
+            if (!selected->getIsSelected()) {
                 selectNode(selected,true); ///< don't wipe the selection
             }
         }
@@ -887,7 +888,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         QPointF pos = dotNodeGui->mapToParent(dotNodeGui->mapFromScene(_imp->_lastScenePosClick));
         dotNodeGui->refreshPosition(pos.x(), pos.y());
-        if (!dotNodeGui->isSelected()) {
+        if (!dotNodeGui->getIsSelected()) {
             selectNode(dotNodeGui, modCASIsShift(e));
         }
         _imp->_evtState = NODE_DRAGGING;
@@ -902,25 +903,36 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     if (_imp->_evtState == DEFAULT) {
         ///check if nearby a backdrop
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it!=_imp->_backdrops.end(); ++it) {
-            if ((*it)->isNearbyHeader(_imp->_lastScenePosClick)) {
-                didSomething = true;
-                if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, modCASIsShift(e));
+            
+            if (buttonDownIsLeft(e)) {
+                bool nearbyHeader = (*it)->isNearbyHeader(_imp->_lastScenePosClick);
+                bool nearbyResizeHandle = (*it)->isNearbyResizeHandle(_imp->_lastScenePosClick);
+                
+                if (nearbyHeader || nearbyResizeHandle) {
+                    didSomething = true;
+                    if (!(*it)->getIsSelected()) {
+                        selectBackDrop(*it, modCASIsShift(e));
+                    } else if (modCASIsShift(e)) {
+                        std::list<NodeBackDrop* >::iterator found = std::find(_imp->_selection.bds.begin(),
+                                                                              _imp->_selection.bds.end(),*it);
+                        if (found != _imp->_selection.bds.end()) {
+                            (*it)->setUserSelected(false);
+                            _imp->_selection.bds.erase(found);
+                        }
+                    }
+                    
+                    if (nearbyHeader) {
+                        _imp->_evtState = BACKDROP_DRAGGING;
+                    } else if (nearbyResizeHandle) {
+                        _imp->_backdropResized = *it;
+                        _imp->_evtState = BACKDROP_RESIZING;
+                    }
+
                 }
-                if (buttonDownIsLeft(e)) {
-                    _imp->_evtState = BACKDROP_DRAGGING;
+            } else if (buttonDownIsRight(e)) {
+                if (!(*it)->getIsSelected()) {
+                    selectBackDrop(*it,true); ///< don't wipe the selection
                 }
-                break;
-            } else if ((*it)->isNearbyResizeHandle(_imp->_lastScenePosClick)) {
-                didSomething = true;
-                _imp->_backdropResized = *it;
-                if (!(*it)->isSelected()) {
-                    selectBackDrop(*it, modCASIsShift(e));
-                }
-                if (buttonDownIsLeft(e)) {
-                    _imp->_evtState = BACKDROP_RESIZING;
-                }
-                break;
             }
         }
     }
@@ -959,11 +971,11 @@ NodeGraph::deselect()
     {
         QMutexLocker l(&_imp->_nodesMutex);
         for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();it!=_imp->_selection.nodes.end();++it) {
-            (*it)->setSelected(false);
+            (*it)->setUserSelected(false);
         }
     }
     for(std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin();it!=_imp->_selection.bds.end();++it) {
-        (*it)->setSelected(false);
+        (*it)->setUserSelected(false);
     }
     _imp->_selection.nodes.clear();
     _imp->_selection.bds.clear();
@@ -1368,10 +1380,10 @@ void
 NodeGraphPrivate::resetSelection()
 {
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.nodes.begin(); it!=_selection.nodes.end(); ++it) {
-        (*it)->setSelected(false);
+        (*it)->setUserSelected(false);
     }
     for (std::list<NodeBackDrop*>::iterator it = _selection.bds.begin(); it!= _selection.bds.end();++it) {
-        (*it)->setSelected(false);
+        (*it)->setUserSelected(false);
     }
     
     _selection.nodes.clear();
@@ -1391,14 +1403,14 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
         QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
         if (selection.contains(bbox)) {
             _selection.nodes.push_back(*it);
-            (*it)->setSelected(true);
+            (*it)->setUserSelected(true);
         }
     }
     for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it!= _backdrops.end();++it) {
         QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
         if (selection.contains(bbox)) {
             _selection.bds.push_back(*it);
-            (*it)->setSelected(true);
+            (*it)->setUserSelected(true);
         }
     }
 }
@@ -1682,26 +1694,26 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
             QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
             if (r.intersects(bbox) && (*it)->isActive() && (*it)->isVisible()) {
-                (*it)->setSelected(true);
+                (*it)->setUserSelected(true);
                 _imp->_selection.nodes.push_back(*it);
             }
         }
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
             QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
             if (r.intersects(bbox)) {
-                (*it)->setSelected(true);
+                (*it)->setUserSelected(true);
                 _imp->_selection.bds.push_back(*it);
             }
         }
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
             if ((*it)->isActive() && (*it)->isVisible()) {
-                (*it)->setSelected(true);
+                (*it)->setUserSelected(true);
                 _imp->_selection.nodes.push_back(*it);
             }
         }
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin();it!=_imp->_backdrops.end();++it) {
-            (*it)->setSelected(true);
+            (*it)->setUserSelected(true);
             _imp->_selection.bds.push_back(*it);
         }
     }
@@ -1867,7 +1879,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui>& node)
         }
     }
     
-    node->setSelected(false);
+    node->setUserSelected(false);
     std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
     std::list<NodeBackDrop*> bds;
     nodesToRemove.push_back(node);
@@ -1935,11 +1947,11 @@ NodeGraph::deleteSelection()
         }
         
         for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
-            (*it)->setSelected(false);
+            (*it)->setUserSelected(false);
         }
         
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToRemove.begin();it!=nodesToRemove.end();++it) {
-            (*it)->setSelected(false);
+            (*it)->setUserSelected(false);
         }
         
         
@@ -1968,18 +1980,18 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui>& n,bool addToSelection)
         {
             QMutexLocker l(&_imp->_nodesMutex);
             for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();it!=_imp->_selection.nodes.end();++it) {
-                (*it)->setSelected(false);
+                (*it)->setUserSelected(false);
             }
         }
         for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
-            (*it)->setSelected(false);
+            (*it)->setUserSelected(false);
         }
         _imp->_selection.nodes.clear();
         _imp->_selection.bds.clear();
         _imp->_selection.nodes.push_back(n);
     }
     
-    n->setSelected(true);
+    n->setUserSelected(true);
     
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance());
     if (isViewer) {
@@ -2017,17 +2029,17 @@ NodeGraph::selectBackDrop(NodeBackDrop* bd,
         {
             QMutexLocker l(&_imp->_nodesMutex);
             for(std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();it!=_imp->_selection.nodes.end();++it) {
-                (*it)->setSelected(false);
+                (*it)->setUserSelected(false);
             }
         }
         for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it!=_imp->_selection.bds.end(); ++it) {
-            (*it)->setSelected(false);
+            (*it)->setUserSelected(false);
         }
         _imp->_selection.bds.clear();
         _imp->_selection.nodes.clear();
         _imp->_selection.bds.push_back(bd);
     }
-    bd->setSelected(true);
+    bd->setUserSelected(true);
 
 }
 
@@ -2971,7 +2983,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
         getGui()->getCurveEditor()->removeNode(n.get());
         std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n);
         if (found != _imp->_selection.nodes.end()) {
-            n->setSelected(false);
+            n->setUserSelected(false);
             _imp->_selection.nodes.erase(found);
         }
         

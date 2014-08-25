@@ -865,7 +865,7 @@ void NodeGui::refreshCurrentBrush()
     }
 }
 
-void NodeGui::setSelected(bool b){
+void NodeGui::setUserSelected(bool b) {
     {
         QMutexLocker l(&_selectedMutex);
         _selected = b;
@@ -881,7 +881,7 @@ void NodeGui::setSelected(bool b){
     }
 }
 
-bool NodeGui::isSelected() { QMutexLocker l(&_selectedMutex); return _selected; }
+bool NodeGui::getIsSelected() const { QMutexLocker l(&_selectedMutex); return _selected; }
 
 void NodeGui::setSelectedGradient(const QLinearGradient& gradient){
     *_selectedGradient = gradient;

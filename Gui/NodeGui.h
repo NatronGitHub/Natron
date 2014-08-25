@@ -189,10 +189,10 @@ public:
         
        
     /* @brief toggles selected on/off. MT-Safe*/
-    void setSelected(bool b);
+    void setUserSelected(bool b);
     
     /* @brief Is the node selected ? MT-Safe */
-    bool isSelected() ;
+    bool getIsSelected() const;
     
     /*Returns a pointer to the first available input. Otherwise returns NULL*/
     Edge* firstAvailableEdge();

@@ -28,19 +28,17 @@
 
 // macros to test if a button is held down (pressed), or a single-button compatibility combination
 #define buttonControlAlt(e)          ((e)->modifiers() & (Qt::ControlModifier|Qt::AltModifier))
-#define buttonDownIsLeft(e)              (((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::NoModifier))
+#define buttonDownIsLeft(e)              ((e)->buttons() == Qt::LeftButton && !modifierHasAlt(e))
 #define buttonDownIsMiddle(e)            (((e)->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::NoModifier) || \
                                       ((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier))
-#define buttonDownIsRight(e)             (((e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier) || \
-                                      ((e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier))
+#define buttonDownIsRight(e)             (((e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier))
 
 // macros to test the button that triggered the event
 #define triggerButtonisLeft(e) ((e)->button() == Qt::LeftButton)
 #define triggerButtonisMiddle(e) ((e)->button() == Qt::MiddleButton || \
 ((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier))
 
-#define triggerButtonisRight(e) ((e)->button() == Qt::RightButton || \
-((e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier))
+#define triggerButtonisRight(e) ((e)->button() == Qt::RightButton)
 
 // macros to test
 #define buttonModifier(e)            ((e)->modifiers() & (Qt::KeyboardModifierMask & ~(Qt::ControlModifier|Qt::AltModifier)))

@@ -97,7 +97,7 @@ public slots:
     
     void setSettingsPanelClosed(bool closed);
     
-    void setSelected(bool selected);
+    void setUserSelected(bool selected);
     
     void refreshSlaveMasterLinkPosition();
     
