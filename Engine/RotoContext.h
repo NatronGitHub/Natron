@@ -819,6 +819,10 @@ public:
     
     virtual ~RotoContext();
   
+    /**
+     * @brief Returns true when the context is empty (it has no shapes)
+     **/
+    bool isEmpty() const;
        
     /**
      * @brief Turn on/off auto-keying

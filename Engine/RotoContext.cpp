@@ -3851,6 +3851,13 @@ const
     }
 }
 
+bool
+RotoContext::isEmpty() const
+{
+    QMutexLocker l(&_imp->rotoContextMutex);
+    return _imp->layers.empty();
+}
+
 void
 RotoContext::save(RotoContextSerialization* obj) const
 {

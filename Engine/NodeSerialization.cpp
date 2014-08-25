@@ -69,7 +69,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node>& n)
         }
         
         boost::shared_ptr<RotoContext> roto = n->getRotoContext();
-        if (roto) {
+        if (roto && !roto->isEmpty()) {
             _hasRotoContext = true;
             roto->save(&_rotoContext);
         } else {
