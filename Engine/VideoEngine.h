@@ -149,6 +149,11 @@ public:
     
     bool wasTreeEverBuilt() const { return _wasEverBuilt; }
     
+    /**
+     * @brief Set frozen all knobs of all nodes in the tree.
+     **/
+    void setNodesKnobsFrozen(bool frozen);
+    
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
@@ -319,6 +324,11 @@ public:
   
     
     void refreshTree();
+    
+    /**
+     * @brief Set frozen all knobs of all nodes in the tree.
+     **/
+    void setNodesKnobsFrozen(bool frozen) { _tree.setNodesKnobsFrozen(frozen); }
     
 	/**
      *@returns Returns true if the engine is currently working.

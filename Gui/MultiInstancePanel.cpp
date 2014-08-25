@@ -1619,17 +1619,21 @@ bool TrackerPanel::trackBackward()
     int start = timeline->currentFrame();
     int cur = start;
     Gui* gui = getGui();
+    ///freeze the tracker node
+    setKnobsFrozen(true);
     gui->startProgress(selectedInstances.front()->getLiveInstance(), tr("Tracking...").toStdString());
     while (cur > end) {
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
         if (getGui() && !getGui()->progressUpdate(selectedInstances.front()->getLiveInstance(),
                                                   ((double)(start - cur) / (double)(start - end)))) {
+            setKnobsFrozen(false);
             return true;
         }
         --cur;
     }
     gui->endProgress(selectedInstances.front()->getLiveInstance());
+    setKnobsFrozen(false);
     return true;
 }
 
@@ -1665,17 +1669,22 @@ bool TrackerPanel::trackForward()
     int cur = start;
     
     Gui* gui = getGui();
+    
+    ///freeze the tracker node
+    setKnobsFrozen(true);
     gui->startProgress(selectedInstances.front()->getLiveInstance(), tr("Tracking...").toStdString());
     while (cur < end) {
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
         if (getGui() && !getGui()->progressUpdate(selectedInstances.front()->getLiveInstance(),
                                                   ((double)(cur - start) / (double)(end - start)))) {
+            setKnobsFrozen(false);
             return true;
         }
         ++cur;
     }
     gui->endProgress(selectedInstances.front()->getLiveInstance());
+    setKnobsFrozen(false);
     return true;
 }
 

@@ -127,6 +127,12 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     const std::vector< boost::shared_ptr<KnobI> >& getKnobs() const;
+    
+    /**
+     * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
+     **/
+    void setKnobsFrozen(bool frozen);
+
 
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;

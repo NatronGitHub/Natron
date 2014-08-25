@@ -1823,6 +1823,13 @@ Node::getKnobs() const
     return _imp->liveInstance->getKnobs();
 }
 
+void
+Node::setKnobsFrozen(bool frozen)
+{
+    ///MT-safe from EffectInstance::setKnobsFrozen
+    return _imp->liveInstance->setKnobsFrozen(frozen);
+}
+
 std::string
 Node::getPluginID() const
 {

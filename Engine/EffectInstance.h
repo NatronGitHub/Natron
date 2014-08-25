@@ -568,8 +568,7 @@ public:
      * - To properly delete
      **/
     void createKnobDynamically();
-    
-    
+       
     
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done

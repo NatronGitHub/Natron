@@ -240,6 +240,11 @@ bool VideoEngine::startEngine(bool singleThreaded) {
                 return false;
             }
         }
+        
+        ///We're attempting to render with a write node in an interactive session, freeze all the nodes of the tree
+        if (!_tree.isOutputAViewer() && !appPTR->isBackground()) {
+            setNodesKnobsFrozen(true);
+        }
     }
 
     {
@@ -322,8 +327,15 @@ bool VideoEngine::stopEngine() {
     Natron::OutputEffectInstance* outputEffect = dynamic_cast<Natron::OutputEffectInstance*>(_tree.getOutput());
     outputEffect->setDoingFullSequenceRender(false);
     
-    if (!_tree.isOutputAViewer() && _currentRunArgs._forceSequential) {
-        (void)_tree.endSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
+    if (!_tree.isOutputAViewer()) {
+        
+        ///We're attempting to render with a write node in an interactive session, freeze all the nodes of the tree
+        if (!appPTR->isBackground()) {
+            setNodesKnobsFrozen(false);
+        }
+        if ( _currentRunArgs._forceSequential) {
+            (void)_tree.endSequentialRender(_firstFrame, _lastFrame, _tree.getOutput()->getApp()->getMainView());
+        }
     }
     
     if (appPTR->isBackground()) {
@@ -856,7 +868,7 @@ Natron::Status RenderTree::beginSequentialRender(SequenceTime first,SequenceTime
 {
     RenderScale s;
     s.x = s.y = 1.;
-    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+    for (TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
         if ((*it)->getLiveInstance()->beginSequenceRender_public(first, last, 1, false, s, true,false, view) == StatFailed) {
             return StatFailed;
         }
@@ -870,7 +882,7 @@ Natron::Status RenderTree::endSequentialRender(SequenceTime first,SequenceTime l
 {
     RenderScale s;
     s.x = s.y = 1.;
-    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+    for (TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
         if ((*it)->getLiveInstance()->endSequenceRender_public(first, last, 1, false, s, true,false, view) == StatFailed) {
             return StatFailed;
         }
@@ -878,6 +890,12 @@ Natron::Status RenderTree::endSequentialRender(SequenceTime first,SequenceTime l
     return StatOK;
 }
 
+void RenderTree::setNodesKnobsFrozen(bool frozen)
+{
+    for (TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->setKnobsFrozen(frozen);
+    }
+}
 
 void RenderTree::clearPersistentMessages()
 {

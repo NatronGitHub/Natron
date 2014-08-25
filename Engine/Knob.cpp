@@ -542,6 +542,13 @@ bool KnobHelper::getIsSecret() const
     return _imp->IsSecret;
 }
 
+void KnobHelper::setIsFrozen(bool frozen)
+{
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_setFrozen(frozen);
+    }
+}
+
 bool KnobHelper::isEnabled(int dimension) const
 {
     assert(0 <= dimension && dimension < getDimension());
@@ -1273,6 +1280,15 @@ void KnobHolder::restoreDefaultValues()
     evaluate_public(NULL, true, Natron::USER_EDITED);
     
 
+}
+
+void
+KnobHolder::setKnobsFrozen(bool frozen)
+{
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        knobs[i]->setIsFrozen(frozen);
+    }
 }
 
 /***************************STRING ANIMATION******************************************/

@@ -143,6 +143,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,DockablePanel* container)
     QObject::connect(handler,SIGNAL(animationLevelChanged(int)),this,SLOT(onAnimationLevelChanged(int)));
     QObject::connect(handler,SIGNAL(appendParamEditChange(Variant,int,int,bool,bool)),this,
                      SLOT(onAppendParamEditChanged(Variant,int,int,bool,bool)));
+    QObject::connect(handler,SIGNAL(frozenChanged(bool)),this,SLOT(onFrozenChanged(bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -1434,4 +1435,17 @@ void KnobGui::onAppendParamEditChanged(const Variant& v,int dim,int time,bool cr
     pushUndoCommand(new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,v,dim,time));
 }
 
-
+void KnobGui::onFrozenChanged(bool frozen)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    int dims = knob->getDimension();
+    for (int i = 0; i < dims; ++i) {
+        
+        ///Do not unset read only if the knob is slaved in this dimension because we are still using it.
+        if (!frozen && knob->isSlave(i)) {
+            continue;
+        }
+        setReadOnly_(frozen, i);
+        
+    }
+}

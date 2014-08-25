@@ -245,6 +245,7 @@ public slots:
     
     void onAppendParamEditChanged(const Variant& v,int dim,int time,bool createNewCommand,bool setKeyFrame);
     
+    void onFrozenChanged(bool frozen);
 signals:
     
     void knobUndoneChange();

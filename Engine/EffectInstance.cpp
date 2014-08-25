@@ -1972,6 +1972,8 @@ EffectInstance::createKnobDynamically()
     _node->createKnobDynamically();
 }
 
+
+
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,

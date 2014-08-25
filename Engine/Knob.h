@@ -329,6 +329,12 @@ public:
     virtual bool getIsSecret() const = 0;
     
     /**
+     * @biref This is called to notify the gui that the knob shouldn't be editable.
+     * Basically this is used when rendering with a Writer or for Trackers while tracking is active.
+     **/
+    virtual void setIsFrozen(bool frozen) = 0;
+    
+    /**
      * @brief When dirty, the knob is actually representing several elements that do not hold the same value.
      * For example for the roto node, a knob actually represent the value of the opacity of the selected curve.
      * If they're multiple curves selected,then the value of the knob is dirty
@@ -559,6 +565,7 @@ public:
         emit appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
     }
     void s_setDirty(bool b) { emit dirty(b); }
+    void s_setFrozen(bool f) { emit frozenChanged(f); }
     
 public slots:
     
@@ -615,6 +622,10 @@ signals:
     
     ///Emitted when a dimension enabled state changed
     void enabledChanged();
+    
+    ///This is called to notify the gui that the knob shouldn't be editable.
+    ///Basically this is used when rendering with a Writer or for Trackers while tracking is active.
+    void frozenChanged(bool frozen);
     
     ///Emitted whenever a keyframe is set with a reason different of USER_EDITED
     ///@param added True if this is the first time that the keyframe was set
@@ -762,6 +773,8 @@ public:
     virtual void setSecret(bool b) OVERRIDE FINAL;
     
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     
     virtual void setDirty(bool d) OVERRIDE FINAL;
     
@@ -1155,6 +1168,12 @@ public:
     void restoreDefaultValues();
     
     virtual void aboutToRestoreDefaultValues() {}
+
+    
+    /**
+     * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
+     **/
+    void setKnobsFrozen(bool frozen);
 
 protected:
     

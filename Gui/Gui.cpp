@@ -3307,9 +3307,15 @@ Gui::onWriterRenderStarted(const QString& sequenceName,
                            int lastFrame,
                            Natron::OutputEffectInstance* writer)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     RenderingProgressDialog *dialog = new RenderingProgressDialog(sequenceName,firstFrame,lastFrame,
                                                                   boost::shared_ptr<ProcessHandler>(),this);
     VideoEngine* ve = writer->getVideoEngine().get();
+    ///Cycle through the render tree and freeze all knobs since this render is taking place in the active GUI session.
+    ve->refreshTree();
+    
+    
     QObject::connect(dialog,SIGNAL(canceled()),ve,SLOT(abortRenderingNonBlocking()));
     QObject::connect(ve,SIGNAL(frameRendered(int)),dialog,SLOT(onFrameRendered(int)));
     QObject::connect(ve,SIGNAL(progressChanged(int)),dialog,SLOT(onCurrentFrameProgress(int)));
@@ -3503,7 +3509,7 @@ Gui::startProgress(Natron::EffectInstance* effect,
     }
     
     QProgressDialog* dialog = new QProgressDialog(message.c_str(),tr("Cancel"),0,100,this);
-    dialog->setModal(true);
+    dialog->setModal(false);
     dialog->setRange(0, 100);
     dialog->setMinimumWidth(250);
     dialog->setWindowTitle(effect->getNode()->getName_mt_safe().c_str());
