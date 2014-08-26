@@ -970,6 +970,48 @@ void GuiApplicationManager::exitApp()
     }
 }
 
+static bool matchesModifers(const Qt::KeyboardModifiers& lhs,const Qt::KeyboardModifiers& rhs,Qt::Key key)
+{
+    if (lhs == rhs) {
+        return true;
+    }
+    
+    bool isDigit =
+    key == Qt::Key_0 ||
+    key == Qt::Key_1 ||
+    key == Qt::Key_2 ||
+    key == Qt::Key_3 ||
+    key == Qt::Key_4 ||
+    key == Qt::Key_5 ||
+    key == Qt::Key_6 ||
+    key == Qt::Key_7 ||
+    key == Qt::Key_8 ||
+    key == Qt::Key_9;
+    // On some keyboards (e.g. French AZERTY), the number keys are shifted
+    if (lhs == (Qt::ShiftModifier | Qt::AltModifier) && rhs == Qt::AltModifier && isDigit) {
+        return true;
+    }
+    
+    return false;
+}
+
+static bool matchesKey(Qt::Key lhs,Qt::Key rhs)
+{
+    if (lhs == rhs) {
+        return true;
+    }
+    ///special case for the backspace and delete keys that mean the same thing generally
+    else if ((lhs == Qt::Key_Backspace && rhs == Qt::Key_Delete) ||
+             (lhs == Qt::Key_Delete && rhs == Qt::Key_Backspace)) {
+        return true;
+    }
+    ///special case for the return and enter keys that mean the same thing generally
+    else if ((lhs == Qt::Key_Return && rhs == Qt::Key_Enter) ||
+             (lhs == Qt::Key_Enter && rhs == Qt::Key_Return)) {
+        return true;
+    }
+    return false;
+}
 
 bool GuiApplicationManager::matchesKeybind(const QString& group,const QString& actionID,
                                            const Qt::KeyboardModifiers& modifiers,int symbol) const
@@ -994,22 +1036,9 @@ bool GuiApplicationManager::matchesKeybind(const QString& group,const QString& a
     // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
     Qt::KeyboardModifiers onlyCAS = modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier);
     
-    if (onlyCAS == keybind->modifiers) {
-        
+    if (matchesModifers(onlyCAS,keybind->modifiers,(Qt::Key)symbol)) {
         // modifiers are equal, now test symbol
-        if ((Qt::Key)symbol == keybind->currentShortcut) {
-            return true;
-        }
-        ///special case for the backspace and delete keys that mean the same thing generally
-        else if (((Qt::Key)symbol == Qt::Key_Backspace && (Qt::Key)keybind->currentShortcut == Qt::Key_Delete) ||
-                   ((Qt::Key)symbol == Qt::Key_Delete && (Qt::Key)keybind->currentShortcut == Qt::Key_Backspace)) {
-            return true;
-        }
-        ///special case for the return and enter keys that mean the same thing generally
-        else if (((Qt::Key)symbol == Qt::Key_Return && (Qt::Key)keybind->currentShortcut == Qt::Key_Enter) ||
-                 ((Qt::Key)symbol == Qt::Key_Enter && (Qt::Key)keybind->currentShortcut == Qt::Key_Return)) {
-            return true;
-        }
+        return matchesKey((Qt::Key)symbol, keybind->currentShortcut);
     }
     return false;
 }

@@ -1144,39 +1144,34 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         //next key
         _imp->app->getTimeLine()->goToNextKeyframe();
 
-    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
         centerViewer();
         
-    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key)) {
         onClipToProjectButtonToggle(!_imp->_clipToProjectFormatButton->isDown());
 
-    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, modifiers, key)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, modifiers, key)) {
         refresh();
 
-    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, modifiers, key)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, modifiers, key)) {
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
 
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key)) {
         onRenderScaleButtonClicked(!_imp->_renderScaleActive);
 
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, modifiers, key)) {
-        // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(0);
 
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, modifiers, key)) {
-        // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(1);
 
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, modifiers, key)) {
-        // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(2);
 
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, modifiers, key)) {
-        // On some keyboards (e.g. French AZERTY), the number keys are shifted
       _imp->_renderScaleCombo->setCurrentIndex(3);
 
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, modifiers, key)) {
-        // On some keyboards (e.g. French AZERTY), the number keys are shifted
        _imp->_renderScaleCombo->setCurrentIndex(4);
     }
 }
