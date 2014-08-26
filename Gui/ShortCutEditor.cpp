@@ -17,7 +17,7 @@
 #include <QHBoxLayout>
 #include <QGroupBox>
 #include <QLabel>
-
+#include <QTextDocument>
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -41,13 +41,15 @@ static QString keybindToString(const Qt::KeyboardModifiers& modifiers,Qt::Key ke
 static QString mouseShortcutToString(const Qt::KeyboardModifiers& modifiers,Qt::MouseButton button)
 {
     QString ret = makeKeySequence(modifiers, (Qt::Key)0).toString(QKeySequence::NativeText);
-    ret.append('+');
+    if (!ret.isEmpty()) {
+        ret.append('+');
+    }
     switch (button) {
         case Qt::LeftButton:
             ret.append(QObject::tr("LeftButton"));
             break;
         case Qt::MiddleButton:
-            ret.append(QObject::tr("Wheel"));
+            ret.append(QObject::tr("MiddleButton"));
             break;
         case Qt::RightButton:
             ret.append(QObject::tr("RightButton"));
@@ -147,13 +149,20 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     setWindowTitle(tr("Shortcuts editor"));
     _imp->tree = new QTreeWidget(this);
-    _imp->tree->setItemsExpandable(false);
     _imp->tree->setColumnCount(2);
     QStringList headers;
     headers << tr("Command") << tr("Shortcut");
     _imp->tree->setHeaderLabels(headers);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
-    
+    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
+    _imp->tree->setToolTip(Qt::convertFromPlainText(
+                                                    tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
+                                                       " Note that this table also have some special assignments which also involve the mouse. "
+                                                       "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
+                                                       "Note that internally " NATRON_APPLICATION_NAME " does an emulation of a three-button mouse "
+                                                       "if your computer doesn't have one, that is: \n"
+                                                       "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
+                                                       "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."),Qt::WhiteSpaceNormal));
     const AppShortcuts& appShortcuts = appPTR->getAllShortcuts();
     for (AppShortcuts::const_iterator it = appShortcuts.begin(); it!= appShortcuts.end(); ++it) {
         GuiShortCutGroup group;
@@ -179,11 +188,15 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
             action.item->setExpanded(true);
             action.item->setText(1, shortcutStr);
             group.actions.push_back(action);
+            group.item->addChild(action.item);
         }
         _imp->appShortcuts.push_back(group);
         group.item->setFlags(Qt::ItemIsEnabled);
+        group.item->setText(0, it->first);
+        group.item->setExpanded(true);
         _imp->tree->addTopLevelItem(group.item);
     }
+    _imp->tree->resizeColumnToContents(0);
     QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onSelectionChanged()));
     
     _imp->mainLayout->addWidget(_imp->tree);
@@ -199,6 +212,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
     
     _imp->shortcutEditor = new LineEdit(_imp->shortcutGroup);
+    _imp->shortcutEditor->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
     _imp->shortcutEditor->setPlaceholderText(tr("Type to set shortcut"));
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
     
@@ -231,6 +245,8 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->buttonsLayout->addWidget(_imp->okButton);
     
     _imp->buttonsLayout->addStretch();
+    
+    resize(700,400);
 }
 
 ShortCutEditor::~ShortCutEditor()
