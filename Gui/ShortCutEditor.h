@@ -15,6 +15,8 @@
 
 #include <QWidget>
 #include "Global/Macros.h"
+#include "Gui/LineEdit.h"
+
 struct ShortCutEditorPrivate;
 class ShortCutEditor : public QWidget
 {
@@ -42,6 +44,19 @@ public slots:
 private:
         
     boost::scoped_ptr<ShortCutEditorPrivate> _imp;
+};
+
+class KeybindRecorder : public LineEdit
+{
+public:
+    
+    KeybindRecorder(QWidget* parent);
+    
+    virtual ~KeybindRecorder();
+    
+private:
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 #endif // SHORTCUTEDITOR_H

@@ -18,8 +18,11 @@
 #include <QGroupBox>
 #include <QLabel>
 #include <QTextDocument>
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QApplication>
+
 #include "Gui/Button.h"
-#include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ActionShortcuts.h"
 
@@ -62,15 +65,35 @@ static QString mouseShortcutToString(const Qt::KeyboardModifiers& modifiers,Qt::
 
 typedef std::list<GuiShortCutGroup> GuiAppShorcuts;
 
+///A small hack to the QTreeWidget class to make 2 fuctions public so we can use them in the ShortcutDelegate class
+class HackedTreeWidget : public QTreeWidget
+{
+    
+public:
+    
+    HackedTreeWidget(QWidget* parent) : QTreeWidget(parent) {}
+    
+    QModelIndex	indexFromItem_natron(QTreeWidgetItem * item, int column = 0) const
+    {
+        return indexFromItem(item,column);
+    }
+    
+    QTreeWidgetItem* itemFromIndex_natron(const QModelIndex & index) const
+    {
+        return itemFromIndex(index);
+    }
+    
+};
+
 struct ShortCutEditorPrivate
 {
     QVBoxLayout* mainLayout;
-    QTreeWidget* tree;
+    HackedTreeWidget* tree;
     
     QGroupBox* shortcutGroup;
     QHBoxLayout* shortcutGroupLayout;
     QLabel* shortcutLabel;
-    LineEdit* shortcutEditor;
+    KeybindRecorder* shortcutEditor;
     Button* resetButton;
     
     QWidget* buttonsContainer;
@@ -117,7 +140,7 @@ struct ShortCutEditorPrivate
     
 };
 
-static void setItemShortCutText(QTreeWidgetItem* item,const BoundAction* action,bool useDefault)
+static QString makeItemShortCutText(const BoundAction* action,bool useDefault)
 {
     const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
     const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
@@ -137,8 +160,28 @@ static void setItemShortCutText(QTreeWidgetItem* item,const BoundAction* action,
     } else {
         assert(false);
     }
-    item->setText(1, shortcutStr);
+    return shortcutStr;
 }
+
+static void setItemShortCutText(QTreeWidgetItem* item,const BoundAction* action,bool useDefault)
+{
+    item->setText(1, makeItemShortCutText(action,useDefault));
+}
+
+class ShortcutDelegate : public QStyledItemDelegate {
+    
+    HackedTreeWidget* tree;
+public:
+    
+    ShortcutDelegate(HackedTreeWidget* parent)
+    : QStyledItemDelegate(parent)
+    , tree(parent)
+    {}
+    
+private:
+    
+    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
+};
 
 ShortCutEditor::ShortCutEditor(QWidget* parent)
 : QWidget(parent)
@@ -148,7 +191,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     setWindowTitle(tr("Shortcuts editor"));
-    _imp->tree = new QTreeWidget(this);
+    _imp->tree = new HackedTreeWidget(this);
     _imp->tree->setColumnCount(2);
     QStringList headers;
     headers << tr("Command") << tr("Shortcut");
@@ -163,6 +206,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                                                        "if your computer doesn't have one, that is: \n"
                                                        "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
                                                        "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."),Qt::WhiteSpaceNormal));
+    _imp->tree->setItemDelegate(new ShortcutDelegate(_imp->tree));
     const AppShortcuts& appShortcuts = appPTR->getAllShortcuts();
     for (AppShortcuts::const_iterator it = appShortcuts.begin(); it!= appShortcuts.end(); ++it) {
         GuiShortCutGroup group;
@@ -183,6 +227,8 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                 assert(false);
             }
             if (!it2->second->editable) {
+                action.item->setToolTip(0, tr("This action is standard and its shortcut cannot be edited."));
+                action.item->setToolTip(1, tr("This action is standard and its shortcut cannot be edited."));
                 action.item->setDisabled(true);
             }
             action.item->setExpanded(true);
@@ -211,7 +257,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutLabel->setText(tr("Sequence:"));
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
     
-    _imp->shortcutEditor = new LineEdit(_imp->shortcutGroup);
+    _imp->shortcutEditor = new KeybindRecorder(_imp->shortcutGroup);
     _imp->shortcutEditor->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
     _imp->shortcutEditor->setPlaceholderText(tr("Type to set shortcut"));
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
@@ -265,12 +311,15 @@ void ShortCutEditor::onSelectionChanged()
     if (items.empty()) {
         _imp->shortcutEditor->setText("");
         _imp->shortcutEditor->setPlaceholderText(tr("Type to set shortcut"));
+        _imp->shortcutEditor->setReadOnly(true);
         return;
     }
     
+    _imp->shortcutEditor->setReadOnly(false);
     QTreeWidgetItem* selection = items.front();
     BoundAction* action = _imp->getActionForTreeItem(selection);
     assert(action);
+    _imp->shortcutEditor->setText(makeItemShortCutText(action, true));
 }
 
 void ShortCutEditor::onResetButtonClicked()
@@ -291,7 +340,7 @@ void ShortCutEditor::onResetButtonClicked()
     BoundAction* action = _imp->getActionForTreeItem(selection);
     assert(action);
     setItemShortCutText(selection, action, true);
-
+    _imp->shortcutEditor->setText(makeItemShortCutText(action, true));
 }
 
 void ShortCutEditor::onRestoreDefaultsButtonClicked()
@@ -324,4 +373,70 @@ void ShortCutEditor::onOkButtonClicked()
 {
     appPTR->saveShortcuts();
     close();
+}
+
+void ShortcutDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
+{
+    QTreeWidgetItem* item = tree->itemFromIndex_natron(index);
+    if (!item) {
+        QStyledItemDelegate::paint(painter, option, index);
+        return;
+    }
+    
+    ///Determine whether the item is top level or not
+    bool isTopLevel = false;
+    int topLvlCount = tree->topLevelItemCount();
+    for (int i = 0; i < topLvlCount; ++i) {
+        if (tree->topLevelItem(i) == item) {
+            isTopLevel = true;
+            break;
+        }
+    }
+    
+    QFont font = painter->font();
+    QPen pen;
+    
+    if (isTopLevel) {
+        font.setBold(true);
+        font.setPixelSize(15);
+        pen.setColor(Qt::black);
+    } else {
+        font.setBold(false);
+        font.setPixelSize(11);
+        if (item->isDisabled()) {
+            pen.setColor(Qt::black);
+        } else {
+            pen.setColor(QColor(200,200,200));
+        }
+    }
+    painter->setFont(font);
+    painter->setPen(pen);
+    
+    // get the proper subrect from the style
+    QStyle *style = QApplication::style();
+    QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
+
+    ///Draw the item name column
+    if (option.state & QStyle::State_Selected){
+        painter->fillRect(geom, option.palette.highlight());
+    }
+    QRect r;
+    painter->drawText(geom,Qt::TextSingleLine,item->data(index.column(), Qt::DisplayRole).toString(),&r);
+
+}
+
+KeybindRecorder::KeybindRecorder(QWidget* parent)
+: LineEdit(parent)
+{
+    
+}
+
+KeybindRecorder::~KeybindRecorder()
+{
+    
+}
+
+void KeybindRecorder::keyPressEvent(QKeyEvent* e)
+{
+    LineEdit::keyPressEvent(e);
 }
