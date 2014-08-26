@@ -2328,8 +2328,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates(e->x(), e->y());
 
-    Qt::KeyboardModifiers modifiers = e->modifiers();
-    if (isMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomY, modifiers, Qt::MiddleButton)) {
+    if (modCASIsControlShift(e)) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {
@@ -2348,7 +2347,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.factor();
         }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-    } else if (isMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomX, modifiers, Qt::MiddleButton)) {
+    } else if (modCASIsControl(e)) {
         // Alt + Wheel: zoom time only, keep point under mouse
         par = _imp->zoomCtx.par() * scaleFactor;
         if (par <= par_min) {
@@ -2359,7 +2358,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.factor();
         }
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-    } else if (isMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoom, modifiers, Qt::MiddleButton)) {
+    } else {
         // Wheel: zoom values and time, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {

@@ -958,7 +958,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
-        } else if (isMouseShortcut(kShortcutGroupNodegraph, kShortcutIDMousePan,e->modifiers(), e->button())) {
+        } else if (buttonDownIsMiddle(e)) {
             _imp->_evtState = MOVING_AREA;
             QGraphicsView::mousePressEvent(e);
         }

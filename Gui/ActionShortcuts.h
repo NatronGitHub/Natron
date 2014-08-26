@@ -148,17 +148,6 @@
 #define kShortcutIDActionProxyLevel32 "proxy32"
 #define kShortcutDescActionProxyLevel32 "Set proxy level to 32"
 
-#define kShortcutIDMouseZoom "zoom"
-#define kShortcutDescMouseZoom "Zoom"
-
-#define kShortcutIDMouseZoomX "zoomX"
-#define kShortcutDescMouseZoomX "Zoom in X only"
-
-#define kShortcutIDMouseZoomY "zoomY"
-#define kShortcutDescMouseZoomY "Zoom in Y only"
-
-#define kShortcutIDMousePan "pan"
-#define kShortcutDescMousePan "Pan"
 
 #define kShortcutIDMousePickColor "pick"
 #define kShortcutDescMousePickColor "Pick a color"

@@ -1215,9 +1215,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5);
 
-    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseZoom, kShortcutDescMouseZoom, Qt::NoModifier, Qt::MiddleButton);
-    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePan, kShortcutDescMousePan, Qt::AltModifier, Qt::LeftButton);
-    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
+    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::NoModifier, Qt::MiddleButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ControlModifier | Qt::ShiftModifier, Qt::LeftButton);
 
     ///Player
@@ -1286,8 +1284,6 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, kShortcutDescActionGraphForcePreview, Qt::NoModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, kShortcutDescActionGraphFrameNodes, Qt::NoModifier, Qt::Key_F);
 
-    registerMouseShortcut(kShortcutGroupNodegraph, kShortcutIDMouseZoom, kShortcutDescMouseZoom, Qt::NoModifier, Qt::MiddleButton);
-    registerMouseShortcut(kShortcutGroupNodegraph, kShortcutIDMousePan, kShortcutDescMousePan, Qt::AltModifier, Qt::LeftButton);
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
@@ -1303,10 +1299,6 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, kShortcutDescActionCurveEditorCopy, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, kShortcutDescActionCurveEditorPaste, Qt::ControlModifier, Qt::Key_V);
 
-    registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoom, kShortcutDescMouseZoom, Qt::NoModifier, Qt::MiddleButton);
-    registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMousePan, kShortcutDescMousePan, Qt::AltModifier, Qt::LeftButton);
-    registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomX, kShortcutDescMouseZoomX, Qt::ControlModifier, Qt::MiddleButton);
-    registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomY, kShortcutDescMouseZoomY, Qt::ControlModifier | Qt::ShiftModifier, Qt::MiddleButton);
 } // populateShortcuts
 
 void
