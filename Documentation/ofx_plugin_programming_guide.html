@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1187.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 18.0px Times}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; min-height: 14.0px}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Times}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 17.0px Times}
+    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times}
+    p.p6 {margin: 0.0px 0.0px 0.0px 48.0px; text-indent: -48.0px; font: 12.0px Times}
+    p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #2e6ffd}
+    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #0044fe}
+    p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #6293fe}
+    p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 15.0px Menlo}
+    p.p11 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Times}
+    span.s1 {color: #2e6ffd}
+    span.s2 {color: #000000}
+    span.s3 {font: 15.0px Menlo; color: #c67c48}
+  </style>
+</head>
+<body>
+<p class="p1"><b>OpenFX plug-in programming guide (C/C++)</b></p>
+<p class="p2"><br></p>
+<p class="p3"><i>- 1st draft 08/24/2014 </i>Alexandre Gauthier-Foichat</p>
+<p class="p2"><br></p>
+<p class="p4"><b>Introduction</b></p>
+<p class="p2"><br></p>
+<p class="p5">First off, the main <i>official</i> specification can be found right there <a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html"><span class="s1">http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html</span></a><span class="s1"> </span>and should be followed very precisely when in case of doubt. This document is 100% true and answers almost all questions one might have. However this is a quite long document which can be quite hard to swallow the first time one has to read it.</p>
+<p class="p2"><br></p>
+<p class="p5">I'll skip all the details regarding packaging of OpenFX pug-ins and the philosophy and focus this document on the programming of OpenFX plug-ins using the <b>Support</b> layer.</p>
+<p class="p5">What is the <b>Support</b> layer?</p>
+<p class="p2"><br></p>
+<p class="p5">OpenFX is in under the hood just a protocol for a plug-in and a host application to help communicate.</p>
+<p class="p5">They do so with a C API using <i>blind</i> <i>handles</i> and properties which are uniquely identified by names, which all begins with kOfx* .</p>
+<p class="p5">To help using this API, the official guys from the OpenFX association have made a C++ wrapper around it so it is easier to use. The wrapper on the plug-in side is called the <b>Support</b> layer and the one on the Host side (the application, e.g: Natron) is called the <b>HostSupport</b> layer.</p>
+<p class="p2"><br></p>
+<p class="p5">The official repository of the OpenFX association is no longer actively maintained. That's why the Natron dev team has forked it and continue maintaining it and fixing bugs whilst also incorporating new features of the newer versions of OpenFX.</p>
+<p class="p5">The official repository of the OpenFX association can be found here: <a href="https://github.com/ofxa/openfx"><span class="s1">https://github.com/ofxa/openfx</span></a></p>
+<p class="p5">The repository the Natron dev team maintains can be found here: <a href="https://github.com/devernay/openfx"><span class="s1">https://github.com/devernay/openfx</span></a></p>
+<p class="p2"><br></p>
+<p class="p5">On this repository you will find the 2 layers mentioned above in separate folders with their respective names.</p>
+<p class="p5">The Examples directory contains OpenFX plug-in examples which were programmed using directly the C API (thus not using the <b>Support</b> layer).</p>
+<p class="p5">The <b>Support</b> folder contains a Plugins folder which contains other examples. These examples are on the other hand programmed using the <b>Support</b> layer.</p>
+<p class="p2"><br></p>
+<p class="p5">The Natron dev team has 2 separate repositories for its OpenFX plug-ins.</p>
+<p class="p2"><br></p>
+<p class="p6">One is to handle all plug-ins which do input/output operations and rely on external libraries (such as OpenImageIO, OpenColorIO,FFMPEG,OpenEXR, etc…) and can be found here: <a href="https://github.com/MrKepzie/openfx-io"><span class="s1">https://github.com/MrKepzie/openfx-io</span></a></p>
+<p class="p6">The other one is for all other plug-ins which do image processing. They do not require linking to any other external library and are generally easier to compile and understand. The address of that repository is: <a href="https://github.com/devernay/openfx-misc"><span class="s1">https://github.com/devernay/openfx-misc</span></a></p>
+<p class="p2"><br></p>
+<p class="p5">Depending on what kind of plug-in you implement you should base your work upon one of the 2 repositories above as they contain "state of the art" OpenFX plug-ins. They use the OpenFX API as one should do.</p>
+<p class="p5">If you were to create a new reader plug-in to read whatever you need that isn't supported already, I suggest that you fork openfx-io and derive the GenericReader class which does all the quite complex handling of what a fully-featured reader plug-in is expected to do (such as downscaling, color-space transformation) . Same for writer plug-ins, I suggest you derive the GenericWriter class.</p>
+<p class="p2"><br></p>
+<p class="p5">If on the other hand you were to write an image processing plug-in, I suggest you fork the openfx-misc repository and look at the plug-ins inside as examples. The Crop and Invert plug-ins are trivial plug-ins which should give you a fair understanding on how OpenFX works.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>Architecture of a plug-in</b></p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p5">A plug-in is a folder on Windows/Linux and a bundle on MacOSX which can be represented as follows:</p>
+<p class="p2"><br></p>
+<p class="p5">MyPlugin.ofx.bundle/</p>
+<p class="p5">Contents/</p>
+<p class="p5">Win32/</p>
+<p class="p5">MyPlugin.ofx</p>
+<p class="p5">Win64/</p>
+<p class="p5">MyPlugin.ofx</p>
+<p class="p5">Resource/</p>
+<p class="p5">MyPlugin.svg</p>
+<p class="p2"><br></p>
+<p class="p5">The .ofx is just a .so on Linux, a .dylib on MacOSX and a .dll on Windows whose extension has been renamed to .ofx.</p>
+<p class="p5">For an extensive explanation of the details of how the bundle should be setup, please refer to</p>
+<p class="p7"><a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id449875">http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id449875</a></p>
+<p class="p2"><br></p>
+<p class="p4"><b>Communication between the host and a plug-in</b></p>
+<p class="p2"><br></p>
+<p class="p5">Each plug-in can be instantiated in different context by an application depending on its use.</p>
+<p class="p5">They are well described in the OpenFX specification and won't go through them here.</p>
+<p class="p7"><a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectContexts">http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectContexts</a></p>
+<p class="p2"><br></p>
+<p class="p5">The OpenFX spec. defines functions that the host can call on the plug-ins to make it perform special actions. These functions are called <b>actions</b> and their specification is well described here:</p>
+<p class="p8"><a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id473661">http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id473661</a></p>
+<p class="p5">The most important action to implement in general is the render action which is called when a plug-in needs to render its image. We will detail a bit more the important actions in the chapter dedicated to the plug-in object.</p>
+<p class="p2"><br></p>
+<p class="p5">The plug-in can also call some functions on the host to query some informations. These functions are grouped in "<i>suites</i>". Generally the type of things you would like to ask is "fetch that image", "fetch that image's size", etc…</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p4"><b>Using the C++ Support Layer</b></p>
+<p class="p2"><br></p>
+<p class="p5">A C++ plug-in is composed of 3 objects in the general cases:</p>
+<p class="p2"><br></p>
+<p class="p6">The <b><i>factory</i></b> object which is used to instantiate the plug-in to the host application at the moment the binary is loaded.</p>
+<p class="p6">The <b><i>plug-in</i></b> object which is used to communicate with the host application and do some work. Generally the processing is not done in this object, rather we do it in the last object…</p>
+<p class="p6">The <b><i>processor</i></b> object which is used to do the processing in an optimised way: OpenFX offers a way to do multi-threading easily using this class.</p>
+<p class="p5">The last class is not mandatory and one could also do the rendering in the plug-in class, though it would not be multi-threaded.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The factory</b></p>
+<p class="p2"><br></p>
+<p class="p5">It basically serves 3 purposes:</p>
+<p class="p6">Instantiating the <b><i>plug-in</i></b> object.</p>
+<p class="p6">Declaring some parameters/clips: This is done in the <b>describeInContext</b> function. The parameters are what the user *could* (generally can, but not if they are hidden/disabled) interact with in the user interface. They are several types of parameters and they are quite well described in the specification:</p>
+<p class="p6"><span class="s1"><a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersChapter">http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParametersChapter</a></span> . What you can control is whether the user can animate them, their name, default value, etc… Please check out the examples in the openfx-misc for implementation details.</p>
+<p class="p6">The clips are the objects that refer the input images (in Natron a clip is the arrow between 2 nodes). This is a view of the plug-in of another input plug-in. The plug-in must always define an output clip: This is where the output image of this plug-in will be defined.</p>
+<p class="p2"><br></p>
+<p class="p6">Declaring some properties of the plug-in to the host application. This is done in the <b>describe</b> function. This is where the plug-in defines its name, which bit depths it can support,, whether it can support multi-resolution images, whether it will need fetching images at different times, whether it supports interlaced images, whether it supports multi-threading…. etc</p>
+<p class="p9"><span class="s2">See the invert plug-in describe function here <a href="https://github.com/devernay/openfx-misc/blob/master/Invert/Invert.cpp">https://github.com/devernay/openfx-misc/blob/master/Invert/Invert.cpp</a></span></p>
+<p class="p5">for an example of the function.</p>
+<p class="p5">All properties defined in the <b>describe</b> function are well covered by the OpenFX specification though some need some extra caution:</p>
+<p class="p2"><br></p>
+<p class="p5">- <a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPluginRenderThreadSafety"><span class="s3">kOfxImageEffectPluginRenderThreadSafety</span></a><span class="s3"> </span>: This must be carefully set. If misused, then your plug-in might not be thread-safe.</p>
+<p class="p6">Unsafe means that all instances of the same plug-in can only have 1 render-thread at once: they will all be synchronised.</p>
+<p class="p6">InstanceSafe means that an instance can only have 1 render thread at a time, though several instances do not need special synchronisation.</p>
+<p class="p6">FullySafe indicating that any instance of a plug-in can have multiple render threads running simultaneously.</p>
+<p class="p5">On top of that the plug-in can also set the property <a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPluginPropHostFrameThreading"><span class="s3">kOfxImageEffectPluginPropHostFrameThreading</span></a><span class="s3"> </span>: When set to 1, and if the thread-safety of the plug-in permits, the host will slice the render window and call it with several threads instead of calling the render function with only 1 thread.</p>
+<p class="p5">Bear in mind that you as a plug-in do not need to set this to 1 since you can use the multi-thread suite and do the multi-threading yourself. This suite also includes locking abilities allowing you to properly control the thread-safety of your plug-in.</p>
+<p class="p5">- <a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution"><span class="s3">kOfxImageEffectPropSupportsMultiResolution</span></a><span class="s3"> </span>: When set to 1 that means your plug-in is expected to work with arbitrary image rectangles in input and output and they may not necessarily be the same.</p>
+<p class="p2"><br></p>
+<p class="p5">- <a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles"><span class="s3">kOfxImageEffectPropSupportsTiles</span></a><span class="s3"> </span>: When set to 1 that means your plug-in is expected to work with images that are not the "full image" but just a sub-rectangle of the full image.</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p4"><b>The plug-in object</b></p>
+<p class="p2"><br></p>
+<p class="p5">This is the main object allowing to bridge with the application. When implementing your plug-in you will want to derive the OFX::ImageEffect class. There are a bunch of virtual functions which are the <b>actions</b> the host application can call. (The functions I mentioned above).</p>
+<p class="p2"><br></p>
+<p class="p5">The constructor of the plug-in is here to fetch a pointer to all the parameters/clip you defined previously in the <b>describe</b> function of the factory. These pointers represent the "instantiated" version of those parameters/clip, whereas in the <b>describe</b> function well…you just <b>described</b> them so the host would instantiate them correctly. This is with those pointers that you can get/set values and query informations.</p>
+<p class="p2"><br></p>
+<p class="p5">The output clip (sometimes called dstClip_ in our examples) represents the output image.</p>
+<p class="p5">The source clip represents the source image and this is from this object that you need to fetch the input image.</p>
+<p class="p5">If you were to have several input clips, then you would fetch the input images from each of your source clips.</p>
+<p class="p5">Some clips can be optional (such as a mask for example) and needs to be set so explicitly in the describe function of the factory.</p>
+<p class="p2"><br></p>
+<p class="p5">In the following I will vaguely re-explain the main actions that are generally implemented by a plug-in. Though for more detailed explanation and how to report errors in these functions please check the OpenFX specification which does a full coverage on them.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The isIdentity action</b></p>
+<p class="p10">virtual bool isIdentity(const IsIdentityArguments &amp;args, Clip * &amp;identityClip, double &amp;identityTime) OVERRIDE FINAL</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p5">This function must return true if the effect in its current state will not apply any change to the source image. This is called by the host to determine whether a call to the render action is necessary or not.</p>
+<p class="p5">When true then the rendering pipeline is much faster as the host just skips this plug-in from the compositing tree.</p>
+<p class="p5">The identityClip parameter must be set to a pointer of the input clip of which the effect is an identity of.</p>
+<p class="p5">The identityTime parameter must be set to the time at which the effect is an identity of the input clip.</p>
+<p class="p5">For example a gain effect whose "Scale" parameter would be set to 1 would be an identity.</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p4"><b>The changedParam action</b></p>
+<p class="p10">virtual void changedParam(const OFX::InstanceChangedArgs &amp;args, const std::string &amp;paramName) OVERRIDE FINAL;</p>
+<p class="p2"><br></p>
+<p class="p5">This function is called every time a parameter is changed. This function can be called either because you set the value of a parameter programmatically or because the user interacted with the parameter.</p>
+<p class="p5">the args.reason parameter will inform you from what this function was called.</p>
+<p class="p5">For example if you had a button parameter, when the user would press it, it would call this function with the args.reason == eChangeUserEdit.</p>
+<p class="p2"><br></p>
+<p class="p5">This function is also a great place to show/hide and enable/disable other parameters according to special values of another parameter.</p>
+<p class="p2"><br></p>
+<p class="p5">This function could be used to implement analysis effects (such as a tracker). Fetching an image is allowed in this action.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The getRegionOfDefinition action</b></p>
+<p class="p10">virtual bool getRegionOfDefinition(const OFX::RegionOfDefinitionArguments &amp;args, OfxRectD &amp;rod) OVERRIDE FINAL;</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p5">This is called by the host to determine the size of the image (or region of definition) produced by this effect.</p>
+<p class="p5">If your plug-in doesn't apply any geometrical transformation to the image, then it is probably not modifying it's size (e.g: an Invert plug-in doesn't modify the image's region of definition.) In that case you do not need to implement this function, this is the default behaviour to return the region of definition of the source clip.</p>
+<p class="p5">On the other hand, a crop effect would return the size of the crop area as its region of definition.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The getRegionsOfInterest action</b></p>
+<p class="p10">virtual void getRegionsOfInterest(const OFX::RegionsOfInterestArguments &amp;args, OFX::RegionOfInterestSetter &amp;rois) OVERRIDE FINAL;</p>
+<p class="p2"><br></p>
+<p class="p5">Even though the name is close to the getRegionOfDefinition action, it doesn't serve the same purpose at all!</p>
+<p class="p5">This function is called by the host before the render action is called. This is called when it wants to pre-render the input images this effect might need. In order to do so, the host needs to ask this effect what is the rectangle of the source image we're interested in. This is the purpose of this action. In general if your plug-in does need exactly the render window then you don't have to implement this function. On the other hand , a blur plug-in might have to include the border padding to the region of interest of the input clip.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The getClipPreferences action</b></p>
+<p class="p10">virtual void getClipPreferences(ClipPreferencesSetter &amp;clipPreferences) OVERRIDE FINAL;</p>
+<p class="p2"><br></p>
+<p class="p5">You rarely need to implement this action. This action is called by the host to allow the effect to perform modifications of the state of the clip, such as its premultiplication (is the image premultiplied or not?) or the image components (is it alpha, RGB or RGBA?) or image bit depth (is it byte, short or float ?)</p>
+<p class="p5">For example the shuffle plug-ins uses it when the users chooses different output components or different bit depth.</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The render action</b></p>
+<p class="p10">virtual void render(const OFX::RenderArguments &amp;args) OVERRIDE FINAL;</p>
+<p class="p2"><br></p>
+<p class="p5">This is where the processing must be done. The args contain several parameters that define how the image should be rendered.</p>
+<p class="p6">time: The time at which the render is taking place. This can be used to fetch the input images at the same time or at other times.</p>
+<p class="p6">renderScale: When different than 1 this informs that the image is rendered at a lower resolution than the full resolution. For example this is used in Natron when the user zooms out. As a filter plug-in , this is merely an hint and doesn't hold much value. On the other hand for a reader effect (such as the ones in openfx-io) this is clearly stating at which scale you should read the image. In this case you should explicitly downscale the image yourself (ONLY FOR READER PLUG-INS!!). If you don't support downscaling the images, then in all the actions called by the host, you're expected to check the render scale parameter and throw a kOfxStatFailed exception if the render scale is different than 1. This can in turn inform the host that you don't support the downscaling of the images and it will take care of it for you.</p>
+<p class="p6">renderWindow: This is the portion of the image to render. If you specified that you support tiles in the describe function of the factory then it might not be the full <b>region of definition</b> of the image.</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p5">To fetch input images, call the fetchImage on the source clips at the desired time. You're expected to check whether the input clip is connected before fetching the image (i.e: call getConnected() on the clip). A clip is connected in Natron when the arrow is connected to another effect.</p>
+<p class="p5">If you cannot use the input image for any reason (bad bit depth, bad components, etc…) then your expected to throw a significant exception to indicate that the render failed (kOfxErrBadFormat).</p>
+<p class="p11"><b>You can only fetch an image during the render action or the changedParam action</b></p>
+<p class="p2"><br></p>
+<p class="p5">Generally a plug-in is better if it can handle arbitrary bit depths and image components. To deal with that in our plug-ins we template the internal render function by the components and the bit depth.</p>
+<p class="p5">For example in the Invert plug-in of the openfx-misc repository, the render function just instantiate the templated class ImageInverter with the good template parameters depending on the bit depth and the image components.</p>
+<p class="p2"><br></p>
+<p class="p5">In this example we use the processor object (ImageInverter) to do the rendering because it enables the multi-threading offered by the host, but we could clearly do the processing in the render function, though, it wouldn't be multi-threaded (unless we would have set the <a href="http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPluginPropHostFrameThreading"><span class="s3">kOfxImageEffectPluginPropHostFrameThreading</span></a><span class="s3"> </span>property to 1).</p>
+<p class="p2"><br></p>
+<p class="p4"><b>The processor</b></p>
+<p class="p2"><br></p>
+<p class="p5">The host application can implement the multi-thread suite. Remember, a suite is a set of functions that a host can implement, offering some functionalities to the plug-in. In this case this suite is designed to offer SMP style multi-processing.</p>
+<p class="p5">The C++ processor class is just a wrapper around this suite so that it is easier for you, as a plug-in developer, to multi-thread your processing. You would need to derive the OFX::ImageProcessor to craft your own processor.</p>
+<p class="p5">The only function you have to override is the <b>multiThreadProcessImages </b>function. This is the core render function which renders an image rectangle for a single thread. You can cycle through all the examples for inspiration on how the processing is generally written, though the inner part of the pixel processing is really up to the plug-in developer.</p>
+<p class="p2"><br></p>
+<p class="p5">Bear in mind that it is more efficient to get all the values from the parameters before calling the processor multithread function. In order to do that we generally fetch all the values we want in the render function (or more specifically in the setupAndProcess function) and then give it in parameter to the processor class.</p>
+<p class="p5">The getValue function of a parameter can be quite expensive and it's better to call it once if you can.</p>
+<p class="p5">Same applies for the fetchImage function.</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+<p class="p5">TODO: Dealing with overlay interacts</p>
+</body>
+</html>

@@ -5,7 +5,6 @@
 moc*.cpp
 *moc
 build
-*html*
 *latex*
 DerivedData
 Natron.xcodeproj
