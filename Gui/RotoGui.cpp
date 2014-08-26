@@ -2145,15 +2145,17 @@ void
 RotoGui::moveSelectedCpsWithKeyArrows(int x,
                                       int y)
 {
-    std::pair<double,double> pixelScale;
-    _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
-    int time = _imp->context->getTimelineCurrentTime();
-    pushUndoCommand(new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,(double)x * pixelScale.first,
-                                                     (double)y * pixelScale.second,time));
-    _imp->computeSelectedCpsBBOX();
-    _imp->context->evaluateChange();
-    _imp->node->getNode()->getApp()->triggerAutoSave();
-    _imp->viewerTab->onRotoEvaluatedForThisViewer();
+    if (!_imp->rotoData->selectedCps.empty()) {
+        std::pair<double,double> pixelScale;
+        _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
+        int time = _imp->context->getTimelineCurrentTime();
+        pushUndoCommand(new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,(double)x * pixelScale.first,
+                                                         (double)y * pixelScale.second,time));
+        _imp->computeSelectedCpsBBOX();
+        _imp->context->evaluateChange();
+        _imp->node->getNode()->getApp()->triggerAutoSave();
+        _imp->viewerTab->onRotoEvaluatedForThisViewer();
+    }
 }
 
 void

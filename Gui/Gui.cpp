@@ -90,6 +90,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/RotoGui.h"
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/ShortCutEditor.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -192,6 +193,7 @@ struct GuiPrivate {
     QAction *actionExit;
     QAction *actionProject_settings;
     QAction *actionShowOfxLog;
+    QAction *actionShortcutEditor;
     QAction *actionNewViewer;
     QAction *actionFullScreen;
     QAction *actionClearDiskCache;
@@ -329,6 +331,8 @@ struct GuiPrivate {
     
     TabWidget* fullScreenWidgetDuringSave;
 
+    ShortCutEditor* shortcutEditor;
+    
     GuiPrivate(GuiAppInstance* app,Gui* gui)
     : _gui(gui)
     , _isUserScrubbingTimeline(false)
@@ -352,6 +356,7 @@ struct GuiPrivate {
     , actionExit(0)
     , actionProject_settings(0)
     , actionShowOfxLog(0)
+    , actionShortcutEditor(0)
     , actionNewViewer(0)
     , actionFullScreen(0)
     , actionClearDiskCache(0)
@@ -424,6 +429,7 @@ struct GuiPrivate {
     , abortedEnginesMutex()
     , abortedEngines()
     , fullScreenWidgetDuringSave(0)
+    , shortcutEditor(0)
     {
         
     }
@@ -677,6 +683,8 @@ GuiPrivate::retranslateUi(QMainWindow *MainWindow)
     actionProject_settings->setText(QObject::tr("Project Settings..."));
     assert(actionShowOfxLog);
     actionShowOfxLog->setText(QObject::tr("Show OpenFX log"));
+    assert(actionShortcutEditor);
+    actionShortcutEditor->setText(QObject::tr("Edit/View shortcuts..."));
     assert(actionNewViewer);
     actionNewViewer->setText(QObject::tr("New Viewer"));
     assert(actionFullScreen);
@@ -829,6 +837,7 @@ Gui::setupUi()
     _imp->actionProject_settings->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionProjectSettings));
     _imp->actionShowOfxLog = new QAction(this);
     _imp->actionShowOfxLog->setObjectName(QString::fromUtf8("actionShowOfxLog"));
+    _imp->actionShortcutEditor = new QAction(this);
     _imp->actionNewViewer = new QAction(this);
     _imp->actionNewViewer->setObjectName(QString::fromUtf8("actionNewViewer"));
     _imp->actionNewViewer->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionNewViewer));
@@ -978,6 +987,9 @@ Gui::setupUi()
     _imp->_aboutWindow = new AboutWindow(this,this);
     _imp->_aboutWindow->hide();
     
+    _imp->shortcutEditor = new ShortCutEditor(this);
+    _imp->shortcutEditor->hide();
+    
     _imp->menubar->addAction(_imp->menuFile->menuAction());
     _imp->menubar->addAction(_imp->menuEdit->menuAction());
     _imp->menubar->addAction(_imp->menuLayout->menuAction());
@@ -1009,6 +1021,7 @@ Gui::setupUi()
     
     _imp->menuOptions->addAction(_imp->actionProject_settings);
     _imp->menuOptions->addAction(_imp->actionShowOfxLog);
+    _imp->menuOptions->addAction(_imp->actionShortcutEditor);
     _imp->menuDisplay->addAction(_imp->actionNewViewer);
     _imp->menuDisplay->addAction(_imp->viewersMenu->menuAction());
     _imp->viewersMenu->addAction(_imp->viewerInputsMenu->menuAction());
@@ -1054,6 +1067,7 @@ Gui::setupUi()
     QObject::connect(_imp->actionExit,SIGNAL(triggered()),appPTR,SLOT(exitApp()));
     QObject::connect(_imp->actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     QObject::connect(_imp->actionShowOfxLog,SIGNAL(triggered()),this,SLOT(showOfxLog()));
+    QObject::connect(_imp->actionShortcutEditor,SIGNAL(triggered()),this,SLOT(showShortcutEditor()));
     
     QObject::connect(_imp->actionConnectInput1, SIGNAL(triggered()),this,SLOT(connectInput1()));
     QObject::connect(_imp->actionConnectInput2, SIGNAL(triggered()),this,SLOT(connectInput2()));
@@ -2962,6 +2976,12 @@ Gui::showAbout()
 {
     _imp->_aboutWindow->show();
     _imp->_aboutWindow->exec();
+}
+
+void
+Gui::showShortcutEditor()
+{
+    _imp->shortcutEditor->show();
 }
 
 void

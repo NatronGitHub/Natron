@@ -414,6 +414,8 @@ public slots:
     
     void showAbout();
     
+    void showShortcutEditor();
+    
     void showOfxLog();
 
     void openRecentFile();

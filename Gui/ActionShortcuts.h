@@ -9,10 +9,10 @@
 /**
 * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
 **/
-
+#include <map>
 #include <QKeyEvent>
 #include <QMouseEvent>
-
+#include <QString>
 
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
@@ -385,6 +385,68 @@
 #define kShortcutIDActionCurveEditorPaste "paste"
 #define kShortcutDescActionCurveEditorPaste "Paste keyframes"
 
+class BoundAction {
+    
+public:
+    
+    bool editable;
+    QString grouping; //< the grouping of the action, such as CurveEditor/
+    QString description; //< the description that will be in the shortcut editor
+    Qt::KeyboardModifiers modifiers; //< the keyboard modifiers that must be held down during the action
+    Qt::KeyboardModifiers defaultModifiers; //< the default keyboard modifiers
+    
+    BoundAction() : editable(true) {}
+    
+    virtual ~BoundAction() {}
+};
+
+class KeyBoundAction : public BoundAction
+{
+public:
+    
+    Qt::Key currentShortcut; //< the actual shortcut for the keybind
+    Qt::Key defaultShortcut; //< the default shortcut proposed by the dev team
+    
+    KeyBoundAction() : BoundAction() {}
+    
+    virtual ~KeyBoundAction() {}
+};
+
+class MouseAction : public BoundAction {
+    
+public:
+    
+    Qt::MouseButton button; //< the button that must be held down for the action. This cannot be edited!
+    
+    MouseAction() : BoundAction() {}
+    
+    virtual ~MouseAction() {}
+};
+
+inline QKeySequence makeKeySequence(const Qt::KeyboardModifiers& modifiers,Qt::Key key) {
+    int keys = 0;
+    if (modifiers.testFlag(Qt::ControlModifier)) {
+        keys |= Qt::CTRL;
+    }
+    if (modifiers.testFlag(Qt::ShiftModifier)) {
+        keys |= Qt::SHIFT;
+    }
+    if (modifiers.testFlag(Qt::AltModifier)) {
+        keys |= Qt::ALT;
+    }
+    if (modifiers.testFlag(Qt::MetaModifier)) {
+        keys |= Qt::META;
+    }
+    keys |= key;
+    return QKeySequence(keys);
+}
+
+///All the shortcuts of a group matched against their
+///internal id to find and match the action in the event handlers
+typedef std::map<QString,BoundAction*> GroupShortcuts;
+
+///All groups shortcuts mapped against the name of the group
+typedef std::map<QString,GroupShortcuts> AppShortcuts;
 
 
 #endif // ACTIONSHORTCUTS_H

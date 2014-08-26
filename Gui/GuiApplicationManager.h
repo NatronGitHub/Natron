@@ -45,6 +45,7 @@ class KnobI;
 class KnobGui;
 class KnobSerialization;
 class Curve;
+class BoundAction;
 
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
@@ -113,7 +114,9 @@ public:
     void saveShortcuts() const;
 
     void restoreDefaultShortcuts();
-
+    
+    const std::map<QString,std::map<QString,BoundAction*> >& getAllShortcuts() const;
+    
 public slots:
 
 

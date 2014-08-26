@@ -83,6 +83,7 @@ SOURCES += \
     ScaleSliderQWidget.cpp \
     SequenceFileDialog.cpp \
     Shaders.cpp \
+    ShortCutEditor.cpp \
     SpinBox.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
@@ -146,6 +147,7 @@ HEADERS += \
     ScaleSliderQWidget.h \
     SequenceFileDialog.h \
     Shaders.h \
+    ShortCutEditor.h \
     SpinBox.h \
     SplashScreen.h \
     Splitter.h \
