@@ -2117,7 +2117,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         wipeSelectionTol = 8. / _imp->zoomCtx.factor();
     }
     
-    if (isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePan,modifiers, button)) {
+    if (isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePan, modifiers, button)) {
         _imp->ms = DRAGGING_IMAGE;
         overlaysCaught = true;
     } else if (_imp->ms == UNDEFINED && _imp->overlay) {
@@ -2138,7 +2138,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             mustRedraw = true;
             overlaysCaught = true;
 
-        } else if (hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor,modifiers, button) && displayingImage()) {
+        } else if (hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage()) {
             // picker with single-point selection
             _imp->pickerState = PICKER_POINT;
             if (pickColor(e->x(),e->y())) {
@@ -2147,7 +2147,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
                 overlaysCaught = true;
             }
 
-        } else if (hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick,modifiers, button) && displayingImage()) {
+        } else if (hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage()) {
             // start picker with rectangle selection (picked color is the average over the rectangle)
             _imp->pickerState = PICKER_RECTANGLE;
             _imp->pickerRect.setTopLeft(zoomPos);

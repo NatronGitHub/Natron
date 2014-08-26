@@ -1062,7 +1062,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key)) { //< this shortcut is global
         if (parentWidget()) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,key,modifiers);
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,key, modifiers);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
 
