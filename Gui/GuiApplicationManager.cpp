@@ -1401,6 +1401,9 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
     mA->grouping = grouping;
     mA->description = description;
     mA->defaultModifiers = modifiers;
+    if (modifiers & (Qt::AltModifier|Qt::ControlModifier)) {
+        qDebug() << "Warning: mouse shortcut " << grouping << '/' << id << " uses the Alt or Control modifier, which is reserved for three-button mouse emulation";
+    }
     mA->modifiers = modifiers;
     mA->button = button;
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
