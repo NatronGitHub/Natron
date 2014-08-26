@@ -1,0 +1,381 @@
+#ifndef ACTIONSHORTCUTS_H
+#define ACTIONSHORTCUTS_H
+
+//  Natron
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/**
+* @brief In this file all Natron's actions that can have their shortcut edited should be listed.
+**/
+
+#include <QKeyEvent>
+#include <QMouseEvent>
+
+
+#define kShortcutGroupGlobal "Global"
+#define kShortcutGroupNodegraph "NodeGraph"
+#define kShortcutGroupCurveEditor "CurveEditor"
+#define kShortcutGroupViewer "Viewer"
+#define kShortcutGroupRoto "Roto"
+#define kShortcutGroupTracking "Tracking"
+#define kShortcutGroupPlayer "Player"
+
+
+/////////GLOBAL SHORTCUTS
+#define kShortcutIDActionNewProject "newProject"
+#define kShortcutDescActionNewProject "Create a new project"
+
+#define kShortcutIDActionOpenProject "openProject"
+#define kShortcutDescActionOpenProject "Open a project"
+
+#define kShortcutIDActionCloseProject "closeProject"
+#define kShortcutDescActionCloseProject "Close project"
+
+#define kShortcutIDActionSaveProject "saveProject"
+#define kShortcutDescActionSaveProject "Save project"
+
+#define kShortcutIDActionSaveAsProject "saveAsProject"
+#define kShortcutDescActionSaveAsProject "Save as project"
+
+#define kShortcutIDActionPreferences "preferences"
+#define kShortcutDescActionPreferences "Preferences"
+
+#define kShortcutIDActionQuit "quit"
+#define kShortcutDescActionQuit "Quit application"
+
+#define kShortcutIDActionNewProject "newProject"
+#define kShortcutDescActionNewProject "Create a new project"
+
+#define kShortcutIDActionProjectSettings "projectSettings"
+#define kShortcutDescActionProjectSettings "Show project settings"
+
+#define kShortcutIDActionNewViewer "newViewer"
+#define kShortcutDescActionNewViewer "New viewer"
+
+#define kShortcutIDActionFullscreen "fullScreen"
+#define kShortcutDescActionFullscreen "FullScreen"
+
+#define kShortcutIDActionClearDiskCache "clearDiskCache"
+#define kShortcutDescActionClearDiskCache "Clear disk cache"
+
+#define kShortcutIDActionClearAllCaches "clearAllCaches"
+#define kShortcutDescActionClearAllCaches "Clear all caches"
+
+#define kShortcutIDActionRenderSelected "renderSelect"
+#define kShortcutDescActionRenderSelected "Render selected writers"
+
+#define kShortcutIDActionRenderAll "renderAll"
+#define kShortcutDescActionRenderAll "Render all writers"
+
+#define kShortcutIDActionConnectViewerToInput1 "connectViewerInput1"
+#define kShortcutDescActionConnectViewerToInput1 "Connect viewer to input 1"
+
+#define kShortcutIDActionConnectViewerToInput2 "connectViewerInput2"
+#define kShortcutDescActionConnectViewerToInput2 "Connect viewer to input 2"
+
+#define kShortcutIDActionConnectViewerToInput3 "connectViewerInput3"
+#define kShortcutDescActionConnectViewerToInput3 "Connect viewer to input 3"
+
+#define kShortcutIDActionConnectViewerToInput4 "connectViewerInput4"
+#define kShortcutDescActionConnectViewerToInput4 "Connect viewer to input 4"
+
+#define kShortcutIDActionConnectViewerToInput5 "connectViewerInput5"
+#define kShortcutDescActionConnectViewerToInput5 "Connect viewer to input 5"
+
+#define kShortcutIDActionConnectViewerToInput6 "connectViewerInput6"
+#define kShortcutDescActionConnectViewerToInput6 "Connect viewer to input 6"
+
+#define kShortcutIDActionConnectViewerToInput7 "connectViewerInput7"
+#define kShortcutDescActionConnectViewerToInput7 "Connect viewer to input 7"
+
+#define kShortcutIDActionConnectViewerToInput8 "connectViewerInput8"
+#define kShortcutDescActionConnectViewerToInput8 "Connect viewer to input 8"
+
+#define kShortcutIDActionConnectViewerToInput9 "connectViewerInput9"
+#define kShortcutDescActionConnectViewerToInput9 "Connect viewer to input 9"
+
+#define kShortcutIDActionConnectViewerToInput10 "connectViewerInput10"
+#define kShortcutDescActionConnectViewerToInput10 "Connect viewer to input 10"
+
+#define kShortcutIDActionShowPaneFullScreen "showPaneFullScreen"
+#define kShortcutDescActionShowPaneFullScreen "Show pane full-screen"
+
+/////////VIEWER SHORTCUTS
+#define kShortcutIDActionLuminance "luminance"
+#define kShortcutDescActionLuminance "Display luminance"
+
+#define kShortcutIDActionR "channelR"
+#define kShortcutDescActionR "Display red channel"
+
+#define kShortcutIDActionG "channelG"
+#define kShortcutDescActionG "Display green channel"
+
+#define kShortcutIDActionB "channelB"
+#define kShortcutDescActionB "Display blue channel"
+
+#define kShortcutIDActionA "channelA"
+#define kShortcutDescActionA "Display alpha channel"
+
+#define kShortcutIDActionFitViewer "fitViewer"
+#define kShortcutDescActionFitViewer "Fit image to viewer"
+
+#define kShortcutIDActionClipEnabled "clipEnabled"
+#define kShortcutDescActionClipEnabled "Enable clipping to project window"
+
+#define kShortcutIDActionRefresh "refresh"
+#define kShortcutDescActionRefresh "Refresh image"
+
+#define kShortcutIDActionROIEnabled "userRoiEnabled"
+#define kShortcutDescActionROIEnabled "Enable user roi"
+
+#define kShortcutIDActionProxyEnabled "proxyEnabled"
+#define kShortcutDescActionProxyEnabled "Enable proxy rendering"
+
+#define kShortcutIDActionProxyLevel2 "proxy2"
+#define kShortcutDescActionProxyLevel2 "Set proxy level to 2"
+
+#define kShortcutIDActionProxyLevel4 "proxy4"
+#define kShortcutDescActionProxyLevel4 "Set proxy level to 4"
+
+#define kShortcutIDActionProxyLevel8 "proxy8"
+#define kShortcutDescActionProxyLevel8 "Set proxy level to 8"
+
+#define kShortcutIDActionProxyLevel16 "proxy16"
+#define kShortcutDescActionProxyLevel16 "Set proxy level to 16"
+
+#define kShortcutIDActionProxyLevel32 "proxy32"
+#define kShortcutDescActionProxyLevel32 "Set proxy level to 32"
+
+#define kShortcutIDMouseZoom "zoom"
+#define kShortcutDescMouseZoom "Zoom"
+
+#define kShortcutIDMouseZoomX "zoomX"
+#define kShortcutDescMouseZoomX "Zoom in X only"
+
+#define kShortcutIDMouseZoomY "zoomY"
+#define kShortcutDescMouseZoomY "Zoom in Y only"
+
+#define kShortcutIDMousePan "pan"
+#define kShortcutDescMousePan "Pan"
+
+#define kShortcutIDMousePickColor "pick"
+#define kShortcutDescMousePickColor "Pick a color"
+
+#define kShortcutIDMouseRectanglePick "rectanglePick"
+#define kShortcutDescMouseRectanglePick "Rectangle colour picker"
+
+///////////PLAYER SHORTCUTS
+
+#define kShortcutIDActionPlayerPrevious "prev"
+#define kShortcutDescActionPlayerPrevious "Previous frame"
+
+#define kShortcutIDActionPlayerNext "next"
+#define kShortcutDescActionPlayerNext "Next frame"
+
+#define kShortcutIDActionPlayerBackward "backward"
+#define kShortcutDescActionPlayerBackward "Play backward (rewind)"
+
+#define kShortcutIDActionPlayerForward "forward"
+#define kShortcutDescActionPlayerForward "Play forward"
+
+#define kShortcutIDActionPlayerStop "stop"
+#define kShortcutDescActionPlayerStop "Stop"
+
+#define kShortcutIDActionPlayerPrevIncr "prevIncr"
+#define kShortcutDescActionPlayerPrevIncr "Go to current frame minus increment"
+
+#define kShortcutIDActionPlayerNextIncr "nextIncr"
+#define kShortcutDescActionPlayerNextIncr "Go to current frame plus increment"
+
+#define kShortcutIDActionPlayerPrevKF "prevKF"
+#define kShortcutDescActionPlayerPrevKF "Go to previous keyframe"
+
+#define kShortcutIDActionPlayerNextKF "nextKF"
+#define kShortcutDescActionPlayerNextKF "Go to next keyframe"
+
+#define kShortcutIDActionPlayerFirst "first"
+#define kShortcutDescActionPlayerFirst "Go to first frame"
+
+#define kShortcutIDActionPlayerLast "last"
+#define kShortcutDescActionPlayerLast "Go to last frame"
+
+
+///////////ROTO SHORTCUTS
+#define kShortcutIDActionRotoDelete "delete"
+#define kShortcutDescActionRotoDelete "Delete element"
+
+#define kShortcutIDActionRotoCloseBezier "closeBezier"
+#define kShortcutDescActionRotoCloseBezier "Close bezier"
+
+#define kShortcutIDActionRotoTransformModifier "transform"
+#define kShortcutDescActionRotoTransformModifier "Transform modifier"
+
+#define kShortcutIDActionRotoSelectAll "selectAll"
+#define kShortcutDescActionRotoSelectAll "Select all"
+
+#define kShortcutIDActionRotoSelectionTool "selectionTool"
+#define kShortcutDescActionRotoSelectionTool "Switch to selection mode"
+
+#define kShortcutIDActionRotoAddTool "addTool"
+#define kShortcutDescActionRotoAddTool "Switch to add mode"
+
+#define kShortcutIDActionRotoEditTool "editTool"
+#define kShortcutDescActionRotoEditTool "Switch to edition mode"
+
+#define kShortcutIDActionRotoNudgeLeft "nudgeLeft"
+#define kShortcutDescActionRotoNudgeLeft "Move bezier on the left"
+
+#define kShortcutIDActionRotoNudgeRight "nudgeRight"
+#define kShortcutDescActionRotoNudgeRight "Move bezier on the right"
+
+#define kShortcutIDActionRotoNudgeBottom "nudgeBottom"
+#define kShortcutDescActionRotoNudgeBottom "Move bezier on the bottom"
+
+#define kShortcutIDActionRotoNudgeTop "nudgeTop"
+#define kShortcutDescActionRotoNudgeTop "Move bezier on the top"
+
+#define kShortcutIDActionRotoSmooth "smooth"
+#define kShortcutDescActionRotoSmooth "Smooth bezier"
+
+#define kShortcutIDActionRotoCuspBezier "cusp"
+#define kShortcutDescActionRotoCuspBezier "Cusp bezier"
+
+#define kShortcutIDActionRotoRemoveFeather "editTool"
+#define kShortcutDescActionRotoRemoveFeather "Remove feather"
+
+///////////TRACKING SHORTCUTS
+#define kShortcutIDActionTrackingSelectAll "selectAll"
+#define kShortcutDescActionTrackingSelectAll "Select All tracks"
+
+#define kShortcutIDActionTrackingDelete "delete"
+#define kShortcutDescActionTrackingDelete "Remove tracks"
+
+#define kShortcutIDActionTrackingBackward "backward"
+#define kShortcutDescActionTrackingBackward "Track backward"
+
+#define kShortcutIDActionTrackingForward "forward"
+#define kShortcutDescActionTrackingForward "Track forward"
+
+#define kShortcutIDActionTrackingPrevious "prev"
+#define kShortcutDescActionTrackingPrevious "Track to previous frame"
+
+#define kShortcutIDActionTrackingNext "next"
+#define kShortcutDescActionTrackingnext "Track to next frame"
+
+
+///////////NODEGRAPH SHORTCUTS
+#define kShortcutIDActionGraphCreateReader "createReader"
+#define kShortcutDescActionGraphCreateReader "Create reader"
+
+#define kShortcutIDActionGraphCreateWriter "createWriter"
+#define kShortcutDescActionGraphCreateWriter "Create writer"
+
+#define kShortcutIDActionGraphCreateTransform "createTransform"
+#define kShortcutDescActionGraphCreateTransform "Create transform"
+
+#define kShortcutIDActionGraphCreateMerge "createMerge"
+#define kShortcutDescActionGraphCreateMerge "Create merge"
+
+#define kShortcutIDActionGraphCreateColorCorrect "createCC"
+#define kShortcutDescActionGraphCreateColorCorrect "Create color correct"
+
+#define kShortcutIDActionGraphCreateGrade "createGrade"
+#define kShortcutDescActionGraphCreateGrade "Create grade"
+
+#define kShortcutIDActionGraphCreateRoto "createRoto"
+#define kShortcutDescActionGraphCreateRoto "Create roto"
+
+#define kShortcutIDActionGraphRearrangeNodes "rearrange"
+#define kShortcutDescActionGraphRearrangeNodes "Rearrange nodes"
+
+#define kShortcutIDActionGraphDisableNodes "disable"
+#define kShortcutDescActionGraphDisableNodes "Disable nodes"
+
+#define kShortcutIDActionGraphRemoveNodes "remove"
+#define kShortcutDescActionGraphRemoveNodes "Remove nodes"
+
+#define kShortcutIDActionGraphShowExpressions "displayExp"
+#define kShortcutDescActionGraphShowExpressions "Display expressions links"
+
+#define kShortcutIDActionGraphNavigateUpstream "navigateUp"
+#define kShortcutDescActionGraphNavigateUpstream "Navigate tree upward"
+
+#define kShortcutIDActionGraphNavigateDownstream "navigateDown"
+#define kShortcutDescActionGraphNavigateDownstram "Navigate tree downward"
+
+#define kShortcutIDActionGraphSelectAll "selectAll"
+#define kShortcutDescActionGraphSelectAll "Select all nodes"
+
+#define kShortcutIDActionGraphSelectAllVisible "selectAllVisible"
+#define kShortcutDescActionGraphSelectAllVisible "Select all nodes visible"
+
+#define kShortcutIDActionGraphEnableHints "hints"
+#define kShortcutDescActionGraphEnableHints "Enable connection hints"
+
+#define kShortcutIDActionGraphSwitchInputs "switchInputs"
+#define kShortcutDescActionGraphSwitchInputs "Switch input 1 and 2"
+
+#define kShortcutIDActionGraphCopy "copy"
+#define kShortcutDescActionGraphCopy "Copy nodes"
+
+#define kShortcutIDActionGraphPaste "paste"
+#define kShortcutDescActionGraphPaste "Paste nodes"
+
+#define kShortcutIDActionGraphClone "clone"
+#define kShortcutDescActionGraphClone "Clone nodes"
+
+#define kShortcutIDActionGraphDeclone "declone"
+#define kShortcutDescActionGraphDeclone "Declone nodes"
+
+#define kShortcutIDActionGraphCut "cut"
+#define kShortcutDescActionGraphCut "Cut nodes"
+
+#define kShortcutIDActionGraphDuplicate "duplicate"
+#define kShortcutDescActionGraphDuplicate "Duplicate nodes"
+
+#define kShortcutIDActionGraphForcePreview "preview"
+#define kShortcutDescActionGraphForcePreview "Refresh previews"
+
+#define kShortcutIDActionGraphFrameNodes "frameNodes"
+#define kShortcutDescActionGraphFrameNodes "Center on all nodes"
+
+
+///////////CURVEEDITOR SHORTCUTS
+#define kShortcutIDActionCurveEditorRemoveKeys "remove"
+#define kShortcutDescActionCurveEditorRemoveKeys "Remove keyframes"
+
+#define kShortcutIDActionCurveEditorConstant "constant"
+#define kShortcutDescActionCurveEditorConstant "Constant interpolation"
+
+#define kShortcutIDActionCurveEditorLinear "linear"
+#define kShortcutDescActionCurveEditorLinear "Linear interpolation"
+
+#define kShortcutIDActionCurveEditorCatmullrom "catmullrom"
+#define kShortcutDescActionCurveEditorCatmullrom "Catmull-rom interpolation"
+
+#define kShortcutIDActionCurveEditorCubic "cubic"
+#define kShortcutDescActionCurveEditorCubic "Cubic interpolation"
+
+#define kShortcutIDActionCurveEditorHorizontal "horiz"
+#define kShortcutDescActionCurveEditorHorizontal "Horizontal interpolation"
+
+#define kShortcutIDActionCurveEditorBreak "break"
+#define kShortcutDescActionCurveEditorBreak "Break curvature"
+
+#define kShortcutIDActionCurveEditorSelectAll "selectAll"
+#define kShortcutDescActionCurveEditorSelectAll "Select all keyframes"
+
+#define kShortcutIDActionCurveEditorCenter "center"
+#define kShortcutDescActionCurveEditorCenter "Center on curve"
+
+#define kShortcutIDActionCurveEditorCopy "copy"
+#define kShortcutDescActionCurveEditorCopy "Copy keyframes"
+
+#define kShortcutIDActionCurveEditorPaste "paste"
+#define kShortcutDescActionCurveEditorPaste "Paste keyframes"
+
+
+
+#endif // ACTIONSHORTCUTS_H

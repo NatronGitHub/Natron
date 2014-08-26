@@ -21,6 +21,9 @@
 #endif
 #define appPTR (static_cast<GuiApplicationManager*>(AppManager::instance()))
 
+#define isKeybind(group,action,modifiers,symbol) (appPTR->matchesKeybind(group,action, modifiers, symbol))
+#define isMouseShortcut(group,action,modifiers,button) (appPTR->matchesMouseShortcut(group,action, modifiers, button))
+#define getKeybind(group,action) (appPTR->getKeySequenceForAction(group,action))
 
 class QPixmap;
 class QCursor;
@@ -82,6 +85,26 @@ public:
         
     void setFileToOpen(const QString& str);
     
+    /**
+     * @brief Returns true if the given keyboard symbol and modifiers match the given action.
+     * The symbol parameter is to be casted to the Qt::Key enum
+     **/
+    bool matchesKeybind(const QString& group,const QString& actionID,const Qt::KeyboardModifiers& modifiers,int symbol) const;
+    
+    /**
+     * @brief Returns true if the given keyboard modifiers and the given mouse button match the given action.
+     * The button parameter is to be casted to the Qt::MouseButton enum
+     **/
+    bool matchesMouseShortcut(const QString& group,const QString& actionID,const Qt::KeyboardModifiers& modifiers,int button) const;
+    
+    QKeySequence getKeySequenceForAction(const QString& group,const QString& actionID) const;
+    
+    /**
+     * @brief Save shortcuts to QSettings
+     **/
+    void saveShortcuts() const;
+    
+    void restoreDefaultShortcuts();
 public slots:
     
     
@@ -114,6 +137,13 @@ private:
     void handleOpenFileRequest();
     
     virtual void onLoadCompleted() OVERRIDE FINAL;
+    
+    /**
+     * @brief Load shortcuts from QSettings
+     **/
+    void loadShortcuts();
+    
+    void populateShortcuts();
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 

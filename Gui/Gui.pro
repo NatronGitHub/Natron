@@ -99,6 +99,7 @@ SOURCES += \
 
 HEADERS += \
     AboutWindow.h \
+    ActionShortcuts.h \
     AnimatedCheckBox.h \
     AnimationButton.h \
     Button.h \

@@ -89,7 +89,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/Button.h"
 #include "Gui/RotoGui.h"
 #include "Gui/ProjectGuiSerialization.h"
-
+#include "Gui/ActionShortcuts.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -786,56 +786,56 @@ Gui::setupUi()
 
     _imp->actionNew_project = new QAction(this);
     _imp->actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
-    _imp->actionNew_project->setShortcut(QKeySequence::New);
+    _imp->actionNew_project->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionNewProject));
     _imp->actionNew_project->setIcon(get_icon("document-new"));
     _imp->actionNew_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect(_imp->actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()));
     _imp->actionOpen_project = new QAction(this);
     _imp->actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
-    _imp->actionOpen_project->setShortcut(QKeySequence::Open);
+    _imp->actionOpen_project->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionOpenProject));
     _imp->actionOpen_project->setIcon(get_icon("document-open"));
     _imp->actionOpen_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect(_imp->actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
     _imp->actionClose_project = new QAction(this);
     _imp->actionClose_project->setObjectName(QString::fromUtf8("actionClose_project"));
-    _imp->actionClose_project->setShortcut(QKeySequence::Close);
+    _imp->actionClose_project->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionCloseProject));
     _imp->actionClose_project->setShortcutContext(Qt::WindowShortcut);
     _imp->actionClose_project->setIcon(get_icon("document-close"));
     QObject::connect(_imp->actionClose_project, SIGNAL(triggered()), this, SLOT(closeProject()));
     _imp->actionSave_project = new QAction(this);
     _imp->actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
-    _imp->actionSave_project->setShortcut(QKeySequence::Save);
+    _imp->actionSave_project->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionSaveProject));
     _imp->actionSave_project->setShortcutContext(Qt::WindowShortcut);
     _imp->actionSave_project->setIcon(get_icon("document-save"));
     QObject::connect(_imp->actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
     _imp->actionSaveAs_project = new QAction(this);
     _imp->actionSaveAs_project->setObjectName(QString::fromUtf8("actionSaveAs_project"));
-    _imp->actionSaveAs_project->setShortcut(QKeySequence::SaveAs);
+    _imp->actionSaveAs_project->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionSaveAsProject));
     _imp->actionSaveAs_project->setIcon(get_icon("document-save-as"));
     QObject::connect(_imp->actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
     _imp->actionPreferences = new QAction(this);
     _imp->actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
-    _imp->actionPreferences->setShortcut(QKeySequence::Preferences);
+    _imp->actionPreferences->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionPreferences));
     _imp->actionExit = new QAction(this);
     _imp->actionExit->setObjectName(QString::fromUtf8("actionExit"));
     _imp->actionExit->setMenuRole(QAction::QuitRole);
-    _imp->actionExit->setShortcut(QKeySequence::Quit);
+    _imp->actionExit->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionQuit));
     _imp->actionExit->setShortcutContext(Qt::WindowShortcut);
     _imp->actionExit->setIcon(get_icon("application-exit"));
     _imp->actionProject_settings = new QAction(this);
     _imp->actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
     _imp->actionProject_settings->setIcon(get_icon("document-properties"));
-    _imp->actionProject_settings->setShortcut(QKeySequence(Qt::Key_S));
+    _imp->actionProject_settings->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionProjectSettings));
     _imp->actionShowOfxLog = new QAction(this);
     _imp->actionShowOfxLog->setObjectName(QString::fromUtf8("actionShowOfxLog"));
     _imp->actionNewViewer = new QAction(this);
     _imp->actionNewViewer->setObjectName(QString::fromUtf8("actionNewViewer"));
-    _imp->actionNewViewer->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_I));
+    _imp->actionNewViewer->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionNewViewer));
     _imp->actionNewViewer->setShortcutContext(Qt::WindowShortcut);
     _imp->actionFullScreen = new QAction(this);
     _imp->actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
-    _imp->actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
+    _imp->actionFullScreen->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionFullscreen));
     _imp->actionFullScreen->setShortcutContext(Qt::WindowShortcut);
     _imp->actionFullScreen->setIcon(get_icon("view-fullscreen"));
     _imp->actionClearDiskCache = new QAction(this);
@@ -853,7 +853,7 @@ Gui::setupUi()
     _imp->actionClearAllCaches = new QAction(this);
     _imp->actionClearAllCaches->setObjectName(QString::fromUtf8("actionClearAllCaches"));
     _imp->actionClearAllCaches->setCheckable(false);
-    _imp->actionClearAllCaches->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
+    _imp->actionClearAllCaches->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionClearAllCaches));
     _imp->actionShowAboutWindow = new QAction(this);
     _imp->actionShowAboutWindow->setObjectName(QString::fromUtf8("actionShowAboutWindow"));
     _imp->actionShowAboutWindow->setMenuRole(QAction::AboutRole);
@@ -862,11 +862,11 @@ Gui::setupUi()
     _imp->renderAllWriters = new QAction(this);
     _imp->renderAllWriters->setCheckable(false);
     _imp->renderAllWriters->setShortcutContext(Qt::WindowShortcut);
-    _imp->renderAllWriters->setShortcut(QKeySequence(Qt::Key_F5));
+    _imp->renderAllWriters->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionRenderAll));
     _imp->renderSelectedNode = new QAction(this);
     _imp->renderSelectedNode->setCheckable(false);
     _imp->renderSelectedNode->setShortcutContext(Qt::WindowShortcut);
-    _imp->renderSelectedNode->setShortcut(QKeySequence(Qt::Key_F7));
+    _imp->renderSelectedNode->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionRenderSelected));
     
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         _imp->actionsOpenRecentFile[c] = new QAction(this);
@@ -877,52 +877,52 @@ Gui::setupUi()
     _imp->actionConnectInput1 = new QAction(this);
     _imp->actionConnectInput1->setCheckable(false);
     _imp->actionConnectInput1->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput1->setShortcut(QKeySequence(Qt::Key_1));
+    _imp->actionConnectInput1->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput1));
     
     _imp->actionConnectInput2 = new QAction(this);
     _imp->actionConnectInput2->setCheckable(false);
     _imp->actionConnectInput2->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput2->setShortcut(QKeySequence(Qt::Key_2));
+    _imp->actionConnectInput2->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput2));
     
     _imp->actionConnectInput3 = new QAction(this);
     _imp->actionConnectInput3->setCheckable(false);
     _imp->actionConnectInput3->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput3->setShortcut(QKeySequence(Qt::Key_3));
+    _imp->actionConnectInput3->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput3));
     
     _imp->actionConnectInput4 = new QAction(this);
     _imp->actionConnectInput4->setCheckable(false);
     _imp->actionConnectInput4->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput4->setShortcut(QKeySequence(Qt::Key_4));
+    _imp->actionConnectInput4->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput4));
     
     _imp->actionConnectInput5 = new QAction(this);
     _imp->actionConnectInput5->setCheckable(false);
     _imp->actionConnectInput5->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput5->setShortcut(QKeySequence(Qt::Key_5));
+    _imp->actionConnectInput5->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput5));
     
     _imp->actionConnectInput6 = new QAction(this);
     _imp->actionConnectInput6->setCheckable(false);
     _imp->actionConnectInput6->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput6->setShortcut(QKeySequence(Qt::Key_6));
+    _imp->actionConnectInput6->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput6));
     
     _imp->actionConnectInput7 = new QAction(this);
     _imp->actionConnectInput7->setCheckable(false);
     _imp->actionConnectInput7->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput7->setShortcut(QKeySequence(Qt::Key_7));
+    _imp->actionConnectInput7->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput7));
     
     _imp->actionConnectInput8 = new QAction(this);
     _imp->actionConnectInput8->setCheckable(false);
     _imp->actionConnectInput8->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput8->setShortcut(QKeySequence(Qt::Key_8));
+    _imp->actionConnectInput8->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput8));
     
     _imp->actionConnectInput9 = new QAction(this);
     _imp->actionConnectInput9->setCheckable(false);
     _imp->actionConnectInput9->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput9->setShortcut(QKeySequence(Qt::Key_9));
+    _imp->actionConnectInput9->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput9));
     
     _imp->actionConnectInput10 = new QAction(this);
     _imp->actionConnectInput10->setCheckable(false);
     _imp->actionConnectInput10->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput10->setShortcut(QKeySequence(Qt::Key_0));
+    _imp->actionConnectInput10->setShortcut(getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput10));
 
     _imp->actionImportLayout = new QAction(this);
     _imp->actionImportLayout->setCheckable(false);
