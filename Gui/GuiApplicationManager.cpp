@@ -1286,7 +1286,7 @@ void GuiApplicationManager::populateShortcuts()
     registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoom, kShortcutDescMouseZoom, Qt::NoModifier, Qt::MiddleButton);
     registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMousePan, kShortcutDescMousePan, Qt::AltModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomX, kShortcutDescMouseZoomX, Qt::ControlModifier, Qt::MiddleButton);
-    registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomY, kShortcutDescMouseZoomY, Qt::ControlModifier | Qt::AltModifier, Qt::MiddleButton);
+    registerMouseShortcut(kShortcutGroupCurveEditor, kShortcutIDMouseZoomY, kShortcutDescMouseZoomY, Qt::ControlModifier | Qt::ShiftModifier, Qt::MiddleButton);
 }
 
 void GuiApplicationManagerPrivate::addKeybind(const QString& grouping,const QString& id,

@@ -63,6 +63,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/ProjectGui.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/ActionShortcuts.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2083,6 +2084,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!_imp->viewerTab->getGui()) {
         return;
     }
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::MouseButton button = e->button();
+    
     if (buttonDownIsLeft(e)) {
         _imp->viewerTab->getGui()->selectNode(_imp->viewerTab->getGui()->getApp()->getNodeGui(_imp->viewerTab->getInternalNode()->getNode()));
     }
@@ -2113,7 +2117,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         wipeSelectionTol = 8. / _imp->zoomCtx.factor();
     }
     
-    if (buttonDownIsMiddle(e)) {
+    if (isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePan,modifiers, button)) {
         _imp->ms = DRAGGING_IMAGE;
         overlaysCaught = true;
     } else if (_imp->ms == UNDEFINED && _imp->overlay) {
@@ -2129,12 +2133,12 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
         
         if (_imp->pickerState != PICKER_INACTIVE && buttonDownIsLeft(e) && displayingImage()) {
-            // ???
+            // disable picker if picker is set when clicking
             _imp->pickerState = PICKER_INACTIVE;
             mustRedraw = true;
             overlaysCaught = true;
 
-        } else if (hasPickers && buttonDownIsRight(e) && buttonModifierIsNone(e) && displayingImage()) {
+        } else if (hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor,modifiers, button) && displayingImage()) {
             // picker with single-point selection
             _imp->pickerState = PICKER_POINT;
             if (pickColor(e->x(),e->y())) {
@@ -2143,7 +2147,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
                 overlaysCaught = true;
             }
 
-        } else if (hasPickers && buttonDownIsRight(e) && buttonModifierIsShift(e) && displayingImage()) {
+        } else if (hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick,modifiers, button) && displayingImage()) {
             // start picker with rectangle selection (picked color is the average over the rectangle)
             _imp->pickerState = PICKER_RECTANGLE;
             _imp->pickerRect.setTopLeft(zoomPos);

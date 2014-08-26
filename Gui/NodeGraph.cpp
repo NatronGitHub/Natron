@@ -958,7 +958,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
-        } else if (buttonDownIsMiddle(e)) {
+        } else if (isMouseShortcut(kShortcutGroupNodegraph, kShortcutIDMousePan,e->modifiers(), e->button())) {
             _imp->_evtState = MOVING_AREA;
             QGraphicsView::mousePressEvent(e);
         }
@@ -1808,7 +1808,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     qreal newZoomfactor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if(newZoomfactor < 0.07 || newZoomfactor > 10)
         return;
-    
+     
     if (modCASIsControl(e) && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
