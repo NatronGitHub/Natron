@@ -82,6 +82,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/ActionShortcuts.h"
+#include "Gui/GuiApplicationManager.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -1508,60 +1510,62 @@ NodeGraph::onNodeCreationDialogFinished()
 void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space && modCASIsNone(e)) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key)) {
+        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
         QCoreApplication::postEvent(parentWidget(),ev);
 
-    } else if (e->key() == Qt::Key_R && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key)) {
         _imp->_gui->createReader();
 
-    } else if (e->key() == Qt::Key_W && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, modifiers, key)) {
         _imp->_gui->createWriter();
 
-    } else if ((e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete) && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key)) {
         deleteSelection();
 
-    } else if (e->key() == Qt::Key_P && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, modifiers, key)) {
         forceRefreshAllPreviews();
 
-    } else if (e->key() == Qt::Key_C && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy, modifiers, key)) {
         copySelectedNodes();
 
-    } else if (e->key() == Qt::Key_V && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste, modifiers, key)) {
         pasteNodeClipBoards();
 
-    } else if (e->key() == Qt::Key_X && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCut, modifiers, key)) {
         cutSelectedNodes();
 
-    } else if (e->key() == Qt::Key_C && modCASIsAlt(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate, modifiers, key)) {
         duplicateSelectedNodes();
 
-    } else if (e->key() == Qt::Key_K && modCASIsAlt(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphClone, modifiers, key)) {
         cloneSelectedNodes();
 
-    } else if (e->key() == Qt::Key_K && modCASIsAltShift(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDeclone, modifiers, key)) {
         decloneSelectedNodes();
 
-    } else if (e->key() == Qt::Key_F && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, modifiers, key)) {
         centerOnAllNodes();
 
-    } else if (e->key() == Qt::Key_H && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints, modifiers, key)) {
         toggleConnectionHints();
 
-    } else if (e->key() == Qt::Key_X && modCASIsShift(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSwitchInputs, modifiers, key)) {
         ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
         switchInputs1and2ForSelectedNodes();
         
-    } else if (e->key() == Qt::Key_A && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAll, modifiers, key)) {
         selectAllNodes(false);
 
-    } else if (e->key() == Qt::Key_A && modCASIsControlShift(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAllVisible, modifiers, key)) {
         selectAllNodes(true);
 
-    } else if (e->key() == Qt::Key_Control) {
+    } else if (key == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
 
-    } else if (e->key() == Qt::Key_Up && (modCASIsControlShift(e) || modCASIsControlAltShift(e))) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key)) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if (!_imp->_selection.nodes.empty()) {
@@ -1575,7 +1579,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             }
         }
 
-    } else if (e->key() == Qt::Key_Down && (modCASIsNone(e) || modCASIsShift(e))) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectDown, modifiers, key)) {
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if (!_imp->_selection.nodes.empty()) {
@@ -1588,69 +1592,69 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             }
         }
         
-    } else if (e->key() == Qt::Key_Left && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->previousFrame();
         }
 
-    } else if (e->key() == Qt::Key_Right && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->nextFrame();
         }
 
-    } else if (e->key() == Qt::Key_Left && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->firstFrame();
         }
 
-    } else if (e->key() == Qt::Key_Right && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->lastFrame();
         }
 
-    } else if (e->key() == Qt::Key_Left && modCASIsShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->previousIncrement();
         }
 
-    } else if (e->key() == Qt::Key_Right && modCASIsShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key)) {
         if (getGui()->getLastSelectedViewer()) {
             getGui()->getLastSelectedViewer()->nextIncrement();
         }
 
-    } else if (e->key() == Qt::Key_Left && modCASIsControlShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key)) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
 
-    } else if (e->key() == Qt::Key_Right && modCASIsControlShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key)) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
 
-    } else if (e->key() == Qt::Key_T && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateTransform, modifiers, key)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("TransformOFX  [Transform]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_O && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateRoto, modifiers, key)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("RotoOFX  [Draw]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_M && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateMerge, modifiers, key)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("MergeOFX  [Merge]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_G && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateGrade, modifiers, key)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("GradeOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_C && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateColorCorrect, modifiers, key)) {
         QPointF hint = mapToScene(mapFromGlobal(QCursor::pos()));
         getGui()->getApp()->createNode(CreateNodeArgs("ColorCorrectOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y()));
 
-    } else if (e->key() == Qt::Key_L && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, modifiers, key)) {
         _imp->rearrangeSelectedNodes();
 
-    } else if (e->key() == Qt::Key_D && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key)) {
         _imp->toggleSelectedNodesEnabled();
 
-    } else if (e->key() == Qt::Key_E && modCASIsShift(e)) {
+    } else if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, modifiers, key)) {
         toggleKnobLinksVisible();
     }
     

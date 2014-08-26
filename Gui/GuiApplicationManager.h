@@ -21,8 +21,19 @@
 #endif
 #define appPTR (static_cast<GuiApplicationManager*>(AppManager::instance()))
 
+/**
+ * @brief Returns true if the given modifiers and symbol should trigger the given action of the given group.
+ **/
 #define isKeybind(group,action,modifiers,symbol) (appPTR->matchesKeybind(group,action, modifiers, symbol))
+
+/**
+ * @brief Returns true if the given modifiers and button should trigger the given action of the given group.
+ **/
 #define isMouseShortcut(group,action,modifiers,button) (appPTR->matchesMouseShortcut(group,action, modifiers, button))
+
+/**
+ * @brief Returns the QKeySequence object for the given action of the given group.
+ **/
 #define getKeybind(group,action) (appPTR->getKeySequenceForAction(group,action))
 
 class QPixmap;
@@ -98,6 +109,7 @@ public:
     bool matchesMouseShortcut(const QString& group,const QString& actionID,const Qt::KeyboardModifiers& modifiers,int button) const;
     
     QKeySequence getKeySequenceForAction(const QString& group,const QString& actionID) const;
+    bool getModifiersAndKeyForAction(const QString& group,const QString& actionID,Qt::KeyboardModifiers& modifiers,int& symbol) const;
     
     /**
      * @brief Save shortcuts to QSettings

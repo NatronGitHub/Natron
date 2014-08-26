@@ -58,6 +58,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TrackerGui.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/ActionShortcuts.h"
 
 using namespace Natron;
 
@@ -1057,13 +1058,15 @@ ViewerTab::isPlayingBackward() const
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space && modCASIsNone(e)) {
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key)) { //< this shortcut is global
         if (parentWidget()) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,key,modifiers);
             QCoreApplication::postEvent(parentWidget(),ev);
         }
 
-    } else if (e->key() == Qt::Key_Y && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1071,7 +1074,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(0);
         }
 
-    } else if (e->key() == Qt::Key_R && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionR, modifiers, key)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 2) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1079,7 +1082,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(2);
         }
 
-    } else if (e->key() == Qt::Key_G && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionG, modifiers, key)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 3) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1087,7 +1090,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(3);
         }
 
-    } else if (e->key() == Qt::Key_B  && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionB, modifiers, key)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 4) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1095,7 +1098,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(4);
         }
 
-    } else if (e->key() == Qt::Key_A && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionA, modifiers, key)) {
         int currentIndex = _imp->_viewerChannels->activeIndex();
         if (currentIndex == 5) {
             _imp->_viewerChannels->setCurrentIndex(1);
@@ -1103,76 +1106,76 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->_viewerChannels->setCurrentIndex(5);
         }
 
-    } else if (e->key() == Qt::Key_Left && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
         previousFrame();
 
-    } else if (e->key() == Qt::Key_J && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key)) {
         startBackward(!_imp->play_Backward_Button->isDown());
 
-    } else if (e->key() == Qt::Key_K && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key)) {
         abortRendering();
 
-    } else if (e->key() == Qt::Key_L && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key)) {
         startPause(!_imp->play_Forward_Button->isDown());
         
-    } else if (e->key() == Qt::Key_Right && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key)) {
         nextFrame();
-    } else if (e->key() == Qt::Key_Left && modCASIsShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key)) {
         //prev incr
         previousIncrement();
 
-    } else if (e->key() == Qt::Key_Right && modCASIsShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key)) {
         //next incr
         nextIncrement();
 
-    } else if (e->key() == Qt::Key_Left && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key)) {
         //first frame
         firstFrame();
 
-    } else if (e->key() == Qt::Key_Right && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key)) {
         //last frame
         lastFrame();
 
-    } else if (e->key() == Qt::Key_Left && modCASIsControlShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key)) {
         //prev key
         _imp->app->getTimeLine()->goToPreviousKeyframe();
 
-    } else if (e->key() == Qt::Key_Right && modCASIsControlShift(e)) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key)) {
         //next key
         _imp->app->getTimeLine()->goToNextKeyframe();
 
-    } else if(e->key() == Qt::Key_F && modCASIsNone(e)) {
+    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
         centerViewer();
         
-    } else if(e->key() == Qt::Key_C && modCASIsShift(e)) {
+    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key)) {
         onClipToProjectButtonToggle(!_imp->_clipToProjectFormatButton->isDown());
 
-    } else if(e->key() == Qt::Key_U && modCASIsNone(e)) {
+    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, modifiers, key)) {
         refresh();
 
-    } else if(e->key() == Qt::Key_W && modCASIsShift(e)) {
+    } else if(isKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, modifiers, key)) {
         onEnableViewerRoIButtonToggle(!_imp->_enableViewerRoI->isDown());
 
-    } else if (e->key() == Qt::Key_P && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key)) {
         onRenderScaleButtonClicked(!_imp->_renderScaleActive);
 
-    } else if (e->key() == Qt::Key_1 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, modifiers, key)) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(0);
 
-    } else if (e->key() == Qt::Key_2 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, modifiers, key)) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(1);
 
-    } else if (e->key() == Qt::Key_3 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, modifiers, key)) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
         _imp->_renderScaleCombo->setCurrentIndex(2);
 
-    } else if (e->key() == Qt::Key_4 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, modifiers, key)) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
       _imp->_renderScaleCombo->setCurrentIndex(3);
 
-    } else if (e->key() == Qt::Key_5 && (modCASIsAlt(e) || modCASIsAltShift(e))) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, modifiers, key)) {
         // On some keyboards (e.g. French AZERTY), the number keys are shifted
        _imp->_renderScaleCombo->setCurrentIndex(4);
     }

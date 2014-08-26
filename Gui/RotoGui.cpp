@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/ActionShortcuts.h"
 
 #include "Global/GLIncludes.h"
 
@@ -2220,7 +2221,10 @@ RotoGui::keyDown(double /*scaleX*/,
 {
     bool didSomething = false;
 
-    if (modCASIsControl(e)) {
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    
+    if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoTransformModifier, Qt::KeyboardModifiers(), key)) {
         if (!_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && e->key() == Qt::Key_Control) {
             _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
             ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
@@ -2228,7 +2232,7 @@ RotoGui::keyDown(double /*scaleX*/,
         }
     }
     
-    if ((e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) && modCASIsNone(e)) {
+    if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoDelete, modifiers, key)) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if (!_imp->rotoData->selectedCps.empty()) {
             pushUndoCommand(new RemovePointUndoCommand(this,_imp->rotoData->selectedCps));
@@ -2238,7 +2242,7 @@ RotoGui::keyDown(double /*scaleX*/,
             didSomething = true;
         }
         
-    } else if ((e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key)) {
         if (_imp->selectedTool == DRAW_BEZIER && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished()) {
             pushUndoCommand(new OpenCloseUndoCommand(this,_imp->rotoData->builtBezier));
             _imp->rotoData->builtBezier.reset();
@@ -2248,7 +2252,7 @@ RotoGui::keyDown(double /*scaleX*/,
             didSomething = true;
         }
 
-    } else if (e->key() == Qt::Key_A && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectAll, modifiers, key)) {
         _imp->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
         if (_imp->rotoData->selectedBeziers.empty()) {
@@ -2274,39 +2278,40 @@ RotoGui::keyDown(double /*scaleX*/,
         }
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Q && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key)) {
         _imp->selectTool->handleSelection();
 
-    } else if (e->key() == Qt::Key_V && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key)) {
         _imp->bezierEditionTool->handleSelection();
 
-    } else if (e->key() == Qt::Key_D && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key)) {
         _imp->pointsEditionTool->handleSelection();
 
-    } else if (e->key() == Qt::Key_Right && modCASIsAlt(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, modifiers, key)) {
         moveSelectedCpsWithKeyArrows(1,0);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Left && modCASIsAlt(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeLeft, modifiers, key)) {
         moveSelectedCpsWithKeyArrows(-1,0);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Up && modCASIsAlt(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeTop, modifiers, key)) {
         moveSelectedCpsWithKeyArrows(0,1);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Down && modCASIsAlt(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeBottom, modifiers, key)) {
         moveSelectedCpsWithKeyArrows(0,-1);
         didSomething = true;
 
-    } else if (e->key() == Qt::Key_Z && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSmooth, modifiers, key)) {
         smoothSelectedCurve();
-
-    } else if (e->key() == Qt::Key_Z && modCASIsShift(e)) {
+        didSomething = true;
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCuspBezier, modifiers, key)) {
         cuspSelectedCurve();
-
-    } else if (e->key() == Qt::Key_E && modCASIsShift(e)) {
+        didSomething = true;
+    } else if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoRemoveFeather, modifiers, key)) {
         removeFeatherForSelectedCurve();
+        didSomething = true;
     }
     
     return didSomething;

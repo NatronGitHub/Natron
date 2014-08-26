@@ -242,7 +242,7 @@
 #define kShortcutIDActionRotoCuspBezier "cusp"
 #define kShortcutDescActionRotoCuspBezier "Cusp bezier"
 
-#define kShortcutIDActionRotoRemoveFeather "editTool"
+#define kShortcutIDActionRotoRemoveFeather "rmvFeather"
 #define kShortcutDescActionRotoRemoveFeather "Remove feather"
 
 ///////////TRACKING SHORTCUTS
@@ -305,6 +305,12 @@
 #define kShortcutIDActionGraphNavigateDownstream "navigateDown"
 #define kShortcutDescActionGraphNavigateDownstram "Navigate tree downward"
 
+#define kShortcutIDActionGraphSelectUp "selUp"
+#define kShortcutDescActionGraphSelectUp "Select tree upward"
+
+#define kShortcutIDActionGraphSelectDown "selDown"
+#define kShortcutDescActionGraphSelectDown "Select tree downward"
+
 #define kShortcutIDActionGraphSelectAll "selectAll"
 #define kShortcutDescActionGraphSelectAll "Select all nodes"
 
@@ -351,6 +357,9 @@
 
 #define kShortcutIDActionCurveEditorLinear "linear"
 #define kShortcutDescActionCurveEditorLinear "Linear interpolation"
+
+#define kShortcutIDActionCurveEditorSmooth "smooth"
+#define kShortcutDescActionCurveEditorSmooth "Smooth interpolation"
 
 #define kShortcutIDActionCurveEditorCatmullrom "catmullrom"
 #define kShortcutDescActionCurveEditorCatmullrom "Catmull-rom interpolation"

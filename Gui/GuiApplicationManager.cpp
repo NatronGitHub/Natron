@@ -1000,9 +1000,14 @@ bool GuiApplicationManager::matchesKeybind(const QString& group,const QString& a
         if ((Qt::Key)symbol == keybind->currentShortcut) {
             return true;
         }
-        ///special case for the backsapce and delete keys that mean the same thing generally
+        ///special case for the backspace and delete keys that mean the same thing generally
         else if (((Qt::Key)symbol == Qt::Key_Backspace && (Qt::Key)keybind->currentShortcut == Qt::Key_Delete) ||
                    ((Qt::Key)symbol == Qt::Key_Delete && (Qt::Key)keybind->currentShortcut == Qt::Key_Backspace)) {
+            return true;
+        }
+        ///special case for the return and enter keys that mean the same thing generally
+        else if (((Qt::Key)symbol == Qt::Key_Return && (Qt::Key)keybind->currentShortcut == Qt::Key_Enter) ||
+                 ((Qt::Key)symbol == Qt::Key_Enter && (Qt::Key)keybind->currentShortcut == Qt::Key_Return)) {
             return true;
         }
     }
@@ -1182,7 +1187,7 @@ void GuiApplicationManager::populateShortcuts()
     ///Roto
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoDelete, kShortcutDescActionRotoDelete, Qt::NoModifier, Qt::Key_Backspace);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, kShortcutDescActionRotoCloseBezier, Qt::NoModifier, Qt::Key_Enter);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoTransformModifier, kShortcutDescActionRotoTransformModifier, Qt::ControlModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoTransformModifier, kShortcutDescActionRotoTransformModifier, Qt::NoModifier,Qt::Key_Control);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectAll, kShortcutDescActionRotoSelectAll, Qt::ControlModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, kShortcutDescActionRotoSelectionTool, Qt::NoModifier, Qt::Key_Q);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, kShortcutDescActionRotoAddTool, Qt::NoModifier, Qt::Key_D);
@@ -1217,6 +1222,8 @@ void GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, kShortcutDescActionGraphShowExpressions, Qt::ShiftModifier, Qt::Key_E);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateDownstream, kShortcutDescActionGraphNavigateDownstram, Qt::NoModifier, Qt::Key_Down);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateUpstream, kShortcutDescActionGraphNavigateUpstream, Qt::NoModifier, Qt::Key_Up);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, kShortcutDescActionGraphSelectUp, Qt::ShiftModifier, Qt::Key_Up);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectDown, kShortcutDescActionGraphSelectDown, Qt::ShiftModifier, Qt::Key_Down);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAll, kShortcutDescActionGraphSelectAll, Qt::ControlModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAllVisible, kShortcutDescActionGraphSelectAllVisible, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints, kShortcutDescActionGraphEnableHints, Qt::NoModifier, Qt::Key_H);
@@ -1235,6 +1242,7 @@ void GuiApplicationManager::populateShortcuts()
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
+    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSmooth, kShortcutDescActionCurveEditorSmooth, Qt::NoModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorLinear, kShortcutDescActionCurveEditorLinear, Qt::NoModifier, Qt::Key_L);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCatmullrom, kShortcutDescActionCurveEditorCatmullrom, Qt::NoModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCubic, kShortcutDescActionCurveEditorCubic, Qt::NoModifier, Qt::Key_C);
@@ -1367,4 +1375,22 @@ QKeySequence GuiApplicationManager::getKeySequenceForAction(const QString& group
         }
     }
     return QKeySequence();
+}
+
+bool GuiApplicationManager::getModifiersAndKeyForAction(const QString& group,const QString& actionID,
+                                                        Qt::KeyboardModifiers& modifiers,int& symbol) const
+{
+    AppShortcuts::const_iterator foundGroup = _imp->_actionShortcuts.find(group);
+    if (foundGroup != _imp->_actionShortcuts.end()) {
+        GroupShortcuts::const_iterator found = foundGroup->second.find(actionID);
+        if (found != foundGroup->second.end()) {
+            const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(found->second);
+            if (ka) {
+                modifiers = found->second->modifiers;
+                symbol = ka->currentShortcut;
+                return true;
+            }
+        }
+    }
+    return false;
 }

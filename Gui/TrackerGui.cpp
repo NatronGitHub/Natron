@@ -28,7 +28,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/GuiMacros.h"
-
+#include "Gui/ActionShortcuts.h"
 
 #define POINT_SIZE 5
 #define CROSS_SIZE 6
@@ -454,6 +454,10 @@ TrackerGui::keyDown(double scaleX,
 {
     bool didSomething = false;
     
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+
+    
     if (e->key() == Qt::Key_Control) {
         ++_imp->controlDown;
     }
@@ -479,28 +483,28 @@ TrackerGui::keyDown(double scaleX,
         _imp->addTrackButton->setChecked(true);
         didSomething = true;
 
-    } else if (modCASIsControl(e) && e->key() == Qt::Key_A) {
+    } else if (isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, modifiers, key)) {
         _imp->panel->onSelectAllButtonClicked();
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
 
-    } else if (modCASIsNone(e) && (e->key() == Qt::Key_Backspace || e->key() == Qt::Key_Delete)) {
+    } else if (isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, modifiers, key)) {
         _imp->panel->onDeleteKeyPressed();
         std::list<Natron::Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
 
-    } else if (modCASIsNone(e) && (e->key() == Qt::Key_Z)) {
+    } else if (isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, modifiers, key)) {
         didSomething = _imp->panel->trackBackward();
 
-    } else if (modCASIsNone(e) && (e->key() == Qt::Key_X)) {
+    } else if (isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, modifiers, key)) {
         didSomething = _imp->panel->trackPrevious();
 
-    } else if (modCASIsNone(e) && (e->key() == Qt::Key_C)) {
+    } else if (isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingNext, modifiers, key)) {
         didSomething = _imp->panel->trackNext();
 
-    } else if (modCASIsNone(e) && (e->key() == Qt::Key_V)) {
+    } else if (isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, modifiers, key)) {
         didSomething = _imp->panel->trackForward();
     }
     

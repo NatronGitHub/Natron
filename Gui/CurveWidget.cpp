@@ -33,7 +33,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Curve.h"
 #include "Engine/Settings.h"
 
-#include "Gui/GuiApplicationManager.h"
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Button.h"
@@ -47,6 +46,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TabWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/ActionShortcuts.h"
+#include "Gui/GuiApplicationManager.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2451,46 +2452,48 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     // always running in the main thread
     assert(qApp && qApp->thread() == QThread::currentThread());
 
-    if(e->key() == Qt::Key_Space){
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key)) {
         if(parentWidget()){
             if(parentWidget()->parentWidget()){
                 if(parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName){
-                    QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
+                    QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
                     QCoreApplication::postEvent(parentWidget()->parentWidget(),ev);
                 }
             }
         }
         
     }
-    else if(e->key() == Qt::Key_Backspace) {
+    else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key)) {
         deleteSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_K && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key)) {
         constantInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_L && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorLinear, modifiers, key)) {
         linearInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_Z && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key)) {
         smoothForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_R && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key)) {
         catmullromInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_C && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCubic, modifiers, key)) {
         cubicInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_H && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key)) {
         horizontalInterpForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_X && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
         breakDerivativesForSelectedKeyFrames();
-    } else if(e->key() == Qt::Key_F && modCASIsNone(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter, modifiers, key)) {
         frameSelectedCurve();
-    } else if(e->key() == Qt::Key_A && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll, modifiers, key)) {
         selectAllKeyFrames();
-    } else if(e->key() == Qt::Key_C && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, modifiers, key)) {
         copySelectedKeyFrames();
-    } else if(e->key() == Qt::Key_V && modCASIsControl(e)) {
+    } else if (isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key)) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
-    }  else if (e->key() == Qt::Key_Left && modCASIsControlShift(e)) {
+    }  else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
         if (_imp->_timeline) {
             _imp->_timeline->goToPreviousKeyframe();
         }
-    }  else if (e->key() == Qt::Key_Right && modCASIsControlShift(e)) {
+    }  else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key)) {
         if (_imp->_timeline) {
             _imp->_timeline->goToNextKeyframe();
         }
