@@ -807,17 +807,14 @@ ViewerInstance::renderViewer_internal(SequenceTime time,bool singleThreaded,bool
 
         ///intersect the image render window to the actual image region of definition.
         texRectClipped.intersect(bounds, &texRectClipped);
-        
-        boost::shared_ptr<Natron::Image> originalInputImage = inputImage;
-        
+                
         bool renderedCompletely = false;
         boost::shared_ptr<Natron::Image> downscaledImage = inputImage;
         boost::shared_ptr<Natron::Image> lastRenderedImage;
 
         ///If the plug-in doesn't support the render scale and we found an image cached but which still
         ///contains some stuff to render we don't want to use it, instead we need to upscale the image
-#pragma message WARN("Call setSupportsRenderScaleMaybe before as it wasn't set already here")
-        if (!activeInputToRender->supportsRenderScale() && isInputImgCached && mipMapLevel != 0) {
+        if (isInputImgCached && mipMapLevel != 0 && !activeInputToRender->supportsRenderScale()) {
 
             /// If the list is empty then we already rendered it all
             /// Otherwise we have to upscale the found image, render what we need and downscale it again
