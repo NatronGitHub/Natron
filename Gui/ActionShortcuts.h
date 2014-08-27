@@ -198,9 +198,6 @@
 #define kShortcutIDActionRotoCloseBezier "closeBezier"
 #define kShortcutDescActionRotoCloseBezier "Close bezier"
 
-#define kShortcutIDActionRotoTransformModifier "transform"
-#define kShortcutDescActionRotoTransformModifier "Transform modifier"
-
 #define kShortcutIDActionRotoSelectAll "selectAll"
 #define kShortcutDescActionRotoSelectAll "Select all"
 

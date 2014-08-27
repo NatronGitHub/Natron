@@ -2226,7 +2226,7 @@ RotoGui::keyDown(double /*scaleX*/,
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     
-    if (isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoTransformModifier, Qt::KeyboardModifiers(), key)) {
+    if (modCASIsControl(e)) {
         if (!_imp->iSelectingwithCtrlA && _imp->rotoData->showCpsBbox && e->key() == Qt::Key_Control) {
             _imp->rotoData->transformMode = _imp->rotoData->transformMode == TRANSLATE_AND_SCALE ?
             ROTATE_AND_SKEW : TRANSLATE_AND_SCALE;
