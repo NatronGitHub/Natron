@@ -505,6 +505,9 @@ KeybindRecorder::~KeybindRecorder()
 
 void KeybindRecorder::keyPressEvent(QKeyEvent* e)
 {
+    if (!isEnabled() || isReadOnly()) {
+        return;
+    }
     QKeySequence seq(e->key());
     QString txt = text()  + seq.toString(QKeySequence::NativeText);
     setText(txt);
