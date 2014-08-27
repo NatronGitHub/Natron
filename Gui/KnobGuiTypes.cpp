@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/AnimatedCheckBox.h"
@@ -2415,7 +2416,7 @@ String_KnobGui::restoreTextInfosFromString()
     if ( text.isEmpty() ) {
         EffectInstance* effect = dynamic_cast<EffectInstance*>( _knob->getHolder() );
         /// If the node has a sublabel, restore it in the label
-        if ( effect && (_knob->getName() == "label_natron") ) {
+        if ( effect && (_knob->getName() == kUserLabelKnobName) ) {
             boost::shared_ptr<KnobI> knob = effect->getKnobByName(kOfxParamStringSublabelName);
             if (knob) {
                 String_Knob* strKnob = dynamic_cast<String_Knob*>( knob.get() );

@@ -1267,7 +1267,7 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
         for (U32 i = 0; i < knobs.size(); ++i) {
             Button_Knob* isBtn = dynamic_cast<Button_Knob*>( knobs[i].get() );
 
-            if ( !isBtn && (knobs[i]->getName() != "label_natron") && (knobs[i]->getName() != kOfxParamStringSublabelName) ) {
+            if ( !isBtn && (knobs[i]->getName() != kUserLabelKnobName) && (knobs[i]->getName() != kOfxParamStringSublabelName) ) {
                 knobs[i]->blockEvaluation();
                 int dims = knobs[i]->getDimension();
                 for (int j = 0; j < dims; ++j) {

@@ -536,6 +536,8 @@ Project::initializeKnobs()
     boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Settings");
 
     _imp->formatKnob = Natron::createKnob<Choice_Knob>(this, "Output Format");
+    _imp->formatKnob->setName("outputFormat");
+    
     const std::vector<Format*> & appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
@@ -553,9 +555,11 @@ Project::initializeKnobs()
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
     _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
+    _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
 
     _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
+    _imp->viewsCount->setName("noViews");
     _imp->viewsCount->setAnimationEnabled(false);
     _imp->viewsCount->setMinimum(1);
     _imp->viewsCount->setDisplayMinimum(1);
@@ -565,6 +569,7 @@ Project::initializeKnobs()
     page->addKnob(_imp->viewsCount);
 
     _imp->mainView = Natron::createKnob<Int_Knob>(this, "Main view");
+    _imp->mainView->setName("mainView");
     _imp->mainView->disableSlider();
     _imp->mainView->setDefaultValue(0);
     _imp->mainView->setMinimum(0);
@@ -573,6 +578,7 @@ Project::initializeKnobs()
     page->addKnob(_imp->mainView);
 
     _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
+    _imp->previewMode->setName("autoPreviews");
     _imp->previewMode->setHintToolTip("When checked, preview images on the node graph will be "
                                       "refreshed automatically. You can uncheck this option to improve performances."
                                       "Press P in the node graph to refresh the previews yourself.");
@@ -586,18 +592,21 @@ Project::initializeKnobs()
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
     _imp->colorSpace8bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8 bits images");
+    _imp->colorSpace8bits->setName("8bitCS");
     _imp->colorSpace8bits->setHintToolTip("Defines the color-space in which 8 bits images are assumed to be by default.");
     _imp->colorSpace8bits->setAnimationEnabled(false);
     _imp->colorSpace8bits->populateChoices(colorSpaces);
     _imp->colorSpace8bits->setDefaultValue(0);
 
     _imp->colorSpace16bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16 bits images");
+    _imp->colorSpace16bits->setName("16bitCS");
     _imp->colorSpace16bits->setHintToolTip("Defines the color-space in which 16 bits images are assumed to be by default.");
     _imp->colorSpace16bits->setAnimationEnabled(false);
     _imp->colorSpace16bits->populateChoices(colorSpaces);
     _imp->colorSpace16bits->setDefaultValue(2);
 
     _imp->colorSpace32bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32 bits fp images");
+    _imp->colorSpace32bits->setName("32bitCS");
     _imp->colorSpace32bits->setHintToolTip("Defines the color-space in which 32 bits floating point images are assumed to be by default.");
     _imp->colorSpace32bits->setAnimationEnabled(false);
     _imp->colorSpace32bits->populateChoices(colorSpaces);

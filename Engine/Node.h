@@ -31,7 +31,11 @@ CLANG_DIAG_ON(deprecated)
 
 #define NATRON_EXTRA_PARAMETER_PAGE_NAME "Node"
 
-#define kDisableNodeKnobName "disable_natron"
+#define kDisableNodeKnobName "disableNode"
+#define kUserLabelKnobName "userTextArea"
+#define kEnableMaskKnobName "enableMask"
+#define kMaskChannelKnobName "maskChannel"
+#define kEnablePreviewKnobName "enablePreview"
 
 class AppInstance;
 class NodeSettingsPanel;

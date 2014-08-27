@@ -736,7 +736,7 @@ Node::initializeKnobs(const NodeSerialization & serialization)
             _imp->enableMaskKnob.insert( std::make_pair(i,enableMaskKnob) );
             enableMaskKnob->setDefaultValue(false, 0);
             enableMaskKnob->turnOffNewLine();
-            std::string enableMaskName("enable_mask_natron_" + maskName);
+            std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
             enableMaskKnob->setName(enableMaskName);
             enableMaskKnob->setAnimationEnabled(false);
             enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
@@ -756,7 +756,7 @@ Node::initializeKnobs(const NodeSerialization & serialization)
             maskChannelKnob->turnOffNewLine();
             maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
                                             "Setting this to None is the same as disabling the mask.");
-            std::string channelMaskName("mask_channel_natron_" + maskName);
+            std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
             maskChannelKnob->setName(channelMaskName);
 
 
@@ -770,7 +770,7 @@ Node::initializeKnobs(const NodeSerialization & serialization)
 
     _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance, "Label",1,false);
     assert(_imp->nodeLabelKnob);
-    _imp->nodeLabelKnob->setName("label_natron");
+    _imp->nodeLabelKnob->setName(kUserLabelKnobName);
     _imp->nodeLabelKnob->setAnimationEnabled(false);
     _imp->nodeLabelKnob->setEvaluateOnChange(false);
     _imp->nodeLabelKnob->setAsMultiLine();
@@ -782,7 +782,7 @@ Node::initializeKnobs(const NodeSerialization & serialization)
     _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance, "Preview enabled",1,false);
     assert(_imp->previewEnabledKnob);
     _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
-    _imp->previewEnabledKnob->setName("preview_enabled_natron");
+    _imp->previewEnabledKnob->setName(kEnablePreviewKnobName);
     _imp->previewEnabledKnob->setAnimationEnabled(false);
     _imp->previewEnabledKnob->turnOffNewLine();
     _imp->previewEnabledKnob->setIsPersistant(false);

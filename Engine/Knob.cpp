@@ -1421,7 +1421,7 @@ KnobHolder::restoreDefaultValues()
         Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( _imp->knobs[i].get() );
 
         ///Don't restore buttons and the node label
-        if ( !isBtn && !isPage && !isGroup && !isSeparator && (_imp->knobs[i]->getName() != "label_natron") ) {
+        if ( !isBtn && !isPage && !isGroup && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
             _imp->knobs[i]->blockEvaluation();
             for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
                 _imp->knobs[i]->resetToDefaultValue(d);
