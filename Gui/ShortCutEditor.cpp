@@ -44,9 +44,6 @@ static QString keybindToString(const Qt::KeyboardModifiers& modifiers,Qt::Key ke
 static QString mouseShortcutToString(const Qt::KeyboardModifiers& modifiers,Qt::MouseButton button)
 {
     QString ret = makeKeySequence(modifiers, (Qt::Key)0).toString(QKeySequence::NativeText);
-    if (!ret.isEmpty()) {
-        ret.append('+');
-    }
     switch (button) {
         case Qt::LeftButton:
             ret.append(QObject::tr("LeftButton"));

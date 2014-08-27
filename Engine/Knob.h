@@ -1204,6 +1204,26 @@ protected:
      **/
     void decrementRecursionLevel();
     
+    /**
+     * @brief A small class to help managing the recursion level
+     * that can also that an action is not recursive.
+     **/
+    class RecursionLevelManager
+    {
+        KnobHolder* _holder;
+    public:
+        
+        RecursionLevelManager(KnobHolder* holder,bool assertNotRecursive)
+        : _holder(holder)
+        {
+            if (assertNotRecursive) {
+                _holder->assertActionIsNotRecursive();
+            }
+            _holder->incrementRecursionLevel();
+        }
+        
+        ~RecursionLevelManager() { _holder->decrementRecursionLevel(); }
+    };
     
 public:
     
@@ -1333,6 +1353,23 @@ private:
 
 };
 
+/**
+ * @macro This special macro creates an object that will increment the recursion level in the constructor and decrement it in the
+ * destructor. 
+ * @param assertNonRecursive If true then it will check that the recursion level is 0 and otherwise print a warning indicating that
+ * this action was called recursively.
+ **/
+#define MANAGE_RECURSION(assertNonRecursive) KnobHolder::RecursionLevelManager actionRecursionManager(this,assertNonRecursive);
+
+/**
+ * @brief Should be called in the begining of any action that cannot be called recursively.
+ **/
+#define NON_RECURSIVE_ACTION() MANAGE_RECURSION(true)
+
+/**
+ * @brief Should be called in the begining of any action that can be called recursively
+ **/
+#define RECURSIVE_ACTION() MANAGE_RECURSION(false)
 
 ////Common interface for EffectInstance and backdrops
 class NamedKnobHolder : public KnobHolder

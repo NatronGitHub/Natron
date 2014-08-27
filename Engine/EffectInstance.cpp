@@ -2204,6 +2204,9 @@ EffectInstance::drawOverlay_public(double scaleX,
     if (!hasOverlay()) {
         return;
     }
+    
+    RECURSIVE_ACTION()
+    
     SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view ;
     unsigned int mipMapLevel;
@@ -2217,12 +2220,9 @@ EffectInstance::drawOverlay_public(double scaleX,
     if (getRecursionLevel() == 0) {
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
-    ///Recursive action, must not call assertActionIsNotRecursive()
-    incrementRecursionLevel();
     _imp->setDuringInteractAction(true);
     drawOverlay(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
 }
 
 bool
@@ -2242,13 +2242,10 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 }
@@ -2278,12 +2275,10 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     //Don't chek if render is needed on pen motion, wait for the pen up
     //checkIfRenderNeeded();
     return ret;
@@ -2306,12 +2301,10 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 }
@@ -2333,13 +2326,10 @@ EffectInstance::onOverlayKeyDown_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 }
@@ -2361,13 +2351,11 @@ EffectInstance::onOverlayKeyUp_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
+
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers, rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -2390,13 +2378,10 @@ EffectInstance::onOverlayKeyRepeat_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -2425,13 +2410,10 @@ EffectInstance::onOverlayFocusGained_public(double scaleX,
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
-    
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusGained(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -2459,13 +2441,10 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
-    
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusLost(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
-    decrementRecursionLevel();
     checkIfRenderNeeded();
     return ret;
 
@@ -2487,8 +2466,7 @@ EffectInstance::render_public(SequenceTime time,
                               bool isRenderResponseToUserInteraction,
                               boost::shared_ptr<Natron::Image> output)
 {
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     
     ///Clear any previous input image which may be left
     _imp->clearInputImagePointers();
@@ -2500,14 +2478,12 @@ EffectInstance::render_public(SequenceTime time,
     } catch (const std::exception & e) {
         ///Also clear images when catching an exception
         _imp->clearInputImagePointers();
-        decrementRecursionLevel();
         throw e;
     }
     
     ///Clear any previous input image which may be left
     _imp->clearInputImagePointers();
 
-    decrementRecursionLevel();
     return stat;
 }
 
@@ -2527,8 +2503,8 @@ EffectInstance::isIdentity_public(SequenceTime time,
         qDebug() << "EffectInstance::isIdentity_public() called with renderscale !=1, but plugin does not support it";
     }
 #endif
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    
+    NON_RECURSIVE_ACTION()
     bool ret = false;
     if (_node->isNodeDisabled()) {
         ret = true;
@@ -2556,12 +2532,10 @@ EffectInstance::isIdentity_public(SequenceTime time,
             try {
                 ret = isIdentity(time, scale, rod, view, inputTime, inputNb);
             } catch (...) {
-                decrementRecursionLevel();
                 throw;
             }
         }
     }
-    decrementRecursionLevel();
     return ret;
 }
 
@@ -2572,24 +2546,20 @@ EffectInstance::getRegionOfDefinition_public(SequenceTime time,
                                              RectD* rod,
                                              bool* isProjectFormat)
 {
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     Natron::Status ret;
 
     try {
         ret = getRegionOfDefinition(time, scale, view, rod);
     } catch (const std::exception& e) {
-        decrementRecursionLevel();
         throw e;
     }
     if (ret != StatOK && ret != StatReplyDefault) {
         // rod is not valid
-        decrementRecursionLevel();
         return ret;
     }
     assert((ret == StatOK || ret == StatReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2));
     
-    decrementRecursionLevel();
     *isProjectFormat = ifInfiniteApplyHeuristic(time, scale, view, rod);
     assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
     return ret;
@@ -2602,39 +2572,31 @@ EffectInstance::getRegionsOfInterest_public(SequenceTime time,
                                             const RectD& renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                             int view)
 {
-    assertActionIsNotRecursive();
+    NON_RECURSIVE_ACTION()
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
-    incrementRecursionLevel();
     EffectInstance::RoIMap ret;
     try {
         ret = getRegionsOfInterest(time, scale, outputRoD, renderWindow, view);
     } catch (const std::exception& e) {
-        decrementRecursionLevel();
         throw e;
     }
-    decrementRecursionLevel();
     return ret;
 }
 
 EffectInstance::FramesNeededMap
 EffectInstance::getFramesNeeded_public(SequenceTime time)
 {
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
-    EffectInstance::FramesNeededMap ret = getFramesNeeded(time);
-    decrementRecursionLevel();
-    return ret;
+    NON_RECURSIVE_ACTION()
+    return getFramesNeeded(time);
 }
 
 void
 EffectInstance::getFrameRange_public(SequenceTime *first,
                                      SequenceTime *last)
 {
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     getFrameRange(first, last);
-    decrementRecursionLevel();
 }
 
 Natron::Status
@@ -2647,8 +2609,7 @@ EffectInstance::beginSequenceRender_public(SequenceTime first,
                                            bool isRenderResponseToUserInteraction,
                                            int view)
 {
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     {
         if (!_imp->beginEndRenderCount.hasLocalData()) {
             _imp->beginEndRenderCount.localData() = 1;
@@ -2656,10 +2617,8 @@ EffectInstance::beginSequenceRender_public(SequenceTime first,
             ++_imp->beginEndRenderCount.localData();
         }
     }
-    Natron::Status ret = beginSequenceRender(first, last, step, interactive, scale,
+    return beginSequenceRender(first, last, step, interactive, scale,
                                              isSequentialRender, isRenderResponseToUserInteraction, view);
-    decrementRecursionLevel();
-    return ret;
 }
 
 Natron::Status
@@ -2672,16 +2631,13 @@ EffectInstance::endSequenceRender_public(SequenceTime first,
                                          bool isRenderResponseToUserInteraction,
                                          int view)
 {
-    assertActionIsNotRecursive();
-    incrementRecursionLevel();
+    NON_RECURSIVE_ACTION()
     {
         assert(_imp->beginEndRenderCount.hasLocalData());
         --_imp->beginEndRenderCount.localData();
         assert(_imp->beginEndRenderCount.localData() >= 0);
     }
-    Natron::Status ret = endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
-    decrementRecursionLevel();
-    return ret;
+    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
 }
 
 
@@ -2879,17 +2835,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                            isIdentity,
                                                            identityTime,
                                                            identityNb);
-            ///Recursive action, must not call assertActionIsNotRecursive()
-            incrementRecursionLevel();
+            
+            RECURSIVE_ACTION()
             knobChanged(k, reason, rod, view, time);
-            decrementRecursionLevel();
         
         } else {
             int view = getCurrentViewRecursive();
-            ///Recursive action, must not call assertActionIsNotRecursive()
-            incrementRecursionLevel();
+            RECURSIVE_ACTION()
             knobChanged(k, reason, rod, view, time);
-            decrementRecursionLevel();
         }
         
         ///Clear input images pointers that were stored in getImage() for the main-thread.

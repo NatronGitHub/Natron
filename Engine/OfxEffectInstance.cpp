@@ -862,10 +862,10 @@ void
 OfxEffectInstance::onMultipleInputsChanged()
 {
     assert(_context != eContextNone);
-    ///Recursive action, must not call assertActionIsNotRecursive()
-    incrementRecursionLevel();
+
+    RECURSIVE_ACTION()
     _effect->runGetClipPrefsConditionally();
-    decrementRecursionLevel();
+
 }
 
 std::vector<std::string>
@@ -2013,10 +2013,9 @@ OfxEffectInstance::knobChanged(KnobI* k,
     }
     
     if (_effect->isClipPreferencesSlaveParam(k->getName())) {
-        ///Recursive action, must not call assertActionIsNotRecursive()
-        incrementRecursionLevel();
+        
+        RECURSIVE_ACTION()
         _effect->runGetClipPrefsConditionally();
-        decrementRecursionLevel();
     }
     if (_overlayInteract) {
         std::vector<std::string> params;

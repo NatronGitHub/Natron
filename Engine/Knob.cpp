@@ -1157,10 +1157,8 @@ void KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reaso
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
     
-    ///Recursive action, must not call assertActionIsNotRecursive()
-    incrementRecursionLevel();
+    RECURSIVE_ACTION()
     beginKnobsValuesChanged(reason);
-    decrementRecursionLevel();
 }
 
 void KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReason reason)
@@ -1168,10 +1166,8 @@ void KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReason reason)
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
     
-    ///Recursive action, must not call assertActionIsNotRecursive()
-    incrementRecursionLevel();
+    RECURSIVE_ACTION()
     endKnobsValuesChanged(reason);
-    decrementRecursionLevel();
 }
 
 
@@ -1182,10 +1178,8 @@ void KnobHolder::onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason r
     if (isEvaluationBlocked() || !_imp->knobsInitialized) {
         return;
     }
-    ///Recursive action, must not call assertActionIsNotRecursive()
-    incrementRecursionLevel();
+    RECURSIVE_ACTION()
     onKnobValueChanged(k, reason,time);
-    decrementRecursionLevel();
 }
 
 void KnobHolder::evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueChangedReason reason)
@@ -1238,7 +1232,7 @@ void KnobHolder::incrementRecursionLevel()
     if (!_imp->actionsRecursionLevel.hasLocalData()) {
         _imp->actionsRecursionLevel.setLocalData(1);
     } else {
-        _imp->actionsRecursionLevel.setLocalData(_imp->actionsRecursionLevel.localData() + 1);
+        _imp->actionsRecursionLevel.localData() += 1;
     }
 }
 
@@ -1246,7 +1240,7 @@ void KnobHolder::incrementRecursionLevel()
 void KnobHolder::decrementRecursionLevel()
 {
     assert(_imp->actionsRecursionLevel.hasLocalData());
-    _imp->actionsRecursionLevel.setLocalData(_imp->actionsRecursionLevel.localData() - 1);
+    _imp->actionsRecursionLevel.localData() -= 1;
 }
 
 int KnobHolder::getRecursionLevel() const
