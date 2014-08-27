@@ -394,13 +394,13 @@ AppManager::newAppInstance(const QString & projectName,
     try {
         instance->load(projectName,writers);
     } catch (const std::exception & e) {
-        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString() + ": " + e.what() );
+        Natron::errorDialog( NATRON_APPLICATION_NAME,e.what() );
         removeInstance(_imp->_availableID);
         delete instance;
 
         return NULL;
     } catch (...) {
-        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString() );
+        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString() );
         removeInstance(_imp->_availableID);
         delete instance;
 
@@ -596,15 +596,10 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
-        if (_imp->_appType == APP_BACKGROUND_AUTO_RUN) {
-            qDebug() << "Pipe between Gui process and render process is broken, progress report is not functionnal.";
-        }
         qDebug() << longMessage;
-
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
-
     return true;
 }
 
