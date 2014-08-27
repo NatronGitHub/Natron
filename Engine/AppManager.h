@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -38,47 +38,47 @@ class Settings;
 class KnobHolder;
 class NodeSerialization;
 namespace Natron {
-    class Node;
-    class EffectInstance;
-    class LibraryBinary;
-    class ImageKey;
-    class FrameKey;
-    class Image;
-    class ImageParams;
-    class FrameParams;
-    class FrameEntry;
-    class Plugin;
-    class CacheSignalEmitter;
-    
-    enum AppInstanceStatus
-    {
-        APP_INACTIVE = 0, //< the app has not been loaded yet or has been closed already
-        APP_ACTIVE //< the app is active and can be used
-    };
+class Node;
+class EffectInstance;
+class LibraryBinary;
+class ImageKey;
+class FrameKey;
+class Image;
+class ImageParams;
+class FrameParams;
+class FrameEntry;
+class Plugin;
+class CacheSignalEmitter;
+
+enum AppInstanceStatus
+{
+    APP_INACTIVE = 0,     //< the app has not been loaded yet or has been closed already
+    APP_ACTIVE     //< the app is active and can be used
+};
 }
 
 struct AppInstanceRef
 {
     AppInstance* app;
     Natron::AppInstanceStatus status;
-    
 };
 
 struct AppManagerPrivate;
-class AppManager : public QObject , public boost::noncopyable
+class AppManager
+    : public QObject, public boost::noncopyable
 {
-
     Q_OBJECT
 
 public:
 
-    enum AppType {
+    enum AppType
+    {
         APP_BACKGROUND = 0, //< a background AppInstance which will not do anything but instantiate the class making it ready for use.
                             //this is used by the unit tests
-        
+
         APP_BACKGROUND_AUTO_RUN, //< a background AppInstance that will launch a project and render it. If projectName is empty or
                                  //writers is empty, it doesn't make sense to call AppInstance with this parameter.
-        
+
         APP_GUI //< a GUI AppInstance, the end-user can interact with it.
     };
 
@@ -96,29 +96,34 @@ public:
      * @param mainProcessServerName The name of the main process named pipe so the background application can communicate with the
      * main process.
      **/
-    bool load(int &argc, char **argv, const QString& projectFilename = QString(),
-              const QStringList& writers = QStringList(),
-              const QString& mainProcessServerName = QString());
+    bool load( int &argc, char **argv, const QString & projectFilename = QString(),
+               const QStringList & writers = QStringList(),
+               const QString & mainProcessServerName = QString() );
 
     virtual ~AppManager();
-    
-    static AppManager* instance() { return _instance; }
-    
-    virtual bool isBackground() const { return true; }
-    
-    AppManager::AppType getAppType() const;
-    
-    static void printBackGroundWelcomeMessage();
 
+    static AppManager* instance()
+    {
+        return _instance;
+    }
+
+    virtual bool isBackground() const
+    {
+        return true;
+    }
+
+    AppManager::AppType getAppType() const;
+    static void printBackGroundWelcomeMessage();
     static void printUsage();
-    
+
     bool isLoaded() const;
-    
-    AppInstance* newAppInstance(const QString& projectName = QString(),const QStringList& writers = QStringList());
-    
-    virtual void hideSplashScreen() {}
-    
-    Natron::EffectInstance* createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
+
+    AppInstance* newAppInstance( const QString & projectName = QString(),const QStringList & writers = QStringList() );
+    virtual void hideSplashScreen()
+    {
+    }
+
+    Natron::EffectInstance* createOFXEffect(const std::string & pluginID,boost::shared_ptr<Natron::Node> node,
                                             const NodeSerialization* serialization ) const;
 
     void registerAppInstance(AppInstance* app);
@@ -129,46 +134,41 @@ public:
 
     void setAsTopLevelInstance(int appID);
 
-    const std::map<int,AppInstanceRef>& getAppInstances() const WARN_UNUSED_RETURN;
-
+    const std::map<int,AppInstanceRef> & getAppInstances() const WARN_UNUSED_RETURN;
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
-
-    const std::vector<Natron::Plugin*>& getPluginsList() const WARN_UNUSED_RETURN;
-
-    QMutex* getMutexForPlugin(const QString& pluginId) const WARN_UNUSED_RETURN;
-
-    Natron::LibraryBinary* getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    const std::vector<Natron::Plugin*> & getPluginsList() const WARN_UNUSED_RETURN;
+    QMutex* getMutexForPlugin(const QString & pluginId) const WARN_UNUSED_RETURN;
+    Natron::LibraryBinary* getPluginBinary(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
-
-    const std::vector<Format*>& getFormats() const WARN_UNUSED_RETURN;
+    const std::vector<Format*> & getFormats() const WARN_UNUSED_RETURN;
 
     /*Tries to load all plugins in directory "where"*/
-    static std::vector<Natron::LibraryBinary*> loadPlugins (const QString& where) WARN_UNUSED_RETURN;
+    static std::vector<Natron::LibraryBinary*> loadPlugins (const QString & where) WARN_UNUSED_RETURN;
 
     /*Tries to load all plugins in directory "where" that contains all the functions described by
- their name in "functions".*/
-    static std::vector<Natron::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
-                                                                           const std::vector<std::string>& functions) WARN_UNUSED_RETURN;
+       their name in "functions".*/
+    static std::vector<Natron::LibraryBinary*> loadPluginsAndFindFunctions(const QString & where,
+                                                                           const std::vector<std::string> & functions) WARN_UNUSED_RETURN;
 
 
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
-    bool getImage(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,boost::shared_ptr<Natron::Image>* returnValue) const;
-    
+    bool getImage(const Natron::ImageKey & key,boost::shared_ptr<const Natron::ImageParams>* params,boost::shared_ptr<Natron::Image>* returnValue) const;
+
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams> params,
-                  boost::shared_ptr<Natron::Image>* returnValue) const;
+    bool getImageOrCreate(const Natron::ImageKey & key,boost::shared_ptr<const Natron::ImageParams> params,
+                          boost::shared_ptr<Natron::Image>* returnValue) const;
 
-    bool getTexture(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams>* params,
+    bool getTexture(const Natron::FrameKey & key,boost::shared_ptr<const Natron::FrameParams>* params,
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
-    
-    bool getTextureOrCreate(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams> params,
-                    boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
+
+    bool getTextureOrCreate(const Natron::FrameKey & key,boost::shared_ptr<const Natron::FrameParams> params,
+                            boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
 
@@ -180,74 +180,78 @@ public:
 
     void setPlaybackCacheMaximumSize(double p);
 
-    void removeFromNodeCache(const boost::shared_ptr<Natron::Image>& image);
+    void removeFromNodeCache(const boost::shared_ptr<Natron::Image> & image);
 
-    void removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture);
-    
+    void removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry> & texture);
+
     /**
      * @brief Given the following tree version, removes all images from the node cache with a matching
      * tree version. This is useful to wipe the cache for one particular node.
      **/
-    void  removeAllImagesFromCacheWithMatchingKey(U64 treeVersion) ;
-    void  removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion) ;
+    void  removeAllImagesFromCacheWithMatchingKey(U64 treeVersion);
+    void  removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
-
-    const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN;
+    const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
      * short message. Otherwise the longMessage is printed to stdout
      **/
-    bool writeToOutputPipe(const QString& longMessage,const QString& shortMessage);
+    bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage);
 
     void abortAnyProcessing();
-    
+
     bool hasAbortAnyProcessingBeenCalled() const;
 
-    virtual void setLoadingStatus(const QString& str);
+    virtual void setLoadingStatus(const QString & str);
 
     /**
-    * @brief Toggle on/off multi-threading globally in Natron
-    **/
+     * @brief Toggle on/off multi-threading globally in Natron
+     **/
     void setNumberOfThreads(int threadsNb);
 
-    const QString& getApplicationBinaryPath() const;
-
+    const QString & getApplicationBinaryPath() const;
     static bool parseCmdLineArgs(int argc,char* argv[],
                                  bool* isBackground,
-                                 QString& projectFilename,
-                                 QStringList& writers,
-                                 QString& mainProcessServerName);
+                                 QString & projectFilename,
+                                 QStringList & writers,
+                                 QString & mainProcessServerName);
 
     /**
      * @brief Called when the instance is exited
      **/
     void quit(AppInstance* instance);
-    
+
     /**
      * @brief Starts the event loop and doesn't return until
      * quit() is called on all AppInstance's
      **/
     int exec();
-    
-    virtual void setUndoRedoStackLimit(int /*limit*/) {}
-    
-    QString getOfxLog_mt_safe() const;
-    
-    void writeToOfxLog_mt_safe(const QString& str);
-    
-    virtual void debugImage(const Natron::Image* /*image*/,const QString& /*filename = QString()*/) const {}
 
-    void registerPlugin(const QStringList& groups,
-                        const QString& pluginID,
-                        const QString& pluginLabel,
-                        const QString& pluginIconPath,
-                        const QString& groupIconPath,
+    virtual void setUndoRedoStackLimit(int /*limit*/)
+    {
+    }
+
+    QString getOfxLog_mt_safe() const;
+
+    void writeToOfxLog_mt_safe(const QString & str);
+
+    virtual void debugImage(const Natron::Image* /*image*/,
+                            const QString & /*filename = QString()*/) const
+    {
+    }
+
+    void registerPlugin(const QStringList & groups,
+                        const QString & pluginID,
+                        const QString & pluginLabel,
+                        const QString & pluginIconPath,
+                        const QString & groupIconPath,
                         Natron::LibraryBinary* binary,
                         bool mustCreateMutex,
                         int major,
                         int minor);
+
 public slots:
 
     ///Closes the application not saving any projects.
@@ -264,98 +268,113 @@ public slots:
     void clearPluginsLoadedCache();
 
     void clearAllCaches();
-    
+
     void onNodeMemoryRegistered(qint64 mem);
-    
+
     qint64 getTotalNodesMemoryRegistered() const;
-    
+
     void onMaxPanelsOpenedChanged(int maxPanels);
-    
-    
+
+
 #ifdef Q_OS_UNIX
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
-    
+
 signals:
-    
+
     void imageRemovedFromViewerCache(SequenceTime time);
 
 protected:
 
-    virtual void initGui(){}
+    virtual void initGui()
+    {
+    }
 
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                    std::map<std::string,std::vector<std::string> >* readersMap,
-                                    std::map<std::string,std::vector<std::string> >* writersMap);
-
+                                        std::map<std::string,std::vector<std::string> >* readersMap,
+                                        std::map<std::string,std::vector<std::string> >* writersMap);
     virtual AppInstance* makeNewInstance(int appID) const;
-    
-    virtual void registerGuiMetaTypes() const {}
-    
+    virtual void registerGuiMetaTypes() const
+    {
+    }
+
     virtual void initializeQApp(int &argc,char** argv);
-    
-    virtual void onLoadCompleted() {}
-    
-    virtual void onPluginLoaded(const QStringList& /*groups*/,
-                                      const QString& /*pluginID*/,
-                                      const QString& /*pluginLabel*/,
-                                      const QString& /*pluginIconPath*/,
-                                      const QString& /*groupIconPath*/) {}
+    virtual void onLoadCompleted()
+    {
+    }
+
+    virtual void onPluginLoaded(const QStringList & /*groups*/,
+                                const QString & /*pluginID*/,
+                                const QString & /*pluginLabel*/,
+                                const QString & /*pluginIconPath*/,
+                                const QString & /*groupIconPath*/)
+    {
+    }
 
 private:
-    
-    
 
-    bool loadInternal(const QString& projectFilename,const QStringList& writers,const QString& mainProcessServerName);
+
+    bool loadInternal(const QString & projectFilename,const QStringList & writers,const QString & mainProcessServerName);
 
     void registerEngineMetaTypes() const;
 
     void loadAllPlugins();
-    
-    static AppManager *_instance;
 
+    static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
 };
 
-namespace Natron{
+namespace Natron {
+void errorDialog(const std::string & title,const std::string & message);
 
-void errorDialog(const std::string& title,const std::string& message);
+void warningDialog(const std::string & title,const std::string & message);
 
-void warningDialog(const std::string& title,const std::string& message);
+void informationDialog(const std::string & title,const std::string & message);
 
-void informationDialog(const std::string& title,const std::string& message);
-
-Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
-        Natron::StandardButtons(Natron::Yes | Natron::No),
+Natron::StandardButton questionDialog(const std::string & title,const std::string & message,Natron::StandardButtons buttons =
+                                          Natron::StandardButtons(Natron::Yes | Natron::No),
                                       Natron::StandardButton defaultButton = Natron::NoButton);
 
 template <class K>
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder, const std::string &description, int dimension = 1,bool declaredByPlugin = true){
+boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+                                const std::string &description,
+                                int dimension = 1,
+                                bool declaredByPlugin = true)
+{
     return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension,declaredByPlugin);
 }
-    
-inline bool getImageFromCache(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,
-                              boost::shared_ptr<Natron::Image> *returnValue) {
+
+inline bool
+getImageFromCache(const Natron::ImageKey & key,
+                  boost::shared_ptr<const Natron::ImageParams>* params,
+                  boost::shared_ptr<Natron::Image> *returnValue)
+{
     return appPTR->getImage(key,params, returnValue);
 }
-    
-inline bool getImageFromCacheOrCreate(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams> params,
-                                  boost::shared_ptr<Natron::Image> *returnValue) {
+
+inline bool
+getImageFromCacheOrCreate(const Natron::ImageKey & key,
+                          boost::shared_ptr<const Natron::ImageParams> params,
+                          boost::shared_ptr<Natron::Image> *returnValue)
+{
     return appPTR->getImageOrCreate(key,params, returnValue);
 }
-    
-inline bool getTextureFromCache(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams>* params,
-                                boost::shared_ptr<Natron::FrameEntry>* returnValue) {
+
+inline bool
+getTextureFromCache(const Natron::FrameKey & key,
+                    boost::shared_ptr<const Natron::FrameParams>* params,
+                    boost::shared_ptr<Natron::FrameEntry>* returnValue)
+{
     return appPTR->getTexture(key,params,returnValue);
 }
 
-inline bool getTextureFromCacheOrCreate(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams> params,
-                                    boost::shared_ptr<Natron::FrameEntry>* returnValue) {
+inline bool
+getTextureFromCacheOrCreate(const Natron::FrameKey & key,
+                            boost::shared_ptr<const Natron::FrameParams> params,
+                            boost::shared_ptr<Natron::FrameEntry>* returnValue)
+{
     return appPTR->getTextureOrCreate(key,params,returnValue);
 }
-    
-
-    
 } // namespace Natron
 
 

@@ -6,12 +6,13 @@
 #include "AnimatedCheckBox.h"
 
 #include <QStyle>
+#include "Gui/GuiMacros.h"
+CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
-
-#include "Gui/GuiMacros.h"
+CLANG_DIAG_ON(deprecated-register)
 
 void
 AnimatedCheckBox::setAnimation(int i)
@@ -42,7 +43,7 @@ AnimatedCheckBox::setDirty(bool b)
 void
 AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if (readOnly && buttonDownIsLeft(e)) {
+    if ( readOnly && buttonDownIsLeft(e) ) {
         return;
     } else {
         QCheckBox::mousePressEvent(e);

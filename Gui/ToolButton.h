@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #ifndef TOOLBUTTON_H
 #define TOOLBUTTON_H
@@ -29,47 +29,46 @@ class QMenu;
 class QAction;
 
 struct ToolButtonPrivate;
-class ToolButton : public QObject {
+class ToolButton
+    : public QObject
+{
     Q_OBJECT
-    
+
 public:
-    
-    ToolButton(AppInstance* app,
-               PluginGroupNode* pluginToolButton,
-               const QString& pluginID,
-               const QString& label,
-               QIcon icon = QIcon());
-    
+
+    ToolButton( AppInstance* app,
+                PluginGroupNode* pluginToolButton,
+                const QString & pluginID,
+                const QString & label,
+                QIcon icon = QIcon() );
+
     virtual ~ToolButton();
-    
-    const QString& getID() const;
-    
-    const QString& getLabel() const;
-    
-    const QIcon& getIcon() const;
-    
+
+    const QString & getID() const;
+    const QString & getLabel() const;
+    const QIcon & getIcon() const;
+
     bool hasChildren() const;
-    
+
     QMenu* getMenu() const;
-    
+
     void setMenu(QMenu* menu );
-    
+
     void tryAddChild(ToolButton* child);
-    
-    const std::vector<ToolButton*>& getChildren() const;
-    
+
+    const std::vector<ToolButton*> & getChildren() const;
     QAction* getAction() const;
-    
+
     void setAction(QAction* action);
-    
+
     PluginGroupNode* getPluginToolButton() const;
-    
+
 public slots:
-    
+
     void onTriggered();
-    
+
 private:
-    
+
     boost::scoped_ptr<ToolButtonPrivate> _imp;
 };
 

@@ -20,7 +20,6 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/serialization/split_member.hpp>
 
 
-
 #include "Engine/KnobSerialization.h"
 
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2
@@ -32,26 +31,55 @@ class NodeBackDropSerialization
 {
 public:
     NodeBackDropSerialization();
-    
-    void initialize(const NodeBackDrop* n);
-    
-    std::string getName() const { return name; }
-    
-    std::string getMasterBackdropName() const { return masterBackdropName; }
-    
-    void getPos(double& x,double &y) const { x = posX; y = posY; }
-    
-    void getSize(int& w,int& h) const { w = width; h = height; }
-    
-    boost::shared_ptr<KnobI> getLabelSerialization() const { return label->getKnob(); }
 
-    void getColor(float& red,float &green,float& blue) const { red = r; green = g; blue = b; }
-    
-    bool isSelected() const { return selected; }
-    
-    bool isNull() const { return _isNull; }
+    void initialize(const NodeBackDrop* n);
+
+    std::string getName() const
+    {
+        return name;
+    }
+
+    std::string getMasterBackdropName() const
+    {
+        return masterBackdropName;
+    }
+
+    void getPos(double & x,
+                double &y) const
+    {
+        x = posX; y = posY;
+    }
+
+    void getSize(int & w,
+                 int & h) const
+    {
+        w = width; h = height;
+    }
+
+    boost::shared_ptr<KnobI> getLabelSerialization() const
+    {
+        return label->getKnob();
+    }
+
+    void getColor(float & red,
+                  float &green,
+                  float & blue) const
+    {
+        red = r; green = g; blue = b;
+    }
+
+    bool isSelected() const
+    {
+        return selected;
+    }
+
+    bool isNull() const
+    {
+        return _isNull;
+    }
+
 private:
-    
+
     double posX;
     double posY;
     int width,height;
@@ -61,12 +89,12 @@ private:
     std::string masterBackdropName;
     bool selected;
     bool _isNull;
-    
+
     friend class boost::serialization::access;
     template<class Archive>
-    void save(Archive & ar, const unsigned int /*version*/) const
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
     {
-        
         ar & boost::serialization::make_nvp("X_position",posX);
         ar & boost::serialization::make_nvp("Y_position",posY);
         ar & boost::serialization::make_nvp("Width",width);
@@ -79,17 +107,18 @@ private:
         ar & boost::serialization::make_nvp("b",b);
         ar & boost::serialization::make_nvp("Selected",selected);
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
-        
         ar & boost::serialization::make_nvp("X_position",posX);
         ar & boost::serialization::make_nvp("Y_position",posY);
         ar & boost::serialization::make_nvp("Width",width);
         ar & boost::serialization::make_nvp("Height",height);
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("MasterName",masterBackdropName);
+
         label.reset(new KnobSerialization);
         ar & boost::serialization::make_nvp("Label",*label);
         ar & boost::serialization::make_nvp("r",r);
@@ -100,10 +129,8 @@ private:
         }
         _isNull = false;
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-
-
 };
 
 BOOST_CLASS_VERSION(NodeBackDropSerialization, NODE_BACKDROP_SERIALIZATION_VERSION)

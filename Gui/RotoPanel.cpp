@@ -67,80 +67,86 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 
 
-static QPixmap getColorButtonDefaultPixmap()
+static QPixmap
+getColorButtonDefaultPixmap()
 {
     QImage img(15,15,QImage::Format_ARGB32);
     QColor gray(Qt::gray);
-    img.fill(gray.rgba());
+
+    img.fill( gray.rgba() );
     QPainter p(&img);
     QPen pen;
     pen.setColor(Qt::black);
     pen.setWidth(2);
     p.setPen(pen);
     p.drawLine(0, 0, 14, 14);
+
     return QPixmap::fromImage(img);
 }
 
-
-
-class TreeWidget: public QTreeWidget
+class TreeWidget
+    : public QTreeWidget
 {
-    
     RotoPanel* _panel;
-    
+
 public:
-    
-    TreeWidget(RotoPanel* panel,QWidget* parent): QTreeWidget(parent) , _panel(panel) {
-    
+
+    TreeWidget(RotoPanel* panel,
+               QWidget* parent)
+        : QTreeWidget(parent), _panel(panel)
+    {
     }
-    
-    virtual ~TreeWidget(){}
-    
-    
+
+    virtual ~TreeWidget()
+    {
+    }
+
 private:
-    
+
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        QModelIndex index = indexAt(e->pos());
-        QTreeWidgetItem* item = itemAt(e->pos());
+        QModelIndex index = indexAt( e->pos() );
+        QTreeWidgetItem* item = itemAt( e->pos() );
+
         QList<QTreeWidgetItem*> selection = selectedItems();
-        
-        if (index.isValid() && index.column() != 0 && selection.contains(item)) {
-            emit itemClicked(item, index.column());
-        } else if (triggerButtonisRight(e) && index.isValid()) {
-            _panel->showItemMenu(item,e->globalPos());
+
+        if ( index.isValid() && (index.column() != 0) && selection.contains(item) ) {
+            emit itemClicked( item, index.column() );
+        } else if ( triggerButtonisRight(e) && index.isValid() ) {
+            _panel->showItemMenu( item,e->globalPos() );
         } else {
             QTreeWidget::mouseReleaseEvent(e);
         }
     }
-    
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    
-    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
-    bool dragAndDropHandler(const QMimeData* mime,
-                            const QPoint& pos,
-                            std::list<DroppedTreeItemPtr>& dropped);
-};
 
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+
+    bool dragAndDropHandler(const QMimeData* mime,
+                            const QPoint & pos,
+                            std::list<DroppedTreeItemPtr> & dropped);
+};
 
 struct TreeItem
 {
     QTreeWidgetItem* treeItem;
     boost::shared_ptr<RotoItem> rotoItem;
-    
-    TreeItem() : treeItem(0) , rotoItem() {}
-    
-    TreeItem(QTreeWidgetItem* t,const boost::shared_ptr<RotoItem>& r): treeItem(t) , rotoItem(r) {}
+
+    TreeItem()
+        : treeItem(0), rotoItem()
+    {
+    }
+
+    TreeItem(QTreeWidgetItem* t,
+             const boost::shared_ptr<RotoItem> & r)
+        : treeItem(t), rotoItem(r)
+    {
+    }
 };
 
 typedef std::list< TreeItem > TreeItems;
-
-
 typedef std::list< boost::shared_ptr<RotoItem> > SelectedItems;
-
 typedef std::map<RotoItem*, std::set<int> > ItemKeys;
 
 enum ColorDialogEdition
@@ -152,182 +158,170 @@ enum ColorDialogEdition
 
 struct RotoPanelPrivate
 {
-    
     RotoPanel* publicInterface;
-    
     NodeGui* node;
     RotoContext* context;
-    
     QVBoxLayout* mainLayout;
-    
     QWidget* splineContainer;
     QHBoxLayout* splineLayout;
     ClickableLabel* splineLabel;
     SpinBox* currentKeyframe;
     ClickableLabel* ofLabel;
     SpinBox* totalKeyframes;
-    
     Button* prevKeyframe;
     Button* nextKeyframe;
     Button* addKeyframe;
     Button* removeKeyframe;
-    
     QWidget* buttonContainer;
     QHBoxLayout* buttonLayout;
     Button* addLayerButton;
     Button* removeItemButton;
-    
     QIcon iconLayer,iconBezier,iconVisible,iconUnvisible,iconLocked,iconUnlocked,iconInverted,iconUninverted,iconWheel;
-    
     TreeWidget* tree;
     QTreeWidgetItem* treeHeader;
-    
-    
     SelectedItems selectedItems;
-    
     TreeItems items;
-    
     QTreeWidgetItem* editedItem;
     std::string editedItemName;
-    
     QTreeWidgetItem* lastRightClickedItem;
     QList<QTreeWidgetItem*> clipBoard;
-    
+
     ItemKeys keyframes; //< track of all keyframes for items
-    
     ColorDialogEdition dialogEdition;
-    
-    RotoPanelPrivate(RotoPanel* publicInter,NodeGui*  n)
-    : publicInterface(publicInter)
-    , node(n)
-    , context(n->getNode()->getRotoContext().get())
-    , editedItem(NULL)
-    , lastRightClickedItem(NULL)
-    , clipBoard()
-    , dialogEdition(EDITING_NOTHING)
+
+    RotoPanelPrivate(RotoPanel* publicInter,
+                     NodeGui*  n)
+        : publicInterface(publicInter)
+          , node(n)
+          , context( n->getNode()->getRotoContext().get() )
+          , editedItem(NULL)
+          , lastRightClickedItem(NULL)
+          , clipBoard()
+          , dialogEdition(EDITING_NOTHING)
     {
         assert(n && context);
-        
     }
-    
+
     void updateSplinesInfosGUI(int time);
-    
+
     void buildTreeFromContext();
-    
+
     TreeItems::iterator findItem(RotoItem* item)
     {
-        for (TreeItems::iterator it = items.begin() ; it != items.end() ;++it) {
+        for (TreeItems::iterator it = items.begin(); it != items.end(); ++it) {
             if (it->rotoItem.get() == item) {
                 return it;
             }
         }
+
         return items.end();
     }
-    
+
     TreeItems::iterator findItem(QTreeWidgetItem* item)
     {
-        for (TreeItems::iterator it = items.begin() ; it != items.end() ;++it) {
+        for (TreeItems::iterator it = items.begin(); it != items.end(); ++it) {
             if (it->treeItem == item) {
                 return it;
             }
         }
+
         return items.end();
     }
-    
-    void insertItemRecursively(int time,const boost::shared_ptr<RotoItem>& item);
-    
+
+    void insertItemRecursively(int time,const boost::shared_ptr<RotoItem> & item);
+
     void removeItemRecursively(RotoItem* item);
-    
-    void insertSelectionRecursively(const boost::shared_ptr<RotoLayer>& layer);
-    
+
+    void insertSelectionRecursively(const boost::shared_ptr<RotoLayer> & layer);
+
     void setChildrenActivatedRecursively(bool activated,QTreeWidgetItem* item);
-    
+
     void setChildrenLockedRecursively(bool locked,QTreeWidgetItem* item);
-    
+
     bool itemHasKey(RotoItem* item,int time) const;
-    
+
     void setItemKey(RotoItem* item,int time);
-    
+
     void removeItemKey(RotoItem* item,int time);
-    
-    void insertItemInternal(int reason,int time,const boost::shared_ptr<RotoItem>& item);
+
+    void insertItemInternal(int reason,int time,const boost::shared_ptr<RotoItem> & item);
 };
 
-RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
-: QWidget(parent)
-, _imp(new RotoPanelPrivate(this,n))
+RotoPanel::RotoPanel(NodeGui* n,
+                     QWidget* parent)
+    : QWidget(parent)
+      , _imp( new RotoPanelPrivate(this,n) )
 {
-    
-    QObject::connect(_imp->context, SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)));
-    QObject::connect(_imp->context,SIGNAL(itemInserted(int)),this,SLOT(onItemInserted(int)));
-    QObject::connect(_imp->context,SIGNAL(itemRemoved(RotoItem*,int)),this,SLOT(onItemRemoved(RotoItem*,int)));
-    QObject::connect(n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
-                     SLOT(onTimeChanged(SequenceTime, int)));
-    QObject::connect(n, SIGNAL(settingsPanelClosed(bool)), this, SLOT(onSettingsPanelClosed(bool)));
-    
+    QObject::connect( _imp->context, SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
+    QObject::connect( _imp->context,SIGNAL( itemInserted(int) ),this,SLOT( onItemInserted(int) ) );
+    QObject::connect( _imp->context,SIGNAL( itemRemoved(RotoItem*,int) ),this,SLOT( onItemRemoved(RotoItem*,int) ) );
+    QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime,int) ), this,
+                      SLOT( onTimeChanged(SequenceTime, int) ) );
+    QObject::connect( n, SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
+
     _imp->mainLayout = new QVBoxLayout(this);
-    
+
     _imp->splineContainer = new QWidget(this);
     _imp->mainLayout->addWidget(_imp->splineContainer);
-    
+
     _imp->splineLayout = new QHBoxLayout(_imp->splineContainer);
     _imp->splineLayout->setSpacing(2);
     _imp->splineLabel = new ClickableLabel(tr("Spline keyframe:"),_imp->splineContainer);
     _imp->splineLabel->setSunken(false);
     _imp->splineLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->splineLabel);
-    
+
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::DOUBLE_SPINBOX);
     _imp->currentKeyframe->setEnabled(false);
     _imp->currentKeyframe->setReadOnly(true);
-    _imp->currentKeyframe->setToolTip(tr("The current keyframe for the selected shape(s)"));
+    _imp->currentKeyframe->setToolTip( tr("The current keyframe for the selected shape(s)") );
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
-    
+
     _imp->ofLabel = new ClickableLabel("of",_imp->splineContainer);
     _imp->ofLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->ofLabel);
-    
+
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::INT_SPINBOX);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly(true);
-    _imp->totalKeyframes->setToolTip(tr("The keyframe count for all the selected shapes."));
+    _imp->totalKeyframes->setToolTip( tr("The keyframe count for all the selected shapes.") );
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
-    
+
     QPixmap prevPix,nextPix,addPix,removePix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, &prevPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT_KEY, &nextPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_KEYFRAME, &addPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, &removePix);
-    
+
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
     _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->prevKeyframe->setToolTip(tr("Go to the previous keyframe"));
+    _imp->prevKeyframe->setToolTip( tr("Go to the previous keyframe") );
     _imp->prevKeyframe->setEnabled(false);
-    QObject::connect(_imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()));
+    QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
-    
+
     _imp->nextKeyframe = new Button(QIcon(nextPix),"",_imp->splineContainer);
     _imp->nextKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->nextKeyframe->setToolTip(tr("Go to the next keyframe"));
+    _imp->nextKeyframe->setToolTip( tr("Go to the next keyframe") );
     _imp->nextKeyframe->setEnabled(false);
-    QObject::connect(_imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()));
+    QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
-    
+
     _imp->addKeyframe = new Button(QIcon(addPix),"",_imp->splineContainer);
     _imp->addKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addKeyframe->setToolTip(tr("Add keyframe at the current timeline's time"));
+    _imp->addKeyframe->setToolTip( tr("Add keyframe at the current timeline's time") );
     _imp->addKeyframe->setEnabled(false);
-    QObject::connect(_imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()));
+    QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->addKeyframe);
-    
+
     _imp->removeKeyframe = new Button(QIcon(removePix),"",_imp->splineContainer);
     _imp->removeKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->removeKeyframe->setToolTip(tr("Remove keyframe at the current timeline's time"));
+    _imp->removeKeyframe->setToolTip( tr("Remove keyframe at the current timeline's time") );
     _imp->removeKeyframe->setEnabled(false);
-    QObject::connect(_imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()));
+    QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     _imp->splineLayout->addStretch();
-    
+
     _imp->tree = new TreeWidget(this,this);
     _imp->tree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
     _imp->tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -337,19 +331,19 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
 
     _imp->mainLayout->addWidget(_imp->tree);
-    
-    QObject::connect(_imp->tree, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(onItemClicked(QTreeWidgetItem*, int)));
-    QObject::connect(_imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
-    QObject::connect(_imp->tree, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(onItemChanged(QTreeWidgetItem*, int)));
-    QObject::connect(_imp->tree, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)), this,
-                     SLOT(onCurrentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)));
-    QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()));
-    
+
+    QObject::connect( _imp->tree, SIGNAL( itemClicked(QTreeWidgetItem*,int) ), this, SLOT( onItemClicked(QTreeWidgetItem*, int) ) );
+    QObject::connect( _imp->tree, SIGNAL( itemDoubleClicked(QTreeWidgetItem*,int) ), this, SLOT( onItemDoubleClicked(QTreeWidgetItem*, int) ) );
+    QObject::connect( _imp->tree, SIGNAL( itemChanged(QTreeWidgetItem*,int) ), this, SLOT( onItemChanged(QTreeWidgetItem*, int) ) );
+    QObject::connect( _imp->tree, SIGNAL( currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*) ), this,
+                      SLOT( onCurrentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*) ) );
+    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onItemSelectionChanged() ) );
+
 
     _imp->tree->setColumnCount(MAX_COLS);
     _imp->treeHeader = new QTreeWidgetItem;
-    _imp->treeHeader->setText(0, tr("Name"));
-    
+    _imp->treeHeader->setText( 0, tr("Name") );
+
     QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
     appPTR->getIcon(NATRON_PIXMAP_BEZIER, &pixBezier);
@@ -363,7 +357,7 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, &pixmerge);
     pixmerge = pixmerge.scaled(15, 15);
     pixDefault = getColorButtonDefaultPixmap();
-    
+
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);
     _imp->iconInverted.addPixmap(pixInverted);
@@ -373,17 +367,17 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->iconLocked.addPixmap(pixLocked);
     _imp->iconUnlocked.addPixmap(pixUnlocked);
     _imp->iconWheel.addPixmap(pixWheel);
-    
+
     _imp->treeHeader->setIcon(COL_ACTIVATED, _imp->iconVisible);
     _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
-    _imp->treeHeader->setIcon(COL_OVERLAY, QIcon(pixDefault));
+    _imp->treeHeader->setIcon( COL_OVERLAY, QIcon(pixDefault) );
     _imp->treeHeader->setIcon(COL_COLOR, _imp->iconWheel);
 #ifdef NATRON_ROTO_INVERTIBLE
     _imp->treeHeader->setIcon(COL_INVERTED, _imp->iconUninverted);
 #endif
-    _imp->treeHeader->setIcon(COL_OPERATOR, QIcon(pixmerge));
+    _imp->treeHeader->setIcon( COL_OPERATOR, QIcon(pixmerge) );
     _imp->tree->setHeaderItem(_imp->treeHeader);
-    
+
     for (int i = 1; i < MAX_COLS; ++i) {
         _imp->tree->setColumnWidth(i, 25);
     }
@@ -398,106 +392,113 @@ RotoPanel::RotoPanel(NodeGui* n,QWidget* parent)
     _imp->buttonLayout = new QHBoxLayout(_imp->buttonContainer);
     _imp->buttonLayout->setContentsMargins(0, 0, 0, 0);
     _imp->buttonLayout->setSpacing(0);
-    
+
     _imp->addLayerButton = new Button("+",_imp->buttonContainer);
     _imp->addLayerButton->setToolTip("Add a new layer");
     _imp->buttonLayout->addWidget(_imp->addLayerButton);
-    QObject::connect(_imp->addLayerButton, SIGNAL(clicked(bool)), this, SLOT(onAddLayerButtonClicked()));
-    
+    QObject::connect( _imp->addLayerButton, SIGNAL( clicked(bool) ), this, SLOT( onAddLayerButtonClicked() ) );
+
     _imp->removeItemButton = new Button("-",_imp->buttonContainer);
-    _imp->removeItemButton->setToolTip(tr("Remove selected items"));
+    _imp->removeItemButton->setToolTip( tr("Remove selected items") );
     _imp->buttonLayout->addWidget(_imp->removeItemButton);
-    QObject::connect(_imp->removeItemButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveItemButtonClicked()));
-    
+    QObject::connect( _imp->removeItemButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveItemButtonClicked() ) );
+
     _imp->buttonLayout->addStretch();
-    
+
     _imp->mainLayout->addWidget(_imp->buttonContainer);
-    
+
     _imp->buildTreeFromContext();
-    
+
     ///refresh selection
     onSelectionChanged(RotoContext::OTHER);
-
 }
 
 RotoPanel::~RotoPanel()
 {
-    
 }
 
 boost::shared_ptr<RotoItem> RotoPanel::getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const
 {
-    TreeItems::iterator it =_imp->findItem(treeItem);
-    if (it != _imp->items.end()) {
+    TreeItems::iterator it = _imp->findItem(treeItem);
+
+    if ( it != _imp->items.end() ) {
         return it->rotoItem;
     }
+
     return boost::shared_ptr<RotoItem>();
 }
 
-QTreeWidgetItem* RotoPanel::getTreeItemForRotoItem(const boost::shared_ptr<RotoItem>& item) const
+QTreeWidgetItem*
+RotoPanel::getTreeItemForRotoItem(const boost::shared_ptr<RotoItem> & item) const
 {
-    TreeItems::iterator it = _imp->findItem(item.get());
-    if (it != _imp->items.end()) {
+    TreeItems::iterator it = _imp->findItem( item.get() );
+
+    if ( it != _imp->items.end() ) {
         return it->treeItem;
     }
+
     return NULL;
 }
 
-void RotoPanel::onGoToPrevKeyframeButtonClicked()
+void
+RotoPanel::onGoToPrevKeyframeButtonClicked()
 {
     _imp->context->goToPreviousKeyframe();
 }
 
-void RotoPanel::onGoToNextKeyframeButtonClicked()
+void
+RotoPanel::onGoToNextKeyframeButtonClicked()
 {
     _imp->context->goToNextKeyframe();
 }
 
-void RotoPanel::onAddKeyframeButtonClicked()
+void
+RotoPanel::onAddKeyframeButtonClicked()
 {
     _imp->context->setKeyframeOnSelectedCurves();
 }
 
-void RotoPanel::onRemoveKeyframeButtonClicked()
+void
+RotoPanel::onRemoveKeyframeButtonClicked()
 {
     _imp->context->removeKeyframeOnSelectedCurves();
 }
 
-void RotoPanel::onSelectionChangedInternal()
+void
+RotoPanel::onSelectionChangedInternal()
 {
     ///disconnect previous selection
-    for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
-        Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
+    for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+        Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
         if (isBezier) {
-            QObject::disconnect(isBezier, SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
-            QObject::disconnect(isBezier, SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
-            QObject::disconnect(isBezier, SIGNAL(aboutToClone()), this, SLOT(onSelectedBezierAboutToClone()));
-            QObject::disconnect(isBezier, SIGNAL(cloned()), this, SLOT(onSelectedBezierCloned()));
+            QObject::disconnect( isBezier, SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
+            QObject::disconnect( isBezier, SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::disconnect( isBezier, SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
+            QObject::disconnect( isBezier, SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
         }
     }
     _imp->selectedItems.clear();
-    
+
     ///connect new selection
     int selectedBeziersCount = 0;
-    const std::list<boost::shared_ptr<RotoItem> >& items = _imp->context->getSelectedItems();
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
+    const std::list<boost::shared_ptr<RotoItem> > & items = _imp->context->getSelectedItems();
+    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         _imp->selectedItems.push_back(*it);
-        const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
-        const RotoLayer* isLayer = dynamic_cast<const RotoLayer*>(it->get());
+        const Bezier* isBezier = dynamic_cast<const Bezier*>( it->get() );
+        const RotoLayer* isLayer = dynamic_cast<const RotoLayer*>( it->get() );
         if (isBezier) {
-            QObject::connect(isBezier, SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
-            QObject::connect(isBezier, SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
-            QObject::connect(isBezier, SIGNAL(aboutToClone()), this, SLOT(onSelectedBezierAboutToClone()));
-            QObject::connect(isBezier, SIGNAL(cloned()), this, SLOT(onSelectedBezierCloned()));
+            QObject::connect( isBezier, SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
+            QObject::connect( isBezier, SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::connect( isBezier, SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
+            QObject::connect( isBezier, SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
             ++selectedBeziersCount;
-        } else if (isLayer && !isLayer->getItems().empty()) {
+        } else if ( isLayer && !isLayer->getItems().empty() ) {
             ++selectedBeziersCount;
         }
-        
     }
-    
+
     bool enabled = selectedBeziersCount > 0;
-    
+
     _imp->splineLabel->setEnabled(enabled);
     _imp->currentKeyframe->setEnabled(enabled);
     _imp->ofLabel->setEnabled(enabled);
@@ -506,62 +507,68 @@ void RotoPanel::onSelectionChangedInternal()
     _imp->nextKeyframe->setEnabled(enabled);
     _imp->addKeyframe->setEnabled(enabled);
     _imp->removeKeyframe->setEnabled(enabled);
-    
+
     int time = _imp->context->getTimelineCurrentTime();
-    
+
     ///update the splines info GUI
     _imp->updateSplinesInfosGUI(time);
 }
 
-void RotoPanel::onSelectionChanged(int reason)
+void
+RotoPanel::onSelectionChanged(int reason)
 {
-    if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
+    if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
         return;
     }
-    
+
     onSelectionChangedInternal();
     _imp->tree->blockSignals(true);
     _imp->tree->clearSelection();
     ///now update the selection according to the selected curves
     ///Note that layers will not be selected because this is called when the user clicks on a overlay on the viewer
-    for (SelectedItems::iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
-        TreeItems::iterator found = _imp->findItem(it->get());
-        if (found == _imp->items.end()) {
+    for (SelectedItems::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+        TreeItems::iterator found = _imp->findItem( it->get() );
+        if ( found == _imp->items.end() ) {
             _imp->selectedItems.erase(it);
             break;
         }
         found->treeItem->setSelected(true);
     }
     _imp->tree->blockSignals(false);
-
 }
 
-void RotoPanel::onSelectedBezierKeyframeSet(int time)
+void
+RotoPanel::onSelectedBezierKeyframeSet(int time)
 {
-    Bezier* isBezier = qobject_cast<Bezier*>(sender());
+    Bezier* isBezier = qobject_cast<Bezier*>( sender() );
+
     _imp->updateSplinesInfosGUI(time);
     if (isBezier) {
         _imp->setItemKey(isBezier, time);
     }
 }
 
-void RotoPanel::onSelectedBezierKeyframeRemoved(int time)
+void
+RotoPanel::onSelectedBezierKeyframeRemoved(int time)
 {
-    Bezier* isBezier = qobject_cast<Bezier*>(sender());
+    Bezier* isBezier = qobject_cast<Bezier*>( sender() );
+
     _imp->updateSplinesInfosGUI(time);
     if (isBezier) {
         _imp->removeItemKey(isBezier, time);
     }
 }
 
-void RotoPanel::onSelectedBezierAboutToClone()
+void
+RotoPanel::onSelectedBezierAboutToClone()
 {
-    Bezier* isBezier = qobject_cast<Bezier*>(sender());
+    Bezier* isBezier = qobject_cast<Bezier*>( sender() );
+
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
-        if (it != _imp->keyframes.end()) {
+        if ( it != _imp->keyframes.end() ) {
             std::list<SequenceTime> markers;
-            for (std::set<int>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            for (std::set<int>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 markers.push_back(*it2);
             }
             _imp->node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(markers,true);
@@ -569,50 +576,56 @@ void RotoPanel::onSelectedBezierAboutToClone()
     }
 }
 
-void RotoPanel::onSelectedBezierCloned()
+void
+RotoPanel::onSelectedBezierCloned()
 {
-    Bezier* isBezier = qobject_cast<Bezier*>(sender());
+    Bezier* isBezier = qobject_cast<Bezier*>( sender() );
+
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
-        if (it != _imp->keyframes.end()) {
+        if ( it != _imp->keyframes.end() ) {
             std::set<int> keys;
             isBezier->getKeyframeTimes(&keys);
             std::list<SequenceTime> markers;
-            for (std::set<int>::iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
+            for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                 markers.push_back(*it2);
             }
             it->second = keys;
             _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
         }
-
     }
 }
 
-static void makeSolidIcon(double *color,QIcon& icon)
+static void
+makeSolidIcon(double *color,
+              QIcon & icon)
 {
     QPixmap p(15,15);
     QColor c;
-    c.setRgbF(clamp<double>(color[0]), clamp<double>(color[1]), clamp<double>(color[2]));
+
+    c.setRgbF( clamp<double>(color[0]), clamp<double>(color[1]), clamp<double>(color[2]) );
     p.fill(c);
     icon.addPixmap(p);
 }
 
-void RotoPanel::updateItemGui(QTreeWidgetItem* item)
+void
+RotoPanel::updateItemGui(QTreeWidgetItem* item)
 {
     int time = _imp->context->getTimelineCurrentTime();
     TreeItems::iterator it = _imp->findItem(item);
-    assert(it!=_imp->items.end());
+
+    assert( it != _imp->items.end() );
     it->treeItem->setIcon(COL_ACTIVATED,it->rotoItem->isGloballyActivated() ? _imp->iconVisible : _imp->iconUnvisible);
     it->treeItem->setIcon(COL_LOCKED,it->rotoItem->isLockedRecursive() ? _imp->iconLocked : _imp->iconUnlocked);
-    
-    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+
+    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
     if (drawable) {
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
         QIcon overlayIcon;
         makeSolidIcon(overlayColor, overlayIcon);
         it->treeItem->setIcon(COL_OVERLAY, overlayIcon);
-        
+
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeColorIcon;
@@ -625,58 +638,58 @@ void RotoPanel::updateItemGui(QTreeWidgetItem* item)
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
         assert(cb);
-        cb->setCurrentIndex_no_emit(drawable->getCompositingOperator(time));
+        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator(time) );
     }
-   
-
 }
 
-void RotoPanelPrivate::updateSplinesInfosGUI(int time)
+void
+RotoPanelPrivate::updateSplinesInfosGUI(int time)
 {
     std::set<int> keyframes;
-    for (SelectedItems::const_iterator it = selectedItems.begin(); it!=selectedItems.end(); ++it) {
-        const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
+
+    for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
+        const Bezier* isBezier = dynamic_cast<const Bezier*>( it->get() );
         if (isBezier) {
             isBezier->getKeyframeTimes(&keyframes);
         }
     }
-    totalKeyframes->setValue((double)keyframes.size());
-    
-    if (keyframes.empty()) {
+    totalKeyframes->setValue( (double)keyframes.size() );
+
+    if ( keyframes.empty() ) {
         currentKeyframe->setValue(1.);
         currentKeyframe->setAnimation(0);
     } else {
         ///get the first time that is equal or greater to the current time
         std::set<int>::iterator lowerBound = keyframes.lower_bound(time);
         int dist = 0;
-        if (lowerBound != keyframes.end()) {
+        if ( lowerBound != keyframes.end() ) {
             dist = std::distance(keyframes.begin(), lowerBound);
         }
-        
-        if (lowerBound == keyframes.end()) {
+
+        if ( lowerBound == keyframes.end() ) {
             ///we're after the last keyframe
-            currentKeyframe->setValue((double)keyframes.size());
+            currentKeyframe->setValue( (double)keyframes.size() );
             currentKeyframe->setAnimation(1);
         } else if (*lowerBound == time) {
             currentKeyframe->setValue(dist + 1);
             currentKeyframe->setAnimation(2);
         } else {
             ///we're in-between 2 keyframes, interpolate
-            if (lowerBound == keyframes.begin()) {
+            if ( lowerBound == keyframes.begin() ) {
                 currentKeyframe->setValue(1.);
             } else {
                 std::set<int>::iterator prev = lowerBound;
                 --prev;
-                currentKeyframe->setValue((double)(time - *prev) / (double)(*lowerBound - *prev) + dist);
+                currentKeyframe->setValue( (double)(time - *prev) / (double)(*lowerBound - *prev) + dist );
             }
-            
+
             currentKeyframe->setAnimation(1);
         }
     }
-    
+
     ///Refresh the  inverted state
     for (TreeItems::iterator it = items.begin(); it != items.end(); ++it) {
-        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
         if (drawable) {
             QIcon shapeColorIC;
             double shapeColor[3];
@@ -692,46 +705,52 @@ void RotoPanelPrivate::updateSplinesInfosGUI(int time)
 //            }
         }
     }
-}
+} // updateSplinesInfosGUI
 
-void RotoPanel::onTimeChanged(SequenceTime time,int /*reason*/)
+void
+RotoPanel::onTimeChanged(SequenceTime time,
+                         int /*reason*/)
 {
     _imp->updateSplinesInfosGUI(time);
 }
 
-static void expandRecursively(QTreeWidgetItem* item)
+static void
+expandRecursively(QTreeWidgetItem* item)
 {
     item->setExpanded(true);
-    if (item->parent()) {
-        expandRecursively(item->parent());
+    if ( item->parent() ) {
+        expandRecursively( item->parent() );
     }
 }
 
-void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<RotoItem>& item)
+void
+RotoPanelPrivate::insertItemRecursively(int time,
+                                        const boost::shared_ptr<RotoItem> & item)
 {
     QTreeWidgetItem* treeItem = new QTreeWidgetItem;
     RotoItem* parent = item->getParentLayer();
+
     if (parent) {
         TreeItems::iterator parentIT = findItem(parent);
-        
+
         ///the parent must have already been inserted!
-        assert(parentIT != items.end());
+        assert( parentIT != items.end() );
         parentIT->treeItem->addChild(treeItem);
     } else {
         tree->addTopLevelItem(treeItem);
     }
-    items.push_back(TreeItem(treeItem,item));
+    items.push_back( TreeItem(treeItem,item) );
 
-    treeItem->setText(COL_NAME, item->getName_mt_safe().c_str());
-    treeItem->setToolTip(COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal));
+    treeItem->setText( COL_NAME, item->getName_mt_safe().c_str() );
+    treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip(COL_ACTIVATED, Qt::convertFromPlainText(kRotoActivatedHint, Qt::WhiteSpaceNormal));
+    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText(kRotoActivatedHint, Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    treeItem->setToolTip(COL_LOCKED, Qt::convertFromPlainText(kRotoLockedHint, Qt::WhiteSpaceNormal));
+    treeItem->setToolTip( COL_LOCKED, Qt::convertFromPlainText(kRotoLockedHint, Qt::WhiteSpaceNormal) );
 
-    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
-    RotoLayer* layer = dynamic_cast<RotoLayer*>(item.get());
-    
+    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( item.get() );
+    RotoLayer* layer = dynamic_cast<RotoLayer*>( item.get() );
+
     if (drawable) {
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
@@ -739,76 +758,79 @@ void RotoPanelPrivate::insertItemRecursively(int time,const boost::shared_ptr<Ro
         makeSolidIcon(overlayColor, overlayIcon);
         treeItem->setIcon(COL_NAME, iconBezier);
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
-        treeItem->setToolTip(COL_OVERLAY, Qt::convertFromPlainText(kRotoOverlayHint, Qt::WhiteSpaceNormal));
+        treeItem->setToolTip( COL_OVERLAY, Qt::convertFromPlainText(kRotoOverlayHint, Qt::WhiteSpaceNormal) );
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
-        treeItem->setToolTip(COL_COLOR, Qt::convertFromPlainText(kRotoColorHint, Qt::WhiteSpaceNormal));
+        treeItem->setToolTip( COL_COLOR, Qt::convertFromPlainText(kRotoColorHint, Qt::WhiteSpaceNormal) );
 #ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        treeItem->setTooltip(COL_INVERTED, Qt::convertFromPlainText(kRotoInvertedHint, Qt::WhiteSpaceNormal));
+        treeItem->setTooltip( COL_INVERTED, Qt::convertFromPlainText(kRotoInvertedHint, Qt::WhiteSpaceNormal) );
 #endif
 
         publicInterface->makeCustomWidgetsForItem(drawable,treeItem);
 #ifdef NATRON_ROTO_INVERTIBLE
-        QObject::connect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
+        QObject::connect( drawable,SIGNAL( invertedStateChanged() ), publicInterface, SLOT( onRotoItemInvertedStateChanged() ) );
 #endif
-        QObject::connect(drawable,SIGNAL(shapeColorChanged()),publicInterface,SLOT(onRotoItemShapeColorChanged()));
-        QObject::connect(drawable,SIGNAL(compositingOperatorChanged(int,int)),publicInterface,SLOT(onRotoItemCompOperatorChanged(int,int)));
+        QObject::connect( drawable,SIGNAL( shapeColorChanged() ),publicInterface,SLOT( onRotoItemShapeColorChanged() ) );
+        QObject::connect( drawable,SIGNAL( compositingOperatorChanged(int,int) ),publicInterface,SLOT( onRotoItemCompOperatorChanged(int,int) ) );
     } else {
         treeItem->setIcon(0, iconLayer);
         ///insert children
-        const std::list<boost::shared_ptr<RotoItem> >& children = layer->getItems();
-        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it!= children.end(); ++it) {
+        const std::list<boost::shared_ptr<RotoItem> > & children = layer->getItems();
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it != children.end(); ++it) {
             insertItemRecursively(time,*it);
         }
     }
     expandRecursively(treeItem);
-}
+} // insertItemRecursively
 
-void RotoPanel::makeCustomWidgetsForItem(RotoDrawableItem* item,QTreeWidgetItem* treeItem)
+void
+RotoPanel::makeCustomWidgetsForItem(RotoDrawableItem* item,
+                                    QTreeWidgetItem* treeItem)
 {
     //If NULL was passed to treeItem,find it ourselves
     if (!treeItem) {
         TreeItems::iterator found = _imp->findItem(item);
-        if (found == _imp->items.end()) {
+        if ( found == _imp->items.end() ) {
             return;
         }
         treeItem = found->treeItem;
     }
-    
-    
+
+
     int time = _imp->context->getTimelineCurrentTime();
     ComboBox* cb = new ComboBox;
-    QObject::connect(cb,SIGNAL(currentIndexChanged(int)),this,SLOT(onCurrentItemCompOperatorChanged(int)));
+    QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCurrentItemCompOperatorChanged(int) ) );
     std::vector<std::string> compositingOperators,tooltips;
     getCompositingOperators(&compositingOperators, &tooltips);
     for (U32 i = 0; i < compositingOperators.size(); ++i) {
-        cb->addItem(compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+        cb->addItem( compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str() );
     }
     // set the tooltip
-    const std::string& tt = item->getCompositingOperatorToolTip();
-    cb->setToolTip(Qt::convertFromPlainText(tt.c_str(), Qt::WhiteSpaceNormal));
-    cb->setCurrentIndex_no_emit(item->getCompositingOperator(time));
+    const std::string & tt = item->getCompositingOperatorToolTip();
+    cb->setToolTip( Qt::convertFromPlainText(tt.c_str(), Qt::WhiteSpaceNormal) );
+    cb->setCurrentIndex_no_emit( item->getCompositingOperator(time) );
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
-
 }
 
-void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
+void
+RotoPanelPrivate::removeItemRecursively(RotoItem* item)
 {
     TreeItems::iterator it = findItem(item);
-    if (it == items.end()) {
+
+    if ( it == items.end() ) {
         return;
     }
 #ifdef NATRON_ROTO_INVERTIBLE
     RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item);
     if (drawable) {
-        QObject::disconnect(drawable,SIGNAL(invertedStateChanged()), publicInterface, SLOT(onRotoItemInvertedStateChanged()));
+        QObject::disconnect( drawable,SIGNAL( invertedStateChanged() ), publicInterface, SLOT( onRotoItemInvertedStateChanged() ) );
     }
 #endif
-    
+
     ///deleting the item will emit a selection change which would lead to a deadlock
     tree->blockSignals(true);
     delete it->treeItem;
@@ -816,78 +838,87 @@ void RotoPanelPrivate::removeItemRecursively(RotoItem* item)
     items.erase(it);
 }
 
-
-void RotoPanel::onItemInserted(int reason)
+void
+RotoPanel::onItemInserted(int reason)
 {
     boost::shared_ptr<RotoItem> lastInsertedItem = _imp->context->getLastInsertedItem();
     int time = _imp->context->getTimelineCurrentTime();
+
     _imp->insertItemInternal(reason,time, lastInsertedItem);
-    
 }
 
-void RotoPanelPrivate::insertItemInternal(int reason,int time,const boost::shared_ptr<RotoItem>& item)
+void
+RotoPanelPrivate::insertItemInternal(int reason,
+                                     int time,
+                                     const boost::shared_ptr<RotoItem> & item)
 {
-    Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
+    Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
+
     if (isBezier) {
         ItemKeys::iterator it = keyframes.find(isBezier);
-        if (it == keyframes.end()) {
+        if ( it == keyframes.end() ) {
             std::set<int> keys;
             isBezier->getKeyframeTimes(&keys);
-            keyframes.insert(std::make_pair(isBezier, keys));
+            keyframes.insert( std::make_pair(isBezier, keys) );
             std::list<SequenceTime> markers;
-            for (std::set<int>::iterator it2 = keys.begin(); it2!=keys.end(); ++it2) {
+            for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                 markers.push_back(*it2);
             }
             node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
-            
         }
     }
-    if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
-        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(item.get());
+    if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
+        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( item.get() );
         publicInterface->makeCustomWidgetsForItem(drawable);
+
         return;
     }
     assert(item);
     insertItemRecursively(time, item);
 }
 
-void RotoPanel::onItemRemoved(RotoItem* item,int reason)
+void
+RotoPanel::onItemRemoved(RotoItem* item,
+                         int reason)
 {
     Bezier* isBezier = qobject_cast<Bezier*>(item);
+
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
-        if (it != _imp->keyframes.end()) {
+        if ( it != _imp->keyframes.end() ) {
             for (std::set<int>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 _imp->node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(*it2);
             }
             _imp->keyframes.erase(it);
         }
     }
-    if ((RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL) {
+    if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
         return;
     }
     _imp->removeItemRecursively(item);
 }
 
-void RotoPanelPrivate::buildTreeFromContext()
+void
+RotoPanelPrivate::buildTreeFromContext()
 {
-    
     int time = context->getTimelineCurrentTime();
-    const std::list< boost::shared_ptr<RotoLayer> >& layers = context->getLayers();
-    if (!layers.empty()) {
-        const boost::shared_ptr<RotoLayer>& base = layers.front();
+    const std::list< boost::shared_ptr<RotoLayer> > & layers = context->getLayers();
+
+    if ( !layers.empty() ) {
+        const boost::shared_ptr<RotoLayer> & base = layers.front();
         insertItemRecursively(time, base);
     }
-    
 }
 
-void RotoPanel::onCurrentItemCompOperatorChanged(int index)
+void
+RotoPanel::onCurrentItemCompOperatorChanged(int index)
 {
-    QWidget* comboboxSender = qobject_cast<QWidget*>(sender());
+    QWidget* comboboxSender = qobject_cast<QWidget*>( sender() );
+
     assert(comboboxSender);
-    for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
+    for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if (_imp->tree->itemWidget(it->treeItem,COL_OPERATOR) == comboboxSender) {
-            RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+            RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             assert(drawable);
             boost::shared_ptr<Choice_Knob> op = drawable->getOperatorKnob();
             op->setValue(index, 0);
@@ -897,30 +928,34 @@ void RotoPanel::onCurrentItemCompOperatorChanged(int index)
             break;
         }
     }
-    
 }
 
 #ifdef NATRON_ROTO_INVERTIBLE
-void RotoPanel::onRotoItemInvertedStateChanged()
+void
+RotoPanel::onRotoItemInvertedStateChanged()
 {
-    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
+    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>( sender() );
+
     if (item) {
         int time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
-        if (it != _imp->items.end()) {
+        if ( it != _imp->items.end() ) {
             it->treeItem->setIcon(COL_INVERTED, item->getInverted(time)  ? _imp->iconInverted : _imp->iconUninverted);
         }
     }
 }
+
 #endif
 
-void RotoPanel::onRotoItemShapeColorChanged()
+void
+RotoPanel::onRotoItemShapeColorChanged()
 {
-    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
+    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>( sender() );
+
     if (item) {
         int time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
-        if (it != _imp->items.end()) {
+        if ( it != _imp->items.end() ) {
             QIcon icon;
             double shapeColor[3];
             item->getColor(time, shapeColor);
@@ -930,17 +965,19 @@ void RotoPanel::onRotoItemShapeColorChanged()
     }
 }
 
-void RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,int reason)
+void
+RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
+                                         int reason)
 {
-    if ((Natron::ValueChangedReason)reason == Natron::SLAVE_REFRESH) {
+    if ( (Natron::ValueChangedReason)reason == Natron::SLAVE_REFRESH ) {
         return;
     }
-    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>(sender());
+    RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>( sender() );
     if (item) {
         int time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
-        if (it != _imp->items.end()) {
-            ComboBox* cb = dynamic_cast<ComboBox*>(_imp->tree->itemWidget(it->treeItem, COL_OPERATOR));
+        if ( it != _imp->items.end() ) {
+            ComboBox* cb = dynamic_cast<ComboBox*>( _imp->tree->itemWidget(it->treeItem, COL_OPERATOR) );
             if (cb) {
                 int compIndex = item->getCompositingOperator(time);
                 cb->setCurrentIndex_no_emit(compIndex);
@@ -949,168 +986,165 @@ void RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,int reason)
     }
 }
 
-
-void RotoPanel::onItemClicked(QTreeWidgetItem* item,int column)
+void
+RotoPanel::onItemClicked(QTreeWidgetItem* item,
+                         int column)
 {
     TreeItems::iterator it = _imp->findItem(item);
-    if (it != _imp->items.end()) {
+
+    if ( it != _imp->items.end() ) {
         int time = _imp->context->getTimelineCurrentTime();
         switch (column) {
-                
-            case COL_ACTIVATED:
-            {
-                bool activated = !it->rotoItem->isGloballyActivated();
-                QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                for (int i = 0; i < selected.size(); ++i) {
-                    TreeItems::iterator found = _imp->findItem(selected[i]);
-                    assert(found != _imp->items.end());
-                    found->rotoItem->setGloballyActivated(activated, true);
-                    _imp->setChildrenActivatedRecursively(activated, found->treeItem);
-                }
-                _imp->context->emitRefreshViewerOverlays();
-            }   break;
-               
-            case COL_LOCKED:
-            {
-                bool locked = !it->rotoItem->getLocked();
-                QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                for (int i = 0; i < selected.size(); ++i) {
-                    TreeItems::iterator found = _imp->findItem(selected[i]);
-                    assert(found != _imp->items.end());
-                    _imp->context->setLastItemLocked(found->rotoItem);
-                    found->rotoItem->setLocked(locked,true);
-                    _imp->setChildrenLockedRecursively(locked, found->treeItem);
-                }
-                
-            }   break;
-                
-            case COL_OVERLAY:
-            {
-                RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
-                if (drawable) {
-                    QColorDialog dialog;
-                    _imp->dialogEdition = EDITING_OVERLAY_COLOR;
-                    double oc[4];
-                    drawable->getOverlayColor(oc);
-                    QColor color;
-                    color.setRgbF(oc[0], oc[1], oc[2]);
-                    color.setAlphaF(oc[3]);
-                    dialog.setCurrentColor(color);
-                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
-                    if (dialog.exec()) {
-                        color = dialog.selectedColor();
-                        oc[0] = color.redF();
-                        oc[1] = color.greenF();
-                        oc[2] = color.blueF();
-                        oc[3] = color.alphaF();
-                    }
-                    _imp->dialogEdition = EDITING_NOTHING;
-                    QPixmap pix(15,15);
-                    pix.fill(color);
-                    QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                    for (int i = 0; i < selected.size(); ++i) {
-                        TreeItems::iterator found = _imp->findItem(selected[i]);
-                        assert(found != _imp->items.end());
-                        drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                        if (drawable) {
-                            drawable->setOverlayColor(oc);
-                            found->treeItem->setIcon(COL_OVERLAY, QIcon(pix));
-                        }
-                    }
-                }
-            }   break;
-                
-            case COL_COLOR:
-            {
-                RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
-                QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                bool colorChosen = false;
-                double shapeColor[3];
-                if (drawable) {
-                    QColorDialog dialog;
-                    _imp->dialogEdition = EDITING_SHAPE_COLOR;
-                    drawable->getColor(time,shapeColor);
-                    QColor color;
-                    color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
-                    dialog.setCurrentColor(color);
-                    QObject::connect(&dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onItemColorDialogEdited(QColor)));
-                    if (dialog.exec()) {
-                        color = dialog.selectedColor();
-                        shapeColor[0] = color.redF();
-                        shapeColor[1] = color.greenF();
-                        shapeColor[2] = color.blueF();
-                    }
-                    _imp->dialogEdition = EDITING_NOTHING;
-                    QIcon icon;
-                    makeSolidIcon(shapeColor, icon);
-                    colorChosen = true;
-                    for (int i = 0; i < selected.size(); ++i) {
-                        TreeItems::iterator found = _imp->findItem(selected[i]);
-                        assert(found != _imp->items.end());
-                        drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                        if (drawable) {
-                            boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
-                            colorKnob->setValue(shapeColor[0], 0);
-                            colorKnob->setValue(shapeColor[1], 1);
-                            colorKnob->setValue(shapeColor[2], 2);
-                            found->treeItem->setIcon(COL_COLOR, icon);
-                        }
-                    }
-                }
-                if (colorChosen && !selected.empty()) {
-                    _imp->context->getColorKnob()->setValue(shapeColor[0], 0);
-                    _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
-                    _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
-                }
-            }   break;
-               
-#ifdef NATRON_ROTO_INVERTIBLE
-            case COL_INVERTED:
-            {
-                QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
-                bool inverted = false;
-                bool invertedSet = false;
-                for (int i = 0; i < selected.size(); ++i) {
-                    TreeItems::iterator found = _imp->findItem(selected[i]);
-                    assert(found != _imp->items.end());
-                    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
-                    if (drawable) {
-                        boost::shared_ptr<Bool_Knob> invertedKnob = drawable->getInvertedKnob();
-                        bool isOnKeyframe = invertedKnob->getKeyFrameIndex(0, time) != -1;
-                        inverted = !drawable->getInverted(time);
-                        invertedSet = true;
-                        if (_imp->context->isAutoKeyingEnabled() || isOnKeyframe) {
-                            invertedKnob->setValueAtTime(time, inverted, 0);
-                        } else {
-                            invertedKnob->setValue(inverted, 0);
-                        }
-                        found->treeItem->setIcon(COL_INVERTED, inverted ? _imp->iconInverted : _imp->iconUninverted);
-                    }
-                }
-                if (!selected.empty() && invertedSet) {
-                    _imp->context->getInvertedKnob()->setValue(inverted, 0);
-                
-                }
-                
-                
-            }   break;
-#endif
-            case 0:
-            default:
-                break;
+        case COL_ACTIVATED: {
+            bool activated = !it->rotoItem->isGloballyActivated();
+            QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+            for (int i = 0; i < selected.size(); ++i) {
+                TreeItems::iterator found = _imp->findItem(selected[i]);
+                assert( found != _imp->items.end() );
+                found->rotoItem->setGloballyActivated(activated, true);
+                _imp->setChildrenActivatedRecursively(activated, found->treeItem);
+            }
+            _imp->context->emitRefreshViewerOverlays();
         }
-    }
-}
+        break;
 
-void RotoPanel::onItemColorDialogEdited(const QColor& color)
+        case COL_LOCKED: {
+            bool locked = !it->rotoItem->getLocked();
+            QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+            for (int i = 0; i < selected.size(); ++i) {
+                TreeItems::iterator found = _imp->findItem(selected[i]);
+                assert( found != _imp->items.end() );
+                _imp->context->setLastItemLocked(found->rotoItem);
+                found->rotoItem->setLocked(locked,true);
+                _imp->setChildrenLockedRecursively(locked, found->treeItem);
+            }
+        }
+        break;
+
+        case COL_OVERLAY: {
+            RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
+            if (drawable) {
+                QColorDialog dialog;
+                _imp->dialogEdition = EDITING_OVERLAY_COLOR;
+                double oc[4];
+                drawable->getOverlayColor(oc);
+                QColor color;
+                color.setRgbF(oc[0], oc[1], oc[2]);
+                color.setAlphaF(oc[3]);
+                dialog.setCurrentColor(color);
+                QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onItemColorDialogEdited(QColor) ) );
+                if ( dialog.exec() ) {
+                    color = dialog.selectedColor();
+                    oc[0] = color.redF();
+                    oc[1] = color.greenF();
+                    oc[2] = color.blueF();
+                    oc[3] = color.alphaF();
+                }
+                _imp->dialogEdition = EDITING_NOTHING;
+                QPixmap pix(15,15);
+                pix.fill(color);
+                QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+                for (int i = 0; i < selected.size(); ++i) {
+                    TreeItems::iterator found = _imp->findItem(selected[i]);
+                    assert( found != _imp->items.end() );
+                    drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
+                    if (drawable) {
+                        drawable->setOverlayColor(oc);
+                        found->treeItem->setIcon( COL_OVERLAY, QIcon(pix) );
+                    }
+                }
+            }
+        }
+        break;
+
+        case COL_COLOR: {
+            RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
+            QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+            bool colorChosen = false;
+            double shapeColor[3];
+            if (drawable) {
+                QColorDialog dialog;
+                _imp->dialogEdition = EDITING_SHAPE_COLOR;
+                drawable->getColor(time,shapeColor);
+                QColor color;
+                color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
+                dialog.setCurrentColor(color);
+                QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onItemColorDialogEdited(QColor) ) );
+                if ( dialog.exec() ) {
+                    color = dialog.selectedColor();
+                    shapeColor[0] = color.redF();
+                    shapeColor[1] = color.greenF();
+                    shapeColor[2] = color.blueF();
+                }
+                _imp->dialogEdition = EDITING_NOTHING;
+                QIcon icon;
+                makeSolidIcon(shapeColor, icon);
+                colorChosen = true;
+                for (int i = 0; i < selected.size(); ++i) {
+                    TreeItems::iterator found = _imp->findItem(selected[i]);
+                    assert( found != _imp->items.end() );
+                    drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
+                    if (drawable) {
+                        boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
+                        colorKnob->setValue(shapeColor[0], 0);
+                        colorKnob->setValue(shapeColor[1], 1);
+                        colorKnob->setValue(shapeColor[2], 2);
+                        found->treeItem->setIcon(COL_COLOR, icon);
+                    }
+                }
+            }
+            if ( colorChosen && !selected.empty() ) {
+                _imp->context->getColorKnob()->setValue(shapeColor[0], 0);
+                _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
+                _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
+            }
+        }
+        break;
+
+#ifdef NATRON_ROTO_INVERTIBLE
+        case COL_INVERTED: {
+            QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+            bool inverted = false;
+            bool invertedSet = false;
+            for (int i = 0; i < selected.size(); ++i) {
+                TreeItems::iterator found = _imp->findItem(selected[i]);
+                assert( found != _imp->items.end() );
+                RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
+                if (drawable) {
+                    boost::shared_ptr<Bool_Knob> invertedKnob = drawable->getInvertedKnob();
+                    bool isOnKeyframe = invertedKnob->getKeyFrameIndex(0, time) != -1;
+                    inverted = !drawable->getInverted(time);
+                    invertedSet = true;
+                    if (_imp->context->isAutoKeyingEnabled() || isOnKeyframe) {
+                        invertedKnob->setValueAtTime(time, inverted, 0);
+                    } else {
+                        invertedKnob->setValue(inverted, 0);
+                    }
+                    found->treeItem->setIcon(COL_INVERTED, inverted ? _imp->iconInverted : _imp->iconUninverted);
+                }
+            }
+            if (!selected.empty() && invertedSet) {
+                _imp->context->getInvertedKnob()->setValue(inverted, 0);
+            }
+        }
+        break;
+#endif
+        case 0:
+        default:
+            break;
+        } // switch
+    }
+} // onItemClicked
+
+void
+RotoPanel::onItemColorDialogEdited(const QColor & color)
 {
     QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {
         TreeItems::iterator found = _imp->findItem(selected[i]);
-        assert(found != _imp->items.end());
-        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(found->rotoItem.get());
+        assert( found != _imp->items.end() );
+        RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
         if (drawable) {
-            
             if (_imp->dialogEdition == EDITING_SHAPE_COLOR) {
                 boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
                 colorKnob->setValue(color.redF(), 0);
@@ -1123,11 +1157,10 @@ void RotoPanel::onItemColorDialogEdited(const QColor& color)
                 colorArray[2] = color.blueF();
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
-                
+
                 _imp->context->getColorKnob()->setValue(colorArray[0], 0);
                 _imp->context->getColorKnob()->setValue(colorArray[1], 1);
                 _imp->context->getColorKnob()->setValue(colorArray[2], 2);
-                
             } else if (_imp->dialogEdition == EDITING_OVERLAY_COLOR) {
                 double colorArray[4];
                 colorArray[0] = color.redF();
@@ -1138,78 +1171,86 @@ void RotoPanel::onItemColorDialogEdited(const QColor& color)
                 QIcon icon;
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_OVERLAY,icon);
-
             }
         }
-            
     }
-
 }
 
-void RotoPanelPrivate::setChildrenActivatedRecursively(bool activated,QTreeWidgetItem* item)
+void
+RotoPanelPrivate::setChildrenActivatedRecursively(bool activated,
+                                                  QTreeWidgetItem* item)
 {
     item->setIcon(COL_ACTIVATED, activated ? iconVisible : iconUnvisible);
     for (int i = 0; i < item->childCount(); ++i) {
-        setChildrenActivatedRecursively(activated,item->child(i));
+        setChildrenActivatedRecursively( activated,item->child(i) );
     }
 }
 
-void RotoPanelPrivate::setChildrenLockedRecursively(bool locked,QTreeWidgetItem* item)
+void
+RotoPanelPrivate::setChildrenLockedRecursively(bool locked,
+                                               QTreeWidgetItem* item)
 {
     item->setIcon(COL_LOCKED, locked ? iconLocked : iconUnlocked);
     for (int i = 0; i < item->childCount(); ++i) {
-        setChildrenLockedRecursively(locked,item->child(i));
+        setChildrenLockedRecursively( locked,item->child(i) );
     }
-
 }
 
-void RotoPanel::onItemChanged(QTreeWidgetItem* item,int column)
+void
+RotoPanel::onItemChanged(QTreeWidgetItem* item,
+                         int column)
 {
     if (column != 0) {
         return;
     }
     TreeItems::iterator it = _imp->findItem(item);
-    if (it != _imp->items.end()) {
+    if ( it != _imp->items.end() ) {
         std::string newName = item->text(column).toStdString();
         boost::shared_ptr<RotoItem> existingItem = _imp->context->getItemByName(newName);
-        if (existingItem && existingItem != it->rotoItem) {
-            Natron::warningDialog("", tr("An item with the name ").toStdString() + newName + tr(" already exists. Please pick something else.").toStdString());
-            item->setText(COL_NAME, _imp->editedItemName.c_str());
+        if ( existingItem && (existingItem != it->rotoItem) ) {
+            Natron::warningDialog( "", tr("An item with the name ").toStdString() + newName + tr(" already exists. Please pick something else.").toStdString() );
+            item->setText( COL_NAME, _imp->editedItemName.c_str() );
         } else {
             it->rotoItem->setName(newName);
         }
     }
 }
 
-void RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,int column)
+void
+RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
+                               int column)
 {
     if (column != COL_NAME) {
         return;
     }
     TreeItems::iterator it = _imp->findItem(item);
-    if (it != _imp->items.end()) {
+    if ( it != _imp->items.end() ) {
         _imp->editedItem = item;
-        QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)));
+        QObject::connect( qApp, SIGNAL( focusChanged(QWidget*,QWidget*) ), this, SLOT( onFocusChanged(QWidget*,QWidget*) ) );
         _imp->editedItemName = it->rotoItem->getName_mt_safe();
         _imp->tree->openPersistentEditor(item);
     }
 }
 
-void RotoPanel::onCurrentItemChanged(QTreeWidgetItem* /*current*/,QTreeWidgetItem* /*previous*/)
+void
+RotoPanel::onCurrentItemChanged(QTreeWidgetItem* /*current*/,
+                                QTreeWidgetItem* /*previous*/)
 {
     onTreeOutOfFocusEvent();
 }
 
-void RotoPanel::onTreeOutOfFocusEvent()
+void
+RotoPanel::onTreeOutOfFocusEvent()
 {
     if (_imp->editedItem) {
         _imp->tree->closePersistentEditor(_imp->editedItem);
         _imp->editedItem = NULL;
     }
-    
 }
 
-void RotoPanel::onFocusChanged(QWidget* old,QWidget*)
+void
+RotoPanel::onFocusChanged(QWidget* old,
+                          QWidget*)
 {
     if (_imp->editedItem) {
         QWidget* w = _imp->tree->itemWidget(_imp->editedItem, COL_NAME);
@@ -1220,13 +1261,15 @@ void RotoPanel::onFocusChanged(QWidget* old,QWidget*)
     }
 }
 
-void RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLayer>& layer)
+void
+RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLayer> & layer)
 {
-    const std::list<boost::shared_ptr<RotoItem> >& children = layer->getItems();
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it!=children.end(); ++it) {
+    const std::list<boost::shared_ptr<RotoItem> > & children = layer->getItems();
+
+    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it != children.end(); ++it) {
         boost::shared_ptr<RotoLayer> l = boost::dynamic_pointer_cast<RotoLayer>(*it);
         SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), *it);
-        if (found == selectedItems.end()) {
+        if ( found == selectedItems.end() ) {
             context->select(*it, RotoContext::SETTINGS_PANEL);
             selectedItems.push_back(*it);
         }
@@ -1236,55 +1279,56 @@ void RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLa
     }
 }
 
-void RotoPanel::onItemSelectionChanged()
+void
+RotoPanel::onItemSelectionChanged()
 {
-    
     ///disconnect previous selection
-    for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it!=_imp->selectedItems.end(); ++it) {
-        const Bezier* isBezier = dynamic_cast<const Bezier*>(it->get());
+    for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+        const Bezier* isBezier = dynamic_cast<const Bezier*>( it->get() );
         if (isBezier) {
-            QObject::disconnect(isBezier, SIGNAL(keyframeSet(int)), this, SLOT(onSelectedBezierKeyframeSet(int)));
-            QObject::disconnect(isBezier, SIGNAL(keyframeRemoved(int)), this, SLOT(onSelectedBezierKeyframeRemoved(int)));
+            QObject::disconnect( isBezier, SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
+            QObject::disconnect( isBezier, SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
         }
     }
     _imp->context->deselect(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
     _imp->selectedItems.clear();
-    
+
     ///Don't allow any selection to be made if the roto is a clone of another roto  node.
-    if (_imp->node->getNode()->getMasterNode()) {
+    if ( _imp->node->getNode()->getMasterNode() ) {
         _imp->tree->selectionModel()->clear();
+
         return;
     }
-    
+
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
-    
+
     int selectedBeziersCount = 0;
     for (int i = 0; i < selectedItems.size(); ++i) {
         TreeItems::iterator it = _imp->findItem(selectedItems[i]);
-        assert(it != _imp->items.end());
+        assert( it != _imp->items.end() );
         boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
         boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
         if (bezier) {
             SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), bezier);
-            if (found == _imp->selectedItems.end()) {
+            if ( found == _imp->selectedItems.end() ) {
                 _imp->selectedItems.push_back(bezier);
                 ++selectedBeziersCount;
             }
         } else if (layer) {
-            if (!layer->getItems().empty()) {
+            if ( !layer->getItems().empty() ) {
                 ++selectedBeziersCount;
             }
             SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), it->rotoItem);
-            if (found == _imp->selectedItems.end()) {
+            if ( found == _imp->selectedItems.end() ) {
                 _imp->selectedItems.push_back(it->rotoItem);
             }
             _imp->insertSelectionRecursively(layer);
         }
     }
     _imp->context->select(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
-    
+
     bool enabled = selectedBeziersCount > 0;
-    
+
     _imp->splineLabel->setEnabled(enabled);
     _imp->currentKeyframe->setEnabled(enabled);
     _imp->ofLabel->setEnabled(enabled);
@@ -1293,34 +1337,39 @@ void RotoPanel::onItemSelectionChanged()
     _imp->nextKeyframe->setEnabled(enabled);
     _imp->addKeyframe->setEnabled(enabled);
     _imp->removeKeyframe->setEnabled(enabled);
-    
+
     int time = _imp->context->getTimelineCurrentTime();
-    
+
     ///update the splines info GUI
     _imp->updateSplinesInfosGUI(time);
+} // onItemSelectionChanged
 
-}
-
-void RotoPanel::onAddLayerButtonClicked()
+void
+RotoPanel::onAddLayerButtonClicked()
 {
-    pushUndoCommand(new AddLayerUndoCommand(this));
+    pushUndoCommand( new AddLayerUndoCommand(this) );
 }
 
-void RotoPanel::onRemoveItemButtonClicked()
+void
+RotoPanel::onRemoveItemButtonClicked()
 {
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
-    pushUndoCommand(new RemoveItemsUndoCommand(this,selectedItems));
-  
+    pushUndoCommand( new RemoveItemsUndoCommand(this,selectedItems) );
 }
 
-static void isLayerAParent_recursive(RotoLayer* layer,RotoItem* item,bool* ret)
+static void
+isLayerAParent_recursive(RotoLayer* layer,
+                         RotoItem* item,
+                         bool* ret)
 {
     RotoLayer* parent = item->getParentLayer();
+
     if (!parent) {
         return;
     } else {
         if (layer == parent) {
             *ret = true;
+
             return;
         } else {
             isLayerAParent_recursive(layer, parent, ret);
@@ -1334,69 +1383,65 @@ TreeWidget::dragMoveEvent(QDragMoveEvent* e)
     const QMimeData* mime = e->mimeData();
     std::list<DroppedTreeItemPtr> droppedItems;
     bool ret = dragAndDropHandler(mime, e->pos(), droppedItems);
-    
     QTreeWidget::dragMoveEvent(e);
-    
+
     if (!ret) {
         e->setAccepted(ret);
     }
 }
 
-static void checkIfTreatedRecursive(QTreeWidgetItem* matcher, QTreeWidgetItem* item,bool *ret)
+static void
+checkIfTreatedRecursive(QTreeWidgetItem* matcher,
+                        QTreeWidgetItem* item,
+                        bool *ret)
 {
     if (item == matcher) {
         *ret = true;
     } else {
-        if (item->parent()) {
+        if ( item->parent() ) {
             checkIfTreatedRecursive(matcher,item->parent(),ret);
         }
     }
 }
 
-
 bool
 TreeWidget::dragAndDropHandler(const QMimeData* mime,
-                               const QPoint& pos,
-                               std::list<DroppedTreeItemPtr>& dropped)
+                               const QPoint & pos,
+                               std::list<DroppedTreeItemPtr> & dropped)
 {
-
-
-    if (mime->hasFormat("application/x-qabstractitemmodeldatalist")) {
+    if ( mime->hasFormat("application/x-qabstractitemmodeldatalist") ) {
         QByteArray encoded = mime->data("application/x-qabstractitemmodeldatalist");
         QDataStream stream(&encoded,QIODevice::ReadOnly);
-        
         DropIndicatorPosition position = dropIndicatorPosition();
-        
+
         ///list of items we already handled d&d for. If we find an item whose parent
         ///is already in this list we don't handle it
         std::list<QTreeWidgetItem*> treatedItems;
-        while (!stream.atEnd())
-        {
-            
+        while ( !stream.atEnd() ) {
             int row, col;
             QMap<int,QVariant> roleDataMap;
-            
+
             stream >> row >> col >> roleDataMap;
-            
+
             QMap<int, QVariant>::Iterator it = roleDataMap.find(0);
-            
-            if (it != roleDataMap.end()) {
+
+            if ( it != roleDataMap.end() ) {
                 DroppedTreeItemPtr ret(new DroppedTreeItem);
 
                 ///The target item
                 QTreeWidgetItem* into = itemAt(pos);
-                
+
                 if (!into) {
                     return false;
                 }
-                
+
                 boost::shared_ptr<RotoItem> intoRotoItem = _panel->getRotoItemForTreeItem(into);
                 QList<QTreeWidgetItem*> foundDropped = findItems(it.value().toString(),Qt::MatchExactly | Qt::MatchRecursive,0);
-                assert(!foundDropped.empty());
-                
+                assert( !foundDropped.empty() );
+
                 ///the dropped item
                 ret->dropped = foundDropped[0];
-                
+
                 bool treated = false;
                 for (std::list<QTreeWidgetItem*>::iterator treatedIt = treatedItems.begin(); treatedIt != treatedItems.end(); ++treatedIt) {
                     checkIfTreatedRecursive(*treatedIt,ret->dropped,&treated);
@@ -1407,105 +1452,105 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                 if (treated) {
                     continue;
                 }
-                
-                
+
+
                 ret->droppedRotoItem = _panel->getRotoItemForTreeItem(ret->dropped);
                 assert(into && ret->dropped && intoRotoItem && ret->droppedRotoItem);
-                
+
                 ///Is the target item a layer ?
-                RotoLayer* isIntoALayer = dynamic_cast<RotoLayer*>(intoRotoItem.get());
-     
+                RotoLayer* isIntoALayer = dynamic_cast<RotoLayer*>( intoRotoItem.get() );
+
                 ///Determine into which layer the item should be inserted.
                 switch (position) {
-                    case QAbstractItemView::AboveItem:
-                    {
-                        ret->newParentLayer = intoRotoItem->getParentLayer();
-                        if (ret->newParentLayer) {
-                            ret->newParentItem = into->parent();
-                            ///find the target item index into its parent layer and insert the item above it
-                            const std::list<boost::shared_ptr<RotoItem> >& children = intoRotoItem->getParentLayer()->getItems();
-                            std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
+                case QAbstractItemView::AboveItem: {
+                    ret->newParentLayer = intoRotoItem->getParentLayer();
+                    if (ret->newParentLayer) {
+                        ret->newParentItem = into->parent();
+                        ///find the target item index into its parent layer and insert the item above it
+                        const std::list<boost::shared_ptr<RotoItem> > & children = intoRotoItem->getParentLayer()->getItems();
+                        std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
                             std::find(children.begin(),children.end(),intoRotoItem);
-                            assert(found != children.end());
-                            int index = std::distance(children.begin(), found);
-                            
-                            ///if the dropped item is already into the children and after the found index don't decrement
-                            found = std::find(children.begin(),children.end(),ret->droppedRotoItem);
-                            if (found != children.end() && std::distance(children.begin(), found) > index) {
-                                ret->insertIndex = index;
-                            } else {
-                                ret->insertIndex = index == 0 ? 0 : index - 1;
-                            }
+                        assert( found != children.end() );
+                        int index = std::distance(children.begin(), found);
+
+                        ///if the dropped item is already into the children and after the found index don't decrement
+                        found = std::find(children.begin(),children.end(),ret->droppedRotoItem);
+                        if ( ( found != children.end() ) && ( std::distance(children.begin(), found) > index) ) {
+                            ret->insertIndex = index;
                         } else {
-                            return false;
+                            ret->insertIndex = index == 0 ? 0 : index - 1;
                         }
-                    }   break;
-                    case QAbstractItemView::BelowItem:
-                    {
-                        RotoLayer* intoParentLayer = intoRotoItem->getParentLayer();
-                        bool isTargetLayerAParent = false;
-                        if (isIntoALayer) {
-                            isLayerAParent_recursive(isIntoALayer, ret->droppedRotoItem.get(), &isTargetLayerAParent);
-                        }
-                        if (!intoParentLayer || isTargetLayerAParent) {
-                            ///insert at the begining of the layer
-                            ret->insertIndex = 0;
-                            ret->newParentLayer = isIntoALayer;
-                            ret->newParentItem = into;
-                        } else {
-                            ///find the target item index into its parent layer and insert the item after it
-                            const std::list<boost::shared_ptr<RotoItem> >& children = intoParentLayer->getItems();
-                            std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
-                            std::find(children.begin(),children.end(),intoRotoItem);
-                            assert(found != children.end());
-                            int index = std::distance(children.begin(), found);
-                            
-                            ///if the dropped item is already into the children and before the found index don't decrement
-                            found = std::find(children.begin(),children.end(),ret->droppedRotoItem);
-                            if (found != children.end() && std::distance(children.begin(), found) < index) {
-                                ret->insertIndex = index;
-                            } else {
-                                ret->insertIndex = index + 1;
-                            }
-                            
-                            ret->newParentLayer = intoParentLayer;
-                            ret->newParentItem = into->parent();
-                        }
-                    }   break;
-                    case QAbstractItemView::OnItem:
-                    {
-                        if (isIntoALayer) {
-                            ///insert at the end of the layer
-                            const std::list<boost::shared_ptr<RotoItem> >& children = isIntoALayer->getItems();
-                            ///check if the item is already in that layer
-                            std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
-                            std::find(children.begin(), children.end(), ret->droppedRotoItem);
-                            if (found != children.end()) {
-                                ret->insertIndex =  children.empty() ? 0 : (int)children.size() -1; // minus one because we're going to remove the item from it
-                            } else {
-                                ret->insertIndex = (int)children.size();
-                            }
-                            
-                            ret->newParentLayer = isIntoALayer;
-                            ret->newParentItem = into;
-                        } else {
-                            ///dropping an item on another item which is not a layer is not accepted
-                            return false;
-                        }
-                    }   break;
-                    case QAbstractItemView::OnViewport:
-                    default:
-                        //do nothing we don't accept it
+                    } else {
                         return false;
+                    }
+                }
+                break;
+                case QAbstractItemView::BelowItem: {
+                    RotoLayer* intoParentLayer = intoRotoItem->getParentLayer();
+                    bool isTargetLayerAParent = false;
+                    if (isIntoALayer) {
+                        isLayerAParent_recursive(isIntoALayer, ret->droppedRotoItem.get(), &isTargetLayerAParent);
+                    }
+                    if (!intoParentLayer || isTargetLayerAParent) {
+                        ///insert at the begining of the layer
+                        ret->insertIndex = 0;
+                        ret->newParentLayer = isIntoALayer;
+                        ret->newParentItem = into;
+                    } else {
+                        ///find the target item index into its parent layer and insert the item after it
+                        const std::list<boost::shared_ptr<RotoItem> > & children = intoParentLayer->getItems();
+                        std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
+                            std::find(children.begin(),children.end(),intoRotoItem);
+                        assert( found != children.end() );
+                        int index = std::distance(children.begin(), found);
+
+                        ///if the dropped item is already into the children and before the found index don't decrement
+                        found = std::find(children.begin(),children.end(),ret->droppedRotoItem);
+                        if ( ( found != children.end() ) && ( std::distance(children.begin(), found) < index) ) {
+                            ret->insertIndex = index;
+                        } else {
+                            ret->insertIndex = index + 1;
+                        }
+
+                        ret->newParentLayer = intoParentLayer;
+                        ret->newParentItem = into->parent();
+                    }
+                }
+                break;
+                case QAbstractItemView::OnItem: {
+                    if (isIntoALayer) {
+                        ///insert at the end of the layer
+                        const std::list<boost::shared_ptr<RotoItem> > & children = isIntoALayer->getItems();
+                        ///check if the item is already in that layer
+                        std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
+                            std::find(children.begin(), children.end(), ret->droppedRotoItem);
+                        if ( found != children.end() ) {
+                            ret->insertIndex =  children.empty() ? 0 : (int)children.size() - 1;    // minus one because we're going to remove the item from it
+                        } else {
+                            ret->insertIndex = (int)children.size();
+                        }
+
+                        ret->newParentLayer = isIntoALayer;
+                        ret->newParentItem = into;
+                    } else {
+                        ///dropping an item on another item which is not a layer is not accepted
+                        return false;
+                    }
+                }
+                break;
+                case QAbstractItemView::OnViewport:
+                default:
+
+                    //do nothing we don't accept it
+                    return false;
                 } // switch
                 dropped.push_back(ret);
                 treatedItems.push_back(ret->dropped);
             } //  if (it != roleDataMap.end())
-
         } // while (!stream.atEnd())
     } //if (mime->hasFormat("application/x-qabstractitemmodeldatalist"))
     return true;
-}
+} // dragAndDropHandler
 
 void
 TreeWidget::dropEvent(QDropEvent* e)
@@ -1513,12 +1558,12 @@ TreeWidget::dropEvent(QDropEvent* e)
     std::list<DroppedTreeItemPtr> droppedItems;
     const QMimeData* mime = e->mimeData();
     bool accepted = dragAndDropHandler(mime,e->pos(), droppedItems);
+
     e->setAccepted(accepted);
-    
+
     if (accepted) {
-        _panel->pushUndoCommand(new DragItemsUndoCommand(_panel,droppedItems));
+        _panel->pushUndoCommand( new DragItemsUndoCommand(_panel,droppedItems) );
     }
-    
 }
 
 void
@@ -1526,20 +1571,20 @@ TreeWidget::keyPressEvent(QKeyEvent* e)
 {
     QList<QTreeWidgetItem*> selected = selectedItems();
     QTreeWidgetItem* item = selected.empty() ? 0 :  selected.front();
-    
+
     if (item) {
         _panel->setLastRightClickedItem(item);
-        if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
+        if ( (e->key() == Qt::Key_Delete) || (e->key() == Qt::Key_Backspace) ) {
             _panel->onRemoveItemButtonClicked();
-        } else if (e->key() == Qt::Key_C && modCASIsControl(e)) {
+        } else if ( (e->key() == Qt::Key_C) && modCASIsControl(e) ) {
             _panel->onCopyItemActionTriggered();
-        } else if (e->key() == Qt::Key_V && modCASIsControl(e)) {
+        } else if ( (e->key() == Qt::Key_V) && modCASIsControl(e) ) {
             _panel->onPasteItemActionTriggered();
-        } else if (e->key() == Qt::Key_X && modCASIsControl(e)) {
+        } else if ( (e->key() == Qt::Key_X) && modCASIsControl(e) ) {
             _panel->onCutItemActionTriggered();
-        } else if (e->key() == Qt::Key_C && modCASIsAlt(e)) {
+        } else if ( (e->key() == Qt::Key_C) && modCASIsAlt(e) ) {
             _panel->onDuplicateItemActionTriggered();
-        } else if (e->key() == Qt::Key_A && modCASIsControl(e)) {
+        } else if ( (e->key() == Qt::Key_A) && modCASIsControl(e) ) {
             _panel->selectAll();
         } else {
             QTreeWidget::keyPressEvent(e);
@@ -1553,6 +1598,7 @@ void
 RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 {
     NodeSettingsPanel* panel = _imp->node->getSettingPanel();
+
     assert(panel);
     panel->pushUndoCommand(cmd);
 }
@@ -1578,41 +1624,42 @@ RotoPanel::clearSelection()
 
 void
 RotoPanel::showItemMenu(QTreeWidgetItem* item,
-                        const QPoint& globalPos)
+                        const QPoint & globalPos)
 {
     TreeItems::iterator it = _imp->findItem(item);
-    if (it == _imp->items.end()) {
+
+    if ( it == _imp->items.end() ) {
         return;
     }
-    
-    
+
+
     _imp->lastRightClickedItem = item;
-    
+
     QMenu menu(this);
-    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
     menu.setShortcutEnabled(false);
-    QAction* addLayerAct = menu.addAction(tr("Add layer"));
-    QObject::connect(addLayerAct, SIGNAL(triggered()), this, SLOT(onAddLayerActionTriggered()));
-    QAction* deleteAct = menu.addAction(tr("Delete"));
-    deleteAct->setShortcut(QKeySequence(Qt::Key_Backspace));
-    QObject::connect(deleteAct, SIGNAL(triggered()), this, SLOT(onDeleteItemActionTriggered()));
-    QAction* cutAct = menu.addAction(tr("Cut"));
-    cutAct->setShortcut(QKeySequence(Qt::Key_X + Qt::CTRL));
-    QObject::connect(cutAct, SIGNAL(triggered()), this, SLOT(onCutItemActionTriggered()));
-    QAction* copyAct = menu.addAction(tr("Copy"));
-    copyAct->setShortcut(QKeySequence(Qt::Key_C + Qt::CTRL));
-    QObject::connect(copyAct, SIGNAL(triggered()), this, SLOT(onCopyItemActionTriggered()));
-    QAction* pasteAct = menu.addAction(tr("Paste"));
-    pasteAct->setShortcut(QKeySequence(Qt::Key_V + Qt::CTRL));
-    QObject::connect(pasteAct, SIGNAL(triggered()), this, SLOT(onPasteItemActionTriggered()));
-    pasteAct->setEnabled(!_imp->clipBoard.empty());
-    QAction* duplicateAct = menu.addAction(tr("Duplicate"));
-    duplicateAct->setShortcut(QKeySequence(Qt::Key_C + Qt::ALT));
-    QObject::connect(duplicateAct, SIGNAL(triggered()), this, SLOT(onDuplicateItemActionTriggered()));
-    
+    QAction* addLayerAct = menu.addAction( tr("Add layer") );
+    QObject::connect( addLayerAct, SIGNAL( triggered() ), this, SLOT( onAddLayerActionTriggered() ) );
+    QAction* deleteAct = menu.addAction( tr("Delete") );
+    deleteAct->setShortcut( QKeySequence(Qt::Key_Backspace) );
+    QObject::connect( deleteAct, SIGNAL( triggered() ), this, SLOT( onDeleteItemActionTriggered() ) );
+    QAction* cutAct = menu.addAction( tr("Cut") );
+    cutAct->setShortcut( QKeySequence(Qt::Key_X + Qt::CTRL) );
+    QObject::connect( cutAct, SIGNAL( triggered() ), this, SLOT( onCutItemActionTriggered() ) );
+    QAction* copyAct = menu.addAction( tr("Copy") );
+    copyAct->setShortcut( QKeySequence(Qt::Key_C + Qt::CTRL) );
+    QObject::connect( copyAct, SIGNAL( triggered() ), this, SLOT( onCopyItemActionTriggered() ) );
+    QAction* pasteAct = menu.addAction( tr("Paste") );
+    pasteAct->setShortcut( QKeySequence(Qt::Key_V + Qt::CTRL) );
+    QObject::connect( pasteAct, SIGNAL( triggered() ), this, SLOT( onPasteItemActionTriggered() ) );
+    pasteAct->setEnabled( !_imp->clipBoard.empty() );
+    QAction* duplicateAct = menu.addAction( tr("Duplicate") );
+    duplicateAct->setShortcut( QKeySequence(Qt::Key_C + Qt::ALT) );
+    QObject::connect( duplicateAct, SIGNAL( triggered() ), this, SLOT( onDuplicateItemActionTriggered() ) );
+
     ///The base layer cannot be duplicated
     duplicateAct->setEnabled(it->rotoItem->getParentLayer() != NULL);
-    
+
     menu.exec(globalPos);
 }
 
@@ -1620,7 +1667,7 @@ void
 RotoPanel::onAddLayerActionTriggered()
 {
     assert(_imp->lastRightClickedItem);
-    pushUndoCommand(new AddLayerUndoCommand(this));
+    pushUndoCommand( new AddLayerUndoCommand(this) );
 }
 
 void
@@ -1628,8 +1675,7 @@ RotoPanel::onDeleteItemActionTriggered()
 {
     assert(_imp->lastRightClickedItem);
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
-    pushUndoCommand(new RemoveItemsUndoCommand(this,selectedItems));
-
+    pushUndoCommand( new RemoveItemsUndoCommand(this,selectedItems) );
 }
 
 void
@@ -1638,8 +1684,7 @@ RotoPanel::onCutItemActionTriggered()
     assert(_imp->lastRightClickedItem);
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
     _imp->clipBoard = selectedItems;
-    pushUndoCommand(new RemoveItemsUndoCommand(this,selectedItems));
-
+    pushUndoCommand( new RemoveItemsUndoCommand(this,selectedItems) );
 }
 
 void
@@ -1652,50 +1697,49 @@ RotoPanel::onCopyItemActionTriggered()
 void
 RotoPanel::onPasteItemActionTriggered()
 {
-    assert(!_imp->clipBoard.empty());
+    assert( !_imp->clipBoard.empty() );
     RotoDrawableItem* drawable;
     {
         TreeItems::iterator it = _imp->findItem(_imp->lastRightClickedItem);
-        if (it == _imp->items.end()) {
+        if ( it == _imp->items.end() ) {
             return;
         }
-        drawable = dynamic_cast<RotoDrawableItem*>(it->rotoItem.get());
+        drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
     }
-        
-    
+
+
     ///make sure that if the item copied is only a bezier that we do not paste it on the same bezier.
     if (_imp->clipBoard.size() == 1) {
-        TreeItems::iterator it = _imp->findItem(_imp->clipBoard.front());
-        if (it == _imp->items.end()) {
+        TreeItems::iterator it = _imp->findItem( _imp->clipBoard.front() );
+        if ( it == _imp->items.end() ) {
             return;
         }
         if (it->rotoItem.get() == drawable) {
             return;
         }
     }
-    
+
     if (drawable) {
-        
         ///cannot paste multiple items on a drawable item
         if (_imp->clipBoard.size() > 1) {
             return;
         }
-        
+
         ///cannot paste a non-drawable to a drawable
-        TreeItems::iterator clip = _imp->findItem(_imp->clipBoard.front());
-        RotoDrawableItem* isClipBoardDrawable = dynamic_cast<RotoDrawableItem*>(clip->rotoItem.get());
+        TreeItems::iterator clip = _imp->findItem( _imp->clipBoard.front() );
+        RotoDrawableItem* isClipBoardDrawable = dynamic_cast<RotoDrawableItem*>( clip->rotoItem.get() );
         if (!isClipBoardDrawable) {
             return;
         }
     }
-    
-    pushUndoCommand(new PasteItemUndoCommand(this,_imp->lastRightClickedItem,_imp->clipBoard));
+
+    pushUndoCommand( new PasteItemUndoCommand(this,_imp->lastRightClickedItem,_imp->clipBoard) );
 }
 
 void
 RotoPanel::onDuplicateItemActionTriggered()
 {
-    pushUndoCommand(new DuplicateItemUndoCommand(this,_imp->lastRightClickedItem));
+    pushUndoCommand( new DuplicateItemUndoCommand(this,_imp->lastRightClickedItem) );
 }
 
 void
@@ -1709,7 +1753,7 @@ void
 RotoPanel::selectAll()
 {
     _imp->tree->blockSignals(true);
-    for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
+    for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         it->treeItem->setSelected(true);
     }
     _imp->tree->blockSignals(false);
@@ -1717,23 +1761,28 @@ RotoPanel::selectAll()
 }
 
 bool
-RotoPanelPrivate::itemHasKey(RotoItem* item,int time) const
+RotoPanelPrivate::itemHasKey(RotoItem* item,
+                             int time) const
 {
     ItemKeys::const_iterator it = keyframes.find(item);
-    if (it != keyframes.end()) {
+
+    if ( it != keyframes.end() ) {
         std::set<int>::const_iterator it2 = it->second.find(time);
-        if (it2 != it->second.end()) {
+        if ( it2 != it->second.end() ) {
             return true;
         }
     }
+
     return false;
 }
 
 void
-RotoPanelPrivate::setItemKey(RotoItem* item,int time)
+RotoPanelPrivate::setItemKey(RotoItem* item,
+                             int time)
 {
     ItemKeys::iterator it = keyframes.find(item);
-    if (it != keyframes.end()) {
+
+    if ( it != keyframes.end() ) {
         std::pair<std::set<int>::iterator,bool> ret = it->second.insert(time);
         if (ret.second) {
             node->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
@@ -1741,17 +1790,19 @@ RotoPanelPrivate::setItemKey(RotoItem* item,int time)
     } else {
         std::set<int> keys;
         keys.insert(time);
-        keyframes.insert(std::make_pair(item, keys));
+        keyframes.insert( std::make_pair(item, keys) );
     }
 }
 
 void
-RotoPanelPrivate::removeItemKey(RotoItem* item,int time)
+RotoPanelPrivate::removeItemKey(RotoItem* item,
+                                int time)
 {
     ItemKeys::iterator it = keyframes.find(item);
-    if (it != keyframes.end()) {
+
+    if ( it != keyframes.end() ) {
         std::set<int>::iterator it2 = it->second.find(time);
-        if (it2 != it->second.end()) {
+        if ( it2 != it->second.end() ) {
             it->second.erase(it2);
             node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
         }
@@ -1763,11 +1814,11 @@ RotoPanel::onSettingsPanelClosed(bool closed)
 {
     if (closed) {
         ///remove all keyframes from the structure kept
-        for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>(it->rotoItem.get());
+        for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+            Bezier* isBezier = dynamic_cast<Bezier*>( it->rotoItem.get() );
             if (isBezier) {
                 ItemKeys::iterator it2 = _imp->keyframes.find(isBezier);
-                if (it2 != _imp->keyframes.end()) {
+                if ( it2 != _imp->keyframes.end() ) {
                     std::list<SequenceTime> markers;
                     for (std::set<int>::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
                         markers.push_back(*it3);
@@ -1779,20 +1830,20 @@ RotoPanel::onSettingsPanelClosed(bool closed)
         }
     } else {
         ///rebuild all the keyframe structure
-        for (TreeItems::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>(it->rotoItem.get());
+        for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+            Bezier* isBezier = dynamic_cast<Bezier*>( it->rotoItem.get() );
             if (isBezier) {
-                assert (_imp->keyframes.find(isBezier) == _imp->keyframes.end());
+                assert ( _imp->keyframes.find(isBezier) == _imp->keyframes.end() );
                 std::set<int> keys;
                 isBezier->getKeyframeTimes(&keys);
                 std::list<SequenceTime> markers;
                 for (std::set<int>::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     markers.push_back(*it3);
                 }
-                _imp->keyframes.insert(std::make_pair(isBezier, keys));
+                _imp->keyframes.insert( std::make_pair(isBezier, keys) );
                 _imp->node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
-                
             }
         }
     }
 }
+

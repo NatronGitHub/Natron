@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -29,29 +29,33 @@ class QVBoxLayout;
 class QDialogButtonBox;
 class Button;
 class Gui;
-class PreferencesPanel : public QWidget
+class PreferencesPanel
+    : public QWidget
 {
     Q_OBJECT
-    
+
 public:
-    PreferencesPanel(boost::shared_ptr<Settings> settings,Gui* parent);
-    ~PreferencesPanel() OVERRIDE {}
+    PreferencesPanel(boost::shared_ptr<Settings> settings,
+                     Gui* parent);
+    ~PreferencesPanel() OVERRIDE
+    {
+    }
 
 public slots:
-    
+
     void restoreDefaults();
-    
+
     void cancelChanges();
 
     void applyChanges();
 
     void applyChangesAndClose();
+
 private:
-    
+
     virtual void showEvent(QShowEvent* e) OVERRIDE;
-    
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
-    
+
     // FIXME: PIMPL
     Gui* _gui;
     QVBoxLayout* _mainLayout;

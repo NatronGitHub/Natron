@@ -4,7 +4,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-
 #ifndef TRACKERGUI_H
 #define TRACKERGUI_H
 
@@ -27,64 +26,66 @@ class QPointF;
 class QMouseEvent;
 
 struct TrackerGuiPrivate;
-class TrackerGui : public QObject
+class TrackerGui
+    : public QObject
 {
     Q_OBJECT
-    
+
 public:
-    
-    TrackerGui(const boost::shared_ptr<TrackerPanel>& panel,ViewerTab* parent);
-    
+
+    TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
+               ViewerTab* parent);
+
     virtual ~TrackerGui();
-    
+
     /**
      * @brief Return the horizontal buttons bar.
      **/
     QWidget* getButtonsBar() const;
-    
-    
+
+
     void drawOverlays(double scaleX, double scaleY) const;
-    
-    bool penDown(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
-    
-    bool penDoubleClicked(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
-    
-    bool penMotion(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
-    
-    bool penUp(double scaleX, double scaleY, const QPointF& viewportPos, const QPointF& pos, QMouseEvent* e);
-    
+
+    bool penDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+
+    bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+
+    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+
+    bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+
     bool keyDown(double scaleX, double scaleY, QKeyEvent* e);
-    
+
     bool keyUp(double scaleX, double scaleY, QKeyEvent* e);
-    
+
     bool loseFocus(double scaleX, double scaleY);
 
 public slots:
-    
+
     void onAddTrackClicked(bool clicked);
-    
+
     void onTrackBwClicked();
-    
+
     void onTrackPrevClicked();
-    
+
     void onTrackNextClicked();
-    
+
     void onTrackFwClicked();
-    
+
     void onUpdateViewerClicked(bool clicked);
-    
+
     void onClearAllAnimationClicked();
-    
+
     void onClearBwAnimationClicked();
-    
+
     void onClearFwAnimationClicked();
-    
+
     void updateSelectionFromSelectionRectangle(bool onRelease);
-    
+
     void onSelectionCleared();
-    
+
 private:
-    
+
     boost::scoped_ptr<TrackerGuiPrivate> _imp;
 };
 

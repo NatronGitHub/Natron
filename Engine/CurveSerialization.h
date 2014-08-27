@@ -4,11 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
-
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 
 #ifndef NATRON_ENGINE_CURVESERIALIZATION_H_
@@ -29,13 +28,12 @@ CLANG_DIAG_ON(unused-parameter)
 
 
 template<class Archive>
-void Curve::serialize(Archive & ar, const unsigned int /*version*/)
+void
+Curve::serialize(Archive & ar,
+                 const unsigned int /*version*/)
 {
     QReadLocker l(&_imp->_lock);
     ar & boost::serialization::make_nvp("KeyFrameSet",_imp->keyFrames);
 }
-
-
-
 
 #endif // NATRON_ENGINE_CURVESERIALIZATION_H_

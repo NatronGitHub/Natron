@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #ifndef NATRON_GUI_INFOVIEWERWIDGET_H_
 #define NATRON_GUI_INFOVIEWERWIDGET_H_
@@ -27,40 +27,42 @@ class ViewerGL;
 class QLabel;
 class QHBoxLayout;
 
-class InfoViewerWidget: public QWidget{
+class InfoViewerWidget
+    : public QWidget
+{
     Q_OBJECT
-    
+
 public:
-    explicit InfoViewerWidget(ViewerGL* v,const QString& description,QWidget* parent=0);
+    explicit InfoViewerWidget(ViewerGL* v,
+                              const QString & description,
+                              QWidget* parent = 0);
     virtual ~InfoViewerWidget() OVERRIDE;
-    
-    
+
+
     bool colorAndMouseVisible();
-    
-    void setResolution(const Format& f);
-    
-    void setDataWindow(const RectD& r); // in canonical coordinates
-    
+
+    void setResolution(const Format & f);
+
+    void setDataWindow(const RectD & r); // in canonical coordinates
+
     void setImageFormat(Natron::ImageComponents comp,Natron::ImageBitDepth depth);
-    
+
     void setColor(float r,float g,float b,float a);
-    
+
     void setMousePos(QPoint p);
-    
+
 public slots:
 
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
     void setFps(double actualFps,double desiredFps);
     void hideFps();
-    
+
 private:
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    
-    
-    
+
 private:
-    
+
     QHBoxLayout* layout;
     QLabel* descriptionLabel;
     QLabel* imageFormat;
@@ -74,7 +76,6 @@ private:
     QLabel* hvl_lastOption;
     QLabel* _fpsLabel;
     ViewerGL* viewer;
-    
     Natron::ImageComponents _comp;
 };
 

@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #include <csignal>
 #include <cstdio>
@@ -23,15 +23,17 @@
 void setShutDownSignal(int signalId);
 void handleShutDownSignal(int signalId);
 
-int main(int argc, char *argv[])
-{	
+int
+main(int argc,
+     char *argv[])
+{
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
-     Avoid 'Too many open files' on Unix.
+       Avoid 'Too many open files' on Unix.
 
-     Increase the number of file descriptors that the process can open to the maximum allowed.
-     - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
-     - On Linux, the default limit is usually 1024.
+       Increase the number of file descriptors that the process can open to the maximum allowed.
+       - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
+       - On Linux, the default limit is usually 1024.
      */
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
@@ -58,19 +60,21 @@ int main(int argc, char *argv[])
     setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
 #ifdef Q_OS_UNIX
-    if (!projectName.isEmpty()) {
+    if ( !projectName.isEmpty() ) {
         projectName = AppManager::qt_tildeExpansion(projectName);
     }
 #endif
     if (isBackground) {
-        if (projectName.isEmpty()) {
+        if ( projectName.isEmpty() ) {
             ///Autobackground without a project file name is not correct
             AppManager::printUsage();
+
             return 1;
         }
         AppManager manager;
-        if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
+        if ( !manager.load(argc,argv,projectName,writers,mainProcessServerName) ) {
             AppManager::printUsage();
+
             return 1;
         } else {
             return 0;
@@ -81,12 +85,13 @@ int main(int argc, char *argv[])
         if (!loaded) {
             return 1;
         }
+
         return manager.exec();
     }
+} // main
 
-}
-
-void setShutDownSignal( int signalId )
+void
+setShutDownSignal( int signalId )
 {
 #ifdef __NATRON_UNIX__
     struct sigaction sa;
@@ -100,8 +105,9 @@ void setShutDownSignal( int signalId )
 #endif
 }
 
-
-void handleShutDownSignal( int /*signalId*/ )
+void
+handleShutDownSignal( int /*signalId*/ )
 {
     QCoreApplication::exit(0);
 }
+

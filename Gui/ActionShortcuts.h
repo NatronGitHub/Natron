@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
-* @brief In this file all Natron's actions that can have their shortcut edited should be listed.
-**/
+ * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
+ **/
 #include <map>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -371,60 +371,82 @@
 #define kShortcutIDActionCurveEditorPaste "paste"
 #define kShortcutDescActionCurveEditorPaste "Paste keyframes"
 
-class BoundAction {
-    
+class BoundAction
+{
 public:
-    
+
     bool editable;
     QString grouping; //< the grouping of the action, such as CurveEditor/
     QString description; //< the description that will be in the shortcut editor
     Qt::KeyboardModifiers modifiers; //< the keyboard modifiers that must be held down during the action
     Qt::KeyboardModifiers defaultModifiers; //< the default keyboard modifiers
-    
-    BoundAction() : editable(true) {}
-    
-    virtual ~BoundAction() {}
+
+    BoundAction()
+        : editable(true)
+    {
+    }
+
+    virtual ~BoundAction()
+    {
+    }
 };
 
-class KeyBoundAction : public BoundAction
+class KeyBoundAction
+    : public BoundAction
 {
 public:
-    
+
     Qt::Key currentShortcut; //< the actual shortcut for the keybind
     Qt::Key defaultShortcut; //< the default shortcut proposed by the dev team
-    
-    KeyBoundAction() : BoundAction() {}
-    
-    virtual ~KeyBoundAction() {}
+
+    KeyBoundAction()
+        : BoundAction()
+    {
+    }
+
+    virtual ~KeyBoundAction()
+    {
+    }
 };
 
-class MouseAction : public BoundAction {
-    
+class MouseAction
+    : public BoundAction
+{
 public:
-    
+
     Qt::MouseButton button; //< the button that must be held down for the action. This cannot be edited!
-    
-    MouseAction() : BoundAction() {}
-    
-    virtual ~MouseAction() {}
+
+    MouseAction()
+        : BoundAction()
+    {
+    }
+
+    virtual ~MouseAction()
+    {
+    }
 };
 
 inline
-QKeySequence makeKeySequence(const Qt::KeyboardModifiers& modifiers,Qt::Key key) {
+QKeySequence
+makeKeySequence(const Qt::KeyboardModifiers & modifiers,
+                Qt::Key key)
+{
     int keys = 0;
-    if (modifiers.testFlag(Qt::ControlModifier)) {
+
+    if ( modifiers.testFlag(Qt::ControlModifier) ) {
         keys |= Qt::CTRL;
     }
-    if (modifiers.testFlag(Qt::ShiftModifier)) {
+    if ( modifiers.testFlag(Qt::ShiftModifier) ) {
         keys |= Qt::SHIFT;
     }
-    if (modifiers.testFlag(Qt::AltModifier)) {
+    if ( modifiers.testFlag(Qt::AltModifier) ) {
         keys |= Qt::ALT;
     }
-    if (modifiers.testFlag(Qt::MetaModifier)) {
+    if ( modifiers.testFlag(Qt::MetaModifier) ) {
         keys |= Qt::META;
     }
     keys |= key;
+
     return QKeySequence(keys);
 }
 
@@ -432,7 +454,7 @@ QKeySequence makeKeySequence(const Qt::KeyboardModifiers& modifiers,Qt::Key key)
 ///in the sequence native's string. If we find them, we remove them. The last character
 ///is then the key symbol, we just have to call seq[0] to retrieve it.
 inline void
-extractKeySequence(const QKeySequence& seq,
+extractKeySequence(const QKeySequence & seq,
                    Qt::KeyboardModifiers & modifiers,
                    Qt::Key & symbol)
 {
@@ -440,8 +462,8 @@ extractKeySequence(const QKeySequence& seq,
     const QString nativeCTRLStr = QKeySequence(Qt::CTRL).toString(QKeySequence::NativeText);
     const QString nativeSHIFTStr = QKeySequence(Qt::SHIFT).toString(QKeySequence::NativeText);
     const QString nativeALTStr = QKeySequence(Qt::ALT).toString(QKeySequence::NativeText);
-    
     QString nativeSeqStr = seq.toString(QKeySequence::NativeText);
+
     if (nativeSeqStr.indexOf(nativeMETAStr) != -1) {
         modifiers |= Qt::MetaModifier;
         nativeSeqStr = nativeSeqStr.remove(nativeMETAStr);
@@ -458,7 +480,7 @@ extractKeySequence(const QKeySequence& seq,
         modifiers |= Qt::AltModifier;
         nativeSeqStr = nativeSeqStr.remove(nativeALTStr);
     }
-    
+
     ///The nativeSeqStr now contains only the symbol
     QKeySequence newSeq(nativeSeqStr,QKeySequence::NativeText);
     if (newSeq.count() > 0) {
@@ -466,7 +488,6 @@ extractKeySequence(const QKeySequence& seq,
     } else {
         symbol = (Qt::Key)0;
     }
-    
 }
 
 ///All the shortcuts of a group matched against their

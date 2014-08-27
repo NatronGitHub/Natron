@@ -4,12 +4,12 @@
 #include <QString>
 
 namespace Natron {
-
 class StandardPaths
 {
 public:
-    
-    enum StandardLocation {
+
+    enum StandardLocation
+    {
         DesktopLocation = 0,
         DocumentsLocation,
         FontsLocation,
@@ -27,17 +27,13 @@ public:
         DownloadLocation,
         GenericCacheLocation
     };
-    
-    
+
     static QString writableLocation(StandardLocation type);
 
-    
 private:
-    
-    StandardPaths();
 
+    StandardPaths();
 };
-    
 }
 
 #endif // STANDARDPATHS_H

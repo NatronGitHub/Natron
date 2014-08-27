@@ -34,10 +34,9 @@ using namespace Natron;
 
 #define NATRON_TEXT_RENDERER_USE_CACHE
 
-namespace
+namespace {
+struct CharBitmap
 {
-
-struct CharBitmap {
     GLuint texID;
     uint w;
     uint h;
@@ -45,21 +44,21 @@ struct CharBitmap {
     GLfloat yTexCoords[2];
 };
 
-struct TextRendererPrivate {
+struct TextRendererPrivate
+{
     TextRendererPrivate(const QFont &font);
 
     ~TextRendererPrivate();
 
     void newTransparantTexture();
 
-    CharBitmap *createCharacter(QChar c);
+    CharBitmap * createCharacter(QChar c);
 
     void clearUsedTextures();
-    
+
     void clearBitmapCache();
 
     QFont _font;
-
     QFontMetrics _fontMetrics;
 
 #ifdef NATRON_TEXT_RENDERER_USE_CACHE
@@ -69,21 +68,18 @@ struct TextRendererPrivate {
 #endif
 
     std::list<GLuint> _usedTextures;
-
     GLint _xOffset;
-
     GLint _yOffset;
 };
 
-    typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
-
+typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
 }
 
 TextRendererPrivate::TextRendererPrivate(const QFont &font)
     : _font(font)
-    , _fontMetrics(font)
-    , _xOffset(0)
-    , _yOffset(0)
+      , _fontMetrics(font)
+      , _xOffset(0)
+      , _yOffset(0)
 {
 }
 
@@ -93,65 +89,68 @@ TextRendererPrivate::~TextRendererPrivate()
     clearBitmapCache();
 }
 
-void TextRendererPrivate::clearUsedTextures()
+void
+TextRendererPrivate::clearUsedTextures()
 {
-
-    for (std::list<GLuint>::iterator it = _usedTextures.begin(); it!= _usedTextures.end(); ++it) {
+    for (std::list<GLuint>::iterator it = _usedTextures.begin(); it != _usedTextures.end(); ++it) {
         //https://www.opengl.org/sdk/docs/man2/xhtml/glIsTexture.xml
-               //A name returned by glGenTextures, but not yet associated with a texture by calling glBindTexture, is not the name of a texture.
-               //Not sure if we should leave this assert here since  textures are not bound any longer at this point.
-               //        assert(glIsTexture(texture));
-        glDeleteTextures(1, &(*it));
+        //A name returned by glGenTextures, but not yet associated with a texture by calling glBindTexture, is not the name of a texture.
+        //Not sure if we should leave this assert here since  textures are not bound any longer at this point.
+        //        assert(glIsTexture(texture));
+        glDeleteTextures( 1, &(*it) );
     }
 }
 
-void TextRendererPrivate::clearBitmapCache()
+void
+TextRendererPrivate::clearBitmapCache()
 {
 #ifdef NATRON_TEXT_RENDERER_USE_CACHE
-    for (BitmapCache::iterator it = _bitmapsCache.begin(); it!= _bitmapsCache.end(); ++it) {
+    for (BitmapCache::iterator it = _bitmapsCache.begin(); it != _bitmapsCache.end(); ++it) {
         delete it.value();
     }
     _bitmapsCache.clear();
 #endif
 }
 
-void TextRendererPrivate::newTransparantTexture()
+void
+TextRendererPrivate::newTransparantTexture()
 {
     GLuint texture;
+
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    assert(glIsTexture(texture));
+    assert( glIsTexture(texture) );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     QImage image(TEXTURE_SIZE, TEXTURE_SIZE, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     image = QGLWidget::convertToGLFormat(image);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
+                  0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits() );
 
     glBindTexture(GL_TEXTURE_2D, 0);
     _usedTextures.push_back(texture);
 }
 
-CharBitmap *TextRendererPrivate::createCharacter(QChar c)
+CharBitmap *
+TextRendererPrivate::createCharacter(QChar c)
 {
 #ifdef NATRON_TEXT_RENDERER_USE_CACHE
 
     ushort unic = c.unicode();
     //c is already in the cache
     BitmapCache::iterator it = _bitmapsCache.find(unic);
-    if (it != _bitmapsCache.end()) {
+    if ( it != _bitmapsCache.end() ) {
         return it.value();
     }
 #endif
 
-    if (_usedTextures.empty()) {
+    if ( _usedTextures.empty() ) {
         newTransparantTexture();
     }
 
     GLuint texture = _usedTextures.back();
-
     GLsizei width = _fontMetrics.width(c);
     GLsizei height = _fontMetrics.height();
 
@@ -173,9 +172,9 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c)
     image = QGLWidget::convertToGLFormat(image);
     glCheckError();
     glBindTexture(GL_TEXTURE_2D, texture);
-    assert(glIsTexture(texture));
-    glTexSubImage2D(GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
-                    GL_UNSIGNED_BYTE, image.bits());
+    assert( glIsTexture(texture) );
+    glTexSubImage2D( GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
+                     GL_UNSIGNED_BYTE, image.bits() );
     glCheckError();
 
 
@@ -193,9 +192,9 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c)
 
 #ifdef NATRON_TEXT_RENDERER_USE_CACHE
     BitmapCache::iterator retIt = _bitmapsCache.insert(unic, character); // insert a new charactr
-    assert(retIt != _bitmapsCache.end());
+    assert( retIt != _bitmapsCache.end() );
 #endif
-    
+
     _xOffset += width;
     if (_xOffset + width >= TEXTURE_SIZE) {
         _xOffset = 1;
@@ -207,17 +206,20 @@ CharBitmap *TextRendererPrivate::createCharacter(QChar c)
     }
 
 #ifdef NATRON_TEXT_RENDERER_USE_CACHE
+
     return retIt.value();
 #else
+
     return character;
 #endif
-}
+} // createCharacter
 
-
-
-struct TextRenderer::Implementation {
+struct TextRenderer::Implementation
+{
     Implementation()
-        : renderers() {}
+        : renderers()
+    {
+    }
 
     FontRenderers renderers;
 };
@@ -231,16 +233,20 @@ TextRenderer::~TextRenderer()
 {
 }
 
-
-void TextRenderer::renderText(float x, float y, const QString &text, const QColor &color, const QFont &font) const
+void
+TextRenderer::renderText(float x,
+                         float y,
+                         const QString &text,
+                         const QColor &color,
+                         const QFont &font) const
 {
     glCheckError();
     boost::shared_ptr<TextRendererPrivate> p;
     FontRenderers::iterator it = _imp->renderers.find(font);
-    if (it != _imp->renderers.end()) {
+    if ( it != _imp->renderers.end() ) {
         p  = (*it).second;
     } else {
-        p = boost::shared_ptr<TextRendererPrivate>(new TextRendererPrivate(font));
+        p = boost::shared_ptr<TextRendererPrivate>( new TextRendererPrivate(font) );
         _imp->renderers[font] = p;
     }
     assert(p);
@@ -251,7 +257,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     GLuint texture = 0;
     glTranslatef(x, y, 0);
-    glColor4f(color.redF(), color.greenF(), color.blueF(), color.alphaF());
+    glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
     for (int i = 0; i < text.length(); ++i) {
         CharBitmap *c = p->createCharacter(text[i]);
         if (!c) {
@@ -260,7 +266,7 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         if (texture != c->texID) {
             texture = c->texID;
             glBindTexture(GL_TEXTURE_2D, texture);
-            assert(glIsTexture(texture));
+            assert( glIsTexture(texture) );
         }
         glCheckError();
         glBegin(GL_QUADS);
@@ -276,12 +282,11 @@ void TextRenderer::renderText(float x, float y, const QString &text, const QColo
         glCheckErrorIgnoreOSXBug();
         glTranslatef(c->w, 0, 0);
         glCheckError();
-
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     glPopMatrix();
     glPopAttrib();
     glCheckError();
     glColor4f(1., 1., 1., 1.);
-}
+} // renderText
 

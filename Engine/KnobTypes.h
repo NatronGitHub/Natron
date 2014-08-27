@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -31,82 +31,82 @@ class Curve;
 class OverlaySupport;
 class StringAnimationManager;
 class BezierCP;
-namespace Natron
-{
-    class Node;
+namespace Natron {
+class Node;
 }
 /******************************INT_KNOB**************************************/
 
-class Int_Knob: public QObject, public Knob<int>
+class Int_Knob
+    : public QObject, public Knob<int>
 {
-    
     Q_OBJECT
-    
+
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Int_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Int_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
+
+    Int_Knob(KnobHolder* holder,
+             const std::string &description,
+             int dimension,
+             bool declaredByPlugin);
+
     void disableSlider();
-    
+
     bool isSliderDisabled() const;
-        
-    static const std::string& typeNameStatic();
-    
+
+    static const std::string & typeNameStatic();
+
 public:
     void setMinimum(int mini, int index = 0);
-    
+
     void setMaximum(int maxi, int index = 0);
-    
+
     void setDisplayMinimum(int mini, int index = 0);
-    
+
     void setDisplayMaximum(int maxi, int index = 0);
-    
+
     void setIncrement(int incr, int index = 0);
-    
+
     void setIncrement(const std::vector<int> &incr);
-    
+
     /*minis & maxis must have the same size*/
     void setMinimumsAndMaximums(const std::vector<int> &minis, const std::vector<int> &maxis);
-    
+
     void setDisplayMinimumsAndMaximums(const std::vector<int> &minis, const std::vector<int> &maxis);
-    
+
     const std::vector<int> &getMinimums() const;
-    
     const std::vector<int> &getMaximums() const;
-    
     const std::vector<int> &getIncrements() const;
-    
     const std::vector<int> &getDisplayMinimums() const;
-    
     const std::vector<int> &getDisplayMaximums() const;
-    
     std::pair<int,int> getMinMaxForCurve(const Curve* curve) const;
-    
-    void setDimensionName(int dim,const std::string& name);
-    
+
+    void setDimensionName(int dim,const std::string & name);
+
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
 signals:
-    
+
     void minMaxChanged(int mini, int maxi, int index = 0);
-    
+
     void displayMinMaxChanged(int mini,int maxi,int index = 0);
-    
+
     void incrementChanged(int incr, int index = 0);
-    
+
 private:
-        
-    
+
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
-    
+
     std::vector<std::string> _dimensionNames;
     std::vector<int> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     bool _disableSlider;
@@ -115,102 +115,115 @@ private:
 
 /******************************BOOL_KNOB**************************************/
 
-class Bool_Knob:  public Knob<bool>
+class Bool_Knob
+    :  public Knob<bool>
 {
-    
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Bool_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Bool_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
+
+    Bool_Knob(KnobHolder* holder,
+              const std::string &description,
+              int dimension,
+              bool declaredByPlugin);
+
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
     /// @see Curve::getValueAt() for the animation code.
-    static bool canAnimateStatic() { return true; }
-    
-    static const std::string& typeNameStatic();
-    
+    static bool canAnimateStatic()
+    {
+        return true;
+    }
+
+    static const std::string & typeNameStatic();
+
 private:
-    
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     static const std::string _typeNameStr;
 };
 
 /******************************DOUBLE_KNOB**************************************/
 
-class Double_Knob:  public QObject,public Knob<double>
+class Double_Knob
+    :  public QObject,public Knob<double>
 {
     Q_OBJECT
-    
+
 public:
-    
-    enum NormalizedState {
+
+    enum NormalizedState
+    {
         NORMALIZATION_NONE = 0, ///< indicating that the dimension holds a  non-normalized value.
         NORMALIZATION_X, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
         NORMALIZATION_Y ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
     };
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Double_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Double_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin );
-    
+
+    Double_Knob(KnobHolder* holder,
+                const std::string &description,
+                int dimension,
+                bool declaredByPlugin );
+
     virtual ~Double_Knob();
-    
+
     void disableSlider();
-    
+
     bool isSliderDisabled() const;
-    
+
     const std::vector<double> &getMinimums() const;
-    
     const std::vector<double> &getMaximums() const;
-    
     const std::vector<double> &getIncrements() const;
-    
     const std::vector<int> &getDecimals() const;
-    
     const std::vector<double> &getDisplayMinimums() const;
-    
     const std::vector<double> &getDisplayMaximums() const;
-    
+
     void setMinimum(double mini, int index = 0);
-    
+
     void setMaximum(double maxi, int index = 0);
-    
+
     void setDisplayMinimum(double mini, int index = 0);
-    
+
     void setDisplayMaximum(double maxi, int index = 0);
-    
+
     void setIncrement(double incr, int index = 0);
-    
+
     void setDecimals(int decis, int index = 0);
-    
+
     std::pair<double,double> getMinMaxForCurve(const Curve* curve) const;
-    
-    
+
+
     /*minis & maxis must have the same size*/
     void setMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
-    
+
     void setDisplayMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
-    
+
     void setIncrement(const std::vector<double> &incr);
-    
+
     void setDecimals(const std::vector<int> &decis);
-    
-    static const std::string& typeNameStatic();
-    
-    void setDimensionName(int dim,const std::string& name);
-    
+
+    static const std::string & typeNameStatic();
+
+    void setDimensionName(int dim,const std::string & name);
+
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
-    
+
     NormalizedState getNormalizedState(int dimension) const
     {
         assert(dimension < 2 && dimension >= 0);
@@ -219,10 +232,11 @@ public:
         } else {
             return _normalizationXY.second;
         }
-        
     }
-    
-    void setNormalizedState(int dimension,NormalizedState state) {
+
+    void setNormalizedState(int dimension,
+                            NormalizedState state)
+    {
         assert(dimension < 2 && dimension >= 0);
         if (dimension == 0) {
             _normalizationXY.first = state;
@@ -230,7 +244,7 @@ public:
             _normalizationXY.second = state;
         }
     }
-    
+
     /**
      * @brief Normalize the default values, set the _defaultStoredNormalized to true and
      * calls setDefaultValue with the good parameters.
@@ -259,39 +273,47 @@ public:
      * and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
      **/
     void setDefaultValuesNormalized(int dims,double defaults[]);
-    
+
     /**
      * @brief Same as setDefaultValuesNormalized but for 1 dimensional doubles
      **/
-    void setDefaultValuesNormalized(double def) {
+    void setDefaultValuesNormalized(double def)
+    {
         double d[1];
+
         d[0] = def;
         setDefaultValuesNormalized(1,d);
     }
-    
+
     /**
      * @brief Returns whether the default values are stored normalized or not.
      **/
     bool areDefaultValuesNormalized() const;
-    
+
     /**
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setNormalizedState has been called!
      **/
     void denormalize(int dimension,double time,double* value) const;
-    
+
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setNormalizedState has been called!
      **/
     void normalize(int dimension,double time,double* value) const;
-    
-    void addSlavedTrack(const boost::shared_ptr<BezierCP>& cp) { _slavedTracks.push_back(cp); }
-    
-    void removeSlavedTrack(const boost::shared_ptr<BezierCP>& cp);
-    
-    const std::list< boost::shared_ptr<BezierCP> >& getSlavedTracks() { return _slavedTracks; }
-    
+
+    void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
+    {
+        _slavedTracks.push_back(cp);
+    }
+
+    void removeSlavedTrack(const boost::shared_ptr<BezierCP> & cp);
+
+    const std::list< boost::shared_ptr<BezierCP> > & getSlavedTracks()
+    {
+        return _slavedTracks;
+    }
+
     struct SerializedTrack
     {
         std::string rotoNodeName;
@@ -300,83 +322,98 @@ public:
         bool isFeather;
         int offsetTime;
     };
+
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack>& tracks,const std::vector<boost::shared_ptr<Natron::Node> >& activeNodes);
-    
-    
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::vector<boost::shared_ptr<Natron::Node> > & activeNodes);
+
 public slots:
-    
+
     void onNodeDeactivated();
     void onNodeActivated();
-    
+
 signals:
     void minMaxChanged(double mini, double maxi, int index = 0);
-    
+
     void displayMinMaxChanged(double mini,double maxi,int index = 0);
-    
+
     void incrementChanged(double incr, int index = 0);
-    
+
     void decimalsChanged(int deci, int index = 0);
-    
+
 private:
-    
+
 
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
-    
+
     std::vector<std::string> _dimensionNames;
     std::vector<double> _minimums, _maximums, _increments, _displayMins, _displayMaxs;
     std::vector<int> _decimals;
     bool _disableSlider;
     std::list< boost::shared_ptr<BezierCP> > _slavedTracks;
-    
+
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
     /// BY default they have NORMALIZATION_NONE
     std::pair<NormalizedState, NormalizedState> _normalizationXY;
-    
+
     ///For double params respecting the kOfxParamCoordinatesNormalised
     ///This tells us that only the default value is stored normalized.
     ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
     bool _defaultStoredNormalized;
-    
     static const std::string _typeNameStr;
-    
 };
 
 /******************************BUTTON_KNOB**************************************/
 
-class Button_Knob: public Knob<bool>
+class Button_Knob
+    : public Knob<bool>
 {
-    
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Button_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Button_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
-    static const std::string& typeNameStatic();
-    
-    void setAsRenderButton() { _renderButton = true; }
-    
-    bool isRenderButton() const { return _renderButton; }
-    
-    void setIconFilePath(const std::string& filePath) { _iconFilePath = filePath; }
-    const std::string& getIconFilePath() const { return _iconFilePath; }
-    
+
+    Button_Knob(KnobHolder* holder,
+                const std::string &description,
+                int dimension,
+                bool declaredByPlugin);
+    static const std::string & typeNameStatic();
+
+    void setAsRenderButton()
+    {
+        _renderButton = true;
+    }
+
+    bool isRenderButton() const
+    {
+        return _renderButton;
+    }
+
+    void setIconFilePath(const std::string & filePath)
+    {
+        _iconFilePath = filePath;
+    }
+
+    const std::string & getIconFilePath() const
+    {
+        return _iconFilePath;
+    }
+
 private:
-    
-    
+
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     static const std::string _typeNameStr;
     bool _renderButton;
@@ -385,48 +422,56 @@ private:
 
 /******************************CHOICE_KNOB**************************************/
 
-class Choice_Knob: public QObject,public Knob<int>
+class Choice_Knob
+    : public QObject,public Knob<int>
 {
     Q_OBJECT
+
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Choice_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Choice_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
+
+    Choice_Knob(KnobHolder* holder,
+                const std::string &description,
+                int dimension,
+                bool declaredByPlugin);
 
     virtual ~Choice_Knob();
-    
+
     /*Must be called right away after the constructor.*/
-    void populateChoices(const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>());
-    
+    void populateChoices( const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>() );
+
     const std::vector<std::string> &getEntries() const;
-    
     const std::vector<std::string> &getEntriesHelp() const;
-    
     const std::string &getActiveEntryText() const;
-    
+
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
     /// @see Curve::getValueAt() for the animation code.
-    static bool canAnimateStatic() { return true; }
-    
-    static const std::string& typeNameStatic();
+    static bool canAnimateStatic()
+    {
+        return true;
+    }
 
+    static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
-    
+
 signals:
-    
+
     void populated();
-    
+
 private:
-    
-    
+
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
@@ -435,29 +480,35 @@ private:
 
 /******************************SEPARATOR_KNOB**************************************/
 
-class Separator_Knob: public Knob<bool>
+class Separator_Knob
+    : public Knob<bool>
 {
-    
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Separator_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Separator_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
-    static const std::string& typeNameStatic();
-    
+
+    Separator_Knob(KnobHolder* holder,
+                   const std::string &description,
+                   int dimension,
+                   bool declaredByPlugin);
+    static const std::string & typeNameStatic();
+
 private:
-    
-    
+
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     static const std::string _typeNameStr;
 };
+
 /******************************RGBA_KNOB**************************************/
 
 /**
@@ -466,24 +517,28 @@ private:
  * In dimension 3 the knob will have 3 channel R,G,B
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
-class Color_Knob:  public QObject, public Knob<double>
+class Color_Knob
+    :  public QObject, public Knob<double>
 {
     Q_OBJECT
+
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Color_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    
-    Color_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
 
+    Color_Knob(KnobHolder* holder,
+               const std::string &description,
+               int dimension,
+               bool declaredByPlugin);
     const std::vector<double> &getMinimums() const;
-
     const std::vector<double> &getMaximums() const;
-
     const std::vector<double> &getDisplayMinimums() const;
-
     const std::vector<double> &getDisplayMaximums() const;
 
     void setMinimum(double mini, int index);
@@ -501,51 +556,55 @@ public:
 
     void setDisplayMinimumsAndMaximums(const std::vector<double> &minis, const std::vector<double> &maxis);
 
-    static const std::string& typeNameStatic();
-    
-    void setDimensionName(int dim,const std::string& dimension);
-    
+    static const std::string & typeNameStatic();
+
+    void setDimensionName(int dim,const std::string & dimension);
+
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL;
 
     bool areAllDimensionsEnabled() const;
-    
-    void activateAllDimensions() { emit mustActivateAllDimensions(); }
-    
-    void setPickingEnabled(bool enabled) { emit pickingEnabled(enabled); }
-    
+
+    void activateAllDimensions()
+    {
+        emit mustActivateAllDimensions();
+    }
+
+    void setPickingEnabled(bool enabled)
+    {
+        emit pickingEnabled(enabled);
+    }
+
     /**
      * @brief Convenience function for RGB color params
      **/
     void setValues(double r,double g,double b);
-    
-    
+
+
     /**
      * @brief Convenience function for RGBA color params
      **/
     void setValues(double r,double g,double b,double a);
 
-    
 public slots:
-    
+
     void onDimensionSwitchToggled(bool b);
-    
+
 signals:
-    
+
     void pickingEnabled(bool);
-    
+
     void minMaxChanged(double mini, double maxi, int index = 0);
 
     void displayMinMaxChanged(double mini,double maxi,int index = 0);
 
     void mustActivateAllDimensions();
-    
+
 private:
-    
+
 
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     bool _allDimensionsEnabled;
     std::vector<std::string> _dimensionNames;
@@ -556,235 +615,273 @@ private:
 /******************************STRING_KNOB**************************************/
 
 
-
-class String_Knob: public AnimatingString_KnobHelper
+class String_Knob
+    : public AnimatingString_KnobHelper
 {
 public:
-    
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new String_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    String_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
+
+    String_Knob(KnobHolder* holder,
+                const std::string &description,
+                int dimension,
+                bool declaredByPlugin);
+
     virtual ~String_Knob();
-    
+
     /// Can this type be animated?
     /// String animation consists in setting constant strings at
     /// each keyframe, which are valid until the next keyframe.
     /// It can be useful for titling/subtitling.
-    static bool canAnimateStatic() { return true; }
-    
-    static const std::string& typeNameStatic();
-    
-    void setAsMultiLine() { _multiLine = true;  }
-    
-    void setUsesRichText(bool useRichText) { _richText = useRichText; }
-    
-    bool isMultiLine() const { return _multiLine; }
-    
-    bool usesRichText() const { return _richText; }
-    
-    void setAsLabel() {
+    static bool canAnimateStatic()
+    {
+        return true;
+    }
+
+    static const std::string & typeNameStatic();
+
+    void setAsMultiLine()
+    {
+        _multiLine = true;
+    }
+
+    void setUsesRichText(bool useRichText)
+    {
+        _richText = useRichText;
+    }
+
+    bool isMultiLine() const
+    {
+        return _multiLine;
+    }
+
+    bool usesRichText() const
+    {
+        return _richText;
+    }
+
+    void setAsLabel()
+    {
         setAnimationEnabled(false); //< labels cannot animate
         _isLabel = true;
     }
 
-    bool isLabel() const { return _isLabel; }
+    bool isLabel() const
+    {
+        return _isLabel;
+    }
 
-    void setAsCustom() { _isCustom = true; }
-    
-    bool isCustomKnob() const { return _isCustom; }
-        
-    private:
-    
+    void setAsCustom()
+    {
+        _isCustom = true;
+    }
+
+    bool isCustomKnob() const
+    {
+        return _isCustom;
+    }
+
+private:
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     static const std::string _typeNameStr;
-    
     bool _multiLine;
     bool _richText;
     bool _isLabel;
     bool _isCustom;
-
-
 };
 
 /******************************GROUP_KNOB**************************************/
-class Group_Knob:  public QObject, public Knob<bool>
+class Group_Knob
+    :  public QObject, public Knob<bool>
 {
     Q_OBJECT
-    
+
     std::vector< boost::shared_ptr<KnobI> > _children;
     bool _isTab;
+
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Group_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Group_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
+
+    Group_Knob(KnobHolder* holder,
+               const std::string &description,
+               int dimension,
+               bool declaredByPlugin);
+
     void addKnob(boost::shared_ptr<KnobI> k);
-    
+
     const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
-    
-    void setAsTab() ;
-    
+
+    void setAsTab();
+
     bool isTab() const;
-    
-    static const std::string& typeNameStatic();
-    
+
+    static const std::string & typeNameStatic();
+
 private:
-    
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
     static const std::string _typeNameStr;
 };
 
 
-
 /******************************PAGE_KNOB**************************************/
 
-class Page_Knob :  public QObject,public Knob<bool>
+class Page_Knob
+    :  public QObject,public Knob<bool>
 {
     Q_OBJECT
+
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Page_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Page_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin);
-    
+
+    Page_Knob(KnobHolder* holder,
+              const std::string &description,
+              int dimension,
+              bool declaredByPlugin);
+
     void addKnob(boost::shared_ptr<KnobI> k);
-    
-    const std::vector< boost::shared_ptr<KnobI> >& getChildren() const { return _children; }
-    
-    static const std::string& typeNameStatic();
-    
+
+    const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
+    {
+        return _children;
+    }
+
+    static const std::string & typeNameStatic();
+
 private:
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
 private:
-    
+
     std::vector< boost::shared_ptr<KnobI> > _children;
-    
     static const std::string _typeNameStr;
 };
 
 
 /******************************Parametric_Knob**************************************/
 
-class Parametric_Knob :  public QObject, public Knob<double>
+class Parametric_Knob
+    :  public QObject, public Knob<double>
 {
-    
     Q_OBJECT
-    
+
     mutable QMutex _curvesMutex;
     std::vector< boost::shared_ptr<Curve> > _curves;
     std::vector<RGBAColourF> _curvesColor;
     std::vector<std::string> _curveLabels;
-    
+
 public:
-    
-    static KnobHelper *BuildKnob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin = true) {
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &description,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
         return new Parametric_Knob(holder, description, dimension,declaredByPlugin);
     }
-    
-    Parametric_Knob(KnobHolder* holder, const std::string &description, int dimension,bool declaredByPlugin );
-    
+
+    Parametric_Knob(KnobHolder* holder,
+                    const std::string &description,
+                    int dimension,
+                    bool declaredByPlugin );
+
     void setCurveColor(int dimension,double r,double g,double b);
-    
+
     void getCurveColor(int dimension,double* r,double* g,double* b);
-    
-    void setCurveLabel(int dimension,const std::string& str);
-    
-    const std::string& getCurveLabel(int dimension) const WARN_UNUSED_RETURN;
-    
+
+    void setCurveLabel(int dimension,const std::string & str);
+
+    const std::string & getCurveLabel(int dimension) const WARN_UNUSED_RETURN;
+
     void setParametricRange(double min,double max);
-    
+
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
-    
     virtual std::string getDimensionName(int dimension) const WARN_UNUSED_RETURN;
-    
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
-    
     Natron::Status addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    
     Natron::Status getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
-    
     Natron::Status getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
-    
     Natron::Status getNthControlPoint(int dimension,
-                                      int    nthCtl,
+                                      int nthCtl,
                                       double *key,
                                       double *value) WARN_UNUSED_RETURN;
-    
-    Natron::Status setNthControlPoint(int   dimension,
-                                      int   nthCtl,
+    Natron::Status setNthControlPoint(int dimension,
+                                      int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
-    
     Natron::Status deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    
     Natron::Status deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
-    
-    
-    static const std::string& typeNameStatic() WARN_UNUSED_RETURN;
-    
+    static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
+
     void saveParametricCurves(std::list< Curve >* curves) const;
-    
-    void loadParametricCurves(const std::list< Curve >& curves);
-    
+
+    void loadParametricCurves(const std::list< Curve > & curves);
+
 public slots:
-    
-    virtual void drawCustomBackground(){
+
+    virtual void drawCustomBackground()
+    {
         emit customBackgroundRequested();
     }
-    
-    virtual void initializeOverlayInteract(OverlaySupport* widget){
+
+    virtual void initializeOverlayInteract(OverlaySupport* widget)
+    {
         emit mustInitializeOverlayInteract(widget);
     }
-    
-    virtual void resetToDefault(const QVector<int>& dimensions){
-        
+
+    virtual void resetToDefault(const QVector<int> & dimensions)
+    {
         emit mustResetToDefault(dimensions);
     }
 
-    
 signals:
-    
+
     //emitted by drawCustomBackground()
     //if you can't overload drawCustomBackground()
     void customBackgroundRequested();
-    
+
     void mustInitializeOverlayInteract(OverlaySupport*);
-    
+
     ///emitted when the state of a curve changed at the indicated dimension
     void curveChanged(int);
-    
+
     void mustResetToDefault(QVector<int>);
-    
+
 private:
-    
+
     virtual bool canAnimate() const OVERRIDE FINAL;
-    
-    virtual const std::string& typeName() const OVERRIDE FINAL;
-    
+    virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other) OVERRIDE FINAL;
-    
     virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range) OVERRIDE FINAL;
-    
     static const std::string _typeNameStr;
 };
 

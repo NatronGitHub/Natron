@@ -114,10 +114,9 @@ public:
     void saveShortcuts() const;
 
     void restoreDefaultShortcuts();
-    
-    const std::map<QString,std::map<QString,BoundAction*> >& getAllShortcuts() const;
-    
-    
+
+    const std::map<QString,std::map<QString,BoundAction*> > & getAllShortcuts() const;
+
 public slots:
 
 

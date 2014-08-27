@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -14,11 +14,7 @@
 #define NATRON_ENGINE_INTERPOLATION_H_
 
 #include "Global/Enums.h"
-namespace Natron
-{
-
-
-
+namespace Natron {
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
  * and the derivatives P1(t1,v1) (being the derivative at P0 with respect to
@@ -94,63 +90,63 @@ double integrate_clamp(double tcur, const double vcur, //start control point
  * B'(1) = P3'_l
  **/
 /*
-  Maple code to compute the values for each case:
-with(CodeGeneration):
+   Maple code to compute the values for each case:
+   with(CodeGeneration):
 
-P := t -> (1-t)**3 * P0 + 3 * (1-t)**2 * t * P1 + 3 * (1-t) * t**2 * P2 + t**3 * P3:
-Q := t -> (1-t)**3 * Q0 + 3 * (1-t)**2 * t * Q1 + 3 * (1-t) * t**2 * Q2 + t**3 * Q3:
+   P := t -> (1-t)**3 * P0 + 3 * (1-t)**2 * t * P1 + 3 * (1-t) * t**2 * P2 + t**3 * P3:
+   Q := t -> (1-t)**3 * Q0 + 3 * (1-t)**2 * t * Q1 + 3 * (1-t) * t**2 * Q2 + t**3 * Q3:
 
-dP := D(P):
-dP2 := D(dP):
-dQ := D(Q):
-dQ2 := D(dQ):
+   dP := D(P):
+   dP2 := D(dP):
+   dQ := D(Q):
+   dQ2 := D(dQ):
 
-P1 := P0 + P0pr / 3:
-Q2 := Q3 - Q3pl / 3:
-Q1 := Q0 + Q0pr / 3:
-P2 := P3 - P3pl / 3:
-Q3 := P0:
+   P1 := P0 + P0pr / 3:
+   Q2 := Q3 - Q3pl / 3:
+   Q1 := Q0 + Q0pr / 3:
+   P2 := P3 - P3pl / 3:
+   Q3 := P0:
 
-derivativeAtCurRight := dP(0)/(tnext-tcur):
-curvatureAtCurRight := dP2(0)/(tnext-tcur):
-curvatureAtNextLeft:= dP2(1)/(tnext - tcur):
- derivativeAtCurLeft := dQ(1)/(tcur-tprev):
-curvatureAtCurLeft:= dQ2(1)/(tcur - tprev):
-curvatureAtPrevRight:= dQ2(0)/(tcur - tprev):
+   derivativeAtCurRight := dP(0)/(tnext-tcur):
+   curvatureAtCurRight := dP2(0)/(tnext-tcur):
+   curvatureAtNextLeft:= dP2(1)/(tnext - tcur):
+   derivativeAtCurLeft := dQ(1)/(tcur-tprev):
+   curvatureAtCurLeft:= dQ2(1)/(tcur - tprev):
+   curvatureAtPrevRight:= dQ2(0)/(tcur - tprev):
 
-printf("linear, general case:"):
-solve( {curvatureAtCurRight = 0, curvatureAtCurLeft = 0}, { P0pr, Q3pl });
-map(C,%):
+   printf("linear, general case:"):
+   solve( {curvatureAtCurRight = 0, curvatureAtCurLeft = 0}, { P0pr, Q3pl });
+   map(C,%):
 
-printf("linear, prev is linear:"):
-solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtPrevRight = 0}, { P0pr, Q3pl, Q0pr});
-map(C,%):
+   printf("linear, prev is linear:"):
+   solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtPrevRight = 0}, { P0pr, Q3pl, Q0pr});
+   map(C,%):
 
-printf("linear, next is linear:"):
-solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtNextLeft = 0}, {P0pr, Q3pl, P3pl});
-map(C,%):
+   printf("linear, next is linear:"):
+   solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtNextLeft = 0}, {P0pr, Q3pl, P3pl});
+   map(C,%):
 
-printf("linear, prev and next are linear:"):
-solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtPrevRight = 0, curvatureAtNextLeft = 0}, {P0pr, Q3pl, Q0pr, P3pl});
-map(C,%):
+   printf("linear, prev and next are linear:"):
+   solve({curvatureAtCurRight = 0, curvatureAtCurLeft = 0, curvatureAtPrevRight = 0, curvatureAtNextLeft = 0}, {P0pr, Q3pl, Q0pr, P3pl});
+   map(C,%):
 
-printf("cubic, general case:"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft}, {P0pr, Q3pl});
-map(C,%):
+   printf("cubic, general case:"):
+   solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft}, {P0pr, Q3pl});
+   map(C,%):
 
-printf("cubic, prev is linear:"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtPrevRight = 0},{P0pr, Q3pl, Q0pr});
-map(C,%):
+   printf("cubic, prev is linear:"):
+   solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtPrevRight = 0},{P0pr, Q3pl, Q0pr});
+   map(C,%):
 
-printf("cubic, next is linear:"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtNextLeft = 0}, {P0pr, Q3pl, P3pl});
-map(C,%):
+   printf("cubic, next is linear:"):
+   solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtNextLeft = 0}, {P0pr, Q3pl, P3pl});
+   map(C,%):
 
-printf("cubic, prev and next are linear"):
-solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtPrevRight = 0, curvatureAtNextLeft = 0},{P0pr, Q3pl, Q0pr, P3pl});
-map(C,%):
+   printf("cubic, prev and next are linear"):
+   solve({curvatureAtCurRight = curvatureAtCurLeft, derivativeAtCurRight = derivativeAtCurLeft, curvatureAtPrevRight = 0, curvatureAtNextLeft = 0},{P0pr, Q3pl, Q0pr, P3pl});
+   map(C,%):
 
-*/
+ */
 void autoComputeDerivatives(Natron::KeyframeType interpPrev,
                             Natron::KeyframeType interp,
                             Natron::KeyframeType interpNext,
@@ -183,7 +179,6 @@ int solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3]
 /// solutions an and their order are put in s and o
 int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4]);
 }
-
 
 
 #endif // NATRON_ENGINE_INTERPOLATION_H_

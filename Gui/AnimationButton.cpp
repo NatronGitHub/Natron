@@ -31,7 +31,7 @@ CLANG_DIAG_ON(deprecated)
 void
 AnimationButton::mousePressEvent(QMouseEvent* e)
 {
-    if (buttonDownIsLeft(e)) {
+    if ( buttonDownIsLeft(e) ) {
         _dragPos = e->pos();
         _dragging = true;
     }
@@ -41,40 +41,40 @@ AnimationButton::mousePressEvent(QMouseEvent* e)
 void
 AnimationButton::mouseMoveEvent(QMouseEvent* e)
 {
-    if(_dragging){
+    if (_dragging) {
         // If the left button isn't pressed anymore then return
-        if (!buttonDownIsLeft(e))
+        if ( !buttonDownIsLeft(e) ) {
             return;
+        }
         // If the distance is too small then return
-        if ((e->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
+        if ( (e->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance() ) {
             return;
-        
+        }
+
         // initiate Drag
-        
+
         _knob->onCopyAnimationActionTriggered();
         QDrag* drag = new QDrag(this);
         QMimeData* mimeData = new QMimeData;
         mimeData->setData("Animation", "");
         drag->setMimeData(mimeData);
-        
+
         QFontMetrics fmetrics = fontMetrics();
-        QString textFirstLine(tr("Copying animation from:"));
-        QString textSecondLine(_knob->getKnob()->getDescription().c_str());
-        QString textThirdLine(tr("Drag it to another animation button."));
-        
-        int textWidth = std::max(std::max(fmetrics.width(textFirstLine), fmetrics.width(textSecondLine)),fmetrics.width(textThirdLine));
-        
+        QString textFirstLine( tr("Copying animation from:") );
+        QString textSecondLine( _knob->getKnob()->getDescription().c_str() );
+        QString textThirdLine( tr("Drag it to another animation button.") );
+        int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(textSecondLine) ),fmetrics.width(textThirdLine) );
         QImage dragImg(textWidth,(fmetrics.height() + 5) * 3,QImage::Format_ARGB32);
-        dragImg.fill(QColor(243,137,0));
+        dragImg.fill( QColor(243,137,0) );
         QPainter p(&dragImg);
         p.drawText(QPointF(0,dragImg.height() - 2.5), textThirdLine);
         p.drawText(QPointF(0,dragImg.height() - fmetrics.height() - 5), textSecondLine);
-        p.drawText(QPointF(0,dragImg.height() - fmetrics.height()*2 - 10), textFirstLine);
+        p.drawText(QPointF(0,dragImg.height() - fmetrics.height() * 2 - 10), textFirstLine);
 
-        drag->setPixmap(QPixmap::fromImage(dragImg));
+        drag->setPixmap( QPixmap::fromImage(dragImg) );
         setDown(false);
         drag->exec();
-    }else{
+    } else  {
         QPushButton::mouseMoveEvent(e);
     }
 }
@@ -90,18 +90,19 @@ AnimationButton::mouseReleaseEvent(QMouseEvent* e)
 void
 AnimationButton::dragEnterEvent(QDragEnterEvent* e)
 {
-    if(e->source() == this){
+    if (e->source() == this) {
         return;
     }
     QStringList formats = e->mimeData()->formats();
-    if (formats.contains("Animation")) {
+    if ( formats.contains("Animation") ) {
         setCursor(Qt::DragCopyCursor);
         e->acceptProposedAction();
     }
 }
 
-void AnimationButton::dragLeaveEvent(QDragLeaveEvent* /*event*/){
-
+void
+AnimationButton::dragLeaveEvent(QDragLeaveEvent* /*event*/)
+{
 }
 
 void
@@ -109,7 +110,7 @@ AnimationButton::dropEvent(QDropEvent* e)
 {
     e->accept();
     QStringList formats = e->mimeData()->formats();
-    if (formats.contains("Animation")) {
+    if ( formats.contains("Animation") ) {
         _knob->onPasteAnimationActionTriggered();
         e->acceptProposedAction();
     }
@@ -119,7 +120,8 @@ void
 AnimationButton::dragMoveEvent(QDragMoveEvent* e)
 {
     QStringList formats = e->mimeData()->formats();
-    if (formats.contains("Animation")) {
+
+    if ( formats.contains("Animation") ) {
         e->acceptProposedAction();
     }
 }
@@ -139,3 +141,4 @@ AnimationButton::leaveEvent(QEvent* /*e*/)
         setCursor(Qt::ArrowCursor);
     }
 }
+

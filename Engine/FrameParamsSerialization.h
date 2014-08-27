@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -26,7 +26,9 @@ CLANG_DIAG_ON(unused-parameter)
 using namespace Natron;
 
 template<class Archive>
-void FrameParams::serialize(Archive & ar, const unsigned int /*version*/)
+void
+FrameParams::serialize(Archive & ar,
+                       const unsigned int /*version*/)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Natron::NonKeyParams);
     ar & boost::serialization::make_nvp("Rod",_rod);

@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -27,88 +27,103 @@ CLANG_DIAG_ON(uninitialized)
 using Natron::Scale_Type;
 
 class QFont;
-class ScaleSliderQWidget : public QWidget
+class ScaleSliderQWidget
+    : public QWidget
 {
     Q_OBJECT
-    
+
 public:
-    
+
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
                        Natron::Scale_Type type = Natron::LINEAR_SCALE, // the type of scale
-                       QWidget* parent=0);
-    
+                       QWidget* parent = 0);
+
     virtual ~ScaleSliderQWidget() OVERRIDE;
-    
+
     void setMinimumAndMaximum(double min,double max);
-    
-    void changeScale(Natron::Scale_Type type){_type = type;}
-    
-    Natron::Scale_Type type() const {return _type;}
-    
-    double minimum() const {return _minimum;}
-    
-    double maximum() const {return _maximum;}
-    
+
+    void changeScale(Natron::Scale_Type type)
+    {
+        _type = type;
+    }
+
+    Natron::Scale_Type type() const
+    {
+        return _type;
+    }
+
+    double minimum() const
+    {
+        return _minimum;
+    }
+
+    double maximum() const
+    {
+        return _maximum;
+    }
+
     void setReadOnly(bool ro);
-    
-    bool isReadOnly() const { return _readOnly; }
-    
-    double getPosition() const { return _value; }
-    
+
+    bool isReadOnly() const
+    {
+        return _readOnly;
+    }
+
+    double getPosition() const
+    {
+        return _value;
+    }
+
 signals:
     void editingFinished();
     void positionChanged(double);
-    
+
 public slots:
-    
+
     void seekScalePosition(double v);
-    
+
 private:
-    
+
     void seekInternal(double v);
-    
+
     /**
      *@brief See toZoomCoordinates in ViewerGL.h
      **/
     QPointF toScaleCoordinates(double x, double y);
-    
+
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
     QPointF toWidgetCoordinates(double x, double y);
-        
+
     void centerOn(double left,double right);
-    
+
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
-    
-    
-    
+
+
     // see ViewerGL.cpp for a full documentation of ZoomContext
-    struct ZoomContext {
+    struct ZoomContext
+    {
         ZoomContext()
-        : bottom(0.)
-        , left(0.)
-        , zoomFactor(1.)
-        {}
-        
+            : bottom(0.)
+              , left(0.)
+              , zoomFactor(1.)
+        {
+        }
+
         QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
         double bottom; /// the bottom edge of orthographic projection
         double left; /// the left edge of the orthographic projection
         double zoomFactor; /// the zoom factor applied to the current image
-        
         double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
     };
-    
+
     ZoomContext _zoomCtx;
     double _minimum,_maximum;
     Natron::Scale_Type _type;
@@ -121,7 +136,6 @@ private:
     bool _initialized;
     bool _mustInitializeSliderPosition;
     bool _readOnly;
-
 };
 
 #endif // SCALESLIDERQWIDGET_H

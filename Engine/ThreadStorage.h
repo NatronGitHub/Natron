@@ -21,9 +21,9 @@
 // Of course, as a consequence the main thread always has "local data", which is just a global variable.
 
 namespace Natron {
-
 template <class T>
-class ThreadStorage : public QThreadStorage<T>
+class ThreadStorage
+    : public QThreadStorage<T>
 {
 public:
     /// Is local storage present?
@@ -33,12 +33,12 @@ public:
     /// Do *not* use this to check if there is *valid* local data. You must store a flag in the local data for that purpose.
     inline bool hasLocalData() const
     {
-        return (QThread::currentThread() == qApp->thread() || QThreadStorage<T>::hasLocalData());
+        return QThread::currentThread() == qApp->thread() || QThreadStorage<T>::hasLocalData();
     }
 
-    inline T& localData()
+    inline T & localData()
     {
-        if (QThread::currentThread() == qApp->thread()) {
+        if ( QThread::currentThread() == qApp->thread() ) {
             return mainData;
         } else {
             return QThreadStorage<T>::localData();
@@ -47,7 +47,7 @@ public:
 
     inline T localData() const
     {
-        if (QThread::currentThread() == qApp->thread()) {
+        if ( QThread::currentThread() == qApp->thread() ) {
             return mainData;
         } else {
             return QThreadStorage<T>::localData();
@@ -56,17 +56,17 @@ public:
 
     inline void setLocalData(T t)
     {
-        if (QThread::currentThread() == qApp->thread()) {
+        if ( QThread::currentThread() == qApp->thread() ) {
             mainData = t;
         } else {
             return QThreadStorage<T>::setLocalData(t);
         }
     }
+
 private:
     T mainData;
 };
-
 } // namespace Natron
 
 
-#endif
+#endif // ifndef Natron_Engine_ThreadStorage_h

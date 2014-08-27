@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -12,53 +12,58 @@
 #define SHORTCUTEDITOR_H
 
 #include <boost/scoped_ptr.hpp>
-
-#include <QWidget>
 #include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
+#include <QWidget>
+CLANG_DIAG_ON(deprecated-register)
 #include "Gui/LineEdit.h"
 
 struct ShortCutEditorPrivate;
-class ShortCutEditor : public QWidget
+class ShortCutEditor
+    : public QWidget
 {
     Q_OBJECT
+
 public:
-    
+
     ShortCutEditor(QWidget* parent);
-    
+
     virtual ~ShortCutEditor();
-    
+
 public slots:
-    
+
     void onSelectionChanged();
-    
+
     void onClearButtonClicked();
-    
+
     void onResetButtonClicked();
-    
+
     void onRestoreDefaultsButtonClicked();
-    
+
     void onApplyButtonClicked();
-    
+
     void onCancelButtonClicked();
-    
+
     void onOkButtonClicked();
-    
-    void onEditorTextEdited(const QString& text);
+
+    void onEditorTextEdited(const QString & text);
+
 private:
-        
+
     boost::scoped_ptr<ShortCutEditorPrivate> _imp;
 };
 
-class KeybindRecorder : public LineEdit
+class KeybindRecorder
+    : public LineEdit
 {
 public:
-    
+
     KeybindRecorder(QWidget* parent);
-    
+
     virtual ~KeybindRecorder();
-    
+
 private:
-    
+
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 

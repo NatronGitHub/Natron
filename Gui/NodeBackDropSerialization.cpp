@@ -9,19 +9,21 @@
 #include "Gui/NodeBackDrop.h"
 
 NodeBackDropSerialization::NodeBackDropSerialization()
-: posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0),selected(false) , _isNull(true)
+    : posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0),selected(false), _isNull(true)
 {
 }
 
-void NodeBackDropSerialization::initialize(const NodeBackDrop* n)
+void
+NodeBackDropSerialization::initialize(const NodeBackDrop* n)
 {
     QPointF pos = n->getPos_mt_safe();
+
     posX = pos.x();
     posY = pos.y();
     n->getSize(width,height);
-    
+
     label.reset(new KnobSerialization);
-    label->initialize(n->getLabelKnob());
+    label->initialize( n->getLabelKnob() );
     QColor color = n->getCurrentColor();
     r = color.redF();
     g = color.greenF();

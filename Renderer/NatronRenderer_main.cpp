@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #include <QCoreApplication>
 
@@ -18,15 +18,17 @@
 #include "Engine/AppManager.h"
 
 
-int main(int argc, char *argv[])
+int
+main(int argc,
+     char *argv[])
 {
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
-     Avoid 'Too many open files' on Unix.
-     
-     Increase the number of file descriptors that the process can open to the maximum allowed.
-     - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
-     - On Linux, the default limit is usually 1024.
+       Avoid 'Too many open files' on Unix.
+
+       Increase the number of file descriptors that the process can open to the maximum allowed.
+       - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
+       - On Linux, the default limit is usually 1024.
      */
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
@@ -53,19 +55,22 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_UNIX
     projectName = AppManager::qt_tildeExpansion(projectName);
 #endif
-    
+
     ///auto-background without a project name is not valid.
-    if (projectName.isEmpty()) {
+    if ( projectName.isEmpty() ) {
         AppManager::printUsage();
+
         return 1;
     }
     AppManager manager;
-    if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
+    if ( !manager.load(argc,argv,projectName,writers,mainProcessServerName) ) {
         AppManager::printUsage();
+
         return 1;
     } else {
         return 0;
     }
+
     return 0;
 }
 

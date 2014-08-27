@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -17,15 +17,17 @@
 #include "Engine/TextureRect.h"
 
 namespace boost {
-    namespace serialization {
-
-        template<class Archive>
-        void serialize(Archive & ar, TextureRect &t, const unsigned int version)
-        {
-            (void)version;
-            ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
-        }
-    }
+namespace serialization {
+template<class Archive>
+void
+serialize(Archive & ar,
+          TextureRect &t,
+          const unsigned int version)
+{
+    (void)version;
+    ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
+}
+}
 }
 
 #endif // NATRON_ENGINE_TEXTURERECTSERIALIZATION_H_

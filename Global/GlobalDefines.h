@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
 #define NATRON_GLOBAL_GLOBALDEFINES_H_
@@ -50,7 +50,6 @@ typedef OfxPointD Point;
 }
 
 typedef OfxRGBAColourF RGBAColourF;
-
 typedef OfxRangeD RangeD;
 
 ///these are used between process to communicate via the pipes
@@ -91,20 +90,23 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphResizeNodeBackDropCommandCompressionID 15
 
 #ifdef __NATRON_WIN32__
-namespace NatronWindows{
-    /*Converts a std::string to wide string*/
-    inline std::wstring s2ws(const std::string& s)
-    {
-        int len;
-        int slength = (int)s.length() + 1;
-        len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-        wchar_t* buf = new wchar_t[len];
-        MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-        std::wstring r(buf);
-        delete[] buf;
-        return r;
-    }
+namespace NatronWindows {
+/*Converts a std::string to wide string*/
+inline std::wstring
+s2ws(const std::string & s)
+{
+    int len;
+    int slength = (int)s.length() + 1;
+
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t* buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+
+    return r;
+}
 }
 #endif
 
-#endif
+#endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H_

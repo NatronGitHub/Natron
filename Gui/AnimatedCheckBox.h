@@ -15,44 +15,62 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-class AnimatedCheckBox : public QCheckBox
+class AnimatedCheckBox
+    : public QCheckBox
 {
-
-    Q_OBJECT
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
+    Q_OBJECT Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool readOnly READ getReadOnly WRITE setReadOnly)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    
+
     int animation;
     bool readOnly;
     bool dirty;
+
 public:
-    
-    AnimatedCheckBox(QWidget *parent = NULL): QCheckBox(parent), animation(0) , readOnly(false) , dirty(false) {}
 
-    virtual ~AnimatedCheckBox() OVERRIDE {}
+    AnimatedCheckBox(QWidget *parent = NULL)
+        : QCheckBox(parent), animation(0), readOnly(false), dirty(false)
+    {
+    }
 
-    void setAnimation(int i) ;
+    virtual ~AnimatedCheckBox() OVERRIDE
+    {
+    }
 
-    int getAnimation() const {
+    void setAnimation(int i);
+
+    int getAnimation() const
+    {
         return animation;
     }
-    
+
     void setReadOnly(bool readOnly);
-    
-    bool getReadOnly() const { return readOnly; }
-    
-    bool getDirty() const { return dirty; }
-    
+
+    bool getReadOnly() const
+    {
+        return readOnly;
+    }
+
+    bool getDirty() const
+    {
+        return dirty;
+    }
+
     void setDirty(bool b);
-    
-    virtual QSize minimumSizeHint() const OVERRIDE FINAL { return QSize(25,25); }
-    
-    virtual QSize sizeHint() const OVERRIDE FINAL { return QSize(25,25); }
+
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL
+    {
+        return QSize(25,25);
+    }
+
+    virtual QSize sizeHint() const OVERRIDE FINAL
+    {
+        return QSize(25,25);
+    }
+
 private:
-    
+
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
 };
 
 #endif // NATRON_GUI_ANIMATEDCHECKBOX_H_

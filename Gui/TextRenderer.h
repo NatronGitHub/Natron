@@ -13,12 +13,9 @@ class QString;
 class QColor;
 class QFont;
 
-namespace Natron
-{
-
+namespace Natron {
 class TextRenderer
 {
-
 public:
 
     TextRenderer();
@@ -31,7 +28,6 @@ private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp;
 };
-
 }
 
 #endif // NATRON_GUI_TEXTRENDERER_H_

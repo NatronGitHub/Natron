@@ -3,24 +3,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 #include "BlockingBackgroundRender.h"
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QDebug>
+CLANG_DIAG_ON(deprecated-register)
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
 
 BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance* writer)
-: _running(false)
-,_writer(writer)
+    : _running(false)
+      ,_writer(writer)
 {
-    
 }
 
-void BlockingBackgroundRender::blockingRender(){
+void
+BlockingBackgroundRender::blockingRender()
+{
     _writer->renderFullSequence(this);
     if (appPTR->getCurrentSettings()->getNumberOfThreads() != -1) {
         QMutexLocker locker(&_runningMutex);
@@ -31,7 +35,9 @@ void BlockingBackgroundRender::blockingRender(){
     }
 }
 
-void BlockingBackgroundRender::notifyFinished() {
+void
+BlockingBackgroundRender::notifyFinished()
+{
     qDebug() << "Blocking render finished.";
     appPTR->writeToOutputPipe(kRenderingFinishedStringLong,kRenderingFinishedStringShort);
     QMutexLocker locker(&_runningMutex);

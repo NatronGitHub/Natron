@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #ifndef CURVEEDITOR_H
 #define CURVEEDITOR_H
@@ -50,41 +50,63 @@ class TimeLine;
  * checkVisibleState() which will automatically show/hide the curve from the tree if it has (or hasn't) an animation.
  **/
 
-class NodeCurveEditorElement : public QObject
+class NodeCurveEditorElement
+    : public QObject
 {
-    
     Q_OBJECT
 
 public:
-    
-    NodeCurveEditorElement(QTreeWidget* tree,CurveWidget* curveWidget,KnobGui* knob,int dimension,
-                           QTreeWidgetItem* item,CurveGui* curve);
-    
-    NodeCurveEditorElement():_treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL){}
-    
+
+    NodeCurveEditorElement(QTreeWidget* tree,
+                           CurveWidget* curveWidget,
+                           KnobGui* knob,
+                           int dimension,
+                           QTreeWidgetItem* item,
+                           CurveGui* curve);
+
+    NodeCurveEditorElement()
+        : _treeItem(),_curve(),_curveDisplayed(false),_curveWidget(NULL)
+    {
+    }
+
     virtual ~NodeCurveEditorElement() OVERRIDE;
-    
-    QTreeWidgetItem* getTreeItem() const WARN_UNUSED_RETURN {return _treeItem;}
-    
-    CurveGui* getCurve() const WARN_UNUSED_RETURN {return _curve;}
 
-    bool isCurveVisible() const WARN_UNUSED_RETURN { return _curveDisplayed; }
-    
-    int getDimension() const WARN_UNUSED_RETURN { return _dimension; }
+    QTreeWidgetItem* getTreeItem() const WARN_UNUSED_RETURN
+    {
+        return _treeItem;
+    }
 
-    KnobGui* getKnob() const WARN_UNUSED_RETURN { return _knob; }
-    
+    CurveGui* getCurve() const WARN_UNUSED_RETURN
+    {
+        return _curve;
+    }
+
+    bool isCurveVisible() const WARN_UNUSED_RETURN
+    {
+        return _curveDisplayed;
+    }
+
+    int getDimension() const WARN_UNUSED_RETURN
+    {
+        return _dimension;
+    }
+
+    KnobGui* getKnob() const WARN_UNUSED_RETURN
+    {
+        return _knob;
+    }
+
 public slots:
-    
+
     /**
      * @brief This is invoked everytimes the knob has a keyframe set or removed, to determine whether we need
      * to keep this element in the tree or not.
      **/
     void checkVisibleState();
-        
+
 private:
-    
-    
+
+
     QTreeWidgetItem* _treeItem;
     CurveGui* _curve;
     bool _curveDisplayed;
@@ -94,7 +116,8 @@ private:
     int _dimension;
 };
 
-class NodeCurveEditorContext : public QObject
+class NodeCurveEditorContext
+    : public QObject
 {
     Q_OBJECT
 
@@ -102,41 +125,47 @@ public:
 
     typedef std::vector< NodeCurveEditorElement* > Elements;
 
-    NodeCurveEditorContext(QTreeWidget *tree,CurveWidget* curveWidget,boost::shared_ptr<NodeGui> node);
+    NodeCurveEditorContext(QTreeWidget *tree,
+                           CurveWidget* curveWidget,
+                           boost::shared_ptr<NodeGui> node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
 
-    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN { return _node; }
+    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN
+    {
+        return _node;
+    }
 
-    const Elements& getElements() const WARN_UNUSED_RETURN {return _nodeElements; }
+    const Elements & getElements() const WARN_UNUSED_RETURN
+    {
+        return _nodeElements;
+    }
 
     NodeCurveEditorElement* findElement(CurveGui* curve) const WARN_UNUSED_RETURN;
-
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
-
     NodeCurveEditorElement* findElement(QTreeWidgetItem* item) const WARN_UNUSED_RETURN;
 
 public slots:
 
-    void onNameChanged(const QString& name);
-    
-    
+    void onNameChanged(const QString & name);
+
 private:
     // FIXME: PIMPL
     boost::shared_ptr<NodeGui> _node;
     Elements _nodeElements;
     QTreeWidgetItem* _nameItem;
-
 };
 
-class CurveEditor  : public QWidget
+class CurveEditor
+    : public QWidget
 {
-
     Q_OBJECT
 
 public:
 
-    CurveEditor(Gui* gui,boost::shared_ptr<TimeLine> timeline,QWidget* parent = 0);
+    CurveEditor(Gui* gui,
+                boost::shared_ptr<TimeLine> timeline,
+                QWidget* parent = 0);
 
     virtual ~CurveEditor() OVERRIDE;
 
@@ -146,35 +175,33 @@ public:
     void addNode(boost::shared_ptr<NodeGui> node);
 
     void removeNode(NodeGui* node);
-    
-    void centerOn(const std::vector<boost::shared_ptr<Curve> >& curves);
-    
-    std::pair<QAction*,QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
 
+    void centerOn(const std::vector<boost::shared_ptr<Curve> > & curves);
+
+    std::pair<QAction*,QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
     CurveGui* findCurve(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
-    
+
     void hideCurves(KnobGui* knob);
-    
+
     void hideCurve(KnobGui* knob,int dimension);
-    
+
     void showCurves(KnobGui* knob);
-    
+
     void showCurve(KnobGui* knob,int dimension);
-    
+
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
-    
+
 public slots:
-    
+
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
 
 private:
-    
-    
+
+
     // FIXME: PIMPL
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves);
-    
-    std::list<NodeCurveEditorContext*> _nodes;
 
+    std::list<NodeCurveEditorContext*> _nodes;
     QHBoxLayout* _mainLayout;
     QSplitter* _splitter;
     CurveWidget* _curveWidget;
@@ -182,7 +209,6 @@ private:
     boost::scoped_ptr<QUndoStack> _undoStack;
     QAction* _undoAction,*_redoAction;
 };
-
 
 
 #endif // CURVEEDITOR_H

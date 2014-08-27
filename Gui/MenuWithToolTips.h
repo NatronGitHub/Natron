@@ -14,10 +14,12 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class MenuWithToolTips : public QMenu {
+class MenuWithToolTips
+    : public QMenu
+{
 public:
     MenuWithToolTips(QWidget* parent);
-    
+
     bool event(QEvent* e);
 };
 

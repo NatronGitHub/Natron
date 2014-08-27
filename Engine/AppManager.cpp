@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -47,9 +47,8 @@ BOOST_CLASS_EXPORT(Natron::ImageParams)
 using namespace Natron;
 
 AppManager* AppManager::_instance = 0;
-
-struct AppManagerPrivate {
-    
+struct AppManagerPrivate
+{
     AppManager::AppType _appType; //< the type of app
     std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
@@ -67,49 +66,45 @@ struct AppManagerPrivate {
     QString _binaryPath; //< the path to the application's binary
     mutable QMutex _wasAbortCalledMutex;
     bool _wasAbortAnyProcessingCalled; // < has abortAnyProcessing() called at least once ?
-
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
-    
     mutable QMutex _ofxLogMutex;
     QString _ofxLog;
-    
+
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
-        , _appInstances()
-        , _availableID(0)
-        , _topLevelInstanceID(0)
-        , _settings(new Settings(NULL))
-        , _formats()
-        , _plugins()
-        , ofxHost(new Natron::OfxHost())
-        , _knobFactory(new KnobFactory())
-        , _nodeCache()
-        , _viewerCache()
-        ,_backgroundIPC(0)
-        ,_loaded(false)
-        ,_binaryPath()
-        ,_wasAbortAnyProcessingCalled(false)
-        ,_nodesGlobalMemoryUse(0)
-        ,_ofxLogMutex()
-        ,_ofxLog()
-    
+          , _appInstances()
+          , _availableID(0)
+          , _topLevelInstanceID(0)
+          , _settings( new Settings(NULL) )
+          , _formats()
+          , _plugins()
+          , ofxHost( new Natron::OfxHost() )
+          , _knobFactory( new KnobFactory() )
+          , _nodeCache()
+          , _viewerCache()
+          ,_backgroundIPC(0)
+          ,_loaded(false)
+          ,_binaryPath()
+          ,_wasAbortAnyProcessingCalled(false)
+          ,_nodesGlobalMemoryUse(0)
+          ,_ofxLogMutex()
+          ,_ofxLog()
+
     {
     }
-    
-    void initProcessInputChannel(const QString& mainProcessServerName);
-    
+
+    void initProcessInputChannel(const QString & mainProcessServerName);
+
     void loadBuiltinFormats();
-    
+
     void saveCaches();
-    
+
     void restoreCaches();
-    
-    bool checkForCacheDiskStructure(const QString& cachePath);
-    
-    void cleanUpCacheDiskStructure(const QString& cachePath);
 
+    bool checkForCacheDiskStructure(const QString & cachePath);
+
+    void cleanUpCacheDiskStructure(const QString & cachePath);
 };
-
 
 void
 AppManager::printBackGroundWelcomeMessage()
@@ -118,9 +113,9 @@ AppManager::printBackGroundWelcomeMessage()
     std::cout << NATRON_APPLICATION_NAME << "    " << QObject::tr(" version: ").toStdString() << NATRON_VERSION_STRING << std::endl;
     std::cout << QObject::tr(">>>Running in background mode (off-screen rendering only).<<<").toStdString() << std::endl;
     std::cout << QObject::tr("Please note that the background mode is in early stage and accepts only project files "
-                 "that would produce a valid output from the graphical version of ").toStdString() << NATRON_APPLICATION_NAME << std::endl;
+                             "that would produce a valid output from the graphical version of ").toStdString() << NATRON_APPLICATION_NAME << std::endl;
     std::cout << QObject::tr("If the background mode doesn't output any result, please adjust your project via the application interface "
-                 "and then re-try using the background mode.").toStdString() << std::endl;
+                             "and then re-try using the background mode.").toStdString() << std::endl;
 }
 
 void
@@ -130,51 +125,51 @@ AppManager::printUsage()
     std::cout << "./" NATRON_APPLICATION_NAME << QObject::tr("    <project file path>").toStdString() << std::endl;
     std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown.").toStdString() << std::endl;
     std::cout << QObject::tr("[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
-                 " name following the --writer argument. If no such node exists in the project file, the process will abort."
-                 "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file.").toStdString() << std::endl;
-
+                             " name following the --writer argument. If no such node exists in the project file, the process will abort."
+                             "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file.").toStdString() << std::endl;
 }
 
 bool
 AppManager::parseCmdLineArgs(int argc,
                              char* argv[],
                              bool* isBackground,
-                             QString& projectFilename,
-                             QStringList& writers,
-                             QString& mainProcessServerName)
+                             QString & projectFilename,
+                             QStringList & writers,
+                             QString & mainProcessServerName)
 {
     if (!argv) {
         return false;
     }
-    
+
     *isBackground = false;
     bool expectWriterNameOnNextArg = false;
     bool expectPipeFileNameOnNextArg = false;
-    
     QStringList args;
-    for(int i = 0; i < argc; ++i){
-        args.push_back(QString(argv[i]));
+    for (int i = 0; i < argc; ++i) {
+        args.push_back( QString(argv[i]) );
     }
-    
-    for (int i = 0 ; i < args.size(); ++i) {
-        
-        if (args.at(i).contains("." NATRON_PROJECT_FILE_EXT)) {
-            if(expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+
+    for (int i = 0; i < args.size(); ++i) {
+        if ( args.at(i).contains("." NATRON_PROJECT_FILE_EXT) ) {
+            if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
                 AppManager::printUsage();
+
                 return false;
             }
             projectFilename = args.at(i);
             continue;
-        } else if (args.at(i) == "--background" || args.at(i) == "-b") {
-            if(expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg){
+        } else if ( (args.at(i) == "--background") || (args.at(i) == "-b") ) {
+            if (expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg) {
                 AppManager::printUsage();
+
                 return false;
             }
             *isBackground = true;
             continue;
-        } else if (args.at(i) == "--writer" || args.at(i) == "-w") {
-            if(expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg){
+        } else if ( (args.at(i) == "--writer") || (args.at(i) == "-w") ) {
+            if (expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg) {
                 AppManager::printUsage();
+
                 return false;
             }
             expectWriterNameOnNextArg = true;
@@ -182,12 +177,13 @@ AppManager::parseCmdLineArgs(int argc,
         } else if (args.at(i) == "--IPCpipe") {
             if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
                 AppManager::printUsage();
+
                 return false;
             }
             expectPipeFileNameOnNextArg = true;
             continue;
         }
-        
+
         if (expectWriterNameOnNextArg) {
             assert(!expectPipeFileNameOnNextArg);
             writers << args.at(i);
@@ -201,27 +197,27 @@ AppManager::parseCmdLineArgs(int argc,
     }
 
     return true;
-}
+} // parseCmdLineArgs
 
 AppManager::AppManager()
-: QObject()
-, _imp(new AppManagerPrivate())
+    : QObject()
+      , _imp( new AppManagerPrivate() )
 {
     assert(!_instance);
     _instance = this;
-    
 }
 
 bool
 AppManager::load(int &argc,
                  char *argv[],
-                 const QString& projectFilename,
-                 const QStringList& writers,
-                 const QString& mainProcessServerName)
+                 const QString & projectFilename,
+                 const QStringList & writers,
+                 const QString & mainProcessServerName)
 {
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
     bool hadArgs = true;
+
     if (!argv) {
         QString binaryPath = QDir::currentPath();
         argc = 1;
@@ -240,54 +236,53 @@ AppManager::load(int &argc,
         delete [] argv[0];
         delete [] argv;
     }
-    
+
     ///the QCoreApplication must have been created so far.
     assert(qApp);
+
     return loadInternal(projectFilename,writers,mainProcessServerName);
 }
 
 AppManager::~AppManager()
 {
-    assert(_imp->_appInstances.empty());
-    
+    assert( _imp->_appInstances.empty() );
+
     for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
         delete _imp->_plugins[i];
     }
-    foreach(Format* f,_imp->_formats){
+    foreach(Format * f,_imp->_formats) {
         delete f;
     }
-    
-    
+
+
     if (_imp->_backgroundIPC) {
         delete _imp->_backgroundIPC;
     }
-    
+
     _instance = 0;
-    
+
     _imp->saveCaches();
-    
-	if(qApp) {
-		delete qApp;
-	}
+
+    if (qApp) {
+        delete qApp;
+    }
 }
 
 void
 AppManager::quit(AppInstance* instance)
 {
-	instance->aboutToQuit();
-    std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find(instance->getAppID());
-    assert(found != _imp->_appInstances.end());
+    instance->aboutToQuit();
+    std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
+    assert( found != _imp->_appInstances.end() );
     found->second.status = APP_INACTIVE;
-	///if we exited the last instance, exit the event loop, this will make
-	/// the exec() function return.
-	if (_imp->_appInstances.size() == 1) {
-		assert(qApp);
-		qApp->quit();
-	}
-	delete instance;
-	
+    ///if we exited the last instance, exit the event loop, this will make
+    /// the exec() function return.
+    if (_imp->_appInstances.size() == 1) {
+        assert(qApp);
+        qApp->quit();
+    }
+    delete instance;
 }
-
 
 void
 AppManager::initializeQApp(int &argc,
@@ -297,14 +292,14 @@ AppManager::initializeQApp(int &argc,
 }
 
 bool
-AppManager::loadInternal(const QString& projectFilename,
-                         const QStringList& writers,
-                         const QString& mainProcessServerName)
+AppManager::loadInternal(const QString & projectFilename,
+                         const QStringList & writers,
+                         const QString & mainProcessServerName)
 {
     assert(!_imp->_loaded);
 
     _imp->_binaryPath = QCoreApplication::applicationDirPath();
-    
+
     registerEngineMetaTypes();
     registerGuiMetaTypes();
 
@@ -325,8 +320,7 @@ AppManager::loadInternal(const QString& projectFilename,
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
     std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
     std::setlocale(LC_ALL,"C"); // set the locale for everything
-
-    Natron::Log::instance();//< enable logging
+    Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
     ///Call restore after initializing knobs
@@ -340,32 +334,31 @@ AppManager::loadInternal(const QString& projectFilename,
     U64 maxDiskCache = _imp->_settings->getMaximumDiskCacheSize();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
-    _imp->_nodeCache.reset(new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1));
-    _imp->_viewerCache.reset(new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache));
+    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",0x1, maxCacheRAM - playbackSize,1) );
+    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",0x1,maxDiskCache,(double)playbackSize / (double)maxDiskCache) );
 
-    setLoadingStatus(tr("Restoring the image cache..."));
+    setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();
-    
-    setLoadingStatus(tr("Restoring user settings..."));
+
+    setLoadingStatus( tr("Restoring user settings...") );
 
 
-    
     ///Set host properties after restoring settings since it depends on the host name.
     _imp->ofxHost->setProperties();
-    
+
     /*loading all plugins*/
     loadAllPlugins();
     _imp->loadBuiltinFormats();
-     
 
-    if (isBackground() && !mainProcessServerName.isEmpty()) {
+
+    if ( isBackground() && !mainProcessServerName.isEmpty() ) {
         _imp->initProcessInputChannel(mainProcessServerName);
         printBackGroundWelcomeMessage();
     }
 
 
-    if (isBackground()) {
-        if (!projectFilename.isEmpty()) {
+    if ( isBackground() ) {
+        if ( !projectFilename.isEmpty() ) {
             _imp->_appType = APP_BACKGROUND_AUTO_RUN;
         } else {
             _imp->_appType = APP_BACKGROUND;
@@ -381,40 +374,44 @@ AppManager::loadInternal(const QString& projectFilename,
     if (!mainInstance) {
         return false;
     } else {
-        
         onLoadCompleted();
-        
+
         ///In background project auto-run the rendering is finished at this point, just exit the instance
-        if (_imp->_appType == APP_BACKGROUND_AUTO_RUN && mainInstance) {
+        if ( (_imp->_appType == APP_BACKGROUND_AUTO_RUN) && mainInstance ) {
             mainInstance->quit();
         }
-        
+
         return true;
     }
-}
+} // loadInternal
 
 AppInstance*
-AppManager::newAppInstance(const QString& projectName,
-                           const QStringList& writers)
+AppManager::newAppInstance(const QString & projectName,
+                           const QStringList & writers)
 {
     AppInstance* instance = makeNewInstance(_imp->_availableID);
+
     try {
         instance->load(projectName,writers);
-    } catch (const std::exception& e) {
-        Natron::errorDialog(NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString() + ": " + e.what());
+    } catch (const std::exception & e) {
+        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString() + ": " + e.what() );
         removeInstance(_imp->_availableID);
         delete instance;
+
         return NULL;
     } catch (...) {
-        Natron::errorDialog(NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString());
+        Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot create project").toStdString() );
         removeInstance(_imp->_availableID);
         delete instance;
+
         return NULL;
     }
+
     ++_imp->_availableID;
-    
+
     ///flag that we finished loading the Appmanager even if it was already true
     _imp->_loaded = true;
+
     return instance;
 }
 
@@ -422,15 +419,16 @@ AppInstance*
 AppManager::getAppInstance(int appID) const
 {
     std::map<int,AppInstanceRef>::const_iterator it;
+
     it = _imp->_appInstances.find(appID);
-    if(it != _imp->_appInstances.end()){
+    if ( it != _imp->_appInstances.end() ) {
         return it->second.app;
-    }else{
+    } else {
         return NULL;
     }
 }
 
-const std::map<int,AppInstanceRef>&
+const std::map<int,AppInstanceRef> &
 AppManager::getAppInstances() const
 {
     return _imp->_appInstances;
@@ -440,10 +438,9 @@ void
 AppManager::removeInstance(int appID)
 {
     _imp->_appInstances.erase(appID);
-    if(!_imp->_appInstances.empty()) {
+    if ( !_imp->_appInstances.empty() ) {
         setAsTopLevelInstance(_imp->_appInstances.begin()->first);
     }
-
 }
 
 AppManager::AppType
@@ -456,27 +453,24 @@ void
 AppManager::clearPlaybackCache()
 {
     _imp->_viewerCache->clearInMemoryPortion();
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->clearViewersLastRenderedTexture();
     }
 }
-
 
 void
 AppManager::clearDiskCache()
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->clearViewersLastRenderedTexture();
     }
     _imp->_viewerCache->clear();
-   
 }
-
 
 void
 AppManager::clearNodeCache()
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->clearAllLastRenderedImages();
     }
     _imp->_nodeCache->clear();
@@ -493,9 +487,9 @@ AppManager::clearAllCaches()
 {
     clearDiskCache();
     clearNodeCache();
-    
+
     ///for each app instance clear all its nodes cache
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->clearOpenFXPluginsCaches();
     }
 }
@@ -505,44 +499,47 @@ AppManager::loadPlugins(const QString &where)
 {
     std::vector<LibraryBinary*> ret;
     QDir d(where);
-    if (d.isReadable())
-    {
+
+    if ( d.isReadable() ) {
         QStringList filters;
-        filters << QString(QString("*.")+QString(NATRON_LIBRARY_EXT));
+        filters << QString( QString("*.") + QString(NATRON_LIBRARY_EXT) );
         d.setNameFilters(filters);
         QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ; ++i) {
+        for (int i = 0; i < fileList.size(); ++i) {
             QString filename = fileList.at(i);
-            if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
+            if ( filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so") ) {
                 QString className;
                 int index = filename.lastIndexOf("." NATRON_LIBRARY_EXT);
                 className = filename.left(index);
                 std::string binaryPath = NATRON_PLUGINS_PATH + className.toStdString() + "." + NATRON_LIBRARY_EXT;
                 LibraryBinary* plugin = new LibraryBinary(binaryPath);
-                if(!plugin->isValid()){
+                if ( !plugin->isValid() ) {
                     delete plugin;
-                }else{
+                } else {
                     ret.push_back(plugin);
                 }
-            }else{
+            } else {
                 continue;
             }
         }
     }
+
     return ret;
 }
 
 std::vector<Natron::LibraryBinary*>
-AppManager::loadPluginsAndFindFunctions(const QString& where,
-                                        const std::vector<std::string>& functions)
+AppManager::loadPluginsAndFindFunctions(const QString & where,
+                                        const std::vector<std::string> & functions)
 {
     std::vector<LibraryBinary*> ret;
     std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
+
     for (U32 i = 0; i < loadedLibraries.size(); ++i) {
-        if (loadedLibraries[i]->loadFunctions(functions)) {
+        if ( loadedLibraries[i]->loadFunctions(functions) ) {
             ret.push_back(loadedLibraries[i]);
         }
     }
+
     return ret;
 }
 
@@ -550,14 +547,13 @@ AppInstance*
 AppManager::getTopLevelInstance () const
 {
     std::map<int,AppInstanceRef>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
-    if(it == _imp->_appInstances.end()){
+
+    if ( it == _imp->_appInstances.end() ) {
         return NULL;
-    }else{
+    } else {
         return it->second.app;
     }
 }
-
-
 
 bool
 AppManager::isLoaded() const
@@ -565,9 +561,8 @@ AppManager::isLoaded() const
     return _imp->_loaded;
 }
 
-
 void
-AppManagerPrivate::initProcessInputChannel(const QString& mainProcessServerName)
+AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)
 {
     _backgroundIPC = new ProcessInputChannel(mainProcessServerName);
 }
@@ -576,18 +571,18 @@ bool
 AppManager::hasAbortAnyProcessingBeenCalled() const
 {
     QMutexLocker l(&_imp->_wasAbortCalledMutex);
+
     return _imp->_wasAbortAnyProcessingCalled;
 }
 
 void
 AppManager::abortAnyProcessing()
 {
-    
     {
         QMutexLocker l(&_imp->_wasAbortCalledMutex);
         _imp->_wasAbortAnyProcessingCalled = true;
     }
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         std::vector<boost::shared_ptr<Natron::Node> > nodes;
         it->second.app->getActiveNodes(&nodes);
         for (U32 i = 0; i < nodes.size(); ++i) {
@@ -597,16 +592,19 @@ AppManager::abortAnyProcessing()
 }
 
 bool
-AppManager::writeToOutputPipe(const QString& longMessage,const QString& shortMessage)
+AppManager::writeToOutputPipe(const QString & longMessage,
+                              const QString & shortMessage)
 {
-    if(!_imp->_backgroundIPC) {
+    if (!_imp->_backgroundIPC) {
         if (_imp->_appType == APP_BACKGROUND_AUTO_RUN) {
             qDebug() << "Pipe between Gui process and render process is broken, progress report is not functionnal.";
         }
         qDebug() << longMessage;
+
         return false;
     }
     _imp->_backgroundIPC->writeToOutputChannel(shortMessage);
+
     return true;
 }
 
@@ -614,20 +612,22 @@ void
 AppManager::registerAppInstance(AppInstance* app)
 {
     AppInstanceRef ref;
+
     ref.app = app;
     ref.status = Natron::APP_ACTIVE;
-    _imp->_appInstances.insert(std::make_pair(app->getAppID(),ref));
+    _imp->_appInstances.insert( std::make_pair(app->getAppID(),ref) );
 }
 
-void AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
+void
+AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 {
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
+
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
     U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
-    _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
-    
+    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
@@ -635,9 +635,9 @@ AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
 {
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
+
     _imp->_viewerCache->setMaximumCacheSize(size);
-    _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)size);
-    
+    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)size );
 }
 
 void
@@ -645,35 +645,33 @@ AppManager::setPlaybackCacheMaximumSize(double p)
 {
     size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
     U64 playbackSize = maxCacheRAM * p;
+
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
     _imp->_nodeCache->setMaximumInMemorySize(1);
     U64 maxDiskCacheSize = _imp->_settings->getMaximumDiskCacheSize();
-    _imp->_viewerCache->setMaximumInMemorySize((double)playbackSize / (double)maxDiskCacheSize);
-    
+    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
 AppManager::loadAllPlugins()
 {
-    assert(_imp->_plugins.empty());
-    assert(_imp->_formats.empty());
-    
-    
+    assert( _imp->_plugins.empty() );
+    assert( _imp->_formats.empty() );
+
+
     std::map<std::string,std::vector<std::string> > readersMap;
     std::map<std::string,std::vector<std::string> > writersMap;
-    
+
     /*loading node plugins*/
-    
+
     loadBuiltinNodePlugins(&_imp->_plugins, &readersMap, &writersMap);
 
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
-    
+
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
-
 }
-
 
 void
 AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
@@ -681,21 +679,21 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                                    std::map<std::string,std::vector<std::string> >* /*writersMap*/)
 {
     {
-        boost::shared_ptr<EffectInstance> dotNode(Dot::BuildEffect(boost::shared_ptr<Natron::Node>()));
+        boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
         std::map<std::string,void*> functions;
-        functions.insert(std::make_pair("BuildEffect", (void*)&Dot::BuildEffect));
+        functions.insert( std::make_pair("BuildEffect", (void*)&Dot::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
 
-        Natron::Plugin* plugin = new Natron::Plugin(binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                    "",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion());
+        Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
+                                                     "",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion() );
         plugins->push_back(plugin);
         std::list<std::string> grouping;
         dotNode->getPluginGrouping(&grouping);
         QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it!=grouping.end(); ++it) {
-            qgrouping.push_back(it->c_str());
+
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
         }
 
         onPluginLoaded(qgrouping, dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(), "", "");
@@ -703,32 +701,32 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
 }
 
 void
-AppManager::registerPlugin(const QStringList& groups,
-                           const QString& pluginID,
-                           const QString& pluginLabel,
-                           const QString& pluginIconPath,
-                           const QString& groupIconPath,
+AppManager::registerPlugin(const QStringList & groups,
+                           const QString & pluginID,
+                           const QString & pluginLabel,
+                           const QString & pluginIconPath,
+                           const QString & groupIconPath,
                            Natron::LibraryBinary* binary,
                            bool mustCreateMutex,
                            int major,
                            int minor)
 {
     QMutex* pluginMutex = 0;
+
     if (mustCreateMutex) {
         pluginMutex = new QMutex(QMutex::Recursive);
     }
     Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,pluginMutex,major,minor);
     _imp->_plugins.push_back(plugin);
     onPluginLoaded(groups, pluginID, pluginLabel, pluginIconPath, groupIconPath);
-
 }
-
 
 void
 AppManagerPrivate::loadBuiltinFormats()
 {
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
+
     formatNames.push_back("PC_Video");
     formatNames.push_back("NTSC");
     formatNames.push_back("PAL");
@@ -745,7 +743,7 @@ AppManagerPrivate::loadBuiltinFormats()
     formatNames.push_back("square_512");
     formatNames.push_back("square_1K");
     formatNames.push_back("square_2K");
-    
+
     std::vector< std::vector<double> > resolutions;
     std::vector<double> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
     std::vector<double> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
@@ -763,7 +761,7 @@ AppManagerPrivate::loadBuiltinFormats()
     std::vector<double> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
     std::vector<double> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
     std::vector<double> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
-    
+
     resolutions.push_back(pcvideo);
     resolutions.push_back(ntsc);
     resolutions.push_back(pal);
@@ -780,257 +778,316 @@ AppManagerPrivate::loadBuiltinFormats()
     resolutions.push_back(square512);
     resolutions.push_back(square1K);
     resolutions.push_back(square2K);
-    
-    assert(formatNames.size() == resolutions.size());
-    for (U32 i =0; i<formatNames.size(); ++i) {
-        const std::vector<double>& v = resolutions[i];
+
+    assert( formatNames.size() == resolutions.size() );
+    for (U32 i = 0; i < formatNames.size(); ++i) {
+        const std::vector<double> & v = resolutions[i];
         assert(v.size() >= 3);
         Format* _frmt = new Format(0, 0, (int)v[0], (int)v[1], formatNames[i], v[2]);
         assert(_frmt);
         _formats.push_back(_frmt);
     }
-    
-}
-
-
+} // loadBuiltinFormats
 
 Format*
-AppManager::findExistingFormat(int w, int h, double pixel_aspect) const
+AppManager::findExistingFormat(int w,
+                               int h,
+                               double pixel_aspect) const
 {
-    for (U32 i =0; i< _imp->_formats.size(); ++i) {
+    for (U32 i = 0; i < _imp->_formats.size(); ++i) {
         Format* frmt = _imp->_formats[i];
         assert(frmt);
-        if(frmt->width() == w && frmt->height() == h && frmt->getPixelAspect() == pixel_aspect){
+        if ( (frmt->width() == w) && (frmt->height() == h) && (frmt->getPixelAspect() == pixel_aspect) ) {
             return frmt;
         }
     }
+
     return NULL;
 }
 
-
-
-
-void AppManager::setAsTopLevelInstance(int appID){
-    if(_imp->_topLevelInstanceID == appID){
+void
+AppManager::setAsTopLevelInstance(int appID)
+{
+    if (_imp->_topLevelInstanceID == appID) {
         return;
     }
     _imp->_topLevelInstanceID = appID;
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin();
-         it!=_imp->_appInstances.end();
+         it != _imp->_appInstances.end();
          ++it) {
         if (it->first != _imp->_topLevelInstanceID) {
-            if(!isBackground())
+            if ( !isBackground() ) {
                 it->second.app->disconnectViewersFromViewerCache();
-        }else{
-            if(!isBackground())
+            }
+        } else {
+            if ( !isBackground() ) {
                 it->second.app->connectViewersToViewerCache();
+            }
         }
     }
 }
 
-
-void AppManager::clearExceedingEntriesFromNodeCache(){
+void
+AppManager::clearExceedingEntriesFromNodeCache()
+{
     _imp->_nodeCache->clearExceedingEntries();
 }
 
-const std::vector<Natron::Plugin*>& AppManager::getPluginsList() const
+const std::vector<Natron::Plugin*> &
+AppManager::getPluginsList() const
 {
     return _imp->_plugins;
 }
 
-QMutex* AppManager::getMutexForPlugin(const QString& pluginId) const {
+QMutex*
+AppManager::getMutexForPlugin(const QString & pluginId) const
+{
     for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        if(_imp->_plugins[i]->getPluginID() == pluginId){
+        if (_imp->_plugins[i]->getPluginID() == pluginId) {
             return _imp->_plugins[i]->getPluginLock();
         }
     }
     std::string exc("Couldn't find a plugin named ");
-    exc.append(pluginId.toStdString());
+    exc.append( pluginId.toStdString() );
     throw std::invalid_argument(exc);
 }
 
-const std::vector<Format*>& AppManager::getFormats() const {
+const std::vector<Format*> &
+AppManager::getFormats() const
+{
     return _imp->_formats;
 }
 
-const KnobFactory& AppManager::getKnobFactory() const {
+const KnobFactory &
+AppManager::getKnobFactory() const
+{
     return *(_imp->_knobFactory);
 }
 
-Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginId,int majorVersion,int minorVersion) const{
+Natron::LibraryBinary*
+AppManager::getPluginBinary(const QString & pluginId,
+                            int majorVersion,
+                            int minorVersion) const
+{
     std::map<int,Natron::Plugin*> matches;
+
     for (U32 i = 0; i < _imp->_plugins.size(); ++i) {
-        if(_imp->_plugins[i]->getPluginID() != pluginId){
+        if (_imp->_plugins[i]->getPluginID() != pluginId) {
             continue;
         }
-        if(majorVersion != -1 && _imp->_plugins[i]->getMajorVersion() != majorVersion){
+        if ( (majorVersion != -1) && (_imp->_plugins[i]->getMajorVersion() != majorVersion) ) {
             continue;
         }
-        matches.insert(std::make_pair(_imp->_plugins[i]->getMinorVersion(),_imp->_plugins[i]));
+        matches.insert( std::make_pair(_imp->_plugins[i]->getMinorVersion(),_imp->_plugins[i]) );
     }
-    
-    if(matches.empty()){
+
+    if ( matches.empty() ) {
         QString exc = QString("Couldn't find a plugin named %1, with a major version of %2 and a minor version greater or equal to %3.")
-                .arg(pluginId)
-                .arg(majorVersion)
-                .arg(minorVersion);
-        throw std::invalid_argument(exc.toStdString());
-    }else{
+                      .arg(pluginId)
+                      .arg(majorVersion)
+                      .arg(minorVersion);
+        throw std::invalid_argument( exc.toStdString() );
+    } else {
         std::map<int,Natron::Plugin*>::iterator greatest = matches.end();
         --greatest;
+
         return greatest->second->getLibraryBinary();
     }
 }
 
-
-Natron::EffectInstance* AppManager::createOFXEffect(const std::string& pluginID,boost::shared_ptr<Natron::Node> node,
-                                                    const NodeSerialization* serialization ) const {
+Natron::EffectInstance*
+AppManager::createOFXEffect(const std::string & pluginID,
+                            boost::shared_ptr<Natron::Node> node,
+                            const NodeSerialization* serialization ) const
+{
     return _imp->ofxHost->createOfxEffect(pluginID, node,serialization);
 }
 
-void AppManager::removeFromNodeCache(const boost::shared_ptr<Natron::Image>& image){
+void
+AppManager::removeFromNodeCache(const boost::shared_ptr<Natron::Image> & image)
+{
     _imp->_nodeCache->removeEntry(image);
 }
 
-void AppManager::removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry>& texture){
+void
+AppManager::removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry> & texture)
+{
     _imp->_viewerCache->removeEntry(texture);
-    if(texture) {
-        emit imageRemovedFromViewerCache(texture->getKey().getTime());
+    if (texture) {
+        emit imageRemovedFromViewerCache( texture->getKey().getTime() );
     }
 }
 
-void AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
+void
+AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
 {
     std::list< boost::shared_ptr<Natron::Image> > cacheContent;
+
     _imp->_nodeCache->getCopy(&cacheContent);
-    for (std::list< boost::shared_ptr<Natron::Image> >::iterator it = cacheContent.begin(); it!=cacheContent.end(); ++it) {
-        if ((*it)->getKey().getTreeVersion() == treeVersion) {
+    for (std::list< boost::shared_ptr<Natron::Image> >::iterator it = cacheContent.begin(); it != cacheContent.end(); ++it) {
+        if ( (*it)->getKey().getTreeVersion() == treeVersion ) {
             _imp->_nodeCache->removeEntry(*it);
         }
     }
 }
 
-void AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
+void
+AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
 {
     std::list< boost::shared_ptr<Natron::FrameEntry> > cacheContent;
+
     _imp->_viewerCache->getCopy(&cacheContent);
-    for (std::list< boost::shared_ptr<Natron::FrameEntry> >::iterator it = cacheContent.begin(); it!=cacheContent.end(); ++it) {
-        if ((*it)->getKey().getTreeVersion() == treeVersion) {
+    for (std::list< boost::shared_ptr<Natron::FrameEntry> >::iterator it = cacheContent.begin(); it != cacheContent.end(); ++it) {
+        if ( (*it)->getKey().getTreeVersion() == treeVersion ) {
             _imp->_viewerCache->removeEntry(*it);
         }
     }
 }
 
-const QString& AppManager::getApplicationBinaryPath() const {
+const QString &
+AppManager::getApplicationBinaryPath() const
+{
     return _imp->_binaryPath;
 }
 
-void AppManager::setNumberOfThreads(int threadsNb) {
+void
+AppManager::setNumberOfThreads(int threadsNb)
+{
     _imp->_settings->setNumberOfThreads(threadsNb);
 }
 
-bool AppManager::getImage(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams>* params,
-                          boost::shared_ptr<Natron::Image>* returnValue) const {
+bool
+AppManager::getImage(const Natron::ImageKey & key,
+                     boost::shared_ptr<const Natron::ImageParams>* params,
+                     boost::shared_ptr<Natron::Image>* returnValue) const
+{
     boost::shared_ptr<const NonKeyParams> paramsBase;
+
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getImage");
     bool ret = _imp->_nodeCache->get(key,&paramsBase,returnValue);
-    if(ret) {
+    if (ret) {
         *params = boost::dynamic_pointer_cast<const Natron::ImageParams>(paramsBase);
         Log::print("Image found in cache!");
     } else {
         Log::print("Image not found in cache!");
     }
     Log::endFunction("AppManager","getImage");
+
     return ret;
 #else
     bool ret = _imp->_nodeCache->get(key,&paramsBase, returnValue);
     if (ret) {
         *params = boost::dynamic_pointer_cast<const Natron::ImageParams>(paramsBase);
     }
+
     return ret;
 #endif
-
 }
 
-bool AppManager::getImageOrCreate(const Natron::ImageKey& key,boost::shared_ptr<const Natron::ImageParams> params,
-                      boost::shared_ptr<Natron::Image>* returnValue) const {
+bool
+AppManager::getImageOrCreate(const Natron::ImageKey & key,
+                             boost::shared_ptr<const Natron::ImageParams> params,
+                             boost::shared_ptr<Natron::Image>* returnValue) const
+{
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getImage");
     bool ret = _imp->_nodeCache->getOrCreate(key,params,returnValue);
-    if(ret) {
+    if (ret) {
         Log::print("Image found in cache!");
     } else {
         Log::print("Image not found in cache!");
     }
     Log::endFunction("AppManager","getImage");
+
     return ret;
 #else
+
     return _imp->_nodeCache->getOrCreate(key,params,returnValue);
 #endif
 }
 
-bool AppManager::getTexture(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams>* params,
-                            boost::shared_ptr<Natron::FrameEntry>* returnValue) const {
+bool
+AppManager::getTexture(const Natron::FrameKey & key,
+                       boost::shared_ptr<const Natron::FrameParams>* params,
+                       boost::shared_ptr<Natron::FrameEntry>* returnValue) const
+{
     boost::shared_ptr<const NonKeyParams> paramsBase;
+
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getTexture");
     bool ret = _imp->_viewerCache->get(key,paramsBase, returnValue);
-    if(ret) {
+    if (ret) {
         *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
         Log::print("Texture found in cache!");
     } else {
         Log::print("Texture not found in cache!");
     }
     Log::endFunction("AppManager","getTexture");
+
     return ret;
 #else
     bool ret =  _imp->_viewerCache->get(key, &paramsBase,returnValue);
     if (ret && params) {
         *params = boost::dynamic_pointer_cast<const Natron::FrameParams>(paramsBase);
     }
+
     return ret;
 
 #endif
 }
 
-bool AppManager::getTextureOrCreate(const Natron::FrameKey& key,boost::shared_ptr<const Natron::FrameParams> params,
-                            boost::shared_ptr<Natron::FrameEntry>* returnValue) const {
+bool
+AppManager::getTextureOrCreate(const Natron::FrameKey & key,
+                               boost::shared_ptr<const Natron::FrameParams> params,
+                               boost::shared_ptr<Natron::FrameEntry>* returnValue) const
+{
 #ifdef NATRON_LOG
     Log::beginFunction("AppManager","getTexture");
     bool ret = _imp->_viewerCache->getOrCreate(key,params, returnValue);
-    if(ret) {
+    if (ret) {
         Log::print("Texture found in cache!");
     } else {
         Log::print("Texture not found in cache!");
     }
     Log::endFunction("AppManager","getTexture");
+
     return ret;
 #else
+
     return _imp->_viewerCache->getOrCreate(key, params,returnValue);
 #endif
 }
 
-U64 AppManager::getCachesTotalMemorySize() const {
+U64
+AppManager::getCachesTotalMemorySize() const
+{
     return _imp->_viewerCache->getMemoryCacheSize() + _imp->_nodeCache->getMemoryCacheSize();
 }
 
-Natron::CacheSignalEmitter* AppManager::getOrActivateViewerCacheSignalEmitter() const {
+Natron::CacheSignalEmitter*
+AppManager::getOrActivateViewerCacheSignalEmitter() const
+{
     return _imp->_viewerCache->activateSignalEmitter();
 }
 
-boost::shared_ptr<Settings> AppManager::getCurrentSettings() const {
+boost::shared_ptr<Settings> AppManager::getCurrentSettings() const
+{
     return _imp->_settings;
 }
 
-void AppManager::setLoadingStatus(const QString& str) {
-    if (isLoaded()) {
+void
+AppManager::setLoadingStatus(const QString & str)
+{
+    if ( isLoaded() ) {
         return;
     }
     std::cout << str.toStdString() << std::endl;
 }
 
-AppInstance* AppManager::makeNewInstance(int appID) const {
+AppInstance*
+AppManager::makeNewInstance(int appID) const
+{
     return new AppInstance(appID);
 }
 
@@ -1038,7 +1095,9 @@ AppInstance* AppManager::makeNewInstance(int appID) const {
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
 
-void AppManager::registerEngineMetaTypes() const {
+void
+AppManager::registerEngineMetaTypes() const
+{
     qRegisterMetaType<Variant>();
     qRegisterMetaType<Natron::ChannelSet>();
     qRegisterMetaType<Format>();
@@ -1051,318 +1110,364 @@ void AppManager::registerEngineMetaTypes() const {
 #endif
 }
 
-void AppManagerPrivate::saveCaches() {
-    
-    
+void
+AppManagerPrivate::saveCaches()
+{
     {
         std::ofstream ofile;
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         std::string cacheRestoreFilePath = _viewerCache->getRestoreFilePath();
         try {
             ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-        } catch (const std::ofstream::failure& e) {
+        } catch (const std::ofstream::failure & e) {
             qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
+
             return;
         }
-        
-        if (!ofile.good()) {
+
+        if ( !ofile.good() ) {
             ofile.close();
             qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+
             return;
         }
-        
+
         Natron::Cache<FrameEntry>::CacheTOC toc;
         _viewerCache->save(&toc);
-        
+
         try {
             boost::archive::binary_oarchive oArchive(ofile);
             oArchive << toc;
-        } catch(const std::exception& e) {
+        } catch (const std::exception & e) {
             qDebug() << "Failed to serialize the cache table of contents: " << e.what();
         }
+
         ofile.close();
     }
 
-    
+
     {
         std::ofstream ofile;
         ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         std::string cacheRestoreFilePath = _nodeCache->getRestoreFilePath();
         try {
             ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-        } catch (const std::ofstream::failure& e) {
+        } catch (const std::ofstream::failure & e) {
             qDebug() << "Exception occured when opening file " << cacheRestoreFilePath.c_str() << ": " << e.what();
+
             return;
         }
-        
-        if(!ofile.good()) {
+
+        if ( !ofile.good() ) {
             qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+
             return;
         }
-        
+
         Natron::Cache<Image>::CacheTOC toc;
         _nodeCache->save(&toc);
-        
+
         try {
             boost::archive::binary_oarchive oArchive(ofile);
             oArchive << toc;
             ofile.close();
-        } catch(const std::exception& e) {
+        } catch (const std::exception & e) {
             qDebug() << "Failed to serialize the cache table of contents: " << e.what();
         }
     }
-}
+} // saveCaches
 
-void AppManagerPrivate::restoreCaches() {
-    
+void
+AppManagerPrivate::restoreCaches()
+{
     {
-        if (checkForCacheDiskStructure(_nodeCache->getCachePath())) {
+        if ( checkForCacheDiskStructure( _nodeCache->getCachePath() ) ) {
             std::ifstream ifile;
             std::string settingsFilePath = _nodeCache->getRestoreFilePath();
             try {
                 ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
                 ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-            } catch (const std::ifstream::failure& e) {
+            } catch (const std::ifstream::failure & e) {
                 qDebug() << "Failed to open the cache restoration file: " << e.what();
+
                 return;
             }
-            
-            if (!ifile.good()) {
+
+            if ( !ifile.good() ) {
                 qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
                 ifile.close();
+
                 return;
             }
-            
+
             Natron::Cache<Image>::CacheTOC tableOfContents;
             try {
                 boost::archive::binary_iarchive iArchive(ifile);
                 iArchive >> tableOfContents;
-            } catch(const std::exception & e) {
+            } catch (const std::exception & e) {
                 qDebug() << e.what();
                 ifile.close();
+
                 return;
             }
+
             ifile.close();
 
-            QFile restoreFile(settingsFilePath.c_str());
+            QFile restoreFile( settingsFilePath.c_str() );
             restoreFile.remove();
-            
+
             _nodeCache->restore(tableOfContents);
         }
     }
     {
-        if (checkForCacheDiskStructure(_viewerCache->getCachePath())) {
+        if ( checkForCacheDiskStructure( _viewerCache->getCachePath() ) ) {
             std::ifstream ifile;
             std::string settingsFilePath = _viewerCache->getRestoreFilePath();
             try {
                 ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
                 ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-            } catch (const std::ifstream::failure& e) {
+            } catch (const std::ifstream::failure & e) {
                 qDebug() << "Failed to open the cache restoration file: " << e.what();
+
                 return;
             }
-            
-            if (!ifile.good()) {
+
+            if ( !ifile.good() ) {
                 qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
                 ifile.close();
+
                 return;
             }
-            
+
             Natron::Cache<FrameEntry>::CacheTOC tableOfContents;
             try {
                 boost::archive::binary_iarchive iArchive(ifile);
                 iArchive >> tableOfContents;
-            } catch(const std::exception & e) {
+            } catch (const std::exception & e) {
                 qDebug() << e.what();
                 ifile.close();
+
                 return;
             }
+
             ifile.close();
 
-            QFile restoreFile(settingsFilePath.c_str());
+            QFile restoreFile( settingsFilePath.c_str() );
             restoreFile.remove();
-            
+
             _viewerCache->restore(tableOfContents);
         }
     }
-}
+} // restoreCaches
 
-bool AppManagerPrivate::checkForCacheDiskStructure(const QString& cachePath) {
-    QString settingsFilePath(cachePath+QDir::separator()+"restoreFile." NATRON_CACHE_FILE_EXT);
-    if (!QFile::exists(settingsFilePath)) {
+bool
+AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
+{
+    QString settingsFilePath(cachePath + QDir::separator() + "restoreFile." NATRON_CACHE_FILE_EXT);
+
+    if ( !QFile::exists(settingsFilePath) ) {
         qDebug() << "Disk cache empty.";
         cleanUpCacheDiskStructure(cachePath);
+
         return false;
     }
     QDir directory(cachePath);
     QStringList files = directory.entryList(QDir::AllDirs);
-    
-    
+
+
     /*Now counting actual data files in the cache*/
     /*check if there's 256 subfolders, otherwise reset cache.*/
     int count = 0; // -1 because of the restoreFile
     int subFolderCount = 0;
-    for (int i =0; i< files.size(); ++i) {
+    for (int i = 0; i < files.size(); ++i) {
         QString subFolder(cachePath);
-        subFolder.append(QDir::separator());
+        subFolder.append( QDir::separator() );
         subFolder.append(files[i]);
-        if(subFolder.right(1) == QString(".") || subFolder.right(2) == QString("..")) continue;
+        if ( ( subFolder.right(1) == QString(".") ) || ( subFolder.right(2) == QString("..") ) ) {
+            continue;
+        }
         QDir d(subFolder);
-        if (d.exists()) {
+        if ( d.exists() ) {
             ++subFolderCount;
             QStringList items = d.entryList();
             for (int j = 0; j < items.size(); ++j) {
-                if(items[j] != QString(".") && items[j] != QString("..")) {
+                if ( ( items[j] != QString(".") ) && ( items[j] != QString("..") ) ) {
                     ++count;
                 }
             }
         }
     }
-    if (subFolderCount<256) {
-        qDebug()<< cachePath << " doesn't contain sub-folders indexed from 00 to FF. Reseting.";
+    if (subFolderCount < 256) {
+        qDebug() << cachePath << " doesn't contain sub-folders indexed from 00 to FF. Reseting.";
         cleanUpCacheDiskStructure(cachePath);
+
         return false;
     }
+
     return true;
 }
 
-void AppManagerPrivate::cleanUpCacheDiskStructure(const QString& cachePath) {
+void
+AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
+{
     /*re-create cache*/
-    
+
     QDir cacheFolder(cachePath);
+
 #   if QT_VERSION < 0x050000
     removeRecursively(cachePath);
 #   else
-    if (cacheFolder.exists()) {
+    if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();
     }
 #endif
     cacheFolder.mkpath(".");
-    
+
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
     if (etr.size() < 256) {
-        foreach(QString e, etr){
+        foreach(QString e, etr) {
             cacheFolder.rmdir(e);
         }
     }
-    for (U32 i = 0x00 ; i <= 0xF; ++i) {
-        for (U32 j = 0x00 ; j <= 0xF ; ++j) {
+    for (U32 i = 0x00; i <= 0xF; ++i) {
+        for (U32 j = 0x00; j <= 0xF; ++j) {
             std::ostringstream oss;
             oss << std::hex <<  i;
-            oss << std::hex << j ;
+            oss << std::hex << j;
             std::string str = oss.str();
-            cacheFolder.mkdir(str.c_str());
+            cacheFolder.mkdir( str.c_str() );
         }
     }
 }
 
-void AppManager::onMaxPanelsOpenedChanged(int maxPanels)
+void
+AppManager::onMaxPanelsOpenedChanged(int maxPanels)
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it!= _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->onMaxPanelsOpenedChanged(maxPanels);
     }
 }
 
-int AppManager::exec() {
+int
+AppManager::exec()
+{
     return qApp->exec();
 }
 
-void AppManager::onNodeMemoryRegistered(qint64 mem)
+void
+AppManager::onNodeMemoryRegistered(qint64 mem)
 {
     ///runs only in the main thread
-    assert(QThread::currentThread() == qApp->thread());
-    
-    if (((qint64)_imp->_nodesGlobalMemoryUse + mem) < 0) {
+    assert( QThread::currentThread() == qApp->thread() );
+
+    if ( ( (qint64)_imp->_nodesGlobalMemoryUse + mem ) < 0 ) {
         qDebug() << "Memory underflow...a node is trying to release more memory than it registered.";
         _imp->_nodesGlobalMemoryUse = 0;
+
         return;
     }
 
     _imp->_nodesGlobalMemoryUse += mem;
 }
 
-qint64 AppManager::getTotalNodesMemoryRegistered() const
+qint64
+AppManager::getTotalNodesMemoryRegistered() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->_nodesGlobalMemoryUse;
 }
 
-QString AppManager::getOfxLog_mt_safe() const
+QString
+AppManager::getOfxLog_mt_safe() const
 {
     QMutexLocker l(&_imp->_ofxLogMutex);
+
     return _imp->_ofxLog;
 }
 
-void AppManager::writeToOfxLog_mt_safe(const QString& str)
+void
+AppManager::writeToOfxLog_mt_safe(const QString & str)
 {
     QMutexLocker l(&_imp->_ofxLogMutex);
+
     _imp->_ofxLog.append(str + '\n');
 }
 
-void AppManager::exitApp()
+void
+AppManager::exitApp()
 {
-    const std::map<int,AppInstanceRef>& instances = getAppInstances();
-    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it!=instances.end(); ++it) {
+    const std::map<int,AppInstanceRef> & instances = getAppInstances();
+
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         it->second.app->quit();
     }
 }
 
-
 #ifdef Q_OS_UNIX
-QString AppManager::qt_tildeExpansion(const QString &path, bool *expanded)
+QString
+AppManager::qt_tildeExpansion(const QString &path,
+                              bool *expanded)
 {
-    if (expanded != 0)
+    if (expanded != 0) {
         *expanded = false;
-    if (!path.startsWith(QLatin1Char('~')))
+    }
+    if ( !path.startsWith( QLatin1Char('~') ) ) {
         return path;
+    }
     QString ret = path;
-    QStringList tokens = ret.split(QDir::separator());
-    if (tokens.first() == QLatin1String("~")) {
-        ret.replace(0, 1, QDir::homePath());
+    QStringList tokens = ret.split( QDir::separator() );
+    if ( tokens.first() == QLatin1String("~") ) {
+        ret.replace( 0, 1, QDir::homePath() );
     } /*else {
-       QString userName = tokens.first();
-       userName.remove(0, 1);
-       
-       const QString homePath = QString::fro#if defined(Q_OS_VXWORKS)
-       const QString homePath = QDir::homePath();
-       #elif defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(Q_OS_OPENBSD)
-       passwd pw;
-       passwd *tmpPw;
-       char buf[200];
-       const int bufSize = sizeof(buf);
-       int err = 0;
-       #if defined(Q_OS_SOLARIS) && (_POSIX_C_SOURCE - 0 < 199506L)
-       tmpPw = getpwnam_r(userName.toLocal8Bit().constData(), &pw, buf, bufSize);
-       #else
-       err = getpwnam_r(userName.toLocal8Bit().constData(), &pw, buf, bufSize, &tmpPw);
-       #endif
-       if (err || !tmpPw)
-       return ret;mLocal8Bit(pw.pw_dir);
-       #else
-       passwd *pw = getpwnam(userName.toLocal8Bit().constData());
-       if (!pw)
-       return ret;
-       const QString homePath = QString::fromLocal8Bit(pw->pw_dir);
-       #endif
-       ret.replace(0, tokens.first().length(), homePath);
-       }*/
-    if (expanded != 0)
+         QString userName = tokens.first();
+         userName.remove(0, 1);
+
+         const QString homePath = QString::fro#if defined(Q_OS_VXWORKS)
+         const QString homePath = QDir::homePath();
+         #elif defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(Q_OS_OPENBSD)
+         passwd pw;
+         passwd *tmpPw;
+         char buf[200];
+         const int bufSize = sizeof(buf);
+         int err = 0;
+         #if defined(Q_OS_SOLARIS) && (_POSIX_C_SOURCE - 0 < 199506L)
+         tmpPw = getpwnam_r(userName.toLocal8Bit().constData(), &pw, buf, bufSize);
+         #else
+         err = getpwnam_r(userName.toLocal8Bit().constData(), &pw, buf, bufSize, &tmpPw);
+         #endif
+         if (err || !tmpPw)
+         return ret;mLocal8Bit(pw.pw_dir);
+         #else
+         passwd *pw = getpwnam(userName.toLocal8Bit().constData());
+         if (!pw)
+         return ret;
+         const QString homePath = QString::fromLocal8Bit(pw->pw_dir);
+         #endif
+         ret.replace(0, tokens.first().length(), homePath);
+         }*/
+    if (expanded != 0) {
         *expanded = true;
+    }
+
     return ret;
 }
+
 #endif
 
-namespace Natron{
-
-void errorDialog(const std::string& title,const std::string& message){
+namespace Natron {
+void
+errorDialog(const std::string & title,
+            const std::string & message)
+{
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
-    if(!appPTR->isBackground()){
+    if ( !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title,message);
-    }else{
-        std::cout << "ERROR: " << title << " :"<<  message << std::endl;
+    } else {
+        std::cout << "ERROR: " << title << " :" <<  message << std::endl;
     }
 
 #ifdef NATRON_LOG
@@ -1372,14 +1477,17 @@ void errorDialog(const std::string& title,const std::string& message){
 #endif
 }
 
-void warningDialog(const std::string& title,const std::string& message){
+void
+warningDialog(const std::string & title,
+              const std::string & message)
+{
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
-    if(!appPTR->isBackground()){
+    if ( !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title,message);
-    }else{
-        std::cout << "WARNING: " << title << " :"<< message << std::endl;
+    } else {
+        std::cout << "WARNING: " << title << " :" << message << std::endl;
     }
 #ifdef NATRON_LOG
     Log::beginFunction(title,"WARNING");
@@ -1388,14 +1496,17 @@ void warningDialog(const std::string& title,const std::string& message){
 #endif
 }
 
-void informationDialog(const std::string& title,const std::string& message){
+void
+informationDialog(const std::string & title,
+                  const std::string & message)
+{
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
-    if(!appPTR->isBackground()){
+    if ( !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title,message);
-    }else{
-        std::cout << "INFO: " << title << " :"<< message << std::endl;
+    } else {
+        std::cout << "INFO: " << title << " :" << message << std::endl;
     }
 #ifdef NATRON_LOG
     Log::beginFunction(title,"INFO");
@@ -1404,16 +1515,21 @@ void informationDialog(const std::string& title,const std::string& message){
 #endif
 }
 
-Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
-                                      Natron::StandardButton defaultButton){
+Natron::StandardButton
+questionDialog(const std::string & title,
+               const std::string & message,
+               Natron::StandardButtons buttons,
+               Natron::StandardButton defaultButton)
+{
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
-    if(!appPTR->isBackground()){
+    if ( !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
-    }else{
-        std::cout << "QUESTION ASKED: " << title << " :"<< message << std::endl;
+    } else {
+        std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
+
         return Natron::Yes;
     }
 #ifdef NATRON_LOG
@@ -1422,6 +1538,4 @@ Natron::StandardButton questionDialog(const std::string& title,const std::string
     Log::endFunction(title,"QUESTION");
 #endif
 }
-
-
 } //Namespace Natron

@@ -22,30 +22,31 @@ class QHBoxLayout;
 class Button;
 class Gui;
 
-class AboutWindow : public QDialog
+class AboutWindow
+    : public QDialog
 {
-    
     QVBoxLayout* _mainLayout;
     QLabel* _iconLabel;
     QTabWidget* _tabWidget;
-    
     QTextBrowser* _aboutText;
     QTextBrowser* _libsText;
     QTextBrowser* _teamText;
     QTextBrowser* _licenseText;
-    
     QWidget* _buttonContainer;
     QHBoxLayout* _buttonLayout;
     Button* _closeButton;
     Gui* _gui;
-    
+
 public:
-    
-    AboutWindow(Gui* gui,QWidget* parent = 0);
-    
+
+    AboutWindow(Gui* gui,
+                QWidget* parent = 0);
+
     void updateLibrariesVersions();
-    
-    virtual ~AboutWindow() {}
+
+    virtual ~AboutWindow()
+    {
+    }
 };
 
 #endif // ABOUTWINDOW_H

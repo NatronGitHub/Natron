@@ -16,19 +16,23 @@ CLANG_DIAG_ON(unused-parameter)
 using namespace Natron;
 
 namespace boost {
-    namespace serialization {
-        template<class Archive>
-        void serialize(Archive & ar,OfxRangeD& r,const unsigned int /*version*/)
-        {
-            ar &  boost::serialization::make_nvp("Min",r.min);
-            ar &  boost::serialization::make_nvp("Max",r.max);
-        }
-
-    }
+namespace serialization {
+template<class Archive>
+void
+serialize(Archive & ar,
+          OfxRangeD & r,
+          const unsigned int /*version*/)
+{
+    ar &  boost::serialization::make_nvp("Min",r.min);
+    ar &  boost::serialization::make_nvp("Max",r.max);
+}
+}
 }
 
 template<class Archive>
-void ImageParams::serialize(Archive & ar,const unsigned int /*version*/)
+void
+ImageParams::serialize(Archive & ar,
+                       const unsigned int /*version*/)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Natron::NonKeyParams);
     ar & boost::serialization::make_nvp("RoD",_rod);
@@ -38,9 +42,6 @@ void ImageParams::serialize(Archive & ar,const unsigned int /*version*/)
     ar & boost::serialization::make_nvp("InputTimeIdentity",_inputTimeIdentity);
     ar & boost::serialization::make_nvp("FramesNeeded",_framesNeeded);
     ar & boost::serialization::make_nvp("Components",_components);
-    
 }
-
-
 
 #endif // IMAGEPARAMSSERIALIZATION_H

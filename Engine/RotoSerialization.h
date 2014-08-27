@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 #ifndef ROTOSERIALIZATION_H
 #define ROTOSERIALIZATION_H
 
@@ -30,7 +30,9 @@
 #define BEZIER_CP_VERSION BEZIER_CP_INTRODUCES_OFFSET
 
 template<class Archive>
-void BezierCP::serialize(Archive & ar, const unsigned int version)
+void
+BezierCP::serialize(Archive & ar,
+                    const unsigned int version)
 {
     (void)version;
     ar & boost::serialization::make_nvp("X",_imp->x);
@@ -57,25 +59,27 @@ class RotoItemSerialization
 {
     friend class boost::serialization::access;
     friend class RotoItem;
-    
+
 public:
-    
+
     RotoItemSerialization()
-    : name()
-    , activated(false)
-    , parentLayerName()
-    , locked(false)
+        : name()
+          , activated(false)
+          , parentLayerName()
+          , locked(false)
     {
-        
     }
-    
-    virtual ~RotoItemSerialization() {}
-    
+
+    virtual ~RotoItemSerialization()
+    {
+    }
+
 private:
-    
-    
+
+
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
+    void save(Archive & ar,
+              const unsigned int version) const
     {
         (void)version;
         ar & boost::serialization::make_nvp("Name",name);
@@ -83,9 +87,10 @@ private:
         ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
         ar & boost::serialization::make_nvp("Locked",locked);
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
         (void)version;
         ar & boost::serialization::make_nvp("Name",name);
@@ -95,43 +100,45 @@ private:
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+
     std::string name;
     bool activated;
     std::string parentLayerName;
     bool locked;
-    
 };
 
 //BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoItemSerialization);
 
-class RotoDrawableItemSerialization : public RotoItemSerialization
+class RotoDrawableItemSerialization
+    : public RotoItemSerialization
 {
     friend class boost::serialization::access;
     friend class RotoDrawableItem;
-    
+
 public:
-    
+
     RotoDrawableItemSerialization()
-    : RotoItemSerialization()
-    , _hasColorAndCompOp(false)
+        : RotoItemSerialization()
+          , _hasColorAndCompOp(false)
     {
-        
     }
-    
-    virtual ~RotoDrawableItemSerialization() {}
-    
+
+    virtual ~RotoDrawableItemSerialization()
+    {
+    }
+
 private:
-    
-    
+
+
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
+    void save(Archive & ar,
+              const unsigned int version) const
     {
         (void)version;
         boost::serialization::void_cast_register<RotoDrawableItemSerialization,RotoItemSerialization>(
-                                                                                                      static_cast<RotoDrawableItemSerialization *>(NULL),
-                                                                                                      static_cast<RotoItemSerialization *>(NULL)
-                                                                                                      );
+            static_cast<RotoDrawableItemSerialization *>(NULL),
+            static_cast<RotoItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         ar & boost::serialization::make_nvp("Activated",_activated);
         ar & boost::serialization::make_nvp("Opacity",_opacity);
@@ -146,19 +153,18 @@ private:
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
         ar & boost::serialization::make_nvp("OC.a",_overlayColor[3]);
-        
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
         (void)version;
         boost::serialization::void_cast_register<RotoDrawableItemSerialization,RotoItemSerialization>(
-                                                                                                      static_cast<RotoDrawableItemSerialization *>(NULL),
-                                                                                                      static_cast<RotoItemSerialization *>(NULL)
-                                                                                                      );
+            static_cast<RotoDrawableItemSerialization *>(NULL),
+            static_cast<RotoItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
-        
         ar & boost::serialization::make_nvp("Activated",_activated);
         ar & boost::serialization::make_nvp("Opacity",_opacity);
         ar & boost::serialization::make_nvp("Feather",_feather);
@@ -182,9 +188,9 @@ private:
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
         ar & boost::serialization::make_nvp("OC.a",_overlayColor[3]);
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+
     KnobSerialization _activated;
     KnobSerialization _opacity;
     KnobSerialization _feather;
@@ -197,61 +203,62 @@ private:
     KnobSerialization _color;
     KnobSerialization _compOp;
     double _overlayColor[4];
-    
 };
 
 BOOST_CLASS_VERSION(RotoDrawableItemSerialization,ROTO_DRAWABLE_ITEM_VERSION)
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoDrawableItemSerialization);
 
-class BezierSerialization : public RotoDrawableItemSerialization
+class BezierSerialization
+    : public RotoDrawableItemSerialization
 {
     friend class boost::serialization::access;
     friend class Bezier;
-    
+
 public:
-    
+
     BezierSerialization()
-    : RotoDrawableItemSerialization()
+        : RotoDrawableItemSerialization()
     {
-        
     }
-    
-    virtual ~BezierSerialization() {}
-    
+
+    virtual ~BezierSerialization()
+    {
+    }
+
 private:
-    
-    
+
+
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
+    void save(Archive & ar,
+              const unsigned int version) const
     {
         (void)version;
         boost::serialization::void_cast_register<BezierSerialization,RotoDrawableItemSerialization>(
-                                                                                        static_cast<BezierSerialization *>(NULL),
-                                                                                        static_cast<RotoDrawableItemSerialization *>(NULL)
-                                                                                                      );
+            static_cast<BezierSerialization *>(NULL),
+            static_cast<RotoDrawableItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
-        assert(_controlPoints.size() == _featherPoints.size());
+        assert( _controlPoints.size() == _featherPoints.size() );
         int numPoints = (int)_controlPoints.size();
         ar & boost::serialization::make_nvp("NumPoints",numPoints);
-        
         std::list< BezierCP >::const_iterator itF = _featherPoints.begin();
-        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it!= _controlPoints.end();++it,++itF) {
+        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it,++itF) {
             ar & boost::serialization::make_nvp("CP",*it);
             ar & boost::serialization::make_nvp("FP",*itF);
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
-        
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
         (void)version;
         boost::serialization::void_cast_register<BezierSerialization,RotoDrawableItemSerialization>(
-                                                                                                    static_cast<BezierSerialization *>(NULL),
-                                                                                                    static_cast<RotoDrawableItemSerialization *>(NULL)
-                                                                                                    );
+            static_cast<BezierSerialization *>(NULL),
+            static_cast<RotoDrawableItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         int numPoints;
         ar & boost::serialization::make_nvp("NumPoints",numPoints);
@@ -263,54 +270,51 @@ private:
             _featherPoints.push_back(fp);
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
-        
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+
     std::list< BezierCP > _controlPoints,_featherPoints;
     bool _closed;
-    
 };
 
 
-class RotoLayerSerialization : public RotoItemSerialization
+class RotoLayerSerialization
+    : public RotoItemSerialization
 {
     friend class boost::serialization::access;
     friend class RotoLayer;
-    
+
 public:
-    
+
     RotoLayerSerialization()
-    : RotoItemSerialization()
+        : RotoItemSerialization()
     {
-        
     }
-        
+
     virtual ~RotoLayerSerialization()
     {
-     
     }
-    
-    
+
 private:
-    
-    
+
+
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
+    void save(Archive & ar,
+              const unsigned int version) const
     {
         (void)version;
-        
+
         boost::serialization::void_cast_register<RotoLayerSerialization,RotoItemSerialization>(
-                                                            static_cast<RotoLayerSerialization *>(NULL),
-                                                            static_cast<RotoItemSerialization *>(NULL)
-                                                                                                      );
+            static_cast<RotoLayerSerialization *>(NULL),
+            static_cast<RotoItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         int numChildren = (int)children.size();
         ar & boost::serialization::make_nvp("NumChildren",numChildren);
-        for (std::list < boost::shared_ptr<RotoItemSerialization> >::const_iterator it = children.begin() ; it!=children.end(); ++it) {
-            BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>(it->get());
-            RotoLayerSerialization* isLayer = dynamic_cast<RotoLayerSerialization*>(it->get());
+        for (std::list < boost::shared_ptr<RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+            BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>( it->get() );
+            RotoLayerSerialization* isLayer = dynamic_cast<RotoLayerSerialization*>( it->get() );
             bool bezier = isBezier != NULL;
             ar & boost::serialization::make_nvp("IsBezier",bezier);
             if (isBezier) {
@@ -320,23 +324,21 @@ private:
                 ar & boost::serialization::make_nvp("Item",*isLayer);
             }
         }
-        
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
         (void)version;
         boost::serialization::void_cast_register<RotoLayerSerialization,RotoItemSerialization>(
-                                                                    static_cast<RotoLayerSerialization *>(NULL),
-                                                                    static_cast<RotoItemSerialization *>(NULL)
-                                                                                                            );
+            static_cast<RotoLayerSerialization *>(NULL),
+            static_cast<RotoItemSerialization *>(NULL)
+            );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
-        
         int numChildren;
         ar & boost::serialization::make_nvp("NumChildren",numChildren);
-        for (int i = 0; i < numChildren ;++i)
-        {
+        for (int i = 0; i < numChildren; ++i) {
             bool bezier;
             ar & boost::serialization::make_nvp("IsBezier",bezier);
             if (bezier) {
@@ -350,41 +352,38 @@ private:
             }
         }
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+
     std::list < boost::shared_ptr<RotoItemSerialization> > children;
-    
 };
 
-
-    
 
 class RotoContextSerialization
 {
     friend class boost::serialization::access;
     friend class RotoContext;
-    
+
 public:
-    
+
     RotoContextSerialization()
-    : _baseLayer()
+        : _baseLayer()
     {
-        
     }
-    
+
     ~RotoContextSerialization()
     {
     }
-    
+
 private:
-    
-    
+
+
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
+    void save(Archive & ar,
+              const unsigned int version) const
     {
         (void)version;
-    
+
         ar & boost::serialization::make_nvp("BaseLayer",_baseLayer);
         ar & boost::serialization::make_nvp("AutoKeying",_autoKeying);
         ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
@@ -392,12 +391,13 @@ private:
         ar & boost::serialization::make_nvp("Selection",_selectedItems);
         ar & boost::serialization::make_nvp("Counters",_itemCounters);
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
         (void)version;
-        
+
         ar & boost::serialization::make_nvp("BaseLayer",_baseLayer);
         ar & boost::serialization::make_nvp("AutoKeying",_autoKeying);
         ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
@@ -405,10 +405,10 @@ private:
         ar & boost::serialization::make_nvp("Selection",_selectedItems);
         ar & boost::serialization::make_nvp("Counters",_itemCounters);
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
-    RotoLayerSerialization  _baseLayer;
+
+    RotoLayerSerialization _baseLayer;
     std::list< std::string > _selectedItems;
     bool _autoKeying;
     bool _rippleEdit;

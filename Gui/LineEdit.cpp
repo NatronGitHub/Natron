@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #include "LineEdit.h"
 
@@ -30,23 +30,24 @@ CLANG_DIAG_ON(uninitialized)
 class QPaintEvent;
 
 LineEdit::LineEdit(QWidget* parent)
-: QLineEdit(parent)
-, animation(0)
-, dirty(false)
+    : QLineEdit(parent)
+      , animation(0)
+      , dirty(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect,0);
-    connect(this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
+    connect( this, SIGNAL( editingFinished() ), this, SLOT( onEditingFinished() ) );
 }
 
 LineEdit::~LineEdit()
 {
 }
-    
+
 void
 LineEdit::paintEvent(QPaintEvent* e)
 {
     QPalette p = this->palette();
     QColor c(200,200,200,255);
+
     p.setColor( QPalette::Highlight, c );
     p.setColor( QPalette::HighlightedText, c );
     this->setPalette( p );
@@ -56,19 +57,18 @@ LineEdit::paintEvent(QPaintEvent* e)
 void
 LineEdit::dropEvent(QDropEvent* e)
 {
-    if(!e->mimeData()->hasUrls())
+    if ( !e->mimeData()->hasUrls() ) {
         return;
+    }
 
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
         path = urls.at(0).path();
     }
-    if (!path.isEmpty()) {
+    if ( !path.isEmpty() ) {
         setText(path);
-
     }
-
 }
 
 void

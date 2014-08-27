@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 
 #include "NodeGuiSerialization.h"
@@ -23,9 +23,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 
 
-void NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui>& n)
+void
+NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui> & n)
 {
-    
     ////All this code is MT-safe
     _nodeName = n->getNode()->getName_mt_safe();
     QPointF pos = n->getPos_mt_safe();
@@ -38,3 +38,4 @@ void NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui>& n)
     _b = color.blueF();
     _selected = n->isSelected();
 }
+

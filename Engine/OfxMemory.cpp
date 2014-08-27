@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -19,38 +19,51 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/PluginMemory.h"
 
 OfxMemory::OfxMemory(Natron::EffectInstance* effect)
-: OFX::Host::Memory::Instance()
-, _memory(new PluginMemory(effect))
+    : OFX::Host::Memory::Instance()
+      , _memory( new PluginMemory(effect) )
 {
 }
 
-OfxMemory::~OfxMemory() {
+OfxMemory::~OfxMemory()
+{
     delete _memory;
 }
 
-void* OfxMemory::getPtr() {
+void*
+OfxMemory::getPtr()
+{
     return _memory->getPtr();
 }
 
-bool OfxMemory::alloc(size_t nBytes) {
-
+bool
+OfxMemory::alloc(size_t nBytes)
+{
     bool ret = false;
+
     try {
         ret = _memory->alloc(nBytes);
-    } catch (const std::bad_alloc&) {
+    } catch (const std::bad_alloc &) {
         return false;
     }
+
     return ret;
 }
 
-void OfxMemory::freeMem() {
+void
+OfxMemory::freeMem()
+{
     _memory->freeMem();
 }
 
-void OfxMemory::lock() {
+void
+OfxMemory::lock()
+{
     _memory->lock();
 }
 
-void OfxMemory::unlock() {
+void
+OfxMemory::unlock()
+{
     _memory->unlock();
 }
+

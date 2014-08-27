@@ -3,9 +3,9 @@
 //
 // Copyright (c) 2006, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -17,8 +17,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -63,7 +63,7 @@ enum PlayState
 
 class Timer
 {
-  public:
+public:
 
     //------------
     // Constructor
@@ -84,39 +84,35 @@ class Timer
     // returns immediately.
     //--------------------------------------------------------
 
-    void	waitUntilNextFrameIsDue ();
+    void    waitUntilNextFrameIsDue ();
 
 
     //-------------------------------------------------
     // Set and get the frame rate, in frames per second
     //-------------------------------------------------
 
-    void	setDesiredFrameRate (float fps);
+    void    setDesiredFrameRate (float fps);
     float   getDesiredFrameRate() const;
-    
-    float	actualFrameRate ();
+
+    float   actualFrameRate ();
 
 
     //-------------------
     // Current play state
     //-------------------
 
-    PlayState	playState;
+    PlayState playState;
 
+private:
 
-  private:
-
-    float	_spf;				// desired frame rate,
-    						// in seconds per frame
-
-    timeval	_lastFrameTime;			// time when we displayed the
-    						// last frame
-
-    float	_timingError;			// cumulative timing error
-
-    timeval	_lastFpsFrameTime;		// state to keep track of the
-    int		_framesSinceLastFpsFrame;	// actual frame rate, averaged
-    float	_actualFrameRate;		// over several frames
+    float _spf;                 // desired frame rate,
+    // in seconds per frame
+    timeval _lastFrameTime;         // time when we displayed the
+    // last frame
+    float _timingError;             // cumulative timing error
+    timeval _lastFpsFrameTime;      // state to keep track of the
+    int _framesSinceLastFpsFrame;       // actual frame rate, averaged
+    float _actualFrameRate;         // over several frames
 };
 
-#endif
+#endif // ifndef NATRON_ENGINE_TIMER_H_

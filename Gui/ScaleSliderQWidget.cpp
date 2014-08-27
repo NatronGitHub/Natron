@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -26,60 +26,62 @@ CLANG_DIAG_ON(unused-private-field)
 #define SLIDER_WIDTH 4
 #define SLIDER_HEIGHT 20
 
-ScaleSliderQWidget::ScaleSliderQWidget(double bottom, double top, double initialPos, Natron::Scale_Type type, QWidget* parent)
-: QWidget(parent)
-, _minimum(bottom)
-, _maximum(top)
-, _type(type)
-, _value(initialPos)
-, _dragging(false)
-, _font(new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8))
-, _textColor(200,200,200,255)
-, _scaleColor(100,100,100,255)
-, _sliderColor(97,83,30,255)
-, _initialized(false)
-, _mustInitializeSliderPosition(true)
-, _readOnly(false)
+ScaleSliderQWidget::ScaleSliderQWidget(double bottom,
+                                       double top,
+                                       double initialPos,
+                                       Natron::Scale_Type type,
+                                       QWidget* parent)
+    : QWidget(parent)
+      , _minimum(bottom)
+      , _maximum(top)
+      , _type(type)
+      , _value(initialPos)
+      , _dragging(false)
+      , _font( new QFont(NATRON_FONT_ALT, NATRON_FONT_SIZE_8) )
+      , _textColor(200,200,200,255)
+      , _scaleColor(100,100,100,255)
+      , _sliderColor(97,83,30,255)
+      , _initialized(false)
+      , _mustInitializeSliderPosition(true)
+      , _readOnly(false)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 }
 
-QSize ScaleSliderQWidget::sizeHint() const{
+QSize
+ScaleSliderQWidget::sizeHint() const
+{
     return QSize(150,30);
 }
 
-ScaleSliderQWidget::~ScaleSliderQWidget(){
+ScaleSliderQWidget::~ScaleSliderQWidget()
+{
     delete _font;
 }
 
 void
 ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 {
-    
     if (!_readOnly) {
         QPoint newClick =  e->pos();
-        
-        _zoomCtx.oldClick = newClick;
-        QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
-        
-        seekInternal(newClick_opengl.x());
 
+        _zoomCtx.oldClick = newClick;
+        QPointF newClick_opengl = toScaleCoordinates( newClick.x(),newClick.y() );
+
+        seekInternal( newClick_opengl.x() );
     }
     QWidget::mousePressEvent(e);
 }
 
-
 void
 ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 {
-    
     if (!_readOnly) {
         QPoint newClick =  e->pos();
-        QPointF newClick_opengl = toScaleCoordinates(newClick.x(),newClick.y());
-        
-        seekInternal(newClick_opengl.x());
+        QPointF newClick_opengl = toScaleCoordinates( newClick.x(),newClick.y() );
+
+        seekInternal( newClick_opengl.x() );
     }
-    
 }
 
 void
@@ -89,22 +91,24 @@ ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
     QWidget::mouseReleaseEvent(e);
 }
 
-
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
-    if(v < _minimum)
+    if (v < _minimum) {
         v = _minimum;
-    if(v > _maximum)
+    }
+    if (v > _maximum) {
         v = _maximum;
-    
-    
-    if(v == _value && _initialized){
+    }
+
+
+    if ( (v == _value) && _initialized ) {
         return;
     }
     _value = v;
-    if(_initialized)
+    if (_initialized) {
         update();
+    }
 }
 
 void
@@ -130,28 +134,29 @@ QPointF
 ScaleSliderQWidget::toScaleCoordinates(double x,
                                        double y)
 {
-    double w = (double)width() ;
+    double w = (double)width();
     double h = (double)height();
     double bottom = _zoomCtx.bottom;
     double left = _zoomCtx.left;
     double top =  bottom +  h / _zoomCtx.zoomFactor;
     double right = left +  w / _zoomCtx.zoomFactor;
-    return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
+
+    return QPointF( ( ( (right - left) * x ) / w ) + left,( ( (bottom - top) * y ) / h ) + top );
 }
 
 QPointF
 ScaleSliderQWidget::toWidgetCoordinates(double x,
                                         double y)
 {
-    double w = (double)width() ;
+    double w = (double)width();
     double h = (double)height();
     double bottom = _zoomCtx.bottom;
     double left = _zoomCtx.left;
     double top =  bottom +  h / _zoomCtx.zoomFactor;
     double right = left +  w / _zoomCtx.zoomFactor;
-    return QPoint(((x - left)/(right - left))*w,((y - top)/(bottom - top))*h);
-}
 
+    return QPoint( ( (x - left) / (right - left) ) * w,( (y - top) / (bottom - top) ) * h );
+}
 
 void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
@@ -168,22 +173,23 @@ ScaleSliderQWidget::centerOn(double left,
 {
     double scaleWidth = (right - left) * 1.1;
     double w = width();
+
     _zoomCtx.left = left - (right - left) * 0.05;;
     _zoomCtx.zoomFactor = w / scaleWidth;
-    
+
     update();
 }
 
 void
 ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 {
-    if(_mustInitializeSliderPosition){
+    if (_mustInitializeSliderPosition) {
         centerOn(_minimum, _maximum);
         _mustInitializeSliderPosition = false;
         seekScalePosition(_value);
         _initialized = true;
     }
-    
+
     ///fill the background with the appropriate style color
     QStyleOption opt;
     opt.init(this);
@@ -193,19 +199,19 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QFontMetrics fontM(*_font);
     p.setPen(_scaleColor);
 
-    QPointF btmLeft = toScaleCoordinates(0,height()-1);
-    QPointF topRight = toScaleCoordinates(width()-1, 0);
-    
-    if (btmLeft.x() == topRight.x()) {
+    QPointF btmLeft = toScaleCoordinates(0,height() - 1);
+    QPointF topRight = toScaleCoordinates(width() - 1, 0);
+
+    if ( btmLeft.x() == topRight.x() ) {
         return;
     }
-    
+
     /*drawing X axis*/
-    double lineYpos = height() -1 - fontM.height()  - TICK_HEIGHT/2;
+    double lineYpos = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
     p.drawLine(0, lineYpos, width() - 1, lineYpos);
-    
-    double tickBottom = toScaleCoordinates(0,height() -1 - fontM.height() ).y();
-    double tickTop = toScaleCoordinates(0,height() -1 - fontM.height()  - TICK_HEIGHT).y();
+
+    double tickBottom = toScaleCoordinates( 0,height() - 1 - fontM.height() ).y();
+    double tickTop = toScaleCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     std::vector<double> acceptedDistances;
@@ -214,8 +220,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
     const double rangePixel =  width();
-    const double range_min = btmLeft.x() ;
-    const double range_max =  topRight.x() ;
+    const double range_min = btmLeft.x();
+    const double range_max =  topRight.x();
     const double range = range_max - range_min;
     double smallTickSize;
     bool half_tick;
@@ -228,65 +234,63 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
     const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
     const double largestTickSize = range * largestTickSizePixel / rangePixel;
-    const double minTickSizeTextPixel = fontM.width(QString("00")) ; // AXIS-SPECIFIC
-    const double minTickSizeText = range * minTickSizeTextPixel/rangePixel;
-    for(int i = m1 ; i <= m2; ++i) {
+    const double minTickSizeTextPixel = fontM.width( QString("00") ); // AXIS-SPECIFIC
+    const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
+    for (int i = m1; i <= m2; ++i) {
         double value = i * smallTickSize + offset;
-        const double tickSize = ticks[i-m1]*smallTickSize;
+        const double tickSize = ticks[i - m1] * smallTickSize;
         const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
-        
         QColor color(_textColor);
         color.setAlphaF(alpha);
         QPen pen(color);
         pen.setWidthF(1.9);
         p.setPen(pen);
-        
+
         QPointF tickBottomPos = toWidgetCoordinates(value, tickBottom);
         QPointF tickTopPos = toWidgetCoordinates(value, tickTop);
-        
+
         p.drawLine(tickBottomPos,tickTopPos);
-     
-        
+
+
         if (tickSize > minTickSizeText) {
-            const int tickSizePixel = rangePixel * tickSize/range;
+            const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
             const int sSizePixel =  fontM.width(s);
             if (tickSizePixel > sSizePixel) {
                 const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
-                double alphaText = 1.0;//alpha;
+                double alphaText = 1.0; //alpha;
                 if (tickSizePixel < sSizeFullPixel) {
                     // when the text size is between sSizePixel and sSizeFullPixel,
                     // draw it with a lower alpha
-                    alphaText *= (tickSizePixel - sSizePixel)/(double)minTickSizeTextPixel;
+                    alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
                 QColor c = _readOnly || !isEnabled() ? Qt::black : _textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(*_font);
                 p.setPen(c);
-                
-                QPointF textPos = toWidgetCoordinates(value, btmLeft.y());
+
+                QPointF textPos = toWidgetCoordinates( value, btmLeft.y() );
 
                 p.drawText(textPos, s);
             }
         }
     }
     double positionValue = toWidgetCoordinates(_value,0).x();
-    QPointF sliderBottomLeft(positionValue - SLIDER_WIDTH / 2,height() -1 - fontM.height()/2);
-    QPointF sliderTopRight(positionValue + SLIDER_WIDTH / 2,height() -1 - fontM.height()/2 - SLIDER_HEIGHT);
-    
+    QPointF sliderBottomLeft(positionValue - SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2);
+    QPointF sliderTopRight(positionValue + SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2 - SLIDER_HEIGHT);
+
     /*draw the slider*/
     p.setPen(_sliderColor);
     p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_sliderColor);
-    
+
     /*draw a black rect around the slider for contrast*/
     p.setPen(Qt::black);
-    
-    p.drawLine(sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y());
-    p.drawLine(sliderBottomLeft.x(),sliderTopRight.y(),sliderTopRight.x(),sliderTopRight.y());
-    p.drawLine(sliderTopRight.x(),sliderTopRight.y(),sliderTopRight.x(),sliderBottomLeft.y());
-    p.drawLine(sliderTopRight.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderBottomLeft.y());
 
-}
+    p.drawLine( sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y() );
+    p.drawLine( sliderBottomLeft.x(),sliderTopRight.y(),sliderTopRight.x(),sliderTopRight.y() );
+    p.drawLine( sliderTopRight.x(),sliderTopRight.y(),sliderTopRight.x(),sliderBottomLeft.y() );
+    p.drawLine( sliderTopRight.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderBottomLeft.y() );
+} // paintEvent
 
 void
 ScaleSliderQWidget::setReadOnly(bool ro)
@@ -294,3 +298,4 @@ ScaleSliderQWidget::setReadOnly(bool ro)
     _readOnly = ro;
     update();
 }
+

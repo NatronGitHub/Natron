@@ -7,29 +7,33 @@
 #include <QEvent>
 #include <QStyle>
 
-ClickableLabel::ClickableLabel(const QString &text, QWidget *parent):
-QLabel(text, parent),
-_toggled(false) ,
-dirty(false) ,
-readOnly(false),
-animation(0),
-sunkenStyle(false)
+ClickableLabel::ClickableLabel(const QString &text,
+                               QWidget *parent)
+    : QLabel(text, parent),
+      _toggled(false),
+      dirty(false),
+      readOnly(false),
+      animation(0),
+      sunkenStyle(false)
 {
-    setFont(QFont(NATRON_FONT, NATRON_FONT_SIZE_11));
+    setFont( QFont(NATRON_FONT, NATRON_FONT_SIZE_11) );
 }
 
-
-void ClickableLabel::mousePressEvent(QMouseEvent* e) {
-    if (isEnabled()) {
+void
+ClickableLabel::mousePressEvent(QMouseEvent* e)
+{
+    if ( isEnabled() ) {
         _toggled = !_toggled;
         emit clicked(_toggled);
     }
     QLabel::mousePressEvent(e);
 }
 
-void ClickableLabel::changeEvent(QEvent* e) {
+void
+ClickableLabel::changeEvent(QEvent* e)
+{
     if (e->type() == QEvent::EnabledChange) {
-        if (!isEnabled()) {
+        if ( !isEnabled() ) {
             QString paintTxt = text();
             paintTxt.prepend("<font color=\"#000000\">");
             paintTxt.append("</font>");
@@ -43,36 +47,38 @@ void ClickableLabel::changeEvent(QEvent* e) {
     }
 }
 
-void ClickableLabel::setText_overload(const QString& str) {
+void
+ClickableLabel::setText_overload(const QString & str)
+{
     QString paintTxt = str;
-    
-    if (!isEnabled()) {
+
+    if ( !isEnabled() ) {
         paintTxt.prepend("<font color=\"#000000\">");
         paintTxt.append("</font>");
     }
     setText(paintTxt);
-    
-
 }
 
-void ClickableLabel::setReadOnly(bool readOnly)
+void
+ClickableLabel::setReadOnly(bool readOnly)
 {
-    
     this->readOnly = readOnly;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
 }
 
-void ClickableLabel::setAnimation(int i){
+void
+ClickableLabel::setAnimation(int i)
+{
     animation = i;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
 }
 
-
-void ClickableLabel::setDirty(bool b)
+void
+ClickableLabel::setDirty(bool b)
 {
     dirty = b;
     style()->unpolish(this);
@@ -80,11 +86,11 @@ void ClickableLabel::setDirty(bool b)
     repaint();
 }
 
-void ClickableLabel::setSunken(bool s)
+void
+ClickableLabel::setSunken(bool s)
 {
     sunkenStyle = s;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
-
 }

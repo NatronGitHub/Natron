@@ -17,68 +17,64 @@ class QEvent;
 
 class KnobGui;
 
-class AnimationButton : public Button
+class AnimationButton
+    : public Button
 {
-    
     Q_OBJECT
-    
+
 public:
-    
-    explicit AnimationButton(KnobGui* knob,QWidget* parent = 0)
-    : Button(parent)
-    , _dragging(false)
-    , _knob(knob)
-    {
-        setMouseTracking(true);
-        setAcceptDrops(true);
-    }
-    explicit AnimationButton(KnobGui* knob,const QString & text, QWidget * parent = 0)
-    : Button(text,parent)
-    , _dragging(false)
-    , _knob(knob)
-    {
-        setMouseTracking(true);
-        setAcceptDrops(true);
 
-    }
-    AnimationButton(KnobGui* knob,const QIcon & icon, const QString & text, QWidget * parent = 0)
-    : Button(icon,text,parent)
-    , _dragging(false)
-    , _knob(knob)
+    explicit AnimationButton(KnobGui* knob,
+                             QWidget* parent = 0)
+        : Button(parent)
+          , _dragging(false)
+          , _knob(knob)
     {
         setMouseTracking(true);
         setAcceptDrops(true);
-
     }
-    
+
+    explicit AnimationButton(KnobGui* knob,
+                             const QString & text,
+                             QWidget * parent = 0)
+        : Button(text,parent)
+          , _dragging(false)
+          , _knob(knob)
+    {
+        setMouseTracking(true);
+        setAcceptDrops(true);
+    }
+
+    AnimationButton(KnobGui* knob,
+                    const QIcon & icon,
+                    const QString & text,
+                    QWidget * parent = 0)
+        : Button(icon,text,parent)
+          , _dragging(false)
+          , _knob(knob)
+    {
+        setMouseTracking(true);
+        setAcceptDrops(true);
+    }
+
 signals:
-    
+
     void animationMenuRequested();
-    
+
 private:
-    
+
     virtual void mousePressEvent(QMouseEvent* e);
-    
     virtual void mouseMoveEvent(QMouseEvent* e);
-    
     virtual void mouseReleaseEvent(QMouseEvent* e);
-    
     virtual void dragEnterEvent(QDragEnterEvent* e);
-    
     virtual void dragMoveEvent(QDragMoveEvent* e);
-    
     virtual void dragLeaveEvent(QDragLeaveEvent* e);
-    
     virtual void dropEvent(QDropEvent* e);
- 
     virtual void enterEvent(QEvent* e);
-    
     virtual void leaveEvent(QEvent* e);
-    
     QPoint _dragPos;
     bool _dragging;
     KnobGui* _knob;
-
 };
 
 #endif // ANIMATIONBUTTON_H

@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -22,145 +22,139 @@
 #include "Engine/Node.h"
 #include "Engine/ProjectSerialization.h"
 
-namespace Natron{
+namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
     : projectLock()
-    , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
-    , hasProjectBeenSavedByUser(false)
-    , ageSinceLastSave(QDateTime::currentDateTime())
-    , lastAutoSave()
-    , projectCreationTime(ageSinceLastSave)
-    , formatKnob()
-    , builtinFormats()
-    , additionalFormats()
-    , formatMutex()
-    , addFormatKnob()
-    , viewsCount()
-    , viewsCountMutex()
-    , previewMode()
-    , previewModeMutex()
-    , colorSpace8bits()
-    , colorSpace16bits()
-    , colorSpace32bits()
-    , timelineMutex()
-    , timeline(new TimeLine(project))
-    , autoSetProjectFormat(true)
-    , currentNodes()
-    , project(project)
-    , lastTimelineSeekCaller()
-    , isLoadingProjectMutex()
-    , isLoadingProject(false)
-    , isSavingProjectMutex()
-    , isSavingProject(false)
-    , autoSaveTimer(new QTimer())
+      , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
+      , hasProjectBeenSavedByUser(false)
+      , ageSinceLastSave( QDateTime::currentDateTime() )
+      , lastAutoSave()
+      , projectCreationTime(ageSinceLastSave)
+      , formatKnob()
+      , builtinFormats()
+      , additionalFormats()
+      , formatMutex()
+      , addFormatKnob()
+      , viewsCount()
+      , viewsCountMutex()
+      , previewMode()
+      , previewModeMutex()
+      , colorSpace8bits()
+      , colorSpace16bits()
+      , colorSpace32bits()
+      , timelineMutex()
+      , timeline( new TimeLine(project) )
+      , autoSetProjectFormat(true)
+      , currentNodes()
+      , project(project)
+      , lastTimelineSeekCaller()
+      , isLoadingProjectMutex()
+      , isLoadingProject(false)
+      , isSavingProjectMutex()
+      , isSavingProject(false)
+      , autoSaveTimer( new QTimer() )
 
 {
     autoSaveTimer->setSingleShot(true);
 }
 
-
-void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
-    
-
+void
+ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj)
+{
     /*1st OFF RESTORE THE PROJECT KNOBS*/
-    
-    projectCreationTime = QDateTime::fromMSecsSinceEpoch(obj.getCreationDate());
 
-    
+    projectCreationTime = QDateTime::fromMSecsSinceEpoch( obj.getCreationDate() );
+
+
     /*we must restore the entries in the combobox before restoring the value*/
     std::vector<std::string> entries;
-    
-    for (std::list<Format>::const_iterator it = builtinFormats.begin(); it!=builtinFormats.end();++it) {
+
+    for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
         QString formatStr = Natron::generateStringFromFormat(*it);
-        entries.push_back(formatStr.toStdString());
+        entries.push_back( formatStr.toStdString() );
     }
 
-    const std::list<Format>& objAdditionalFormats = obj.getAdditionalFormats();
-    for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it!=objAdditionalFormats.end();++it) {
+    const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
+    for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
         QString formatStr = Natron::generateStringFromFormat(*it);
-        entries.push_back(formatStr.toStdString());
+        entries.push_back( formatStr.toStdString() );
     }
     additionalFormats = objAdditionalFormats;
 
     formatKnob->populateChoices(entries);
     autoSetProjectFormat = false;
-    
-    const std::list< boost::shared_ptr<KnobSerialization> >& projectSerializedValues = obj.getProjectKnobsValues();
-    const std::vector< boost::shared_ptr<KnobI> >& projectKnobs = project->getKnobs();
-    
-    
+
+    const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
+    const std::vector< boost::shared_ptr<KnobI> > & projectKnobs = project->getKnobs();
+
+
     /// 1) restore project's knobs.
-    
-    for(U32 i = 0 ; i < projectKnobs.size();++i){
+
+    for (U32 i = 0; i < projectKnobs.size(); ++i) {
         ///try to find a serialized value for this knob
-        for(std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it!=projectSerializedValues.end();++it) {
-            if((*it)->getName() == projectKnobs[i]->getName()) {
-                if (projectKnobs[i]->getIsPersistant()) {
-                    projectKnobs[i]->clone((*it)->getKnob());
+        for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
+            if ( (*it)->getName() == projectKnobs[i]->getName() ) {
+                if ( projectKnobs[i]->getIsPersistant() ) {
+                    projectKnobs[i]->clone( (*it)->getKnob() );
                 }
                 break;
             }
         }
     }
-    
-    
-    
+
+
     /// 2) restore the timeline
-    timeline->setBoundaries(obj.getLeftBoundTime(), obj.getRightBoundTime());
+    timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
     timeline->seekFrame(obj.getCurrentTime(),NULL);
 
     /// 3) Restore the nodes
-    const std::list< NodeSerialization >& serializedNodes = obj.getNodesSerialization();
+    const std::list< NodeSerialization > & serializedNodes = obj.getNodesSerialization();
     bool hasProjectAWriter = false;
     /*first create all nodes*/
-    for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it!=serializedNodes.end();++it) {
-
-        if (appPTR->isBackground() && it->getPluginID() == "Viewer") {
+    for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+        if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
 
         ///this code may throw an exception which will be caught above
-        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode(LoadNodeArgs(it->getPluginID().c_str()
-                                                                        ,it->isMultiInstanceChild()
-                                                                        ,it->getPluginMajorVersion()
-                                                                        ,it->getPluginMinorVersion(),&(*it),false));
+        boost::shared_ptr<Natron::Node> n = project->getApp()->loadNode( LoadNodeArgs(it->getPluginID().c_str()
+                                                                                      ,it->isMultiInstanceChild()
+                                                                                      ,it->getPluginMajorVersion()
+                                                                                      ,it->getPluginMinorVersion(),&(*it),false) );
         if (!n) {
             project->clearNodes();
-            QString text(QObject::tr("Failed to restore the graph! \n The node "));
-            text.append(it->getPluginID().c_str());
-            text.append(QObject::tr(" was found in the script but doesn't seem \n"
-                        "to exist in the currently loaded plug-ins."));
+            QString text( QObject::tr("Failed to restore the graph! \n The node ") );
+            text.append( it->getPluginID().c_str() );
+            text.append( QObject::tr(" was found in the script but doesn't seem \n"
+                                     "to exist in the currently loaded plug-ins.") );
             qDebug() << text;
-            Natron::errorDialog("", text.toStdString());
+            Natron::errorDialog( "", text.toStdString() );
             continue;
         }
-        if (n->isOutputNode()) {
+        if ( n->isOutputNode() ) {
             hasProjectAWriter = true;
         }
-
     }
 
 
-
-    if(!hasProjectAWriter && appPTR->isBackground()){
+    if ( !hasProjectAWriter && appPTR->isBackground() ) {
         project->clearNodes();
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
-  
-    
+
+
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
-    for(std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it!=serializedNodes.end();++it) {
-        
-        if(appPTR->isBackground() && it->getPluginID() == "Viewer"){
+    for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+        if ( appPTR->isBackground() && (it->getPluginID() == "Viewer") ) {
             //ignore viewers on background mode
             continue;
         }
 
-        
+
         boost::shared_ptr<Natron::Node> thisNode;
         for (U32 j = 0; j < currentNodes.size(); ++j) {
-            if (currentNodes[j]->getName() == it->getPluginLabel()) {
+            if ( currentNodes[j]->getName() == it->getPluginLabel() ) {
                 thisNode = currentNodes[j];
                 break;
             }
@@ -168,16 +162,16 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
         if (!thisNode) {
             continue;
         }
-        
+
         ///for all nodes that are part of a multi-instance, fetch the main instance node pointer
-        const std::string& parentName = it->isMultiInstanceChild();
-        if (!parentName.empty()) {
+        const std::string & parentName = it->isMultiInstanceChild();
+        if ( !parentName.empty() ) {
             thisNode->fetchParentMultiInstancePointer();
         }
-        
+
         ///restore slave/master link if any
-        const std::string& masterNodeName = it->getMasterNodeName();
-        if (!masterNodeName.empty()) {
+        const std::string & masterNodeName = it->getMasterNodeName();
+        if ( !masterNodeName.empty() ) {
             ///find such a node
             boost::shared_ptr<Natron::Node> masterNode;
             for (U32 j = 0; j < currentNodes.size(); ++j) {
@@ -189,60 +183,59 @@ void ProjectPrivate::restoreFromSerialization(const ProjectSerialization& obj){
             if (!masterNode) {
                 qDebug() << "Cannot restore the link between " << it->getPluginLabel().c_str() << " and " << masterNodeName.c_str();
             }
-            thisNode->getLiveInstance()->slaveAllKnobs(masterNode->getLiveInstance());
+            thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
         } else {
             thisNode->restoreKnobsLinks(*it,currentNodes);
         }
-        
-        const std::vector<std::string>& inputs = it->getInputs();
-        for (U32 j = 0; j < inputs.size();++j) {
-            
-            if (!inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode)) {
+
+        const std::vector<std::string> & inputs = it->getInputs();
+        for (U32 j = 0; j < inputs.size(); ++j) {
+            if ( !inputs[j].empty() && !project->getApp()->getProject()->connectNodes(j, inputs[j],thisNode) ) {
                 std::string message = std::string("Failed to connect node ") + it->getPluginLabel() + " to " + inputs[j];
                 qDebug() << message.c_str();
             }
         }
-
     }
-    
+
 
     nodeCounters = obj.getNodeCounters();
-    
+} // restoreFromSerialization
 
-}
-    
-bool ProjectPrivate::findFormat(int index,Format* format) const
+bool
+ProjectPrivate::findFormat(int index,
+                           Format* format) const
 {
-    if (index >= (int)(builtinFormats.size() + additionalFormats.size())) {
+    if ( index >= (int)( builtinFormats.size() + additionalFormats.size() ) ) {
         return false;
     }
-    
+
     int i = 0;
-    if (index >= (int)builtinFormats.size()) {
+    if ( index >= (int)builtinFormats.size() ) {
         ///search in the additional formats
         index -= builtinFormats.size();
-        
-        for (std::list<Format>::const_iterator it = additionalFormats.begin();it!=additionalFormats.end();++it) {
+
+        for (std::list<Format>::const_iterator it = additionalFormats.begin(); it != additionalFormats.end(); ++it) {
             if (i == index) {
-                assert(!it->isNull());
+                assert( !it->isNull() );
                 *format = *it;
+
                 return true;
             }
             ++i;
         }
     } else {
         ///search in the builtins formats
-        for (std::list<Format>::const_iterator it = builtinFormats.begin();it!=builtinFormats.end();++it) {
+        for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
             if (i == index) {
-                assert(!it->isNull());
+                assert( !it->isNull() );
                 *format = *it;
+
                 return true;
             }
             ++i;
         }
     }
+
     return false;
-
 }
-
 } // namespace Natron

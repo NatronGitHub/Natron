@@ -16,40 +16,57 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-class ClickableLabel : public QLabel
+class ClickableLabel
+    : public QLabel
 {
-    Q_OBJECT
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
+    Q_OBJECT Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
     Q_PROPERTY( bool sunkenStyle READ isSunken WRITE setSunken)
+
 public:
 
-    ClickableLabel(const QString &text, QWidget *parent);
+    ClickableLabel(const QString &text,
+                   QWidget *parent);
 
-    virtual ~ClickableLabel() OVERRIDE {}
+    virtual ~ClickableLabel() OVERRIDE
+    {
+    }
 
-    void setClicked(bool b) {
+    void setClicked(bool b)
+    {
         _toggled = b;
     }
-    
+
     void setDirty(bool b);
-    
-    bool getDirty() const { return dirty; }
-    
+
+    bool getDirty() const
+    {
+        return dirty;
+    }
+
     ///Updates the text as setText does but also keeps the current color info
-    void setText_overload(const QString& str);
-    
-    int getAnimation() const { return animation; }
+    void setText_overload(const QString & str);
+
+    int getAnimation() const
+    {
+        return animation;
+    }
 
     void setAnimation(int i);
 
-    bool isReadOnly() const { return readOnly; }
-    
-    void setReadOnly(bool readOnly) ;
-    
-    bool isSunken() const { return sunkenStyle; }
-    
+    bool isReadOnly() const
+    {
+        return readOnly;
+    }
+
+    void setReadOnly(bool readOnly);
+
+    bool isSunken() const
+    {
+        return sunkenStyle;
+    }
+
     void setSunken(bool s);
 
 signals:
@@ -57,9 +74,8 @@ signals:
 
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
-    
+
 private:
     bool _toggled;
     bool dirty;

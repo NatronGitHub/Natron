@@ -12,32 +12,32 @@
 #include <boost/scoped_ptr.hpp>
 #include "Global/Macros.h"
 namespace Natron {
-    class Image;
+class Image;
 }
 class RectI;
 struct HistogramCPUPrivate;
-class HistogramCPU : public QThread
+class HistogramCPU
+    : public QThread
 {
-    
     Q_OBJECT
-    
+
 public:
-    
+
     HistogramCPU();
-    
+
     virtual ~HistogramCPU();
-    
+
     void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayMode
-                          const boost::shared_ptr<Natron::Image>& image,
-                          const RectI& rect,
+                          const boost::shared_ptr<Natron::Image> & image,
+                          const RectI & rect,
                           int binsCount,
                           double vmin,
                           double vmax,
                           int smoothingKernelSize);
-    
+
     ////Returns true if a new histogram fully computed is available
     bool hasProducedHistogram() const;
-    
+
     ///Returns the most recently produced histogram.
     ///This function should be called as a result of the histogramProduced signal reception.
     ///If this function couldn't return a valid histogram, it will return false.
@@ -52,20 +52,17 @@ public:
                                           unsigned int* pixelsCount,
                                           int* mode,
                                           double* vmin,double* vmax);
-    
+
     void quitAnyComputation();
-    
+
 signals:
-    
+
     void histogramProduced();
-    
+
 private:
-    
+
     virtual void run() OVERRIDE FINAL;
-    
     boost::scoped_ptr<HistogramCPUPrivate> _imp;
-    
-    
 };
 
 #endif // HISTOGRAMCPU_H

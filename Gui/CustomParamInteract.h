@@ -24,66 +24,55 @@ namespace Natron {
 class OfxParamOverlayInteract;
 }
 struct CustomParamInteractPrivate;
-class CustomParamInteract : public QGLWidget, public OverlaySupport
+class CustomParamInteract
+    : public QGLWidget, public OverlaySupport
 {
 public:
     CustomParamInteract(KnobGui* knob,
                         void* ofxParamHandle,
-                        const boost::shared_ptr<Natron::OfxParamOverlayInteract>& entryPoint,
+                        const boost::shared_ptr<Natron::OfxParamOverlayInteract> & entryPoint,
                         QWidget* parent = 0);
 
     virtual ~CustomParamInteract();
-    
+
     /**
      * @brief Swap the OpenGL buffers.
      **/
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
-    
+
     /**
      * @brief Repaint
      **/
     virtual void redraw() OVERRIDE FINAL;
-    
+
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    
+
     /**
      * @brief Returns the pixel scale of the viewport.
      **/
-    virtual void getPixelScale(double& xScale, double& yScale) const  OVERRIDE FINAL;
-    
+    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
+
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL ;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
 
 private:
-    
-    virtual void paintGL() OVERRIDE FINAL;
-    
-    virtual void initializeGL() OVERRIDE FINAL;
-    
-    virtual void resizeGL(int w,int h) OVERRIDE FINAL;
-    
-    virtual QSize sizeHint() const OVERRIDE FINAL;
-    
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
-    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
-    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
-    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
-    
-    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
-    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    
+    virtual void paintGL() OVERRIDE FINAL;
+    virtual void initializeGL() OVERRIDE FINAL;
+    virtual void resizeGL(int w,int h) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<CustomParamInteractPrivate> _imp;
 };
 

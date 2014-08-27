@@ -28,13 +28,15 @@ class ViewerGL;
  * @class An histogram view in the histograms gui.
  **/
 struct HistogramPrivate;
-class Histogram : public QGLWidget
+class Histogram
+    : public QGLWidget
 {
     Q_OBJECT
-    
+
 public:
-    
-    enum DisplayMode {
+
+    enum DisplayMode
+    {
         RGB = 0,
         A,
         Y,
@@ -42,59 +44,48 @@ public:
         G,
         B
     };
-    
-    Histogram(Gui* gui, const QGLWidget* shareWidget = NULL);
-    
+
+    Histogram(Gui* gui,
+              const QGLWidget* shareWidget = NULL);
+
     virtual ~Histogram();
-    
-    void renderText(double x,double y,const QString& text,const QColor& color,const QFont& font) const;
-    
+
+    void renderText(double x,double y,const QString & text,const QColor & color,const QFont & font) const;
+
 public slots:
-    
+
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
     void onCPUHistogramComputed();
-    
+
     void computeHistogramAndRefresh(bool forceEvenIfNotVisible = false);
 
     void populateViewersChoices();
-        
+
 #endif
-    
+
     void onDisplayModeChanged(QAction*);
-    
+
     void onFilterChanged(QAction*);
-    
+
     void onCurrentViewerChanged(QAction*);
 
     void onViewerImageChanged(ViewerGL* viewer,int texIndex);
-    
+
 private:
-    
-    virtual void initializeGL() OVERRIDE FINAL; 
-    
+
+    virtual void initializeGL() OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
-    
     virtual void resizeGL(int w,int h) OVERRIDE FINAL;
-    
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
-    
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
-    
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    
     virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;
-    
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    
     boost::scoped_ptr<HistogramPrivate> _imp;
 };
 

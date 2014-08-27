@@ -1,4 +1,4 @@
-    //  Natron
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -13,7 +13,8 @@
 #include "Engine/Image.h"
 
 
-struct HistogramRequest {
+struct HistogramRequest
+{
     int binsCount;
     int mode;
     boost::shared_ptr<Natron::Image> image;
@@ -21,38 +22,38 @@ struct HistogramRequest {
     double vmin;
     double vmax;
     int smoothingKernelSize;
-    
+
     HistogramRequest()
-    : binsCount(0)
-    , mode(0)
-    , image()
-    , rect()
-    , vmin(0)
-    , vmax(0)
-    , smoothingKernelSize(0)
+        : binsCount(0)
+          , mode(0)
+          , image()
+          , rect()
+          , vmin(0)
+          , vmax(0)
+          , smoothingKernelSize(0)
     {
-        
     }
-    
+
     HistogramRequest(int binsCount,
                      int mode,
-                     const boost::shared_ptr<Natron::Image>& image,
-                     const RectI& rect,
+                     const boost::shared_ptr<Natron::Image> & image,
+                     const RectI & rect,
                      double vmin,
                      double vmax,
                      int smoothingKernelSize)
-    : binsCount(binsCount)
-    , mode(mode)
-    , image(image)
-    , rect(rect)
-    , vmin(vmin)
-    , vmax(vmax)
-    , smoothingKernelSize(smoothingKernelSize)
+        : binsCount(binsCount)
+          , mode(mode)
+          , image(image)
+          , rect(rect)
+          , vmin(vmin)
+          , vmax(vmax)
+          , smoothingKernelSize(smoothingKernelSize)
     {
     }
 };
 
-struct FinishedHistogram {
+struct FinishedHistogram
+{
     std::vector<float> histogram1;
     std::vector<float> histogram2;
     std::vector<float> histogram3;
@@ -60,52 +61,47 @@ struct FinishedHistogram {
     int binsCount;
     int pixelsCount;
     double vmin,vmax;
-    
+
     FinishedHistogram()
-    : histogram1()
-    , histogram2()
-    , histogram3()
-    , mode(0)
-    , binsCount(0)
-    , pixelsCount(0)
-    , vmin(0)
-    , vmax(0)
+        : histogram1()
+          , histogram2()
+          , histogram3()
+          , mode(0)
+          , binsCount(0)
+          , pixelsCount(0)
+          , vmin(0)
+          , vmax(0)
     {
-        
     }
 };
 
 struct HistogramCPUPrivate
 {
-    
     QWaitCondition requestCond;
     QMutex requestMutex;
     std::list<HistogramRequest> requests;
-    
     QMutex producedMutex;
     std::list<boost::shared_ptr<FinishedHistogram> > produced;
-    
     QWaitCondition mustQuitCond;
     QMutex mustQuitMutex;
     bool mustQuit;
 
     HistogramCPUPrivate()
-    : requestCond()
-    , requestMutex()
-    , requests()
-    , producedMutex()
-    , produced()
-    , mustQuitCond()
-    , mustQuitMutex()
-    , mustQuit(false)
+        : requestCond()
+          , requestMutex()
+          , requests()
+          , producedMutex()
+          , produced()
+          , mustQuitCond()
+          , mustQuitMutex()
+          , mustQuit(false)
     {
-        
     }
 };
 
 HistogramCPU::HistogramCPU()
-: QThread()
-, _imp(new HistogramCPUPrivate())
+    : QThread()
+      , _imp( new HistogramCPUPrivate() )
 {
 }
 
@@ -114,18 +110,20 @@ HistogramCPU::~HistogramCPU()
     quitAnyComputation();
 }
 
-void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayMode
-                                    const boost::shared_ptr<Natron::Image>& image,
-                                    const RectI& rect,
-                                    int binsCount,
-                                    double vmin,
-                                    double vmax,
-                                    int smoothingKernelSize)
+void
+HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayMode
+                               const boost::shared_ptr<Natron::Image> & image,
+                               const RectI & rect,
+                               int binsCount,
+                               double vmin,
+                               double vmax,
+                               int smoothingKernelSize)
 {
     /*Starting or waking-up the thread*/
     QMutexLocker quitLocker(&_imp->mustQuitMutex);
     QMutexLocker locker(&_imp->requestMutex);
-    _imp->requests.push_back(HistogramRequest(binsCount,mode,image,rect,vmin,vmax,smoothingKernelSize));
+
+    _imp->requests.push_back( HistogramRequest(binsCount,mode,image,rect,vmin,vmax,smoothingKernelSize) );
     if (!isRunning() && !_imp->mustQuit) {
         quitLocker.unlock();
         start(HighestPriority);
@@ -133,15 +131,15 @@ void HistogramCPU::computeHistogram(int mode, //< corresponds to the enum Histog
         quitLocker.unlock();
         _imp->requestCond.wakeOne();
     }
-
 }
 
-void HistogramCPU::quitAnyComputation()
+void
+HistogramCPU::quitAnyComputation()
 {
-    if (isRunning()) {
+    if ( isRunning() ) {
         QMutexLocker l(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
-        
+
         ///post a fake request to wakeup the thread
         l.unlock();
         computeHistogram(0, boost::shared_ptr<Natron::Image>(), RectI(), 0,0,0,0);
@@ -156,6 +154,7 @@ bool
 HistogramCPU::hasProducedHistogram() const
 {
     QMutexLocker l(&_imp->producedMutex);
+
     return !_imp->produced.empty();
 }
 
@@ -172,10 +171,10 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     assert(histogram1 && histogram2 && histogram3 && binsCount && pixelsCount && mode && vmin && vmax);
 
     QMutexLocker l(&_imp->producedMutex);
-    if (_imp->produced.empty()) {
+    if ( _imp->produced.empty() ) {
         return false;
     }
-    
+
     boost::shared_ptr<FinishedHistogram> h = _imp->produced.back();
 
     *histogram1 = h->histogram1;
@@ -193,41 +192,41 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
 
 ///putting these in an anonymous namespace will yield this error on gcc 4.2:
 ///"function has not external linkage"
-struct pix_red {
-    static float
-    val(float *pix)
+struct pix_red
+{
+    static float val(float *pix)
     {
         return pix[0];
     }
 };
 
-struct pix_green {
-    static float
-    val(float *pix)
+struct pix_green
+{
+    static float val(float *pix)
     {
         return pix[1];
     }
 };
 
-struct pix_blue {
-    static float
-    val(float *pix)
+struct pix_blue
+{
+    static float val(float *pix)
     {
         return pix[2];
     }
 };
 
-struct pix_alpha {
-    static float
-    val(float *pix)
+struct pix_alpha
+{
+    static float val(float *pix)
     {
         return pix[3];
     }
 };
 
-struct pix_lum {
-    static float
-    val(float *pix)
+struct pix_lum
+{
+    static float val(float *pix)
     {
         return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
     }
@@ -236,35 +235,36 @@ struct pix_lum {
 
 template <float pix_func(float*)>
 void
-computeHisto(const HistogramRequest& request, int upscale, std::vector<float> *histo)
+computeHisto(const HistogramRequest & request,
+             int upscale,
+             std::vector<float> *histo)
 {
     assert(histo);
     histo->resize(request.binsCount * upscale);
     std::fill(histo->begin(), histo->end(), 0.f);
-
     double binSize = (request.vmax - request.vmin) / histo->size();
 
     ///Images come from the viewer which is in float.
     assert(request.image->getBitDepth() == Natron::IMAGE_FLOAT);
-    
-    for (int y = request.rect.bottom() ; y < request.rect.top(); ++y) {
+
+    for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {
-            float *pix = (float*)request.image->pixelAt(x, y) ;
+            float *pix = (float*)request.image->pixelAt(x, y);
             float v = pix_func(pix);
-            if (request.vmin <= v && v < request.vmax) {
-                int index = (int)((v - request.vmin) / binSize);
-                assert(0 <= index && index < (int)histo->size());
+            if ( (request.vmin <= v) && (v < request.vmax) ) {
+                int index = (int)( (v - request.vmin) / binSize );
+                assert( 0 <= index && index < (int)histo->size() );
                 (*histo)[index] += 1.f;
             }
         }
     }
 }
 
-
 /// IIR Gaussian filter: recursive implementation.
 
 static void
-YvVfilterCoef(double sigma, double *filter)
+YvVfilterCoef(double sigma,
+              double *filter)
 {
     /* the recipe in the Young-van Vliet paper:
      * I.T. Young, L.J. van Vliet, M. van Ginkel, Recursive Gabor filtering.
@@ -273,33 +273,33 @@ YvVfilterCoef(double sigma, double *filter)
      * (this is an improvement over Young-Van Vliet, Sig. Proc. 44, 1995)
      */
 
-	double q, qsq;
+    double q, qsq;
     double scale;
     double B, b1, b2, b3;
 
-	/* initial values */
-	double m0 = 1.16680, m1 = 1.10783, m2 = 1.40586;
-	double m1sq = m1*m1, m2sq = m2*m2;
+    /* initial values */
+    double m0 = 1.16680, m1 = 1.10783, m2 = 1.40586;
+    double m1sq = m1 * m1, m2sq = m2 * m2;
 
-	/* calculate q */
-	if(sigma < 3.556) {
-		q = -0.2568 + 0.5784 * sigma + 0.0561 * sigma * sigma;
-	} else {
-		q = 2.5091 + 0.9804 * (sigma - 3.556);
+    /* calculate q */
+    if (sigma < 3.556) {
+        q = -0.2568 + 0.5784 * sigma + 0.0561 * sigma * sigma;
+    } else {
+        q = 2.5091 + 0.9804 * (sigma - 3.556);
     }
 
-	qsq = q*q;
+    qsq = q * q;
 
-	/* calculate scale, and b[0,1,2,3] */
-	scale = (m0 + q) * (m1sq + m2sq + 2*m1*q + qsq);
-	b1 = -q * (2*m0*m1 + m1sq + m2sq + (2*m0 + 4*m1) * q + 3*qsq) / scale;
-	b2 = qsq * (m0 + 2*m1 + 3*q) / scale;
-	b3 = - qsq * q / scale;
+    /* calculate scale, and b[0,1,2,3] */
+    scale = (m0 + q) * (m1sq + m2sq + 2 * m1 * q + qsq);
+    b1 = -q * (2 * m0 * m1 + m1sq + m2sq + (2 * m0 + 4 * m1) * q + 3 * qsq) / scale;
+    b2 = qsq * (m0 + 2 * m1 + 3 * q) / scale;
+    b3 = -qsq * q / scale;
 
-	/* calculate B */
-	B = (m0 * (m1sq + m2sq))/scale;
+    /* calculate B */
+    B = ( m0 * (m1sq + m2sq) ) / scale;
 
-	/* fill in filter */
+    /* fill in filter */
     filter[0] = -b3;
     filter[1] = -b2;
     filter[2] = -b1;
@@ -310,12 +310,13 @@ YvVfilterCoef(double sigma, double *filter)
 }
 
 /* Triggs matrix, from
- B. Triggs and M. Sdika. Boundary conditions for Young-van Vliet
- recursive filtering. IEEE Trans. Signal Processing,
- vol. 54, pp. 2365-2367, 2006.
-*/
+   B. Triggs and M. Sdika. Boundary conditions for Young-van Vliet
+   recursive filtering. IEEE Trans. Signal Processing,
+   vol. 54, pp. 2365-2367, 2006.
+ */
 static void
-TriggsM(double *filter, double *M)
+TriggsM(double *filter,
+        double *M)
 {
     double scale;
     double a1, a2, a3;
@@ -324,43 +325,45 @@ TriggsM(double *filter, double *M)
     a2 = filter[1];
     a1 = filter[2];
 
-    scale = 1.0/((1.0+a1-a2+a3)*(1.0-a1-a2-a3)*(1.0+a2+(a1-a3)*a3));
-    M[0] = scale*(-a3*a1+1.0-a3*a3-a2);
-    M[1] = scale*(a3+a1)*(a2+a3*a1);
-    M[2] = scale*a3*(a1+a3*a2);
-    M[3] = scale*(a1+a3*a2);
-    M[4] = -scale*(a2-1.0)*(a2+a3*a1);
-    M[5] = -scale*a3*(a3*a1+a3*a3+a2-1.0);
-    M[6] = scale*(a3*a1+a2+a1*a1-a2*a2);
-    M[7] = scale*(a1*a2+a3*a2*a2-a1*a3*a3-a3*a3*a3-a3*a2+a3);
-    M[8] = scale*a3*(a1+a3*a2);
+    scale = 1.0 / ( (1.0 + a1 - a2 + a3) * (1.0 - a1 - a2 - a3) * (1.0 + a2 + (a1 - a3) * a3) );
+    M[0] = scale * (-a3 * a1 + 1.0 - a3 * a3 - a2);
+    M[1] = scale * (a3 + a1) * (a2 + a3 * a1);
+    M[2] = scale * a3 * (a1 + a3 * a2);
+    M[3] = scale * (a1 + a3 * a2);
+    M[4] = -scale * (a2 - 1.0) * (a2 + a3 * a1);
+    M[5] = -scale * a3 * (a3 * a1 + a3 * a3 + a2 - 1.0);
+    M[6] = scale * (a3 * a1 + a2 + a1 * a1 - a2 * a2);
+    M[7] = scale * (a1 * a2 + a3 * a2 * a2 - a1 * a3 * a3 - a3 * a3 * a3 - a3 * a2 + a3);
+    M[8] = scale * a3 * (a1 + a3 * a2);
 }
-
 
 // IIR filter.
 // may operate in-place, using src=dest
 template<class SrcIterator, class DstIterator>
 static void
-iir_1d_filter(SrcIterator src, DstIterator dest, int sx, double *filter)
+iir_1d_filter(SrcIterator src,
+              DstIterator dest,
+              int sx,
+              double *filter)
 {
-    int      j;
-    double   b1, b2, b3;
-    double   pix, p1, p2, p3;
-    double   sum, sumsq;
-    double   iplus, uplus, vplus;
-    double   unp, unp1, unp2;
-    double   M[9];
+    int j;
+    double b1, b2, b3;
+    double pix, p1, p2, p3;
+    double sum, sumsq;
+    double iplus, uplus, vplus;
+    double unp, unp1, unp2;
+    double M[9];
 
     sumsq = filter[3];
-    sum = sumsq*sumsq;
+    sum = sumsq * sumsq;
 
     /* causal filter */
     b1 = filter[2]; b2 = filter[1]; b3 = filter[0];
-    p1 = *src/sumsq; p2 = p1; p3 = p1;
+    p1 = *src / sumsq; p2 = p1; p3 = p1;
 
-    iplus = src[sx-1];
+    iplus = src[sx - 1];
     for (j = 0; j < sx; j++) {
-        pix = *src++ + b1*p1 + b2*p2 + b3*p3;
+        pix = *src++ + b1 * p1 + b2 * p2 + b3 * p3;
         *dest++ = pix;
         p3 = p2; p2 = p1; p1 = pix; /* update history */
     }
@@ -368,49 +371,51 @@ iir_1d_filter(SrcIterator src, DstIterator dest, int sx, double *filter)
     /* anti-causal filter */
 
     /* apply Triggs border condition */
-    uplus = iplus/(1.0-b1-b2-b3);
+    uplus = iplus / (1.0 - b1 - b2 - b3);
     b1 = filter[4]; b2 = filter[5]; b3 = filter[6];
-    vplus = uplus/(1.0-b1-b2-b3);
+    vplus = uplus / (1.0 - b1 - b2 - b3);
 
-    unp = p1-uplus;
-    unp1 = p2-uplus;
-    unp2 = p3-uplus;
+    unp = p1 - uplus;
+    unp1 = p2 - uplus;
+    unp2 = p3 - uplus;
 
     TriggsM(filter, M);
 
-    pix = M[0]*unp+M[1]*unp1+M[2]*unp2 + vplus;
-    p1  = M[3]*unp+M[4]*unp1+M[5]*unp2 + vplus;
-    p2  = M[6]*unp+M[7]*unp1+M[8]*unp2 + vplus;
+    pix = M[0] * unp + M[1] * unp1 + M[2] * unp2 + vplus;
+    p1  = M[3] * unp + M[4] * unp1 + M[5] * unp2 + vplus;
+    p2  = M[6] * unp + M[7] * unp1 + M[8] * unp2 + vplus;
     pix *= sum; p1 *= sum; p2 *= sum;
 
     *(--dest) = pix;
     p3 = p2; p2 = p1; p1 = pix;
 
-    for (j = sx-2; j >= 0; j--) {
-        pix = sum * *(--dest) + b1*p1 + b2*p2 + b3*p3;
+    for (j = sx - 2; j >= 0; j--) {
+        pix = sum * *(--dest) + b1 * p1 + b2 * p2 + b3 * p3;
         *dest = pix;
         p3 = p2; p2 = p1; p1 = pix;
     }
-}
+} // iir_1d_filter
 
 static void
-computeHistogramStatic(const HistogramRequest& request, boost::shared_ptr<FinishedHistogram> ret, int histogramIndex)
+computeHistogramStatic(const HistogramRequest & request,
+                       boost::shared_ptr<FinishedHistogram> ret,
+                       int histogramIndex)
 {
     const int upscale = 5;
-
     std::vector<float> *histo = 0;
+
     switch (histogramIndex) {
-        case 1:
-            histo = &ret->histogram1;
-            break;
-        case 2:
-            histo = &ret->histogram2;
-            break;
-        case 3:
-            histo = &ret->histogram3;
-            break;
-        default:
-            break;
+    case 1:
+        histo = &ret->histogram1;
+        break;
+    case 2:
+        histo = &ret->histogram2;
+        break;
+    case 3:
+        histo = &ret->histogram3;
+        break;
+    default:
+        break;
     }
     assert(histo);
 
@@ -427,32 +432,32 @@ computeHistogramStatic(const HistogramRequest& request, boost::shared_ptr<Finish
     // a histogram with upscale more bins
     std::vector<float> histo_upscaled;
     switch (mode) {
-        case 1: //< A
-            computeHisto<&pix_alpha::val>(request, upscale, &histo_upscaled);
-            break;
-        case 2: //<Y
-            computeHisto<&pix_lum::val>(request, upscale, &histo_upscaled);
-            break;
-        case 3: //< R
-            computeHisto<&pix_red::val>(request, upscale, &histo_upscaled);
-            break;
-        case 4: //< G
-            computeHisto<&pix_green::val>(request, upscale, &histo_upscaled);
-            break;
-        case 5: //< B
-            computeHisto<&pix_blue::val>(request, upscale, &histo_upscaled);
-            break;
+    case 1:     //< A
+        computeHisto<&pix_alpha::val>(request, upscale, &histo_upscaled);
+        break;
+    case 2:     //<Y
+        computeHisto<&pix_lum::val>(request, upscale, &histo_upscaled);
+        break;
+    case 3:     //< R
+        computeHisto<&pix_red::val>(request, upscale, &histo_upscaled);
+        break;
+    case 4:     //< G
+        computeHisto<&pix_green::val>(request, upscale, &histo_upscaled);
+        break;
+    case 5:     //< B
+        computeHisto<&pix_blue::val>(request, upscale, &histo_upscaled);
+        break;
 
-        default:
-            assert(false);
-            break;
+    default:
+        assert(false);
+        break;
     }
     double sigma = upscale;
     if (request.smoothingKernelSize > 1) {
         sigma *= request.smoothingKernelSize;
     }
     // smooth the upscaled histogram
-    double	filter[7];
+    double filter[7];
     /* calculate filter coefficients */
     YvVfilterCoef(sigma, filter);
     // filter
@@ -463,75 +468,74 @@ computeHistogramStatic(const HistogramRequest& request, boost::shared_ptr<Finish
     assert(histo_upscaled.size() == histo->size() * upscale);
     std::vector<float>::const_iterator it_in = histo_upscaled.begin();
     std::advance(it_in, (upscale - 1) / 2);
-	std::vector<float>::iterator it_out = histo->begin();
-    while (it_out != histo->end()) {
+    std::vector<float>::iterator it_out = histo->begin();
+    while ( it_out != histo->end() ) {
         *it_out = *it_in * upscale;
-		++it_out;
-		if (it_out != histo->end()) {
-			std::advance (it_in,upscale);
-		}
+        ++it_out;
+        if ( it_out != histo->end() ) {
+            std::advance (it_in,upscale);
+        }
     }
-}
+} // computeHistogramStatic
 
 void
 HistogramCPU::run()
 {
-    for (;;) {
+    for (;; ) {
         HistogramRequest request;
         {
             QMutexLocker l(&_imp->requestMutex);
-            while (_imp->requests.empty()) {
+            while ( _imp->requests.empty() ) {
                 _imp->requestCond.wait(&_imp->requestMutex);
             }
-            
+
             ///get the last request
             request = _imp->requests.back();
             _imp->requests.pop_back();
-            
+
             ///ignore all other requests pending
             _imp->requests.clear();
         }
-        
+
         {
             QMutexLocker l(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
                 _imp->mustQuitCond.wakeOne();
+
                 return;
             }
         }
-        
-        
         boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;
         ret->vmax = request.vmax;
-        
+
 
         switch (request.mode) {
-            case 0: //< RGB
-                computeHistogramStatic(request, ret, 1);
-                computeHistogramStatic(request, ret, 2);
-                computeHistogramStatic(request, ret, 3);
-                break;
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-                computeHistogramStatic(request, ret, 1);
-                break;
-            default:
-                assert(false); //< unknown case.
-                break;
+        case 0:     //< RGB
+            computeHistogramStatic(request, ret, 1);
+            computeHistogramStatic(request, ret, 2);
+            computeHistogramStatic(request, ret, 3);
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+            computeHistogramStatic(request, ret, 1);
+            break;
+        default:
+            assert(false);     //< unknown case.
+            break;
         }
-        
-        
+
+
         {
             QMutexLocker l(&_imp->producedMutex);
             _imp->produced.push_back(ret);
         }
         emit histogramProduced();
     }
-}
+} // run

@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 //
@@ -53,25 +53,25 @@ CLANG_DIAG_ON(unknown-pragmas)
  *- BOOST with hashing: boost::bimap with boost::unordered_set_of
  *- BOOST with comparison : boost::bimap with boost::set_of
  *
- *Using the appropriate #define , the software can be tuned to use a specific
- *underlying container version for all caches.
+ * Using the appropriate #define , the software can be tuned to use a specific
+ * underlying container version for all caches.
  *
- *USE_VARIADIC_TEMPLATES : define this if c++11 features like var args are
- *supported. It will make use of variadic templates to greatly
- *reduce the line of codes necessary, and it will also make it possible
- *to use STL with hashing (std::unordered_map), as it is defined in c++11
+ * USE_VARIADIC_TEMPLATES : define this if c++11 features like var args are
+ * supported. It will make use of variadic templates to greatly
+ * reduce the line of codes necessary, and it will also make it possible
+ * to use STL with hashing (std::unordered_map), as it is defined in c++11
  *
- *NATRON_CACHE_USE_BOOST : define this to tell the compiler to use boost internally
- *for caches. Otherwise it will fallback on a STL version
+ * NATRON_CACHE_USE_BOOST : define this to tell the compiler to use boost internally
+ * for caches. Otherwise it will fallback on a STL version
  *
- *NATRON_CACHE_USE_HASH : define this to tell the compiler to use hashing
+ * NATRON_CACHE_USE_HASH : define this to tell the compiler to use hashing
  *(std::unordered_map or boost::unordered_set_of) instead of a
- *tree-based version (std::map or boost::set_of).
+ * tree-based version (std::map or boost::set_of).
  *
- *WARNING:  definining NATRON_CACHE_USE_HASH and not defining
- *NATRON_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
- *defined otherwise it will not compile. (no std::unordered_map
- *support on c++98)
+ * WARNING:  definining NATRON_CACHE_USE_HASH and not defining
+ * NATRON_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
+ * defined otherwise it will not compile. (no std::unordered_map
+ * support on c++98)
  *
  **/
 
@@ -94,7 +94,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 ///the current reference counting of the object. Typically a shared_ptr.
 
 
-template <typename K,typename V,template<typename...> class MAP>
+template <typename K,typename V,template<typename ...> class MAP>
 class StlLRUHashTable
 {
 public:
@@ -104,63 +104,78 @@ public:
     typedef std::list<key_type> key_tracker_type;
     // Key to value and key history iterator
     typedef MAP<key_type,std::pair<value_type,typename key_tracker_type::iterator> > key_to_value_type;
-    
+
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
-    StlLRUHashTable(){}
-    
+    StlLRUHashTable()
+    {
+    }
+
     // Obtain value of the cached function for k
-    typename key_to_value_type::iterator operator()(const key_type& k) {
+    typename key_to_value_type::iterator operator()(const key_type & k)
+    {
         // Attempt to find existing record
         typename key_to_value_type::iterator it = _key_to_value.find(k);
-        if (it!=_key_to_value.end()) {
+        if ( it != _key_to_value.end() ) {
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
         }
+
         return it;
     }
-    
-    void erase(typename key_to_value_type::iterator it){
+
+    void erase(typename key_to_value_type::iterator it)
+    {
         _key_tracker.erase(it->second.second);
         _key_to_value.erase(it);
     }
-    
-    typename key_to_value_type::iterator end() { return _key_to_value.end(); }
-    
-    typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
-    
+
+    typename key_to_value_type::iterator end()
+    {
+        return _key_to_value.end();
+    }
+
+    typename key_to_value_type::iterator begin()
+    {
+        return _key_to_value.begin();
+    }
+
     // Record a fresh key-value pair in the cache
-    void insert(const key_type& k,const value_type& v) {
+    void insert(const key_type & k,
+                const value_type & v)
+    {
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
-        if(found != _key_to_value.end()){
+        if ( found != _key_to_value.end() ) {
             found->second.first.push_back(v);
-        }else{
+        } else  {
             value_type list;
             list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
-            typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
-            _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
+            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
+            _key_to_value.insert( std::make_pair( k,std::make_pair(v,it) ) );
         }
     }
-    
-    void clear() {
+
+    void clear()
+    {
         _key_to_value.clear();
         _key_tracker.clear();
     }
-    
+
     // Purge the least-recently-used element in the cache
-    std::pair<key_type,V> evict() {
+    std::pair<key_type,V> evict()
+    {
         // Assert method is never called when cache is empty
-        assert(!_key_tracker.empty());
+        assert( !_key_tracker.empty() );
         // Identify least recently used key
-        const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
+        const typename key_to_value_type::iterator it  = _key_to_value.find( _key_tracker.front() );
         for (typename std::list<V>::iterator it2 = it->second.first.begin();
              it2 != it->second.first.end();
              ++it2) {
-            if ((*it2).use_count() == 1) {
+            if ( (*it2).use_count() == 1 ) {
                 std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
                 if (it->second.first.size() == 1) {
                     // Erase both elements to completely purge record
@@ -169,20 +184,23 @@ public:
                 } else {
                     it->second.first.erase(it2);
                 }
+
                 return ret;
             }
         }
-        return std::make_pair(key_type(),V());
+
+        return std::make_pair( key_type(),V() );
     }
-    
-    unsigned int size() { return _container.size(); }
-    
-    
-    
+
+    unsigned int size()
+    {
+        return _container.size();
+    }
+
 private:
     // Key access history
     key_tracker_type _key_tracker;
-    
+
     // Key-to-value lookup
     key_to_value_type _key_to_value;
 };
@@ -193,89 +211,103 @@ private:
         // V f(K).
         // SET is expected to be one of boost::bimaps::set_of
         // or boost::bimaps::unordered_set_of
-template <typename K,typename V,template <typename...> class SET>
+template <typename K,typename V,template <typename ...> class SET>
 class BoostLRUHashTable
 {
 public:
     typedef K key_type;
     typedef V value_type;
     typedef boost::bimaps::bimap<SET<key_type>,boost::bimaps::list_of<value_type> > container_type;
-    
-    BoostLRUHashTable(){}
-    
+
+    BoostLRUHashTable()
+    {
+    }
+
     // Obtain value of the cached function for k
-    typename container_type::left_iterator operator()(const key_type& k) {
+    typename container_type::left_iterator operator()(const key_type & k)
+    {
         // Attempt to find existing record
-        typename container_type::left_iterator it=_container.left.find(k);
-        if (it!=_container.left.end()) {
+        typename container_type::left_iterator it = _container.left.find(k);
+        if ( it != _container.left.end() ) {
             // We do have it:
             // Update the access record view.
-            _container.right.relocate(_container.right.end(),_container.project_right(it));
+            _container.right.relocate( _container.right.end(),_container.project_right(it) );
         }
+
         return it;
     }
-    
-    void erase(typename container_type::left_iterator it){
+
+    void erase(typename container_type::left_iterator it)
+    {
         _container.left.erase(it);
     }
-    
+
     // return end of the iterator
-    typename container_type::left_iterator end() {
+    typename container_type::left_iterator end()
+    {
         return _container.left.end();
     }
-    
+
     // return begin of the iterator
-    typename container_type::left_iterator begin() {
+    typename container_type::left_iterator begin()
+    {
         return _container.left.begin();
     }
-    
-    void insert(const key_type& k,const V& v) {
+
+    void insert(const key_type & k,
+                const V & v)
+    {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
         typename container_type::left_iterator found = this->operator ()(k);
-        if(found != _container.left.end()){
+        if ( found != _container.left.end() ) {
             found->second.push_back(v);
-        }else{
+        } else  {
             value_type list;
             list.push_back(v);
-            _container.insert(typename container_type::value_type(k,list));
+            _container.insert( typename container_type::value_type(k,list) );
         }
     }
-    
-    
-    void clear() {
+
+    void clear()
+    {
         _container.clear();
     }
-    
-    std::pair<key_type,V> evict() {
+
+    std::pair<key_type,V> evict()
+    {
         typename container_type::right_iterator it = _container.right.begin();
-        while (it != _container.right.end()) {
+        while ( it != _container.right.end() ) {
             for (typename std::list<V>::iterator it2 = it->first.begin();
                  it2 != it->first.end();
                  ++it2) {
-                if ((*it2).use_count() == 1) {
+                if ( (*it2).use_count() == 1 ) {
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
                     if (it->first.size() == 1) {
                         _container.right.erase(it);
                     } else {
                         it->first.erase(it2);
                     }
+
                     return ret;
                 }
             }
             ++it;
         }
-        return std::make_pair(key_type(),V());
-        
+
+        return std::make_pair( key_type(),V() );
     }
-    
-    unsigned int size(){return _container.size();}
-    
-    
+
+    unsigned int size()
+    {
+        return _container.size();
+    }
+
 private:
     container_type _container;
 };
+
 #  endif // NATRON_CACHE_USE_BOOST
 
 #else // !USE_VARIADIC_TEMPLATES
@@ -284,7 +316,8 @@ private:
 
 #  ifndef NATRON_CACHE_USE_BOOST
 template <typename K,typename V>
-class StlLRUHashTable{
+class StlLRUHashTable
+{
 public:
     typedef K key_type;
     typedef V value_type;
@@ -292,87 +325,103 @@ public:
     typedef std::list<key_type> key_tracker_type;
     // Key to value and key history iterator
     typedef std::map<key_type,std::pair<value_type,typename key_tracker_type::iterator> > key_to_value_type;
-    
+
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
-    StlLRUHashTable(){}
-    
+    StlLRUHashTable()
+    {
+    }
+
     // Obtain value of the cached function for k
-    typename key_to_value_type::iterator operator()(const key_type& k) {
+    typename key_to_value_type::iterator operator()(const key_type & k)
+    {
         // Attempt to find existing record
-        typename key_to_value_type::iterator it =_key_to_value.find(k);
-        if (it!=_key_to_value.end()) {
+        typename key_to_value_type::iterator it = _key_to_value.find(k);
+        if ( it != _key_to_value.end() ) {
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
         }
+
         return it;
     }
-    
-    void erase(typename key_to_value_type::iterator it){
+
+    void erase(typename key_to_value_type::iterator it)
+    {
         _key_tracker.erase(it->second.second);
         _key_to_value.erase(it);
     }
-    
-    
-    typename key_to_value_type::iterator end() { return _key_to_value.end(); }
-    
-    
-    typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
-    
-    
+
+    typename key_to_value_type::iterator end()
+    {
+        return _key_to_value.end();
+    }
+
+    typename key_to_value_type::iterator begin()
+    {
+        return _key_to_value.begin();
+    }
+
     // Record a fresh key-value pair in the cache
-    void insert(const key_type& k,const value_type& v) {
+    void insert(const key_type & k,
+                const value_type & v)
+    {
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
-        if(found != _key_to_value.end()){
+        if ( found != _key_to_value.end() ) {
             found->second.first.push_back(v);
-        }else{
+        } else  {
             value_type list;
             list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
-            typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
-            _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
+            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(),k);
+            _key_to_value.insert( std::make_pair( k,std::make_pair(v,it) ) );
         }
     }
-    
-    void clear() {
+
+    void clear()
+    {
         _key_to_value.clear();
         _key_tracker.clear();
     }
-    
+
     // Purge the least-recently-used element in the cache
-    std::pair<key_type,V> evict() {
+    std::pair<key_type,V> evict()
+    {
         // Assert method is never called when cache is empty
-        assert(!_key_tracker.empty());
+        assert( !_key_tracker.empty() );
         // Identify least recently used key
-        const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
+        const typename key_to_value_type::iterator it  = _key_to_value.find( _key_tracker.front() );
         for (typename std::list<V>::iterator it2 = it->second.first.begin();
-             it2!=it->second.first.end();
+             it2 != it->second.first.end();
              ++it2) {
-            if((*it2).use_count() == 1){
+            if ( (*it2).use_count() == 1 ) {
                 std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
-                if(it->second.first.size() == 1){
+                if (it->second.first.size() == 1) {
                     // Erase both elements to completely purge record
                     _key_to_value.erase(it);
                     _key_tracker.pop_front();
-                }else{
+                } else  {
                     it->second.first.erase(it2);
                 }
+
                 return ret;
             }
         }
-        return std::make_pair(key_type(),V());
+
+        return std::make_pair( key_type(),V() );
     }
-    
-    unsigned int size() { return _key_to_value.size(); }
-    
-    
+
+    unsigned int size()
+    {
+        return _key_to_value.size();
+    }
+
 private:
     // Key access history
     key_tracker_type _key_tracker;
-    
+
     // Key-to-value lookup
     key_to_value_type _key_to_value;
 };
@@ -381,81 +430,95 @@ private:
 
 #    ifdef NATRON_CACHE_USE_HASH
 template <typename K,typename V>
-class BoostLRUHashTable{
+class BoostLRUHashTable
+{
 public:
     typedef K key_type;
     typedef std::list<V> value_type;
     typedef boost::bimaps::bimap<boost::bimaps::unordered_set_of<key_type>,boost::bimaps::list_of<value_type> > container_type;
-    
-    BoostLRUHashTable(){}
-    
-    typename container_type::left_iterator operator()(const key_type& k) {
+
+    BoostLRUHashTable()
+    {
+    }
+
+    typename container_type::left_iterator operator()(const key_type & k)
+    {
         // Attempt to find existing record
-        typename container_type::left_iterator it=_container.left.find(k);
-        if (it!=_container.left.end()) {
+        typename container_type::left_iterator it = _container.left.find(k);
+        if ( it != _container.left.end() ) {
             // We do have it:
             // Update the access record view.
-            _container.right.relocate(_container.right.end(),_container.project_right(it));
+            _container.right.relocate( _container.right.end(),_container.project_right(it) );
         }
+
         return it;
     }
-    
-    void erase(typename container_type::left_iterator it){
+
+    void erase(typename container_type::left_iterator it)
+    {
         _container.left.erase(it);
     }
 
-    
     // return end of the iterator
-    typename container_type::left_iterator end() {
+    typename container_type::left_iterator end()
+    {
         return _container.left.end();
     }
-    
+
     // return begin of the iterator
-    typename container_type::left_iterator begin() {
+    typename container_type::left_iterator begin()
+    {
         return _container.left.begin();
     }
-    
-    void insert(const key_type& k,const V& v) {
+
+    void insert(const key_type & k,
+                const V & v)
+    {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
         typename container_type::left_iterator found = this->operator ()(k);
-        if(found != _container.left.end()){
+        if ( found != _container.left.end() ) {
             found->second.push_back(v);
-        }else{
+        } else  {
             value_type list;
             list.push_back(v);
-            _container.insert(typename container_type::value_type(k,list));
+            _container.insert( typename container_type::value_type(k,list) );
         }
     }
-    
-    
-    void clear() {
+
+    void clear()
+    {
         _container.clear();
     }
-    
-    std::pair<key_type,V> evict() {
+
+    std::pair<key_type,V> evict()
+    {
         typename container_type::right_iterator it = _container.right.begin();
-        while(it != _container.right.end()){
-            for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
-                if(it2->entry.use_count() == 1){
+        while ( it != _container.right.end() ) {
+            for (typename std::list<V>::iterator it2 = it->first.begin(); it2 != it->first.end(); ++it2) {
+                if (it2->entry.use_count() == 1) {
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
-                    if(it->first.size() == 1){
+                    if (it->first.size() == 1) {
                         _container.right.erase(it);
-                    }else{
+                    } else  {
                         it->first.erase(it2);
                     }
+
                     return ret;
                 }
             }
             ++it;
         }
-        return std::make_pair(key_type(),V());
-        
+
+        return std::make_pair( key_type(),V() );
     }
-    
-    unsigned int size() { return _container.size(); }
-    
+
+    unsigned int size()
+    {
+        return _container.size();
+    }
+
 private:
     container_type _container;
 };
@@ -463,85 +526,102 @@ private:
 #    else // !NATRON_CACHE_USE_HASH
 
 template <typename K,typename V>
-class BoostLRUHashTable{
+class BoostLRUHashTable
+{
 public:
     typedef K key_type;
     typedef V value_type;
     typedef boost::bimaps::bimap<boost::bimaps::set_of<key_type>,boost::bimaps::list_of<value_type> > container_type;
-    
-    BoostLRUHashTable(){}
-    
-    typename container_type::left_iterator operator()(const key_type& k) {
+
+    BoostLRUHashTable()
+    {
+    }
+
+    typename container_type::left_iterator operator()(const key_type & k)
+    {
         // Attempt to find existing record
-        typename container_type::left_iterator it=_container.left.find(k);
-        if (it!=_container.left.end()) {
+        typename container_type::left_iterator it = _container.left.find(k);
+        if ( it != _container.left.end() ) {
             // We do have it:
             // Update the access record view.
-            _container.right.relocate(_container.right.end(),_container.project_right(it));
+            _container.right.relocate( _container.right.end(),_container.project_right(it) );
         }
+
         return it;
     }
-    
-    void erase(typename container_type::left_iterator it){
+
+    void erase(typename container_type::left_iterator it)
+    {
         _container.left.erase(it);
     }
-    
+
     // return end of the iterator
-    typename container_type::left_iterator end() {
+    typename container_type::left_iterator end()
+    {
         return _container.left.end();
     }
-    
+
     // return begin of the iterator
-    typename container_type::left_iterator begin() {
+    typename container_type::left_iterator begin()
+    {
         return _container.left.begin();
     }
-    void insert(const key_type& k,const V& v) {
+
+    void insert(const key_type & k,
+                const V & v)
+    {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
         typename container_type::left_iterator found = this->operator ()(k);
-        if(found != _container.left.end()){
+        if ( found != _container.left.end() ) {
             found->second.push_back(v);
-        }else{
+        } else  {
             value_type list;
             list.push_back(v);
-            _container.insert(typename container_type::value_type(k,list));
+            _container.insert( typename container_type::value_type(k,list) );
         }
     }
-    
-    
-    void clear() {
+
+    void clear()
+    {
         _container.clear();
     }
-    
-    std::pair<key_type,V> evict() {
+
+    std::pair<key_type,V> evict()
+    {
         typename container_type::right_iterator it = _container.right.begin();
-        while(it != _container.right.end()){
-            for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
-                if((*it2).use_count() == 1){
+        while ( it != _container.right.end() ) {
+            for (typename std::list<V>::iterator it2 = it->first.begin(); it2 != it->first.end(); ++it2) {
+                if ( (*it2).use_count() == 1 ) {
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
-                    if(it->first.size() == 1){
+                    if (it->first.size() == 1) {
                         _container.right.erase(it);
-                    }
-                    else{
+                    } else   {
                         it->first.erase(it2);
                     }
+
                     return ret;
                 }
             }
             ++it;
         }
-        return std::make_pair(key_type(),V());
-        
+
+        return std::make_pair( key_type(),V() );
     }
-    unsigned int size() { return _container.size(); }
-    
+
+    unsigned int size()
+    {
+        return _container.size();
+    }
+
 private:
     container_type _container;
 };
+
 #    endif // !NATRON_CACHE_USE_HASH
 #  endif // NATRON_CACHE_USE_BOOST
 
 #endif // !USE_VARIADIC_TEMPLATES
 
-#endif
+#endif // ifndef NATRON_ENGINE_LRUCACHE_H_

@@ -10,88 +10,87 @@
 #include "Engine/Node.h"
 #include "Gui/GuiApplicationManager.h"
 
-PasteUndoCommand::PasteUndoCommand(KnobGui* knob,int targetDimension,
+PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
+                                   int targetDimension,
                                    int dimensionToFetch,
                                    bool copyAnimation,
-                                   const std::list<Variant>& values,
-                                   const std::list<boost::shared_ptr<Curve> >& curves,
-                                   const std::list<boost::shared_ptr<Curve> >& parametricCurves,
-                                   const std::map<int,std::string>& stringAnimation)
-: QUndoCommand(0)
-, _knob(knob)
-, newValues(values)
-, oldValues()
-, newCurves(curves)
-, oldCurves()
-, newParametricCurves(parametricCurves)
-, oldParametricCurves()
-, newStringAnimation(stringAnimation)
-, oldStringAnimation()
-, _targetDimension(targetDimension)
-, _dimensionToFetch(dimensionToFetch)
-, _copyAnimation(copyAnimation)
+                                   const std::list<Variant> & values,
+                                   const std::list<boost::shared_ptr<Curve> > & curves,
+                                   const std::list<boost::shared_ptr<Curve> > & parametricCurves,
+                                   const std::map<int,std::string> & stringAnimation)
+    : QUndoCommand(0)
+      , _knob(knob)
+      , newValues(values)
+      , oldValues()
+      , newCurves(curves)
+      , oldCurves()
+      , newParametricCurves(parametricCurves)
+      , oldParametricCurves()
+      , newStringAnimation(stringAnimation)
+      , oldStringAnimation()
+      , _targetDimension(targetDimension)
+      , _dimensionToFetch(dimensionToFetch)
+      , _copyAnimation(copyAnimation)
 {
-    assert(!appPTR->isClipBoardEmpty());
-    assert((!copyAnimation && newCurves.empty()) || copyAnimation);
-    
+    assert( !appPTR->isClipBoardEmpty() );
+    assert( ( !copyAnimation && newCurves.empty() ) || copyAnimation );
+
     boost::shared_ptr<KnobI> internalKnob = knob->getKnob();
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(internalKnob.get());
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(internalKnob.get());
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(internalKnob.get());
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(internalKnob.get());
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
+    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
 
-    
+
     for (int i = 0; i < internalKnob->getDimension(); ++i) {
         if (isInt) {
-            oldValues.push_back(Variant(isInt->getValue(i)));
+            oldValues.push_back( Variant( isInt->getValue(i) ) );
         } else if (isBool) {
-            oldValues.push_back(Variant(isBool->getValue(i)));
+            oldValues.push_back( Variant( isBool->getValue(i) ) );
         } else if (isDouble) {
-            oldValues.push_back(Variant(isDouble->getValue(i)));
+            oldValues.push_back( Variant( isDouble->getValue(i) ) );
         } else if (isString) {
-            oldValues.push_back(Variant(isString->getValue(i).c_str()));
+            oldValues.push_back( Variant( isString->getValue(i).c_str() ) );
         }
         boost::shared_ptr<Curve> c(new Curve);
-        c->clone(*internalKnob->getCurve(i));
+        c->clone( *internalKnob->getCurve(i) );
         oldCurves.push_back(c);
     }
-    
+
     if (isAnimatingString) {
         isAnimatingString->saveAnimation(&oldStringAnimation);
     }
-    
+
     if (isParametric) {
         std::list< Curve > tmpCurves;
         isParametric->saveParametricCurves(&tmpCurves);
-        for (std::list< Curve >::iterator it = tmpCurves.begin(); it!=tmpCurves.end(); ++it) {
+        for (std::list< Curve >::iterator it = tmpCurves.begin(); it != tmpCurves.end(); ++it) {
             boost::shared_ptr<Curve> c(new Curve);
             c->clone(*it);
             oldParametricCurves.push_back(c);
         }
     }
-
-    
 }
 
-void PasteUndoCommand::undo()
+void
+PasteUndoCommand::undo()
 {
     boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(internalKnob.get());
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(internalKnob.get());
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(internalKnob.get());
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(internalKnob.get());
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
+
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
+    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
-    
-    
     int i = 0;
     std::list<Variant>::iterator next = oldValues.begin();
     ++next;
     internalKnob->blockEvaluation();
-    for (std::list<Variant>::iterator it = oldValues.begin(); it!=oldValues.end();++it,++next) {
-        if ((i == _targetDimension && !_copyAnimation) || _copyAnimation) {
+    for (std::list<Variant>::iterator it = oldValues.begin(); it != oldValues.end(); ++it,++next) {
+        if ( ( (i == _targetDimension) && !_copyAnimation ) || _copyAnimation ) {
             bool isLast = next == oldValues.end();
             if (isLast) {
                 internalKnob->unblockEvaluation();
@@ -111,58 +110,56 @@ void PasteUndoCommand::undo()
     if (_copyAnimation) {
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
         i = 0;
-        for (std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin(); it!=oldCurves.end(); ++it) {
-            internalKnob->getCurve(i)->clone(*(*it));
+        for (std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin(); it != oldCurves.end(); ++it) {
+            internalKnob->getCurve(i)->clone( *(*it) );
             ++i;
         }
         ///parameters are meaningless here, we just want to update the curve editor.
         _knob->onInternalKeySet(0, 0,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
-    
+
     if (isAnimatingString) {
         isAnimatingString->loadAnimation(oldStringAnimation);
     }
-    
+
     if (isParametric) {
         std::list<Curve> tmpCurves;
-        for(std::list<boost::shared_ptr<Curve> >::iterator it = oldParametricCurves.begin();it!=oldParametricCurves.end();++it) {
+        for (std::list<boost::shared_ptr<Curve> >::iterator it = oldParametricCurves.begin(); it != oldParametricCurves.end(); ++it) {
             Curve c;
-            c.clone(*(*it));
+            c.clone( *(*it) );
             tmpCurves.push_back(c);
         }
         isParametric->loadParametricCurves(tmpCurves);
     }
-    
+
 
     if (!_copyAnimation) {
-        setText(QObject::tr("Paste value of %1")
-                .arg(_knob->getKnob()->getDescription().c_str()));
+        setText( QObject::tr("Paste value of %1")
+                 .arg( _knob->getKnob()->getDescription().c_str() ) );
     } else {
-        setText(QObject::tr("Paste animation of %1")
-                .arg(_knob->getKnob()->getDescription().c_str()));
+        setText( QObject::tr("Paste animation of %1")
+                 .arg( _knob->getKnob()->getDescription().c_str() ) );
     }
+} // undo
 
-}
-
-void PasteUndoCommand::redo()
+void
+PasteUndoCommand::redo()
 {
-    
-    
     boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(internalKnob.get());
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(internalKnob.get());
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(internalKnob.get());
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(internalKnob.get());
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>(internalKnob.get());
+
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
+    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
-    
     int i = 0;
     std::list<Variant>::iterator next = newValues.begin();
     ++next;
     internalKnob->blockEvaluation();
-    for (std::list<Variant>::iterator it = newValues.begin(); it!=newValues.end();++it,++next) {
-        if ((i == _dimensionToFetch && !_copyAnimation) || _copyAnimation) {
+    for (std::list<Variant>::iterator it = newValues.begin(); it != newValues.end(); ++it,++next) {
+        if ( ( (i == _dimensionToFetch) && !_copyAnimation ) || _copyAnimation ) {
             bool isLast = next == newValues.end();
             if (isLast) {
                 internalKnob->unblockEvaluation();
@@ -179,192 +176,189 @@ void PasteUndoCommand::redo()
         }
         ++i;
     }
-    if (!newCurves.empty()) {
+    if ( !newCurves.empty() ) {
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
     }
     i = 0;
     bool hasKeyframeData = false;
-    for (std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin(); it!=newCurves.end(); ++it) {
-        internalKnob->getCurve(i)->clone(*(*it));
-        if ((*it)->getKeyFramesCount() > 0) {
+    for (std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin(); it != newCurves.end(); ++it) {
+        internalKnob->getCurve(i)->clone( *(*it) );
+        if ( (*it)->getKeyFramesCount() > 0 ) {
             hasKeyframeData = true;
         }
         ++i;
     }
-    if (!newCurves.empty()) {
+    if ( !newCurves.empty() ) {
         _knob->setAllKeyframeMarkersOnTimeline(-1);
     }
-    if (_copyAnimation && hasKeyframeData && !newCurves.empty()) {
+    if ( _copyAnimation && hasKeyframeData && !newCurves.empty() ) {
         ///parameters are meaningless here, we just want to update the curve editor.
         _knob->onInternalKeySet(0, 0,false);
     }
-    
+
     if (isAnimatingString) {
         isAnimatingString->loadAnimation(newStringAnimation);
     }
-    
+
     if (isParametric) {
         std::list<Curve> tmpCurves;
-        for(std::list<boost::shared_ptr<Curve> >::iterator it = newParametricCurves.begin();it!=newParametricCurves.end();++it) {
+        for (std::list<boost::shared_ptr<Curve> >::iterator it = newParametricCurves.begin(); it != newParametricCurves.end(); ++it) {
             Curve c;
-            c.clone(*(*it));
+            c.clone( *(*it) );
             tmpCurves.push_back(c);
         }
         isParametric->loadParametricCurves(tmpCurves);
     }
-    
+
     if (!_copyAnimation) {
-        setText(QObject::tr("Paste value of %1")
-            .arg(_knob->getKnob()->getDescription().c_str()));
+        setText( QObject::tr("Paste value of %1")
+                 .arg( _knob->getKnob()->getDescription().c_str() ) );
     } else {
-        setText(QObject::tr("Paste animation of %1")
-                .arg(_knob->getKnob()->getDescription().c_str()));
+        setText( QObject::tr("Paste animation of %1")
+                 .arg( _knob->getKnob()->getDescription().c_str() ) );
     }
-    
-}
+} // redo
 
-
-MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,bool createNew,bool setKeyFrame,
-                                                           const Variant& value,int dimension,int time)
-: QUndoCommand()
-, knobs()
-, createNew(createNew)
-, firstRedoCalled(false)
+MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
+                                                           bool createNew,
+                                                           bool setKeyFrame,
+                                                           const Variant & value,
+                                                           int dimension,
+                                                           int time)
+    : QUndoCommand()
+      , knobs()
+      , createNew(createNew)
+      , firstRedoCalled(false)
 {
     assert(knob);
     boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
     boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
-    
     ValueToSet v;
     v.newValue = value;
     v.dimension = dimension;
     v.time = time;
     v.copy = copy;
     v.setKeyFrame = setKeyFrame;
-    knobs.insert(std::make_pair(knob, v));
-
+    knobs.insert( std::make_pair(knob, v) );
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
-    
 }
 
-boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI>& originalKnob)
+boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI> & originalKnob)
 {
-    const std::string& typeName = originalKnob->typeName();
+    const std::string & typeName = originalKnob->typeName();
     boost::shared_ptr<KnobI> copy;
     int dimension = originalKnob->getDimension();
-    if (typeName == Int_Knob::typeNameStatic()) {
-        copy.reset(new Int_Knob(NULL,"",dimension,false));
-    } else if (typeName == Bool_Knob::typeNameStatic()) {
-        copy.reset(new Bool_Knob(NULL,"",dimension,false));
-    } else if (typeName == Double_Knob::typeNameStatic()) {
-        copy.reset(new Double_Knob(NULL,"",dimension,false));
-    } else if (typeName == Choice_Knob::typeNameStatic()) {
-        copy.reset(new Choice_Knob(NULL,"",dimension,false));
-    } else if (typeName == String_Knob::typeNameStatic()) {
-        copy.reset(new String_Knob(NULL,"",dimension,false));
-    } else if (typeName == Parametric_Knob::typeNameStatic()) {
-        copy.reset(new Parametric_Knob(NULL,"",dimension,false));
-    } else if (typeName == Color_Knob::typeNameStatic()) {
-        copy.reset(new Color_Knob(NULL,"",dimension,false));
-    } else if (typeName == Path_Knob::typeNameStatic()) {
-        copy.reset(new Path_Knob(NULL,"",dimension,false));
-    } else if (typeName == File_Knob::typeNameStatic()) {
-        copy.reset(new File_Knob(NULL,"",dimension,false));
-    } else if (typeName == OutputFile_Knob::typeNameStatic()) {
-        copy.reset(new OutputFile_Knob(NULL,"",dimension,false));
+
+    if ( typeName == Int_Knob::typeNameStatic() ) {
+        copy.reset( new Int_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Bool_Knob::typeNameStatic() ) {
+        copy.reset( new Bool_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Double_Knob::typeNameStatic() ) {
+        copy.reset( new Double_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Choice_Knob::typeNameStatic() ) {
+        copy.reset( new Choice_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == String_Knob::typeNameStatic() ) {
+        copy.reset( new String_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Parametric_Knob::typeNameStatic() ) {
+        copy.reset( new Parametric_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Color_Knob::typeNameStatic() ) {
+        copy.reset( new Color_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Path_Knob::typeNameStatic() ) {
+        copy.reset( new Path_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == File_Knob::typeNameStatic() ) {
+        copy.reset( new File_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == OutputFile_Knob::typeNameStatic() ) {
+        copy.reset( new OutputFile_Knob(NULL,"",dimension,false) );
     }
-    
+
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
     copy->populate();
-    
+
     ///make a clone of the original knob at that time and stash it
     copy->clone(originalKnob);
+
     return copy;
 }
 
-void MultipleKnobEditsUndoCommand::undo()
+void
+MultipleKnobEditsUndoCommand::undo()
 {
-    
-    
     ///keep track of all different knobs and call instance changed action only once for all of them
     std::set <KnobI*> knobsUnique;
-    for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+
+    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ///clone the copy for all knobs
         boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
         boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
-        
+
         ///clone the original knob back to its old state
         originalKnob->clone(it->second.copy);
-        
+
         ///clone the copy to the new values
         it->second.copy->clone(copyWithNewValues);
-        
-        knobsUnique.insert(originalKnob.get());
+
+        knobsUnique.insert( originalKnob.get() );
     }
-    
-    
-    assert(!knobs.empty());
+
+
+    assert( !knobs.empty() );
     KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
     QString holderName;
 
-    
+
     if (holder) {
         int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
-        for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+        for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
             (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
         }
 
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            
             effect->evaluate_public(NULL, true, Natron::USER_EDITED);
-            
+
             holderName = effect->getName().c_str();
         }
     }
-    setText(QObject::tr("Multiple edits for %1").arg(holderName));
-
+    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
 }
 
-void MultipleKnobEditsUndoCommand::redo()
+void
+MultipleKnobEditsUndoCommand::redo()
 {
     if (firstRedoCalled) {
         ///just clone
         std::set <KnobI*> knobsUnique;
-        for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
             boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
             boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
-            
+
             ///clone the original knob back to its old state
             originalKnob->clone(it->second.copy);
-            
+
             ///clone the copy to the old values
             it->second.copy->clone(copyWithOldValues);
-            
-            knobsUnique.insert(originalKnob.get());
-            
-            
-            for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it!=knobsUnique.end(); ++it) {
+
+            knobsUnique.insert( originalKnob.get() );
+
+
+            for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
                 int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
                 (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::USER_EDITED,currentFrame);
             }
         }
-
     } else {
         ///this is the first redo command, set values
-        for (ParamsMap::iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
             boost::shared_ptr<KnobI> knob = it->first->getKnob();
-            
-            
             KeyFrame k;
-            Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
-            Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isInt) {
                 it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::PLUGIN_EDITED);
             } else if (isBool) {
@@ -380,11 +374,10 @@ void MultipleKnobEditsUndoCommand::redo()
             if (it->second.setKeyFrame) {
                 it->first->setKeyframe(it->second.time, it->second.dimension);
             }
-            
         }
     }
-    
-    assert(!knobs.empty());
+
+    assert( !knobs.empty() );
     KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
     QString holderName;
     if (holder) {
@@ -398,25 +391,27 @@ void MultipleKnobEditsUndoCommand::redo()
     }
     firstRedoCalled = true;
 
-    setText(QObject::tr("Multiple edits for %1").arg(holderName));
+    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
+} // redo
 
-}
-
-int MultipleKnobEditsUndoCommand::id() const
+int
+MultipleKnobEditsUndoCommand::id() const
 {
     return kMultipleKnobsUndoChangeCommandCompressionID;
 }
 
-bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
+bool
+MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 {
     const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command);
-    if (!knobCommand || command->id() != id()) {
+
+    if ( !knobCommand || ( command->id() != id() ) ) {
         return false;
     }
-    
+
     ///if all knobs are the same between the old and new command, ignore the createNew flag and merge them anyway
     bool ignoreCreateNew = false;
-    if (knobs.size() == knobCommand->knobs.size()) {
+    if ( knobs.size() == knobCommand->knobs.size() ) {
         ParamsMap::const_iterator thisIt = knobs.begin();
         ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
         bool oneDifferent = false;
@@ -430,95 +425,89 @@ bool MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
             ignoreCreateNew = true;
         }
     }
-    
+
     if (!ignoreCreateNew && knobCommand->createNew) {
         return false;
     }
-    
-    knobs.insert(knobCommand->knobs.begin(), knobCommand->knobs.end());
+
+    knobs.insert( knobCommand->knobs.begin(), knobCommand->knobs.end() );
+
     return true;
 }
 
-
-RestoreDefaultsCommand::RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> >& knobs, QUndoCommand *parent)
-: QUndoCommand(parent)
-, _knobs(knobs)
+RestoreDefaultsCommand::RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
+                                                                       QUndoCommand *parent)
+    : QUndoCommand(parent)
+      , _knobs(knobs)
 {
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        _clones.push_back(MultipleKnobEditsUndoCommand::createCopyForKnob(*it));
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
     }
 }
 
-void RestoreDefaultsCommand::undo()
+void
+RestoreDefaultsCommand::undo()
 {
-    assert(_clones.size() == _knobs.size());
-    
+    assert( _clones.size() == _knobs.size() );
+
     std::list<SequenceTime> times;
-    const boost::shared_ptr<KnobI>& first = _knobs.front();
-    
+    const boost::shared_ptr<KnobI> & first = _knobs.front();
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
-    
     std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it,++itClone) {
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it,++itClone) {
         (*it)->clone(*itClone);
-        
-        if ((*it)->getHolder()->getApp()) {
+
+        if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
                 KeyFrameSet kfs = (*it)->getCurve(i)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
-                    times.push_back(it->getTime());
+                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                    times.push_back( it->getTime() );
                 }
             }
-            
         }
-
     }
     timeline->addMultipleKeyframeIndicatorsAdded(times,true);
 
     _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
     first->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
-    if (first->getHolder()->getApp()) {
+    if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
 
-    setText(QObject::tr("Restore default value(s)"));
+    setText( QObject::tr("Restore default value(s)") );
 }
 
-void RestoreDefaultsCommand::redo()
+void
+RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
-    const boost::shared_ptr<KnobI>& first = _knobs.front();
-
+    const boost::shared_ptr<KnobI> & first = _knobs.front();
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
-        
-        if ((*it)->getHolder()->getApp()) {
+
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
                 KeyFrameSet kfs = (*it)->getCurve(i)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
-                    times.push_back(it->getTime());
+                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                    times.push_back( it->getTime() );
                 }
             }
-            
         }
-        
+
         (*it)->blockEvaluation();
         for (int d = 0; d < (*it)->getDimension(); ++d) {
             (*it)->resetToDefaultValue(d);
         }
         (*it)->unblockEvaluation();
-        
-        
     }
     timeline->removeMultipleKeyframeIndicator(times,true);
 
     first->getHolder()->evaluate_public(NULL, true, Natron::USER_EDITED);
-    if (first->getHolder()->getApp()) {
+    if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
-    setText(QObject::tr("Restore default value(s)"));
+    setText( QObject::tr("Restore default value(s)") );
 }
-
 

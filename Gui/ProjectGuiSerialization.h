@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -43,7 +43,8 @@ CLANG_DIAG_ON(unused-parameter)
 class ProjectGui;
 class Gui;
 
-struct ViewerData {
+struct ViewerData
+{
     double zoomLeft;
     double zoomBottom;
     double zoomFactor;
@@ -60,12 +61,12 @@ struct ViewerData {
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
     bool frameRangeLocked;
-    
+
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,const unsigned int version)
+    void serialize(Archive & ar,
+                   const unsigned int version)
     {
-        
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
@@ -79,6 +80,7 @@ struct ViewerData {
         ar & boost::serialization::make_nvp("Channels",channels);
         ar & boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);
         ar & boost::serialization::make_nvp("MipMapLevel",mipMapLevel);
+
         if (version >= VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING) {
             ar & boost::serialization::make_nvp("ZoomOrPanSinceFit",zoomOrPanSinceLastFit);
             ar & boost::serialization::make_nvp("CompositingOP",wipeCompositingOp);
@@ -96,24 +98,24 @@ struct ViewerData {
 
 BOOST_CLASS_VERSION(ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
 
-struct PaneLayout{
-    
+struct PaneLayout
+{
     bool floating;
-    
+
     ///These are only relevant when floating is true
     int posx,posy;
     int width,height;
-    
     bool parentingCreated;
     std::list<bool> splits;
     std::string parentName;
     std::list<std::string> splitsNames;
     std::list<std::string> tabs;
     int currentIndex;
-    
+
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,const unsigned int version)
+    void serialize(Archive & ar,
+                   const unsigned int version)
     {
         (void)version;
         ar & boost::serialization::make_nvp("Floating",floating);
@@ -133,8 +135,6 @@ struct PaneLayout{
             }
         }
     }
-    
-    
 };
 
 BOOST_CLASS_VERSION(PaneLayout, PANE_SERIALIZATION_VERSION)
@@ -142,22 +142,24 @@ BOOST_CLASS_VERSION(PaneLayout, PANE_SERIALIZATION_VERSION)
 
 class GuiLayoutSerialization
 {
-    
 public:
-    
-    GuiLayoutSerialization() {}
-    
+
+    GuiLayoutSerialization()
+    {
+    }
+
     void initialize(Gui* gui);
-    
+
     ///widget name, pane layout
     std::map<std::string,PaneLayout> _layout;
-    
+
     //splitter name, splitter serialization
     std::map<std::string,std::string> _splittersStates;
-    
+
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,const unsigned int /*version*/)
+    void serialize(Archive & ar,
+                   const unsigned int /*version*/)
     {
         ar & boost::serialization::make_nvp("Gui_Layout",_layout);
         ar & boost::serialization::make_nvp("Splitters_states",_splittersStates);
@@ -165,26 +167,21 @@ public:
 };
 
 
-class ProjectGuiSerialization {
-    
+class ProjectGuiSerialization
+{
     std::list< NodeGuiSerialization > _serializedNodes;
-    
     GuiLayoutSerialization _layoutSerialization;
-    
     std::map<std::string, ViewerData > _viewersData;
-    
     std::list<std::string> _histograms;
-    
     std::list<NodeBackDropSerialization> _backdrops;
-    
     std::list<std::string> _openedPanelsOrdered;
-    
     unsigned int _version;
-    
+
     friend class boost::serialization::access;
-    
+
     template<class Archive>
-    void save(Archive & ar,const unsigned int version) const
+    void save(Archive & ar,
+              const unsigned int version) const
     {
         (void)version;
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
@@ -194,13 +191,14 @@ class ProjectGuiSerialization {
         ar & boost::serialization::make_nvp("Backdrops",_backdrops);
         ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
     }
-    
+
     template<class Archive>
-    void load(Archive & ar,const unsigned int version)
+    void load(Archive & ar,
+              const unsigned int version)
     {
         (void)version;
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
-        
+
         if (version < PROJECT_GUI_EXERNALISE_GUI_LAYOUT) {
             ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization._layout);
             ar & boost::serialization::make_nvp("Splitters_states",_layoutSerialization._splittersStates);
@@ -224,34 +222,58 @@ class ProjectGuiSerialization {
         }
         _version = version;
     }
-    
-    
-public:
-    
-    ProjectGuiSerialization(){}
-    
-    ~ProjectGuiSerialization(){ _serializedNodes.clear(); }
-    
-    void initialize(const ProjectGui* projectGui);
-    
-    const std::list< NodeGuiSerialization >& getSerializedNodesGui() const { return _serializedNodes; }
-    
-    const GuiLayoutSerialization& getGuiLayout() const { return _layoutSerialization; }
-    
-    const std::map<std::string, ViewerData >& getViewersProjections() const { return _viewersData; }
-        
-    const std::list<std::string>& getHistograms() const { return _histograms; }
-    
-    const std::list<NodeBackDropSerialization>& getBackdrops() const { return _backdrops; }
-    
-    const std::list<std::string>& getOpenedPanels() const { return _openedPanelsOrdered; }
-    
-    unsigned int getVersion() const { return _version; }
-    
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    
+public:
+
+    ProjectGuiSerialization()
+    {
+    }
+
+    ~ProjectGuiSerialization()
+    {
+        _serializedNodes.clear();
+    }
+
+    void initialize(const ProjectGui* projectGui);
+
+    const std::list< NodeGuiSerialization > & getSerializedNodesGui() const
+    {
+        return _serializedNodes;
+    }
+
+    const GuiLayoutSerialization & getGuiLayout() const
+    {
+        return _layoutSerialization;
+    }
+
+    const std::map<std::string, ViewerData > & getViewersProjections() const
+    {
+        return _viewersData;
+    }
+
+    const std::list<std::string> & getHistograms() const
+    {
+        return _histograms;
+    }
+
+    const std::list<NodeBackDropSerialization> & getBackdrops() const
+    {
+        return _backdrops;
+    }
+
+    const std::list<std::string> & getOpenedPanels() const
+    {
+        return _openedPanelsOrdered;
+    }
+
+    unsigned int getVersion() const
+    {
+        return _version;
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
+
 BOOST_CLASS_VERSION(ProjectGuiSerialization, PROJECT_GUI_SERIALIZATION_VERSION)
 
 

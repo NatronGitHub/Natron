@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 #include "OfxClipInstance.h"
@@ -32,66 +32,74 @@
 using namespace Natron;
 
 OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
-                                 ,Natron::OfxImageEffectInstance* effect
-                                 ,int /*index*/
-                                 , OFX::Host::ImageEffect::ClipDescriptor* desc)
-: OFX::Host::ImageEffect::ClipInstance(effect, *desc)
-, _nodeInstance(nodeInstance)
-, _effect(effect)
+                                 ,
+                                 Natron::OfxImageEffectInstance* effect
+                                 ,
+                                 int  /*index*/
+                                 ,
+                                 OFX::Host::ImageEffect::ClipDescriptor* desc)
+    : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
+      , _nodeInstance(nodeInstance)
+      , _effect(effect)
 {
     assert(_nodeInstance);
     assert(_effect);
 }
 
-const std::string& OfxClipInstance::getUnmappedBitDepth() const
+const std::string &
+OfxClipInstance::getUnmappedBitDepth() const
 {
 #pragma message WARN("TODO: it should return the clip bit depth before Natron converts it using clip preferences")
     // we always use floats
     static const std::string v(kOfxBitDepthFloat);
+
     return v;
 }
 
-const std::string &OfxClipInstance::getUnmappedComponents() const
+const std::string &
+OfxClipInstance::getUnmappedComponents() const
 {
 #pragma message WARN("TODO: it should return the clip components before Natron converts it using clip preferences - the Components could be Alpha, and the UnmappedComponents RGBA (Natron lets the user select which component is converted to Alpha)")
     static const std::string rgbStr(kOfxImageComponentRGB);
     static const std::string noneStr(kOfxImageComponentNone);
     static const std::string rgbaStr(kOfxImageComponentRGBA);
     static const std::string alphaStr(kOfxImageComponentAlpha);
-    
+
     ///Default to RGBA, let the plug-in clip prefs inform us of its preferences
     return rgbaStr;
 }
-
 
 // PreMultiplication -
 //
 //  kOfxImageOpaque - the image is opaque and so has no premultiplication state
 //  kOfxImagePreMultiplied - the image is premultiplied by it's alpha
 //  kOfxImageUnPreMultiplied - the image is unpremultiplied
-const std::string &OfxClipInstance::getPremult() const
+const std::string &
+OfxClipInstance::getPremult() const
 {
     static const std::string v(kOfxImagePreMultiplied);
-    OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(getAssociatedNode());
+    OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( getAssociatedNode() );
+
     if (effect) {
         return effect->ofxGetOutputPremultiplication();
     }
-    
+
     ///Default to premultiplied, let the plug-in clip prefs inform us of its preferences
     return v;
 }
 
-
 // Pixel Aspect Ratio -
 //
 //  The pixel aspect ratio of a clip or image.
-double OfxClipInstance::getAspectRatio() const
+double
+OfxClipInstance::getAspectRatio() const
 {
     return _effect->getProjectPixelAspectRatio();
 }
 
 // Frame Rate -
-double OfxClipInstance::getFrameRate() const
+double
+OfxClipInstance::getFrameRate() const
 {
     return _effect->getFrameRate();
 }
@@ -99,7 +107,9 @@ double OfxClipInstance::getFrameRate() const
 // Frame Range (startFrame, endFrame) -
 //
 //  The frame range over which a clip has images.
-void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
+void
+OfxClipInstance::getFrameRange(double &startFrame,
+                               double &endFrame) const
 {
     assert(_nodeInstance);
     EffectInstance* n = getAssociatedNode();
@@ -108,7 +118,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
             startFrame = _lastRenderArgs.localData().firstFrame;
             endFrame = _lastRenderArgs.localData().lastFrame;
         } else {
-            if (n == _nodeInstance && _nodeInstance->isCreated()) {
+            if ( (n == _nodeInstance) && _nodeInstance->isCreated() ) {
                 qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getFrameRange. Please investigate this bug.";
             }
             SequenceTime first,last;
@@ -118,12 +128,11 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
         }
     } else {
         assert(_nodeInstance);
-        assert(_nodeInstance->getApp());
-        assert(_nodeInstance->getApp()->getTimeLine());
+        assert( _nodeInstance->getApp() );
+        assert( _nodeInstance->getApp()->getTimeLine() );
         startFrame = _nodeInstance->getApp()->getTimeLine()->leftBound();
         endFrame = _nodeInstance->getApp()->getTimeLine()->rightBound();
     }
-    
 }
 
 /// Field Order - Which spatial field occurs temporally first in a frame.
@@ -131,7 +140,8 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 ///  - kOfxImageFieldNone - the clip material is unfielded
 ///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occuring first in a frame
 ///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
-const std::string &OfxClipInstance::getFieldOrder() const
+const std::string &
+OfxClipInstance::getFieldOrder() const
 {
     return _effect->getDefaultOutputFielding();
 }
@@ -139,20 +149,21 @@ const std::string &OfxClipInstance::getFieldOrder() const
 // Connected -
 //
 //  Says whether the clip is actually connected at the moment.
-bool OfxClipInstance::getConnected() const
+bool
+OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
-    if (getName() == "Roto"  && _nodeInstance->getNode()->isRotoNode()) {
+    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
         return true;
     } else {
         if (_isOutput) {
             return _nodeInstance->hasOutputConnected();
         } else {
             int inputNb = getInputNb();
-            if (isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb)) {
+            if ( isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb) ) {
                 return false;
             }
-            if (QThread::currentThread() == qApp->thread()) {
+            if ( QThread::currentThread() == qApp->thread() ) {
                 return _nodeInstance->input(inputNb) != NULL;
             } else {
                 return _nodeInstance->input_other_thread(inputNb) != NULL;
@@ -164,7 +175,8 @@ bool OfxClipInstance::getConnected() const
 // Unmapped Frame Rate -
 //
 //  The unmaped frame range over which an output clip has images.
-double OfxClipInstance::getUnmappedFrameRate() const
+double
+OfxClipInstance::getUnmappedFrameRate() const
 {
     //return getNode().asImageEffectNode().getOutputFrameRate();
     return 25;
@@ -174,7 +186,9 @@ double OfxClipInstance::getUnmappedFrameRate() const
 //
 //  The unmaped frame range over which an output clip has images.
 // this is applicable only to hosts and plugins that allow a plugin to change frame rates
-void OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame, double &unmappedEndFrame) const
+void
+OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
+                                       double &unmappedEndFrame) const
 {
     unmappedStartFrame = 1;
     unmappedEndFrame = 1;
@@ -184,23 +198,24 @@ void OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame, double &
 //
 //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
 //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
-bool OfxClipInstance::getContinuousSamples() const
+bool
+OfxClipInstance::getContinuousSamples() const
 {
     return false;
 }
 
-
 /// override this to return the rod on the clip canonical coords!
-OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
+OfxRectD
+OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
     RectD rod; // rod is in canonical coordinates
-    
     unsigned int mipmapLevel;
     int view;
 
     ///We're not during an action,just do regular call
     Natron::EffectInstance* associatedNode = getAssociatedNode();
+
     if (!associatedNode) {
         ///Doesn't matter, input is not connected
         mipmapLevel = 0;
@@ -220,10 +235,9 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
             }
         }
     }
-    
-    
-    
-    if (getName() == "Roto" && _nodeInstance->getNode()->isRotoNode()) {
+
+
+    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
         boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
         assert(rotoCtx);
         RectD rod;
@@ -232,20 +246,21 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ret.x2 = rod.x2;
         ret.y1 = rod.y1;
         ret.y2 = rod.y2;
+
         return ret;
     }
-    
-    while (associatedNode && associatedNode->getNode()->isNodeDisabled()) {
+
+    while ( associatedNode && associatedNode->getNode()->isNodeDisabled() ) {
         ///we forward this node to the last connected non-optional input
         ///if there's only optional inputs connected, we return the last optional input
         int lastOptionalInput = -1;
         int inputNb = -1;
         for (int i = associatedNode->getMaxInputCount() - 1; i >= 0; --i) {
             bool optional = associatedNode->isInputOptional(i);
-            if (!optional && associatedNode->getNode()->input_other_thread(i)) {
+            if ( !optional && associatedNode->getNode()->input_other_thread(i) ) {
                 inputNb = i;
                 break;
-            } else if (optional && lastOptionalInput == -1) {
+            } else if ( optional && (lastOptionalInput == -1) ) {
                 lastOptionalInput = i;
             }
         }
@@ -256,8 +271,8 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     }
     if (associatedNode) {
         bool isProjectFormat;
-        
-        
+
+
         ///First thing: we try to find in the cache an image with the following key
         ///so that retrieving the RoD is cheap. If we can't do this then there are
         ///several cases:
@@ -269,34 +284,30 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         if (!foundRenderHash) {
             nodeHash = associatedNode->getHash();
         }
-        
+
         boost::shared_ptr<const ImageParams> cachedImgParams;
         boost::shared_ptr<Image> image;
-        
         Natron::ImageKey key = Natron::Image::makeKey(nodeHash, time,mipmapLevel,view);
         bool isCached = Natron::getImageFromCache(key, &cachedImgParams,&image);
-        
         Format f;
         associatedNode->getRenderFormat(&f);
-        
+
         ///If the RoD is cached accept it always if it doesn't depend on the project format.
         ///Otherwise cehck that it is really the current project format.
         ///Also don't use cached RoDs for identity effects as they contain garbage here (because identity effects allocates
         ///images with 0 bytes of data (rod null))
-        if (isCached && (!cachedImgParams->isRodProjectFormat()
-            || (cachedImgParams->isRodProjectFormat() && cachedImgParams->getRoD() == static_cast<RectD&>(f))) &&
-            cachedImgParams->getInputNbIdentity() == -1) {
+        if ( isCached && ( !cachedImgParams->isRodProjectFormat()
+                           || ( cachedImgParams->isRodProjectFormat() && ( cachedImgParams->getRoD() == static_cast<RectD &>(f) ) ) ) &&
+             ( cachedImgParams->getInputNbIdentity() == -1) ) {
             rod = cachedImgParams->getRoD();
             ret.x1 = rod.left();
             ret.x2 = rod.right();
             ret.y1 = rod.bottom();
             ret.y2 = rod.top();
-            
         } else {
             bool outputRoDStorageSet = _lastRenderArgs.localData().rodValid;
-            if (associatedNode != _nodeInstance || (!outputRoDStorageSet && associatedNode == _nodeInstance)) {
-                
-                if (associatedNode == _nodeInstance && !outputRoDStorageSet) {
+            if ( (associatedNode != _nodeInstance) || ( !outputRoDStorageSet && (associatedNode == _nodeInstance) ) ) {
+                if ( (associatedNode == _nodeInstance) && !outputRoDStorageSet ) {
                     qDebug() << "Clip thread storage not set in a call to OfxClipInstance::getRegionOfDefinition. Please investigate this bug.";
                 }
                 RenderScale scale;
@@ -320,7 +331,6 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
                 ret.y1 = rod.bottom();
                 ret.y2 = rod.top();
             }
-            
         }
     } else {
         ret.x1 = 0.;
@@ -328,9 +338,9 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         ret.y1 = 0.;
         ret.y2 = 0.;
     }
-    return ret;
-}
 
+    return ret;
+} // getRegionOfDefinition
 
 /// override this to fill in the image at the given time.
 /// The bounds of the image on the image plane should be
@@ -338,17 +348,20 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// on the effect instance. Outside a render call, the optionalBounds should
 /// be 'appropriate' for the.
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, const OfxRectD *optionalBounds)
+OFX::Host::ImageEffect::Image*
+OfxClipInstance::getImage(OfxTime time,
+                          const OfxRectD *optionalBounds)
 {
     return getStereoscopicImage(time, -1, optionalBounds);
 }
 
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,
-                                                                 const OfxPointD& renderScale,
-                                                                 int view,
-                                                                 const OfxRectD *optionalBounds)
+OFX::Host::ImageEffect::Image*
+OfxClipInstance::getImageInternal(OfxTime time,
+                                  const OfxPointD & renderScale,
+                                  int view,
+                                  const OfxRectD *optionalBounds)
 {
-    assert(!isOutput());
+    assert( !isOutput() );
     // input has been rendered just find it in the cache
     RectD bounds;
     if (optionalBounds) {
@@ -359,8 +372,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,
     }
     boost::shared_ptr<Natron::Image> image = _nodeInstance->getImage(getInputNb(), time, renderScale, view,
                                                                      optionalBounds ? &bounds : NULL,
-                                                                     ofxComponentsToNatronComponents(getComponents()),
-                                                                     ofxDepthToNatronDepth(getPixelDepth()),false);
+                                                                     ofxComponentsToNatronComponents( getComponents() ),
+                                                                     ofxDepthToNatronDepth( getPixelDepth() ),false);
     if (!image) {
         return NULL;
     } else {
@@ -368,27 +381,34 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time,
     }
 }
 
-std::string OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponents comp) {
+std::string
+OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponents comp)
+{
     switch (comp) {
-        case Natron::ImageComponentNone:
-            return kOfxImageComponentNone;
-            break;
-        case Natron::ImageComponentAlpha:
-            return kOfxImageComponentAlpha;
-            break;
-        case Natron::ImageComponentRGB:
-            return kOfxImageComponentRGB;
-            break;
-        case Natron::ImageComponentRGBA:
-            return kOfxImageComponentRGBA;
-            break;
-        default:
-            assert(false);//comp unsupported
-            break;
+    case Natron::ImageComponentNone:
+
+        return kOfxImageComponentNone;
+        break;
+    case Natron::ImageComponentAlpha:
+
+        return kOfxImageComponentAlpha;
+        break;
+    case Natron::ImageComponentRGB:
+
+        return kOfxImageComponentRGB;
+        break;
+    case Natron::ImageComponentRGBA:
+
+        return kOfxImageComponentRGBA;
+        break;
+    default:
+        assert(false);    //comp unsupported
+        break;
     }
 }
 
-Natron::ImageComponents OfxClipInstance::ofxComponentsToNatronComponents(const std::string& comp)
+Natron::ImageComponents
+OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
 {
     if (comp ==  kOfxImageComponentRGBA) {
         return Natron::ImageComponentRGBA;
@@ -399,11 +419,12 @@ Natron::ImageComponents OfxClipInstance::ofxComponentsToNatronComponents(const s
     } else if (comp == kOfxImageComponentNone) {
         return Natron::ImageComponentNone;
     } else {
-        throw std::runtime_error(comp+": unsupported component "); //< comp unsupported
+        throw std::runtime_error(comp + ": unsupported component "); //< comp unsupported
     }
 }
 
-Natron::ImageBitDepth OfxClipInstance::ofxDepthToNatronDepth(const std::string& depth)
+Natron::ImageBitDepth
+OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth)
 {
     if (depth == kOfxBitDepthByte) {
         return Natron::IMAGE_BYTE;
@@ -414,42 +435,49 @@ Natron::ImageBitDepth OfxClipInstance::ofxDepthToNatronDepth(const std::string& 
     } else if (depth == kOfxBitDepthNone) {
         return Natron::IMAGE_NONE;
     } else {
-        throw std::runtime_error(depth+": unsupported bitdepth"); //< comp unsupported
+        throw std::runtime_error(depth + ": unsupported bitdepth"); //< comp unsupported
     }
 }
 
-std::string OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
+std::string
+OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepth depth)
 {
     switch (depth) {
-        case Natron::IMAGE_BYTE:
-            return kOfxBitDepthByte;
-        case Natron::IMAGE_SHORT:
-            return kOfxBitDepthShort;
-        case Natron::IMAGE_FLOAT:
-            return kOfxBitDepthFloat;
-        case Natron::IMAGE_NONE:
-            return kOfxBitDepthNone;
-        default:
-            assert(false);//< shouldve been caught earlier
-            break;
+    case Natron::IMAGE_BYTE:
+
+        return kOfxBitDepthByte;
+    case Natron::IMAGE_SHORT:
+
+        return kOfxBitDepthShort;
+    case Natron::IMAGE_FLOAT:
+
+        return kOfxBitDepthFloat;
+    case Natron::IMAGE_NONE:
+
+        return kOfxBitDepthNone;
+    default:
+        assert(false);    //< shouldve been caught earlier
+        break;
     }
 }
 
-OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip)
-: OFX::Host::ImageEffect::Image(clip)
-, _bitDepth(OfxImage::eBitDepthFloat)
-, _floatImage(internalImage)
+OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                   OfxClipInstance &clip)
+    : OFX::Host::ImageEffect::Image(clip)
+      , _bitDepth(OfxImage::eBitDepthFloat)
+      , _floatImage(internalImage)
 {
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
+
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
-    const RectI& bounds = internalImage->getBounds();
-    const RectD& rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(bounds.left(), bounds.bottom()));
+    const RectI & bounds = internalImage->getBounds();
+    const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
+    setPointerProperty( kOfxImagePropData,internalImage->pixelAt( bounds.left(), bounds.bottom() ) );
     // bounds and rod
     setIntProperty(kOfxImagePropBounds, bounds.left(), 0);
     setIntProperty(kOfxImagePropBounds, bounds.bottom(), 1);
@@ -467,74 +495,86 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstanc
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, bounds.width() *
-                   Natron::getElementsCountForComponents(internalImage->getComponents()) *
-                   getSizeOfForBitDepth(internalImage->getBitDepth()));
-    setStringProperty(kOfxImageEffectPropComponents, OfxClipInstance::natronsComponentsToOfxComponents(internalImage->getComponents()));
-    setStringProperty(kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth(internalImage->getBitDepth()));
-    setStringProperty(kOfxImageEffectPropPreMultiplication, clip.getPremult());
+    setIntProperty( kOfxImagePropRowBytes, bounds.width() *
+                    Natron::getElementsCountForComponents( internalImage->getComponents() ) *
+                    getSizeOfForBitDepth( internalImage->getBitDepth() ) );
+    setStringProperty( kOfxImageEffectPropComponents, OfxClipInstance::natronsComponentsToOfxComponents( internalImage->getComponents() ) );
+    setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
+    setStringProperty( kOfxImageEffectPropPreMultiplication, clip.getPremult() );
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
-    setStringProperty(kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString());
-    setDoubleProperty(kOfxImagePropPixelAspectRatio, clip.getAspectRatio());
+    setStringProperty( kOfxImagePropUniqueIdentifier,QString::number(internalImage->getHashKey(), 16).toStdString() );
+    setDoubleProperty( kOfxImagePropPixelAspectRatio, clip.getAspectRatio() );
 }
 
-OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
+OfxRGBAColourF*
+OfxImage::pixelF(int x,
+                 int y) const
+{
     assert(_bitDepth == eBitDepthFloat);
-    const RectI& bounds = _floatImage->getBounds();
-    if ((x >= bounds.left()) && ( x < bounds.right()) && ( y >= bounds.bottom()) && ( y < bounds.top()) )
-    {
-        return reinterpret_cast<OfxRGBAColourF*>(_floatImage->pixelAt(x, y));
+    const RectI & bounds = _floatImage->getBounds();
+    if ( ( x >= bounds.left() ) && ( x < bounds.right() ) && ( y >= bounds.bottom() ) && ( y < bounds.top() ) ) {
+        return reinterpret_cast<OfxRGBAColourF*>( _floatImage->pixelAt(x, y) );
     }
+
     return 0;
 }
-int OfxClipInstance::getInputNb() const{
-    if(_isOutput){
+
+int
+OfxClipInstance::getInputNb() const
+{
+    if (_isOutput) {
         return -1;
     }
     int index = 0;
     OfxEffectInstance::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
     for (U32 i = 0; i < inputs.size(); ++i) {
-        if (inputs[i]->getName() == getName()) {
+        if ( inputs[i]->getName() == getName() ) {
             index = i;
             break;
         }
     }
-    return inputs.size()-1-index;
+
+    return inputs.size() - 1 - index;
 }
 
-Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const
+Natron::EffectInstance*
+OfxClipInstance::getAssociatedNode() const
 {
     assert(_nodeInstance);
-    if (getName() == "Roto" && _nodeInstance->getNode()->isRotoNode()) {
+    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
         return _nodeInstance;
     }
-    if(_isOutput) {
+    if (_isOutput) {
         return _nodeInstance;
     } else {
-        if (QThread::currentThread() == qApp->thread()) {
-            return _nodeInstance->input(getInputNb());
+        if ( QThread::currentThread() == qApp->thread() ) {
+            return _nodeInstance->input( getInputNb() );
         } else {
-            return _nodeInstance->input_other_thread(getInputNb());
+            return _nodeInstance->input_other_thread( getInputNb() );
         }
     }
 }
 
-OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds)
+OFX::Host::ImageEffect::Image*
+OfxClipInstance::getStereoscopicImage(OfxTime time,
+                                      int view,
+                                      const OfxRectD *optionalBounds)
 {
     OfxPointD scale;
+
     scale.x = scale.y = 1.;
-    if (!_lastRenderArgs.hasLocalData()) {
+    if ( !_lastRenderArgs.hasLocalData() ) {
         qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-        "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-        "fix it.";
+            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+            "fix it.";
     }
-    assert(_lastRenderArgs.hasLocalData());
-    if (isOutput()) {
+    assert( _lastRenderArgs.hasLocalData() );
+    if ( isOutput() ) {
         boost::shared_ptr<Natron::Image> outputImage;
         if (!_lastRenderArgs.localData().isImageValid) {
             qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-            "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
             ///try to recover from the mistake of the plug-in.
             unsigned int mipmapLevel = _nodeInstance->getCurrentMipMapLevelRecursive();
             if (view == -1) {
@@ -547,17 +587,18 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime tim
         if (!outputImage) {
             return NULL;
         }
+
         return new OfxImage(outputImage,*this);
     }
-    
+
     unsigned int mipMapLevel;
     if (!_lastRenderArgs.localData().isViewValid || !_lastRenderArgs.localData().isMipMapLevelValid) {
         qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-        "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-        "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+            "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+            "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
         std::list<ViewerInstance*> viewersConnected;
         _nodeInstance->getNode()->hasViewersConnected(&viewersConnected);
-        if (viewersConnected.empty()) {
+        if ( viewersConnected.empty() ) {
             if (view == -1) {
                 view = 0;
             }
@@ -578,11 +619,13 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime tim
     scale.y = scale.x;
 
     return getImageInternal(time, scale, view, optionalBounds);
-}
+} // getStereoscopicImage
 
-void OfxClipInstance::setRenderedView(int view) {
-    if (_lastRenderArgs.hasLocalData()) {
-        LastRenderArgs& args = _lastRenderArgs.localData();
+void
+OfxClipInstance::setRenderedView(int view)
+{
+    if ( _lastRenderArgs.hasLocalData() ) {
+        LastRenderArgs & args = _lastRenderArgs.localData();
         if (args.isViewValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
@@ -595,13 +638,13 @@ void OfxClipInstance::setRenderedView(int view) {
         args.isViewValid =  true;
         _lastRenderArgs.setLocalData(args);
     }
-    
 }
 
-void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
+void
+OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
 {
-    if (_lastRenderArgs.hasLocalData()) {
-        LastRenderArgs& args = _lastRenderArgs.localData();
+    if ( _lastRenderArgs.hasLocalData() ) {
+        LastRenderArgs & args = _lastRenderArgs.localData();
         if (args.isMipMapLevelValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
@@ -614,35 +657,35 @@ void OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
         args.isMipMapLevelValid = true;
         _lastRenderArgs.setLocalData(args);
     }
-    
-
 }
 
 ///Set the view stored in the thread-local storage to be invalid
-void OfxClipInstance::discardView()
+void
+OfxClipInstance::discardView()
 {
-    assert(_lastRenderArgs.hasLocalData());
+    assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().isViewValid = false;
 }
 
 ///Set the mipmap level stored in the thread-local storage to be invalid
-void OfxClipInstance::discardMipMapLevel()
+void
+OfxClipInstance::discardMipMapLevel()
 {
-    assert(_lastRenderArgs.hasLocalData());
+    assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().isMipMapLevelValid = false;
 }
 
-void OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image>& image)
+void
+OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image> & image)
 {
-    if (_lastRenderArgs.hasLocalData()) {
+    if ( _lastRenderArgs.hasLocalData() ) {
         LastRenderArgs &args = _lastRenderArgs.localData();
-        if(args.isImageValid) {
+        if (args.isImageValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
         args.image = image;
         args.isImageValid = true;
         _lastRenderArgs.setLocalData(args);
-
     } else {
         LastRenderArgs args;
         args.image = image;
@@ -651,45 +694,47 @@ void OfxClipInstance::setRenderedImage(const boost::shared_ptr<Natron::Image>& i
     }
 }
 
-void OfxClipInstance::discardRenderedImage()
+void
+OfxClipInstance::discardRenderedImage()
 {
-    assert(_lastRenderArgs.hasLocalData());
+    assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().isImageValid = false;
     _lastRenderArgs.localData().image.reset();
 }
 
 void
-OfxClipInstance::setOutputRoD(const RectD& rod) //!< effect rod in canonical coordinates
+OfxClipInstance::setOutputRoD(const RectD & rod) //!< effect rod in canonical coordinates
 {
-    if (_lastRenderArgs.hasLocalData()) {
+    if ( _lastRenderArgs.hasLocalData() ) {
         LastRenderArgs &args = _lastRenderArgs.localData();
-        if(args.rodValid) {
+        if (args.rodValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
         args.rod = rod;
         args.rodValid = true;
         _lastRenderArgs.setLocalData(args);
-
     } else {
         LastRenderArgs args;
         args.rod = rod;
         args.rodValid = true;
         _lastRenderArgs.setLocalData(args);
-
     }
 }
 
-void OfxClipInstance::discardOutputRoD()
+void
+OfxClipInstance::discardOutputRoD()
 {
-    assert(_lastRenderArgs.hasLocalData());
+    assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().rodValid = false;
 }
 
-void OfxClipInstance::setFrameRange(double first,double last)
+void
+OfxClipInstance::setFrameRange(double first,
+                               double last)
 {
-    if (_lastRenderArgs.hasLocalData()) {
+    if ( _lastRenderArgs.hasLocalData() ) {
         LastRenderArgs &args = _lastRenderArgs.localData();
-        if(args.frameRangeValid) {
+        if (args.frameRangeValid) {
             qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
         }
         args.firstFrame = first;
@@ -702,13 +747,12 @@ void OfxClipInstance::setFrameRange(double first,double last)
         args.lastFrame = last;
         args.frameRangeValid = true;
         _lastRenderArgs.setLocalData(args);
-
     }
-    
 }
 
-void OfxClipInstance::discardFrameRange()
+void
+OfxClipInstance::discardFrameRange()
 {
-    assert(_lastRenderArgs.hasLocalData());
+    assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().frameRangeValid = false;
 }

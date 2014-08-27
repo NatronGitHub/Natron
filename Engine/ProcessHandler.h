@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -21,7 +21,7 @@ CLANG_DIAG_ON(deprecated)
 
 //natron
 class AppInstance;
-namespace Natron{
+namespace Natron {
 class OutputEffectInstance;
 }
 
@@ -53,16 +53,16 @@ class QWaitCondition;
  * used to receive the output messages of the background process.
  *
  * 2) Once the background process is started the first thing it does is creating a ProcessInputChannel.
- * This creates the output channel where it will write to and asks a connection to the server hosted by 
+ * This creates the output channel where it will write to and asks a connection to the server hosted by
  * the main process. It also creates a new local server which will serve to host an input channel and
- * listen to messages coming from the main process. 
- * 
+ * listen to messages coming from the main process.
+ *
  * 3) The background process waits for the main process to answer the connection request of the output channel.
  * Once it has replied, it will send a message (kBgProcessServerCreatedShort) meaning the main process should
  * open the input channel where it will write to (and the background process will listen to).
  *
  * 4) The main process creates the input channel in ProcessHandler::onDataWrittenToSocket
- * 
+ *
  * 5) The background process catches the pending connection and accepts it.
  *
  * The IPC is setup, now both processes are listening to each-other on both sides.
@@ -70,37 +70,37 @@ class QWaitCondition;
  * NB: Message that are exchanged via this channel consists of exactly 1 line, i.e a
  * string terminated with the \n character.
  **/
-class ProcessHandler : public QObject {
-
+class ProcessHandler
+    : public QObject
+{
     Q_OBJECT
 
-    AppInstance* _app;//< pointer to the app executing this process
+    AppInstance* _app; //< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
-    Natron::OutputEffectInstance* _writer;//< pointer to the writer that will render in the bg process
+    Natron::OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
-    
+
     //the socket where data is read by the process
     //note that this socket is initialized only when the background process sends the message
     //kBgProcessServerCreatedShort, meaning it created its server for the input pipe and we can actually open it.
     QLocalSocket* _bgProcessInputSocket;
-    
     bool _earlyCancel; //< true if the user pressed cancel but the _bgProcessInput socket was not created yet
     QString _processLog; //< used to record the log of the process
-    
+
 public:
 
     /**
-     * @brief Starts a new process which will load the project specified by "projectPath". 
+     * @brief Starts a new process which will load the project specified by "projectPath".
      * The process will render using the effect specified by writer.
      **/
     ProcessHandler(AppInstance* app,
-                   const QString& projectPath,
+                   const QString & projectPath,
                    Natron::OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();
-    
-    const QString& getProcessLog() const;
+
+    const QString & getProcessLog() const;
 
 public slots:
 
@@ -128,7 +128,7 @@ public slots:
     void onStandardErrorBytesWritten();
 
     /**
-     * @brief Called whenever the main GUI app clicked the cancel button of the progress dialog. 
+     * @brief Called whenever the main GUI app clicked the cancel button of the progress dialog.
      * It sends a message to the background process via its input pipe to abort the ongoing render.
      **/
     void onProcessCanceled();
@@ -142,22 +142,22 @@ public slots:
      * @brief Called when the process finishes.
      **/
     void onProcessEnd(int exitCode,QProcess::ExitStatus stat);
-    
+
     /**
      * @brief Called when the input pipe connection is successfully sealed.
      **/
     void onInputPipeConnectionMade();
-    
+
 signals:
-    
+
     void deleted();
-    
+
     void frameRendered(int);
-    
+
     void frameProgress(int);
-    
+
     void processCanceled();
-    
+
     /**
      * @brief Emitted when the process terminates. The parameter contains a return code:
      * 0: Everything went OK
@@ -176,24 +176,25 @@ signals:
  * and notifies the ProcessHandler it has done so, so the ProcessHandler creates the input channel where the main process
  * will write data to.
  **/
-class ProcessInputChannel : public QThread {
-    
+class ProcessInputChannel
+    : public QThread
+{
     Q_OBJECT
-    
+
 public:
-    
+
     /**
-      * @brief Creates a new ProcessInputChannel effectively starting a new thread in order to have our own event loop.
-      * This is required in order to listen properly to the incoming messages.
+     * @brief Creates a new ProcessInputChannel effectively starting a new thread in order to have our own event loop.
+     * This is required in order to listen properly to the incoming messages.
      **/
-    ProcessInputChannel(const QString& mainProcessServerName);
-    
+    ProcessInputChannel(const QString & mainProcessServerName);
+
     virtual ~ProcessInputChannel();
-    
+
     /**
      * @brief Call it if you want to write something to the background process output channel.
      **/
-    void writeToOutputChannel(const QString& message);
+    void writeToOutputChannel(const QString & message);
 
 public slots:
 
@@ -201,7 +202,7 @@ public slots:
      * @brief Called when the main process wants to create the input channel.
      **/
     void onNewConnectionPending();
-    
+
     /**
      * @brief Called whenever the main process writes something to the background process' input channel.
      * @returns True if the input channel should close, false otherwise.
@@ -212,30 +213,29 @@ public slots:
      * @brief Called when the output pipe connection is successfully sealed.
      **/
     void onOutputPipeConnectionMade();
-    
+
 private:
-    
+
     /**
      * @brief Runs the event loop the signal/slots are caught correctly.
      **/
     virtual void run();
-    
+
     /**
      * @brief Called once the first time run is started.
-     * Post-condition: The output channel is created and you can write to it via the 
+     * Post-condition: The output channel is created and you can write to it via the
      * writeToOutputChannel(QString) function. Also the local server as been created
      * and the main process should have replied with a connection request to create the input channel.
      **/
     void initialize();
-    
+
     QString _mainProcessServerName;
     QMutex* _backgroundOutputPipeMutex;
     QLocalSocket* _backgroundOutputPipe; //< if the process is background but managed by a gui process then this
                                          //pipe is used to output messages
-    QLocalServer* _backgroundIPCServer;//< for a background app used to manage input IPC  with the gui app
+    QLocalServer* _backgroundIPCServer; //< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
-    
     bool _mustQuit;
     QWaitCondition* _mustQuitCond;
     QMutex* _mustQuitMutex;

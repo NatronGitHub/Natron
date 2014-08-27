@@ -15,16 +15,21 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-class GroupBoxLabel : public QLabel
+class GroupBoxLabel
+    : public QLabel
 {
     Q_OBJECT
+
 public:
 
     GroupBoxLabel(QWidget *parent = 0);
 
-    virtual ~GroupBoxLabel() OVERRIDE {}
+    virtual ~GroupBoxLabel() OVERRIDE
+    {
+    }
 
-    bool isChecked() const {
+    bool isChecked() const
+    {
         return _checked;
     }
 
@@ -33,8 +38,9 @@ public slots:
     void setChecked(bool);
 
 private:
-    virtual void mousePressEvent(QMouseEvent* /*e*/) OVERRIDE FINAL {
-        if (isEnabled()) {
+    virtual void mousePressEvent(QMouseEvent* /*e*/) OVERRIDE FINAL
+    {
+        if ( isEnabled() ) {
             emit checked(!_checked);
         }
     }
@@ -46,4 +52,4 @@ private:
     bool _checked;
 };
 
-#endif
+#endif // ifndef NATRON_GUI_GROUPBOXLABEL_H_

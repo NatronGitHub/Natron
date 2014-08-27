@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 #ifndef NATRON_GUI_KNOBGUIFILE_H_
 #define NATRON_GUI_KNOBGUIFILE_H_
@@ -39,50 +39,49 @@ class Button;
 class File_Knob_UndoCommand;
 
 //================================
-class File_KnobGui: public KnobGui
+class File_KnobGui
+    : public KnobGui
 {
     Q_OBJECT
 
     friend class File_Knob_UndoCommand;
+
 public:
 
-    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
+    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+                                  DockablePanel *container)
+    {
         return new File_KnobGui(knob, container);
     }
 
-    File_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
+    File_KnobGui(boost::shared_ptr<KnobI> knob,
+                 DockablePanel *container);
 
     virtual ~File_KnobGui() OVERRIDE;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+
 public slots:
 
     void onReturnPressed();
-    
+
     void onButtonClicked();
-    
+
     void open_file();
 
 private:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-
     virtual void _hide() OVERRIDE FINAL;
-
     virtual void _show() OVERRIDE FINAL;
-
     virtual void setEnabled() OVERRIDE FINAL;
-    
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
 
-
 private:
-    
+
     void updateLastOpened(const QString &str);
-    
+
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
@@ -91,42 +90,41 @@ private:
 
 
 //================================
-class OutputFile_KnobGui : public KnobGui
+class OutputFile_KnobGui
+    : public KnobGui
 {
     Q_OBJECT
+
 public:
 
-    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
+    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+                                  DockablePanel *container)
+    {
         return new OutputFile_KnobGui(knob, container);
     }
 
-    OutputFile_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
+    OutputFile_KnobGui(boost::shared_ptr<KnobI> knob,
+                       DockablePanel *container);
 
     virtual ~OutputFile_KnobGui() OVERRIDE;
-    
+
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public slots:
 
     void onReturnPressed();
-    
+
     void onButtonClicked();
 
     void open_file(bool);
-    
+
 private:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-
     virtual void _hide() OVERRIDE FINAL;
-
     virtual void _show() OVERRIDE FINAL;
-
     virtual void setEnabled() OVERRIDE FINAL;
-    
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-    
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
 
     void updateLastOpened(const QString &str);
@@ -141,48 +139,48 @@ private:
 
 //================================
 
-class Path_KnobGui : public KnobGui
+class Path_KnobGui
+    : public KnobGui
 {
     Q_OBJECT
+
 public:
-    
-    static KnobGui *BuildKnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container) {
+
+    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+                                  DockablePanel *container)
+    {
         return new Path_KnobGui(knob, container);
     }
-    
-    Path_KnobGui(boost::shared_ptr<KnobI> knob, DockablePanel *container);
-    
+
+    Path_KnobGui(boost::shared_ptr<KnobI> knob,
+                 DockablePanel *container);
+
     virtual ~Path_KnobGui() OVERRIDE;
-    
+
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+
 public slots:
-    
-    
+
+
     void onReturnPressed();
 
     void onButtonClicked();
-    
+
     void open_file();
-    
+
 private:
-    
-    
+
+
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
-    
     virtual void _hide() OVERRIDE FINAL;
-    
     virtual void _show() OVERRIDE FINAL;
-    
     virtual void setEnabled() OVERRIDE FINAL;
-    
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-    
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    
+
     void updateLastOpened(const QString &str);
-    
+
 private:
     LineEdit *_lineEdit;
     Button *_openFileButton;

@@ -6,7 +6,7 @@
 
 #if defined(__cplusplus)
 
-//"gl.h included before glew.h error" on Qt5.3 
+//"gl.h included before glew.h error" on Qt5.3
 //#include <QtGui>
 
 #endif // __cplusplus

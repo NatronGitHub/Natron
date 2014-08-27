@@ -4,12 +4,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-
 #include "NoOp.h"
 
 
 NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
-: Natron::EffectInstance(n)
+    : Natron::EffectInstance(n)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -33,18 +32,21 @@ NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepth>* depths) const
 
 bool
 NoOpBase::isIdentity(SequenceTime time,
-                     const RenderScale& /*scale*/,
-                     const RectD& /*rod*/,
+                     const RenderScale & /*scale*/,
+                     const RectD & /*rod*/,
                      int /*view*/,
                      SequenceTime* inputTime,
                      int* inputNb)
 {
     *inputTime = time;
     *inputNb = 0;
+
     return true;
 }
 
-std::string Dot::getDescription() const
+std::string
+Dot::getDescription() const
 {
     return "Doesn't do anything to the input image, this is used in the node graph to make bends in the links.";
 }
+

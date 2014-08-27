@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -33,8 +33,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/KnobSerialization.h"
 
 class AppInstance;
-class ProjectSerialization{
-    
+class ProjectSerialization
+{
     std::list< NodeSerialization > _serializedNodes;
     std::list<Format> _additionalFormats;
     std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
@@ -42,48 +42,80 @@ class ProjectSerialization{
     qint64 _creationDate;
     std::map<std::string,int> _nodeCounters;
     AppInstance* _app;
+
 public:
-    
-    ProjectSerialization(AppInstance* app) : _app(app){}
-    
-    ~ProjectSerialization(){ _serializedNodes.clear(); }
-    
+
+    ProjectSerialization(AppInstance* app)
+        : _app(app)
+    {
+    }
+
+    ~ProjectSerialization()
+    {
+        _serializedNodes.clear();
+    }
+
     void initialize(const Natron::Project* project);
-    
-    SequenceTime getCurrentTime() const { return _timelineCurrent; }
-    
-    SequenceTime getLeftBoundTime() const { return _timelineLeft; }
-        
-    SequenceTime getRightBoundTime() const { return _timelineRight; }
-    
-    const std::list< boost::shared_ptr<KnobSerialization>  >& getProjectKnobsValues() const { return _projectKnobs; }
-    
-    const std::list<Format>& getAdditionalFormats() const { return _additionalFormats; }
-    
-    const std::list< NodeSerialization >& getNodesSerialization() const { return _serializedNodes; }
-    
-    qint64 getCreationDate() const { return _creationDate; }
-    
-    const std::map<std::string,int>& getNodeCounters() const { return _nodeCounters; }
-    
+
+    SequenceTime getCurrentTime() const
+    {
+        return _timelineCurrent;
+    }
+
+    SequenceTime getLeftBoundTime() const
+    {
+        return _timelineLeft;
+    }
+
+    SequenceTime getRightBoundTime() const
+    {
+        return _timelineRight;
+    }
+
+    const std::list< boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
+    {
+        return _projectKnobs;
+    }
+
+    const std::list<Format> & getAdditionalFormats() const
+    {
+        return _additionalFormats;
+    }
+
+    const std::list< NodeSerialization > & getNodesSerialization() const
+    {
+        return _serializedNodes;
+    }
+
+    qint64 getCreationDate() const
+    {
+        return _creationDate;
+    }
+
+    const std::map<std::string,int> & getNodeCounters() const
+    {
+        return _nodeCounters;
+    }
+
     friend class boost::serialization::access;
     template<class Archive>
-    void save(Archive & ar, const unsigned int /*version*/) const
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
     {
-
         int nodesCount = (int)_serializedNodes.size();
         ar & boost::serialization::make_nvp("NodesCount",nodesCount);
+
         for (std::list< NodeSerialization >::const_iterator it = _serializedNodes.begin();
-             it!= _serializedNodes.end();
+             it != _serializedNodes.end();
              ++it) {
             ar & boost::serialization::make_nvp("item",*it);
         }
         int knobsCount = _projectKnobs.size();
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
-             it!=_projectKnobs.end();
+             it != _projectKnobs.end();
              ++it) {
-            ar & boost::serialization::make_nvp("item",*(*it));
+            ar & boost::serialization::make_nvp( "item",*(*it) );
         }
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
@@ -91,21 +123,21 @@ public:
         ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
         ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
-
     }
-    
+
     template<class Archive>
-    void load(Archive & ar, const unsigned int /*version*/)
+    void load(Archive & ar,
+              const unsigned int /*version*/)
     {
         assert(_app);
         int nodesCount;
         ar & boost::serialization::make_nvp("NodesCount",nodesCount);
-        for (int i = 0; i < nodesCount;++i) {
+        for (int i = 0; i < nodesCount; ++i) {
             NodeSerialization ns(_app);
             ar & boost::serialization::make_nvp("item",ns);
             _serializedNodes.push_back(ns);
         }
-        
+
         int knobsCount;
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
         for (int i = 0; i < knobsCount; ++i) {
@@ -119,12 +151,10 @@ public:
         ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
         ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
-
     }
-    
+
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
-
 
 
 #endif // PROJECTSERIALIZATION_H

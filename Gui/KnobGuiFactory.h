@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -19,8 +19,7 @@
 class KnobI;
 class DockablePanel;
 
-namespace Natron
-{
+namespace Natron {
 class LibraryBinary;
 }
 
@@ -31,7 +30,6 @@ class KnobHolder;
 
 class KnobGuiFactory
 {
-
     std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
 
 public:
@@ -40,17 +38,17 @@ public:
     ~KnobGuiFactory();
 
 
-    KnobGui *createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
+    KnobGui * createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
 
 private:
-    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const {
+    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
+    {
         return _loadedKnobs;
     }
 
     void loadKnobPlugins();
 
     void loadBultinKnobs();
-
 };
 
 

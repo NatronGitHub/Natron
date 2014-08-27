@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
  *
  */
 
@@ -15,27 +15,32 @@
 #include <QWaitCondition>
 
 namespace Natron {
-    class OutputEffectInstance;
+class OutputEffectInstance;
 }
 
-class BlockingBackgroundRender{
-    
-    
+class BlockingBackgroundRender
+{
     bool _running;
     QWaitCondition _runningCond;
     QMutex _runningMutex;
     Natron::OutputEffectInstance* _writer;
+
 public:
-    
+
     BlockingBackgroundRender(Natron::OutputEffectInstance* writer);
-    
-    virtual ~BlockingBackgroundRender(){}
-    
-    Natron::OutputEffectInstance* getWriter() const { return _writer; }
-    
+
+    virtual ~BlockingBackgroundRender()
+    {
+    }
+
+    Natron::OutputEffectInstance* getWriter() const
+    {
+        return _writer;
+    }
+
     void notifyFinished();
-    
+
     void blockingRender();
-    
 };
+
 #endif // BLOCKINGBACKGROUNDRENDER_H

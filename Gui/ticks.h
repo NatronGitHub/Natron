@@ -16,7 +16,7 @@
 // find the smallest tick size, which is a multiple of a power of ten,
 // and is drawn larger than min_tick_size_units (in pixels, or cm...).
 double ticks_size_10(double xmin, double xmax, double range_units, double min_tick_size_units);
- 
+
 // tick_size
 //
 // for a range xmin,xmax drawn with a size range_units (in pixels, or cm...),

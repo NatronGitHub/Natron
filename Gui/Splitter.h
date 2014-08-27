@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
-*contact: immarespond at gmail dot com
-*
-*/
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
 
 
 #ifndef SPLITTER_H
@@ -25,33 +25,37 @@ CLANG_DIAG_ON(uninitialized)
  * @class A thread-safe wrapper over QSplitter
  **/
 class QString;
-class Splitter : public QSplitter
+class Splitter
+    : public QSplitter
 {
 public:
-    
+
     Splitter(QWidget* parent = 0);
-    
-    Splitter(Qt::Orientation orientation, QWidget * parent = 0);
-    
-    virtual ~Splitter(){}
-    
+
+    Splitter(Qt::Orientation orientation,
+             QWidget * parent = 0);
+
+    virtual ~Splitter()
+    {
+    }
+
     void addWidget_mt_safe(QWidget * widget);
-    
+
     QByteArray saveState_mt_safe() const;
-    
+
     QString serializeNatron() const;
-    
-    void restoreNatron(const QString& serialization);
-    
+
+    void restoreNatron(const QString & serialization);
+
     void setSizes_mt_safe(const QList<int> & list);
-    
-    void setObjectName_mt_safe(const QString& str);
-    
+
+    void setObjectName_mt_safe(const QString & str);
+
     QString objectName_mt_safe() const;
+
 private:
-    
+
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    
     mutable QMutex _lock;
 };
 
