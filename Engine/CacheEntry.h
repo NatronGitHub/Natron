@@ -494,8 +494,13 @@ public:
      * @brief An entry stored on disk is effectively destroyed when its backing file is removed.
      **/
     void removeAnyBackingFile() const {
+        if (_data.isAllocated()) {
+            _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
+        } else {
+            _cache->notifyEntryDestroyed(getTime(), size(),Natron::DISK);
+        }
         _data.removeAnyBackingFile();
-        _cache->notifyEntryDestroyed(getTime(), size(),Natron::DISK);
+        
     }
     
     virtual SequenceTime getTime() const OVERRIDE FINAL { return _key.getTime(); }
