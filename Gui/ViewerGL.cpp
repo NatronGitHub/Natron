@@ -2117,7 +2117,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         wipeSelectionTol = 8. / _imp->zoomCtx.factor();
     }
     
-    if (buttonDownIsMiddle(e)) {
+    if (buttonDownIsMiddle(e) && !modifierHasControl(e)) {
         _imp->ms = DRAGGING_IMAGE;
         overlaysCaught = true;
     } else if (_imp->ms == UNDEFINED && _imp->overlay) {
