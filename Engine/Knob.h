@@ -1271,7 +1271,7 @@ public:
     /**
      * @brief To be called after each function that modifies actionsRecursionLevel that is not
      * onKnobChanged or begin/endKnobValueChange.
-     * If actionsRecursionLevel drops to 0 and there was some evaluate requested, it
+     * If actionsRecursionLevel drops to 1 and there was some evaluate requested, it
      * will call evaluate_public
      **/
     void checkIfRenderNeeded();

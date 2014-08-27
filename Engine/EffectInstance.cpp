@@ -2441,6 +2441,7 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
+    
     NON_RECURSIVE_ACTION()
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusLost(scaleX,scaleY,rod);

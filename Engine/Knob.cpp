@@ -1206,7 +1206,7 @@ void KnobHolder::checkIfRenderNeeded()
 {
     ///cannot run in another thread.
     assert(QThread::currentThread() == qApp->thread());
-    if (getRecursionLevel() == 0 && _imp->evaluateQueue.requester != NULL) {
+    if (getRecursionLevel() == 1 && _imp->evaluateQueue.requester != NULL) {
         evaluate(_imp->evaluateQueue.requester, _imp->evaluateQueue.isSignificant,Natron::USER_EDITED);
         _imp->evaluateQueue.requester = NULL;
         _imp->evaluateQueue.isSignificant = false;
