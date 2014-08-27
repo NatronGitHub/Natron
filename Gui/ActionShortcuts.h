@@ -412,7 +412,8 @@ public:
     virtual ~MouseAction() {}
 };
 
-inline QKeySequence makeKeySequence(const Qt::KeyboardModifiers& modifiers,Qt::Key key) {
+inline
+QKeySequence makeKeySequence(const Qt::KeyboardModifiers& modifiers,Qt::Key key) {
     int keys = 0;
     if (modifiers.testFlag(Qt::ControlModifier)) {
         keys |= Qt::CTRL;
@@ -428,6 +429,47 @@ inline QKeySequence makeKeySequence(const Qt::KeyboardModifiers& modifiers,Qt::K
     }
     keys |= key;
     return QKeySequence(keys);
+}
+
+///This is tricky to do, what we do is we try to find the native strings of the modifiers
+///in the sequence native's string. If we find them, we remove them. The last character
+///is then the key symbol, we just have to call seq[0] to retrieve it.
+inline void
+extractKeySequence(const QKeySequence& seq,
+                   Qt::KeyboardModifiers & modifiers,
+                   Qt::Key & symbol)
+{
+    const QString nativeMETAStr = QKeySequence(Qt::META).toString(QKeySequence::NativeText);
+    const QString nativeCTRLStr = QKeySequence(Qt::CTRL).toString(QKeySequence::NativeText);
+    const QString nativeSHIFTStr = QKeySequence(Qt::SHIFT).toString(QKeySequence::NativeText);
+    const QString nativeALTStr = QKeySequence(Qt::ALT).toString(QKeySequence::NativeText);
+    
+    QString nativeSeqStr = seq.toString(QKeySequence::NativeText);
+    if (nativeSeqStr.indexOf(nativeMETAStr) != -1) {
+        modifiers |= Qt::MetaModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeMETAStr);
+    }
+    if (nativeSeqStr.indexOf(nativeCTRLStr) != -1) {
+        modifiers |= Qt::ControlModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeCTRLStr);
+    }
+    if (nativeSeqStr.indexOf(nativeSHIFTStr) != -1) {
+        modifiers |= Qt::ShiftModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeSHIFTStr);
+    }
+    if (nativeSeqStr.indexOf(nativeALTStr) != -1) {
+        modifiers |= Qt::AltModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeALTStr);
+    }
+    
+    ///The nativeSeqStr now contains only the symbol
+    QKeySequence newSeq(nativeSeqStr,QKeySequence::NativeText);
+    if (newSeq.count() > 0) {
+        symbol = (Qt::Key)newSeq[0];
+    } else {
+        symbol = (Qt::Key)0;
+    }
+    
 }
 
 ///All the shortcuts of a group matched against their

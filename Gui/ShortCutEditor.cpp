@@ -94,6 +94,7 @@ struct ShortCutEditorPrivate
     QHBoxLayout* shortcutGroupLayout;
     QLabel* shortcutLabel;
     KeybindRecorder* shortcutEditor;
+    Button* clearButton;
     Button* resetButton;
     
     QWidget* buttonsContainer;
@@ -111,6 +112,7 @@ struct ShortCutEditorPrivate
     , shortcutGroup(0)
     , shortcutGroupLayout(0)
     , shortcutLabel(0)
+    , clearButton(0)
     , resetButton(0)
     , buttonsContainer(0)
     , buttonsLayout(0)
@@ -258,14 +260,18 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
     
     _imp->shortcutEditor = new KeybindRecorder(_imp->shortcutGroup);
+    QObject::connect(_imp->shortcutEditor, SIGNAL(textEdited(QString)), this, SLOT(onEditorTextEdited(QString)));
     _imp->shortcutEditor->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
     _imp->shortcutEditor->setPlaceholderText(tr("Type to set shortcut"));
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
     
+    _imp->clearButton = new Button(tr("Clear"),_imp->shortcutGroup);
+    QObject::connect(_imp->clearButton, SIGNAL(clicked(bool)), this, SLOT(onClearButtonClicked()));
+    _imp->shortcutGroupLayout->addWidget(_imp->clearButton);
+    
     _imp->resetButton = new Button(tr("Reset"),_imp->shortcutGroup);
     QObject::connect(_imp->resetButton, SIGNAL(clicked(bool)), this, SLOT(onResetButtonClicked()));
     _imp->shortcutGroupLayout->addWidget(_imp->resetButton);
-    _imp->shortcutGroupLayout->addStretch();
     
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
@@ -314,12 +320,52 @@ void ShortCutEditor::onSelectionChanged()
         _imp->shortcutEditor->setReadOnly(true);
         return;
     }
+    QTreeWidgetItem* selection = items.front();
+    if (!selection->isDisabled()) {
+        _imp->shortcutEditor->setReadOnly(false);
+        _imp->clearButton->setEnabled(true);
+        _imp->resetButton->setEnabled(true);
+    } else {
+        _imp->shortcutEditor->setReadOnly(true);
+        _imp->clearButton->setEnabled(false);
+        _imp->resetButton->setEnabled(false);
+    }
+
+    BoundAction* action = _imp->getActionForTreeItem(selection);
+    assert(action);
+    _imp->shortcutEditor->setText(makeItemShortCutText(action, false));
+}
+
+void ShortCutEditor::onClearButtonClicked()
+{
+    QList<QTreeWidgetItem*> items = _imp->tree->selectedItems();
+    if (items.size() > 1) {
+        //we do not support selection of more than 1 item
+        return;
+    }
     
-    _imp->shortcutEditor->setReadOnly(false);
+    if (items.empty()) {
+        _imp->shortcutEditor->setText("");
+        _imp->shortcutEditor->setPlaceholderText(tr("Type to set shortcut"));
+        return;
+    }
+    
     QTreeWidgetItem* selection = items.front();
     BoundAction* action = _imp->getActionForTreeItem(selection);
     assert(action);
-    _imp->shortcutEditor->setText(makeItemShortCutText(action, true));
+    action->modifiers = Qt::NoModifier;
+    MouseAction* ma = dynamic_cast<MouseAction*>(action);
+    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
+    if (ma) {
+        ma->button = Qt::NoButton;
+    } else {
+        assert(ka);
+        ka->currentShortcut = (Qt::Key)0;
+    }
+    
+    selection->setText(1, "");
+    _imp->shortcutEditor->setText("");
+    _imp->shortcutEditor->setFocus();
 }
 
 void ShortCutEditor::onResetButtonClicked()
@@ -373,6 +419,30 @@ void ShortCutEditor::onOkButtonClicked()
 {
     appPTR->saveShortcuts();
     close();
+}
+
+void ShortCutEditor::onEditorTextEdited(const QString& text)
+{
+    QList<QTreeWidgetItem*> items = _imp->tree->selectedItems();
+    if (items.size() > 1 || items.empty()) {
+        return;
+    }
+    
+    QTreeWidgetItem* selection = items.front();
+    selection->setText(1,text);
+    
+    QKeySequence seq(text,QKeySequence::NativeText);
+    BoundAction* action = _imp->getActionForTreeItem(selection);
+    
+    //only keybinds can be edited...
+    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
+    assert(ka);
+    
+    Qt::KeyboardModifiers modifiers;
+    Qt::Key symbol;
+    extractKeySequence(seq, modifiers, symbol);
+    action->modifiers = modifiers;
+    ka->currentShortcut = symbol;
 }
 
 void ShortcutDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
@@ -438,5 +508,8 @@ KeybindRecorder::~KeybindRecorder()
 
 void KeybindRecorder::keyPressEvent(QKeyEvent* e)
 {
-    LineEdit::keyPressEvent(e);
+    QKeySequence seq(e->key());
+    QString txt = text()  + seq.toString(QKeySequence::NativeText);
+    setText(txt);
+    emit textEdited(txt);
 }

@@ -31,6 +31,8 @@ public slots:
     
     void onSelectionChanged();
     
+    void onClearButtonClicked();
+    
     void onResetButtonClicked();
     
     void onRestoreDefaultsButtonClicked();
@@ -41,6 +43,7 @@ public slots:
     
     void onOkButtonClicked();
     
+    void onEditorTextEdited(const QString& text);
 private:
         
     boost::scoped_ptr<ShortCutEditorPrivate> _imp;

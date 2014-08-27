@@ -1076,24 +1076,24 @@ GuiApplicationManager::matchesMouseShortcut(const QString & group,
         return false;
     }
 
-    // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
-    Qt::KeyboardModifiers onlyCAS = modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier);
+    // the following macro only tests the Control, Alt, and Shift (and cmd an mac) modifiers, and discards the others
+    Qt::KeyboardModifiers onlyMCAS = modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier | Qt::MetaModifier);
     
     /*Note that the default configuration of Apple's X11 (see X11 menu:Preferences:Input tab) is to "emulate three button mouse". This sets a single button mouse or laptop trackpad to behave as follows:
      X11 left mouse button click
      X11 middle mouse button Option-click
-     X11 right mouse button Command-click
+     X11 right mouse button Ctrl-click
      (Command=clover=apple key)*/
     
-    if (onlyCAS == Qt::AltModifier && (Qt::MouseButton)button == Qt::LeftButton) {
-        onlyCAS = Qt::NoModifier;
+    if (onlyMCAS == Qt::AltModifier && (Qt::MouseButton)button == Qt::LeftButton) {
+        onlyMCAS = Qt::NoModifier;
         button = Qt::MiddleButton;
-    } else if (onlyCAS == Qt::ControlModifier && (Qt::MouseButton)button == Qt::LeftButton) {
-        onlyCAS = Qt::NoModifier;
+    } else if (onlyMCAS == Qt::MetaModifier && (Qt::MouseButton)button == Qt::LeftButton) {
+        onlyMCAS = Qt::NoModifier;
         button = Qt::RightButton;
     }
         
-    if (onlyCAS == mAction->modifiers) {
+    if (onlyMCAS == mAction->modifiers) {
         // modifiers are equal, now test symbol
         if ( (Qt::MouseButton)button == mAction->button ) {
             return true;
@@ -1215,8 +1215,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5);
 
-    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::NoModifier, Qt::MiddleButton);
-    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier, Qt::MiddleButton);
+    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
+    registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
 
     ///Player
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, kShortcutDescActionPlayerPrevious, Qt::NoModifier, Qt::Key_Left);
@@ -1338,11 +1338,15 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
     mA->grouping = grouping;
     mA->description = description;
     mA->defaultModifiers = modifiers;
-    if (modifiers & (Qt::AltModifier|Qt::ControlModifier)) {
-        qDebug() << "Warning: mouse shortcut " << grouping << '/' << description << '(' << id << ')' << " uses the Alt or Control modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
+    if (modifiers & (Qt::AltModifier|Qt::MetaModifier)) {
+        qDebug() << "Warning: mouse shortcut " << grouping << '/' << description << '(' << id << ')' << " uses the Alt or Meta modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
     }
     mA->modifiers = modifiers;
     mA->button = button;
+    
+    ///Mouse shortcuts are not editable.
+    mA->editable = false;
+    
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, mA) );
@@ -1350,27 +1354,6 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
         GroupShortcuts group;
         group.insert( std::make_pair(id, mA) );
         _actionShortcuts.insert( std::make_pair(grouping, group) );
-    }
-}
-
-static void
-extractSymbolsAndModifiers(QKeySequence::StandardKey key,
-                           Qt::KeyboardModifiers & modifiers,
-                           Qt::Key & symbol)
-{
-    QKeySequence seq(key);
-    int count = (int)seq.count();
-
-    for (int i = 0; i < count; ++i) {
-        if (seq[i] == (int)Qt::CTRL) {
-            modifiers |= Qt::ControlModifier;
-        } else if (seq[i] == (int)Qt::SHIFT) {
-            modifiers |= Qt::ShiftModifier;
-        } else if (seq[i] == (int)Qt::ALT) {
-            modifiers |= Qt::AltModifier;
-        } else if (seq[i] != 0) {
-            symbol = (Qt::Key)seq[i];
-        }
     }
 }
 
@@ -1383,7 +1366,7 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     Qt::KeyboardModifiers modifiers;
     Qt::Key symbol;
 
-    extractSymbolsAndModifiers(key, modifiers, symbol);
+    extractKeySequence(QKeySequence(key), modifiers, symbol);
     KeyBoundAction* kA = new KeyBoundAction;
     kA->grouping = grouping;
     kA->editable = false;

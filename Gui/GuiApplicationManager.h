@@ -117,6 +117,7 @@ public:
     
     const std::map<QString,std::map<QString,BoundAction*> >& getAllShortcuts() const;
     
+    
 public slots:
 
 
