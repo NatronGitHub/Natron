@@ -603,9 +603,7 @@ EffectInstance::getImage(int inputNb,
 
     ///If the plug-in doesn't support the render scale, but the image is downscale, up-scale it.
     ///Note that we do NOT cache it
-    const bool supportsRS = supportsRenderScale();
-    const bool renderDownscaleThenUpscale = (!supportsRS && inputImgMipMapLevel != 0);
-    if (!dontUpscale && renderDownscaleThenUpscale) {
+    if (!dontUpscale && inputImgMipMapLevel != 0 && supportsRenderScale()) {
         Natron::ImageBitDepth bitdepth = inputImg->getBitDepth();
         int mipMapLevel = 0;
         RectI bounds;
