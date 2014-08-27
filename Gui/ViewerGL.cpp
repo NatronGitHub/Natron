@@ -2181,7 +2181,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             overlaysCaught = true;
 
         } else if(buttonDownIsLeft(e) &&
-                  isNearByUserRoI(userRoI.x1 + userRoI.x2, userRoI.y1 + userRoI.y2,
+                  isNearByUserRoI((userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
                                   zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)) {
             // start dragging the midpoint of the user ROI
            _imp->ms = DRAGGING_ROI_CROSS;
