@@ -96,6 +96,8 @@ public:
 
     void removeKeyFrame(double time,int dimension);
     
+    QString getScriptNameHtml() const;
+    
     QString toolTip() const;
     
     bool hasToolTip() const;

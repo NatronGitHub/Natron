@@ -191,10 +191,7 @@ void KnobGui::createGUI(QFormLayout* containerLayout,
         layout->addWidget(label);
     }
     
-    QString tt(getKnob()->getHintToolTip().c_str());
-    if (!tt.isEmpty()) {
-        label->setToolTip(Qt::convertFromPlainText(tt,Qt::WhiteSpaceNormal));
-    }
+    label->setToolTip(toolTip());
     
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract != 0) {
@@ -688,13 +685,25 @@ void KnobGui::removeKeyFrame(double time,int dimension){
     updateGUI(dimension);
 }
 
+QString KnobGui::getScriptNameHtml() const
+{
+    return tr("Script name: ") + QString("<font size = 4><b>%1</b></font>").arg(getKnob()->getName().c_str());
+}
+
 QString KnobGui::toolTip() const
 {
-    return Qt::convertFromPlainText(getKnob()->getHintToolTip().c_str(), Qt::WhiteSpaceNormal);
+    QString tt = getScriptNameHtml();
+    QString realTt(getKnob()->getHintToolTip().c_str());
+    if (!realTt.isEmpty()) {
+        realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
+        tt.append(realTt);
+    }
+    return tt;
 }
 
 bool KnobGui::hasToolTip() const {
-    return !getKnob()->getHintToolTip().empty();
+    //Always true now that we display the script name in the tooltip
+    return true;//!getKnob()->getHintToolTip().empty();
 }
 
 void KnobGui::onRemoveKeyActionTriggered(){

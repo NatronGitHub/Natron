@@ -827,10 +827,15 @@ void Choice_KnobGui::onEntriesPopulated()
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
-    QString tt = _knob->getHintToolTipFull().c_str();
-    if (!tt.isEmpty()) {
-        _comboBox->setToolTip(Qt::convertFromPlainText(tt ,Qt::WhiteSpaceNormal));
+    
+    QString tt = getScriptNameHtml();
+    QString realTt(_knob->getHintToolTipFull().c_str());
+    if (!realTt.isEmpty()) {
+        realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
+        tt.append(realTt);
     }
+    _comboBox->setToolTip(tt);
+    
 
 }
 
