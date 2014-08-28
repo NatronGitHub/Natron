@@ -886,7 +886,7 @@ OfxEffectInstance::onMultipleInputsChanged()
 {
     assert(_context != eContextNone);
 
-    RECURSIVE_ACTION()
+    RECURSIVE_ACTION();
     _effect->runGetClipPrefsConditionally();
 }
 
@@ -2037,7 +2037,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
     }
 
     if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
-        RECURSIVE_ACTION()
+        RECURSIVE_ACTION();
         _effect->runGetClipPrefsConditionally();
     }
     if (_overlayInteract) {

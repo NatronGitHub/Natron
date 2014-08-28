@@ -1422,7 +1422,7 @@ private:
  * @param assertNonRecursive If true then it will check that the recursion level is 0 and otherwise print a warning indicating that
  * this action was called recursively.
  **/
-#define MANAGE_RECURSION(assertNonRecursive) KnobHolder::RecursionLevelManager actionRecursionManager(this,assertNonRecursive);
+#define MANAGE_RECURSION(assertNonRecursive) KnobHolder::RecursionLevelManager actionRecursionManager(this,assertNonRecursive)
 
 /**
  * @brief Should be called in the begining of any action that cannot be called recursively.
@@ -1430,7 +1430,7 @@ private:
 #ifdef DEBUG
 #define NON_RECURSIVE_ACTION() MANAGE_RECURSION(true)
 #else
-#define NON_RECURSIVE_ACTION() ( (void)0; )
+#define NON_RECURSIVE_ACTION() ( (void)0 )
 #endif
 
 /**
@@ -1439,7 +1439,7 @@ private:
 #ifdef DEBUG
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
 #else
-#define RECURSIVE_ACTION() ( (void)0; )
+#define RECURSIVE_ACTION() ( (void)0 )
 #endif
 
 ////Common interface for EffectInstance and backdrops

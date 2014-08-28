@@ -2232,7 +2232,7 @@ EffectInstance::drawOverlay_public(double scaleX,
         return;
     }
 
-    RECURSIVE_ACTION()
+    RECURSIVE_ACTION();
 
     SequenceTime time = getApp()->getTimeLine()->currentFrame();
     int view;
@@ -2269,7 +2269,7 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
@@ -2303,7 +2303,7 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
@@ -2330,7 +2330,7 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos,rod);
     _imp->setDuringInteractAction(false);
@@ -2356,7 +2356,7 @@ EffectInstance::onOverlayKeyDown_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
@@ -2382,7 +2382,7 @@ EffectInstance::onOverlayKeyUp_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
 
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers, rod);
@@ -2409,7 +2409,7 @@ EffectInstance::onOverlayKeyRepeat_public(double scaleX,
     RectD rod;
     getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers,rod);
     _imp->setDuringInteractAction(false);
@@ -2441,7 +2441,7 @@ EffectInstance::onOverlayFocusGained_public(double scaleX,
         getClipThreadStorageData(time, &view, &mipMapLevel, &rod);
     }
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusGained(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
@@ -2473,7 +2473,7 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
     }
 
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayFocusLost(scaleX,scaleY,rod);
     _imp->setDuringInteractAction(false);
@@ -2499,7 +2499,7 @@ EffectInstance::render_public(SequenceTime time,
                               bool isRenderResponseToUserInteraction,
                               boost::shared_ptr<Natron::Image> output)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
 
     ///Clear any previous input image which may be left
     _imp->clearInputImagePointers();
@@ -2537,7 +2537,7 @@ EffectInstance::isIdentity_public(SequenceTime time,
     }
 #endif
 
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     bool ret = false;
     if ( _node->isNodeDisabled() ) {
         ret = true;
@@ -2579,7 +2579,7 @@ EffectInstance::getRegionOfDefinition_public(SequenceTime time,
                                              RectD* rod,
                                              bool* isProjectFormat)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     Natron::Status ret;
 
     try {
@@ -2607,7 +2607,7 @@ EffectInstance::getRegionsOfInterest_public(SequenceTime time,
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                             int view)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
     EffectInstance::RoIMap ret;
@@ -2623,7 +2623,7 @@ EffectInstance::getRegionsOfInterest_public(SequenceTime time,
 EffectInstance::FramesNeededMap
 EffectInstance::getFramesNeeded_public(SequenceTime time)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
 
     return getFramesNeeded(time);
 }
@@ -2632,7 +2632,7 @@ void
 EffectInstance::getFrameRange_public(SequenceTime *first,
                                      SequenceTime *last)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     getFrameRange(first, last);
 }
 
@@ -2646,7 +2646,7 @@ EffectInstance::beginSequenceRender_public(SequenceTime first,
                                            bool isRenderResponseToUserInteraction,
                                            int view)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     {
         if ( !_imp->beginEndRenderCount.hasLocalData() ) {
             _imp->beginEndRenderCount.localData() = 1;
@@ -2669,7 +2669,7 @@ EffectInstance::endSequenceRender_public(SequenceTime first,
                                          bool isRenderResponseToUserInteraction,
                                          int view)
 {
-    NON_RECURSIVE_ACTION()
+    NON_RECURSIVE_ACTION();
     {
         assert( _imp->beginEndRenderCount.hasLocalData() );
         --_imp->beginEndRenderCount.localData();
@@ -2870,11 +2870,11 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                            identityTime,
                                                            identityNb);
 
-            RECURSIVE_ACTION()
+            RECURSIVE_ACTION();
             knobChanged(k, reason, rod, view, time);
         } else {
             int view = getCurrentViewRecursive();
-            RECURSIVE_ACTION()
+            RECURSIVE_ACTION();
             knobChanged(k, reason, rod, view, time);
         }
 

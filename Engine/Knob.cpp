@@ -1305,7 +1305,7 @@ KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReason reason)
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION()
+    RECURSIVE_ACTION();
     beginKnobsValuesChanged(reason);
 }
 
@@ -1315,7 +1315,7 @@ KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReason reason)
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION()
+    RECURSIVE_ACTION();
     endKnobsValuesChanged(reason);
 }
 
@@ -1329,7 +1329,7 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
     if (isEvaluationBlocked() || !_imp->knobsInitialized) {
         return;
     }
-    RECURSIVE_ACTION()
+    RECURSIVE_ACTION();
     onKnobValueChanged(k, reason,time);
 }
 
