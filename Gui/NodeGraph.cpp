@@ -1515,7 +1515,17 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             const std::map<int,Edge*> & inputs = lastSelected->getInputsArrows();
             for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
                 if ( it->second->hasSource() ) {
-                    selectNode( it->second->getSource(), modCASIsControlAltShift(e) );
+                    boost::shared_ptr<NodeGui> input = it->second->getSource();
+                    if ( input->getIsSelected() && modCASIsShift(e) ) {
+                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
+                                                                                        _imp->_selection.nodes.end(),lastSelected);
+                        if ( found != _imp->_selection.nodes.end() ) {
+                            lastSelected->setUserSelected(false);
+                            _imp->_selection.nodes.erase(found);
+                        }
+                    } else {
+                        selectNode( it->second->getSource(), modCASIsShift(e) );
+                    }
                     break;
                 }
             }
@@ -1530,7 +1540,17 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             if ( !outputs.empty() ) {
                 boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui( outputs.front() );
                 assert(output);
-                selectNode( output, modCASIsShift(e) );
+                if ( output->getIsSelected() && modCASIsShift(e) ) {
+                    std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
+                                                                                       _imp->_selection.nodes.end(),lastSelected);
+                    if ( found != _imp->_selection.nodes.end() ) {
+                        lastSelected->setUserSelected(false);
+                        _imp->_selection.nodes.erase(found);
+                    }
+
+                } else {
+                    selectNode( output, modCASIsShift(e) );
+                }
             }
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
