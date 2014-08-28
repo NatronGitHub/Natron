@@ -556,8 +556,23 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
     if ( !isEnabled() || isReadOnly() ) {
         return;
     }
-    QKeySequence seq( e->key() );
-    QString txt = text()  + seq.toString(QKeySequence::NativeText);
+
+    QKeySequence *seq;
+    if (e->key() == Qt::Key_Control) {
+        seq = new QKeySequence(Qt::CTRL);
+    } else if (e->key() == Qt::Key_Shift) {
+        seq = new QKeySequence(Qt::SHIFT);
+    } else if (e->key() == Qt::Key_Meta) {
+        seq = new QKeySequence(Qt::META);
+    } else if (e->key() == Qt::Key_Alt) {
+        seq = new QKeySequence(Qt::ALT);
+    } else {
+        seq = new QKeySequence(e->key());
+    }
+
+    QString seqStr = seq->toString(QKeySequence::NativeText);
+    delete seq;
+    QString txt = text()  + seqStr;
     setText(txt);
     emit textEdited(txt);
 }
