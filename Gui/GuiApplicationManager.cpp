@@ -51,9 +51,35 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/ActionShortcuts.h"
 
+/**
+ * @macro Registers a keybind to the application. 
+ * @param group The name of the group under which the shortcut should be (e.g: Global, Viewer,NodeGraph...)
+ * @param id The ID of the shortcut within the group so that we can find it later. The shorter the better, it isn't visible by the user.
+ * @param description The label of the shortcut and the action visible in the GUI. This is what describes the action and what is visible in
+ * the application's menus.
+ * @param modifiers The modifiers of the keybind. This is of type Qt::KeyboardModifiers. Use Qt::NoModifier to indicate no modifier should
+ * be held.
+ * @param symbol The key symbol. This is of type Qt::Key. Use (Qt::Key)0 to indicate there's no keybind for this action.
+ *
+ * Note: Even actions that don't have a default shortcut should be registered this way so that the user can add its own shortcut
+ * on them later. If you don't register an action with that macro, its shortcut won't be editable.
+ * To register an action without a keybind use Qt::NoModifier and (Qt::Key)0
+ **/
 #define registerKeybind(group,id,description, modifiers,symbol) ( _imp->addKeybind(group,id,description, modifiers,symbol) )
+
+/**
+ * @brief Performs the same that the registerKeybind macro, except that it takes a QKeySequence::StandardKey in parameter.
+ * This way the keybind will be standard and will adapt bery well across all platforms supporting the standard.
+ **/
 #define registerStandardKeybind(group,id,description,key) ( _imp->addStandardKeybind(group,id,description,key) )
 
+/**
+ * @brief Performs the same that the registerKeybind macro, except that it works for shortcuts using mouse buttons instead of key symbols.
+ * Generally you don't want this kind of interaction to be editable because it might break compatibility with non 3-button mouses.
+ * Also the shortcut editor of Natron doesn't support editing mouse buttons.
+ * In the end a mouse shortcut will be NON editable. The reason why you should call this is just to show the shortcut in the shortcut view
+ * so that the user is aware it exists, but he/she will not be able to modify it.
+ **/
 #define registerMouseShortcut(group,id,description, modifiers,button) ( _imp->addMouseShortcut(group,id,description, modifiers,button) )
 
 
