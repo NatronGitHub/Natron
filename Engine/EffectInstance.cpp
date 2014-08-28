@@ -1058,7 +1058,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
             RectD canonicalRoI;
-            args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
+            ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
+            ///later on for us already.
+            //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
+            args.roi.toCanonical_noClipping(args.mipMapLevel, &canonicalRoI);
             RoIMap inputsRoI;
             inputsRoI.insert( std::make_pair(input_other_thread(inputNbIdentity), canonicalRoI) );
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
@@ -1194,7 +1197,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             SequenceTime inputTimeIdentity = cachedImgParams->getInputTimeIdentity();
             RectD canonicalRoI;
             assert( !rod.isNull() );
-            args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
+            ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
+            ///later on for us already.
+            //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
+            args.roi.toCanonical_noClipping(args.mipMapLevel, &canonicalRoI);
             RoIMap inputsRoI;
             inputsRoI.insert( std::make_pair(input_other_thread(inputNbIdentity), canonicalRoI) );
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,

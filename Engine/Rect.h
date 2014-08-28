@@ -165,6 +165,7 @@ public:
     }
 
     inline void toCanonical(unsigned int thisLevel, const RectD & rod, RectD *rect) const;
+    inline void toCanonical_noClipping(unsigned int thisLevel, RectD *rect) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**
@@ -836,6 +837,15 @@ RectI::toCanonical(unsigned int thisLevel,
     rect->y1 = y1 << thisLevel;
     rect->y2 = y2 << thisLevel;
     rect->intersect(rod, rect);
+}
+
+void
+RectI::toCanonical_noClipping(unsigned int thisLevel, RectD *rect) const
+{
+    rect->x1 = x1 << thisLevel;
+    rect->x2 = x2 << thisLevel;
+    rect->y1 = y1 << thisLevel;
+    rect->y2 = y2 << thisLevel;
 }
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
