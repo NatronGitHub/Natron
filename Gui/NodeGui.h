@@ -433,7 +433,9 @@ private:
     int _lastPersistentMessageType;
     QGraphicsRectItem* _stateIndicator;
     NodeGuiIndicator* _bitDepthWarning;
-
+    
+    QGraphicsLineItem* _disabledTopLeftBtmRight;
+    QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
     std::map<int,Edge*> _inputEdges;
     Edge* _outputEdge;
@@ -446,7 +448,6 @@ private:
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
     QGradient* _clonedGradient;
-    QGradient* _disabledGradient;
     timeval _lastRenderStartedSlotCallTime;
     timeval _lastInputNRenderStartedSlotCallTime;
     bool _wasRenderStartedSlotRun; //< true if we changed the color of the widget after a call to onRenderingStarted

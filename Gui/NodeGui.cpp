@@ -98,6 +98,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
       , _lastPersistentMessageType(0)
       , _stateIndicator(NULL)
       , _bitDepthWarning(NULL)
+      , _disabledTopLeftBtmRight(NULL)
+      , _disabledBtmLeftTopRight(NULL)
       , _inputEdges()
       , _outputEdge(NULL)
       , _settingsPanel(NULL)
@@ -131,7 +133,6 @@ NodeGui::~NodeGui()
     delete _clonedGradient;
     delete _selectedGradient;
     delete _defaultGradient;
-    delete _disabledGradient;
     delete _bitDepthWarning;
     delete _expressionIndicator;
 }
@@ -212,9 +213,6 @@ NodeGui::initialize(NodeGraph* dag,
     _clonedGradient->setColorAt( 0, QColor(200,70,100) );
     _clonedGradient->setColorAt( 1, QColor(120,120,120) );
 
-    _disabledGradient = new QLinearGradient( rect.topLeft(), rect.bottomRight() );
-    _disabledGradient->setColorAt( 0,QColor(0,0,0) );
-    _disabledGradient->setColorAt( 1, QColor(20,20,20) );
 
     setDefaultGradientColor(defaultColor);
 
@@ -325,12 +323,17 @@ NodeGui::createGui()
     _expressionIndicator->setToolTip( tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links.") );
     _expressionIndicator->setActive(false);
+    
+    _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
+    _disabledBtmLeftTopRight->hide();
+    _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
+    _disabledTopLeftBtmRight->hide();
 }
 
 void
 NodeGui::setDefaultGradientColor(const QColor & color)
 {
-    assert(_clonedGradient && _defaultGradient && _disabledGradient && _selectedGradient);
+    assert(_clonedGradient && _defaultGradient && _selectedGradient);
     _defaultGradient->setColorAt(1,color);
     QColor colorBrightened;
     colorBrightened.setRedF( Natron::clamp(color.redF() * 1.5) );
@@ -417,7 +420,8 @@ NodeGui::updateShape(int width,
     QRectF labelBbox = _nameItem->boundingRect();
     double realHeight =  std::max( (double)height,labelBbox.height() );
 
-    _boundingBox->setRect(topLeft.x(),topLeft.y(),width,realHeight);
+    QRectF bbox(topLeft.x(),topLeft.y(),width,realHeight);
+    _boundingBox->setRect(bbox);
 
     QFont f(NATRON_FONT_ALT, NATRON_FONT_SIZE_12);
     QFontMetrics metrics(f);
@@ -441,7 +445,9 @@ NodeGui::updateShape(int width,
         _previewPixmap->setPos(topLeft.x() + width / 2 - NATRON_PREVIEW_WIDTH / 2,
                                topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
     }
-
+    
+    _disabledBtmLeftTopRight->setLine(QLineF(bbox.bottomLeft(),bbox.topRight()));
+    _disabledTopLeftBtmRight->setLine(QLineF(bbox.topLeft(),bbox.bottomRight()));
     refreshPosition( pos().x(), pos().y() );
 }
 
@@ -897,32 +903,27 @@ NodeGui::applyBrush(const QBrush & brush)
 void
 NodeGui::refreshCurrentBrush()
 {
-    assert(_clonedGradient && _defaultGradient && _disabledGradient && _selectedGradient);
-    bool disabled = _internalNode->isNodeDisabled();
-    bool isMultiInstance = !_internalNode->getParentMultiInstanceName().empty() || _internalNode->isMultiInstance();
-    if ( _internalNode && ( (!disabled && !isMultiInstance) || isMultiInstance ) ) {
-        if (_selected) {
-            float selectedR,selectedG,selectedB;
-            appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&selectedR, &selectedG, &selectedB);
-            QColor selColor;
-            selColor.setRgbF(selectedR, selectedG, selectedB);
-            QColor brightenedSelColor;
-            brightenedSelColor.setRgbF( Natron::clamp(selColor.redF() * 1.2)
-                                        ,Natron::clamp(selColor.greenF() * 1.2)
-                                        ,Natron::clamp(selColor.blueF() * 1.2) );
-            _selectedGradient->setColorAt(1, selColor);
-            _selectedGradient->setColorAt(0, brightenedSelColor);
-            applyBrush(*_selectedGradient);
-        } else {
-            if (_slaveMasterLink) {
-                applyBrush(*_clonedGradient);
-            } else {
-                applyBrush(*_defaultGradient);
-            }
-        }
+    assert(_clonedGradient && _defaultGradient && _selectedGradient);
+    if (_selected) {
+        float selectedR,selectedG,selectedB;
+        appPTR->getCurrentSettings()->getDefaultSelectedNodeColor(&selectedR, &selectedG, &selectedB);
+        QColor selColor;
+        selColor.setRgbF(selectedR, selectedG, selectedB);
+        QColor brightenedSelColor;
+        brightenedSelColor.setRgbF( Natron::clamp(selColor.redF() * 1.2)
+                                   ,Natron::clamp(selColor.greenF() * 1.2)
+                                   ,Natron::clamp(selColor.blueF() * 1.2) );
+        _selectedGradient->setColorAt(1, selColor);
+        _selectedGradient->setColorAt(0, brightenedSelColor);
+        applyBrush(*_selectedGradient);
     } else {
-        applyBrush(*_disabledGradient);
+        if (_slaveMasterLink) {
+            applyBrush(*_clonedGradient);
+        } else {
+            applyBrush(*_defaultGradient);
+        }
     }
+    
 }
 
 void
@@ -1391,6 +1392,7 @@ NodeGui::paint(QPainter* /*painter*/,
                QWidget* /*parent*/)
 {
     //nothing special
+    
 }
 
 const std::map<boost::shared_ptr<KnobI>,KnobGui*> &
@@ -1738,13 +1740,9 @@ NodeGui::onDisabledKnobToggled(bool disabled)
     if ( ( sender() == _internalNode.get() ) && _internalNode->isMultiInstance() ) {
         return;
     }
-
-    if (disabled) {
-        _nameItem->setDefaultTextColor( QColor(120,120,120) );
-    } else {
-        _nameItem->setDefaultTextColor( QColor(0,0,0) );
-    }
-    refreshCurrentBrush();
+    
+    _disabledTopLeftBtmRight->setVisible(disabled);
+    _disabledBtmLeftTopRight->setVisible(disabled);
 }
 
 void
