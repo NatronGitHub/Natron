@@ -10,9 +10,10 @@
 
 #ifndef SHORTCUTEDITOR_H
 #define SHORTCUTEDITOR_H
-
-#include <boost/scoped_ptr.hpp>
 #include "Global/Macros.h"
+GCC_DIAG_OFF(unused-local-typedefs) // /opt/boost/include/boost/serialization/static_warning.hpp:104:18: warning: typedef 'STATIC_WARNING_LINE102' locally defined but not used [-Wunused-local-typedefs]
+#include <boost/scoped_ptr.hpp>
+GCC_DIAG_OFF(unused-local-typedefs)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QWidget>
 CLANG_DIAG_ON(deprecated-register)
