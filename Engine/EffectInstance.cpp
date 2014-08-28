@@ -1083,7 +1083,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
-                image = getImage(inputNbIdentity, inputTimeIdentity, args.scale, args.view, NULL, inputPrefComps, inputPrefDepth, true);
+                image = getImage(inputNbIdentity,
+                                 inputTimeIdentity,
+                                 args.scale,
+                                 args.view,
+                                 &canonicalRoI,
+                                 inputPrefComps,
+                                 inputPrefDepth,
+                                 true);
                 ///Clear input images pointer because getImage has stored the image .
                 _imp->clearInputImagePointers();
             } else {
@@ -1143,6 +1150,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             return newImage;
         }
         assert(newImage);
+        assert(newImage->getRoD() == rod);
         imageLock.reset( new OutputImageLocker(_node.get(),newImage) );
 
         if (cached && byPassCache) {

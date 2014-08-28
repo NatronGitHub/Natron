@@ -1506,7 +1506,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         selectAllNodes(true);
     } else if (key == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
+                isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateUpstream, modifiers, key) ) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if ( !_imp->_selection.nodes.empty() ) {
@@ -1519,7 +1520,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
             }
         }
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectDown, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectDown, modifiers, key) ||
+                isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateDownstream, modifiers, key) ) {
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if ( !_imp->_selection.nodes.empty() ) {
