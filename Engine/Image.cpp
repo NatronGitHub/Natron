@@ -726,10 +726,12 @@ Image::halveRoIForDepth(const RectI & roi,
     assert( getComponents() == output->getComponents() );
 
     int components = getElementsCountForComponents( getComponents() );
+    RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
+    
+#if 0
     srcRoI = srcRoI.roundPowerOfTwoLargestEnclosed(1);
-    RectI dstRoI;
     dstRoI.x1 = srcRoI.x1 / 2;
     dstRoI.y1 = srcRoI.y1 / 2;
     dstRoI.x2 = srcRoI.x2 / 2;
@@ -753,6 +755,12 @@ Image::halveRoIForDepth(const RectI & roi,
     assert(srcRoI.y2 == dstRoI.y2 * 2);
     assert(srcRoI.width() == dstRoI.width() * 2);
     assert(srcRoI.height() == dstRoI.height() * 2);
+#else
+    dstRoI.x1 = std::floor(srcRoI.x1 / 2.);
+    dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
+    dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
+    dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
+#endif
 
     int srcRoIWidth = srcRoI.width();
     //int srcRoIHeight = srcRoI.height();
@@ -775,12 +783,16 @@ Image::halveRoIForDepth(const RectI & roi,
              ++x,
              src += (components + components) - components, // two pixels minus what was done on previous iteration
              dst += (components) - components) { // one pixel minus what was done on previous iteration
+            
+#if 0
             assert(dstBounds.x1 <= dstRoI.x1 + x && dstRoI.x1 + x < dstBounds.x2);
             assert(dstBounds.y1 <= dstRoI.y1 + y && dstRoI.y1 + y < dstBounds.y2);
             assert( dst == (PIX*)output->pixelAt(dstRoI.x1 + x, dstRoI.y1 + y) );
             assert(srcBounds.x1 <= srcRoI.x1 + 2 * x && srcRoI.x1 + 2 * x < srcBounds.x2);
             assert(srcBounds.y1 <= srcRoI.y1 + 2 * y && srcRoI.y1 + 2 * y < srcBounds.y2);
             assert( src == (const PIX*)pixelAt(srcRoI.x1 + 2 * x, srcRoI.y1 + 2 * y) );
+            
+#endif
             for (int k = 0; k < components; ++k, ++dst, ++src) {
                 *dst = PIX( (float)( *src +
                                      *(src + components) +
