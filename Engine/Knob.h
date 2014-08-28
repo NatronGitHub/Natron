@@ -1430,7 +1430,7 @@ private:
 #ifdef DEBUG
 #define NON_RECURSIVE_ACTION() MANAGE_RECURSION(true)
 #else
-#define NON_RECURSIVE_ACTION() ( (void)0 )
+#define NON_RECURSIVE_ACTION() ( (void)0; )
 #endif
 
 /**
@@ -1439,7 +1439,7 @@ private:
 #ifdef DEBUG
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
 #else
-#define RECURSIVE_ACTION() ( (void)0 )
+#define RECURSIVE_ACTION() ( (void)0; )
 #endif
 
 ////Common interface for EffectInstance and backdrops
