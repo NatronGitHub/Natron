@@ -14,13 +14,14 @@
 
 #include "Global/Macros.h"
 
+GCC_DIAG_OFF(unused-local-typedefs) //-Wunused-local-typedefs
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
-
+GCC_DIAG_ON(unused-local-typedefs)
 #include "Engine/FrameParams.h"
 
 using namespace Natron;
