@@ -17,6 +17,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QDialogButtonBox>
+#include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -118,3 +119,12 @@ PreferencesPanel::closeEvent(QCloseEvent*)
     }
 }
 
+void
+PreferencesPanel::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        close();
+    } else {
+        QWidget::keyPressEvent(e);
+    }
+}

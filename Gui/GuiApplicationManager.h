@@ -46,6 +46,7 @@ class KnobGui;
 class KnobSerialization;
 class Curve;
 class BoundAction;
+class QAction;
 
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
@@ -116,7 +117,14 @@ public:
     void restoreDefaultShortcuts();
 
     const std::map<QString,std::map<QString,BoundAction*> > & getAllShortcuts() const;
-
+    
+    /**
+     * @brief Register an action to the shortcut manager indicating it is using a shortcut.
+     * This is used to update the action's shortcut when it gets modified by the user.
+     **/
+    void addShortcutAction(const QString& group,const QString& actionID,QAction* action);
+    void removeShortcutAction(const QString& group,const QString& actionID,QAction* action);
+    
 public slots:
 
 

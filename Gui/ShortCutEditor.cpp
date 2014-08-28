@@ -404,6 +404,12 @@ ShortCutEditor::onResetButtonClicked()
     QTreeWidgetItem* selection = items.front();
     BoundAction* action = _imp->getActionForTreeItem(selection);
     assert(action);
+    action->modifiers = action->defaultModifiers;
+    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
+    if (ka) {
+        ka->currentShortcut = ka->defaultShortcut;
+        ka->updateActionsShortcut();
+    }
     setItemShortCutText(selection, action, true);
     _imp->shortcutEditor->setText( makeItemShortCutText(action, true) );
 }
@@ -468,6 +474,17 @@ ShortCutEditor::onEditorTextEdited(const QString & text)
     extractKeySequence(seq, modifiers, symbol);
     action->modifiers = modifiers;
     ka->currentShortcut = symbol;
+    ka->updateActionsShortcut();
+}
+
+void
+ShortCutEditor::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        close();
+    } else {
+        QWidget::keyPressEvent(e);
+    }
 }
 
 void

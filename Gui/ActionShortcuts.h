@@ -10,9 +10,11 @@
  * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
  **/
 #include <map>
+#include <list>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QString>
+#include <QAction>
 
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
@@ -51,6 +53,12 @@
 #define kShortcutIDActionProjectSettings "projectSettings"
 #define kShortcutDescActionProjectSettings "Show project settings"
 
+#define kShortcutIDActionShowOFXLog "showOFXLog"
+#define kShortcutDescActionShowOFXLog "Show OpenFX log"
+
+#define kShortcutIDActionShowShortcutEditor "showShortcutEditor"
+#define kShortcutDescActionShowShortcutEditor "Show shortcut editor"
+
 #define kShortcutIDActionNewViewer "newViewer"
 #define kShortcutDescActionNewViewer "New viewer"
 
@@ -60,8 +68,20 @@
 #define kShortcutIDActionClearDiskCache "clearDiskCache"
 #define kShortcutDescActionClearDiskCache "Clear disk cache"
 
+#define kShortcutIDActionClearPlaybackCache "clearPlaybackCache"
+#define kShortcutDescActionClearPlaybackCache "Clear playback cache"
+
+#define kShortcutIDActionClearNodeCache "clearNodeCache"
+#define kShortcutDescActionClearNodeCache "Clear per node cache"
+
+#define kShortcutIDActionClearPluginsLoadCache "clearPluginsCache"
+#define kShortcutDescActionClearPluginsLoadCache "Clear plug-ins load cache"
+
 #define kShortcutIDActionClearAllCaches "clearAllCaches"
 #define kShortcutDescActionClearAllCaches "Clear all caches"
+
+#define kShortcutIDActionShowAbout "showAbout"
+#define kShortcutDescActionShowAbout "About"
 
 #define kShortcutIDActionRenderSelected "renderSelect"
 #define kShortcutDescActionRenderSelected "Render selected writers"
@@ -101,6 +121,15 @@
 
 #define kShortcutIDActionShowPaneFullScreen "showPaneFullScreen"
 #define kShortcutDescActionShowPaneFullScreen "Show pane full-screen"
+
+#define kShortcutIDActionImportLayout "importLayout"
+#define kShortcutDescActionImportLayout "Import layout"
+
+#define kShortcutIDActionExportLayout "exportLayout"
+#define kShortcutDescActionExportLayout "Export layout"
+
+#define kShortcutIDActionDefaultLayout "restoreDefaultLayout"
+#define kShortcutDescActionDefaultLayout "Restore default layout"
 
 /////////VIEWER SHORTCUTS
 #define kShortcutIDActionLuminance "luminance"
@@ -371,6 +400,72 @@
 #define kShortcutIDActionCurveEditorPaste "paste"
 #define kShortcutDescActionCurveEditorPaste "Paste keyframes"
 
+inline
+QKeySequence
+makeKeySequence(const Qt::KeyboardModifiers & modifiers,
+                Qt::Key key)
+{
+    int keys = 0;
+    
+    if ( modifiers.testFlag(Qt::ControlModifier) ) {
+        keys |= Qt::CTRL;
+    }
+    if ( modifiers.testFlag(Qt::ShiftModifier) ) {
+        keys |= Qt::SHIFT;
+    }
+    if ( modifiers.testFlag(Qt::AltModifier) ) {
+        keys |= Qt::ALT;
+    }
+    if ( modifiers.testFlag(Qt::MetaModifier) ) {
+        keys |= Qt::META;
+    }
+    if (key != (Qt::Key)0) {
+        keys |= key;
+    }
+    
+    return QKeySequence(keys);
+}
+
+///This is tricky to do, what we do is we try to find the native strings of the modifiers
+///in the sequence native's string. If we find them, we remove them. The last character
+///is then the key symbol, we just have to call seq[0] to retrieve it.
+inline void
+extractKeySequence(const QKeySequence & seq,
+                   Qt::KeyboardModifiers & modifiers,
+                   Qt::Key & symbol)
+{
+    const QString nativeMETAStr = QKeySequence(Qt::META).toString(QKeySequence::NativeText);
+    const QString nativeCTRLStr = QKeySequence(Qt::CTRL).toString(QKeySequence::NativeText);
+    const QString nativeSHIFTStr = QKeySequence(Qt::SHIFT).toString(QKeySequence::NativeText);
+    const QString nativeALTStr = QKeySequence(Qt::ALT).toString(QKeySequence::NativeText);
+    QString nativeSeqStr = seq.toString(QKeySequence::NativeText);
+    
+    if (nativeSeqStr.indexOf(nativeMETAStr) != -1) {
+        modifiers |= Qt::MetaModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeMETAStr);
+    }
+    if (nativeSeqStr.indexOf(nativeCTRLStr) != -1) {
+        modifiers |= Qt::ControlModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeCTRLStr);
+    }
+    if (nativeSeqStr.indexOf(nativeSHIFTStr) != -1) {
+        modifiers |= Qt::ShiftModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeSHIFTStr);
+    }
+    if (nativeSeqStr.indexOf(nativeALTStr) != -1) {
+        modifiers |= Qt::AltModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeALTStr);
+    }
+    
+    ///The nativeSeqStr now contains only the symbol
+    QKeySequence newSeq(nativeSeqStr,QKeySequence::NativeText);
+    if (newSeq.count() > 0) {
+        symbol = (Qt::Key)newSeq[0];
+    } else {
+        symbol = (Qt::Key)0;
+    }
+}
+
 class BoundAction
 {
 public:
@@ -398,7 +493,8 @@ public:
 
     Qt::Key currentShortcut; //< the actual shortcut for the keybind
     Qt::Key defaultShortcut; //< the default shortcut proposed by the dev team
-
+    std::list<QAction*> actions; //< list of actions using this shortcut
+    
     KeyBoundAction()
         : BoundAction()
     {
@@ -406,6 +502,13 @@ public:
 
     virtual ~KeyBoundAction()
     {
+    }
+    
+    void
+    updateActionsShortcut() {
+        for (std::list<QAction*>::iterator it = actions.begin(); it != actions.end(); ++it) {
+            (*it)->setShortcut(makeKeySequence(modifiers, currentShortcut));
+        }
     }
 };
 
@@ -426,69 +529,7 @@ public:
     }
 };
 
-inline
-QKeySequence
-makeKeySequence(const Qt::KeyboardModifiers & modifiers,
-                Qt::Key key)
-{
-    int keys = 0;
 
-    if ( modifiers.testFlag(Qt::ControlModifier) ) {
-        keys |= Qt::CTRL;
-    }
-    if ( modifiers.testFlag(Qt::ShiftModifier) ) {
-        keys |= Qt::SHIFT;
-    }
-    if ( modifiers.testFlag(Qt::AltModifier) ) {
-        keys |= Qt::ALT;
-    }
-    if ( modifiers.testFlag(Qt::MetaModifier) ) {
-        keys |= Qt::META;
-    }
-    keys |= key;
-
-    return QKeySequence(keys);
-}
-
-///This is tricky to do, what we do is we try to find the native strings of the modifiers
-///in the sequence native's string. If we find them, we remove them. The last character
-///is then the key symbol, we just have to call seq[0] to retrieve it.
-inline void
-extractKeySequence(const QKeySequence & seq,
-                   Qt::KeyboardModifiers & modifiers,
-                   Qt::Key & symbol)
-{
-    const QString nativeMETAStr = QKeySequence(Qt::META).toString(QKeySequence::NativeText);
-    const QString nativeCTRLStr = QKeySequence(Qt::CTRL).toString(QKeySequence::NativeText);
-    const QString nativeSHIFTStr = QKeySequence(Qt::SHIFT).toString(QKeySequence::NativeText);
-    const QString nativeALTStr = QKeySequence(Qt::ALT).toString(QKeySequence::NativeText);
-    QString nativeSeqStr = seq.toString(QKeySequence::NativeText);
-
-    if (nativeSeqStr.indexOf(nativeMETAStr) != -1) {
-        modifiers |= Qt::MetaModifier;
-        nativeSeqStr = nativeSeqStr.remove(nativeMETAStr);
-    }
-    if (nativeSeqStr.indexOf(nativeCTRLStr) != -1) {
-        modifiers |= Qt::ControlModifier;
-        nativeSeqStr = nativeSeqStr.remove(nativeCTRLStr);
-    }
-    if (nativeSeqStr.indexOf(nativeSHIFTStr) != -1) {
-        modifiers |= Qt::ShiftModifier;
-        nativeSeqStr = nativeSeqStr.remove(nativeSHIFTStr);
-    }
-    if (nativeSeqStr.indexOf(nativeALTStr) != -1) {
-        modifiers |= Qt::AltModifier;
-        nativeSeqStr = nativeSeqStr.remove(nativeALTStr);
-    }
-
-    ///The nativeSeqStr now contains only the symbol
-    QKeySequence newSeq(nativeSeqStr,QKeySequence::NativeText);
-    if (newSeq.count() > 0) {
-        symbol = (Qt::Key)newSeq[0];
-    } else {
-        symbol = (Qt::Key)0;
-    }
-}
 
 ///All the shortcuts of a group matched against their
 ///internal id to find and match the action in the event handlers

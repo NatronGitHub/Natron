@@ -452,6 +452,8 @@ private:
     void wipeLayout();
 
     void createDefaultLayoutInternal(bool wipePrevious);
+    
+    void createMenuActions();
 
     boost::scoped_ptr<GuiPrivate> _imp;
 };

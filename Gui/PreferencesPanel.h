@@ -55,6 +55,7 @@ private:
 
     virtual void showEvent(QShowEvent* e) OVERRIDE;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
     // FIXME: PIMPL
     Gui* _gui;

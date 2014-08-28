@@ -1115,7 +1115,7 @@ GuiApplicationManager::saveShortcuts() const
             settings.setValue(it2->first + "_Modifiers", (int)it2->second->modifiers);
             if (mAction) {
                 settings.setValue(it2->first + "_Button", (int)mAction->button);
-            } else if (mAction) {
+            } else if (kAction) {
                 settings.setValue(it2->first + "_Symbol", (int)kAction->currentShortcut);
             }
         }
@@ -1175,9 +1175,23 @@ GuiApplicationManager::populateShortcuts()
     registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences);
     registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit);
 
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
+    
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionExportLayout, kShortcutDescActionExportLayout, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionDefaultLayout, kShortcutDescActionDefaultLayout, Qt::NoModifier, (Qt::Key)0);
+    
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, Qt::NoModifier, Qt::Key_S);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowOFXLog, kShortcutDescActionShowOFXLog, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, Qt::NoModifier, (Qt::Key)0);
+    
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, Qt::ControlModifier, Qt::Key_I);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::MetaModifier, Qt::Key_F);
+    
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearDiskCache, kShortcutDescActionClearDiskCache, Qt::NoModifier,(Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPlaybackCache, kShortcutDescActionClearPlaybackCache, Qt::NoModifier,(Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearNodeCache, kShortcutDescActionClearNodeCache, Qt::NoModifier,(Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPluginsLoadCache, kShortcutDescActionClearPluginsLoadCache, Qt::NoModifier,(Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearAllCaches, kShortcutDescActionClearAllCaches, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionRenderSelected, kShortcutDescActionRenderSelected, Qt::NoModifier, Qt::Key_F7);
 
@@ -1366,7 +1380,6 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     extractKeySequence(QKeySequence(key), modifiers, symbol);
     KeyBoundAction* kA = new KeyBoundAction;
     kA->grouping = grouping;
-    kA->editable = false;
     kA->description = description;
     kA->defaultModifiers = modifiers;
     kA->modifiers = modifiers;
@@ -1429,4 +1442,47 @@ const std::map<QString,std::map<QString,BoundAction*> > &
 GuiApplicationManager::getAllShortcuts() const
 {
     return _imp->_actionShortcuts;
+}
+
+void
+GuiApplicationManager::addShortcutAction(const QString& group,
+                  const QString& actionID,
+                  QAction* action)
+{
+    AppShortcuts::iterator foundGroup = _imp->_actionShortcuts.find(group);
+    
+    if ( foundGroup != _imp->_actionShortcuts.end() ) {
+        GroupShortcuts::iterator found = foundGroup->second.find(actionID);
+        if ( found != foundGroup->second.end() ) {
+             KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
+            if (ka) {
+                ka->actions.push_back(action);
+                return ;
+            }
+        }
+    }
+
+}
+
+void
+GuiApplicationManager::removeShortcutAction(const QString& group,
+                     const QString& actionID,
+                     QAction* action)
+{
+    AppShortcuts::iterator foundGroup = _imp->_actionShortcuts.find(group);
+    
+    if ( foundGroup != _imp->_actionShortcuts.end() ) {
+        GroupShortcuts::iterator found = foundGroup->second.find(actionID);
+        if ( found != foundGroup->second.end() ) {
+            KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
+            if (ka) {
+                std::list<QAction*>::iterator foundAction = std::find(ka->actions.begin(),ka->actions.end(),action);
+                if (foundAction != ka->actions.end()) {
+                    ka->actions.erase(foundAction);
+                    return;
+                }
+            }
+        }
+    }
+
 }

@@ -1,5 +1,5 @@
 #ifndef NATRON_GITVERSION_H_
 #define NATRON_GITVERSION_H_
 #define GIT_BRANCH "workshop"
-#define GIT_COMMIT "a2f4d9071510c6ea6f0e390d74e3fe781773c696"
+#define GIT_COMMIT "1c25edbbeeaa11e6ea2a43b821b97ec66579bf40"
 #endif

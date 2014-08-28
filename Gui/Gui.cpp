@@ -157,7 +157,41 @@ getPixmapForGrouping(QPixmap* pixmap,
         appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, pixmap);
     }
 }
+    
+/**
+ * @brief A small class that helps registering an action to a shortcut.
+ * Its shortcut also gets updated when the user modifies it.
+ **/
+class ActionWithShortcut : public QAction
+{
+    QString _group;
+    QString _actionID;
+public:
+    
+    ActionWithShortcut(const QString& group,const QString& actionID,const QString& actionDescription,QObject* parent)
+    : QAction(parent)
+    , _group(group)
+    , _actionID(actionID)
+    {
+        
+        assert (!group.isEmpty() && !actionID.isEmpty()) ;
+        setShortcut(getKeybind(group, actionID));
+        appPTR->addShortcutAction(group, actionID, this);
+        setShortcutContext(Qt::WindowShortcut);
+        setText( QObject::tr(actionDescription.toStdString().c_str()) );
+    }
+    
+    virtual
+    ~ActionWithShortcut()
+    {
+        assert (!_group.isEmpty() && !_actionID.isEmpty()) ;
+        appPTR->removeShortcutAction(_group, _actionID, this);
+        
+    }
+    
+};
 }
+
 
 struct GuiPrivate
 {
@@ -186,40 +220,40 @@ struct GuiPrivate
 
 
     ///all the menu actions
-    QAction *actionNew_project;
-    QAction *actionOpen_project;
-    QAction *actionClose_project;
-    QAction *actionSave_project;
-    QAction *actionSaveAs_project;
-    QAction *actionPreferences;
-    QAction *actionExit;
-    QAction *actionProject_settings;
-    QAction *actionShowOfxLog;
-    QAction *actionShortcutEditor;
-    QAction *actionNewViewer;
-    QAction *actionFullScreen;
-    QAction *actionClearDiskCache;
-    QAction *actionClearPlayBackCache;
-    QAction *actionClearNodeCache;
-    QAction *actionClearPluginsLoadingCache;
-    QAction *actionClearAllCaches;
-    QAction *actionShowAboutWindow;
+    ActionWithShortcut *actionNew_project;
+    ActionWithShortcut *actionOpen_project;
+    ActionWithShortcut *actionClose_project;
+    ActionWithShortcut *actionSave_project;
+    ActionWithShortcut *actionSaveAs_project;
+    ActionWithShortcut *actionPreferences;
+    ActionWithShortcut *actionExit;
+    ActionWithShortcut *actionProject_settings;
+    ActionWithShortcut *actionShowOfxLog;
+    ActionWithShortcut *actionShortcutEditor;
+    ActionWithShortcut *actionNewViewer;
+    ActionWithShortcut *actionFullScreen;
+    ActionWithShortcut *actionClearDiskCache;
+    ActionWithShortcut *actionClearPlayBackCache;
+    ActionWithShortcut *actionClearNodeCache;
+    ActionWithShortcut *actionClearPluginsLoadingCache;
+    ActionWithShortcut *actionClearAllCaches;
+    ActionWithShortcut *actionShowAboutWindow;
     QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
-    QAction *renderAllWriters;
-    QAction *renderSelectedNode;
-    QAction* actionConnectInput1;
-    QAction* actionConnectInput2;
-    QAction* actionConnectInput3;
-    QAction* actionConnectInput4;
-    QAction* actionConnectInput5;
-    QAction* actionConnectInput6;
-    QAction* actionConnectInput7;
-    QAction* actionConnectInput8;
-    QAction* actionConnectInput9;
-    QAction* actionConnectInput10;
-    QAction* actionImportLayout;
-    QAction* actionExportLayout;
-    QAction* actionRestoreDefaultLayout;
+    ActionWithShortcut *renderAllWriters;
+    ActionWithShortcut *renderSelectedNode;
+    ActionWithShortcut* actionConnectInput1;
+    ActionWithShortcut* actionConnectInput2;
+    ActionWithShortcut* actionConnectInput3;
+    ActionWithShortcut* actionConnectInput4;
+    ActionWithShortcut* actionConnectInput5;
+    ActionWithShortcut* actionConnectInput6;
+    ActionWithShortcut* actionConnectInput7;
+    ActionWithShortcut* actionConnectInput8;
+    ActionWithShortcut* actionConnectInput9;
+    ActionWithShortcut* actionConnectInput10;
+    ActionWithShortcut* actionImportLayout;
+    ActionWithShortcut* actionExportLayout;
+    ActionWithShortcut* actionRestoreDefaultLayout;
 
     ///the main "central" widget
     QWidget *_centralWidget;
@@ -431,8 +465,6 @@ struct GuiPrivate
     void saveGuiGeometry();
 
     void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
-
-    void retranslateUi(QMainWindow *MainWindow);
 
     void addToolButton(ToolButton* tool);
 
@@ -653,286 +685,221 @@ Gui::eventFilter(QObject *target,
 }
 
 void
-GuiPrivate::retranslateUi(QMainWindow *MainWindow)
+Gui::createMenuActions()
 {
-    Q_UNUSED(MainWindow);
-    _gui->setWindowTitle( QCoreApplication::applicationName() );
-    assert(actionNew_project);
-    actionNew_project->setText( QObject::tr("&New Project") );
-    assert(actionOpen_project);
-    actionOpen_project->setText( QObject::tr("&Open Project...") );
-    assert(actionClose_project);
-    actionClose_project->setText( QObject::tr("Close Project") );
-    assert(actionSave_project);
-    actionSave_project->setText( QObject::tr("&Save Project") );
-    assert(actionSaveAs_project);
-    actionSaveAs_project->setText( QObject::tr("Save Project As...") );
-    assert(actionPreferences);
-    actionPreferences->setText( QObject::tr("Preferences") );
-    assert(actionExit);
-    actionExit->setText( QObject::tr("E&xit") );
-    assert(actionProject_settings);
-    actionProject_settings->setText( QObject::tr("Project Settings...") );
-    assert(actionShowOfxLog);
-    actionShowOfxLog->setText( QObject::tr("Show OpenFX log") );
-    assert(actionShortcutEditor);
-    actionShortcutEditor->setText( QObject::tr("Edit/View shortcuts...") );
-    assert(actionNewViewer);
-    actionNewViewer->setText( QObject::tr("New Viewer") );
-    assert(actionFullScreen);
-    actionFullScreen->setText( QObject::tr("Toggle Full Screen") );
-    assert(actionClearDiskCache);
-    actionClearDiskCache->setText( QObject::tr("Clear Playback Disk Cache") );
-    assert(actionClearPlayBackCache);
-    actionClearPlayBackCache->setText( QObject::tr("Clear Playback Memory Cache") );
-    assert(actionClearNodeCache);
-    actionClearNodeCache->setText( QObject::tr("Clear Per-Node Memory Cache") );
-    assert(actionClearAllCaches);
-    actionClearAllCaches->setText( QObject::tr("Clear All Memory and Disk Caches") );
-    assert(actionClearPluginsLoadingCache);
-    actionClearPluginsLoadingCache->setText( QObject::tr("Clear OpenFX Plugin Cache") );
-    assert(actionShowAboutWindow);
-    actionShowAboutWindow->setText( QObject::tr("About") );
-    assert(renderAllWriters);
-    renderAllWriters->setText( QObject::tr("Render all writers") );
-    assert(renderSelectedNode);
-    renderSelectedNode->setText( QObject::tr("Render selected node") );
-
-    assert(actionConnectInput1);
-    actionConnectInput1->setText( QObject::tr("Connect to input 1") );
-    assert(actionConnectInput2);
-    actionConnectInput2->setText( QObject::tr("Connect to input 2") );
-    assert(actionConnectInput3);
-    actionConnectInput3->setText( QObject::tr("Connect to input 3") );
-    assert(actionConnectInput4);
-    actionConnectInput4->setText( QObject::tr("Connect to input 4") );
-    assert(actionConnectInput5);
-    actionConnectInput5->setText( QObject::tr("Connect to input 5") );
-    assert(actionConnectInput6);
-    actionConnectInput6->setText( QObject::tr("Connect to input 6") );
-    assert(actionConnectInput7);
-    actionConnectInput7->setText( QObject::tr("Connect to input 7") );
-    assert(actionConnectInput8);
-    actionConnectInput8->setText( QObject::tr("Connect to input 8") );
-    assert(actionConnectInput9);
-    actionConnectInput9->setText( QObject::tr("Connect to input 9") );
-    assert(actionConnectInput10);
-    actionConnectInput10->setText( QObject::tr("Connect to input 10") );
-    assert(actionImportLayout);
-    actionImportLayout->setText( QObject::tr("Import layout...") );
-    assert(actionExportLayout);
-    actionExportLayout->setText( QObject::tr("Export layout...") );
-    assert(actionRestoreDefaultLayout);
-    actionRestoreDefaultLayout->setText( QObject::tr("Restore default layout") );
-
-    assert(menuFile);
-    menuFile->setTitle( QObject::tr("File") );
-    assert(menuRecentFiles);
-    menuRecentFiles->setTitle( QObject::tr("Open recent") );
-    assert(menuEdit);
-    menuEdit->setTitle( QObject::tr("Edit") );
-    assert(menuLayout);
-    menuLayout->setTitle( QObject::tr("Layout") );
-    assert(menuDisplay);
-    menuDisplay->setTitle( QObject::tr("Display") );
-    assert(menuOptions);
-    menuOptions->setTitle( QObject::tr("Options") );
-    assert(menuRender);
-    menuRender->setTitle( QObject::tr("Render") );
-    assert(viewersMenu);
-    viewersMenu->setTitle( QObject::tr("Viewer(s)") );
-    assert(cacheMenu);
-    cacheMenu->setTitle( QObject::tr("Cache") );
-    assert(viewerInputsMenu);
-    viewerInputsMenu->setTitle( QObject::tr("Connect Current Viewer") );
-    assert(viewersViewMenu);
-    viewersViewMenu->setTitle( QObject::tr("Display view number") );
-} // retranslateUi
-
-void
-Gui::setupUi()
-{
-    setMouseTracking(true);
-    installEventFilter(this);
-    assert( !isFullScreen() );
-
-    assert( !isDockNestingEnabled() ); // should be false by default
-
-    loadStyleSheet();
-
-    _imp->restoreGuiGeometry();
-
-
-    _imp->_undoStacksGroup = new QUndoGroup;
-    QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
-
-    /*TOOL BAR menus*/
-    //======================
     _imp->menubar = new QMenuBar(this);
-    _imp->menuFile = new QMenu(_imp->menubar);
-    _imp->menuRecentFiles = new QMenu(_imp->menuFile);
-    _imp->menuEdit = new QMenu(_imp->menubar);
-    _imp->menuLayout = new QMenu(_imp->menubar);
-    _imp->menuDisplay = new QMenu(_imp->menubar);
-    _imp->menuOptions = new QMenu(_imp->menubar);
-    _imp->menuRender = new QMenu(_imp->menubar);
-    _imp->viewersMenu = new QMenu(_imp->menuDisplay);
-    _imp->viewerInputsMenu = new QMenu(_imp->viewersMenu);
-    _imp->viewersViewMenu = new QMenu(_imp->viewersMenu);
-    _imp->cacheMenu = new QMenu(_imp->menubar);
-
     setMenuBar(_imp->menubar);
-
-    _imp->actionNew_project = new QAction(this);
-    _imp->actionNew_project->setObjectName( QString::fromUtf8("actionNew_project") );
-    _imp->actionNew_project->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionNewProject) );
+    
+    _imp->menuFile = new QMenu(QObject::tr("File"),_imp->menubar);
+    _imp->menuRecentFiles = new QMenu(QObject::tr("Open recent"),_imp->menuFile);
+    _imp->menuEdit = new QMenu(QObject::tr("Edit"),_imp->menubar);
+    _imp->menuLayout = new QMenu(QObject::tr("Layout"),_imp->menubar);
+    _imp->menuDisplay = new QMenu(QObject::tr("Display"),_imp->menubar);
+    _imp->menuOptions = new QMenu(QObject::tr("Options"),_imp->menubar);
+    _imp->menuRender = new QMenu(QObject::tr("Render"),_imp->menubar);
+    _imp->viewersMenu = new QMenu(QObject::tr("Viewer(s)"),_imp->menuDisplay);
+    _imp->viewerInputsMenu = new QMenu(QObject::tr("Connect Current Viewer"),_imp->viewersMenu);
+    _imp->viewersViewMenu = new QMenu(QObject::tr("Display view number"),_imp->viewersMenu);
+    _imp->cacheMenu = new QMenu(QObject::tr("Cache"),_imp->menubar);
+    
+    
+    _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionNewProject,kShortcutDescActionNewProject,this);
     _imp->actionNew_project->setIcon( get_icon("document-new") );
-    _imp->actionNew_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect( _imp->actionNew_project, SIGNAL( triggered() ), this, SLOT( newProject() ) );
-    _imp->actionOpen_project = new QAction(this);
-    _imp->actionOpen_project->setObjectName( QString::fromUtf8("actionOpen_project") );
-    _imp->actionOpen_project->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionOpenProject) );
+    
+    _imp->actionOpen_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionOpenProject,kShortcutDescActionOpenProject,this);
     _imp->actionOpen_project->setIcon( get_icon("document-open") );
-    _imp->actionOpen_project->setShortcutContext(Qt::WindowShortcut);
     QObject::connect( _imp->actionOpen_project, SIGNAL( triggered() ), this, SLOT( openProject() ) );
-    _imp->actionClose_project = new QAction(this);
-    _imp->actionClose_project->setObjectName( QString::fromUtf8("actionClose_project") );
-    _imp->actionClose_project->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionCloseProject) );
-    _imp->actionClose_project->setShortcutContext(Qt::WindowShortcut);
+    
+    _imp->actionClose_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionCloseProject,kShortcutDescActionCloseProject,this);
     _imp->actionClose_project->setIcon( get_icon("document-close") );
     QObject::connect( _imp->actionClose_project, SIGNAL( triggered() ), this, SLOT( closeProject() ) );
-    _imp->actionSave_project = new QAction(this);
-    _imp->actionSave_project->setObjectName( QString::fromUtf8("actionSave_project") );
-    _imp->actionSave_project->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionSaveProject) );
-    _imp->actionSave_project->setShortcutContext(Qt::WindowShortcut);
+    
+    _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveProject,kShortcutDescActionSaveProject,this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL( triggered() ), this, SLOT( saveProject() ) );
-    _imp->actionSaveAs_project = new QAction(this);
-    _imp->actionSaveAs_project->setObjectName( QString::fromUtf8("actionSaveAs_project") );
-    _imp->actionSaveAs_project->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionSaveAsProject) );
+    
+    _imp->actionSaveAs_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveAsProject,kShortcutDescActionSaveAsProject,this);
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL( triggered() ), this, SLOT( saveProjectAs() ) );
-    _imp->actionPreferences = new QAction(this);
-    _imp->actionPreferences->setObjectName( QString::fromUtf8("actionPreferences") );
+    
+    _imp->actionPreferences = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionPreferences,kShortcutDescActionPreferences,this);
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
-    _imp->actionPreferences->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionPreferences) );
-    _imp->actionExit = new QAction(this);
-    _imp->actionExit->setObjectName( QString::fromUtf8("actionExit") );
+    QObject::connect( _imp->actionPreferences,SIGNAL( triggered() ),this,SLOT( showSettings() ) );
+    
+    _imp->actionExit = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionQuit,kShortcutDescActionQuit,this);
     _imp->actionExit->setMenuRole(QAction::QuitRole);
-    _imp->actionExit->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionQuit) );
-    _imp->actionExit->setShortcutContext(Qt::WindowShortcut);
     _imp->actionExit->setIcon( get_icon("application-exit") );
-    _imp->actionProject_settings = new QAction(this);
-    _imp->actionProject_settings->setObjectName( QString::fromUtf8("actionProject_settings") );
+    QObject::connect( _imp->actionExit,SIGNAL( triggered() ),appPTR,SLOT( exitApp() ) );
+    
+    _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionProjectSettings,kShortcutDescActionProjectSettings,this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
-    _imp->actionProject_settings->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionProjectSettings) );
-    _imp->actionShowOfxLog = new QAction(this);
-    _imp->actionShowOfxLog->setObjectName( QString::fromUtf8("actionShowOfxLog") );
-    _imp->actionShortcutEditor = new QAction(this);
-    _imp->actionNewViewer = new QAction(this);
-    _imp->actionNewViewer->setObjectName( QString::fromUtf8("actionNewViewer") );
-    _imp->actionNewViewer->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionNewViewer) );
-    _imp->actionNewViewer->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionFullScreen = new QAction(this);
-    _imp->actionFullScreen->setObjectName( QString::fromUtf8("actionFullScreen") );
-    _imp->actionFullScreen->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionFullscreen) );
-    _imp->actionFullScreen->setShortcutContext(Qt::WindowShortcut);
+    QObject::connect( _imp->actionProject_settings,SIGNAL( triggered() ),this,SLOT( setVisibleProjectSettingsPanel() ) );
+    
+    _imp->actionShowOfxLog = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionShowOFXLog,kShortcutDescActionShowOFXLog,this);
+    QObject::connect( _imp->actionShowOfxLog,SIGNAL( triggered() ),this,SLOT( showOfxLog() ) );
+    
+    _imp->actionShortcutEditor = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionShowShortcutEditor,kShortcutDescActionShowShortcutEditor,this);
+    QObject::connect( _imp->actionShortcutEditor,SIGNAL( triggered() ),this,SLOT( showShortcutEditor() ) );
+    
+    _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionNewViewer,kShortcutDescActionNewViewer,this);
+    QObject::connect( _imp->actionNewViewer,SIGNAL( triggered() ),this,SLOT( createNewViewer() ) );
+    
+    _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionFullscreen,kShortcutDescActionFullscreen,this);
     _imp->actionFullScreen->setIcon( get_icon("view-fullscreen") );
-    _imp->actionClearDiskCache = new QAction(this);
-    _imp->actionClearDiskCache->setObjectName( QString::fromUtf8("actionClearDiskCache") );
-    _imp->actionClearDiskCache->setCheckable(false);
-    _imp->actionClearPlayBackCache = new QAction(this);
-    _imp->actionClearPlayBackCache->setObjectName( QString::fromUtf8("actionClearPlayBackCache") );
-    _imp->actionClearPlayBackCache->setCheckable(false);
-    _imp->actionClearNodeCache = new QAction(this);
-    _imp->actionClearNodeCache->setObjectName( QString::fromUtf8("actionClearNodeCache") );
-    _imp->actionClearNodeCache->setCheckable(false);
-    _imp->actionClearPluginsLoadingCache = new QAction(this);
-    _imp->actionClearPluginsLoadingCache->setObjectName( QString::fromUtf8("actionClearPluginsLoadedCache") );
-    _imp->actionClearPluginsLoadingCache->setCheckable(false);
-    _imp->actionClearAllCaches = new QAction(this);
-    _imp->actionClearAllCaches->setObjectName( QString::fromUtf8("actionClearAllCaches") );
-    _imp->actionClearAllCaches->setCheckable(false);
-    _imp->actionClearAllCaches->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionClearAllCaches) );
-    _imp->actionShowAboutWindow = new QAction(this);
-    _imp->actionShowAboutWindow->setObjectName( QString::fromUtf8("actionShowAboutWindow") );
+    QObject::connect( _imp->actionFullScreen, SIGNAL( triggered() ),this,SLOT( toggleFullScreen() ) );
+    
+    _imp->actionClearDiskCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearDiskCache,kShortcutDescActionClearDiskCache,this);
+    QObject::connect( _imp->actionClearDiskCache, SIGNAL( triggered() ),appPTR,SLOT( clearDiskCache() ) );
+    
+    _imp->actionClearPlayBackCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearPlaybackCache,kShortcutDescActionClearPlaybackCache,this);
+    QObject::connect( _imp->actionClearPlayBackCache, SIGNAL( triggered() ),appPTR,SLOT( clearPlaybackCache() ) );
+    
+    _imp->actionClearNodeCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearNodeCache,kShortcutDescActionClearNodeCache,this);
+    QObject::connect( _imp->actionClearNodeCache, SIGNAL( triggered() ),appPTR,SLOT( clearNodeCache() ) );
+    QObject::connect( _imp->actionClearNodeCache, SIGNAL( triggered() ),_imp->_appInstance,SLOT( clearOpenFXPluginsCaches() ) );
+    
+    _imp->actionClearPluginsLoadingCache = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearPluginsLoadCache,kShortcutDescActionClearPluginsLoadCache,this);
+    QObject::connect( _imp->actionClearPluginsLoadingCache, SIGNAL( triggered() ),appPTR,SLOT( clearPluginsLoadedCache() ) );
+    
+    _imp->actionClearAllCaches = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionClearAllCaches,kShortcutDescActionClearAllCaches,this);
+    QObject::connect( _imp->actionClearAllCaches, SIGNAL( triggered() ),appPTR,SLOT( clearAllCaches() ) );
+    
+    _imp->actionShowAboutWindow = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionShowAbout,kShortcutDescActionShowAbout,this);
     _imp->actionShowAboutWindow->setMenuRole(QAction::AboutRole);
-    _imp->actionShowAboutWindow->setCheckable(false);
-
-    _imp->renderAllWriters = new QAction(this);
-    _imp->renderAllWriters->setCheckable(false);
-    _imp->renderAllWriters->setShortcutContext(Qt::WindowShortcut);
-    _imp->renderAllWriters->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionRenderAll) );
-    _imp->renderSelectedNode = new QAction(this);
-    _imp->renderSelectedNode->setCheckable(false);
-    _imp->renderSelectedNode->setShortcutContext(Qt::WindowShortcut);
-    _imp->renderSelectedNode->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionRenderSelected) );
-
+    QObject::connect( _imp->actionShowAboutWindow,SIGNAL( triggered() ),this,SLOT( showAbout() ) );
+    
+    _imp->renderAllWriters = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionRenderAll,kShortcutDescActionRenderAll,this);
+    QObject::connect( _imp->renderAllWriters,SIGNAL( triggered() ),this,SLOT( renderAllWriters() ) );
+    
+    _imp->renderSelectedNode = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionRenderSelected,kShortcutDescActionRenderSelected,this);
+    QObject::connect( _imp->renderSelectedNode,SIGNAL( triggered() ),this,SLOT( renderSelectedNode() ) );
+    
+    
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         _imp->actionsOpenRecentFile[c] = new QAction(this);
         _imp->actionsOpenRecentFile[c]->setVisible(false);
         connect( _imp->actionsOpenRecentFile[c], SIGNAL( triggered() ),this, SLOT( openRecentFile() ) );
     }
+    
+    _imp->actionConnectInput1 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput1,kShortcutDescActionConnectViewerToInput1,this);
+    QObject::connect( _imp->actionConnectInput1, SIGNAL( triggered() ),this,SLOT( connectInput1() ) );
+    
+    _imp->actionConnectInput2 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput2,kShortcutDescActionConnectViewerToInput2,this);
+    QObject::connect( _imp->actionConnectInput2, SIGNAL( triggered() ),this,SLOT( connectInput2() ) );
+    
+    _imp->actionConnectInput3 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput3,kShortcutDescActionConnectViewerToInput3,this);
+    QObject::connect( _imp->actionConnectInput3, SIGNAL( triggered() ),this,SLOT( connectInput3() ) );
+    
+    _imp->actionConnectInput4 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput4,kShortcutDescActionConnectViewerToInput4,this);
+    QObject::connect( _imp->actionConnectInput4, SIGNAL( triggered() ),this,SLOT( connectInput4() ) );
+    
+    _imp->actionConnectInput5 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput5,kShortcutDescActionConnectViewerToInput5,this);
+    QObject::connect( _imp->actionConnectInput5, SIGNAL( triggered() ),this,SLOT( connectInput5() ) );
+    
+    
+    _imp->actionConnectInput6 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput6,kShortcutDescActionConnectViewerToInput6,this);
+    QObject::connect( _imp->actionConnectInput6, SIGNAL( triggered() ),this,SLOT( connectInput6() ) );
+    
+    _imp->actionConnectInput7 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput7,kShortcutDescActionConnectViewerToInput7,this);
+    QObject::connect( _imp->actionConnectInput7, SIGNAL( triggered() ),this,SLOT( connectInput7() ) );
+    
+    _imp->actionConnectInput8 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput8,kShortcutDescActionConnectViewerToInput8,this);
+    QObject::connect( _imp->actionConnectInput8, SIGNAL( triggered() ),this,SLOT( connectInput8() ) );
+    
+    _imp->actionConnectInput9 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput9,kShortcutDescActionConnectViewerToInput9,this);
+    
+    _imp->actionConnectInput10 = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput10,kShortcutDescActionConnectViewerToInput10,this);
+    QObject::connect( _imp->actionConnectInput9, SIGNAL( triggered() ),this,SLOT( connectInput9() ) );
+    QObject::connect( _imp->actionConnectInput10, SIGNAL( triggered() ),this,SLOT( connectInput10() ) );
+    
+    _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionImportLayout,kShortcutDescActionImportLayout,this);
+    QObject::connect( _imp->actionImportLayout, SIGNAL( triggered() ),this,SLOT( importLayout() ) );
+    
+    _imp->actionExportLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionExportLayout,kShortcutDescActionExportLayout,this);
+    QObject::connect( _imp->actionExportLayout, SIGNAL( triggered() ),this,SLOT( exportLayout() ) );
+    
+    _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionDefaultLayout,kShortcutDescActionDefaultLayout,this);
+    QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL( triggered() ),this,SLOT( restoreDefaultLayout() ) );
+    
+    _imp->menubar->addAction( _imp->menuFile->menuAction() );
+    _imp->menubar->addAction( _imp->menuEdit->menuAction() );
+    _imp->menubar->addAction( _imp->menuLayout->menuAction() );
+    _imp->menubar->addAction( _imp->menuDisplay->menuAction() );
+    _imp->menubar->addAction( _imp->menuOptions->menuAction() );
+    _imp->menubar->addAction( _imp->menuRender->menuAction() );
+    _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
+    _imp->menuFile->addAction(_imp->actionShowAboutWindow);
+    _imp->menuFile->addAction(_imp->actionNew_project);
+    _imp->menuFile->addAction(_imp->actionOpen_project);
+    _imp->menuFile->addAction( _imp->menuRecentFiles->menuAction() );
+    updateRecentFileActions();
+    for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
+        _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
+    }
+    
+    _imp->menuFile->addSeparator();
+    _imp->menuFile->addAction(_imp->actionClose_project);
+    _imp->menuFile->addAction(_imp->actionSave_project);
+    _imp->menuFile->addAction(_imp->actionSaveAs_project);
+    _imp->menuFile->addSeparator();
+    _imp->menuFile->addAction(_imp->actionExit);
+    
+    _imp->menuEdit->addAction(_imp->actionPreferences);
+    
+    _imp->menuLayout->addAction(_imp->actionImportLayout);
+    _imp->menuLayout->addAction(_imp->actionExportLayout);
+    _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
+    
+    _imp->menuOptions->addAction(_imp->actionProject_settings);
+    _imp->menuOptions->addAction(_imp->actionShowOfxLog);
+    _imp->menuOptions->addAction(_imp->actionShortcutEditor);
+    _imp->menuDisplay->addAction(_imp->actionNewViewer);
+    _imp->menuDisplay->addAction( _imp->viewersMenu->menuAction() );
+    _imp->viewersMenu->addAction( _imp->viewerInputsMenu->menuAction() );
+    _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput1);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput2);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput3);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput4);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput5);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput6);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput7);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput8);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput9);
+    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput10);
+    _imp->menuDisplay->addSeparator();
+    _imp->menuDisplay->addAction(_imp->actionFullScreen);
+    
+    _imp->menuRender->addAction(_imp->renderAllWriters);
+    _imp->menuRender->addAction(_imp->renderSelectedNode);
+    
+    _imp->cacheMenu->addAction(_imp->actionClearDiskCache);
+    _imp->cacheMenu->addAction(_imp->actionClearPlayBackCache);
+    _imp->cacheMenu->addAction(_imp->actionClearNodeCache);
+    _imp->cacheMenu->addAction(_imp->actionClearAllCaches);
+    _imp->cacheMenu->addSeparator();
+    _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
+}
 
-    _imp->actionConnectInput1 = new QAction(this);
-    _imp->actionConnectInput1->setCheckable(false);
-    _imp->actionConnectInput1->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput1->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput1) );
+void
+Gui::setupUi()
+{
+    setWindowTitle( QCoreApplication::applicationName() );
+    setMouseTracking(true);
+    installEventFilter(this);
+    assert( !isFullScreen() );
 
-    _imp->actionConnectInput2 = new QAction(this);
-    _imp->actionConnectInput2->setCheckable(false);
-    _imp->actionConnectInput2->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput2->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput2) );
+    loadStyleSheet();
 
-    _imp->actionConnectInput3 = new QAction(this);
-    _imp->actionConnectInput3->setCheckable(false);
-    _imp->actionConnectInput3->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput3->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput3) );
+    ///Restores position, size of the main window as well as whether it was fullscreen or not.
+    _imp->restoreGuiGeometry();
 
-    _imp->actionConnectInput4 = new QAction(this);
-    _imp->actionConnectInput4->setCheckable(false);
-    _imp->actionConnectInput4->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput4->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput4) );
+    _imp->_undoStacksGroup = new QUndoGroup;
+    QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
 
-    _imp->actionConnectInput5 = new QAction(this);
-    _imp->actionConnectInput5->setCheckable(false);
-    _imp->actionConnectInput5->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput5->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput5) );
-
-    _imp->actionConnectInput6 = new QAction(this);
-    _imp->actionConnectInput6->setCheckable(false);
-    _imp->actionConnectInput6->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput6->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput6) );
-
-    _imp->actionConnectInput7 = new QAction(this);
-    _imp->actionConnectInput7->setCheckable(false);
-    _imp->actionConnectInput7->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput7->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput7) );
-
-    _imp->actionConnectInput8 = new QAction(this);
-    _imp->actionConnectInput8->setCheckable(false);
-    _imp->actionConnectInput8->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput8->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput8) );
-
-    _imp->actionConnectInput9 = new QAction(this);
-    _imp->actionConnectInput9->setCheckable(false);
-    _imp->actionConnectInput9->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput9->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput9) );
-
-    _imp->actionConnectInput10 = new QAction(this);
-    _imp->actionConnectInput10->setCheckable(false);
-    _imp->actionConnectInput10->setShortcutContext(Qt::WindowShortcut);
-    _imp->actionConnectInput10->setShortcut( getKeybind(kShortcutGroupGlobal,kShortcutIDActionConnectViewerToInput10) );
-
-    _imp->actionImportLayout = new QAction(this);
-    _imp->actionImportLayout->setCheckable(false);
-
-    _imp->actionExportLayout = new QAction(this);
-    _imp->actionExportLayout->setCheckable(false);
-
-    _imp->actionRestoreDefaultLayout = new QAction(this);
-    _imp->actionRestoreDefaultLayout->setCheckable(false);
-
+    createMenuActions();
+    
     /*CENTRAL AREA*/
     //======================
     _imp->_centralWidget = new QWidget(this);
@@ -981,99 +948,23 @@ Gui::setupUi()
     _imp->shortcutEditor = new ShortCutEditor(this);
     _imp->shortcutEditor->hide();
 
-    _imp->menubar->addAction( _imp->menuFile->menuAction() );
-    _imp->menubar->addAction( _imp->menuEdit->menuAction() );
-    _imp->menubar->addAction( _imp->menuLayout->menuAction() );
-    _imp->menubar->addAction( _imp->menuDisplay->menuAction() );
-    _imp->menubar->addAction( _imp->menuOptions->menuAction() );
-    _imp->menubar->addAction( _imp->menuRender->menuAction() );
-    _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
-    _imp->menuFile->addAction(_imp->actionShowAboutWindow);
-    _imp->menuFile->addAction(_imp->actionNew_project);
-    _imp->menuFile->addAction(_imp->actionOpen_project);
-    _imp->menuFile->addAction( _imp->menuRecentFiles->menuAction() );
-    updateRecentFileActions();
-    for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
-        _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
-    }
-
-    _imp->menuFile->addSeparator();
-    _imp->menuFile->addAction(_imp->actionClose_project);
-    _imp->menuFile->addAction(_imp->actionSave_project);
-    _imp->menuFile->addAction(_imp->actionSaveAs_project);
-    _imp->menuFile->addSeparator();
-    _imp->menuFile->addAction(_imp->actionExit);
-
-    _imp->menuEdit->addAction(_imp->actionPreferences);
-
-    _imp->menuLayout->addAction(_imp->actionImportLayout);
-    _imp->menuLayout->addAction(_imp->actionExportLayout);
-    _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
-
-    _imp->menuOptions->addAction(_imp->actionProject_settings);
-    _imp->menuOptions->addAction(_imp->actionShowOfxLog);
-    _imp->menuOptions->addAction(_imp->actionShortcutEditor);
-    _imp->menuDisplay->addAction(_imp->actionNewViewer);
-    _imp->menuDisplay->addAction( _imp->viewersMenu->menuAction() );
-    _imp->viewersMenu->addAction( _imp->viewerInputsMenu->menuAction() );
-    _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput1);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput2);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput3);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput4);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput5);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput6);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput7);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput8);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput9);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput10);
-    _imp->menuDisplay->addSeparator();
-    _imp->menuDisplay->addAction(_imp->actionFullScreen);
-
-    _imp->menuRender->addAction(_imp->renderAllWriters);
-    _imp->menuRender->addAction(_imp->renderSelectedNode);
-
-    _imp->cacheMenu->addAction(_imp->actionClearDiskCache);
-    _imp->cacheMenu->addAction(_imp->actionClearPlayBackCache);
-    _imp->cacheMenu->addAction(_imp->actionClearNodeCache);
-    _imp->cacheMenu->addAction(_imp->actionClearAllCaches);
-    _imp->cacheMenu->addSeparator();
-    _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
-    _imp->retranslateUi(this);
-
-    QObject::connect( _imp->renderAllWriters,SIGNAL( triggered() ),this,SLOT( renderAllWriters() ) );
-    QObject::connect( _imp->renderSelectedNode,SIGNAL( triggered() ),this,SLOT( renderSelectedNode() ) );
-    QObject::connect( _imp->actionShowAboutWindow,SIGNAL( triggered() ),this,SLOT( showAbout() ) );
-    QObject::connect( _imp->actionNewViewer,SIGNAL( triggered() ),this,SLOT( createNewViewer() ) );
-    QObject::connect( _imp->actionFullScreen, SIGNAL( triggered() ),this,SLOT( toggleFullScreen() ) );
-    QObject::connect( _imp->actionClearDiskCache, SIGNAL( triggered() ),appPTR,SLOT( clearDiskCache() ) );
-    QObject::connect( _imp->actionClearPlayBackCache, SIGNAL( triggered() ),appPTR,SLOT( clearPlaybackCache() ) );
-    QObject::connect( _imp->actionClearNodeCache, SIGNAL( triggered() ),appPTR,SLOT( clearNodeCache() ) );
-    QObject::connect( _imp->actionClearPluginsLoadingCache, SIGNAL( triggered() ),appPTR,SLOT( clearPluginsLoadedCache() ) );
-    QObject::connect( _imp->actionClearAllCaches, SIGNAL( triggered() ),appPTR,SLOT( clearAllCaches() ) );
-
-
+    
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
-    QObject::connect( _imp->actionClearNodeCache, SIGNAL( triggered() ),_imp->_appInstance,SLOT( clearOpenFXPluginsCaches() ) );
-    QObject::connect( _imp->actionExit,SIGNAL( triggered() ),appPTR,SLOT( exitApp() ) );
-    QObject::connect( _imp->actionProject_settings,SIGNAL( triggered() ),this,SLOT( setVisibleProjectSettingsPanel() ) );
-    QObject::connect( _imp->actionShowOfxLog,SIGNAL( triggered() ),this,SLOT( showOfxLog() ) );
-    QObject::connect( _imp->actionShortcutEditor,SIGNAL( triggered() ),this,SLOT( showShortcutEditor() ) );
-    QObject::connect( _imp->actionConnectInput1, SIGNAL( triggered() ),this,SLOT( connectInput1() ) );
-    QObject::connect( _imp->actionConnectInput2, SIGNAL( triggered() ),this,SLOT( connectInput2() ) );
-    QObject::connect( _imp->actionConnectInput3, SIGNAL( triggered() ),this,SLOT( connectInput3() ) );
-    QObject::connect( _imp->actionConnectInput4, SIGNAL( triggered() ),this,SLOT( connectInput4() ) );
-    QObject::connect( _imp->actionConnectInput5, SIGNAL( triggered() ),this,SLOT( connectInput5() ) );
-    QObject::connect( _imp->actionConnectInput6, SIGNAL( triggered() ),this,SLOT( connectInput6() ) );
-    QObject::connect( _imp->actionConnectInput7, SIGNAL( triggered() ),this,SLOT( connectInput7() ) );
-    QObject::connect( _imp->actionConnectInput8, SIGNAL( triggered() ),this,SLOT( connectInput8() ) );
-    QObject::connect( _imp->actionConnectInput9, SIGNAL( triggered() ),this,SLOT( connectInput9() ) );
-    QObject::connect( _imp->actionConnectInput10, SIGNAL( triggered() ),this,SLOT( connectInput10() ) );
-    QObject::connect( _imp->actionImportLayout, SIGNAL( triggered() ),this,SLOT( importLayout() ) );
-    QObject::connect( _imp->actionExportLayout, SIGNAL( triggered() ),this,SLOT( exportLayout() ) );
-    QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL( triggered() ),this,SLOT( restoreDefaultLayout() ) );
-    QObject::connect( _imp->actionPreferences,SIGNAL( triggered() ),this,SLOT( showSettings() ) );
     QObject::connect( _imp->_appInstance->getProject().get(),SIGNAL( projectNameChanged(QString) ),this,SLOT( onProjectNameChanged(QString) ) );
+    
+    
+    /*Searches recursively for all child objects of the given object,
+     and connects matching signals from them to slots of object that follow the following form:
+     
+        void on_<object name>_<signal name>(<signal parameters>);
+     
+    Let's assume our object has a child object of type QPushButton with the object name button1.
+     The slot to catch the button's clicked() signal would be:
+     
+    void on_button1_clicked();
+     
+    If object itself has a properly set object name, its own signals are also connected to its respective slots.
+    */
     QMetaObject::connectSlotsByName(this);
 } // setupUi
 
