@@ -281,7 +281,6 @@ boost::shared_ptr<Node> GuiAppInstance::getNode(const boost::shared_ptr<NodeGui>
 void
 GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
 {
-    assert( !n->getNode()->isActivated() );
     if ( !isClosing() ) {
         getProject()->removeNodeFromProject( n->getNode() );
     }

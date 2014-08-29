@@ -475,7 +475,7 @@ NodeGraph::~NodeGraph()
     QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 
-    onProjectNodesCleared();
+    //onProjectNodesCleared();
 }
 
 void
@@ -512,11 +512,13 @@ void
 NodeGraph::onProjectNodesCleared()
 {
     _imp->_selection.nodes.clear();
+    std::list<boost::shared_ptr<NodeGui> > nodesCpy;
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        while ( !_imp->_nodes.empty() ) {
-            deleteNodePermanantly( *_imp->_nodes.begin() );
-        }
+        nodesCpy = _imp->_nodes;
+    }
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin() ; it != nodesCpy.end() ; ++it) {
+        deleteNodePermanantly( *it );
     }
 
     while ( !_imp->_nodesTrash.empty() ) {
@@ -2912,6 +2914,9 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 void
 NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 {
+    boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+    assert(internalNode);
+    internalNode->deactivate(std::list< boost::shared_ptr<Natron::Node> >(),false,false,true,false);
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
     if ( it != _imp->_nodesTrash.end() ) {
@@ -2926,8 +2931,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
         }
     }
 
-    boost::shared_ptr<Natron::Node> internalNode = n->getNode();
-    assert(internalNode);
+    
     n->deleteReferences();
 
     if ( getGui() ) {
