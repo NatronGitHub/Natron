@@ -1375,7 +1375,11 @@ struct TrackerPanelPrivate
     Button* exportButton;
     boost::shared_ptr<Page_Knob> transformPage;
     boost::shared_ptr<Int_Knob> referenceFrame;
-
+    
+    //Not protected because it is all handled in the main-thread.
+    //Set to true when the user presses the stop button.
+    bool abortTrackingRequested;
+    
     TrackerPanelPrivate(TrackerPanel* publicInterface)
         : publicInterface(publicInterface)
           , averageTracksButton(0)
@@ -1386,6 +1390,7 @@ struct TrackerPanelPrivate
           , exportButton(NULL)
           , transformPage()
           , referenceFrame()
+          , abortTrackingRequested(false)
     {
     }
 
@@ -1665,10 +1670,12 @@ TrackerPanel::trackBackward()
     while (cur > end) {
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
-        if ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
-                                                    ( (double)(start - cur) / (double)(start - end) ) ) ) {
+        if ( ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
+                                                    ( (double)(start - cur) / (double)(start - end) ) ) ) ||
+            _imp->abortTrackingRequested ) {
+            
             setKnobsFrozen(false);
-
+            _imp->abortTrackingRequested = false;
             return true;
         }
         --cur;
@@ -1717,10 +1724,12 @@ TrackerPanel::trackForward()
     while (cur < end) {
         handleTrackNextAndPrevious(instanceButtons,cur);
         QCoreApplication::processEvents();
-        if ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
-                                                    ( (double)(cur - start) / (double)(end - start) ) ) ) {
+        if ( ( getGui() && !getGui()->progressUpdate( selectedInstances.front()->getLiveInstance(),
+                                                    ( (double)(cur - start) / (double)(end - start) ) ) ) ||
+            _imp->abortTrackingRequested ) {
+            
             setKnobsFrozen(false);
-
+            _imp->abortTrackingRequested = false;
             return true;
         }
         ++cur;
@@ -1730,6 +1739,12 @@ TrackerPanel::trackForward()
 
     return true;
 } // trackForward
+
+void
+TrackerPanel::stopTracking()
+{
+    _imp->abortTrackingRequested = true;
+}
 
 bool
 TrackerPanel::trackPrevious()

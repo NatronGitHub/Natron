@@ -277,8 +277,10 @@
 #define kShortcutDescActionTrackingPrevious "Track to previous frame"
 
 #define kShortcutIDActionTrackingNext "next"
-#define kShortcutDescActionTrackingnext "Track to next frame"
+#define kShortcutDescActionTrackingNext "Track to next frame"
 
+#define kShortcutIDActionTrackingStop "stop"
+#define kShortcutDescActionTrackingStop "Stop tracking"
 
 ///////////NODEGRAPH SHORTCUTS
 #define kShortcutIDActionGraphCreateReader "createReader"

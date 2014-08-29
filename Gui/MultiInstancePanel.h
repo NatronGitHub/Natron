@@ -146,6 +146,7 @@ public:
     bool trackForward();
     bool trackPrevious();
     bool trackNext();
+    void stopTracking();
 
     void clearAllAnimationForSelection();
 

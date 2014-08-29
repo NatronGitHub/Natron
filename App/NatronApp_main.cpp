@@ -27,6 +27,8 @@ int
 main(int argc,
      char *argv[])
 {
+    
+    /* Windows is not affected by this issue due to the way it handles opened files in memory. */
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
        Avoid 'Too many open files' on Unix.

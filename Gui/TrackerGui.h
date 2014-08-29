@@ -68,6 +68,8 @@ public slots:
 
     void onTrackPrevClicked();
 
+    void onStopButtonClicked();
+    
     void onTrackNextClicked();
 
     void onTrackFwClicked();

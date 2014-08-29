@@ -44,6 +44,7 @@ struct TrackerGuiPrivate
     Button* addTrackButton;
     Button* trackBwButton;
     Button* trackPrevButton;
+    Button* stopTrackingButton;
     Button* trackNextButton;
     Button* trackFwButton;
     Button* clearAllAnimationButton;
@@ -65,6 +66,7 @@ struct TrackerGuiPrivate
           , addTrackButton(NULL)
           , trackBwButton(NULL)
           , trackPrevButton(NULL)
+          , stopTrackingButton(NULL)
           , trackNextButton(NULL)
           , trackFwButton(NULL)
           , clearAllAnimationButton(NULL)
@@ -102,7 +104,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
                                                                    ,Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     _imp->buttonsLayout->addWidget(_imp->addTrackButton);
     QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
-    QPixmap pixBw,pixPrev,pixNext,pixFw,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled;
+    QPixmap pixBw,pixPrev,pixNext,pixFw,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND, &pixBw);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
@@ -112,7 +114,8 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
     appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_ENABLED, &pixUpdateViewerEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_UPDATE_VIEWER_DISABLED, &pixUpdateViewerDisabled);
-
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
+    
     _imp->trackBwButton = new Button(QIcon(pixBw),"",_imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackBwButton->setToolTip(tr("Track selected tracks backward until left bound of the timeline.") +
@@ -127,6 +130,13 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     QObject::connect( _imp->trackPrevButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackPrevClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->trackPrevButton);
 
+    _imp->stopTrackingButton = new Button(QIcon(pixStop),"",_imp->buttonsBar);
+    _imp->stopTrackingButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->stopTrackingButton->setToolTip(tr("Stop the ongoing tracking if any")  +
+                                         "<p><b>" + tr("Keyboard shortcut") + ": Escape</b></p>");
+    QObject::connect( _imp->stopTrackingButton,SIGNAL( clicked(bool) ),this,SLOT( onStopButtonClicked() ) );
+    _imp->buttonsLayout->addWidget(_imp->stopTrackingButton);
+    
     _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
     _imp->trackNextButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->trackNextButton->setToolTip(tr("Track selected tracks on the next frame.") +
@@ -485,6 +495,8 @@ TrackerGui::keyDown(double scaleX,
         didSomething = _imp->panel->trackNext();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, modifiers, key) ) {
         didSomething = _imp->panel->trackForward();
+    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, modifiers, key) ) {
+        _imp->panel->stopTracking();
     }
 
     return didSomething;
@@ -593,6 +605,12 @@ void
 TrackerGui::onTrackPrevClicked()
 {
     _imp->panel->trackPrevious();
+}
+
+void
+TrackerGui::onStopButtonClicked()
+{
+    _imp->panel->stopTracking();
 }
 
 void
