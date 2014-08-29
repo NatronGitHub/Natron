@@ -881,35 +881,41 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( buttonDownIsLeft(e) ) {
                 bool nearbyHeader = (*it)->isNearbyHeader(_imp->_lastScenePosClick);
                 bool nearbyResizeHandle = (*it)->isNearbyResizeHandle(_imp->_lastScenePosClick);
-
+                
+                
                 if (nearbyHeader || nearbyResizeHandle) {
-                    didSomething = true;
-                    if ( !(*it)->getIsSelected() ) {
-                        selectBackDrop( *it, modCASIsShift(e) );
-                    } else if ( modCASIsShift(e) ) {
-                        std::list<NodeBackDrop* >::iterator found = std::find(_imp->_selection.bds.begin(),
-                                                                              _imp->_selection.bds.end(),*it);
-                        if ( found != _imp->_selection.bds.end() ) {
-                            (*it)->setUserSelected(false);
-                            _imp->_selection.bds.erase(found);
+                    
+                    if ( buttonDownIsLeft(e) ) {
+                        didSomething = true;
+                        if ( !(*it)->getIsSelected() ) {
+                            selectBackDrop( *it, modCASIsShift(e) );
+                        } else if ( modCASIsShift(e) ) {
+                            std::list<NodeBackDrop* >::iterator found = std::find(_imp->_selection.bds.begin(),
+                                                                                  _imp->_selection.bds.end(),*it);
+                            if ( found != _imp->_selection.bds.end() ) {
+                                (*it)->setUserSelected(false);
+                                _imp->_selection.bds.erase(found);
+                            }
+                        }
+                        
+                        if (nearbyHeader) {
+                            _imp->_evtState = BACKDROP_DRAGGING;
+                        } else if (nearbyResizeHandle) {
+                            _imp->_backdropResized = *it;
+                            _imp->_evtState = BACKDROP_RESIZING;
+                        }
+                        
+                    } else if ( buttonDownIsRight(e) ) {
+                        if ( !(*it)->getIsSelected() ) {
+                            selectBackDrop(*it,true); ///< don't wipe the selection
                         }
                     }
-
-                    if (nearbyHeader) {
-                        _imp->_evtState = BACKDROP_DRAGGING;
-                    } else if (nearbyResizeHandle) {
-                        _imp->_backdropResized = *it;
-                        _imp->_evtState = BACKDROP_RESIZING;
-                    }
+                    break; 
                 }
-            } else if ( buttonDownIsRight(e) ) {
-                if ( !(*it)->getIsSelected() ) {
-                    selectBackDrop(*it,true); ///< don't wipe the selection
-                }
+                
             }
         }
     }
-
     ///Don't forget to reset back to null the _backdropResized pointer
     if (_imp->_evtState != BACKDROP_RESIZING) {
         _imp->_backdropResized = NULL;
