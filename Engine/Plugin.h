@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <QString>
+#include <QStringList>
 
 class QMutex;
 namespace Natron {
@@ -94,10 +95,12 @@ class Plugin
     QString _id;
     QString _label;
     QString _iconFilePath;
+    QString _groupIconFilePath;
+    QStringList _grouping;
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
-
+    bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
 public:
 
     Plugin()
@@ -105,9 +108,12 @@ public:
           , _id()
           , _label()
           , _iconFilePath()
+          , _groupIconFilePath()
+          , _grouping()
           , _lock()
           , _majorVersion(0)
           , _minorVersion(0)
+          , _hasShortcutSet(false)
     {
     }
 
@@ -115,6 +121,8 @@ public:
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
+           const QString& groupIconFilePath,
+           const QStringList& grouping,
            QMutex* lock,
            int majorVersion,
            int minorVersion)
@@ -122,9 +130,12 @@ public:
           , _id(id)
           , _label(label)
           , _iconFilePath(iconFilePath)
+          , _groupIconFilePath(groupIconFilePath)
+          , _grouping(grouping)
           , _lock(lock)
           , _majorVersion(majorVersion)
           , _minorVersion(minorVersion)
+          , _hasShortcutSet(false)
     {
     }
 
@@ -154,6 +165,16 @@ public:
     {
         return _iconFilePath;
     }
+    
+    const QString & getGroupIconFilePath() const
+    {
+        return _groupIconFilePath;
+    }
+    
+    const QStringList& getGrouping() const
+    {
+        return _grouping;
+    }
 
     QMutex* getPluginLock() const
     {
@@ -173,6 +194,16 @@ public:
     int getMinorVersion() const
     {
         return _minorVersion;
+    }
+    
+    void setHasShortcut(bool has)
+    {
+        _hasShortcutSet = has;
+    }
+    
+    bool getHasShortcut() const
+    {
+        return _hasShortcutSet;
     }
 };
 }

@@ -34,6 +34,8 @@ public:
 public slots:
 
     void onSelectionChanged();
+    
+    void onValidateButtonClicked();
 
     void onClearButtonClicked();
 
@@ -46,8 +48,6 @@ public slots:
     void onCancelButtonClicked();
 
     void onOkButtonClicked();
-
-    void onEditorTextEdited(const QString & text);
 
 private:
 

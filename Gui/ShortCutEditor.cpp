@@ -101,6 +101,7 @@ struct ShortCutEditorPrivate
     QHBoxLayout* shortcutGroupLayout;
     QLabel* shortcutLabel;
     KeybindRecorder* shortcutEditor;
+    Button* validateButton;
     Button* clearButton;
     Button* resetButton;
     QWidget* buttonsContainer;
@@ -117,6 +118,7 @@ struct ShortCutEditorPrivate
           , shortcutGroup(0)
           , shortcutGroupLayout(0)
           , shortcutLabel(0)
+          , validateButton(0)
           , clearButton(0)
           , resetButton(0)
           , buttonsContainer(0)
@@ -214,6 +216,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->tree->setHeaderLabels(headers);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
+    _imp->tree->setSortingEnabled(false);
     _imp->tree->setToolTip( Qt::convertFromPlainText(
                                 tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
                                    " Note that this table also have some special assignments which also involve the mouse. "
@@ -225,12 +228,84 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->tree->setItemDelegate( new ShortcutDelegate(_imp->tree) );
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
     for (AppShortcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
-        GuiShortCutGroup group;
-        group.item = new QTreeWidgetItem(_imp->tree);
+        
+        QString grouping = it->first;
+        
+        ///Do not allow empty grouping, make them under the Global shortcut
+        if (grouping.isEmpty()) {
+            grouping = kShortcutGroupGlobal;
+        }
+        
+        ///Groups are separated by a '/'
+        QStringList groupingSplit = grouping.split(QChar('/'));
+        assert(groupingSplit.size() > 0);
+        const QString& lastGroupName = groupingSplit.back();
+        
+        ///Find out whether the deepest parent group of the action already exist
+        GuiAppShorcuts::iterator foundGuiGroup = _imp->appShortcuts.end();
+        for (GuiAppShorcuts::iterator it2 = _imp->appShortcuts.begin(); it2 != _imp->appShortcuts.end(); ++it2) {
+            if (it2->item->text(0) == lastGroupName) {
+                foundGuiGroup = it2;
+                break;
+            }
+        }
+
+        QTreeWidgetItem* groupParent;
+        if (foundGuiGroup != _imp->appShortcuts.end()) {
+            groupParent = foundGuiGroup->item;
+        } else {
+            groupParent = 0;
+            for (int i = 0; i < groupingSplit.size(); ++i) {
+                QTreeWidgetItem* groupingItem;
+                bool existAlready = false;
+                if (groupParent) {
+                    
+                    for (int j = 0; j < groupParent->childCount(); ++j) {
+                        QTreeWidgetItem* child = groupParent->child(j);
+                        if (child->text(0) == groupingSplit[i]) {
+                            groupingItem = child;
+                            existAlready = true;
+                            break;
+                        }
+                    }
+                    if (!existAlready) {
+                        groupingItem = new QTreeWidgetItem(groupParent);
+                        groupParent->addChild(groupingItem);
+                    }
+                } else {
+                    for (int j = 0; j < _imp->tree->topLevelItemCount(); ++j) {
+                        QTreeWidgetItem* topLvlItem = _imp->tree->topLevelItem(j);
+                        if (topLvlItem->text(0) == groupingSplit[i]) {
+                            groupingItem = topLvlItem;
+                            existAlready = true;
+                            break;
+                        }
+                    }
+                    if (!existAlready) {
+                        groupingItem = new QTreeWidgetItem(_imp->tree);
+                        _imp->tree->addTopLevelItem(groupingItem);
+                    }
+                }
+                if (!existAlready) {
+                    /* expand only top-level groups */
+                    groupingItem->setExpanded(i == 0);
+                    groupingItem->setFlags(Qt::ItemIsEnabled);
+                    groupingItem->setText(0, groupingSplit[i]);
+                }
+                groupParent = groupingItem;
+            }
+            GuiShortCutGroup group;
+            group.item = groupParent;
+            foundGuiGroup = _imp->appShortcuts.insert(_imp->appShortcuts.end(), group);
+        }
+        
+        
+        assert(groupParent);
+
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             GuiBoundAction action;
             action.action = it2->second;
-            action.item = new QTreeWidgetItem(group.item);
+            action.item = new QTreeWidgetItem(groupParent);
             action.item->setText(0, action.action->description);
             const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(it2->second);
             const MouseAction* ma = dynamic_cast<const MouseAction*>(it2->second);
@@ -249,14 +324,9 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
             }
             action.item->setExpanded(true);
             action.item->setText(1, shortcutStr);
-            group.actions.push_back(action);
-            group.item->addChild(action.item);
+            foundGuiGroup->actions.push_back(action);
+            foundGuiGroup->item->addChild(action.item);
         }
-        _imp->appShortcuts.push_back(group);
-        group.item->setFlags(Qt::ItemIsEnabled);
-        group.item->setText(0, it->first);
-        group.item->setExpanded(true);
-        _imp->tree->addTopLevelItem(group.item);
     }
     _imp->tree->resizeColumnToContents(0);
     QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onSelectionChanged() ) );
@@ -274,11 +344,15 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
 
     _imp->shortcutEditor = new KeybindRecorder(_imp->shortcutGroup);
-    QObject::connect( _imp->shortcutEditor, SIGNAL( textEdited(QString) ), this, SLOT( onEditorTextEdited(QString) ) );
     _imp->shortcutEditor->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
     _imp->shortcutEditor->setPlaceholderText( tr("Type to set shortcut") );
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
 
+    _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
+    _imp->validateButton->setToolTip(tr("Validates the shortcut on the field editor and set the selected shortcut."));
+    _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
+    QObject::connect( _imp->validateButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateButtonClicked() ) );
+    
     _imp->clearButton = new Button(tr("Clear"),_imp->shortcutGroup);
     QObject::connect( _imp->clearButton, SIGNAL( clicked(bool) ), this, SLOT( onClearButtonClicked() ) );
     _imp->shortcutGroupLayout->addWidget(_imp->clearButton);
@@ -352,6 +426,50 @@ ShortCutEditor::onSelectionChanged()
 }
 
 void
+ShortCutEditor::onValidateButtonClicked()
+{
+    QString text = _imp->shortcutEditor->text();
+    
+    QList<QTreeWidgetItem*> items = _imp->tree->selectedItems();
+    if ( (items.size() > 1) || items.empty() ) {
+        return;
+    }
+    
+    QTreeWidgetItem* selection = items.front();
+    
+    QKeySequence seq(text,QKeySequence::NativeText);
+    BoundAction* action = _imp->getActionForTreeItem(selection);
+    
+    //only keybinds can be edited...
+    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
+    assert(ka);
+    
+    Qt::KeyboardModifiers modifiers;
+    Qt::Key symbol;
+    extractKeySequence(seq, modifiers, symbol);
+    
+    for (GuiAppShorcuts::iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
+        for (std::list<GuiBoundAction>::iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
+            if (it2->action != action) {
+                KeyBoundAction* keyAction = dynamic_cast<KeyBoundAction*>(it2->action);
+                if (keyAction && keyAction->modifiers == modifiers && keyAction->currentShortcut == symbol) {
+                    QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
+                    .arg(it2->item->text(0));
+                    _imp->shortcutEditor->clear();
+                    Natron::errorDialog(tr("Shortcut editor").toStdString(), tr(err.toStdString().c_str()).toStdString());
+                    return;
+                }
+            }
+        }
+    }
+    
+    selection->setText(1,text);
+    action->modifiers = modifiers;
+    ka->currentShortcut = symbol;
+    appPTR->notifyShortcutChanged(ka);
+}
+
+void
 ShortCutEditor::onClearButtonClicked()
 {
     QList<QTreeWidgetItem*> items = _imp->tree->selectedItems();
@@ -408,7 +526,7 @@ ShortCutEditor::onResetButtonClicked()
     KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
     if (ka) {
         ka->currentShortcut = ka->defaultShortcut;
-        ka->updateActionsShortcut();
+        appPTR->notifyShortcutChanged(ka);
     }
     setItemShortCutText(selection, action, true);
     _imp->shortcutEditor->setText( makeItemShortCutText(action, true) );
@@ -451,31 +569,6 @@ ShortCutEditor::onOkButtonClicked()
     close();
 }
 
-void
-ShortCutEditor::onEditorTextEdited(const QString & text)
-{
-    QList<QTreeWidgetItem*> items = _imp->tree->selectedItems();
-    if ( (items.size() > 1) || items.empty() ) {
-        return;
-    }
-
-    QTreeWidgetItem* selection = items.front();
-    selection->setText(1,text);
-
-    QKeySequence seq(text,QKeySequence::NativeText);
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-
-    //only keybinds can be edited...
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    assert(ka);
-
-    Qt::KeyboardModifiers modifiers;
-    Qt::Key symbol;
-    extractKeySequence(seq, modifiers, symbol);
-    action->modifiers = modifiers;
-    ka->currentShortcut = symbol;
-    ka->updateActionsShortcut();
-}
 
 void
 ShortCutEditor::keyPressEvent(QKeyEvent* e)
@@ -574,6 +667,5 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
     delete seq;
     QString txt = text()  + seqStr;
     setText(txt);
-    emit textEdited(txt);
 }
 

@@ -1589,27 +1589,30 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateTransform, modifiers, key) ) {
-        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-        getGui()->getApp()->createNode( CreateNodeArgs( "TransformOFX  [Transform]","",-1,-1,true,-1,true,hint.x(),hint.y() ) );
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateRoto, modifiers, key) ) {
-        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-        getGui()->getApp()->createNode( CreateNodeArgs( "RotoOFX  [Draw]","",-1,-1,true,-1,true,hint.x(),hint.y() ) );
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateMerge, modifiers, key) ) {
-        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-        getGui()->getApp()->createNode( CreateNodeArgs( "MergeOFX  [Merge]","",-1,-1,true,-1,true,hint.x(),hint.y() ) );
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateGrade, modifiers, key) ) {
-        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-        getGui()->getApp()->createNode( CreateNodeArgs( "GradeOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y() ) );
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateColorCorrect, modifiers, key) ) {
-        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-        getGui()->getApp()->createNode( CreateNodeArgs( "ColorCorrectOFX  [Color]","",-1,-1,true,-1,true,hint.x(),hint.y() ) );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, modifiers, key) ) {
         _imp->rearrangeSelectedNodes();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, modifiers, key) ) {
         toggleKnobLinksVisible();
+    } else {
+        /// Search for a node which has a shortcut bound
+        const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
+        for (U32 i = 0; i < allPlugins.size(); ++i) {
+            if ( allPlugins[i]->getHasShortcut() ) {
+                QString group(kShortcutGroupNodes);
+                QStringList groupingSplit = allPlugins[i]->getGrouping();
+                for (int j = 0; j < groupingSplit.size(); ++j) {
+                    group.push_back('/');
+                    group.push_back(groupingSplit[j]);
+                }
+                if ( isKeybind(group.toStdString().c_str(), allPlugins[i]->getPluginID().toStdString().c_str(), modifiers, key) ) {
+                    QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                    getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),"",-1,-1,true,-1,true,hint.x(),hint.y() ) );
+                    break;
+                }
+            }
+        }
     }
 } // keyPressEvent
 

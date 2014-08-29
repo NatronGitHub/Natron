@@ -23,7 +23,7 @@
 #define kShortcutGroupRoto "Roto"
 #define kShortcutGroupTracking "Tracking"
 #define kShortcutGroupPlayer "Player"
-
+#define kShortcutGroupNodes "Nodes"
 
 /////////GLOBAL SHORTCUTS
 #define kShortcutIDActionNewProject "newProject"
@@ -288,21 +288,6 @@
 
 #define kShortcutIDActionGraphCreateWriter "createWriter"
 #define kShortcutDescActionGraphCreateWriter "Create writer"
-
-#define kShortcutIDActionGraphCreateTransform "createTransform"
-#define kShortcutDescActionGraphCreateTransform "Create transform"
-
-#define kShortcutIDActionGraphCreateMerge "createMerge"
-#define kShortcutDescActionGraphCreateMerge "Create merge"
-
-#define kShortcutIDActionGraphCreateColorCorrect "createCC"
-#define kShortcutDescActionGraphCreateColorCorrect "Create color correct"
-
-#define kShortcutIDActionGraphCreateGrade "createGrade"
-#define kShortcutDescActionGraphCreateGrade "Create grade"
-
-#define kShortcutIDActionGraphCreateRoto "createRoto"
-#define kShortcutDescActionGraphCreateRoto "Create roto"
 
 #define kShortcutIDActionGraphRearrangeNodes "rearrange"
 #define kShortcutDescActionGraphRearrangeNodes "Rearrange nodes"

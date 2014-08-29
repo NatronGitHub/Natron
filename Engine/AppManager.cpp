@@ -666,6 +666,8 @@ AppManager::loadAllPlugins()
 
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
+    
+    onAllPluginsLoaded();
 }
 
 void
@@ -680,18 +682,20 @@ AppManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
 
-        Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
-                                                     "",NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion() );
-        plugins->push_back(plugin);
         std::list<std::string> grouping;
         dotNode->getPluginGrouping(&grouping);
         QStringList qgrouping;
-
+        
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
+        
+        Natron::Plugin* plugin = new Natron::Plugin( binary,dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(),
+                                                     "","",qgrouping,NULL,dotNode->getMajorVersion(),dotNode->getMinorVersion() );
+        plugins->push_back(plugin);
+        
 
-        onPluginLoaded(qgrouping, dotNode->getPluginID().c_str(),dotNode->getPluginLabel().c_str(), "", "");
+        onPluginLoaded(plugin);
     }
 }
 
@@ -711,9 +715,9 @@ AppManager::registerPlugin(const QStringList & groups,
     if (mustCreateMutex) {
         pluginMutex = new QMutex(QMutex::Recursive);
     }
-    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,pluginMutex,major,minor);
+    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor);
     _imp->_plugins.push_back(plugin);
-    onPluginLoaded(groups, pluginID, pluginLabel, pluginIconPath, groupIconPath);
+    onPluginLoaded(plugin);
 }
 
 void

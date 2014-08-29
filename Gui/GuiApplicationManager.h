@@ -46,6 +46,7 @@ class KnobGui;
 class KnobSerialization;
 class Curve;
 class BoundAction;
+class KeyBoundAction;
 class QAction;
 
 struct GuiApplicationManagerPrivate;
@@ -125,6 +126,8 @@ public:
     void addShortcutAction(const QString& group,const QString& actionID,QAction* action);
     void removeShortcutAction(const QString& group,const QString& actionID,QAction* action);
     
+    void notifyShortcutChanged(KeyBoundAction* action);
+    
 public slots:
 
 
@@ -133,11 +136,10 @@ public slots:
 
 private:
 
-    virtual void onPluginLoaded(const QStringList & groups,
-                                const QString & pluginID,
-                                const QString & pluginLabel,
-                                const QString & pluginIconPath,
-                                const QString & groupIconPath) OVERRIDE FINAL;
+    virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
+    
+    virtual void onAllPluginsLoaded() OVERRIDE FINAL;
+    
     virtual void loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
                                         std::map<std::string,std::vector<std::string> >* readersMap,
                                         std::map<std::string,std::vector<std::string> >* writersMap);

@@ -303,14 +303,12 @@ protected:
     {
     }
 
-    virtual void onPluginLoaded(const QStringList & /*groups*/,
-                                const QString & /*pluginID*/,
-                                const QString & /*pluginLabel*/,
-                                const QString & /*pluginIconPath*/,
-                                const QString & /*groupIconPath*/)
+    virtual void onPluginLoaded(Natron::Plugin* /*plugin*/)
     {
     }
 
+    virtual void onAllPluginsLoaded() {}
+    
 private:
 
 
