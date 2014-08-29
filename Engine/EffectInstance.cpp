@@ -403,11 +403,10 @@ EffectInstance::hasOutputConnected() const
 }
 
 EffectInstance*
-EffectInstance::input(int n) const
+EffectInstance::getInput(int n) const
 {
-    ///Only called by the main-thread
 
-    boost::shared_ptr<Natron::Node> inputNode = _node->input(n);
+    boost::shared_ptr<Natron::Node> inputNode = _node->getInput(n);
 
     if (inputNode) {
         return inputNode->getLiveInstance();
@@ -416,17 +415,6 @@ EffectInstance::input(int n) const
     return NULL;
 }
 
-EffectInstance*
-EffectInstance::input_other_thread(int n) const
-{
-    boost::shared_ptr<Natron::Node> inputNode = _node->input_other_thread(n);
-
-    if (inputNode) {
-        return inputNode->getLiveInstance();
-    }
-
-    return NULL;
-}
 
 std::string
 EffectInstance::getInputLabel(int inputNb) const
@@ -456,14 +444,8 @@ EffectInstance::getImage(int inputNb,
     }
 
     ///The input we want the image from
-    EffectInstance* n;
-    if ( QThread::currentThread() == qApp->thread() ) {
-        n = input(inputNb);
-    } else {
-        n  = input_other_thread(inputNb);
-    }
-
-
+    EffectInstance* n = getInput(inputNb);
+    
     boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
     bool useRotoInput = false;
     if (roto) {
@@ -668,7 +650,7 @@ EffectInstance::getRegionOfDefinition(SequenceTime time,
 #endif
 
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = input_other_thread(i);
+        Natron::EffectInstance* input = getInput(i);
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
@@ -721,7 +703,7 @@ EffectInstance::ifInfiniteApplyHeuristic(SequenceTime time,
         calcDefaultRegionOfDefinition(time, scale, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
-            Natron::EffectInstance* input = input_other_thread(i);
+            Natron::EffectInstance* input = getInput(i);
             if (input) {
                 RectD inputRod;
                 bool isProjectFormat;
@@ -796,7 +778,7 @@ EffectInstance::getRegionsOfInterest(SequenceTime /*time*/,
     RoIMap ret;
 
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = input_other_thread(i);
+        Natron::EffectInstance* input = getInput(i);
         if (input) {
             ret.insert( std::make_pair(input, renderWindow) );
         }
@@ -815,7 +797,7 @@ EffectInstance::getFramesNeeded(SequenceTime time)
     std::vector<RangeD> ranges;
     ranges.push_back(defaultRange);
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = input_other_thread(i);
+        Natron::EffectInstance* input = getInput(i);
         if (input) {
             ret.insert( std::make_pair(i, ranges) );
         }
@@ -832,7 +814,7 @@ EffectInstance::getFrameRange(SequenceTime *first,
     *first = INT_MIN;
     *last = INT_MAX;
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = input_other_thread(i);
+        Natron::EffectInstance* input = getInput(i);
         if (input) {
             SequenceTime inpFirst,inpLast;
             input->getFrameRange(&inpFirst, &inpLast);
@@ -1063,7 +1045,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, &canonicalRoI);
             RoIMap inputsRoI;
-            inputsRoI.insert( std::make_pair(input_other_thread(inputNbIdentity), canonicalRoI) );
+            inputsRoI.insert( std::make_pair(getInput(inputNbIdentity), canonicalRoI) );
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         inputsRoI,
                                                         rod,
@@ -1082,7 +1064,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         inputNbIdentity);
             Natron::ImageComponents inputPrefComps;
             Natron::ImageBitDepth inputPrefDepth;
-            Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
+            Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
@@ -1202,7 +1184,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, &canonicalRoI);
             RoIMap inputsRoI;
-            inputsRoI.insert( std::make_pair(input_other_thread(inputNbIdentity), canonicalRoI) );
+            inputsRoI.insert( std::make_pair(getInput(inputNbIdentity), canonicalRoI) );
             Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                         inputsRoI,
                                                         rod,
@@ -1221,7 +1203,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         inputNbIdentity);
             Natron::ImageComponents inputPrefComps;
             Natron::ImageBitDepth inputPrefDepth;
-            Natron::EffectInstance* inputEffectIdentity = input_other_thread(inputNbIdentity);
+            Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 inputEffectIdentity->getPreferredDepthAndComponents(-1, &inputPrefComps, &inputPrefDepth);
                 boost::shared_ptr<Image> ret =  getImage(inputNbIdentity, inputTimeIdentity,
@@ -1588,7 +1570,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 continue;
             }
 
-            EffectInstance* inputEffect = input_other_thread(it2->first);
+            EffectInstance* inputEffect = getInput(it2->first);
             if (inputEffect) {
                 ///What region are we interested in for this input effect ? (This is in Canonical coords)
                 RoIMap::iterator foundInputRoI = inputsRoi.find(inputEffect);
@@ -2107,7 +2089,7 @@ int
 EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const
 {
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        if (input_other_thread(i) == inputEffect) {
+        if (getInput(i) == inputEffect) {
             return i;
         }
     }
@@ -2554,7 +2536,7 @@ EffectInstance::isIdentity_public(SequenceTime time,
         int lastOptionalInput = -1;
         for (int i = getMaxInputCount() - 1; i >= 0; --i) {
             bool optional = isInputOptional(i);
-            if ( !optional && _node->input_other_thread(i) ) {
+            if ( !optional && _node->getInput(i) ) {
                 *inputNb = i;
                 break;
             } else if ( optional && (lastOptionalInput == -1) ) {
@@ -2910,6 +2892,69 @@ EffectInstance::aboutToRestoreDefaultValues()
     if ( _node->areKeyframesVisibleOnTimeline() ) {
         _node->hideKeyframesFromTimeline(true);
     }
+}
+
+/**
+ * @brief Returns a pointer to the first non disabled upstream node.
+ * When cycling through the tree, we prefer non optional inputs and we span inputs
+ * from last to first.
+ **/
+Natron::EffectInstance*
+EffectInstance::getNearestNonDisabled() const
+{
+    if ( !_node->isNodeDisabled() ) {
+        return _node->getLiveInstance();
+    } else {
+        ///Test all inputs recursively, going from last to first, preferring non optional inputs.
+        std::list<Natron::EffectInstance*> nonOptionalInputs;
+        std::list<Natron::EffectInstance*> optionalInputs;
+        
+        int maxInp = getMaxInputCount();
+        
+        ///We cycle in reverse by default. It should be a setting of the application.
+        ///In this case it will return input B instead of input A of a merge for example.
+        for (int i = maxInp -1; i >= 0; --i) {
+            Natron::EffectInstance* inp = getInput(i);
+            bool optional = isInputOptional(i);
+            if (inp) {
+                if (optional) {
+                    optionalInputs.push_back(inp);
+                } else {
+                    nonOptionalInputs.push_back(inp);
+                }
+            }
+        }
+        
+        ///Cycle through all non optional inputs first
+        for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
+            if ( inputRet ) {
+                return inputRet;
+            }
+        }
+        
+        ///Cycle through optional inputs...
+        for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
+            if ( inputRet ) {
+                return inputRet;
+            }
+        }
+        
+        ///We didn't find anything upstream, return
+        return NULL;
+    }
+}
+
+/**
+ * @brief Returns a pointer to the first non identity upstream node.
+ * When cycling through the tree, we prefer non optional inputs and we span inputs
+ * from last to first.
+ **/
+Natron::EffectInstance*
+EffectInstance::getNearestNonIdentity() const
+{
+    
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)

@@ -163,11 +163,9 @@ OfxClipInstance::getConnected() const
             if ( isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb) ) {
                 return false;
             }
-            if ( QThread::currentThread() == qApp->thread() ) {
-                return _nodeInstance->input(inputNb) != NULL;
-            } else {
-                return _nodeInstance->input_other_thread(inputNb) != NULL;
-            }
+     
+            return _nodeInstance->getInput(inputNb) != NULL;
+            
         }
     }
 }
@@ -213,14 +211,23 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     unsigned int mipmapLevel;
     int view;
 
-    ///We're not during an action,just do regular call
     Natron::EffectInstance* associatedNode = getAssociatedNode();
-
+    
+    /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
+    if (associatedNode) {
+        associatedNode = associatedNode->getNearestNonDisabled();
+    }
+    ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
+    ///the same RoD as the input if it is identity.
+    
     if (!associatedNode) {
         ///Doesn't matter, input is not connected
         mipmapLevel = 0;
         view = 0;
     } else {
+        
+
+        ///We're not during an action,just do regular call
         if (associatedNode->getRecursionLevel() == 0) {
             mipmapLevel = associatedNode->getCurrentMipMapLevelRecursive();
             view = associatedNode->getCurrentViewRecursive();
@@ -250,25 +257,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         return ret;
     }
 
-    while ( associatedNode && associatedNode->getNode()->isNodeDisabled() ) {
-        ///we forward this node to the last connected non-optional input
-        ///if there's only optional inputs connected, we return the last optional input
-        int lastOptionalInput = -1;
-        int inputNb = -1;
-        for (int i = associatedNode->getMaxInputCount() - 1; i >= 0; --i) {
-            bool optional = associatedNode->isInputOptional(i);
-            if ( !optional && associatedNode->getNode()->input_other_thread(i) ) {
-                inputNb = i;
-                break;
-            } else if ( optional && (lastOptionalInput == -1) ) {
-                lastOptionalInput = i;
-            }
-        }
-        if (inputNb == -1) {
-            inputNb = lastOptionalInput;
-        }
-        associatedNode = associatedNode->input_other_thread(inputNb);
-    }
+    
     if (associatedNode) {
         bool isProjectFormat;
 
@@ -547,11 +536,7 @@ OfxClipInstance::getAssociatedNode() const
     if (_isOutput) {
         return _nodeInstance;
     } else {
-        if ( QThread::currentThread() == qApp->thread() ) {
-            return _nodeInstance->input( getInputNb() );
-        } else {
-            return _nodeInstance->input_other_thread( getInputNb() );
-        }
+        return _nodeInstance->getInput( getInputNb() );
     }
 }
 
@@ -727,6 +712,7 @@ OfxClipInstance::discardOutputRoD()
     assert( _lastRenderArgs.hasLocalData() );
     _lastRenderArgs.localData().rodValid = false;
 }
+
 
 void
 OfxClipInstance::setFrameRange(double first,

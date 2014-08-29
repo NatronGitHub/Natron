@@ -263,7 +263,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     SequenceTime inpFirst = 0,inpLast = 0;
     int activeInputs[2];
     getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstance* n1 = input_other_thread(activeInputs[0]);
+    EffectInstance* n1 = getInput(activeInputs[0]);
     if (n1) {
         n1->getFrameRange_public(&inpFirst,&inpLast);
     }
@@ -273,7 +273,7 @@ ViewerInstance::getFrameRange(SequenceTime *first,
     inpFirst = 0;
     inpLast = 0;
 
-    EffectInstance* n2 = input_other_thread(activeInputs[1]);
+    EffectInstance* n2 = getInput(activeInputs[1]);
     if (n2) {
         n2->getFrameRange_public(&inpFirst,&inpLast);
         if (inpFirst < *first) {
@@ -359,31 +359,15 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
     }
 
 
-    ///Iterate while nodes are disabled to find the first active input
-    EffectInstance* activeInputToRender = input_other_thread(activeInputIndex);
-    while ( activeInputToRender && activeInputToRender->getNode()->isNodeDisabled() ) {
-        ///we forward this node to the last connected non-optional input
-        ///if there's only optional inputs connected, we return the last optional input
-        int lastOptionalInput = -1;
-        int inputNb = -1;
-        for (int i = activeInputToRender->getMaxInputCount() - 1; i >= 0; --i) {
-            bool optional = activeInputToRender->isInputOptional(i);
-            if ( !optional && activeInputToRender->getNode()->input_other_thread(i) ) {
-                inputNb = i;
-                break;
-            } else if ( optional && (lastOptionalInput == -1) ) {
-                lastOptionalInput = i;
-            }
-        }
-        if (inputNb == -1) {
-            inputNb = lastOptionalInput;
-        }
-        activeInputToRender = activeInputToRender->input_other_thread(inputNb);
+    EffectInstance* activeInputToRender = getInput(activeInputIndex);
+    
+    if (activeInputToRender) {
+        activeInputToRender = activeInputToRender->getNearestNonDisabled();
     }
+    
     if (!activeInputToRender) {
         return StatFailed;
     }
-
 
     bool forceRender;
     {
@@ -489,7 +473,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     ////While the inputs are identity get the RoD of the first non identity input
     while (inputIdentityNumber != -1 && isInputImgCached) {
-        EffectInstance* recursiveInput = activeInputToRender->input_other_thread(inputIdentityNumber);
+        EffectInstance* recursiveInput = activeInputToRender->getInput(inputIdentityNumber);
         if (recursiveInput) {
             inputImageKey = Natron::Image::makeKey(recursiveInput->getHash(), inputIdentityTime, mipMapLevel,view);
             isInputImgCached = Natron::getImageFromCache(inputImageKey, &cachedImgParams,&inputImage);
@@ -1569,7 +1553,7 @@ ViewerInstance::onGainChanged(double exp)
     }
     assert(_imp->uiContext);
     if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
-         && ( input( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
+         && ( getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
         refreshAndContinueRender(false,true);
     } else {
         _imp->uiContext->redraw();
@@ -1588,7 +1572,7 @@ ViewerInstance::onMipMapLevelChanged(int level)
         }
         _imp->viewerMipMapLevel = level;
     }
-    if ( (input( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
+    if ( (getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
         refreshAndContinueRender(false,true);
     }
 }
@@ -1604,7 +1588,7 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsAutoContrast = autoContrast;
     }
-    if ( refresh && (input( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
+    if ( refresh && (getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
         refreshAndContinueRender(false,true);
     }
 }
@@ -1630,7 +1614,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpace colorspace)
 
     assert(_imp->uiContext);
     if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
-         && ( input( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
+         && ( getInput( activeInput() ) != NULL) && !getApp()->getProject()->isLoadingProject() ) {
         refreshAndContinueRender(false,true);
     } else {
         _imp->uiContext->redraw();
@@ -2075,7 +2059,7 @@ void
 ViewerInstance::onInputChanged(int inputNb)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    EffectInstance* inp = input(inputNb);
+    EffectInstance* inp = getInput(inputNb);
     {
         QMutexLocker l(&_imp->activeInputsMutex);
         if (!inp) {

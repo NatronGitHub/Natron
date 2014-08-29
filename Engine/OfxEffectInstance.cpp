@@ -71,12 +71,17 @@ ofxComponentsToNatronChannels(const std::string & comp)
 #endif
 
 namespace  {
-/**
- * @class This class is helpful to set thread-storage data on the clips of an effect
- * When destroyed, it is removed from the clips, ensuring they are removed.
- * It is to be instantiated right before calling the action that will need the per thread-storage
- * This way even if exceptions are thrown, clip thread-storage will be purged.
- **/
+    /**
+     * @class This class is helpful to set thread-storage data on the clips of an effect
+     * When destroyed, it is removed from the clips, ensuring they are removed.
+     * It is to be instantiated right before calling the action that will need the per thread-storage
+     * This way even if exceptions are thrown, clip thread-storage will be purged.
+     *
+     * All the infos set on clip thread-storage are "cached" data that might be needed by a call of the OpenFX API which would
+     * otherwise require a recursive action call, which is forbidden by the specification.
+     * The more you pass parameters, the safer you are that the plug-in will not attempt recursive action calls but the more expensive
+     * it is.
+     **/
 class ClipsThreadStorageSetter
 {
 public:
@@ -841,7 +846,7 @@ OfxEffectInstance::checkClipPrefs(double time,
     _effect->beginInstanceChangedAction(reason);
 
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>( input(i) );
+        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>( getInput(i) );
         OfxClipInstance* clip = getClipCorrespondingToInput(i);
 
         if (instance) {
@@ -1195,7 +1200,7 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
             ///not taking optional inputs into accounts messes it up.
             for (int i = 0; i < inputsCount; ++i) {
                 //if (!isInputOptional(i)) {
-                EffectInstance* inputEffect = input_other_thread(i);
+                EffectInstance* inputEffect = getInput(i);
                 if (inputEffect) {
                     SequenceTime f,l;
                     inputEffect->getFrameRange_public(&f, &l);

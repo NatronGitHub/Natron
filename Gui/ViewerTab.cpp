@@ -2383,7 +2383,7 @@ void
 ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
-    EffectInstance* inp = _imp->_viewerNode->input(inputNb);
+    EffectInstance* inp = _imp->_viewerNode->getInput(inputNb);
 
     if (inp) {
         InputNamesMap::iterator found = _imp->_inputNamesMap.find(inputNb);

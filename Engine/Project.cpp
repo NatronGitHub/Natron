@@ -1158,7 +1158,7 @@ Project::connectNodes(int inputNumber,
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    boost::shared_ptr<Node> existingInput = output->input(inputNumber);
+    boost::shared_ptr<Node> existingInput = output->getInput(inputNumber);
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
         assert(ok);
@@ -1193,7 +1193,7 @@ Project::disconnectNodes(boost::shared_ptr<Node> input,
 
     int inputsCount = input->getMaxInputCount();
     if (inputsCount == 1) {
-        inputToReconnectTo = input->input(0);
+        inputToReconnectTo = input->getInput(0);
     }
 
     if (input->disconnectOutput(output) < 0) {

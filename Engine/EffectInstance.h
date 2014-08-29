@@ -161,14 +161,9 @@ public:
 
     /**
      * @brief Returns input n. It might be NULL if the input is not connected.
-     * Cannot be called by another thread than the application's main thread.
+     * MT-Safe
      **/
-    EffectInstance* input(int n) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns input n. It might be NULL if the input is not connected.
-     **/
-    EffectInstance* input_other_thread(int n) const WARN_UNUSED_RETURN;
+    EffectInstance* getInput(int n) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node holding the effect
@@ -397,6 +392,22 @@ public:
      **/
     virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReason reason,SequenceTime time) OVERRIDE FINAL;
 
+    /**
+     * @brief Returns a pointer to the first non disabled upstream node.
+     * When cycling through the tree, we prefer non optional inputs and we span inputs
+     * from last to first.
+     * If this not is not disabled, it will return a pointer to this.
+     **/
+    Natron::EffectInstance* getNearestNonDisabled() const;
+    
+    /**
+     * @brief Returns a pointer to the first non identity upstream node.
+     * When cycling through the tree, we prefer non optional inputs and we span inputs
+     * from last to first.
+    * If this not is not identity, it will return a pointer to this.
+     **/
+    Natron::EffectInstance* getNearestNonIdentity() const;
+    
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and

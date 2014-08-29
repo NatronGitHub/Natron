@@ -112,12 +112,12 @@ BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
     if (expectedReturnValue) {
         ///check that the connections are internally all set as "expected"
 
-        EXPECT_EQ( (Natron::Node*)NULL,output->input(inputNumber).get() );
+        EXPECT_EQ( (Natron::Node*)NULL,output->getInput(inputNumber).get() );
         EXPECT_FALSE( output->isInputConnected(inputNumber) );
     } else {
         ///the call can only fail for those 2 reasons
         EXPECT_TRUE(inputNumber > output->getMaxInputCount() || //< inputNumber is greater than the maximum input number
-                    output->input(inputNumber).get() != (Natron::Node*)NULL); //< input slot is already filled with another node
+                    output->getInput(inputNumber).get() != (Natron::Node*)NULL); //< input slot is already filled with another node
     }
 
 
@@ -126,7 +126,7 @@ BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
 
     if (expectedReturnValue) {
         EXPECT_TRUE( input->hasOutputConnected() );
-        EXPECT_EQ(output->input(inputNumber),input);
+        EXPECT_EQ(output->getInput(inputNumber),input);
         EXPECT_TRUE( output->isInputConnected(inputNumber) );
     }
 }
@@ -164,7 +164,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         EXPECT_TRUE(foundInput);
         EXPECT_TRUE(foundOutput);
-        EXPECT_EQ(output->input(inputIndex),input);
+        EXPECT_EQ(output->getInput(inputIndex),input);
         EXPECT_TRUE( output->isInputConnected(inputIndex) );
     }
 
@@ -198,7 +198,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         EXPECT_FALSE(foundOutput);
         EXPECT_FALSE(foundInput);
-        EXPECT_EQ( (Natron::Node*)NULL,output->input(inputIndex).get() );
+        EXPECT_EQ( (Natron::Node*)NULL,output->getInput(inputIndex).get() );
         EXPECT_FALSE( output->isInputConnected(inputIndex) );
     }
 } // disconnectNodes

@@ -230,16 +230,9 @@ public:
     /**
      * @brief Returns a pointer to the input Node at index 'index'
      * or NULL if it couldn't find such node.
+     * MT-safe
      **/
-    boost::shared_ptr<Node> input(int index) const;
-
-
-    /**
-     * @brief Same as Node::input(int) but can be called by another thread than the main thread.
-     * Basically it returns a consistent value throughout the rendering of a frame.
-     * The inputs are then updated before the rendering of any frame.
-     **/
-    boost::shared_ptr<Node> input_other_thread(int index) const;
+    boost::shared_ptr<Node> getInput(int index) const;
 
     /**
      * @brief Look-ups the changes made to the inputs that are queued, and if any it updates

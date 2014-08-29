@@ -100,7 +100,7 @@ QtWriter::getFrameRange(SequenceTime *first,
     int index = _frameRangeChoosal->getValue();
 
     if (index == 0) {
-        EffectInstance* inp = input_other_thread(0);
+        EffectInstance* inp = getInput(0);
         if (inp) {
             inp->getFrameRange_public(first, last);
         } else  {

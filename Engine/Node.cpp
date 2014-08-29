@@ -940,41 +940,33 @@ Node::initializeInputs()
 }
 
 boost::shared_ptr<Node>
-Node::input(int index) const
+Node::getInput(int index) const
 {
-    ////Only called by the main-thread
-    ////@see input_other_thread for the MT version
-    assert( QThread::currentThread() == qApp->thread() );
-
-
     if (_imp->multiInstanceParent) {
-        return _imp->multiInstanceParent->input(index);
+        return _imp->multiInstanceParent->getInput(index);
     }
-    if (!_imp->inputsInitialized) {
-        qDebug() << "Node::input(): inputs not initialized";
-    }
-    QMutexLocker l(&_imp->inputsMutex);
-    if ( ( index >= (int)_imp->inputsQueue.size() ) || (index < 0) ) {
-        return boost::shared_ptr<Node>();
-    }
+    if( QThread::currentThread() == qApp->thread() ) {
+        
+        if (!_imp->inputsInitialized) {
+            qDebug() << "Node::getInput(): inputs not initialized";
+        }
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( ( index >= (int)_imp->inputsQueue.size() ) || (index < 0) ) {
+            return boost::shared_ptr<Node>();
+        }
+        
+        return _imp->inputsQueue[index];
+        
+    } else {
+        assert(_imp->inputsInitialized);
 
-    return _imp->inputsQueue[index];
-}
-
-boost::shared_ptr<Node>
-Node::input_other_thread(int index) const
-{
-    assert(_imp->inputsInitialized);
-
-    if (_imp->multiInstanceParent) {
-        return _imp->multiInstanceParent->input_other_thread(index);
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
+            return boost::shared_ptr<Node>();
+        }
+        
+        return _imp->inputs[index];
     }
-    QMutexLocker l(&_imp->inputsMutex);
-    if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
-        return boost::shared_ptr<Node>();
-    }
-
-    return _imp->inputs[index];
 }
 
 void
@@ -1050,7 +1042,7 @@ Node::isInputConnected(int inputNb) const
 {
     assert(_imp->inputsInitialized);
 
-    return input(inputNb) != NULL;
+    return getInput(inputNb) != NULL;
 }
 
 bool
@@ -1435,7 +1427,7 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToD
         }
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
-                inputToConnectTo = input(firstNonOptionalInput);
+                inputToConnectTo = getInput(firstNonOptionalInput);
             } else if (firstOptionalInput) {
                 inputToConnectTo = firstOptionalInput;
             }
@@ -1551,7 +1543,7 @@ Node::activate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToRes
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            boost::shared_ptr<Node> outputHasInput = it->first->input(it->second);
+            boost::shared_ptr<Node> outputHasInput = it->first->getInput(it->second);
             if (outputHasInput) {
                 bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, it->first);
                 assert(ok);
@@ -2331,7 +2323,7 @@ Node::onInputChanged(int inputNb)
     _imp->duringInputChangedAction = true;
     std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.find(inputNb);
     if ( it != _imp->enableMaskKnob.end() ) {
-        boost::shared_ptr<Node> inp = input(inputNb);
+        boost::shared_ptr<Node> inp = getInput(inputNb);
         it->second->setEvaluateOnChange(false);
         it->second->setValue(inp ? true : false, 0);
         it->second->setEvaluateOnChange(true);
@@ -2346,7 +2338,7 @@ Node::onMultipleInputChanged()
     assert( QThread::currentThread() == qApp->thread() );
     _imp->duringInputChangedAction = true;
     for (std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.begin(); it != _imp->enableMaskKnob.end(); ++it) {
-        boost::shared_ptr<Node> inp = input(it->first);
+        boost::shared_ptr<Node> inp = getInput(it->first);
         it->second->setValue(inp ? true : false, 0);
     }
     _imp->liveInstance->onMultipleInputsChanged();
@@ -2374,7 +2366,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
                 found->second->setEnabled(0, false);
             } else if ( !found->second->isEnabled(0) ) {
                 found->second->setEnabled(0, true);
-                if ( input(it->first) ) {
+                if ( getInput(it->first) ) {
                     found->second->setValue(true, 0);
                 }
             }
@@ -2692,7 +2684,7 @@ InspectorNode::tryAddEmptyInput()
             ///if there are already living inputs, look at the last one
             ///and if it is not connected, just don't add an input.
             ///Otherwise, add an empty input.
-            if (input(_inputsCount - 1) != NULL) {
+            if (getInput(_inputsCount - 1) != NULL) {
                 addEmptyInput();
 
                 return true;
@@ -2730,7 +2722,7 @@ InspectorNode::removeEmptyInputs()
     /*While there're NULL inputs at the tail of the map,remove them.
        Stops at the first non-NULL input.*/
     while (_inputsCount > 1) {
-        if ( (input(_inputsCount - 1) == NULL) && (input(_inputsCount - 2) == NULL) ) {
+        if ( (getInput(_inputsCount - 1) == NULL) && (getInput(_inputsCount - 2) == NULL) ) {
             --_inputsCount;
             initializeInputs();
         } else {
@@ -2770,7 +2762,7 @@ InspectorNode::disconnectInput(boost::shared_ptr<Node> input)
 void
 InspectorNode::setActiveInputAndRefresh(int inputNb)
 {
-    if ( ( inputNb > (_inputsCount - 1) ) || (inputNb < 0) || (input(inputNb) == NULL) ) {
+    if ( ( inputNb > (_inputsCount - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }
     {
