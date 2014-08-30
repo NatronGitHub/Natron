@@ -16,13 +16,16 @@
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>
 #include <sys/resource.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
 #endif
 
 #include "Gui/GuiApplicationManager.h"
 
 void setShutDownSignal(int signalId);
 void handleShutDownSignal(int signalId);
-
+#include <fstream>
+#include <sstream>
 int
 main(int argc,
      char *argv[])
@@ -53,13 +56,16 @@ main(int argc,
             }
         }
     }
+#elif defined(Q_OS_WIN) 
+	_setmaxstdio(2048);
 #endif
+	
 
     bool isBackground;
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
-    setShutDownSignal(SIGINT);   // shut down on ctrl-c
+	setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
 #ifdef Q_OS_UNIX
     if ( !projectName.isEmpty() ) {

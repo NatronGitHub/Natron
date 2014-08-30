@@ -13,6 +13,8 @@
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>
 #include <sys/resource.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
 #endif
 
 #include "Engine/AppManager.h"
@@ -46,6 +48,8 @@ main(int argc,
             }
         }
     }
+#elif defined(Q_OS_WIN) 
+	_setmaxstdio(2048);
 #endif
 
     bool isBackground;
