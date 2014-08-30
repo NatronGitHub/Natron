@@ -361,10 +361,10 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             }
         }
 
-        if (nGui->getNode()->getPluginID() == "Viewer") {
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
+        if (viewer) {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if ( found != viewersProjections.end() ) {
-                ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
                 ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
                 tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, found->second.zoomPAR);
                 tab->setChannels(found->second.channels);
@@ -413,8 +413,27 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             panel->addRow( (*it)->getNode() );
         }
     }
+    
+    
+    ///now restore opened settings panels
+    const std::list<std::string> & openedPanels = obj.getOpenedPanels();
+    //reverse the iterator to fill the layout bottom up
+    for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it != openedPanels.rend(); ++it) {
+        if (*it == kNatronProjectSettingsPanelSerializationName) {
+            _gui->setVisibleProjectSettingsPanel();
+        } else {
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin(); it2 != nodesGui.end(); ++it2) {
+                if ( (*it2)->getNode()->getName() == *it ) {
+                    NodeSettingsPanel* panel = (*it2)->getSettingPanel();
+                    if (panel) {
+                        (*it2)->setVisibleSettingsPanel(true);
+                    }
+                }
+            }
+        }
+    }
 
-    _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_CHANGES_SPLITTERS,obj.getGuiLayout() );
+    _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
 
     ///restore the histograms
     const std::list<std::string> & histograms = obj.getHistograms();
@@ -427,24 +446,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     }
 
 
-    ///now restore opened settings panels
-    const std::list<std::string> & openedPanels = obj.getOpenedPanels();
-    //reverse the iterator to fill the layout bottom up
-    for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it != openedPanels.rend(); ++it) {
-        if (*it == "Natron_Project_Settings_Panel") {
-            _gui->setVisibleProjectSettingsPanel();
-        } else {
-            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodesGui.begin(); it2 != nodesGui.end(); ++it2) {
-                if ( (*it2)->getNode()->getName() == *it ) {
-                    NodeSettingsPanel* panel = (*it2)->getSettingPanel();
-                    if (panel) {
-                        (*it2)->setVisibleSettingsPanel(true);
-                        _gui->putSettingsPanelFirst(panel);
-                    }
-                }
-            }
-        }
-    }
 } // load
 
 std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const

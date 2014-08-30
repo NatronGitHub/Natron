@@ -13,6 +13,7 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
+#include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -52,10 +53,17 @@ public:
     void setObjectName_mt_safe(const QString & str);
 
     QString objectName_mt_safe() const;
+    
+    void insertChild_mt_safe(int i,QWidget* w);
+    
+    void removeChild_mt_safe(QWidget* w);
+    
+    void getChildren_mt_safe(std::list<QWidget*>& children) const;
+    
+    
 
 private:
 
-    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     mutable QMutex _lock;
 };
 

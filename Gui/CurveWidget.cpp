@@ -2793,7 +2793,7 @@ CurveWidget::isTabVisible() const
             if (parent->objectName() == kCurveEditorObjectName) {
                 TabWidget* tab = dynamic_cast<TabWidget*>( parentWidget()->parentWidget()->parentWidget() );
                 if (tab) {
-                    if ( tab->isFloating() ) {
+                    if ( tab->isFloatingWindowChild() ) {
                         return true;
                     }
 

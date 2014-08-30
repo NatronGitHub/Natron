@@ -269,7 +269,6 @@ NodeGui::createPanel(QVBoxLayout* container,
 
         if (!requestedByLoad) {
             if ( _internalNode->getParentMultiInstanceName().empty() ) {
-                _graph->getGui()->putSettingsPanelFirst(panel);
                 _graph->getGui()->addVisibleDockablePanel(panel);
             }
         } else {

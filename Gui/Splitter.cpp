@@ -29,7 +29,7 @@ void
 Splitter::addWidget_mt_safe(QWidget * widget)
 {
     QMutexLocker l(&_lock);
-
+    widget->setParent(this);
     addWidget(widget);
 }
 
@@ -75,14 +75,6 @@ Splitter::setSizes_mt_safe(const QList<int> & list)
 }
 
 void
-Splitter::resizeEvent(QResizeEvent* e)
-{
-    QMutexLocker l(&_lock);
-
-    return QSplitter::resizeEvent(e);
-}
-
-void
 Splitter::setObjectName_mt_safe(const QString & str)
 {
     QMutexLocker l(&_lock);
@@ -96,4 +88,28 @@ Splitter::objectName_mt_safe() const
     QMutexLocker l(&_lock);
 
     return objectName();
+}
+
+void
+Splitter::insertChild_mt_safe(int i,QWidget* w)
+{
+    QMutexLocker l(&_lock);
+    insertWidget(i, w);
+    w->setParent(this);
+}
+
+void
+Splitter::removeChild_mt_safe(QWidget* w)
+{
+    QMutexLocker l(&_lock);
+    w->setParent(NULL);
+}
+
+void
+Splitter::getChildren_mt_safe(std::list<QWidget*>& children) const
+{
+    QMutexLocker l(&_lock);
+    for (int i = 0; i < count(); ++i) {
+        children.push_back(widget(i));
+    }
 }

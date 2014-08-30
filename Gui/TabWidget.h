@@ -41,41 +41,9 @@ class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
 class Gui;
+class Splitter;
 
 
-/*This class represents a floating pane that embeds a widget*/
-class FloatingWidget
-    : public QWidget
-{
-    Q_OBJECT
-
-public:
-
-    explicit FloatingWidget(QWidget* parent = 0);
-
-    virtual ~FloatingWidget() OVERRIDE
-    {
-    }
-
-    /*Set the embedded widget. Only 1 widget can be embedded
-       by FloatingWidget. Once set, this function does nothing
-       for subsequent calls..*/
-    void setWidget(const QSize & widgetSize,QWidget* w);
-
-    void removeWidget();
-
-signals:
-
-    void closed();
-
-private:
-
-    virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
-    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE;
-    QWidget* _embeddedWidget;
-    QVBoxLayout* _layout;
-};
 
 class DragPixmap
     : public QWidget
@@ -132,8 +100,6 @@ class TabWidget
 
 public:
 
-    static const QString splitHorizontallyTag;
-    static const QString splitVerticallyTag;
 
     explicit TabWidget(Gui* gui,
                        QWidget* parent = 0);
@@ -195,13 +161,6 @@ public:
 
     QStringList getTabNames() const;
 
-    bool isFloating() const
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
-
-        return _isFloating;
-    }
-
     void destroyTabs();
 
     QWidget* currentWidget() const
@@ -209,13 +168,6 @@ public:
         QMutexLocker l(&_tabWidgetStateMutex);
 
         return _currentWidget;
-    }
-
-    std::list<std::pair<TabWidget*,bool> > getUserSplits() const
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
-
-        return _userSplits;
     }
 
     void dettachTabs();
@@ -246,33 +198,20 @@ public:
 
     int activeIndex() const;
 
-    ///Relevant only when floating
-    QPoint getWindowPos_mt_safe() const;
-    void getWindowSize_mt_safe(int & w,int & h) const;
-    void setWindowPos(const QPoint & globalPos);
-    void setWindowSize(int w,int h);
-
-    /**
-     * @brief Returns the name of the parent TabWidget of this widget (the one from which the split was originated) or an empty string
-     * if it is not a split.
-     * @param isSplit[out] If set to true then this indicates this function ran OK and the returned name is the name of the parent
-     * If set to false this indicates this tabwidget is not a split and the return value will be the objectName argument.
-     * @param horizontal[out] If non null, it will be set to the orientation of this split.
-     **/
-    static QString getTabWidgetParentName(const QString & objectName,bool* isSplit,bool* horizontal = NULL);
-
-    /**
-     * @brief Same as getTabWidgetParentName except that it calls the function with objectName_mt_safe()
-     * Also this function will check that the name of the parent really exists in the panes vector in the GUI object
-     * @returns The name of the parent TabWidget on success, an empty string otherwise.
-     **/
-    QString getParentName(bool* horizontal = NULL) const;
-
-    void closePane(bool calledFromFloatingWindow);
 
     ///MT-Safe
     bool isFullScreen() const;
-
+    
+    ///MT-Safe
+    bool isViewerAnchor() const;
+    
+    void setAsViewerAnchor(bool anchor);
+    
+    /**
+     * @brief Returns true if this tabwidget is part of a floating window
+     **/
+    bool isFloatingWindowChild() const;
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
@@ -302,9 +241,15 @@ public slots:
 
     void closePane();
 
+    /**
+     * @brief Make a new floating window and embbed this widget in it.
+     **/
     void floatPane(QPoint* position = NULL);
 
-    void closeFloatingPane();
+    /**
+     * @brief If the direct parent of this widget is a floating window then close it.
+     **/
+    void tryCloseFloatingPane();
 
     ///If there's 1 tab it floats this pane
     ///Otherwise it creates a new pane, move the current tab to it and floats it
@@ -325,17 +270,15 @@ private:
 
 private:
 
+    TabWidget* splitInternal(bool autoSave,Qt::Orientation orientation);
+
     /**
-     * @brief This function removes from the object name of the given widget the verticial/horizontal identifier
-     * corresponding to the horizontal parameter.
-     * This is called when closing a pane, hence removing one level of splitting.
+     * @brief Deletes container and move the other split (the one that is not this) to the parent of container.
+     * If the parent container is a splitter then we will insert it instead of the container.
+     * Otherwise if the parent is a floating window we will insert it as embedded widget of the window.
      **/
-    static void removeTagNameRecursively(TabWidget* widget, bool horizontal);
-
-    bool removeSplit(TabWidget* tab,bool* orientation = NULL);
-
-    int countSplitsForOrientation(bool vertical) const;
-
+    void closeSplitterAndMoveOtherSplitToParent(Splitter* container);
+    
     // FIXME: PIMPL
     Gui* _gui;
     QVBoxLayout* _mainLayout;
@@ -348,15 +291,13 @@ private:
     Button* _floatButton;
     Button* _closeButton;
     QWidget* _currentWidget;
-    bool _isFloating;
     bool _drawDropRect;
     bool _fullScreen;
-    std::list< std::pair<TabWidget*,bool> > _userSplits; //< for each split, whether the user pressed split vertically (true) or horizontally (false)
+    bool _isViewerAnchor;
 
-    ///Protects _mtSafePos, _mtSafeWidth,_mtSafeHeight, _isFloating, _userSplits, _fullScreen
+    ///Protects  _currentWidget, _fullScreen, _isViewerAnchor
     mutable QMutex _tabWidgetStateMutex;
-    QPoint _mtSafeWindowPos;
-    int _mtSafeWindowWidth,_mtSafeWindowHeight;
+  
 };
 
 

@@ -20,6 +20,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+#include <QDebug>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QDragEnterEvent>
@@ -46,63 +47,6 @@ CLANG_DIAG_ON(deprecated)
 
 using namespace Natron;
 
-const QString TabWidget::splitHorizontallyTag = QString("_horizSplit");
-const QString TabWidget::splitVerticallyTag = QString("_vertiSplit");
-FloatingWidget::FloatingWidget(QWidget* parent)
-    : QWidget(parent)
-      , _embeddedWidget(0)
-      , _layout(0)
-{
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
-    setAttribute(Qt::WA_DeleteOnClose,true);
-    _layout = new QVBoxLayout(this);
-    _layout->setContentsMargins(0, 0, 0, 0);
-    setLayout(_layout);
-}
-
-void
-FloatingWidget::setWidget(const QSize & widgetSize,
-                          QWidget* w)
-{
-    assert(w);
-    if (_embeddedWidget) {
-        return;
-    }
-    _embeddedWidget = w;
-    w->setParent(this);
-    assert(_layout);
-    _layout->addWidget(w);
-    w->setVisible(true);
-    w->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-    resize(widgetSize);
-    show();
-}
-
-void
-FloatingWidget::removeWidget()
-{
-    if (!_embeddedWidget) {
-        return;
-    }
-    _layout->removeWidget(_embeddedWidget);
-    _embeddedWidget->setParent(NULL);
-    _embeddedWidget = 0;
-    // _embeddedWidget->setVisible(false);
-    hide();
-}
-
-void
-FloatingWidget::closeEvent(QCloseEvent* e)
-{
-    TabWidget* embedded = dynamic_cast<TabWidget*>(_embeddedWidget);
-    emit closed();
-
-    if (embedded) {
-        embedded->closePane(true);
-    }
-    QWidget::closeEvent(e);
-}
-
 TabWidget::TabWidget(Gui* gui,
                      QWidget* parent)
     : QFrame(parent),
@@ -115,14 +59,10 @@ TabWidget::TabWidget(Gui* gui,
       _floatButton(0),
       _closeButton(0),
       _currentWidget(0),
-      _isFloating(false),
       _drawDropRect(false),
       _fullScreen(false),
-      _userSplits(),
-      _tabWidgetStateMutex(),
-      _mtSafeWindowPos(),
-      _mtSafeWindowWidth(0),
-      _mtSafeWindowHeight(0)
+      _isViewerAnchor(false),
+      _tabWidgetStateMutex()
 {
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
@@ -188,7 +128,7 @@ TabWidget::~TabWidget()
 void
 TabWidget::notifyGuiAboutRemoval()
 {
-    _gui->removePane(this);
+    _gui->unregisterPane(this);
 }
 
 void
@@ -247,19 +187,18 @@ TabWidget::createMenu()
     QAction* splitHorizontallyAction = new QAction(QIcon(pixH),tr("Split horizontal"),this);
     QObject::connect( splitHorizontallyAction, SIGNAL( triggered() ), this, SLOT( onSplitHorizontally() ) );
     menu->addAction(splitHorizontallyAction);
-    if (_isFloating) {
-        splitVerticallyAction->setEnabled(false);
-        splitHorizontallyAction->setEnabled(false);
-    }
     menu->addSeparator();
     QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),this);
     QObject::connect( floatAction, SIGNAL( triggered() ), this, SLOT( floatCurrentWidget() ) );
     menu->addAction(floatAction);
-    if ( (_tabBar->count() == 0) || _isFloating ) {
+    
+    
+    if ( (_tabBar->count() == 0) ) {
         floatAction->setEnabled(false);
     }
 
     QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), this);
+    closeAction->setEnabled(_closeButton->isEnabled());
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
     menu->addAction(closeAction);
     menu->addSeparator();
@@ -272,42 +211,18 @@ TabWidget::createMenu()
 }
 
 void
-TabWidget::closeFloatingPane()
+TabWidget::tryCloseFloatingPane()
 {
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
-        if (!_isFloating) {
-            return;
-        }
+    FloatingWidget* parent = dynamic_cast<FloatingWidget*>(parentWidget());
+    if (parent) {
+        parent->close();
     }
-    QWidget* p = parentWidget();
-
-    p->close();
 }
 
-bool
-TabWidget::removeSplit(TabWidget* tab,
-                       bool* orientation)
-{
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    for (std::list<std::pair<TabWidget*,bool> > ::iterator it =  _userSplits.begin(); it != _userSplits.end(); ++it) {
-        if (it->first == tab) {
-            if (orientation) {
-                *orientation = it->second;
-            }
-            _userSplits.erase(it);
-
-            return true;
-        }
-    }
-
-    return false;
-}
 
 static void
-getOtherTabWidget(Splitter* parentSplitter,
-                  TabWidget* thisWidget,
+getOtherSplitWidget(Splitter* parentSplitter,
+                  QWidget* thisWidget,
                   QWidget* & other)
 {
     for (int i = 0; i < parentSplitter->count(); ++i) {
@@ -320,291 +235,120 @@ getOtherTabWidget(Splitter* parentSplitter,
     }
 }
 
-static void
-getTabWidgetRecursively(const TabWidget* caller,
-                        Splitter* parentSplitter,
-                        TabWidget* & tab)
+/**
+ * @brief Deletes container and move the other split (the one that is not this) to the parent of container.
+ * If the parent container is a splitter then we will insert it instead of the container.
+ * Otherwise if the parent is a floating window we will insert it as embedded widget of the window.
+ **/
+void TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 {
-    bool found = false;
-
-    for (int i = 0; i < parentSplitter->count(); ++i) {
-        QWidget* w = parentSplitter->widget(i);
-        if (w == caller) {
-            continue;
-        }
-        TabWidget* isTab = dynamic_cast<TabWidget*>(w);
-        Splitter* isSplitter = dynamic_cast<Splitter*>(w);
-        if (isTab) {
-            tab = isTab;
-            found = true;
-            break;
-        } else if (isSplitter) {
-            getTabWidgetRecursively(caller,isSplitter, tab);
-            if (tab) {
-                return;
-            }
-        }
-    }
-    if (!found) {
-        Splitter* parent = dynamic_cast<Splitter*>( parentSplitter->parentWidget() );
-        assert(parent);
-        getTabWidgetRecursively(caller,parent, tab);
-    }
-}
-
-void
-TabWidget::removeTagNameRecursively(TabWidget* widget,
-                                    bool horizontal)
-{
-    QString name = widget->objectName();
-    QString toRemove = horizontal ? TabWidget::splitHorizontallyTag : TabWidget::splitVerticallyTag;
-    int i = name.indexOf(toRemove);
-
-    assert(i != -1);
-    name.remove( i, toRemove.size() );
-
-    ///also remove the unique idenfitifer
-    int identifierIndex = name.size() - 1;
-    while ( identifierIndex >= 0 && name.at(identifierIndex).isDigit() ) {
-        --identifierIndex;
-    }
-    ++identifierIndex;
-    name = name.remove(identifierIndex,name.size() - identifierIndex);
-
-    widget->setObjectName_mt_safe(name);
-
-    std::list<std::pair<TabWidget*,bool> > splitsCopy;
-    {
-        QMutexLocker l(&widget->_tabWidgetStateMutex);
-        splitsCopy = widget->_userSplits;
-    }
-    for (std::list<std::pair<TabWidget*,bool> >::iterator it = splitsCopy.begin(); it != splitsCopy.end(); ++it) {
-        removeTagNameRecursively(it->first,horizontal);
-    }
-}
-
-int
-TabWidget::countSplitsForOrientation(bool vertical) const
-{
-    QMutexLocker l(&_tabWidgetStateMutex);
-    int splitsCount = 0;
-
-    for (std::list<std::pair<TabWidget*,bool> >::const_iterator it2 = _userSplits.begin();
-         it2 != _userSplits.end(); ++it2) {
-        if (vertical && it2->second) {
-            ++splitsCount;
-        } else if (!vertical && !it2->second) {
-            ++splitsCount;
-        }
-    }
-
-    return splitsCount;
-}
-
-void
-TabWidget::closePane(bool calledFromFloatingWindow)
-{
-    /*If it is floating we do not need to re-arrange the splitters containing the tab*/
-    if (isFloating() && !calledFromFloatingWindow) {
-        FloatingWidget* parent = dynamic_cast<FloatingWidget*>( parentWidget() );
-        assert(parent);
-        parent->removeWidget();
-        parent->close();
-        {
-            QMutexLocker l(&_tabWidgetStateMutex);
-            _isFloating = false;
-        }
-    }
-
-
-    /*Removing it from the _panes vector*/
-    _gui->removePane(this);
-
-
-    Splitter* container = dynamic_cast<Splitter*>( parentWidget() );
-    Splitter* parentSplitter  = 0;
-    QWidget* other = 0;
-    if (container) {
-        /*identifying the other tab*/
-        getOtherTabWidget(container,this,other);
-        assert(other);
-
-        bool vertical = false;
-        bool removeOk = false;
-
-        {
-            parentSplitter = container;
-            ///The only reason becasue this is not ok is because we split this TabWidget again
-            while (!removeOk && parentSplitter) {
-                for (int i = 0; i < parentSplitter->count(); ++i) {
-                    TabWidget* tab = dynamic_cast<TabWidget*>( parentSplitter->widget(i) );
-                    if ( tab && (tab != this) ) {
-                        removeOk = tab->removeSplit(this,&vertical);
-                        if (removeOk) {
-                            break;
-                        }
-                    }
-                }
-
-                parentSplitter = dynamic_cast<Splitter*>( parentSplitter->parentWidget() );
-            }
-        }
-    }
-    ///Get the parent name
-    bool isHorizontalSplit;
-    QString parentName = getParentName(&isHorizontalSplit);
-
-
-    ///This is the TabWidget to which we will move all our splits.
-    TabWidget* tabToTransferTo = 0;
-    if ( !parentName.isEmpty() ) {
-        ///Find the parent
-        const std::list<TabWidget*> & panes = _gui->getPanes();
-        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-            if ( (*it)->objectName() == parentName ) {
-                tabToTransferTo = *it;
-                break;
-            }
-        }
-        assert(tabToTransferTo);
-
-        ///Remove this as a split from the parent
-        tabToTransferTo->removeSplit(this);
-    } else if (container) {
-        ///Find another TabWidget recursively in the children
-        getTabWidgetRecursively(this, container, tabToTransferTo);
-    } else {
-        ///last resort pick any different pane from all the panes of the GUI
-        const std::list<TabWidget*> & panes = _gui->getPanes();
-        for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-            if (*it != this) {
-                tabToTransferTo = *it;
-                break;
-            }
-        }
-    }
-
-    if (tabToTransferTo) {
-        assert(tabToTransferTo != this);
-
-
-        std::list<std::pair<TabWidget*,bool> > splitsCopy;
-        {
-            QMutexLocker l(&_tabWidgetStateMutex);
-            splitsCopy = _userSplits;
-        }
-        ///For all splits, remove one hierarchy level from their name.
-        for (std::list<std::pair<TabWidget*,bool> >::iterator it = splitsCopy.begin(); it != splitsCopy.end(); ++it) {
-            removeTagNameRecursively(it->first,!it->second);
-        }
-
-        ///change the name of all the splits so they are children of the parent now
-        for (std::list<std::pair<TabWidget*,bool> >::iterator it = splitsCopy.begin(); it != splitsCopy.end(); ++it) {
-            ///In the case where we're closing the pane that has no parent, we are actually moving its tabs to one of its splits
-            ///hence it->first can be equal to tabToTransferTo
-            if (it->first != tabToTransferTo) {
-                ///Count in the parent how many splits of the same orientation there are
-                ///to give the approriate index to the new split we're moving
-                int splitsCount = tabToTransferTo->countSplitsForOrientation(it->second);
-
-                if (it->second) {
-                    it->first->setObjectName_mt_safe( it->first->objectName_mt_safe() +
-                                                      TabWidget::splitVerticallyTag +
-                                                      QString::number(splitsCount) );
-                } else {
-                    it->first->setObjectName_mt_safe( it->first->objectName_mt_safe() +
-                                                      TabWidget::splitHorizontallyTag +
-                                                      QString::number(splitsCount) );
-                }
-                {
-                    QMutexLocker l(&tabToTransferTo->_tabWidgetStateMutex);
-                    tabToTransferTo->_userSplits.push_back(*it);
-                }
-            }
-        }
-
-        ///Effectively move this tab's splits to the  parent tab widget
-        while (count() > 0) {
-            moveTab(tabAt(0), tabToTransferTo);
-        }
-    }
-    //else { //!tabToTransferTo
-
-    ///If there's no other tab to transfer to we're not supposed to be able to close it
-    ///Because the close button should be greyed out.
-    ///The only case the last pane can be close is when wiping the Gui layout
-    ///programatically to load a new layout, in that case the "unique" widgets
-    ///should've been removed by hand so that nothing gets destroyed.
-    // }
-
-
-    ///Hide this
-    setVisible(false);
-
-    if (container) {
-        /*Only sub-panes are closable. That means the splitter owning them must also
-           have a splitter as parent*/
-        Splitter* parentContainer = dynamic_cast<Splitter*>( container->parentWidget() );
-        if (!parentContainer) {
-            return;
-        }
-
-        QList<int> mainContainerSizes = parentContainer->sizes();
-
-
+    QWidget* otherSplit = 0;
+    /*identifying the other split*/
+    getOtherSplitWidget(container,this,otherSplit);
+    assert(otherSplit);
+   
+    Splitter* parentSplitter = dynamic_cast<Splitter*>( container->parentWidget() );
+    FloatingWidget* parentWindow = dynamic_cast<FloatingWidget*>( container->parentWidget() );
+    
+    assert(parentSplitter || parentWindow);
+    
+    if (parentSplitter) {
+        QList<int> mainContainerSizes = parentSplitter->sizes();
+        
         /*Removing the splitter container from its parent*/
-        int subSplitterIndex = 0;
-        for (int i = 0; i < parentContainer->count(); ++i) {
-            Splitter* subSplitter = dynamic_cast<Splitter*>( parentContainer->widget(i) );
-            if ( subSplitter && (subSplitter == container) ) {
-                subSplitterIndex = i;
-                container->setVisible(false);
-                container->setParent(0);
-                break;
-            }
-        }
-
-        /*moving the other to the mainContainer*/
-        parentContainer->insertWidget(subSplitterIndex, other);
-        other->setVisible(true);
-        other->setParent(parentContainer);
-
-        ///restore the main container sizes
-        parentContainer->setSizes_mt_safe(mainContainerSizes);
-
-        /*deleting the subSplitter*/
-        _gui->removeSplitter(container);
-
-        while (container->count() > 0) {
-            container->widget(0)->setParent(NULL);
-        }
-        container->setParent(NULL);
-        delete container;
+        int containerIndexInParentSplitter = parentSplitter->indexOf(container);
+        parentSplitter->removeChild_mt_safe(container);
+        
+        /*moving the other split to the mainContainer*/
+        parentSplitter->insertChild_mt_safe(containerIndexInParentSplitter, otherSplit);
+        otherSplit->setVisible(true);
+        
+        /*restore the main container sizes*/
+        parentSplitter->setSizes_mt_safe(mainContainerSizes);
+    } else {
+        assert(parentWindow);
+        parentWindow->removeEmbeddedWidget();
+        parentWindow->setWidget(otherSplit);
     }
-} // closePane
+    
+    /*Remove the container from everywhere*/
+    _gui->unregisterSplitter(container);
+    container->setParent(NULL);
+    delete container;
+
+}
 
 void
 TabWidget::closePane()
 {
-    closePane(false);
-}
+    FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
+    if (isFloating && isFloating->getEmbeddedWidget() == this) {
+        isFloating->close();
+    }
+
+
+    /*Removing it from the _panes vector*/
+    _gui->unregisterPane(this);
+
+
+
+    ///This is the TabWidget to which we will move all our splits.
+    TabWidget* tabToTransferTo = 0;
+    
+    ///Move living tabs to the viewer anchor TabWidget, this is better than destroying them.
+    const std::list<TabWidget*> & panes = _gui->getPanes();
+    for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
+        if (*it != this && (*it)->isViewerAnchor()) {
+            tabToTransferTo = *it;
+            break;
+        }
+    }
+    
+    
+    if (tabToTransferTo) {
+        ///move this tab's splits
+        while (count() > 0) {
+            moveTab(tabAt(0), tabToTransferTo);
+        }
+    } else {
+        while (count() > 0) {
+            removeTab(tabAt(0));
+        }
+    }
+
+    ///Hide this
+    setVisible(false);
+    
+    Splitter* container = dynamic_cast<Splitter*>( parentWidget() );
+    if (container) {
+        closeSplitterAndMoveOtherSplitToParent(container);
+    }
+} // closePane
 
 void
 TabWidget::floatPane(QPoint* position)
 {
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
-        _isFloating = true;
+    FloatingWidget* isParentFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
+    if (isParentFloating) {
+        return;
     }
-    FloatingWidget* floatingW = new FloatingWidget(_gui);
+    
+    FloatingWidget* floatingW = new FloatingWidget(_gui,_gui);
 
-    setVisible(false);
+    
+    Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
     setParent(0);
-    floatingW->setWidget(size(),this);
+    if (parentSplitter) {
+        closeSplitterAndMoveOtherSplitToParent(parentSplitter);
+    }
+
+    
+    floatingW->setWidget(this);
 
     if (position) {
         floatingW->move(*position);
     }
+    _gui->registerFloatingWindow(floatingW);
 }
 
 void
@@ -674,48 +418,16 @@ TabWidget::setTabName(QWidget* tab,
 void
 TabWidget::floatCurrentWidget()
 {
-    if (!_currentWidget || _isFloating) {
-        return;
-    }
-
-
+    
     if ( (_tabs.size() > 1) || !_closeButton->isEnabled() ) {
         ///Make a new tab widget and float it instead
         TabWidget* newPane = new TabWidget(_gui,_gui);
+        newPane->setObjectName_mt_safe(_gui->getAvailablePaneName());
         moveTab(_currentWidget, newPane);
         newPane->floatPane();
     } else {
         ///Float this tab
-        Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
         floatPane();
-        if (_tabBar->count() == 0) {
-            _floatButton->setEnabled(false);
-        }
-
-        if (parentSplitter) {
-            QWidget* otherWidget = 0;
-            for (int i = 0; i < parentSplitter->count(); ++i) {
-                QWidget* w = parentSplitter->widget(i);
-                if ( w && (w != this) ) {
-                    otherWidget = w;
-                    break;
-                }
-            }
-            ///move otherWidget to the parent splitter of the splitter
-            Splitter* parentParentSplitter = dynamic_cast<Splitter*>( parentSplitter->parentWidget() );
-            _gui->removeSplitter(parentSplitter);
-
-            while (parentSplitter->count() > 0) {
-                parentSplitter->widget(0)->setParent(NULL);
-            }
-            parentSplitter->setParent(NULL);
-            delete parentSplitter;
-
-
-            if (parentParentSplitter) {
-                parentParentSplitter->addWidget_mt_safe(otherWidget);
-            }
-        }
     }
 }
 
@@ -757,121 +469,92 @@ TabWidget::movePropertiesBinHere()
 }
 
 TabWidget*
-TabWidget::splitHorizontally(bool autoSave)
+TabWidget::splitInternal(bool autoSave,Qt::Orientation orientation)
 {
-    Splitter* container = dynamic_cast<Splitter*>( parentWidget() );
-
-    if (!container) {
-        return NULL;
-    }
-
+    FloatingWidget* parentIsFloating = dynamic_cast<FloatingWidget*>(parentWidget());
+    Splitter* parentIsSplitter = dynamic_cast<Splitter*>( parentWidget() );
+    
+    assert(parentIsSplitter || parentIsFloating);
+    
     /*We need to know the position in the container layout of the old tab widget*/
-    int oldIndex = container->indexOf(this);
-
-    QList<int> containerSizes = container->sizes();
-
-    Splitter* newSplitter = new Splitter(container);
-    newSplitter->setObjectName_mt_safe(container->objectName() + TabWidget::splitHorizontallyTag);
-    newSplitter->setContentsMargins(0, 0, 0, 0);
-    newSplitter->setOrientation(Qt::Horizontal);
-    setVisible(false);
-    setParent(newSplitter);
-    newSplitter->addWidget(this);
-    setVisible(true);
-    _gui->registerSplitter(newSplitter);
-
-    /*Adding now a new tab*/
-    TabWidget* newTab = new TabWidget(_gui,newSplitter);
-
-    ///count the number of horizontal splits that were already made to uniquely identify this split
-    int noHorizSplit = 0;
-    for (std::list< std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin(); it != _userSplits.end(); ++it) {
-        if (!it->second) {
-            ++noHorizSplit;
-        }
+    int oldIndexInParentSplitter;
+    QList<int> oldSizeInParentSplitter;
+    if (parentIsSplitter) {
+        oldIndexInParentSplitter = parentIsSplitter->indexOf(this);
+        oldSizeInParentSplitter = parentIsSplitter->sizes();
+    } else {
+        assert(parentIsFloating);
+        parentIsFloating->removeEmbeddedWidget();
     }
-
-    newTab->setObjectName_mt_safe( objectName() + TabWidget::splitHorizontallyTag + QString::number(noHorizSplit) );
+    
+    Splitter* newSplitter = new Splitter;
+    newSplitter->setContentsMargins(0, 0, 0, 0);
+    newSplitter->setOrientation(orientation);
+    _gui->registerSplitter(newSplitter);
+    
+    /*Add this to the new splitter*/
+    newSplitter->addWidget_mt_safe(this);
+    
+    /*Adding now a new TabWidget*/
+    TabWidget* newTab = new TabWidget(_gui,newSplitter);
+    newTab->setObjectName_mt_safe(_gui->getAvailablePaneName());
     _gui->registerPane(newTab);
-    newSplitter->addWidget(newTab);
-
-    QSize splitterSize = newSplitter->sizeHint();
-    QList<int> sizes; sizes <<   splitterSize.width() / 2;
-    sizes << splitterSize.width() / 2;
+    newSplitter->insertChild_mt_safe(-1,newTab);
+    
+    /*Resize the whole thing so each split gets the same size*/
+    QSize splitterSize;
+    if (parentIsSplitter) {
+        splitterSize = newSplitter->sizeHint();
+    } else {
+        splitterSize = parentIsFloating->size();
+    }
+    
+    QList<int> sizes;
+    if (orientation == Qt::Vertical) {
+        sizes << splitterSize.height() / 2;
+        sizes << splitterSize.height() / 2;
+    } else if (orientation == Qt::Horizontal) {
+        sizes << splitterSize.width() / 2;
+        sizes << splitterSize.width() / 2;
+    } else {
+        assert(false);
+    }
     newSplitter->setSizes_mt_safe(sizes);
-
-    /*Inserting back the new splitter at the original index*/
-    container->insertWidget(oldIndex,newSplitter);
-
-    ///restore the container original sizes
-    container->setSizes_mt_safe(containerSizes);
-
-    _userSplits.push_back( std::make_pair(newTab,false) );
-
+    
+    if (parentIsFloating) {
+        parentIsFloating->setWidget(newSplitter);
+        parentIsFloating->resize(splitterSize);
+    } else {
+        /*The parent MUST be a splitter otherwise there's a serious bug!*/
+        assert(parentIsSplitter);
+        
+        /*Inserting back the new splitter at the original index*/
+        parentIsSplitter->insertChild_mt_safe(oldIndexInParentSplitter,newSplitter);
+        
+        /*restore the container original sizes*/
+        parentIsSplitter->setSizes_mt_safe(oldSizeInParentSplitter);
+    }
+    
+    
     if (!_gui->getApp()->getProject()->isLoadingProject() && autoSave) {
         _gui->getApp()->triggerAutoSave();
     }
-
+    
     return newTab;
-} // splitHorizontally
+
+}
+
+TabWidget*
+TabWidget::splitHorizontally(bool autoSave)
+{
+    return splitInternal(autoSave, Qt::Horizontal);
+}
 
 TabWidget*
 TabWidget::splitVertically(bool autoSave)
 {
-    Splitter* container = dynamic_cast<Splitter*>( parentWidget() );
-
-    if (!container) {
-        return NULL;
-    }
-
-    QList<int> containerSizes = container->sizes();
-
-    /*We need to know the position in the container layout of the old tab widget*/
-    int oldIndex = container->indexOf(this);
-    Splitter* newSplitter = new Splitter(container);
-    newSplitter->setObjectName_mt_safe(container->objectName() + TabWidget::splitVerticallyTag);
-    newSplitter->setContentsMargins(0, 0, 0, 0);
-    newSplitter->setOrientation(Qt::Vertical);
-    setVisible(false);
-    setParent(newSplitter);
-    newSplitter->addWidget(this);
-    setVisible(true);
-    _gui->registerSplitter(newSplitter);
-
-
-    /*Adding now a new tab*/
-    TabWidget* newTab = new TabWidget(_gui,newSplitter);
-
-    ///count the number of vertical splits that were already made to uniquely identify this split
-    int noVertiSplit = 0;
-    for (std::list< std::pair<TabWidget*,bool> >::iterator it = _userSplits.begin(); it != _userSplits.end(); ++it) {
-        if (it->second) {
-            ++noVertiSplit;
-        }
-    }
-
-    newTab->setObjectName_mt_safe( objectName() + TabWidget::splitVerticallyTag + QString::number(noVertiSplit) );
-    _gui->registerPane(newTab);
-    newSplitter->addWidget(newTab);
-
-    QSize splitterSize = newSplitter->sizeHint();
-    QList<int> sizes; sizes <<   splitterSize.height() / 2;
-    sizes << splitterSize.height() / 2;
-    newSplitter->setSizes_mt_safe(sizes);
-    /*Inserting back the new splitter at the original index*/
-    container->insertWidget(oldIndex,newSplitter);
-
-    ///restore the container original sizes
-    container->setSizes_mt_safe(containerSizes);
-
-    _userSplits.push_back( std::make_pair(newTab,true) );
-
-    if (!_gui->getApp()->getProject()->isLoadingProject() && autoSave) {
-        _gui->getApp()->triggerAutoSave();
-    }
-
-    return newTab;
-} // splitVertically
+    return splitInternal(autoSave, Qt::Vertical);
+} 
 
 bool
 TabWidget::appendTab(QWidget* widget)
@@ -955,7 +638,6 @@ TabWidget::removeTab(int index)
         return NULL;
     }
     QWidget* tab = _tabs[index];
-    _gui->unregisterTab(tab);
     _tabs.erase(_tabs.begin() + index);
     _modifyingTabBar = true;
     _tabBar->removeTab(index);
@@ -967,9 +649,9 @@ TabWidget::removeTab(int index)
     } else {
         _currentWidget = 0;
         _mainLayout->addStretch();
-        if ( _isFloating && !_gui->isDraggingPanel() ) {
+        if ( !_gui->isDraggingPanel() ) {
             l.unlock();
-            closeFloatingPane();
+            tryCloseFloatingPane();
             l.relock();
         }
     }
@@ -1032,13 +714,20 @@ TabWidget::makeCurrentTab(int index)
 void
 TabWidget::paintEvent(QPaintEvent* e)
 {
-    if (_drawDropRect) {
-        QColor c(243,149,0,255);
-        QPalette* palette = new QPalette();
-        palette->setColor(QPalette::Foreground,c);
-        setPalette(*palette);
-    }
+
     QFrame::paintEvent(e);
+    if (_drawDropRect) {
+        QRect r = rect();
+        QPainter p(this);
+        QPen pen;
+        pen.setBrush(QColor(243,149,0,255));
+        p.setPen(pen);
+        //        QPalette* palette = new QPalette();
+        //        palette->setColor(QPalette::Foreground,c);
+        //        setPalette(*palette);
+        r.adjust(0, 0, -1, -1);
+        p.drawRect(r);
+    }
 }
 
 void
@@ -1200,8 +889,8 @@ TabBar::mouseReleaseEvent(QMouseEvent* e)
 void
 TabWidget::stopDragTab(const QPoint & globalPos)
 {
-    if ( _isFloating && (count() == 0) ) {
-        closeFloatingPane();
+    if ( count() == 0 ) {
+        tryCloseFloatingPane();
     }
 
     QWidget* draggedPanel = _gui->stopDragPanel();
@@ -1272,6 +961,20 @@ TabWidget::isFullScreen() const
     return _fullScreen;
 }
 
+bool
+TabWidget::isViewerAnchor() const
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    return _isViewerAnchor;
+}
+
+void
+TabWidget::setAsViewerAnchor(bool anchor)
+{
+    QMutexLocker l(&_tabWidgetStateMutex);
+    _isViewerAnchor = anchor;
+}
+
 void
 TabWidget::keyPressEvent (QKeyEvent* e)
 {
@@ -1329,63 +1032,6 @@ TabWidget::moveTab(QWidget* what,
     return true;
 }
 
-void
-FloatingWidget::moveEvent(QMoveEvent* e)
-{
-    QWidget::moveEvent(e);
-    TabWidget* isTab = dynamic_cast<TabWidget*>(_embeddedWidget);
-
-    if (isTab) {
-        isTab->setWindowPos( pos() );
-    }
-}
-
-void
-FloatingWidget::resizeEvent(QResizeEvent* e)
-{
-    QWidget::resizeEvent(e);
-    TabWidget* isTab = dynamic_cast<TabWidget*>(_embeddedWidget);
-
-    if (isTab) {
-        isTab->setWindowSize( width(), height() );
-    }
-}
-
-QPoint
-TabWidget::getWindowPos_mt_safe() const
-{
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    return _mtSafeWindowPos;
-}
-
-void
-TabWidget::getWindowSize_mt_safe(int &w,
-                                 int &h) const
-{
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    w = _mtSafeWindowWidth;
-    h = _mtSafeWindowHeight;
-}
-
-void
-TabWidget::setWindowPos(const QPoint & globalPos)
-{
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    _mtSafeWindowPos = globalPos;
-}
-
-void
-TabWidget::setWindowSize(int w,
-                         int h)
-{
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    _mtSafeWindowWidth = w;
-    _mtSafeWindowHeight = h;
-}
 
 DragPixmap::DragPixmap(const QPixmap & pixmap,
                        const QPoint & offsetFromMouse)
@@ -1443,7 +1089,6 @@ void
 TabWidget::setObjectName_mt_safe(const QString & str)
 {
     QMutexLocker l(&_tabWidgetStateMutex);
-
     setObjectName(str);
 }
 
@@ -1451,86 +1096,19 @@ QString
 TabWidget::objectName_mt_safe() const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
-
     return objectName();
 }
 
-QString
-TabWidget::getTabWidgetParentName(const QString & objectName,
-                                  bool* isSplit,
-                                  bool* horizontal)
+bool
+TabWidget::isFloatingWindowChild() const
 {
-    QString nameCpy = objectName;
-    int indexOfVerticalTag = nameCpy.lastIndexOf(TabWidget::splitVerticallyTag);
-    int indexOfHorizontalTag = nameCpy.lastIndexOf(TabWidget::splitHorizontallyTag);
-    bool horizontalSplit;
-
-    if ( (indexOfHorizontalTag != -1) && (indexOfVerticalTag != -1) ) {
-        horizontalSplit = indexOfHorizontalTag > indexOfVerticalTag;
-    } else if ( (indexOfHorizontalTag != -1) && (indexOfVerticalTag == -1) ) {
-        horizontalSplit = true;
-    } else if ( (indexOfHorizontalTag == -1) && (indexOfVerticalTag != -1) ) {
-        horizontalSplit = false;
-    } else {
-        ///not a child
-        *isSplit = false;
-
-        return objectName;
-    }
-
-    ///Remove the index of the split located at the end of the name
-    int identifierIndex = nameCpy.size() - 1;
-    while ( identifierIndex >= 0 && nameCpy.at(identifierIndex).isDigit() ) {
-        --identifierIndex;
-    }
-    ++identifierIndex;
-    nameCpy = nameCpy.remove(identifierIndex, nameCpy.size() - identifierIndex);
-    if (!horizontalSplit) {
-        //this is a vertical split, find the parent widget and insert this widget as child
-
-        ///The goal of the next lines is to erase the split tag string from the name of the tab widget
-        /// to find out the name of the tab widget from whom this tab was originated
-        nameCpy = nameCpy.remove( indexOfVerticalTag, TabWidget::splitVerticallyTag.size() );
-        if (horizontal) {
-            *horizontal = false;
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(parent);
+        if (isFloating) {
+            return true;
         }
-        *isSplit = true;
-
-        return nameCpy;
-    } else if (indexOfHorizontalTag != -1) {
-        //this is a horizontal split, find the parent widget and insert this widget as child
-        nameCpy = nameCpy.remove( indexOfHorizontalTag, TabWidget::splitVerticallyTag.size() );
-        if (horizontal) {
-            *horizontal = true;
-        }
-        *isSplit = true;
-
-        return nameCpy;
-    } else {
-        *isSplit = false;
-
-        return objectName;
+        parent = parent->parentWidget();
     }
-} // getTabWidgetParentName
-
-QString
-TabWidget::getParentName(bool* horizontal) const
-{
-    bool isSplit;
-    QString objectN = objectName_mt_safe();
-    QString ret = getTabWidgetParentName(objectN, &isSplit, horizontal);
-
-    if (!isSplit) {
-        return "";
-    }
-
-    const std::list<TabWidget*> & panes = _gui->getPanes();
-    for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-        if ( (*it)->objectName_mt_safe() == ret ) {
-            return ret;
-        }
-    }
-
-    return "";
+    return false;
 }
-

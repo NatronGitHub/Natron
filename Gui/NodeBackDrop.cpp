@@ -119,7 +119,6 @@ NodeBackDrop::initialize(const QString & name,
     dockContainer->addWidget(_imp->settingsPanel);
 
     if (!requestedByLoad) {
-        _imp->graph->getGui()->putSettingsPanelFirst(_imp->settingsPanel);
         _imp->graph->getGui()->addVisibleDockablePanel(_imp->settingsPanel);
     } else {
         _imp->settingsPanel->setClosed(true);

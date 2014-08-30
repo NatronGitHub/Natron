@@ -91,6 +91,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ShortCutEditor.h"
+#include "Gui/NodeBackDrop.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -331,6 +332,9 @@ struct GuiPrivate
     mutable QMutex _panesMutex;
     std::list<TabWidget*> _panes;
 
+    mutable QMutex _floatingWindowMutex;
+    std::list<FloatingWidget*> _floatingWindows;
+    
     ///All the tabs used in the TabWidgets (used for d&d purpose)
     std::map<std::string,QWidget*> _registeredTabs;
 
@@ -349,14 +353,20 @@ struct GuiPrivate
 
     ///list of the currently opened property panels
     std::list<DockablePanel*> openedPanels;
+    
     QString _openGLVersion;
     QString _glewVersion;
+    
     QToolButton* _toolButtonMenuOpened;
+    
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
+    
     mutable QMutex abortedEnginesMutex;
     std::list<VideoEngine*> abortedEngines;
+    
     TabWidget* fullScreenWidgetDuringSave;
+    
     ShortCutEditor* shortcutEditor;
 
     GuiPrivate(GuiAppInstance* app,
@@ -442,6 +452,10 @@ struct GuiPrivate
           , viewersMenu(0)
           , viewerInputsMenu(0)
           , cacheMenu(0)
+          , _panesMutex()
+          , _panes()
+          , _floatingWindowMutex()
+          , _floatingWindows()
           , _settingsGui(0)
           , _projectGui(0)
           , _currentlyDraggedPanel(0)
@@ -491,6 +505,7 @@ get_icon(const QString &name)
 Gui::Gui(GuiAppInstance* app,
          QWidget* parent)
     : QMainWindow(parent)
+      , SerializableWindow()
       , _imp( new GuiPrivate(app,this) )
 
 {
@@ -909,7 +924,7 @@ Gui::setupUi()
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
 
     _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
-    _imp->_leftRightSplitter->setObjectName("ToolBar_splitter");
+    _imp->_leftRightSplitter->setObjectName(kMainSplitterObjectName);
     _imp->_splitters.push_back(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
@@ -1073,7 +1088,7 @@ Gui::wipeLayout()
     newSplitter->addWidget(_imp->_toolBox);
     newSplitter->setObjectName_mt_safe( _imp->_leftRightSplitter->objectName_mt_safe() );
     _imp->_mainLayout->removeWidget(_imp->_leftRightSplitter);
-    removeSplitter(_imp->_leftRightSplitter);
+    unregisterSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
     _imp->_mainLayout->addWidget(newSplitter);
@@ -1131,81 +1146,63 @@ Gui::createDefaultLayout1()
     workshopPane->makeCurrentTab(0);
 }
 
-static void
-restoreTabWidgetLayoutRecursively(Gui* gui,
-                                  const std::map<std::string,PaneLayout> & guiLayout,
-                                  std::map<std::string,PaneLayout>::const_iterator layout,
-                                  bool enableOldProjectCompatibility)
+static void restoreTabWidget(TabWidget* pane,const PaneLayout& serialization)
 {
-    const std::map<std::string,QWidget*> & registeredTabs = gui->getRegisteredTabs();
-    const std::list<TabWidget*> & registeredPanes = gui->getPanes();
-    QString serializedTabName( layout->first.c_str() );
-
-    ///for older projects before the layout change, map the old defaut tab names to new defaultLayout1 tab names
-    if (enableOldProjectCompatibility) {
-        if (serializedTabName == "PropertiesPane") {
-            serializedTabName = "ViewerPane" + TabWidget::splitHorizontallyTag + QString::number(0);
-        } else if (serializedTabName == "WorkshopPane") {
-            serializedTabName = "ViewerPane" + TabWidget::splitVerticallyTag + QString::number(0);
+    
+    ///Find out if the name is already used
+    QString availableName = pane->getGui()->getAvailablePaneName(serialization.name.c_str());
+    pane->setObjectName_mt_safe(availableName);
+    pane->setAsViewerAnchor(serialization.isViewerAnchor);
+    const std::map<std::string,QWidget*>& tabs = pane->getGui()->getRegisteredTabs();
+    for (std::list<std::string>::const_iterator it = serialization.tabs.begin(); it != serialization.tabs.end(); ++it) {
+        std::map<std::string,QWidget*>::const_iterator found = tabs.find(*it);
+        
+        ///If the tab exists in the current project, move it
+        if (found != tabs.end()) {
+            TabWidget::moveTab(found->second, pane);
         }
     }
+    pane->makeCurrentTab(serialization.currentIndex);
+}
 
-    TabWidget* pane = 0;
-    for (std::list<TabWidget*>::const_iterator it = registeredPanes.begin(); it != registeredPanes.end(); ++it) {
-        if ( (*it)->objectName() == serializedTabName ) {
-            ///For splits we should pass by here
-            pane = *it;
-        }
+static void restoreSplitterRecursive(Gui* gui,Splitter* splitter,const SplitterSerialization& serialization)
+{
+    Qt::Orientation qO;
+    Natron::Orientation nO = (Natron::Orientation)serialization.orientation;
+    switch (nO) {
+        case Natron::Horizontal:
+            qO = Qt::Horizontal;
+            break;
+        case Natron::Vertical:
+            qO = Qt::Vertical;
+            break;
+        default:
+            throw std::runtime_error("Unrecognized splitter orientation");
+            break;
     }
-
-    if (!pane) {
-        pane = new TabWidget(gui,gui);
-        gui->registerPane(pane);
-        pane->setObjectName_mt_safe(serializedTabName);
+    splitter->setOrientation(qO);
+    
+    if (serialization.children.size() != 2) {
+        throw std::runtime_error("Splitter has a child count that is not 2");
     }
-
-    //we found the pane, restore it!
-    for (std::list<bool>::const_iterator it2 = layout->second.splits.begin(); it2 != layout->second.splits.end(); ++it2) {
-        if (*it2) {
-            pane->splitVertically();
+    
+    for (std::vector<SplitterSerialization::Child*>::const_iterator it = serialization.children.begin();
+         it != serialization.children.end(); ++it) {
+        if ((*it)->child_asSplitter) {
+            Splitter* child = new Splitter(splitter);
+            splitter->addWidget_mt_safe(child);
+            restoreSplitterRecursive(gui,child, *((*it)->child_asSplitter));
         } else {
-            pane->splitHorizontally();
+            assert((*it)->child_asPane);
+            TabWidget* pane = new TabWidget(gui,splitter);
+            splitter->addWidget_mt_safe(pane);
+            restoreTabWidget(pane, *((*it)->child_asPane));
         }
     }
-    if (layout->second.floating) {
-        pane->floatPane();
-        FloatingWidget* window = dynamic_cast<FloatingWidget*>( pane->parentWidget() );
-        assert(window);
-        //QPoint pos(layout->second.posx,layout->second.posy);
-        window->move(layout->second.posx, layout->second.posy);
-        window->resize(layout->second.width, layout->second.height);
-    }
-
-    ///find all the tabs and move them to this widget
-    for (std::list<std::string>::const_iterator it2 = layout->second.tabs.begin(); it2 != layout->second.tabs.end(); ++it2) {
-        std::map<std::string,QWidget*>::const_iterator foundTab = registeredTabs.find(*it2);
-        if ( foundTab != registeredTabs.end() ) {
-            TabWidget::moveTab(foundTab->second,pane);
-        } else if ( *it2 == gui->getCurveEditor()->objectName().toStdString() ) {
-            TabWidget::moveTab(gui->getCurveEditor(),pane);
-        } else if ( *it2 == gui->getPropertiesScrollArea()->objectName().toStdString() ) {
-            TabWidget::moveTab(gui->getPropertiesScrollArea(), pane);
-        } else if ( *it2 == gui->getNodeGraph()->objectName().toStdString() ) {
-            TabWidget::moveTab(gui->getNodeGraph(), pane);
-        }
-    }
-
-    pane->makeCurrentTab(layout->second.currentIndex);
-
-    ///now call this recursively on the freshly new splits
-    for (std::list<std::string>::const_iterator it2 = layout->second.splitsNames.begin(); it2 != layout->second.splitsNames.end(); ++it2) {
-        //find in the guiLayout map the PaneLayout corresponding to the split
-        std::map<std::string,PaneLayout>::const_iterator splitIt = guiLayout.find(*it2);
-        if ( splitIt != guiLayout.end() ) {
-            restoreTabWidgetLayoutRecursively(gui, guiLayout, splitIt,enableOldProjectCompatibility);
-        }
-    }
-} // restoreTabWidgetLayoutRecursively
+    
+    splitter->restoreNatron(serialization.sizes.c_str());
+    
+}
 
 void
 Gui::restoreLayout(bool wipePrevious,
@@ -1217,51 +1214,103 @@ Gui::restoreLayout(bool wipePrevious,
         wipeLayout();
     }
 
-    ///For older projects prior to the layout change, try to load panes
+    ///For older projects prior to the layout change, just set default layout.
     if (enableOldProjectCompatibility) {
         createDefaultLayout1();
-    }
-
-    ///now restore the gui layout
-
-    const std::map<std::string,PaneLayout> & guiLayout = layoutSerialization._layout;
-    for (std::map<std::string,PaneLayout>::const_iterator it = guiLayout.begin(); it != guiLayout.end(); ++it) {
-        ///if it is a top level tab (i.e: the original tabs)
-        ///this will recursively restore all their splits
-        if ( it->second.parentName.empty() ) {
-            restoreTabWidgetLayoutRecursively(this, guiLayout, it,enableOldProjectCompatibility);
+    } else {
+        
+        std::list<ApplicationWindowSerialization*> floatingDockablePanels;
+        ///now restore the gui layout
+        for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
+             it!=layoutSerialization._windows.end(); ++it) {
+            QWidget* mainWidget = 0;
+            
+            ///The window contains only a pane (for the main window it also contains the toolbar)
+            if ((*it)->child_asPane) {
+                TabWidget* centralWidget = new TabWidget(this);
+                restoreTabWidget(centralWidget, *(*it)->child_asPane);
+                mainWidget = centralWidget;
+            }
+            ///The window contains a splitter as central widget
+            else if ((*it)->child_asSplitter) {
+                Splitter* centralWidget = new Splitter;
+                restoreSplitterRecursive(this,centralWidget, *(*it)->child_asSplitter);
+                mainWidget = centralWidget;
+            }
+            ///The child is a dockable panel, restore it later
+            else if (!(*it)->child_asDockablePanel.empty())
+            {
+                assert(!(*it)->isMainWindow);
+                floatingDockablePanels.push_back(*it);
+                continue;
+            }
+            
+            assert(mainWidget);
+            QWidget* window;
+            if ((*it)->isMainWindow) {
+                mainWidget->setParent(_imp->_leftRightSplitter);
+                _imp->_leftRightSplitter->addWidget_mt_safe(mainWidget);
+                window = this;
+            } else {
+                FloatingWidget* floatingWindow = new FloatingWidget(this,this);
+                floatingWindow->setWidget(mainWidget);
+                registerFloatingWindow(floatingWindow);
+                window = floatingWindow;
+            }
+            
+            ///Restore geometry
+            window->resize((*it)->w, (*it)->h);
+            window->move(QPoint((*it)->x,(*it)->y));
         }
-    }
-
-    ///now restore the splitters
-    const std::map<std::string,std::string> & splitters = layoutSerialization._splittersStates;
-    std::list<Splitter*> appSplitters = getSplitters();
-    for (std::map<std::string,std::string>::const_iterator it = splitters.begin(); it != splitters.end(); ++it) {
-        //find the splitter by name
-        for (std::list<Splitter*>::const_iterator it2 = appSplitters.begin(); it2 != appSplitters.end(); ++it2) {
-            if ( (*it2)->objectName().toStdString() == it->first ) {
-                //found a matching splitter, restore its state
-                QString splitterGeometry( it->second.c_str() );
-                if ( !splitterGeometry.isEmpty() ) {
-                    (*it2)->restoreNatron(splitterGeometry);
+        
+        for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
+             it!=floatingDockablePanels.end(); ++it) {
+            ///Find the node associated to the floating panel if any and float it
+            assert(!(*it)->child_asDockablePanel.empty());
+            if ((*it)->child_asDockablePanel == kNatronProjectSettingsPanelSerializationName) {
+                _imp->_projectGui->getPanel()->floatPanel();
+            } else {
+                ///Find a node with the dockable panel name
+                const std::list<boost::shared_ptr<NodeGui> >& nodes = getNodeGraph()->getAllActiveNodes();
+                bool found = false;
+                for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                    if ((*it2)->getNode()->getName_mt_safe() == (*it)->child_asDockablePanel) {
+                        ((*it2)->getSettingPanel()->floatPanel());
+                        found = true;
+                        break;
+                    }
                 }
-                break;
+                
+                if (!found) {
+                    ///try with backdrops setting panels
+                    const std::list<NodeBackDrop*> backdrops = getNodeGraph()->getActiveBackDrops();
+                    for (std::list<NodeBackDrop*>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
+                        if ((*it2)->getName_mt_safe() == (*it)->child_asDockablePanel) {
+                            ((*it2)->getSettingsPanel()->floatPanel());
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
             }
         }
+        
     }
-
-    {
-        QMutexLocker l(&_imp->_viewerTabsMutex);
-        for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2 != _imp->_viewerTabs.end(); ++it2) {
-            TabWidget::moveTab(*it2,_imp->_viewersPane);
-        }
-    }
-    {
-        QMutexLocker l(&_imp->_histogramsMutex);
-        for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2 != _imp->_histograms.end(); ++it2) {
-            TabWidget::moveTab(*it2,_imp->_viewersPane);
-        }
-    }
+    
+//    {
+//        QMutexLocker l(&_imp->_viewerTabsMutex);
+//        for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2 != _imp->_viewerTabs.end(); ++it2) {
+//            TabWidget::moveTab(*it2,_imp->_viewersPane);
+//        }
+//    }
+//    {
+//        QMutexLocker l(&_imp->_histogramsMutex);
+//        for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2 != _imp->_histograms.end(); ++it2) {
+//            TabWidget::moveTab(*it2,_imp->_viewersPane);
+//        }
+//    }
+    
 } // restoreLayout
 
 void
@@ -1565,7 +1614,6 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
 void
 Gui::setVisibleProjectSettingsPanel()
 {
-    putSettingsPanelFirst( _imp->_projectGui->getPanel() );
     addVisibleDockablePanel( _imp->_projectGui->getPanel() );
     if ( !_imp->_projectGui->isVisible() ) {
         _imp->_projectGui->setVisible(true);
@@ -1597,14 +1645,14 @@ void
 Gui::maximize(TabWidget* what)
 {
     assert(what);
-    if ( what->isFloating() ) {
+    if ( what->isFloatingWindowChild() ) {
         return;
     }
 
     QMutexLocker l(&_imp->_panesMutex);
     for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
         //if the widget is not what we want to maximize and it is not floating , hide it
-        if ( (*it != what) && !(*it)->isFloating() ) {
+        if ( (*it != what) && !(*it)->isFloatingWindowChild() ) {
             // also if we want to maximize the workshop pane, don't hide the properties pane
 
             bool hasProperties = false;
@@ -1745,11 +1793,39 @@ Gui::unregisterTab(QWidget* tab)
 }
 
 void
+Gui::registerFloatingWindow(FloatingWidget* window)
+{
+    QMutexLocker k(&_imp->_floatingWindowMutex);
+    std::list<FloatingWidget*>::iterator found = std::find(_imp->_floatingWindows.begin(),_imp->_floatingWindows.end(),window);
+    if (found == _imp->_floatingWindows.end()) {
+        _imp->_floatingWindows.push_back(window);
+    }
+}
+
+void
+Gui::unregisterFloatingWindow(FloatingWidget* window)
+{
+    QMutexLocker k(&_imp->_floatingWindowMutex);
+    std::list<FloatingWidget*>::iterator found = std::find(_imp->_floatingWindows.begin(),_imp->_floatingWindows.end(),window);
+    if (found != _imp->_floatingWindows.end()) {
+        _imp->_floatingWindows.erase(found);
+    }
+}
+                              
+std::list<FloatingWidget*>
+Gui::getFloatingWindows() const
+{
+    QMutexLocker l(&_imp->_floatingWindowMutex);
+    return _imp->_floatingWindows;
+}
+
+void
 Gui::removeViewerTab(ViewerTab* tab,
                      bool initiatedFromNode,
                      bool deleteData)
 {
     assert(tab);
+    unregisterTab(tab);
 
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
@@ -1773,7 +1849,6 @@ Gui::removeViewerTab(ViewerTab* tab,
             delete tab;
         }
     }
-
     emit viewersChanged();
 }
 
@@ -1793,6 +1868,7 @@ Gui::addNewHistogram()
 void
 Gui::removeHistogram(Histogram* h)
 {
+    unregisterTab(h);
     QMutexLocker l(&_imp->_histogramsMutex);
     std::list<Histogram*>::iterator it = std::find(_imp->_histograms.begin(),_imp->_histograms.end(),h);
 
@@ -1818,7 +1894,7 @@ Gui::getHistograms_mt_safe() const
 }
 
 void
-Gui::removePane(TabWidget* pane)
+Gui::unregisterPane(TabWidget* pane)
 {
     QMutexLocker l(&_imp->_panesMutex);
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
@@ -1867,7 +1943,7 @@ Gui::registerSplitter(Splitter* s)
 }
 
 void
-Gui::removeSplitter(Splitter* s)
+Gui::unregisterSplitter(Splitter* s)
 {
     QMutexLocker l(&_imp->_splittersMutex);
     std::list<Splitter*>::iterator found = std::find(_imp->_splitters.begin(), _imp->_splitters.end(), s);
@@ -3171,13 +3247,45 @@ Gui::getPanes_mt_safe() const
     return _imp->_panes;
 }
 
-std::list<Splitter*>
-Gui::getSplitters() const
+int
+Gui::getPanesCount() const
 {
-    QMutexLocker l(&_imp->_splittersMutex);
-
-    return _imp->_splitters;
+    QMutexLocker l(&_imp->_panesMutex);
+    
+    return (int)_imp->_panes.size();
 }
+
+QString
+Gui::getAvailablePaneName(const QString& baseName) const
+{
+    QString name = baseName;
+    
+    QMutexLocker l(&_imp->_panesMutex);
+
+    int baseNumber = _imp->_panes.size();
+    if (name.isEmpty()) {
+        name.append("Pane");
+        name.append(QString::number(baseNumber));
+    }
+    
+    for(;;) {
+        bool foundName = false;
+        for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+            if ((*it)->objectName_mt_safe() == name) {
+                foundName = true;
+                break;
+            }
+        }
+        if (foundName) {
+            ++baseNumber;
+            name = QString("Pane%1").arg(baseNumber);
+        } else {
+            break;
+        }
+    }
+    return name;
+}
+
 
 void
 Gui::setUserScrubbingTimeline(bool b)
@@ -3226,6 +3334,24 @@ Gui::appendTabToDefaultViewerPane(QWidget* tab)
 {
     assert(_imp->_viewersPane);
     _imp->_viewersPane->appendTab(tab);
+}
+
+QWidget*
+Gui::getCentralWidget() const
+{
+    std::list<QWidget*> children;
+    _imp->_leftRightSplitter->getChildren_mt_safe(children);
+    if (children.size() != 2) {
+        ///something is wrong
+        return NULL;
+    }
+    for (std::list<QWidget*>::iterator it = children.begin() ;it!=children.end();++it) {
+        if (*it == _imp->_toolBox) {
+            continue;
+        }
+        return *it;
+    }
+    return NULL;
 }
 
 const std::map<std::string,QWidget*> &
@@ -3547,13 +3673,14 @@ Gui::progressUpdate(Natron::EffectInstance* effect,
 void
 Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
+    putSettingsPanelFirst(panel);
     assert(panel);
     int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
     if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
         std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
         (*it)->closePanel();
     }
-    _imp->openedPanels.push_back(panel);
+    _imp->openedPanels.push_front(panel);
 }
 
 void
@@ -3654,3 +3781,114 @@ Gui::disconnectViewersFromViewerCache()
     }
 }
 
+void
+Gui::moveEvent(QMoveEvent* e)
+{
+    QMainWindow::moveEvent(e);
+    QPoint p = pos();
+    setMtSafePosition(p.x(), p.y());
+}
+
+void
+Gui::resizeEvent(QResizeEvent* e)
+{
+    QMainWindow::resizeEvent(e);
+    setMtSafeWindowSize(width(), height());
+}
+
+
+
+FloatingWidget::FloatingWidget(Gui* gui,QWidget* parent)
+: QWidget(parent)
+, SerializableWindow()
+, _embeddedWidget(0)
+, _layout(0)
+, _gui(gui)
+{
+    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    setAttribute(Qt::WA_DeleteOnClose,true);
+    _layout = new QVBoxLayout(this);
+    _layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(_layout);
+}
+
+FloatingWidget::~FloatingWidget()
+{
+    
+}
+
+void
+FloatingWidget::setWidget(QWidget* w)
+{
+    QSize widgetSize = w->size();
+    assert(w);
+    if (_embeddedWidget) {
+        return;
+    }
+    _embeddedWidget = w;
+    w->setParent(this);
+    assert(_layout);
+    _layout->addWidget(w);
+    w->setVisible(true);
+    w->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    resize(widgetSize);
+    show();
+}
+
+void
+FloatingWidget::removeEmbeddedWidget()
+{
+    if (!_embeddedWidget) {
+        return;
+    }
+    _layout->removeWidget(_embeddedWidget);
+    _embeddedWidget->setParent(NULL);
+    _embeddedWidget = 0;
+    // _embeddedWidget->setVisible(false);
+    hide();
+}
+
+void
+FloatingWidget::moveEvent(QMoveEvent* e)
+{
+    QWidget::moveEvent(e);
+    QPoint p = pos();
+    setMtSafePosition(p.x(), p.y());
+}
+
+void
+FloatingWidget::resizeEvent(QResizeEvent* e)
+{
+    QWidget::resizeEvent(e);
+    setMtSafeWindowSize(width(), height());
+}
+
+static void closeWidgetRecursively(QWidget* w)
+{
+    Splitter* isSplitter = dynamic_cast<Splitter*>(w);
+    TabWidget* isTab = dynamic_cast<TabWidget*>(w);
+    
+    if (!isSplitter && !isTab) {
+        return;
+    }
+    
+    if (isTab) {
+        isTab->closePane();
+    } else {
+        assert(isSplitter);
+        for (int i = 0;i < isSplitter->count() ;++i) {
+            closeWidgetRecursively(isSplitter->widget(i));
+        }
+    }
+}
+
+void
+FloatingWidget::closeEvent(QCloseEvent* e)
+{
+    
+    emit closed();
+    closeWidgetRecursively(_embeddedWidget);
+    removeEmbeddedWidget();
+    _gui->unregisterFloatingWindow(this);
+    QWidget::closeEvent(e);
+}

@@ -307,6 +307,12 @@ enum StorageMode
     RAM = 0,
     DISK
 };
+    
+enum Orientation
+{
+    Horizontal = 0x1,
+    Vertical = 0x2
+};
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

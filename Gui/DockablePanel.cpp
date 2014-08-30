@@ -1105,13 +1105,15 @@ DockablePanel::floatPanel()
     _imp->_floating = !_imp->_floating;
     if (_imp->_floating) {
         assert(!_imp->_floatingWidget);
-        _imp->_floatingWidget = new FloatingWidget(_imp->_gui);
+        _imp->_floatingWidget = new FloatingWidget(_imp->_gui,_imp->_gui);
         QObject::connect( _imp->_floatingWidget,SIGNAL( closed() ),this,SLOT( closePanel() ) );
         _imp->_container->removeWidget(this);
-        _imp->_floatingWidget->setWidget(size(),this);
+        _imp->_floatingWidget->setWidget(this);
+        _imp->_gui->registerFloatingWindow(_imp->_floatingWidget);
     } else {
         assert(_imp->_floatingWidget);
-        _imp->_floatingWidget->removeWidget();
+        _imp->_gui->unregisterFloatingWindow(_imp->_floatingWidget);
+        _imp->_floatingWidget->removeEmbeddedWidget();
         setParent( _imp->_container->parentWidget() );
         _imp->_container->insertWidget(1, this);
         delete _imp->_floatingWidget;
@@ -1164,6 +1166,7 @@ DockablePanel::getGui() const
 {
     return _imp->_gui;
 }
+
 
 void
 DockablePanel::insertHeaderWidget(int index,
