@@ -435,7 +435,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
     return true;
 }
 
-RestoreDefaultsCommand::RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
+RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
                                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
       , _knobs(knobs)

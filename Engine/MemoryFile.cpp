@@ -54,7 +54,7 @@ struct MemoryFilePrivate
           , file_handle(-1)
 #elif defined(__NATRON_WIN32__)
           , file_handle(INVALID_HANDLE_VALUE),
-          , file_mappinghandle_(INVALID_HANDLE_VALUE)
+          , file_mappinghandle(INVALID_HANDLE_VALUE)
 #endif
     {
     }

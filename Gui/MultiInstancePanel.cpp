@@ -413,7 +413,12 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->view->setHorizontalHeaderLabels(dimensionNames);
 
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect,0);
+    
+#if QT_VERSION < 0x050000
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
+#else
+    _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+#endif
     _imp->view->header()->setStretchLastSection(true);
 
 
