@@ -1272,25 +1272,31 @@ Gui::restoreLayout(bool wipePrevious,
             } else {
                 ///Find a node with the dockable panel name
                 const std::list<boost::shared_ptr<NodeGui> >& nodes = getNodeGraph()->getAllActiveNodes();
-                bool found = false;
+                DockablePanel* panel = 0;
                 for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
                     if ((*it2)->getNode()->getName_mt_safe() == (*it)->child_asDockablePanel) {
                         ((*it2)->getSettingPanel()->floatPanel());
-                        found = true;
+                        panel = (*it2)->getSettingPanel();
                         break;
                     }
                 }
                 
-                if (!found) {
+                if (!panel) {
                     ///try with backdrops setting panels
                     const std::list<NodeBackDrop*> backdrops = getNodeGraph()->getActiveBackDrops();
                     for (std::list<NodeBackDrop*>::const_iterator it2 = backdrops.begin(); it2!=backdrops.end(); ++it2) {
                         if ((*it2)->getName_mt_safe() == (*it)->child_asDockablePanel) {
                             ((*it2)->getSettingsPanel()->floatPanel());
-                            found = true;
+                            panel = (*it2)->getSettingsPanel();
                             break;
                         }
                     }
+                }
+                if (panel) {
+                    FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
+                    assert(fWindow);
+                    fWindow->move(QPoint((*it)->x,(*it)->y));
+                    fWindow->resize((*it)->w,(*it)->h);
                 }
                 
             }
@@ -1298,18 +1304,6 @@ Gui::restoreLayout(bool wipePrevious,
         
     }
     
-//    {
-//        QMutexLocker l(&_imp->_viewerTabsMutex);
-//        for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2 != _imp->_viewerTabs.end(); ++it2) {
-//            TabWidget::moveTab(*it2,_imp->_viewersPane);
-//        }
-//    }
-//    {
-//        QMutexLocker l(&_imp->_histogramsMutex);
-//        for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2 != _imp->_histograms.end(); ++it2) {
-//            TabWidget::moveTab(*it2,_imp->_viewersPane);
-//        }
-//    }
     
 } // restoreLayout
 
