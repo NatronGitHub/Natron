@@ -14,7 +14,7 @@
 #include <set>
 #include <map>
 #include <vector>
-
+#include <locale>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QGraphicsProxyWidget>
@@ -2399,7 +2399,7 @@ NodeGraph::dropEvent(QDropEvent* e)
     }
 
     std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
-
+	std::locale local;
     for (U32 i = 0; i < files.size(); ++i) {
         ///get all the decoders
         std::map<std::string,std::string> readersForFormat;
@@ -2411,7 +2411,7 @@ NodeGraph::dropEvent(QDropEvent* e)
         std::string ext = sequence->fileExtension();
         std::string extLower;
         for (size_t j = 0; j < ext.size(); ++j) {
-            extLower.append( 1,std::tolower( ext.at(j) ) );
+            extLower.append( 1,std::tolower( ext.at(j),local ) );
         }
         std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
         if ( found == readersForFormat.end() ) {

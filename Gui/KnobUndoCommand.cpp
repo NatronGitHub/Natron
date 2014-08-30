@@ -106,6 +106,11 @@ PasteUndoCommand::undo()
             }
         }
         ++i;
+
+		///On Windows going pass .end() will crash...
+		if ( next == oldValues.end() ) {
+			--next;
+		}
     }
     if (_copyAnimation) {
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
@@ -175,6 +180,10 @@ PasteUndoCommand::redo()
             }
         }
         ++i;
+		///On Windows going pass .end() will crash...
+		if ( next == newValues.end() ) {
+			--next;
+		}
     }
     if ( !newCurves.empty() ) {
         _knob->removeAllKeyframeMarkersOnTimeline(-1);

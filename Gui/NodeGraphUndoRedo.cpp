@@ -293,8 +293,9 @@ RemoveMultipleNodesCommand::undo()
     std::list<ViewerInstance*> viewersToRefresh;
     std::list<SequenceTime> allKeysToAdd;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
-
-    ++next;
+	if (!_nodes.empty()) {
+		++next;
+	}
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
         it->node->getNode()->activate(it->outputsToRestore,false,false);
         if ( it->node->isSettingsPanelVisible() ) {
@@ -308,6 +309,11 @@ RemoveMultipleNodesCommand::undo()
                 viewersToRefresh.push_back(*it2);
             }
         }
+
+		///On Windows going pass .end() will crash...
+		if ( next == _nodes.end() ) {
+			--next;
+		}
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
         (*it)->activate();
@@ -332,7 +338,9 @@ RemoveMultipleNodesCommand::redo()
 
     std::list<ViewerInstance*> viewersToRefresh;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
-    ++next;
+	if (!_nodes.empty()) {
+		++next;
+	}
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
         ///Make a copy before calling deactivate which will modify the list
         std::list<boost::shared_ptr<Natron::Node> > outputs = it->node->getNode()->getOutputs();
@@ -384,6 +392,11 @@ RemoveMultipleNodesCommand::redo()
         if ( it->node->isSettingsPanelVisible() ) {
             it->node->getNode()->hideKeyframesFromTimeline( next == _nodes.end() );
         }
+
+		///On Windows going pass .end() will crash...
+		if (next == _nodes.end() ) {
+			--next;
+		}
     }
     for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
         (*it)->deactivate();
