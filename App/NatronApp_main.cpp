@@ -14,10 +14,8 @@
 #include <QApplication>
 
 #if defined(Q_OS_UNIX)
-#include <sys/time.h>
-#include <sys/resource.h>
-#elif defined(Q_OS_WIN)
-#include <windows.h>
+//#include <sys/time.h> // <why ?
+#include <sys/signal.h> ///for handling signals
 #endif
 
 #include "Gui/GuiApplicationManager.h"
@@ -31,35 +29,6 @@ main(int argc,
      char *argv[])
 {
     
-    /* Windows is not affected by this issue due to the way it handles opened files in memory. */
-#if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
-    /*
-       Avoid 'Too many open files' on Unix.
-
-       Increase the number of file descriptors that the process can open to the maximum allowed.
-       - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
-       - On Linux, the default limit is usually 1024.
-     */
-    struct rlimit rl;
-    if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
-        if (rl.rlim_max > rl.rlim_cur) {
-            rl.rlim_cur = rl.rlim_max;
-            if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
-#             if defined(__APPLE__) && defined(OPEN_MAX)
-                // On Mac OS X, setrlimit(RLIMIT_NOFILE, &rl) fails to set
-                // rlim_cur above OPEN_MAX even if rlim_max > OPEN_MAX.
-                if (rl.rlim_cur > OPEN_MAX) {
-                    rl.rlim_cur = OPEN_MAX;
-                    setrlimit(RLIMIT_NOFILE, &rl);
-                }
-#             endif
-            }
-        }
-    }
-#elif defined(Q_OS_WIN) 
-	_setmaxstdio(2048);
-#endif
-	
 
     bool isBackground;
     QString projectName,mainProcessServerName;

@@ -10,6 +10,12 @@
 
 #include "AppManager.h"
 
+#if defined(Q_OS_UNIX)
+#include <sys/resource.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
+#endif
+
 #include <clocale>
 
 #include <QDebug>
@@ -70,6 +76,12 @@ struct AppManagerPrivate
     mutable QMutex _ofxLogMutex;
     QString _ofxLog;
 
+    
+    size_t maxCacheFiles;//< the maximum number of files the application can open for caching. This is the hard limit * 0.9
+    
+    size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
+    mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount
+    
     AppManagerPrivate()
         : _appType(AppManager::APP_BACKGROUND)
           , _appInstances()
@@ -89,8 +101,12 @@ struct AppManagerPrivate
           ,_nodesGlobalMemoryUse(0)
           ,_ofxLogMutex()
           ,_ofxLog()
+          ,maxCacheFiles(0)
+          ,currentCacheFilesCount(0)
+          ,currentCacheFilesCountMutex()
 
     {
+        setMaxCacheFiles();
     }
 
     void initProcessInputChannel(const QString & mainProcessServerName);
@@ -104,6 +120,11 @@ struct AppManagerPrivate
     bool checkForCacheDiskStructure(const QString & cachePath);
 
     void cleanUpCacheDiskStructure(const QString & cachePath);
+    
+    /**
+     * @brief Called on startup to initialize the max opened files
+     **/
+    void setMaxCacheFiles();
 };
 
 void
@@ -205,6 +226,7 @@ AppManager::AppManager()
 {
     assert(!_instance);
     _instance = this;
+    
 }
 
 bool
@@ -258,10 +280,12 @@ AppManager::~AppManager()
     if (_imp->_backgroundIPC) {
         delete _imp->_backgroundIPC;
     }
+    
+    _imp->saveCaches();
+
 
     _instance = 0;
 
-    _imp->saveCaches();
 
     if (qApp) {
         delete qApp;
@@ -1338,6 +1362,75 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
             cacheFolder.mkdir( str.c_str() );
         }
     }
+}
+
+void
+AppManagerPrivate::setMaxCacheFiles()
+{
+    /*Default to something reasonnable if the code below would happen to not work for some reason*/
+    size_t hardMax = 10000;
+    
+#if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
+    /*
+     Avoid 'Too many open files' on Unix.
+     
+     Increase the number of file descriptors that the process can open to the maximum allowed.
+     - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
+     - On Linux, the default limit is usually 1024.
+     */
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
+        if (rl.rlim_max > rl.rlim_cur) {
+            rl.rlim_cur = rl.rlim_max;
+            if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
+#             if defined(__APPLE__) && defined(OPEN_MAX)
+                // On Mac OS X, setrlimit(RLIMIT_NOFILE, &rl) fails to set
+                // rlim_cur above OPEN_MAX even if rlim_max > OPEN_MAX.
+                if (rl.rlim_cur > OPEN_MAX) {
+                    rl.rlim_cur = OPEN_MAX;
+                    hardMax = rl.rlim_cur;
+                    setrlimit(RLIMIT_NOFILE, &rl);
+                }
+#             endif
+            } else {
+                hardMax = rl.rlim_cur;
+            }
+        }
+    }
+#elif defined(Q_OS_WIN)
+	_setmaxstdio(2048);
+    hardMax = 2048;
+#endif
+
+    maxCacheFiles = hardMax * 0.9;
+}
+
+bool
+AppManager::isNCacheFilesOpenedCapped() const
+{
+    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+    return _imp->currentCacheFilesCount >= _imp->maxCacheFiles;
+}
+
+size_t
+AppManager::getNCacheFilesOpened() const
+{
+    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+    return _imp->currentCacheFilesCount;
+}
+
+void
+AppManager::increaseNCacheFilesOpened()
+{
+    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+    ++_imp->currentCacheFilesCount;
+}
+
+void
+AppManager::decreaseNCacheFilesOpened()
+{
+    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
+    --_imp->currentCacheFilesCount;
 }
 
 void

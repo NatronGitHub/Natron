@@ -533,8 +533,13 @@ GuiPrivate::notifyGuiClosing()
     for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin(); it != _viewerTabs.end(); ++it) {
         (*it)->notifyAppClosing();
     }
-    for (std::list<DockablePanel*>::iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
-        (*it)->onGuiClosing();
+    
+    const std::list<boost::shared_ptr<NodeGui> > allNodes = _nodeGraphArea->getAllActiveNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        DockablePanel* panel = (*it)->getSettingPanel();
+        if (panel) {
+            panel->onGuiClosing();
+        }
     }
     _nodeGraphArea->discardGuiPointer();
 }
@@ -591,8 +596,8 @@ Gui::abortProject(bool quitApp)
 
         assert(_imp->_appInstance);
 
-        _imp->_appInstance->getProject()->closeProject();
         _imp->notifyGuiClosing();
+        _imp->_appInstance->getProject()->closeProject();
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->getProject()->closeProject();

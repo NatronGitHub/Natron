@@ -13,7 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
-
+#include "Engine/AppManager.h"
 #include "Engine/Hash64.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
@@ -152,7 +152,12 @@ public:
         if ( (_buffer.size() > 0) || _backingFile ) {
             return;
         }
-
+        
+        ///If too many files are opened by the cache, fallback on RAM...
+        if ( appPTR->isNCacheFilesOpenedCapped() ) {
+            cost = 0;
+        }
+        
         if (cost >= 1) {
             _storageMode = DISK;
             _path = path;
@@ -168,6 +173,9 @@ public:
 
                 return;
             }
+            
+            ///Increase the number of files opened by the cache so the application is aware of it
+            appPTR->increaseNCacheFilesOpened();
 
             if ( !path.empty() && (count != 0) ) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
@@ -205,6 +213,7 @@ public:
             _backingFile.reset();
             throw std::bad_alloc();
         }
+        appPTR->increaseNCacheFilesOpened();
     }
 
     void restoreBufferFromFile(const std::string & path)
@@ -215,7 +224,7 @@ public:
             _backingFile.reset();
             throw std::bad_alloc();
         }
-
+        appPTR->increaseNCacheFilesOpened();
         _path = path;
         _storageMode = DISK;
     }
@@ -228,6 +237,7 @@ public:
             if (_backingFile) {
                 bool flushOk = _backingFile->flush();
                 _backingFile.reset();
+                appPTR->decreaseNCacheFilesOpened();
                 if (!flushOk) {
                     throw std::runtime_error("Failed to flush RAM data to backing file.");
                 }
@@ -241,6 +251,7 @@ public:
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
+                appPTR->decreaseNCacheFilesOpened();
             } else {
                 ::remove( _path.c_str() );
             }

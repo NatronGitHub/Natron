@@ -252,6 +252,11 @@ public:
                         int major,
                         int minor);
 
+    bool isNCacheFilesOpenedCapped() const;
+    size_t getNCacheFilesOpened() const;
+    void increaseNCacheFilesOpened();
+    void decreaseNCacheFilesOpened();
+    
 public slots:
 
     ///Closes the application not saving any projects.

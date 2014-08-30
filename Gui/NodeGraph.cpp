@@ -2936,6 +2936,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 
     
     n->deleteReferences();
+    n->discardGraphPointer();
 
     if ( getGui() ) {
         getGui()->removeRotoInterface(n.get(),true);
