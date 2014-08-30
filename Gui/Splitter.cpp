@@ -113,3 +113,4 @@ Splitter::getChildren_mt_safe(std::list<QWidget*>& children) const
         children.push_back(widget(i));
     }
 }
+

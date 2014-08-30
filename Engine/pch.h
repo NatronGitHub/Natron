@@ -44,9 +44,9 @@ CLANG_DIAG_ON(deprecated);
 
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 //        static T cast(U u){
-CLANG_DIAG_OFF(unused - parameter);
+CLANG_DIAG_OFF(unused-parameter);
 #include <boost/serialization/smart_cast.hpp>
-CLANG_DIAG_ON(unused - parameter);
+CLANG_DIAG_ON(unused-parameter);
 
 //In file included from /opt/local/include/boost/bimap/list_of.hpp:37:
 //In file included from /opt/local/include/boost/bimap/views/list_map_view.hpp:22:
@@ -56,23 +56,23 @@ CLANG_DIAG_ON(unused - parameter);
 //In file included from /opt/local/include/boost/bimap/relation/support/is_tag_of_member_at.hpp:26:
 ///opt/local/include/boost/bimap/relation/support/member_with_tag.hpp:73:5: warning: class member cannot be redeclared [-Wredeclared-class-member]
 //    BOOST_BIMAP_STATIC_ERROR( MEMBER_WITH_TAG_FAILURE, (Relation,Tag) );
-CLANG_DIAG_OFF(redeclared - class - member)
+CLANG_DIAG_OFF(redeclared-class-member)
 #include <boost/bimap.hpp>
-CLANG_DIAG_ON(redeclared - class - member)
+CLANG_DIAG_ON(redeclared-class-member)
 
 #if QT_VERSION < 0x050000
-CLANG_DIAG_OFF(unused - private - field);
+CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
-CLANG_DIAG_ON(unused - private - field);
+CLANG_DIAG_ON(unused-private-field);
 #endif
 
 //In file included from ../Natron/Writers/ExrEncoder.cpp:20:
 ///opt/local/include/OpenEXR/half.h:471:2: warning: 'register' storage class specifier is deprecated [-Wdeprecated-register]
 //        register int e = (x.i >> 23) & 0x000001ff;
 //        ^~~~~~~~~
-CLANG_DIAG_OFF(deprecated - register);
+CLANG_DIAG_OFF(deprecated-register);
 #include <OpenEXR/half.h>
-CLANG_DIAG_ON(deprecated - register);
+CLANG_DIAG_ON(deprecated-register);
 
 #endif // __clang__
 
