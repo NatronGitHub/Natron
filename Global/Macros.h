@@ -398,6 +398,14 @@
 #  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA(push) \
     GCC_DIAG_PRAGMA( ignored GCC_DIAG_JOINSTR(-W,x) )
 #  define GCC_DIAG_ON(x) GCC_DIAG_PRAGMA(pop)
+#  if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+//  -Wunused-private-field appeared with GCC 4.8
+#   define GCC_DIAG_OFF_48(x) GCC_DIAG_OFF(x)
+#   define GCC_DIAG_ON_48(x) GCC_DIAG_ON(x)
+#  else
+#   define GCC_DIAG_OFF_48(x)
+#   define GCC_DIAG_ON_48(x)
+#  endif
 # else
 #  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA( ignored GCC_DIAG_JOINSTR(-W,x) )
 #  define GCC_DIAG_ON(x)  GCC_DIAG_PRAGMA( warning GCC_DIAG_JOINSTR(-W,x) )
