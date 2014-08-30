@@ -152,21 +152,18 @@ struct PaneLayout
     std::string name;
     
     ///This is only used to restore compatibility with project saved prior to PANE_SERIALIZATION_MAJOR_OVERHAUL
-    PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE* compat1;
     
     PaneLayout()
     : tabs()
     , currentIndex(-1)
     , isViewerAnchor(false)
     , name()
-    , compat1(NULL)
     {
         
     }
     
     ~PaneLayout()
     {
-        delete compat1;
     }
     
     void initialize(TabWidget* tab);
@@ -188,22 +185,22 @@ struct PaneLayout
               const unsigned int version)
     {
         if (version < PANE_SERIALIZATION_MAJOR_OVERHAUL) {
-            compat1 = new PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE;
+            PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE compat1;
             
-            ar & boost::serialization::make_nvp("Floating",compat1->floating);
-            ar & boost::serialization::make_nvp("Splits",compat1->splits);
-            ar & boost::serialization::make_nvp("ParentName",compat1->parentName);
-            ar & boost::serialization::make_nvp("SplitsNames",compat1->splitsNames);
+            ar & boost::serialization::make_nvp("Floating",compat1.floating);
+            ar & boost::serialization::make_nvp("Splits",compat1.splits);
+            ar & boost::serialization::make_nvp("ParentName",compat1.parentName);
+            ar & boost::serialization::make_nvp("SplitsNames",compat1.splitsNames);
             ar & boost::serialization::make_nvp("Tabs",tabs);
             if (version >= PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB) {
                 ar & boost::serialization::make_nvp("Index",currentIndex);
             }
             if (version >= PANE_SERIALIZATION_INTRODUCES_SIZE) {
-                if (compat1->floating) {
-                    ar & boost::serialization::make_nvp("x",compat1->posx);
-                    ar & boost::serialization::make_nvp("y",compat1->posy);
-                    ar & boost::serialization::make_nvp("w",compat1->width);
-                    ar & boost::serialization::make_nvp("h",compat1->height);
+                if (compat1.floating) {
+                    ar & boost::serialization::make_nvp("x",compat1.posx);
+                    ar & boost::serialization::make_nvp("y",compat1.posy);
+                    ar & boost::serialization::make_nvp("w",compat1.width);
+                    ar & boost::serialization::make_nvp("h",compat1.height);
                 }
             }
         } else {
