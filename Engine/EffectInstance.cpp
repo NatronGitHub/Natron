@@ -2946,16 +2946,6 @@ EffectInstance::getNearestNonDisabled() const
     }
 }
 
-/**
- * @brief Returns a pointer to the first non identity upstream node.
- * When cycling through the tree, we prefer non optional inputs and we span inputs
- * from last to first.
- **/
-Natron::EffectInstance*
-EffectInstance::getNearestNonIdentity() const
-{
-    
-}
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)

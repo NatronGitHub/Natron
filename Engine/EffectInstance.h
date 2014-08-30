@@ -400,13 +400,6 @@ public:
      **/
     Natron::EffectInstance* getNearestNonDisabled() const;
     
-    /**
-     * @brief Returns a pointer to the first non identity upstream node.
-     * When cycling through the tree, we prefer non optional inputs and we span inputs
-     * from last to first.
-    * If this not is not identity, it will return a pointer to this.
-     **/
-    Natron::EffectInstance* getNearestNonIdentity() const;
     
 protected:
     /**
