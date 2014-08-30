@@ -116,6 +116,9 @@ private:
                 }
             }
             ++i;
+			if (next == _oldValue.end()) {
+				--next;
+			}
         }
         if (modifiedKeyFrame) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
@@ -167,6 +170,9 @@ private:
                 _merge = false;
             }
             ++i;
+			if (next == _newValue.end()) {
+				--next;
+			}
         }
 
         if (modifiedKeyFrames) {
