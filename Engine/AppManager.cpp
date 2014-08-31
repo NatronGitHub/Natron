@@ -1463,6 +1463,11 @@ AppManager::increaseNCacheFilesOpened()
 {
     QMutexLocker l(&_imp->currentCacheFilesCountMutex);
     ++_imp->currentCacheFilesCount;
+#ifdef DEBUG
+    if (_imp->currentCacheFilesCount > _imp->maxCacheFiles) {
+        qDebug() << "Cache has more files opened than the limit allowed: " << _imp->currentCacheFilesCount << " / " << _imp->maxCacheFiles;
+    }
+#endif
 }
 
 void

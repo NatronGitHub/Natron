@@ -362,7 +362,7 @@ Image::Image(ImageComponents components,
     _bitmap.initialize( p->getBounds() );
     _rod = regionOfDefinition;
     _bounds = p->getBounds();
-    allocateMemory(false, "");
+    allocateMemory(false,Natron::RAM, "");
 }
 
 #ifdef DEBUG

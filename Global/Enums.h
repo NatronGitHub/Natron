@@ -305,8 +305,9 @@ enum SequentialPreference
 
 enum StorageMode
 {
-    RAM = 0,
-    DISK
+    NO_STORAGE = 0, //< no memory will be allocated
+    RAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector)
+    DISK //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
 };
     
 enum Orientation

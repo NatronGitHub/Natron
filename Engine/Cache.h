@@ -563,7 +563,8 @@ public:
      * @brief To be called by a CacheEntry on allocation.
      **/
     virtual void notifyEntryAllocated(int time,
-                                      std::size_t size) const OVERRIDE FINAL
+                                      std::size_t size,
+                                      Natron::StorageMode storage) const OVERRIDE FINAL
     {
         ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
         ///lock should already be taken.
@@ -571,6 +572,10 @@ public:
         _memoryCacheSize += size;
         if (_signalEmitter) {
             _signalEmitter->emitAddedEntry(time);
+        }
+        
+        if (storage == Natron::DISK) {
+            appPTR->increaseNCacheFilesOpened();
         }
     }
 
@@ -618,9 +623,15 @@ public:
         if (oldStorage == Natron::RAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
+            
+            ///We switched from RAM to DISK that means the MemoryFile object has been destroyed hence the file has been closed.
+            appPTR->decreaseNCacheFilesOpened();
         } else {
             _memoryCacheSize += size;
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
+            
+            ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
+            appPTR->increaseNCacheFilesOpened();
         }
         if (gotLock) {
             _lock.unlock();
@@ -628,6 +639,11 @@ public:
         if (_signalEmitter) {
             _signalEmitter->emitEntryStorageChanged(time, (int)oldStorage, (int)newStorage);
         }
+    }
+    
+    virtual void backingFileRemoved() const OVERRIDE FINAL
+    {
+        appPTR->decreaseNCacheFilesOpened();
     }
 
     // const data member: no need to take the lock
@@ -807,10 +823,17 @@ public:
                 }
                 totalFreeRAM = getAmountFreePhysicalRAM();
             }
+            
+            Natron::StorageMode storage = Natron::DISK;
+            
+            ///If too many files are opened, fall-back on RAM storage.
+            if ( appPTR->isNCacheFilesOpenedCapped() ) {
+                storage = Natron::RAM;
+            }
 
             try {
                 value = new EntryType(it->key,it->params,this);
-                value->allocateMemory( true,QString( getCachePath() + QDir::separator() ).toStdString() );
+                value->allocateMemory( true, storage, QString( getCachePath() + QDir::separator() ).toStdString() );
             } catch (const std::bad_alloc & e) {
                 qDebug() << e.what();
                 continue;
@@ -835,11 +858,27 @@ private:
         assert( !_lock.tryLock() );   // must be locked
         EntryTypePtr entryptr;
 
+        Natron::StorageMode storage;
+        if (params->getCost() == 0) {
+            storage = Natron::RAM;
+        } else if (params->getCost() > 1) {
+            storage = Natron::DISK;
+        } else {
+            storage = Natron::NO_STORAGE;
+        }
+        
+        ///If there are too many opened files, fall-back on RAM storage.
+        if ( appPTR->isNCacheFilesOpenedCapped() ) {
+            storage = Natron::RAM;
+        }
+        
         ///Before allocating the memory check that there's enough space to fit in memory
         size_t systemRAMToKeepFree = _maxPhysicalRAM * appPTR->getCurrentSettings()->getUnreachableRamPercent();
         size_t totalFreeRAM = getAmountFreePhysicalRAM();
         size_t entryDataSize = params->getElementsCount() * sizeof(data_t);
 
+        ///While the current cache size can't fit the new entry, erase the last recently used entries.
+        ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
         while ( (_memoryCacheSize + entryDataSize >= _maximumInMemorySize) || totalFreeRAM <= systemRAMToKeepFree ) {
             if ( !tryEvictEntry() ) {
                 break;
@@ -852,7 +891,7 @@ private:
         // We still allocate the entry because otherwise we would never be able to continue the render.
         try {
             entryptr.reset( new EntryType(key,params,this) );
-            entryptr->allocateMemory( false, QString( getCachePath() + QDir::separator() ).toStdString() );
+            entryptr->allocateMemory( false, storage, QString( getCachePath() + QDir::separator() ).toStdString() );
         } catch (const std::bad_alloc & e) {
             return EntryTypePtr();
         }

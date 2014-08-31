@@ -13,7 +13,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include "Engine/AppManager.h"
 #include "Engine/Hash64.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
@@ -143,8 +142,8 @@ public:
     }
 
     void allocate( U64 count,
-                   int cost,
-                   std::string path = std::string() )
+                  Natron::StorageMode storage,
+                  std::string path = std::string() )
     {
         /*allocate should be called only once.*/
         assert( _path.empty() );
@@ -153,12 +152,8 @@ public:
             return;
         }
         
-        ///If too many files are opened by the cache, fallback on RAM...
-        if ( appPTR->isNCacheFilesOpenedCapped() ) {
-            cost = 0;
-        }
         
-        if (cost >= 1) {
+        if (storage == Natron::DISK) {
             _storageMode = DISK;
             _path = path;
             try {
@@ -166,22 +161,19 @@ public:
             } catch (const std::runtime_error & r) {
                 std::cout << r.what() << std::endl;
 
-                ///if opening the file mapping failed, just call allocate again, but this time on disk!
+                ///if opening the file mapping failed, just call allocate again, but this time on RA%!
                 _backingFile.reset();
                 _path.clear();
-                allocate(count,0,path);
+                allocate(count,Natron::RAM,path);
 
                 return;
             }
-            
-            ///Increase the number of files opened by the cache so the application is aware of it
-            appPTR->increaseNCacheFilesOpened();
 
             if ( !path.empty() && (count != 0) ) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
                 _backingFile->resize( count * sizeof(DataType) );
             }
-        } else if (cost == 0) {
+        } else if (storage == Natron::RAM) {
             _storageMode = RAM;
             _buffer.resize(count);
         }
@@ -213,7 +205,6 @@ public:
             _backingFile.reset();
             throw std::bad_alloc();
         }
-        appPTR->increaseNCacheFilesOpened();
     }
 
     void restoreBufferFromFile(const std::string & path)
@@ -224,7 +215,6 @@ public:
             _backingFile.reset();
             throw std::bad_alloc();
         }
-        appPTR->increaseNCacheFilesOpened();
         _path = path;
         _storageMode = DISK;
     }
@@ -237,7 +227,6 @@ public:
             if (_backingFile) {
                 bool flushOk = _backingFile->flush();
                 _backingFile.reset();
-                appPTR->decreaseNCacheFilesOpened();
                 if (!flushOk) {
                     throw std::runtime_error("Failed to flush RAM data to backing file.");
                 }
@@ -251,7 +240,6 @@ public:
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
-                appPTR->decreaseNCacheFilesOpened();
             } else {
                 ::remove( _path.c_str() );
             }
@@ -331,12 +319,18 @@ public:
     /**
      * @brief To be called by a CacheEntry on allocation.
      **/
-    virtual void notifyEntryAllocated(int time,size_t size) const = 0;
+    virtual void notifyEntryAllocated(int time,size_t size,Natron::StorageMode storage) const = 0;
 
     /**
      * @brief To be called by a CacheEntry on destruction.
      **/
     virtual void notifyEntryDestroyed(int time,size_t size,Natron::StorageMode storage) const = 0;
+    
+    /**
+     * @brief To be called when a backing file has been removed on disk
+     **/
+    virtual void backingFileRemoved() const = 0;
+    
     /**
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
@@ -439,20 +433,20 @@ public:
      * WARNING: This function throws a std::bad_alloc if the allocation fails.
      **/
     void allocateMemory(bool restore,
+                        Natron::StorageMode storage,
                         const std::string & path)
     {
-        ///Don't allocate if cost is -1
-        if (_params->getCost() == -1) {
+        if (storage == Natron::NO_STORAGE) {
             return;
         }
 
         if (restore) {
             restoreBufferFromFile(path);
         } else {
-            allocate(_params->getElementsCount(),_params->getCost(),path);
+            allocate(_params->getElementsCount(),storage,path);
         }
         if (_cache) {
-            _cache->notifyEntryAllocated( getTime(),size() );
+            _cache->notifyEntryAllocated( getTime(),size(),_data.getStorageMode() );
         }
 #     ifdef DEBUG
         onMemoryAllocated();
@@ -565,12 +559,15 @@ public:
      **/
     void removeAnyBackingFile() const
     {
+        _data.removeAnyBackingFile();
         if ( _data.isAllocated() ) {
+            if ( _data.getStorageMode() == Natron::DISK) {
+                _cache->backingFileRemoved();
+            }
             _cache->notifyEntryDestroyed(getTime(), size(),Natron::RAM);
         } else {
             _cache->notifyEntryDestroyed(getTime(), size(),Natron::DISK);
         }
-        _data.removeAnyBackingFile();
     }
 
     virtual SequenceTime getTime() const OVERRIDE FINAL
