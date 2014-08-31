@@ -219,9 +219,6 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
 
         if (openImageFileDialog) {
             node->getLiveInstance()->openImageFileKnob();
-            if ( node->isPreviewEnabled() ) {
-                node->computePreviewImage( getTimeLine()->currentFrame() );
-            }
         }
     }
     if (!loadRequest && !isViewer) {

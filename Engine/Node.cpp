@@ -2382,6 +2382,10 @@ Node::onEffectKnobValueChanged(KnobI* what,
             QString operation = strKnob->getValue().c_str();
             replaceCustomDataInlabel('(' + operation + ')');
         }
+    } else if (what->getName() == "filename" && _imp->liveInstance->isReader()) {
+        ///Refresh the preview automatically if the filename changed
+        incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
+        computePreviewImage(_imp->liveInstance->getCurrentFrameRecursive());
     }
 }
 
