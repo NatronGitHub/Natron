@@ -13,8 +13,6 @@
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
-#elif defined(Q_OS_WIN)
-#include <windows.h>
 #endif
 
 #include <clocale>
@@ -1368,7 +1366,7 @@ void
 AppManagerPrivate::setMaxCacheFiles()
 {
     /*Default to something reasonnable if the code below would happen to not work for some reason*/
-    size_t hardMax = 10000;
+    size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
     
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -1397,15 +1395,50 @@ AppManagerPrivate::setMaxCacheFiles()
             }
         }
     }
-#elif defined(Q_OS_WIN)
+//#elif defined(Q_OS_WIN)
     // The following code sets the limit for stdio-based calls only.
     // Note that low-level calls (CreateFile(), WriteFile(), ReadFile(), CloseHandle()...) are not affected by this limit.
     // References:
     // - http://msdn.microsoft.com/en-us/library/6e3b887c.aspx
     // - https://stackoverflow.com/questions/870173/is-there-a-limit-on-number-of-open-files-in-windows/4276338
     // - http://bugs.mysql.com/bug.php?id=24509
-    _setmaxstdio(2048); // sets the limit for stdio-based calls
-    hardMax = 2048;
+    //_setmaxstdio(2048); // sets the limit for stdio-based calls
+    // On Windows there seems to be no limit at all. The following test program can prove it:
+    /*
+#include <windows.h>
+    int
+    main(int argc,
+         char *argv[])
+    {
+        const int maxFiles = 10000;
+        
+        std::list<HANDLE> files;
+        
+        for (int i = 0; i < maxFiles; ++i) {
+            std::stringstream ss;
+            ss << "C:/Users/Lex/Documents/GitHub/Natron/App/win32/debug/testMaxFiles/file" << i ;
+            std::string filename = ss.str();
+            HANDLE file_handle = ::CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE,
+                                              0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+            
+            
+            if (file_handle != INVALID_HANDLE_VALUE) {
+                files.push_back(file_handle);
+                std::cout << "Good files so far: " << files.size() << std::endl;
+                
+            } else {
+                char* message ;
+                FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,GetLastError(),0,(LPSTR)&message,0,NULL);
+                std::cout << "Failed to open " << filename << ": " << message << std::endl;
+                LocalFree(message);
+            }
+        }
+        std::cout << "Total opened files: " << files.size() << std::endl;
+        for (std::list<HANDLE>::iterator it = files.begin(); it!= files.end();++it) {
+            CloseHandle(*it);
+        }
+    }
+    */
 #endif
 
     maxCacheFiles = hardMax * 0.9;
