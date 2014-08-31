@@ -525,12 +525,12 @@ Knob<T>::unSlave(int dimension,
     if (_signalSlotHandler) {
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
-            checkAnimationLevel(dimension);
         }
     }
     if (getHolder() && _signalSlotHandler) {
         getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,false, master.second->getHolder() );
     }
+    evaluateValueChange(dimension, reason);
 }
 
 template<>

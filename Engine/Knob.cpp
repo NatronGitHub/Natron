@@ -789,20 +789,19 @@ KnobHelper::slaveTo(int dimension,
     if (helper->_signalSlotHandler && _signalSlotHandler) {
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
     }
+    
     if (_signalSlotHandler) {
         ///Notify we want to refresh
-        _signalSlotHandler->s_valueChanged(dimension,reason);
         if (reason == Natron::PLUGIN_EDITED) {
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
 
-        ///Animation might have changed since we're now slaved to someone else
-        checkAnimationLevel(dimension);
         if ( getHolder() ) {
             ///hackish way to get a shared ptr to this knob
             getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,true, other->getHolder() );
         }
     }
+    evaluateValueChange(dimension, reason);
 
     ///Register this as a listener of the master
     helper->addListener(this);
@@ -863,9 +862,8 @@ KnobHelper::checkAnimationLevel(int dimension)
             level = Natron::NO_ANIMATION;
         }
     }
-    if ( level != getAnimationLevel(dimension) ) {
-        setAnimationLevel(dimension,level);
-    }
+    setAnimationLevel(dimension,level);
+
 }
 
 void
@@ -1264,7 +1262,9 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
     }
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
     onAllKnobsSlaved(true,other);
-
+    
+    blockEvaluation();
+    
     const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
     const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
     for (U32 i = 0; i < otherKnobs.size(); ++i) {
@@ -1276,7 +1276,11 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
             }
         }
         assert(foundKnob);
-        for (int j = 0; j < foundKnob->getDimension(); ++j) {
+        int dims = foundKnob->getDimension();
+        for (int j = 0; j < dims; ++j) {
+            if ( (i == otherKnobs.size() - 1) && (j == dims - 1) ) {
+                unblockEvaluation();
+            }
             foundKnob->slaveTo(j, otherKnobs[i], j);
         }
     }
@@ -1296,8 +1300,13 @@ KnobHolder::unslaveAllKnobs()
         return;
     }
     const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
+    blockEvaluation();
     for (U32 i = 0; i < thisKnobs.size(); ++i) {
-        for (int j = 0; j < thisKnobs[i]->getDimension(); ++j) {
+        int dims = thisKnobs[i]->getDimension();
+        for (int j = 0; j < dims ; ++j) {
+            if ( (i == thisKnobs.size() - 1) && (j == dims -1) ) {
+                unblockEvaluation();
+            }
             if ( thisKnobs[i]->isSlave(j) ) {
                 thisKnobs[i]->unSlave(j,true);
             }

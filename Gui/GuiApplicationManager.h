@@ -68,14 +68,14 @@ public:
 
     void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
 
-    void setKnobClipBoard(bool copyAnimation,int dimension,
+    void setKnobClipBoard(bool copyAnimation,
                           const std::list<Variant> & values,
                           const std::list<boost::shared_ptr<Curve> > & animation,
                           const std::map<int,std::string> & stringAnimation,
                           const std::list<boost::shared_ptr<Curve> > & parametricCurves);
 
 
-    void getKnobClipBoard(bool* copyAnimation,int* dimension,
+    void getKnobClipBoard(bool* copyAnimation,
                           std::list<Variant>* values,
                           std::list<boost::shared_ptr<Curve> >* animation,
                           std::map<int,std::string>* stringAnimation,

@@ -283,6 +283,12 @@ AppInstance::getActiveNodes(std::vector<boost::shared_ptr<Natron::Node> >* activ
     }
 }
 
+boost::shared_ptr<Natron::Node>
+AppInstance::getNodeByName(const std::string & name) const
+{
+    return _imp->_currentProject->getNodeByName(name);
+}
+
 boost::shared_ptr<Natron::Project>
 AppInstance::getProject() const
 {

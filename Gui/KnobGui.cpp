@@ -303,7 +303,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         }
     }
 
-    QAction* resetDefaultAction = new QAction(tr("Reset to default value"),_imp->copyRightClickMenu);
+    QAction* resetDefaultAction = new QAction(tr("Reset to default"),_imp->copyRightClickMenu);
     resetDefaultAction->setData( QVariant(dimension) );
     QObject::connect( resetDefaultAction,SIGNAL( triggered() ),this,SLOT( onResetDefaultValuesActionTriggered() ) );
     _imp->copyRightClickMenu->addAction(resetDefaultAction);
@@ -469,15 +469,15 @@ KnobGui::createAnimationMenu(QMenu* menu)
         }
 
         if (!isSlave) {
+            ///If the clipboard is either empty or has no animation, disable the Paste animation action.
             bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
             std::list<Variant> values;
             std::list<boost::shared_ptr<Curve> > curves;
             std::list<boost::shared_ptr<Curve> > parametricCurves;
             std::map<int,std::string> stringAnimation;
             bool copyAnimation;
-            int dimension;
 
-            appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
+            appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves);
 
             QAction* pasteAction = new QAction(tr("Paste animation"),menu);
             QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( onPasteAnimationActionTriggered() ) );
@@ -922,6 +922,13 @@ KnobGui::onInternalValueChanged(int dimension,
 }
 
 void
+KnobGui::updateCurveEditorKeyframes()
+{
+    emit keyFrameSet();
+
+}
+
+void
 KnobGui::onInternalKeySet(SequenceTime time,
                           int,
                           bool added )
@@ -933,7 +940,7 @@ KnobGui::onInternalKeySet(SequenceTime time,
         }
     }
 
-    emit keyFrameSet();
+    updateCurveEditorKeyframes();
 }
 
 void
@@ -949,23 +956,19 @@ KnobGui::onInternalKeyRemoved(SequenceTime time,
 void
 KnobGui::copyAnimationToClipboard() const
 {
-        copyToClipBoard(-1, true);
+        copyToClipBoard(true);
 }
 
 void
 KnobGui::onCopyValuesActionTriggered()
 {
-    QAction *action = qobject_cast<QAction *>( sender() );
-
-    if (action) {
-        copyValues( action->data().toInt() );
-    }
+    copyValuesToCliboard();
 }
 
 void
-KnobGui::copyValues(int dimension)
+KnobGui::copyValuesToCliboard()
 {
-    copyToClipBoard(dimension,false);
+    copyToClipBoard(false);
 }
 
 void
@@ -976,8 +979,7 @@ KnobGui::onCopyAnimationActionTriggered()
 
 
 void
-KnobGui::copyToClipBoard(int dimension,
-                         bool copyAnimation) const
+KnobGui::copyToClipBoard(bool copyAnimation) const
 {
     std::list<Variant> values;
     std::list<boost::shared_ptr<Curve> > curves;
@@ -1024,12 +1026,12 @@ KnobGui::copyToClipBoard(int dimension,
         }
     }
 
-    appPTR->setKnobClipBoard(copyAnimation,dimension,values,curves,stringAnimation,parametricCurves);
+    appPTR->setKnobClipBoard(copyAnimation,values,curves,stringAnimation,parametricCurves);
 }
 
 
 void
-KnobGui::pasteClipBoard(int targetDimension)
+KnobGui::pasteClipBoard()
 {
     if ( appPTR->isClipBoardEmpty() ) {
         return;
@@ -1040,16 +1042,10 @@ KnobGui::pasteClipBoard(int targetDimension)
     std::list<boost::shared_ptr<Curve> > parametricCurves;
     std::map<int,std::string> stringAnimation;
     bool copyAnimation;
-    int dimension;
 
-    appPTR->getKnobClipBoard(&copyAnimation,&dimension,&values,&curves,&stringAnimation,&parametricCurves);
+    appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves);
 
     boost::shared_ptr<KnobI> knob = getKnob();
-
-    ///If we are interested in just copying a value but the dimension is it out of range, return
-    if ( !copyAnimation && ( targetDimension >= knob->getDimension() ) ) {
-        return;
-    }
 
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
@@ -1063,60 +1059,53 @@ KnobGui::pasteClipBoard(int targetDimension)
 
     int i = 0;
     for (std::list<Variant>::iterator it = values.begin(); it != values.end(); ++it) {
-        if (i == dimension) {
-            if (isInt) {
-                if ( !it->canConvert(QVariant::Int) ) {
-                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
-                    Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                    break;
-                }
-            } else if (isBool) {
-                if ( !it->canConvert(QVariant::Bool) ) {
-                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
-                    Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                    break;
-                }
-            } else if (isDouble) {
-                if ( !it->canConvert(QVariant::Double) ) {
-                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
-                    Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                    break;
-                }
-            } else if (isString) {
-                if ( !it->canConvert(QVariant::String) ) {
-                    QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
-                    Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                    break;
-                }
+        if (isInt) {
+            if ( !it->canConvert(QVariant::Int) ) {
+                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
+                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                break;
+            }
+        } else if (isBool) {
+            if ( !it->canConvert(QVariant::Bool) ) {
+                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
+                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                break;
+            }
+        } else if (isDouble) {
+            if ( !it->canConvert(QVariant::Double) ) {
+                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
+                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                break;
+            }
+        } else if (isString) {
+            if ( !it->canConvert(QVariant::String) ) {
+                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
+                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                break;
             }
         }
-
+        
         ++i;
     }
 
-    pushUndoCommand( new PasteUndoCommand(this,targetDimension,dimension,copyAnimation,values,curves,parametricCurves,stringAnimation) );
+    pushUndoCommand( new PasteUndoCommand(this,copyAnimation,values,curves,parametricCurves,stringAnimation) );
 } // pasteClipBoard
 
 void
 KnobGui::onPasteAnimationActionTriggered()
 {
-    pasteClipBoard(0);
+    pasteClipBoard();
 }
 
 void
-KnobGui::pasteValues(int dimension)
+KnobGui::pasteValuesFromClipboard()
 {
-    pasteClipBoard(dimension);
+    pasteClipBoard();
 }
 
 void
-KnobGui::onPasteValuesActionTriggered()
-{
-    QAction *action = qobject_cast<QAction *>( sender() );
-
-    if (action) {
-        pasteValues( action->data().toInt() );
-    }
+KnobGui::onPasteValuesActionTriggered() {
+    pasteValuesFromClipboard();
 }
 
 struct LinkToKnobDialogPrivate
@@ -1130,7 +1119,7 @@ struct LinkToKnobDialogPrivate
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
     std::vector< boost::shared_ptr<Natron::Node> > allNodes;
-    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > > allKnobs;
+    std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
     LinkToKnobDialogPrivate(KnobGui* from)
         : fromKnob(from)
@@ -1218,15 +1207,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {
                     QString name( knobs[j]->getDescription().c_str() );
                     if ( !knobs[j]->isSlave(k) && knobs[j]->isEnabled(k) && !name.isEmpty() ) {
-                        if (knobs[j]->getDimension() > 1) {
-                            QString dimensionName = knobs[j]->getDimensionName(k).c_str();
-
-                            if ( !dimensionName.isEmpty() ) {
-                                name.append('.');
-                                name.append(dimensionName);
-                            }
-                        }
-                        _imp->allKnobs.insert( std::make_pair( name, std::make_pair(k,knobs[j]) ) );
+                        _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
                         _imp->knobSelectionCombo->addItem(name);
                     }
                 }
@@ -1235,15 +1216,15 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     }
 }
 
-std::pair<int,boost::shared_ptr<KnobI> > LinkToKnobDialog::getSelectedKnobs() const
+boost::shared_ptr<KnobI> LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString,std::pair<int,boost::shared_ptr<KnobI > > >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString,boost::shared_ptr<KnobI> >::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;
     } else {
-        return std::make_pair( -1,boost::shared_ptr<KnobI>() );
+        return boost::shared_ptr<KnobI>();
     }
 }
 
@@ -1260,35 +1241,43 @@ KnobGui::onKnobSlavedChanged(int dimension,
 }
 
 void
-KnobGui::linkTo(int dimension)
+KnobGui::linkTo()
 {
     LinkToKnobDialog dialog( this,_imp->copyRightClickMenu->parentWidget() );
 
     if ( dialog.exec() ) {
         boost::shared_ptr<KnobI> thisKnob = getKnob();
-        std::pair<int,boost::shared_ptr<KnobI> > otherKnob = dialog.getSelectedKnobs();
-        if (otherKnob.second) {
-            if ( !thisKnob->isTypeCompatible(otherKnob.second) ) {
+        boost::shared_ptr<KnobI>  otherKnob = dialog.getSelectedKnobs();
+        if (otherKnob) {
+            if ( !thisKnob->isTypeCompatible(otherKnob) ) {
                 errorDialog( tr("Knob Link").toStdString(), tr("Types incompatibles!").toStdString() );
-
+                
                 return;
             }
-
-            assert( otherKnob.first < otherKnob.second->getDimension() );
-
-            std::pair<int,boost::shared_ptr<KnobI> > existingLink = thisKnob->getMaster(otherKnob.first);
-            if (existingLink.second) {
-                std::string err( tr("Cannot link ").toStdString() );
-                err.append( thisKnob->getDescription() );
-                err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
-                err.append( existingLink.second->getDescription() );
-                errorDialog(tr("Knob Link").toStdString(), err);
-
-                return;
+            
+            for (int i = 0; i < thisKnob->getDimension();++i) {
+                std::pair<int,boost::shared_ptr<KnobI> > existingLink = thisKnob->getMaster(i);
+                if (existingLink.second) {
+                    std::string err( tr("Cannot link ").toStdString() );
+                    err.append( thisKnob->getDescription() );
+                    err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
+                    err.append( existingLink.second->getDescription() );
+                    errorDialog(tr("Knob Link").toStdString(), err);
+                    
+                    return;
+                }
+                
             }
-
-            thisKnob->onKnobSlavedTo(dimension, otherKnob.second,otherKnob.first);
-            onKnobSlavedChanged(dimension, true);
+            
+            thisKnob->blockEvaluation();
+            int dims = thisKnob->getDimension();
+            for (int i = 0; i < dims;++i) {
+                if (i == dims - 1) {
+                    thisKnob->unblockEvaluation();
+                }
+                thisKnob->onKnobSlavedTo(i, otherKnob,i);
+                onKnobSlavedChanged(i, true);
+            }
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
@@ -1297,32 +1286,30 @@ KnobGui::linkTo(int dimension)
 void
 KnobGui::onLinkToActionTriggered()
 {
-    QAction *action = qobject_cast<QAction *>( sender() );
-
-    if (action) {
-        linkTo( action->data().toInt() );
-    }
+    linkTo();
 }
 
 void
-KnobGui::unlink(int dimension)
+KnobGui::unlink()
 {
     boost::shared_ptr<KnobI> thisKnob = getKnob();
-    std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(dimension);
-
-    thisKnob->onKnobUnSlaved(dimension);
-    onKnobSlavedChanged(dimension, false);
+    int dims = thisKnob->getDimension();
+    thisKnob->blockEvaluation();
+    for (int i = 0; i < dims ;++i) {
+        std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
+        if (i == dims - 1) {
+            thisKnob->unblockEvaluation();
+        }
+        thisKnob->onKnobUnSlaved(i);
+        onKnobSlavedChanged(i, false);
+    }
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 
 void
 KnobGui::onUnlinkActionTriggered()
 {
-    QAction *action = qobject_cast<QAction *>( sender() );
-
-    if (action) {
-        unlink( action->data().toInt() );
-    }
+    unlink();
 }
 
 void

@@ -492,8 +492,8 @@ LinkArrow::LinkArrow(const NodeGui* master,
       , _headColor(Qt::white)
       , _lineWidth(1)
 {
-    QObject::connect( master,SIGNAL( positionChanged() ),this,SLOT( refreshPosition() ) );
-    QObject::connect( slave,SIGNAL( positionChanged() ),this,SLOT( refreshPosition() ) );
+    QObject::connect( master,SIGNAL( positionChanged(int,int) ),this,SLOT( refreshPosition() ) );
+    QObject::connect( slave,SIGNAL( positionChanged(int,int) ),this,SLOT( refreshPosition() ) );
 
     refreshPosition();
     setZValue(0);

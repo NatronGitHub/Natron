@@ -789,10 +789,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     {
         QMutexLocker l(&_imp->_nodesMutex);
         for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-            boost::shared_ptr<NodeGui> & n = *it;
-            QPointF evpt = n->mapFromScene(_imp->_lastScenePosClick);
-            if ( n->isActive() && n->contains(evpt) ) {
-                selected = n;
+            QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
+            if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
+                selected = *it;
                 break;
             }
         }
@@ -2678,7 +2677,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
 
         ///the node could not exist any longer if the user deleted it in the meantime
-        if (masterNode) {
+        if (masterNode && masterNode->isActivated()) {
             n->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
         }
     }

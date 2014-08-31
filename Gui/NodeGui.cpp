@@ -221,6 +221,7 @@ NodeGui::initialize(NodeGraph* dag,
         _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
     }
 
+    
     ///Refresh the name in the line edit
     onInternalNameChanged( _internalNode->getName().c_str() );
 
@@ -232,6 +233,17 @@ NodeGui::initialize(NodeGraph* dag,
     ///Refresh the disabled knob
     if ( _internalNode->isNodeDisabled() ) {
         onDisabledKnobToggled(true);
+    }
+    
+    ///Link the position of the node to the position of the parent multi-instance
+    const std::string parentMultiInstanceName = _internalNode->getParentMultiInstanceName();
+    if (!parentMultiInstanceName.empty()) {
+        boost::shared_ptr<Natron::Node> parentNode = dag->getGui()->getApp()->getNodeByName(parentMultiInstanceName);
+        boost::shared_ptr<NodeGui> parentNodeGui = dag->getGui()->getApp()->getNodeGui(parentNode);
+        assert(parentNode && parentNodeGui);
+        QObject::connect(parentNodeGui.get(), SIGNAL(positionChanged(int,int)),this,SLOT(onParentMultiInstancePositionChanged(int,int)));
+        QPointF p = parentNodeGui->pos();
+        refreshPosition(p.x(), p.y(),true);
     }
 } // initialize
 
@@ -470,7 +482,7 @@ NodeGui::refreshPositionEnd(double x,
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
-    emit positionChanged();
+    emit positionChanged(x,y);
 }
 
 void
@@ -1613,6 +1625,7 @@ NodeGui::onKnobsLinksChanged()
         }
         if (!found) {
             boost::shared_ptr<NodeGui> master = getDagGui()->getGui()->getApp()->getNodeGui(it->masterNode);
+
             LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
             arrow->setWidth(2);
             arrow->setColor( QColor(143,201,103) );
@@ -2162,6 +2175,12 @@ NodeGui::setKnobLinksVisible(bool visible)
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
         it->arrow->setVisible(visible);
     }
+}
+                         
+void
+NodeGui::onParentMultiInstancePositionChanged(int x,int y)
+{
+    refreshPosition(x, y,true);
 }
 
 //////////Dot node gui

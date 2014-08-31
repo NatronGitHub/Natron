@@ -93,7 +93,6 @@ struct KnobsClipBoard
     std::map<int,std::string> stringAnimation; //< for animating string knobs
     bool isEmpty; //< is the clipboard empty
     bool copyAnimation; //< should we copy all the animation or not
-    int dimension; //< -1 if all dims, otherwise the dim index
 };
 
 struct GuiApplicationManagerPrivate
@@ -728,14 +727,12 @@ GuiApplicationManager::isClipBoardEmpty() const
 
 void
 GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
-                                        int dimension,
                                         const std::list<Variant> & values,
                                         const std::list<boost::shared_ptr<Curve> > & animation,
                                         const std::map<int,std::string> & stringAnimation,
                                         const std::list<boost::shared_ptr<Curve> > & parametricCurves)
 {
     _imp->_knobsClipBoard->copyAnimation = copyAnimation;
-    _imp->_knobsClipBoard->dimension = dimension;
     _imp->_knobsClipBoard->isEmpty = false;
     _imp->_knobsClipBoard->values = values;
     _imp->_knobsClipBoard->curves = animation;
@@ -745,14 +742,12 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
 
 void
 GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
-                                        int* dimension,
                                         std::list<Variant>* values,
                                         std::list<boost::shared_ptr<Curve> >* animation,
                                         std::map<int,std::string>* stringAnimation,
                                         std::list<boost::shared_ptr<Curve> >* parametricCurves) const
 {
     *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
-    *dimension = _imp->_knobsClipBoard->dimension;
     *values = _imp->_knobsClipBoard->values;
     *animation = _imp->_knobsClipBoard->curves;
     *stringAnimation = _imp->_knobsClipBoard->stringAnimation;

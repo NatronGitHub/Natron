@@ -11,8 +11,6 @@
 #include "Gui/GuiApplicationManager.h"
 
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
-                                   int targetDimension,
-                                   int dimensionToFetch,
                                    bool copyAnimation,
                                    const std::list<Variant> & values,
                                    const std::list<boost::shared_ptr<Curve> > & curves,
@@ -28,8 +26,6 @@ PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
       , oldParametricCurves()
       , newStringAnimation(stringAnimation)
       , oldStringAnimation()
-      , _targetDimension(targetDimension)
-      , _dimensionToFetch(dimensionToFetch)
       , _copyAnimation(copyAnimation)
 {
     assert( !appPTR->isClipBoardEmpty() );
@@ -86,25 +82,46 @@ PasteUndoCommand::undo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     int i = 0;
+    if (_copyAnimation) {
+        bool hasKeyframes = false;
+        _knob->removeAllKeyframeMarkersOnTimeline(-1);
+        for (std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin(); it != oldCurves.end(); ++it) {
+            internalKnob->getCurve(i)->clone( *(*it) );
+            if ( internalKnob->getKeyFramesCount(i) > 0 ) {
+                hasKeyframes = true;
+            }
+            ++i;
+        }
+        ///parameters are meaningless here, we just want to update the curve editor.
+        _knob->onInternalKeySet(0, 0,false);
+        _knob->setAllKeyframeMarkersOnTimeline(-1);
+        
+        if (hasKeyframes) {
+            _knob->updateCurveEditorKeyframes();
+        }
+        
+    }
+    
+    i = 0;
+
     std::list<Variant>::iterator next = oldValues.begin();
     ++next;
     internalKnob->blockEvaluation();
     for (std::list<Variant>::iterator it = oldValues.begin(); it != oldValues.end(); ++it,++next) {
-        if ( ( (i == _targetDimension) && !_copyAnimation ) || _copyAnimation ) {
-            bool isLast = next == oldValues.end();
-            if (isLast) {
-                internalKnob->unblockEvaluation();
-            }
-            if (isInt) {
-                isInt->setValue(it->toInt(), i,false);
-            } else if (isBool) {
-                isBool->setValue(it->toBool(), i,false);
-            } else if (isDouble) {
-                isDouble->setValue(it->toDouble(), i,false);
-            } else if (isString) {
-                isString->setValue(it->toString().toStdString(), i,false);
-            }
+        bool isLast = next == oldValues.end();
+        if (isLast) {
+            internalKnob->unblockEvaluation();
         }
+        if (isInt) {
+            isInt->setValue(it->toInt(), i,true);
+        } else if (isBool) {
+            isBool->setValue(it->toBool(), i,true);
+        } else if (isDouble) {
+            isDouble->setValue(it->toDouble(), i,true);
+        } else if (isString) {
+            isString->setValue(it->toString().toStdString(), i,true);
+        }
+        
         ++i;
 
 		///On Windows going pass .end() will crash...
@@ -112,17 +129,7 @@ PasteUndoCommand::undo()
 			--next;
 		}
     }
-    if (_copyAnimation) {
-        _knob->removeAllKeyframeMarkersOnTimeline(-1);
-        i = 0;
-        for (std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin(); it != oldCurves.end(); ++it) {
-            internalKnob->getCurve(i)->clone( *(*it) );
-            ++i;
-        }
-        ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0,false);
-        _knob->setAllKeyframeMarkersOnTimeline(-1);
-    }
+   
 
     if (isAnimatingString) {
         isAnimatingString->loadAnimation(oldStringAnimation);
@@ -160,49 +167,50 @@ PasteUndoCommand::redo()
     AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
     boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
     int i = 0;
+    
+    bool hasKeyframeData = false;
+    if ( !newCurves.empty() ) {
+        _knob->removeAllKeyframeMarkersOnTimeline(-1);
+        for (std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin(); it != newCurves.end(); ++it) {
+            internalKnob->getCurve(i)->clone( *(*it) );
+            if ( (*it)->getKeyFramesCount() > 0 ) {
+                hasKeyframeData = true;
+            }
+            ++i;
+        }
+        _knob->setAllKeyframeMarkersOnTimeline(-1);
+
+    }
+
+    i = 0;
+
     std::list<Variant>::iterator next = newValues.begin();
     ++next;
     internalKnob->blockEvaluation();
     for (std::list<Variant>::iterator it = newValues.begin(); it != newValues.end(); ++it,++next) {
-        if ( ( (i == _dimensionToFetch) && !_copyAnimation ) || _copyAnimation ) {
-            bool isLast = next == newValues.end();
-            if (isLast) {
-                internalKnob->unblockEvaluation();
-            }
-            if (isInt) {
-                isInt->setValue(it->toInt(), (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
-            } else if (isBool) {
-                isBool->setValue(it->toBool(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
-            } else if (isDouble) {
-                isDouble->setValue(it->toDouble(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
-            } else if (isString) {
-                isString->setValue(it->toString().toStdString(),  (i == _dimensionToFetch && !_copyAnimation) ? _targetDimension : i,false);
-            }
+        bool isLast = next == newValues.end();
+        if (isLast) {
+            internalKnob->unblockEvaluation();
         }
+        if (isInt) {
+            isInt->setValue(it->toInt(), i, true);
+        } else if (isBool) {
+            isBool->setValue(it->toBool(), i, true);
+        } else if (isDouble) {
+            isDouble->setValue(it->toDouble(), i, true);
+        } else if (isString) {
+            isString->setValue(it->toString().toStdString(), i, true);
+        }
+        
         ++i;
 		///On Windows going pass .end() will crash...
 		if ( next == newValues.end() ) {
 			--next;
 		}
     }
-    if ( !newCurves.empty() ) {
-        _knob->removeAllKeyframeMarkersOnTimeline(-1);
-    }
-    i = 0;
-    bool hasKeyframeData = false;
-    for (std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin(); it != newCurves.end(); ++it) {
-        internalKnob->getCurve(i)->clone( *(*it) );
-        if ( (*it)->getKeyFramesCount() > 0 ) {
-            hasKeyframeData = true;
-        }
-        ++i;
-    }
-    if ( !newCurves.empty() ) {
-        _knob->setAllKeyframeMarkersOnTimeline(-1);
-    }
+    
     if ( _copyAnimation && hasKeyframeData && !newCurves.empty() ) {
-        ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0,false);
+        _knob->updateCurveEditorKeyframes();
     }
 
     if (isAnimatingString) {
@@ -464,7 +472,7 @@ RestoreDefaultsCommand::undo()
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
     std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it,++itClone) {
-        (*it)->clone(*itClone);
+        (*it)->cloneAndUpdateGui(itClone->get());
 
         if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();

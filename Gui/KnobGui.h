@@ -176,6 +176,12 @@ public:
     void onKeyFrameMoved(int oldTime,int newTime);
 
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
+    
+    void copyValuesToCliboard();
+    
+    void pasteValuesFromClipboard();
+    
+
 public slots:
 
 
@@ -227,21 +233,18 @@ public slots:
 
 
     void onCopyValuesActionTriggered();
-    void copyValues(int dimension);
-
+    
     void onPasteValuesActionTriggered();
-    void pasteValues(int dimension);
-
 
     void onCopyAnimationActionTriggered();
 
     void onPasteAnimationActionTriggered();
 
     void onLinkToActionTriggered();
-    void linkTo(int dimension);
+    void linkTo();
 
     void onUnlinkActionTriggered();
-    void unlink(int dimension);
+    void unlink();
 
     void onResetDefaultValuesActionTriggered();
 
@@ -260,6 +263,7 @@ public slots:
 
     void onFrozenChanged(bool frozen);
 
+    void updateCurveEditorKeyframes();
 signals:
 
     void knobUndoneChange();
@@ -300,9 +304,9 @@ private:
 
     void updateGuiInternal(int dimension);
 
-    void copyToClipBoard(int dimension,bool copyAnimation) const;
+    void copyToClipBoard(bool copyAnimation) const;
 
-    void pasteClipBoard(int dimension);
+    void pasteClipBoard();
 
     virtual void _hide() = 0;
     virtual void _show() = 0;
@@ -351,7 +355,7 @@ public:
 
     virtual ~LinkToKnobDialog();
 
-    std::pair<int,boost::shared_ptr<KnobI> > getSelectedKnobs() const;
+    boost::shared_ptr<KnobI> getSelectedKnobs() const;
 
 public slots:
 

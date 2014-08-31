@@ -204,7 +204,7 @@ public:
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
-     * If no such node could be found or the node is deactivated, NULL is returned.
+     * If no such node could be found, NULL is returned.
      **/
     boost::shared_ptr<Natron::Node> getNodeByName(const std::string & name) const;
 

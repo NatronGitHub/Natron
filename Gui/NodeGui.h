@@ -370,11 +370,12 @@ public slots:
 
     void onSettingsPanelClosedChanged(bool closed);
 
+    void onParentMultiInstancePositionChanged(int x,int y);
 signals:
 
     void nameChanged(QString);
 
-    void positionChanged();
+    void positionChanged(int x,int y);
 
     void settingsPanelClosed(bool b);
 

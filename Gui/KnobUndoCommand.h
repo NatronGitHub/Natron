@@ -277,15 +277,11 @@ class PasteUndoCommand
     std::list<boost::shared_ptr<Curve> > newCurves,oldCurves;
     std::list<boost::shared_ptr<Curve> > newParametricCurves,oldParametricCurves;
     std::map<int,std::string> newStringAnimation,oldStringAnimation;
-    int _targetDimension;
-    int _dimensionToFetch;
     bool _copyAnimation;
 
 public:
 
     PasteUndoCommand(KnobGui* knob,
-                     int targetDimension,
-                     int dimensionToFetch,
                      bool copyAnimation,
                      const std::list<Variant> & values,
                      const std::list<boost::shared_ptr<Curve> > & curves,
