@@ -212,6 +212,8 @@ public:
      **/
     bool isFloatingWindowChild() const;
     
+    void discardGuiPointer();
+    
 public slots:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
@@ -260,6 +262,7 @@ public slots:
     void closeTab(int index);
     
     void onSetAsAnchorActionTriggered();
+
 
 private:
 

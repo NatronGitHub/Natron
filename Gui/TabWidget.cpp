@@ -292,6 +292,10 @@ void TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 void
 TabWidget::closePane()
 {
+    if (!_gui) {
+        return;
+    }
+    
     FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
     if (isFloating && isFloating->getEmbeddedWidget() == this) {
         isFloating->close();
@@ -299,6 +303,7 @@ TabWidget::closePane()
 
 
     /*Removing it from the _panes vector*/
+    
     _gui->unregisterPane(this);
 
 
@@ -1140,4 +1145,10 @@ TabWidget::isFloatingWindowChild() const
         parent = parent->parentWidget();
     }
     return false;
+}
+
+void
+TabWidget::discardGuiPointer()
+{
+    _gui = 0;
 }

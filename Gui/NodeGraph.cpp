@@ -457,21 +457,23 @@ NodeGraph::~NodeGraph()
          ++it) {
         (*it)->discardGraphPointer();
     }
-
-    QGraphicsScene* scene = _imp->_hintInputEdge->scene();
-    if (scene) {
-        scene->removeItem(_imp->_hintInputEdge);
+    
+    if (_imp->_gui) {
+        QGraphicsScene* scene = _imp->_hintInputEdge->scene();
+        if (scene) {
+            scene->removeItem(_imp->_hintInputEdge);
+        }
+        _imp->_hintInputEdge->setParentItem(NULL);
+        delete _imp->_hintInputEdge;
+        
+        scene = _imp->_hintOutputEdge->scene();
+        if (scene) {
+            scene->removeItem(_imp->_hintOutputEdge);
+        }
+        _imp->_hintOutputEdge->setParentItem(NULL);
+        delete _imp->_hintOutputEdge;
     }
-    _imp->_hintInputEdge->setParentItem(NULL);
-    delete _imp->_hintInputEdge;
-
-    scene = _imp->_hintOutputEdge->scene();
-    if (scene) {
-        scene->removeItem(_imp->_hintOutputEdge);
-    }
-    _imp->_hintOutputEdge->setParentItem(NULL);
-    delete _imp->_hintOutputEdge;
-
+    
     QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 
@@ -507,6 +509,7 @@ NodeGraph::discardGuiPointer()
 {
     _imp->_gui = 0;
 }
+
 
 void
 NodeGraph::onProjectNodesCleared()

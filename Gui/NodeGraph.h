@@ -93,6 +93,7 @@ public:
     Gui* getGui() const;
 
     void discardGuiPointer();
+    void discardScenePointer();
 
     void refreshAllEdges();
 

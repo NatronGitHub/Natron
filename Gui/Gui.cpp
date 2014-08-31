@@ -527,8 +527,11 @@ GuiPrivate::notifyGuiClosing()
 {
     ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
     ///cause bad pointer dereference to the Gui object since we're destroying it.
-    for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin(); it != _viewerTabs.end(); ++it) {
-        (*it)->notifyAppClosing();
+    {
+        QMutexLocker k(&_viewerTabsMutex);
+        for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin(); it != _viewerTabs.end(); ++it) {
+            (*it)->notifyAppClosing();
+        }
     }
     
     const std::list<boost::shared_ptr<NodeGui> > allNodes = _nodeGraphArea->getAllActiveNodes();
@@ -539,6 +542,13 @@ GuiPrivate::notifyGuiClosing()
         }
     }
     _nodeGraphArea->discardGuiPointer();
+    
+    {
+        QMutexLocker k(&_panesMutex);
+        for (std::list<TabWidget*>::iterator it = _panes.begin();it!=_panes.end();++it) {
+            (*it)->discardGuiPointer();
+        }
+    }
 }
 
 bool
@@ -3861,7 +3871,6 @@ static void closeWidgetRecursively(QWidget* w)
 FloatingWidget::~FloatingWidget()
 {
     if (_embeddedWidget) {
-        removeEmbeddedWidget();
         closeWidgetRecursively(_embeddedWidget);
     }
 }
