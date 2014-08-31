@@ -1391,7 +1391,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
-        if ( (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
+        if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
             if ( !(*it)->isSettingsPanelVisible() ) {
                 (*it)->setVisibleSettingsPanel(true);
             }

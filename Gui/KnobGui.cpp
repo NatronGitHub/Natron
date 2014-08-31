@@ -1055,6 +1055,7 @@ KnobGui::pasteClipBoard()
 
     if ( copyAnimation && !curves.empty() && ( (int)curves.size() != knob->getDimension() ) ) {
         Natron::errorDialog( tr("Paste animation").toStdString(), tr("You cannot copy/paste animation from/to parameters with different dimensions.").toStdString() );
+        return;
     }
 
     int i = 0;
@@ -1063,25 +1064,25 @@ KnobGui::pasteClipBoard()
             if ( !it->canConvert(QVariant::Int) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
                 Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                break;
+                return;
             }
         } else if (isBool) {
             if ( !it->canConvert(QVariant::Bool) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
                 Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                break;
+                return;
             }
         } else if (isDouble) {
             if ( !it->canConvert(QVariant::Double) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
                 Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                break;
+                return;
             }
         } else if (isString) {
             if ( !it->canConvert(QVariant::String) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
                 Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-                break;
+                return;
             }
         }
         

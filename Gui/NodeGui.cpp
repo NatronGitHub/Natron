@@ -471,7 +471,7 @@ NodeGui::refreshPositionEnd(double x,
     const std::list<boost::shared_ptr<NodeGui> > & allNodes = _graph->getAllActiveNodes();
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-        if ( (it->get() != this) && (*it)->intersects(bbox) ) {
+        if ( (*it)->isVisible() && (it->get() != this) && (*it)->intersects(bbox) ) {
             setAboveItem( it->get() );
         }
     }
