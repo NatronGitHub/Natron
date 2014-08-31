@@ -9,7 +9,8 @@
  */
 
 #include <csignal>
-#include <cstdio>
+#include <cstdio>  // perror
+#include <cstdlib> // exit
 #include <fstream>
 #include <sstream>
 
@@ -76,8 +77,8 @@ setShutDownSignal(int signalId)
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = handleShutDownSignal;
     if (sigaction(signalId, &sa, NULL) == -1) {
-        perror("setting up termination signal");
-        exit(1);
+        std::perror("setting up termination signal");
+        std::exit(1);
     }
 #else
     std::signal(signalId, handleShutDownSignal);
