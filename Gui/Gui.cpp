@@ -267,9 +267,6 @@ struct GuiPrivate
     QString _lastSaveSequenceOpenedDir;
     QString _lastSaveProjectOpenedDir;
 
-    ///the initial pane where the first Viewer is by default.
-    TabWidget* _viewersPane;
-
     // this one is a ptr to others TabWidget.
     //It tells where to put the viewer when making a new one
     // If null it places it on default tab widget
@@ -424,7 +421,6 @@ struct GuiPrivate
           , _lastLoadProjectOpenedDir()
           , _lastSaveSequenceOpenedDir()
           , _lastSaveProjectOpenedDir()
-          , _viewersPane(0)
           , _nextViewerTabPlace(0)
           , _leftRightSplitter(0)
           , _viewerTabsMutex()
@@ -491,6 +487,7 @@ struct GuiPrivate
     void createNodeGraphGui();
 
     void createCurveEditorGui();
+    
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -662,10 +659,12 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     TabWidget* where = _imp->_nextViewerTabPlace;
 
     if (!where) {
-        where = _imp->_viewersPane;
+        where = getAnchor();
     } else  {
-        _imp->_nextViewerTabPlace = NULL; // < reseting anchor to default
+        _imp->_nextViewerTabPlace = NULL; // < reseting next viewer anchor to default
     }
+    assert(where);
+    
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
@@ -1108,21 +1107,22 @@ void
 Gui::createDefaultLayout1()
 {
     ///First tab widget must be created this way
-    _imp->_viewersPane = new TabWidget(this,_imp->_leftRightSplitter);
-    _imp->_viewersPane->setObjectName(kViewerPaneName);
+    TabWidget* mainPane = new TabWidget(this,_imp->_leftRightSplitter);
+    mainPane->setObjectName(kViewerPaneName);
+    mainPane->setAsAnchor(true);
     {
         QMutexLocker l(&_imp->_panesMutex);
-        _imp->_panes.push_back(_imp->_viewersPane);
+        _imp->_panes.push_back(mainPane);
     }
-    _imp->_leftRightSplitter->addWidget(_imp->_viewersPane);
+    _imp->_leftRightSplitter->addWidget(mainPane);
 
     QList<int> sizes;
     sizes << _imp->_toolBox->sizeHint().width() << width();
     _imp->_leftRightSplitter->setSizes_mt_safe(sizes);
 
 
-    TabWidget* propertiesPane = _imp->_viewersPane->splitHorizontally(false);
-    TabWidget* workshopPane = _imp->_viewersPane->splitVertically(false);
+    TabWidget* propertiesPane = mainPane->splitHorizontally(false);
+    TabWidget* workshopPane = mainPane->splitVertically(false);
     Splitter* propertiesSplitter = dynamic_cast<Splitter*>( propertiesPane->parentWidget() );
     assert(propertiesSplitter);
     sizes.clear();
@@ -1136,13 +1136,13 @@ Gui::createDefaultLayout1()
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2 != _imp->_viewerTabs.end(); ++it2) {
-            TabWidget::moveTab(*it2,_imp->_viewersPane);
+            TabWidget::moveTab(*it2,mainPane);
         }
     }
     {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2 != _imp->_histograms.end(); ++it2) {
-            TabWidget::moveTab(*it2,_imp->_viewersPane);
+            TabWidget::moveTab(*it2,mainPane);
         }
     }
 
@@ -1157,7 +1157,7 @@ static void restoreTabWidget(TabWidget* pane,const PaneLayout& serialization)
     ///Find out if the name is already used
     QString availableName = pane->getGui()->getAvailablePaneName(serialization.name.c_str());
     pane->setObjectName_mt_safe(availableName);
-    pane->setAsViewerAnchor(serialization.isViewerAnchor);
+    pane->setAsAnchor(serialization.isAnchor);
     const std::map<std::string,QWidget*>& tabs = pane->getGui()->getRegisteredTabs();
     for (std::list<std::string>::const_iterator it = serialization.tabs.begin(); it != serialization.tabs.end(); ++it) {
         std::map<std::string,QWidget*>::const_iterator found = tabs.find(*it);
@@ -1728,7 +1728,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
         trackerNodesList.push_back(it->first);
     }
 
-    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,trackerNodesList,currentTracker.first,this,viewer,_imp->_viewersPane);
+    ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,trackerNodesList,currentTracker.first,this,viewer,where);
     QObject::connect( tab->getViewer(),SIGNAL( imageChanged(int) ),this,SLOT( onViewerImageChanged(int) ) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -1906,8 +1906,8 @@ Gui::unregisterPane(TabWidget* pane)
         _imp->_panes.front()->setClosable(false);
     }
 
-    if ( (pane == _imp->_viewersPane) && !_imp->_panes.empty() ) {
-        _imp->_viewersPane = _imp->_panes.front();
+    if ( (pane->isAnchor()) && !_imp->_panes.empty() ) {
+        _imp->_panes.front()->setAsAnchor(true);
     }
 }
 
@@ -1915,6 +1915,13 @@ void
 Gui::registerPane(TabWidget* pane)
 {
     QMutexLocker l(&_imp->_panesMutex);
+    bool hasAnchor = false;
+    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it!=_imp->_panes.end(); ++it) {
+        if ((*it)->isAnchor()) {
+            hasAnchor = true;
+            break;
+        }
+    }
     std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
 
     if ( found == _imp->_panes.end() ) {
@@ -1925,7 +1932,9 @@ Gui::registerPane(TabWidget* pane)
         _imp->_panes.push_back(pane);
         if (only1Widget) {
             _imp->_panes.front()->setClosable(true);
-            _imp->_viewersPane = _imp->_panes.front();
+        }
+        if (!hasAnchor) {
+            pane->setAsAnchor(true);
         }
     }
 }
@@ -3130,7 +3139,9 @@ Gui::activateViewerTab(ViewerInstance* viewer)
         QMutexLocker l(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
             if ( (*it)->getViewer() == viewport ) {
-                _imp->_viewersPane->appendTab(*it);
+                TabWidget* viewerAnchor = getAnchor();
+                assert(viewerAnchor);
+                viewerAnchor->appendTab(*it);
                 (*it)->show();
             }
         }
@@ -3215,7 +3226,7 @@ Gui::getLastSelectedViewer() const
 }
 
 void
-Gui::setNewViewerAnchor(TabWidget* where)
+Gui::setNextViewerAnchor(TabWidget* where)
 {
     _imp->_nextViewerTabPlace = where;
 }
@@ -3331,8 +3342,9 @@ Gui::getPropertiesLayout() const
 void
 Gui::appendTabToDefaultViewerPane(QWidget* tab)
 {
-    assert(_imp->_viewersPane);
-    _imp->_viewersPane->appendTab(tab);
+    TabWidget* viewerAnchor = getAnchor();
+    assert(viewerAnchor);
+    viewerAnchor->appendTab(tab);
 }
 
 QWidget*
@@ -3795,7 +3807,17 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize(width(), height());
 }
 
-
+TabWidget*
+Gui::getAnchor() const
+{
+    QMutexLocker l(&_imp->_panesMutex);
+    for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+        if ((*it)->isAnchor()) {
+            return *it;
+        }
+    }
+    return NULL;
+}
 
 FloatingWidget::FloatingWidget(Gui* gui,QWidget* parent)
 : QWidget(parent)

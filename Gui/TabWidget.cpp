@@ -61,7 +61,7 @@ TabWidget::TabWidget(Gui* gui,
       _currentWidget(0),
       _drawDropRect(false),
       _fullScreen(false),
-      _isViewerAnchor(false),
+      _isAnchor(false),
       _tabWidgetStateMutex()
 {
     setMouseTracking(true);
@@ -173,41 +173,52 @@ TabWidget::destroyTab(QWidget* tab)
 void
 TabWidget::createMenu()
 {
-    QMenu *menu = new QMenu(_gui);
+    QMenu menu(_gui);
 
-    menu->setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
-    QPixmap pixV,pixM,pixH,pixC;
+    menu.setFont( QFont(NATRON_FONT,NATRON_FONT_SIZE_11) );
+    QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
     appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
-    QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),this);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR,&pixA);
+    QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),&menu);
     QObject::connect( splitVerticallyAction, SIGNAL( triggered() ), this, SLOT( onSplitVertically() ) );
-    menu->addAction(splitVerticallyAction);
-    QAction* splitHorizontallyAction = new QAction(QIcon(pixH),tr("Split horizontal"),this);
+    menu.addAction(splitVerticallyAction);
+    QAction* splitHorizontallyAction = new QAction(QIcon(pixH),tr("Split horizontal"),&menu);
     QObject::connect( splitHorizontallyAction, SIGNAL( triggered() ), this, SLOT( onSplitHorizontally() ) );
-    menu->addAction(splitHorizontallyAction);
-    menu->addSeparator();
-    QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),this);
+    menu.addAction(splitHorizontallyAction);
+    menu.addSeparator();
+    QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),&menu);
     QObject::connect( floatAction, SIGNAL( triggered() ), this, SLOT( floatCurrentWidget() ) );
-    menu->addAction(floatAction);
+    menu.addAction(floatAction);
     
     
     if ( (_tabBar->count() == 0) ) {
         floatAction->setEnabled(false);
     }
 
-    QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), this);
+    QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), &menu);
     closeAction->setEnabled(_closeButton->isEnabled());
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
-    menu->addAction(closeAction);
-    menu->addSeparator();
-    menu->addAction( tr("New viewer"), this, SLOT( addNewViewer() ) );
-    menu->addAction( tr("New histogram"), this, SLOT( newHistogramHere() ) );
-    menu->addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
-    menu->addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
-    menu->addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
-    menu->exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
+    menu.addAction(closeAction);
+    menu.addSeparator();
+    menu.addAction( tr("New viewer"), this, SLOT( addNewViewer() ) );
+    menu.addAction( tr("New histogram"), this, SLOT( newHistogramHere() ) );
+    menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
+    menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
+    menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
+    
+    
+    QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
+    isAnchorAction->setCheckable(true);
+    bool isVA = isAnchor();
+    isAnchorAction->setChecked(isVA);
+    isAnchorAction->setEnabled(!isVA);
+    QObject::connect( isAnchorAction, SIGNAL( triggered() ), this, SLOT( onSetAsAnchorActionTriggered() ) );
+    menu.addAction(isAnchorAction);
+    
+    menu.exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
 }
 
 void
@@ -298,7 +309,7 @@ TabWidget::closePane()
     ///Move living tabs to the viewer anchor TabWidget, this is better than destroying them.
     const std::list<TabWidget*> & panes = _gui->getPanes();
     for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
-        if (*it != this && (*it)->isViewerAnchor()) {
+        if (*it != this && (*it)->isAnchor()) {
             tabToTransferTo = *it;
             break;
         }
@@ -354,7 +365,7 @@ TabWidget::floatPane(QPoint* position)
 void
 TabWidget::addNewViewer()
 {
-    _gui->setNewViewerAnchor(this);
+    _gui->setNextViewerAnchor(this);
     _gui->getApp()->createNode( CreateNodeArgs("Viewer") );
 }
 
@@ -962,17 +973,35 @@ TabWidget::isFullScreen() const
 }
 
 bool
-TabWidget::isViewerAnchor() const
+TabWidget::isAnchor() const
 {
     QMutexLocker l(&_tabWidgetStateMutex);
-    return _isViewerAnchor;
+    return _isAnchor;
 }
 
 void
-TabWidget::setAsViewerAnchor(bool anchor)
+TabWidget::onSetAsAnchorActionTriggered()
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
-    _isViewerAnchor = anchor;
+    const std::list<TabWidget*>& allPanes = _gui->getPanes();
+    for (std::list<TabWidget*>::const_iterator it = allPanes.begin(); it != allPanes.end(); ++it) {
+        (*it)->setAsAnchor(*it == this);
+    }
+}
+
+void
+TabWidget::setAsAnchor(bool anchor)
+{
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        _isAnchor = anchor;
+    }
+    QPixmap pix;
+    if (anchor) {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR, &pix);
+    } else {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON, &pix);
+    }
+    _leftCornerButton->setIcon(QIcon(pix));
 }
 
 void

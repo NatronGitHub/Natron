@@ -108,6 +108,17 @@ public:
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    
+    /**
+     * @brief Calling this will force the next viewer to be created in the given pane.
+     **/
+    void setNextViewerAnchor(TabWidget* where);
+    
+    /**
+     * @brief Returns the pane where all viewers are created by default is none was specified via
+     * setNextViewerAnchor. It is also the pane that receives all tabs that are moved due to a pane being closed.
+     **/
+    TabWidget* getAnchor() const;
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
@@ -128,8 +139,6 @@ public:
 
     const std::list<Histogram*> & getHistograms() const;
     std::list<Histogram*> getHistograms_mt_safe() const;
-
-    void setNewViewerAnchor(TabWidget* where);
 
     void maximize(TabWidget* what);
 

@@ -110,7 +110,7 @@ PaneLayout::initialize(TabWidget* tab)
     }
     currentIndex = tab->activeIndex();
     name = tab->objectName_mt_safe().toStdString();
-    isViewerAnchor = tab->isViewerAnchor();
+    isAnchor = tab->isAnchor();
 }
 
 void

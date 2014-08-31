@@ -203,9 +203,9 @@ public:
     bool isFullScreen() const;
     
     ///MT-Safe
-    bool isViewerAnchor() const;
+    bool isAnchor() const;
     
-    void setAsViewerAnchor(bool anchor);
+    void setAsAnchor(bool anchor);
     
     /**
      * @brief Returns true if this tabwidget is part of a floating window
@@ -258,6 +258,8 @@ public slots:
     void closeCurrentWidget();
 
     void closeTab(int index);
+    
+    void onSetAsAnchorActionTriggered();
 
 private:
 
@@ -293,7 +295,7 @@ private:
     QWidget* _currentWidget;
     bool _drawDropRect;
     bool _fullScreen;
-    bool _isViewerAnchor;
+    bool _isAnchor;
 
     ///Protects  _currentWidget, _fullScreen, _isViewerAnchor
     mutable QMutex _tabWidgetStateMutex;

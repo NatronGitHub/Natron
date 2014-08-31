@@ -275,6 +275,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             img.load(NATRON_IMAGES_PATH "layout.png");
             *pix = QPixmap::fromImage(img);
             break;
+        case NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR:
+            img.load(NATRON_IMAGES_PATH "layout_anchor.png");
+            *pix = QPixmap::fromImage(img);
+            break;
         case NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY:
             img.load(NATRON_IMAGES_PATH "splitHorizontally.png");
             *pix = QPixmap::fromImage(img);

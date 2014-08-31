@@ -148,7 +148,7 @@ struct PaneLayout
     int currentIndex;
     
     ///Added in PANE_SERIALIZATION_MAJOR_OVERHAUL
-    bool isViewerAnchor;
+    bool isAnchor;
     std::string name;
     
     ///This is only used to restore compatibility with project saved prior to PANE_SERIALIZATION_MAJOR_OVERHAUL
@@ -156,7 +156,7 @@ struct PaneLayout
     PaneLayout()
     : tabs()
     , currentIndex(-1)
-    , isViewerAnchor(false)
+    , isAnchor(false)
     , name()
     {
         
@@ -176,7 +176,7 @@ struct PaneLayout
         ar & boost::serialization::make_nvp("Tabs",tabs);
         ar & boost::serialization::make_nvp("Index",currentIndex);
         ar & boost::serialization::make_nvp("Name",name);
-        ar & boost::serialization::make_nvp("IsViewerAnchor",isViewerAnchor);
+        ar & boost::serialization::make_nvp("IsAnchor",isAnchor);
         
     }
     
@@ -207,7 +207,7 @@ struct PaneLayout
             ar & boost::serialization::make_nvp("Tabs",tabs);
             ar & boost::serialization::make_nvp("Index",currentIndex);
             ar & boost::serialization::make_nvp("Name",name);
-            ar & boost::serialization::make_nvp("IsViewerAnchor",isViewerAnchor);
+            ar & boost::serialization::make_nvp("IsAnchor",isAnchor);
         }
     }
 
