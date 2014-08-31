@@ -1035,6 +1035,8 @@ GuiPrivate::createPropertiesBinGui()
     propertiesAreaButtonsLayout->addStretch();
 
     _layoutPropertiesBin->addWidget(propertiesAreaButtonsContainer);
+    
+    _gui->registerTab(_propertiesScrollArea);
 }
 
 void
@@ -1044,6 +1046,7 @@ GuiPrivate::createNodeGraphGui()
     _graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(_gui,_graphScene,_gui);
     _nodeGraphArea->setObjectName(kNodeGraphObjectName);
+    _gui->registerTab(_nodeGraphArea);
 }
 
 void
@@ -1051,6 +1054,7 @@ GuiPrivate::createCurveEditorGui()
 {
     _curveEditor = new CurveEditor(_gui,_appInstance->getTimeLine(),_gui);
     _curveEditor->setObjectName(kCurveEditorObjectName);
+    _gui->registerTab(_curveEditor);
 }
 
 void
@@ -1200,6 +1204,7 @@ static void restoreSplitterRecursive(Gui* gui,Splitter* splitter,const SplitterS
         } else {
             assert((*it)->child_asPane);
             TabWidget* pane = new TabWidget(gui,splitter);
+            gui->registerPane(pane);
             splitter->addWidget_mt_safe(pane);
             restoreTabWidget(pane, *((*it)->child_asPane));
         }
@@ -1233,6 +1238,7 @@ Gui::restoreLayout(bool wipePrevious,
             ///The window contains only a pane (for the main window it also contains the toolbar)
             if ((*it)->child_asPane) {
                 TabWidget* centralWidget = new TabWidget(this);
+                registerPane(centralWidget);
                 restoreTabWidget(centralWidget, *(*it)->child_asPane);
                 mainWidget = centralWidget;
             }
@@ -3833,9 +3839,31 @@ FloatingWidget::FloatingWidget(Gui* gui,QWidget* parent)
     setLayout(_layout);
 }
 
+static void closeWidgetRecursively(QWidget* w)
+{
+    Splitter* isSplitter = dynamic_cast<Splitter*>(w);
+    TabWidget* isTab = dynamic_cast<TabWidget*>(w);
+    
+    if (!isSplitter && !isTab) {
+        return;
+    }
+    
+    if (isTab) {
+        isTab->closePane();
+    } else {
+        assert(isSplitter);
+        for (int i = 0;i < isSplitter->count() ;++i) {
+            closeWidgetRecursively(isSplitter->widget(i));
+        }
+    }
+}
+
 FloatingWidget::~FloatingWidget()
 {
-    
+    if (_embeddedWidget) {
+        removeEmbeddedWidget();
+        closeWidgetRecursively(_embeddedWidget);
+    }
 }
 
 void
@@ -3884,24 +3912,7 @@ FloatingWidget::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize(width(), height());
 }
 
-static void closeWidgetRecursively(QWidget* w)
-{
-    Splitter* isSplitter = dynamic_cast<Splitter*>(w);
-    TabWidget* isTab = dynamic_cast<TabWidget*>(w);
-    
-    if (!isSplitter && !isTab) {
-        return;
-    }
-    
-    if (isTab) {
-        isTab->closePane();
-    } else {
-        assert(isSplitter);
-        for (int i = 0;i < isSplitter->count() ;++i) {
-            closeWidgetRecursively(isSplitter->widget(i));
-        }
-    }
-}
+
 
 void
 FloatingWidget::closeEvent(QCloseEvent* e)
