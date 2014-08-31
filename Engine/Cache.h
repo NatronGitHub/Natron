@@ -861,7 +861,7 @@ private:
         Natron::StorageMode storage;
         if (params->getCost() == 0) {
             storage = Natron::RAM;
-        } else if (params->getCost() > 1) {
+        } else if (params->getCost() >= 1) {
             storage = Natron::DISK;
         } else {
             storage = Natron::NO_STORAGE;

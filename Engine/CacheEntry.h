@@ -594,19 +594,19 @@ private:
      * it is private.
      **/
     void allocate( U64 count,
-                   int cost,
+                  Natron::StorageMode storage,
                    std::string path = std::string() )
     {
         std::string fileName;
 
-        if (cost > 0) {
+        if (storage == Natron::DISK) {
             try {
                 fileName = generateStringFromHash(path);
             } catch (const std::invalid_argument & e) {
                 std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
             }
         }
-        _data.allocate(count, cost, fileName);
+        _data.allocate(count, storage, fileName);
     }
 
     /** @brief This function is called in allocateMeory() and before the object is exposed
