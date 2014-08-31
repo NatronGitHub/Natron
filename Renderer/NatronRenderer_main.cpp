@@ -8,17 +8,20 @@
  *
  */
 
-#include <QCoreApplication>
+#include <csignal>
+#include <cstdio>  // perror
+#include <cstdlib> // exit
 
 #if defined(Q_OS_UNIX)
-//#include <sys/time.h> // <why ?
-#include <sys/signal.h> ///for handling signals
+#include <sys/signal.h>
 #endif
+
+#include <QCoreApplication>
 
 #include "Engine/AppManager.h"
 
-void setShutDownSignal(int signalId);
-void handleShutDownSignal(int signalId);
+static void setShutDownSignal(int signalId);
+static void handleShutDownSignal(int signalId);
 
 int
 main(int argc,
@@ -29,7 +32,9 @@ main(int argc,
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
-#ifdef Q_OS_UNIX
+    setShutDownSignal(SIGINT);   // shut down on ctrl-c
+    setShutDownSignal(SIGTERM);   // shut down on killall
+#if defined(Q_OS_UNIX)
     projectName = AppManager::qt_tildeExpansion(projectName);
 #endif
 
@@ -51,22 +56,24 @@ main(int argc,
     return 0;
 } //main
 
-void
-setShutDownSignal( int signalId )
+static void
+setShutDownSignal(int signalId)
 {
-#ifdef __NATRON_UNIX__
+#if defined(Q_OS_UNIX)
     struct sigaction sa;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = handleShutDownSignal;
     if (sigaction(signalId, &sa, NULL) == -1) {
-        perror("setting up termination signal");
-        exit(1);
+        std::perror("setting up termination signal");
+        std::exit(1);
     }
+#else
+    std::signal(signalId, handleShutDownSignal);
 #endif
 }
 
-void
+static void
 handleShutDownSignal( int /*signalId*/ )
 {
     QCoreApplication::exit(0);
