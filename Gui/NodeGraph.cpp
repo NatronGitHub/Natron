@@ -447,6 +447,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
@@ -527,6 +528,8 @@ NodeGraph::onProjectNodesCleared()
     while ( !_imp->_nodesTrash.empty() ) {
         deleteNodePermanantly( *( _imp->_nodesTrash.begin() ) );
     }
+    _imp->_selection.nodes.clear();
+    _imp->_magnifiedNode.reset();
     _imp->_nodes.clear();
     _imp->_nodesTrash.clear();
     _imp->_undoStack->clear();
