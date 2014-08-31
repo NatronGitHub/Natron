@@ -59,7 +59,7 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
     _imp->listView = new QListView(this);
     _imp->model = new QStringListModel(this);
     _imp->listView->setWindowFlags(Qt::ToolTip);
-
+    _imp->listView->setModel(_imp->model);
     connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
     connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
 }
@@ -128,6 +128,8 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
 {
     int key = e->key();
     bool viewVisible = !_imp->listView->isHidden();
+    
+    assert(_imp->listView->model());
     int count = _imp->listView->model()->rowCount();
     QModelIndex currentIndex = _imp->listView->currentIndex();
 

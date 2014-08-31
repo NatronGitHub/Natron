@@ -23,6 +23,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand>
 #include <QPainter>
 #include <QLabel>
+#include <QMenu>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -227,6 +228,8 @@ struct MultiInstancePanelPrivate
     {
         mainInstance->getSettingPanel()->pushUndoCommand(cmd);
     }
+    
+    boost::shared_ptr<Natron::Node> getInstanceFromItem(TableItem* item) const;
 };
 
 MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
@@ -384,6 +387,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
 
     _imp->view = new TableView( layout->parentWidget() );
     QObject::connect( _imp->view,SIGNAL( deleteKeyPressed() ),this,SLOT( onDeleteKeyPressed() ) );
+    QObject::connect( _imp->view,SIGNAL( itemRightClicked(TableItem*) ),this,SLOT( onItemRightClicked(TableItem*) ) );
     TableItemDelegate* delegate = new TableItemDelegate(_imp->view,this);
     _imp->view->setItemDelegate(delegate);
 
@@ -1024,6 +1028,20 @@ MultiInstancePanelPrivate::getNodesFromSelection(const QModelIndexList & indexes
     }
 }
 
+boost::shared_ptr<Natron::Node>
+MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
+{
+
+    assert( item->row() >= 0 && item->row() < (int)instances.size() );
+    int i = 0;
+    for (std::list< std::pair<boost::shared_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end();++it,++i) {
+        if (i == item->row()) {
+            return it->first;
+        }
+    }
+    return boost::shared_ptr<Natron::Node>();
+}
+
 boost::shared_ptr<KnobI> MultiInstancePanel::getKnobForItem(TableItem* item,
                                                             int* dimension) const
 {
@@ -1095,6 +1113,15 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                 ++instanceSpecificIndex;
             }
         }
+    }
+}
+
+void
+MultiInstancePanel::onItemRightClicked(TableItem* item)
+{
+    boost::shared_ptr<Natron::Node> instance = _imp->getInstanceFromItem(item);
+    if (instance) {
+        showMenuForInstance(instance.get());
     }
 }
 
@@ -2016,3 +2043,20 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
     }
 } // createCornerPinFromSelection
 
+void
+TrackerPanel::showMenuForInstance(Natron::Node* instance)
+{
+
+    QMenu menu(getGui());
+    menu.setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    
+    QAction* copyTrackAnimation = new QAction(tr("Copy track animation"),&menu);
+    menu.addAction(copyTrackAnimation);
+    
+    QAction* ret = menu.exec(QCursor::pos());
+    if (ret == copyTrackAnimation) {
+        Double_Knob* centerKnob = getCenterKnobForTracker(instance);
+        assert(centerKnob);
+        centerKnob->copyAnimationToClipboard();
+    }
+}

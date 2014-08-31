@@ -456,6 +456,11 @@ public:
      **/
     virtual void setAsInstanceSpecific() = 0;
     virtual bool isInstanceSpecific() const = 0;
+    
+    /**
+     * @brief If this knob has a gui view, then the gui view should set the animation of this knob on the application's knob clipboard.
+     **/
+    virtual void copyAnimationToClipboard() const = 0;
 
 protected:
 
@@ -850,6 +855,7 @@ public:
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
 
 private:
 

@@ -755,6 +755,14 @@ KnobHelper::isMastersPersistenceIgnored() const
     return _imp->ignoreMasterPersistence;
 }
 
+void
+KnobHelper::copyAnimationToClipboard() const
+{
+    if (_imp->gui) {
+        _imp->gui->copyAnimationToClipboard();
+    }
+}
+
 bool
 KnobHelper::slaveTo(int dimension,
                     const boost::shared_ptr<KnobI> & other,

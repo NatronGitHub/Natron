@@ -947,6 +947,12 @@ KnobGui::onInternalKeyRemoved(SequenceTime time,
 }
 
 void
+KnobGui::copyAnimationToClipboard() const
+{
+        copyToClipBoard(-1, true);
+}
+
+void
 KnobGui::onCopyValuesActionTriggered()
 {
     QAction *action = qobject_cast<QAction *>( sender() );
@@ -963,8 +969,15 @@ KnobGui::copyValues(int dimension)
 }
 
 void
+KnobGui::onCopyAnimationActionTriggered()
+{
+    copyAnimationToClipboard();
+}
+
+
+void
 KnobGui::copyToClipBoard(int dimension,
-                         bool copyAnimation)
+                         bool copyAnimation) const
 {
     std::list<Variant> values;
     std::list<boost::shared_ptr<Curve> > curves;
@@ -1014,11 +1027,6 @@ KnobGui::copyToClipBoard(int dimension,
     appPTR->setKnobClipBoard(copyAnimation,dimension,values,curves,stringAnimation,parametricCurves);
 }
 
-void
-KnobGui::onCopyAnimationActionTriggered()
-{
-    copyToClipBoard(-1, true);
-}
 
 void
 KnobGui::pasteClipBoard(int targetDimension)

@@ -100,6 +100,7 @@ public slots:
 
     void onSettingsPanelClosed(bool closed);
 
+    void onItemRightClicked(TableItem* item);
 protected:
 
     virtual void appendExtraGui(QVBoxLayout* /*layout*/)
@@ -112,6 +113,10 @@ protected:
 
     boost::shared_ptr<Natron::Node> addInstanceInternal();
     virtual void initializeExtraKnobs()
+    {
+    }
+    
+    virtual void showMenuForInstance(Natron::Node* /*instance*/)
     {
     }
 
@@ -168,6 +173,7 @@ private:
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
     virtual void setIconForButton(Button_Knob* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
+    virtual void showMenuForInstance(Natron::Node* item) OVERRIDE FINAL;
 
     void handleTrackNextAndPrevious(const std::list<Button_Knob*> & selectedInstances,SequenceTime currentFrame);
 

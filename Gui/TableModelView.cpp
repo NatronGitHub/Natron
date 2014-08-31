@@ -9,8 +9,22 @@
 #include <set>
 #include <QHeaderView>
 #include <QMouseEvent>
+#include "Gui/GuiMacros.h"
 
 //////////////TableItem
+
+namespace {
+    class MetaTypesRegistration
+    {
+    public:
+        inline MetaTypesRegistration()
+        {
+            qRegisterMetaType<TableItem*>("TableItem*");
+        }
+    };
+}
+
+static MetaTypesRegistration registration;
 
 TableItem::TableItem(const TableItem & other)
     : values(other.values)
@@ -32,6 +46,32 @@ TableItem *
 TableItem::clone() const
 {
     return new TableItem(*this);
+}
+
+int
+TableItem::row() const
+{
+    return (view ? view->row(this) : -1);
+}
+
+int
+TableItem::column() const
+{
+    return (view ? view->column(this) : -1);
+}
+
+void
+TableItem::setSelected(bool aselect)
+{
+    if (view) {
+        view->setItemSelected(this, aselect);
+    }
+}
+
+bool
+TableItem::isSelected() const
+{
+    return (view ? view->isItemSelected(this) : false);
 }
 
 void
@@ -919,6 +959,19 @@ TableView::mousePressEvent(QMouseEvent* e)
 }
 
 void
+TableView::mouseReleaseEvent(QMouseEvent* e)
+{
+    QModelIndex index = indexAt( e->pos() );
+    TableItem* item = itemAt( e->pos() );
+    if ( triggerButtonisRight(e) && index.isValid() ) {
+        emit itemRightClicked(item);
+    } else {
+        QTreeView::mouseReleaseEvent(e);
+    }
+    
+}
+
+void
 TableView::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Delete) || (e->key() == Qt::Key_Backspace) ) {
@@ -927,4 +980,18 @@ TableView::keyPressEvent(QKeyEvent* e)
     }
 
     QTreeView::keyPressEvent(e);
+}
+
+bool
+TableView::isItemSelected(const TableItem *item) const
+{
+    QModelIndex index = _imp->model->index(item);
+    return selectionModel()->isSelected(index);
+}
+
+void
+TableView::setItemSelected(const TableItem *item, bool select)
+{
+    QModelIndex index = _imp->model->index(item);
+    selectionModel()->select(index, select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
 }

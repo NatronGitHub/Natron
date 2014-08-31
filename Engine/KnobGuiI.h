@@ -28,7 +28,8 @@ public:
     virtual void getViewportSize(double &width, double &height) const = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
-
+    
+    virtual void copyAnimationToClipboard() const = 0;
 protected:
 
     ///Should set to the underlying knob the gui ptr

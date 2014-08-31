@@ -233,7 +233,6 @@ Node::load(const std::string & pluginID,
         ///Fetch the parent pointer ONLY when not loading (otherwise parent node might still node be created
         ///at that time)
         if ( serialization.isNull() ) {
-            fetchParentMultiInstancePointer();
             setName( QString( parentMultiInstanceName.c_str() ) + '_' + QString::number(childIndex) );
             nameSet = true;
         }
@@ -324,11 +323,7 @@ Node::isMultiInstance() const
 std::string
 Node::getParentMultiInstanceName() const
 {
-    if (_imp->multiInstanceParent) {
-        return _imp->multiInstanceParent->getName_mt_safe();
-    } else {
-        return "";
-    }
+    return _imp->multiInstanceParentName;
 }
 
 U64
@@ -596,21 +591,18 @@ Node::getOutputs() const
     return _imp->outputsQueue;
 }
 
-std::vector<std::string>
-Node::getInputNames() const
+void
+Node::getInputNames(std::vector<std::string>& inputNames) const
 {
-    std::vector<std::string> ret;
-    QMutexLocker l(&_imp->inputsMutex);
-
-    for (U32 i = 0; i < _imp->inputsQueue.size(); ++i) {
-        if (_imp->inputsQueue[i]) {
-            ret.push_back( _imp->inputsQueue[i]->getName_mt_safe() );
+    int maxInp = _imp->liveInstance->getMaxInputCount();
+    for (int i = 0; i < maxInp; ++i) {
+        boost::shared_ptr<Node> inp = getInput(i);
+        if (inp) {
+            inputNames.push_back( inp->getName_mt_safe() );
         } else {
-            ret.push_back("");
+            inputNames.push_back("");
         }
     }
-
-    return ret;
 }
 
 int

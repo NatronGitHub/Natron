@@ -117,7 +117,7 @@ public:
         return _rotoContext;
     }
 
-    const std::string & isMultiInstanceChild() const
+    const std::string & getMultiInstanceParentName() const
     {
         return _multiInstanceParentName;
     }

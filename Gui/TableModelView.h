@@ -16,6 +16,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTreeView>
 #include <QAbstractItemModel>
+#include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -76,14 +77,16 @@ public:
         return view;
     }
 
-    inline int row() const;
-    inline int column() const;
-    inline void setSelected(bool select);
-    inline bool isSelected() const;
+    int row() const;
+    int column() const;
+    void setSelected(bool select);
+    bool isSelected() const;
+    
     inline Qt::ItemFlags flags() const
     {
         return itemFlags;
     }
+    
 
     void setFlags(Qt::ItemFlags flags);
     inline QString text() const
@@ -192,6 +195,7 @@ public:
 };
 
 
+
 inline void
 TableItem::setText(const QString &atext)
 {
@@ -221,6 +225,8 @@ TableItem::setFont(const QFont &afont)
 {
     setData(Qt::FontRole, afont);
 }
+
+Q_DECLARE_METATYPE(TableItem*)
 
 struct TableViewPrivate;
 class TableView
@@ -256,6 +262,9 @@ public:
     void editItem(TableItem *item);
     void openPersistentEditor(TableItem *item);
     void closePersistentEditor(TableItem *item);
+    
+    bool isItemSelected(const TableItem *item) const;
+    void setItemSelected(const TableItem *item, bool select);
 
     QWidget * cellWidget(int row, int column) const;
     void setCellWidget(int row, int column, QWidget *widget);
@@ -267,10 +276,11 @@ public:
 signals:
 
     void deleteKeyPressed();
-
+    void itemRightClicked(TableItem* item);
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<TableViewPrivate> _imp;
 };
@@ -322,8 +332,7 @@ public:
 
     void setRowCount(int rows);
     void setColumnCount(int columns);
-
-
+    
     virtual int rowCount( const QModelIndex &parent = QModelIndex() ) const OVERRIDE FINAL;
     virtual int columnCount( const QModelIndex &parent = QModelIndex() ) const OVERRIDE FINAL;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const OVERRIDE FINAL;

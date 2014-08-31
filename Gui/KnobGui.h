@@ -175,6 +175,7 @@ public:
     ///Handler when a keyframe is moved in the curve editor/dope sheet
     void onKeyFrameMoved(int oldTime,int newTime);
 
+    virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
 public slots:
 
 
@@ -299,7 +300,7 @@ private:
 
     void updateGuiInternal(int dimension);
 
-    void copyToClipBoard(int dimension,bool copyAnimation);
+    void copyToClipBoard(int dimension,bool copyAnimation) const;
 
     void pasteClipBoard(int dimension);
 
