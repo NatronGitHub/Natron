@@ -10,20 +10,20 @@
 
 #include <csignal>
 #include <cstdio>
+#include <fstream>
+#include <sstream>
+
+#if defined(Q_OS_UNIX)
+#include <sys/signal.h>
+#endif
 
 #include <QApplication>
 
-#if defined(Q_OS_UNIX)
-//#include <sys/time.h> // <why ?
-#include <sys/signal.h> ///for handling signals
-#endif
-
 #include "Gui/GuiApplicationManager.h"
 
-void setShutDownSignal(int signalId);
-void handleShutDownSignal(int signalId);
-#include <fstream>
-#include <sstream>
+static void setShutDownSignal(int signalId);
+static void handleShutDownSignal(int signalId);
+
 int
 main(int argc,
      char *argv[])
@@ -34,22 +34,22 @@ main(int argc,
     QString projectName,mainProcessServerName;
     QStringList writers;
     AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,mainProcessServerName);
-	setShutDownSignal(SIGINT);   // shut down on ctrl-c
+    setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
-#ifdef Q_OS_UNIX
-    if ( !projectName.isEmpty() ) {
+#if defined(Q_OS_UNIX)
+    if (!projectName.isEmpty()) {
         projectName = AppManager::qt_tildeExpansion(projectName);
     }
 #endif
     if (isBackground) {
-        if ( projectName.isEmpty() ) {
+        if (projectName.isEmpty()) {
             ///Autobackground without a project file name is not correct
             AppManager::printUsage();
 
             return 1;
         }
         AppManager manager;
-        if ( !manager.load(argc,argv,projectName,writers,mainProcessServerName) ) {
+        if (!manager.load(argc,argv,projectName,writers,mainProcessServerName)) {
             AppManager::printUsage();
 
             return 1;
@@ -68,9 +68,9 @@ main(int argc,
 } // main
 
 void
-setShutDownSignal( int signalId )
+setShutDownSignal(int signalId)
 {
-#ifdef __NATRON_UNIX__
+#if defined(Q_OS_UNIX)
     struct sigaction sa;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
@@ -79,6 +79,8 @@ setShutDownSignal( int signalId )
         perror("setting up termination signal");
         exit(1);
     }
+#else
+    std::signal(signalId, handleShutDownSignal);
 #endif
 }
 
