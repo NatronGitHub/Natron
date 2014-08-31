@@ -11,7 +11,8 @@
 #include "AppManager.h"
 
 #if defined(Q_OS_UNIX)
-#include <sys/resource.h>
+#include <sys/time.h>     // for getrlimit on linux
+#include <sys/resource.h> // for getrlimit
 #elif defined(Q_OS_WIN)
 #include <windows.h>
 #endif
@@ -1398,7 +1399,13 @@ AppManagerPrivate::setMaxCacheFiles()
         }
     }
 #elif defined(Q_OS_WIN)
-	_setmaxstdio(2048);
+    // The following code sets the limit for stdio-based calls only.
+    // Note that low-level calls (CreateFile(), WriteFile(), ReadFile(), CloseHandle()...) are not affected by this limit.
+    // References:
+    // - http://msdn.microsoft.com/en-us/library/6e3b887c.aspx
+    // - https://stackoverflow.com/questions/870173/is-there-a-limit-on-number-of-open-files-in-windows/4276338
+    // - http://bugs.mysql.com/bug.php?id=24509
+    _setmaxstdio(2048); // sets the limit for stdio-based calls
     hardMax = 2048;
 #endif
 
