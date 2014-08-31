@@ -312,7 +312,6 @@ Project::saveProjectInternal(const QString & path,
 
     if ( !ofile.good() ) {
         qDebug() << "Failed to open file " << filePath.toStdString().c_str();
-        ofile.close();
         throw std::runtime_error( "Failed to open file " + filePath.toStdString() );
     }
 

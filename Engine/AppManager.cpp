@@ -1149,7 +1149,6 @@ AppManagerPrivate::saveCaches()
         }
 
         if ( !ofile.good() ) {
-            ofile.close();
             qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
 
             return;
