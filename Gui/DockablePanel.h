@@ -176,6 +176,8 @@ public slots:
     void onColorDialogColorChanged(const QColor & color);
 
     void setClosed(bool closed);
+    
+    void onRightClickMenuRequested(const QPoint& pos);
 
 signals:
 

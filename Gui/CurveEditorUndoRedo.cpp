@@ -26,47 +26,81 @@
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 AddKeysCommand::AddKeysCommand(CurveWidget *editor,
-                               CurveGui* curve,
-                               const std::vector< KeyFrame > & keys,
+                               const KeysToAddList& keys,
                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _curve(curve)
       , _keys(keys)
       , _curveWidget(editor)
 {
 }
 
+AddKeysCommand::AddKeysCommand(CurveWidget *editor,
+               CurveGui* curve,
+               const std::vector<KeyFrame>& keys,
+               QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _keys()
+    , _curveWidget(editor)
+{
+    boost::shared_ptr<KeysForCurve> k(new KeysForCurve);
+    k->curve = curve;
+    k->keys = keys;
+    _keys.push_back(k);
+}
+
 void
 AddKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>( _curve->getKnob()->getKnob() );
+    KeysToAddList::iterator next = _keys.begin();
+    ++next;
+    for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it,++next) {
+        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>( (*it)->curve->getKnob()->getKnob() );
+        (*it)->curve->getKnob()->getKnob()->blockEvaluation();
+        bool isUnblocked = false;
+        assert( !(*it)->keys.empty() );
+        for (U32 i = 0; i < (*it)->keys.size(); ++i) {
+            
+            if ((i == (*it)->keys.size() - 1) && next == _keys.end()) {
+                (*it)->curve->getKnob()->getKnob()->unblockEvaluation();
+                isUnblocked = true;
+            }
+            
+            if (add) {
+                
+                if (isParametric) {
+                    Natron::Status st = isParametric->addControlPoint( (*it)->curve->getDimension(),
+                                                                      (*it)->keys[i].getTime(),
+                                                                      (*it)->keys[i].getValue() );
+                    assert(st == Natron::StatOK);
+                    (void)st;
+                } else {
+                    (*it)->curve->getKnob()->setKeyframe( (*it)->keys[i].getTime(), (*it)->curve->getDimension() );
+                }
+                
+            } else {
+                
+                if (isParametric) {
+                    Natron::Status st = isParametric->deleteControlPoint( (*it)->curve->getDimension(),
+                                                                         (*it)->curve->getInternalCurve()->keyFrameIndex(
+                                                                                                (*it)->keys[i].getTime() ) );
+                    assert(st == Natron::StatOK);
+                    (void)st;
+                } else {
+                    (*it)->curve->getKnob()->removeKeyFrame( (*it)->keys[i].getTime(), (*it)->curve->getDimension() );
+                }
+                
+            }
+            
+        }
+        if (next == _keys.end()) {
+            --next;
+        }
+        if (!isUnblocked) {
+            (*it)->curve->getKnob()->getKnob()->unblockEvaluation();
+        }
 
-    _curve->getKnob()->getKnob()->blockEvaluation();
-    assert( !_keys.empty() );
-    for (U32 i = 0; i < _keys.size(); ++i) {
-        if (i == _keys.size() - 1) {
-            _curve->getKnob()->getKnob()->unblockEvaluation();
-        }
-        if (add) {
-            if (isParametric) {
-                Natron::Status st = isParametric->addControlPoint( _curve->getDimension(), _keys[i].getTime(),_keys[i].getValue() );
-                assert(st == Natron::StatOK);
-                (void)st;
-            } else {
-                _curve->getKnob()->setKeyframe( _keys[i].getTime(), _curve->getDimension() );
-            }
-        } else {
-            if (isParametric) {
-                Natron::Status st = isParametric->deleteControlPoint( _curve->getDimension(),
-                                                                      _curve->getInternalCurve()->keyFrameIndex( _keys[i].getTime() ) );
-                assert(st == Natron::StatOK);
-                (void)st;
-            } else {
-                _curve->getKnob()->removeKeyFrame( _keys[i].getTime(), _curve->getDimension() );
-            }
-        }
     }
-
+    
     _curveWidget->update();
 
     setText( QObject::tr("Add multiple keyframes") );
@@ -97,19 +131,16 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
 void
 RemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    ///this can be called either by a parametric curve widget or by the global curve editor, so we need to handle the different
-    ///cases here. Maybe this is bad design, i don't know how we could change it otherwise.
-    std::list<KnobI*> differentKnobs;
-
+ 
     for (U32 i = 0; i < _keys.size(); ++i) {
-        KnobI* k = _keys[i].first->getKnob()->getKnob().get();
-        if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
-            differentKnobs.push_back(k);
-            k->blockEvaluation();
+        
+        bool hasBlocked = false;
+        
+        if (i != _keys.size() - 1) {
+            _keys[i].first->getKnob()->getKnob()->blockEvaluation();
+            hasBlocked = true;
         }
-    }
-
-    for (U32 i = 0; i < _keys.size(); ++i) {
+        
         if (add) {
             if ( _keys[i].first->getKnob()->getKnob()->typeName() == Parametric_Knob::typeNameStatic() ) {
                 boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( _keys[i].first->getKnob()->getKnob() );
@@ -130,10 +161,10 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 _keys[i].first->getKnob()->removeKeyFrame( _keys[i].second.getTime(), _keys[i].first->getDimension() );
             }
         }
-    }
-    for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
-        (*it)->unblockEvaluation();
-        (*it)->getHolder()->evaluate_public(*it, true, Natron::USER_EDITED);
+        
+        if (hasBlocked) {
+            _keys[i].first->getKnob()->getKnob()->unblockEvaluation();
+        }
     }
 
     _curveWidget->update();

@@ -12,6 +12,7 @@
 #ifndef CURVEEDITORUNDOREDO_H
 #define CURVEEDITORUNDOREDO_H
 
+#include <list>
 #include <vector>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -75,9 +76,20 @@ class AddKeysCommand
 {
 public:
 
+    struct KeysForCurve {
+        CurveGui* curve;
+        std::vector<KeyFrame> keys;
+    };
+    
+    typedef std::list< boost::shared_ptr<KeysForCurve> > KeysToAddList;
+    
+    AddKeysCommand(CurveWidget *editor,
+                   const KeysToAddList& keys,
+                   QUndoCommand *parent = 0);
+    
     AddKeysCommand(CurveWidget *editor,
                    CurveGui* curve,
-                   const std::vector<KeyFrame> &keys,
+                   const std::vector<KeyFrame>& keys,
                    QUndoCommand *parent = 0);
 
     virtual ~AddKeysCommand() OVERRIDE
@@ -91,8 +103,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    CurveGui* _curve;
-    std::vector<KeyFrame> _keys;
+    KeysToAddList _keys;
     CurveWidget *_curveWidget;
 };
 
