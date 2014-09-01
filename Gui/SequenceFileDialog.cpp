@@ -1478,6 +1478,7 @@ SequenceFileDialog::openSelectedFiles()
             if (_dialogMode == OPEN_DIALOG) {
                 std::string pattern = selectedFiles();
                 if ( !pattern.empty() ) {
+                    teardownPreview();
                     QDialog::accept();
                 }
             } else {
