@@ -612,6 +612,11 @@ public:
     {
         emit animationAboutToBeRemoved(dimension);
     }
+    
+    void s_animationRemoved(int dimension)
+    {
+        emit animationRemoved(dimension);
+    }
 
     void s_updateSlaves(int dimension)
     {
@@ -715,8 +720,11 @@ signals:
     ///Emitted whenever a keyframe is removed with a reason different of USER_EDITED
     void keyFrameRemoved(SequenceTime,int);
 
-    ///Emitted whenever all keyframes of a dimension are removed with a reason different of USER_EDITED
+    ///Emitted whenever all keyframes of a dimension are about removed with a reason different of USER_EDITED
     void animationAboutToBeRemoved(int);
+    
+    ///Emitted whenever all keyframes of a dimension are effectively removed
+    void animationRemoved(int);
 
     ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
     ///of the changes that occured in this knob, letting them a chance to update their interface.

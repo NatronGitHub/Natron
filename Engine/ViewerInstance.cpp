@@ -595,6 +595,7 @@ ViewerInstance::renderViewer_internal(SequenceTime time,
 
     ///Make sure the bounds of the area to render in the texture lies in the bounds
     texRect.intersect(bounds, &texRectClipped);
+    
     ///Clip again against the project window
     if (isClippingToProjectWindow) {
         ///it has already been computed in the previous clip above

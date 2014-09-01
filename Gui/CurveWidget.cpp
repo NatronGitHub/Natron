@@ -1731,9 +1731,15 @@ CurveWidget::centerOn(const std::vector<CurveGui*> & curves)
     if ( curves.empty() ) {
         return;
     }
+    
+    bool doCenter = false;
     RectD ret;
     for (U32 i = 0; i < curves.size(); ++i) {
         CurveGui* c = curves[i];
+        if (c->getInternalCurve()->getKeyFramesCount() == 0) {
+            continue;
+        }
+        doCenter = true;
         double xmin = c->getInternalCurve()->getMinimumTimeCovered();
         double xmax = c->getInternalCurve()->getMaximumTimeCovered();
         double ymin = INT_MAX;
@@ -1755,8 +1761,9 @@ CurveWidget::centerOn(const std::vector<CurveGui*> & curves)
     ret.set_left(ret.left() - ret.width() / 10);
     ret.set_right(ret.right() + ret.width() / 10);
     ret.set_top(ret.top() + ret.height() / 10);
-
-    centerOn( ret.left(), ret.right(), ret.bottom(), ret.top() );
+    if (doCenter) {
+        centerOn( ret.left(), ret.right(), ret.bottom(), ret.top() );
+    }
 }
 
 void

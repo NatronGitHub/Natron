@@ -193,6 +193,8 @@ public slots:
 
     void onInternalKeyRemoved(SequenceTime time,int dimension);
 
+    void onInternalAnimationAboutToBeRemoved();
+    
     void onInternalAnimationRemoved();
 
     void setSecret();

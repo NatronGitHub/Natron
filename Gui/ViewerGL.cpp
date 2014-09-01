@@ -1756,20 +1756,26 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
                                      unsigned int mipMapLevel)
 {
     // MT-SAFE
+    RectD visibleArea;
     RectI ret;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
-        ret.x1 = std::floor( topLeft.x() );
-        ret.y2 = std::ceil( topLeft.y() );
+        visibleArea.x1 =  topLeft.x();
+        visibleArea.y2 =  topLeft.y();
         QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
-        ret.x2 = std::ceil( bottomRight.x() );
-        ret.y1 = std::floor( bottomRight.y() );
+        visibleArea.x2 = bottomRight.x() ;
+        visibleArea.y1 = bottomRight.y();
     }
 
     if (mipMapLevel != 0) {
         // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-        ret = ret.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+        visibleArea.toPixelEnclosing(mipMapLevel,&ret);
+    } else {
+        ret.x1 = visibleArea.x1;
+        ret.x2 = visibleArea.x2;
+        ret.y1 = visibleArea.y1;
+        ret.y2 = visibleArea.y2;
     }
 
     ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle

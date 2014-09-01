@@ -381,6 +381,10 @@ KnobHelper::removeAnimation(int dimension,
 
     _imp->curves[dimension]->clearKeyFrames();
 
+    if ( _signalSlotHandler && (reason != Natron::USER_EDITED) ) {
+        _signalSlotHandler->s_animationRemoved(dimension);
+    }
+    
     //virtual portion
     animationRemoved_virtual(dimension);
 }
