@@ -26,7 +26,8 @@
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
-const int graphicalContainerOffset = 10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+#define kGraphicalContainerOffset 10 //!< number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+
 Edge::Edge(int inputNb_,
            double angle_,
            const boost::shared_ptr<NodeGui> & dest_,
@@ -328,15 +329,20 @@ Edge::shape() const
     return path;
 }
 
+static inline double sqr(double x)
+{
+    return x * x;
+}
+
 static double
 dist2(const QPointF & p1,
       const QPointF & p2)
 {
-    return pow(p2.x() - p1.x(),2) +  pow(p2.y() - p1.y(),2);
+    return sqr(p2.x() - p1.x()) +  sqr(p2.y() - p1.y());
 }
 
 static double
-distToSegment(const QLineF & line,
+dist2ToSegment(const QLineF & line,
               const QPointF & p)
 {
     double length = pow(line.length(),2);
@@ -344,12 +350,12 @@ distToSegment(const QLineF & line,
     const QPointF &p2 = line.p2();
 
     if (length == 0.) {
-        dist2(p, p1);
+        return dist2(p, p1);
     }
     // Consider the line extending the segment, parameterized as p1 + t (p2 - p1).
     // We find projection of point p onto the line.
     // It falls where t = [(p-p1) . (p2-p1)] / |p2-p1|^2
-    double t = ( ( p.x() - p1.x() ) * ( p2.x() - p1.x() ) + ( p.y() - p1.y() ) * ( p2.y() - p1.y() ) ) / length;
+    double t = ((p.x() - p1.x()) * (p2.x() - p1.x()) + (p.y() - p1.y()) * (p2.y() - p1.y())) / length;
     if (t < 0) {
         return dist2(p, p1);
     }
@@ -357,16 +363,16 @@ distToSegment(const QLineF & line,
         return dist2(p, p2);
     }
 
-    return sqrt( dist2( p, QPointF( p1.x() + t * ( p2.x() - p1.x() ),
-                                    p1.y() + t * ( p2.y() - p1.y() ) ) ) );
+    return dist2(p, QPointF(p1.x() + t * (p2.x() - p1.x()),
+                            p1.y() + t * (p2.y() - p1.y())));
 }
 
 bool
 Edge::contains(const QPointF &point) const
 {
-    double dist = distToSegment(line(), point);
+    double d2 = dist2ToSegment(line(), point);
 
-    return dist <= graphicalContainerOffset;
+    return d2 <= kGraphicalContainerOffset * kGraphicalContainerOffset;
 }
 
 void
