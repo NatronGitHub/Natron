@@ -2721,7 +2721,7 @@ ViewerTab::setTimelineVisible(bool visible)
 {
     QMutexLocker l(&_imp->_visibleToolbarsMutex);
     _imp->_timelineVisible = visible;
-    _imp->_timeLineGui->setVisible(_imp->_playerVisible);
+    _imp->_timeLineGui->setVisible(_imp->_timelineVisible);
 
 }
 
