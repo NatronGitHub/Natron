@@ -11,13 +11,15 @@
 #ifndef NATRON_ENGINE_OFXHOST_H_
 #define NATRON_ENGINE_OFXHOST_H_
 
-
+#include <list>
 #include <boost/shared_ptr.hpp>
 
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 
 #include "Global/Macros.h"
+
+//#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
 class AbstractOfxEffectInstance;
 class AppInstance;
@@ -142,6 +144,11 @@ private:
     typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
 
     OFXPluginsMap _ofxPlugins;
+    
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+    std::list<QMutex*> _pluginsMutexes;
+    QMutex* _pluginsMutexesLock; //<protects _pluginsMutexes
+#endif
 };
 } // namespace Natron
 

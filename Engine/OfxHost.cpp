@@ -62,6 +62,11 @@ using namespace Natron;
 
 Natron::OfxHost::OfxHost()
     : _imageEffectPluginCache( new OFX::Host::ImageEffect::PluginCache(*this) )
+    , _ofxPlugins()
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+    , _pluginsMutexes()
+    , _pluginsMutexesLock(new QMutex)
+#endif
 {
 }
 
@@ -71,6 +76,9 @@ Natron::OfxHost::~OfxHost()
     OFX::Host::PluginCache::clearPluginCache();
 
     delete _imageEffectPluginCache;
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+    delete _pluginsMutexesLock;
+#endif
 }
 
 void
@@ -857,7 +865,12 @@ Natron::OfxHost::mutexCreate(OfxMutexHandle *mutex,
             m->lock();
         }
         *mutex = (OfxMutexHandle)(m);
-
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+        {
+            QMutexLocker l(_pluginsMutexesLock);
+            _pluginsMutexes.push_back(m);
+        }
+#endif
         return kOfxStatOK;
     } catch (std::bad_alloc) {
         qDebug() << "mutexCreate(): memory error.";
@@ -885,7 +898,19 @@ Natron::OfxHost::mutexDestroy(const OfxMutexHandle mutex)
     }
     // suite functions should not throw
     try {
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+        const QMutex* mutexqt = reinterpret_cast<const QMutex*>(mutex);
+        {
+            QMutexLocker l(_pluginsMutexesLock);
+            std::list<QMutex*>::iterator found = std::find(_pluginsMutexes.begin(),_pluginsMutexes.end(),mutexqt);
+            if ( found != _pluginsMutexes.end() ) {
+                delete *found;
+                _pluginsMutexes.erase(found);
+            }
+        }
+#else
         delete reinterpret_cast<const QMutex*>(mutex);
+#endif
 
         return kOfxStatOK;
     } catch (std::bad_alloc) {
