@@ -365,8 +365,12 @@ SpinBox::increment(int delta,
     // (No trailing zeroes on int, of course)
     assert( len == str.size() );
     if ( (_imp->type == INT_SPINBOX) && (pos >= len) ) {
-        // Can't add decimals to an int: do nothing
-        return;
+        // If this is an int and we are beyond the last position, change the last digit
+        pos = len - 1;
+        // also reset the shift if it was negative
+        if (shift < 0) {
+            shift = 0;
+        }
     }
     while ( pos >= str.size() ) {
         assert(_imp->type == DOUBLE_SPINBOX);
