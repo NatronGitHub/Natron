@@ -586,7 +586,8 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
                          const boost::shared_ptr<Natron::Node> & node,
                          bool requestedByLoad,
                          double xPosHint,
-                         double yPosHint)
+                         double yPosHint,
+                         bool pushUndoRedoCommand)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
@@ -617,8 +618,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
         _imp->_gui->registerNewUndoStack(nodeStack);
     }
 
-    ///When loading don't add a undo/redo command
-    if (!requestedByLoad) {
+    if (pushUndoRedoCommand) {
         _imp->_undoStack->setActive();
         _imp->_undoStack->push( new AddMultipleNodesCommand(this,node_ui) );
     }
@@ -1199,7 +1199,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     QMutexLocker l(&_imp->_nodesMutex);
                     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         boost::shared_ptr<NodeGui> & n = *it;
-                        if (n != selectedNode) {
+                        if ( n != selectedNode && n->isVisible() ) {
                             edge = n->hasEdgeNearbyRect(rect);
 
                             ///if the edge input is the selected node don't continue
@@ -3171,6 +3171,7 @@ NodeGraph::onTimeChanged(SequenceTime time,
     }
     boost::shared_ptr<Natron::Project> project = _imp->_gui->getApp()->getProject();
 
+    ///Refresh all knobs at the current time
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
         if (isViewer) {
@@ -3179,6 +3180,11 @@ NodeGraph::onTimeChanged(SequenceTime time,
         (*it)->refreshKnobsAfterTimeChange(time);
     }
     Natron::OutputEffectInstance* lastTimelineSeekCaller = project->getLastTimelineSeekCaller();
+    project->setLastTimelineSeekCaller(NULL);
+
+    ///Syncrhronize viewers
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(lastTimelineSeekCaller);
+    
     for (U32 i = 0; i < viewers.size(); ++i) {
         if ( (viewers[i] != lastTimelineSeekCaller) || (reason == USER_SEEK) ) {
             boost::shared_ptr<VideoEngine> engine = viewers[i]->getVideoEngine();
@@ -3190,7 +3196,6 @@ NodeGraph::onTimeChanged(SequenceTime time,
                            false); //< force preview
         }
     }
-    project->setLastTimelineSeekCaller(NULL);
 }
 
 void

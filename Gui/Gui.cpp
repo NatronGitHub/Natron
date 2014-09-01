@@ -640,11 +640,12 @@ boost::shared_ptr<NodeGui>
 Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
                     double xPosHint,
-                    double yPosHint)
+                    double yPosHint,
+                    bool pushUndoRedoCommand)
 {
     assert(_imp->_nodeGraphArea);
     boost::shared_ptr<NodeGui> nodeGui = _imp->_nodeGraphArea->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
-                                                                             xPosHint,yPosHint);
+                                                                             xPosHint,yPosHint,pushUndoRedoCommand);
     QObject::connect( nodeGui.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
@@ -2481,7 +2482,7 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::vector<std::string> & initialfilters,
                        const std::string & initialDir)
 {
-    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir);
+    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir,this);
 
     if ( dialog.exec() ) {
         return dialog.selectedFiles();
@@ -2495,7 +2496,7 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::vector<std::string> & initialfilters,
                        const std::string & initialDir)
 {
-    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir);
+    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir,this);
 
     if ( dialog.exec() ) {
         return dialog.filesToSave();

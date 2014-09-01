@@ -29,7 +29,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
 #define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FRAME_RANGE
+#define VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY 4
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -75,6 +76,13 @@ struct ViewerData
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
     bool frameRangeLocked;
+    
+    bool leftToolbarVisible;
+    bool rightToolbarVisible;
+    bool topToolbarVisible;
+    bool playerVisible;
+    bool infobarVisible;
+    bool timelineVisible;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -106,6 +114,15 @@ struct ViewerData
             ar & boost::serialization::make_nvp("FrameRangeLocked",frameRangeLocked);
         } else {
             frameRangeLocked = false;
+        }
+        
+        if (version >= VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY) {
+            ar & boost::serialization::make_nvp("LeftToolbarVisible",leftToolbarVisible);
+            ar & boost::serialization::make_nvp("RightToolbarVisible",rightToolbarVisible);
+            ar & boost::serialization::make_nvp("TopToolbarVisible",topToolbarVisible);
+            ar & boost::serialization::make_nvp("PlayerVisible",playerVisible);
+            ar & boost::serialization::make_nvp("TimelineVisible",timelineVisible);
+            ar & boost::serialization::make_nvp("InfobarVisible",infobarVisible);
         }
     }
 };

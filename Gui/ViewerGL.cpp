@@ -796,13 +796,12 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
 
     QObject::connect( parent->getGui()->getApp()->getProject().get(),SIGNAL( formatChanged(Format) ),this,SLOT( onProjectFormatChanged(Format) ) );
 
-    populateMenu();
 
 
     _imp->blankViewerInfos.setChannels(Natron::Mask_RGBA);
@@ -2189,6 +2188,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     if (!overlaysCaught) {
         if ( buttonDownIsRight(e) ) {
+            populateMenu();
             _imp->menu->exec( mapToGlobal( e->pos() ) );
         } else if ( buttonDownIsLeft(e) ) {
             ///build selection rectangle
@@ -3055,10 +3055,74 @@ ViewerGL::populateMenu()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->menu->clear();
-    QAction* displayOverlaysAction = new QAction("Display overlays",this);
+    QAction* displayOverlaysAction = new QAction(tr("Display overlays"),_imp->menu);
     displayOverlaysAction->setCheckable(true);
     displayOverlaysAction->setChecked(true);
     QObject::connect( displayOverlaysAction,SIGNAL( triggered() ),this,SLOT( toggleOverlays() ) );
+    
+    QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
+    showHideMenu->setFont(QFont(NATRON_FONT,NATRON_FONT_SIZE_11));
+    _imp->menu->addAction(showHideMenu->menuAction());
+    
+    QAction* showHidePlayer,*showHideLeftToolbar,*showHideRightToolbar,*showHideTopToolbar,*showHideInfobar,*showHideTimeline;
+    QAction* showAll,*hideAll;
+    if (_imp->viewerTab->isPlayerVisible()) {
+        showHidePlayer = new QAction(tr("Hide player"),showHideMenu);
+    } else {
+        showHidePlayer = new QAction(tr("Show player"),showHideMenu);
+    }
+    
+    if (_imp->viewerTab->isLeftToolbarVisible()) {
+        showHideLeftToolbar = new QAction(tr("Hide left toolbar"),showHideMenu);
+    } else {
+        showHideLeftToolbar = new QAction(tr("Show left toolbar"),showHideMenu);
+    }
+    
+    if (_imp->viewerTab->isRightToolbarVisible()) {
+        showHideRightToolbar = new QAction(tr("Hide right toolbar"),showHideMenu);
+    } else {
+        showHideRightToolbar = new QAction(tr("Show right toolbar"),showHideMenu);
+    }
+    
+    if (_imp->viewerTab->isTopToolbarVisible()) {
+        showHideTopToolbar = new QAction(tr("Hide top toolbar"),showHideMenu);
+    } else {
+        showHideTopToolbar = new QAction(tr("Show top toolbar"),showHideMenu);
+    }
+    
+    if (_imp->viewerTab->isInfobarVisible()) {
+        showHideInfobar = new QAction(tr("Hide infos bar"),showHideMenu);
+    } else {
+        showHideInfobar = new QAction(tr("Show infos bar"),showHideMenu);
+    }
+    
+    if (_imp->viewerTab->isTimelineVisible()) {
+        showHideTimeline = new QAction(tr("Hide timeline"),showHideMenu);
+    } else {
+        showHideTimeline = new QAction(tr("Show timeline"),showHideMenu);
+    }
+    
+    showAll = new QAction(tr("Show all"),showHideMenu);
+    hideAll = new QAction(tr("Hide all"),showHideMenu);
+    
+    QObject::connect(showHidePlayer,SIGNAL(triggered()),_imp->viewerTab,SLOT(togglePlayerVisibility()));
+    QObject::connect(showHideLeftToolbar,SIGNAL(triggered()),_imp->viewerTab,SLOT(toggleLeftToolbarVisiblity()));
+    QObject::connect(showHideRightToolbar,SIGNAL(triggered()),_imp->viewerTab,SLOT(toggleRightToolbarVisibility()));
+    QObject::connect(showHideTopToolbar,SIGNAL(triggered()),_imp->viewerTab,SLOT(toggleTopToolbarVisibility()));
+    QObject::connect(showHideInfobar,SIGNAL(triggered()),_imp->viewerTab,SLOT(toggleInfobarVisbility()));
+    QObject::connect(showHideTimeline,SIGNAL(triggered()),_imp->viewerTab,SLOT(toggleTimelineVisibility()));
+    QObject::connect(showAll,SIGNAL(triggered()),_imp->viewerTab,SLOT(showAllToolbars()));
+    QObject::connect(hideAll,SIGNAL(triggered()),_imp->viewerTab,SLOT(hideAllToolbars()));
+    
+    showHideMenu->addAction(showHidePlayer);
+    showHideMenu->addAction(showHideTimeline);
+    showHideMenu->addAction(showHideInfobar);
+    showHideMenu->addAction(showHideLeftToolbar);
+    showHideMenu->addAction(showHideRightToolbar);
+    showHideMenu->addAction(showHideTopToolbar);
+    showHideMenu->addAction(showAll);
+    showHideMenu->addAction(hideAll);
+    
     _imp->menu->addAction(displayOverlaysAction);
 }
 
@@ -3758,5 +3822,11 @@ ViewerGL::getSelectionRectangle(double &left,
     right = std::max( topLeft.x(), btmRight.x() );
     bottom = std::min( topLeft.y(), btmRight.y() );
     top = std::max( topLeft.y(), btmRight.y() );
+}
+
+boost::shared_ptr<TimeLine>
+ViewerGL::getTimeline() const
+{
+    return _imp->viewerTab->getTimeLine();
 }
 

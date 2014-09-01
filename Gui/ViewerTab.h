@@ -32,6 +32,7 @@ class Format;
 class QMouseEvent;
 class RotoGui;
 class NodeGui;
+class TimeLine;
 class TrackerGui;
 struct RotoGuiSharedData;
 struct ViewerTabPrivate;
@@ -174,7 +175,21 @@ public:
 
     bool isPlayForwardButtonDown() const;
     bool isPlayBackwardButtonDown() const;
-
+    
+    bool isInfobarVisible() const;
+    bool isTopToolbarVisible() const;
+    bool isPlayerVisible() const;
+    bool isTimelineVisible() const;
+    bool isLeftToolbarVisible() const;
+    bool isRightToolbarVisible() const;
+    
+    ///Not MT-safe
+    void setAsFileDialogViewer();
+    bool isFileDialogViewer() const;
+    
+    void setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline);
+    boost::shared_ptr<TimeLine> getTimeLine() const;
+    
 public slots:
 
     void startPause(bool);
@@ -247,8 +262,28 @@ public slots:
     void setFrameRangeLocked(bool toggled);
 
     void onTimelineBoundariesChanged(SequenceTime,SequenceTime,int);
+    
+    void setLeftToolbarVisible(bool visible);
+    void setRightToolbarVisible(bool visible);
+    void setTopToolbarVisible(bool visible);
+    void setPlayerVisible(bool visible);
+    void setTimelineVisible(bool visible);
+    void setInfobarVisible(bool visible);
 
+    
+    void toggleInfobarVisbility();
+    void togglePlayerVisibility();
+    void toggleTimelineVisibility();
+    void toggleLeftToolbarVisiblity();
+    void toggleRightToolbarVisibility();
+    void toggleTopToolbarVisibility();
+
+    void showAllToolbars();    
+    void hideAllToolbars();
+    
 private:
+    
+    void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);
 
     void manageSlotsForInfoWidget(int textureIndex,bool connect);
 

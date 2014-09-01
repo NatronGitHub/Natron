@@ -147,6 +147,10 @@ public:
     int getProjectMainView() const;
 
     void setOrAddProjectFormat(const Format & frmt,bool skipAdd = false);
+    
+    bool isAutoSetProjectFormatEnabled() const;
+    
+    void setAutoSetProjectFormatEnabled(bool enabled);
 
     bool isAutoPreviewEnabled() const;
 

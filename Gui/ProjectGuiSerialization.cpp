@@ -64,6 +64,12 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
             viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
             viewerData.frameRangeLocked = tab->isFrameRangeLocked();
+            viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();
+            viewerData.rightToolbarVisible = tab->isRightToolbarVisible();
+            viewerData.topToolbarVisible = tab->isTopToolbarVisible();
+            viewerData.infobarVisible = tab->isInfobarVisible();
+            viewerData.playerVisible = tab->isPlayerVisible();
+            viewerData.timelineVisible = tab->isTimelineVisible();
             _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
         }
     }

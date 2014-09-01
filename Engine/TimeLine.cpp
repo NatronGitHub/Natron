@@ -102,7 +102,9 @@ TimeLine::seekFrame(SequenceTime frame,
     }
 
     if (changed) {
-        _project->setLastTimelineSeekCaller(caller);
+        if (_project) {
+            _project->setLastTimelineSeekCaller(caller);
+        }
         emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
     }
 }
@@ -116,8 +118,9 @@ TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller)
         ++_currentFrame;
         frame = _currentFrame;
     }
-
-    _project->setLastTimelineSeekCaller(caller);
+    if (_project) {
+        _project->setLastTimelineSeekCaller(caller);
+    }
     emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
 }
 
@@ -130,8 +133,9 @@ TimeLine::decrementCurrentFrame(Natron::OutputEffectInstance* caller)
         --_currentFrame;
         frame = _currentFrame;
     }
-
-    _project->setLastTimelineSeekCaller(caller);
+    if (_project) {
+        _project->setLastTimelineSeekCaller(caller);
+    }
     emit frameChanged(frame, (int)Natron::PLAYBACK_SEEK);
 }
 

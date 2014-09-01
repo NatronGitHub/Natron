@@ -157,5 +157,6 @@
         <file>Resources/Images/viewer_roiDisabled.png</file>
         <file>Resources/Images/viewer_roiEnabled.png</file>
         <file>Resources/Images/layout_anchor.png</file>
+        <file>Resources/Images/settings.png</file>
     </qresource>
 </RCC>

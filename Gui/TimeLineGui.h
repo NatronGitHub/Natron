@@ -32,6 +32,7 @@ class Gui;
 class ViewerTab;
 class QMouseEvent;
 class TimeLine;
+class ViewerInstance;
 struct TimelineGuiPrivate;
 
 class TimeLineGui
@@ -40,12 +41,16 @@ class TimeLineGui
     Q_OBJECT
 
 public:
-    explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine,
+    explicit TimeLineGui(ViewerInstance* viewer,
+                         boost::shared_ptr<TimeLine> timeLine,
                          Gui* gui,
                          QWidget* parent,
                          const QGLWidget* shareWidget = NULL);
 
     virtual ~TimeLineGui() OVERRIDE;
+    
+    void setTimeline(const boost::shared_ptr<TimeLine>& timeline);
+    boost::shared_ptr<TimeLine> getTimeline() const;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);

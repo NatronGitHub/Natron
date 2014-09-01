@@ -2134,3 +2134,8 @@ ViewerInstance::clearLastRenderedTexture()
     }
 }
 
+boost::shared_ptr<TimeLine>
+ViewerInstance::getTimeline() const
+{
+    return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
+}

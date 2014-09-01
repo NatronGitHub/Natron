@@ -12,11 +12,13 @@
 #ifndef OPENGLVIEWERI_H
 #define OPENGLVIEWERI_H
 
+#include <boost/shared_ptr.hpp>
 #include "Engine/OverlaySupport.h"
 #include "Engine/Rect.h"
 class Format;
 struct TextureRect;
 class QString;
+class TimeLine;
 class OpenGLViewerI
     : public OverlaySupport
 {
@@ -134,6 +136,8 @@ public:
      * @brief Returns whether the user sould be able to edit the frame range or not.
      **/
     virtual bool isFrameRangeLocked() const = 0;
+    
+    virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
 };
 
 

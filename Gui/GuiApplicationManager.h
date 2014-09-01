@@ -49,6 +49,8 @@ class BoundAction;
 class KeyBoundAction;
 class QAction;
 
+
+
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
     : public AppManager
@@ -127,6 +129,7 @@ public:
     void removeShortcutAction(const QString & group,const QString & actionID,QAction* action);
 
     void notifyShortcutChanged(KeyBoundAction* action);
+    
 
 public slots:
 

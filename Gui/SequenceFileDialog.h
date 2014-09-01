@@ -58,9 +58,12 @@ class QSplitter;
 class QAction;
 class SequenceFileDialog;
 class SequenceItemDelegate;
+class Gui;
+class NodeGui;
 namespace SequenceParsing {
 class SequenceFromFiles;
 }
+struct FileDialogPreviewProvider;
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
  * the file system and some urls.
@@ -299,14 +302,17 @@ public:
     typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
     typedef std::vector<NameMappingElement> NameMapping;
 
+
 public:
+    
 
 
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
                        const std::vector<std::string> & filters, // the user accepted file types. Empty means it supports everything
                        bool isSequenceDialog = true, // true if this dialog can display sequences
                        FileDialogMode mode = OPEN_DIALOG, // if it is an open or save dialog
-                       const std::string & currentDirectory = ""); // the directory to show first
+                       const std::string & currentDirectory = "",  // the directory to show first
+                       Gui* gui = NULL);
 
     virtual ~SequenceFileDialog();
 
@@ -497,12 +503,15 @@ public slots:
 
     ///called by onFileExtensionComboChanged
     void setFileExtensionOnLineEdit(const QString &);
+    
+    void onTogglePreviewButtonClicked(bool toggled);
 
 private:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-
+    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
+    
     void createMenuActions();
 
     QModelIndex select(const QModelIndex & index);
@@ -513,6 +522,13 @@ private:
 
     bool restoreState(const QByteArray & state);
 
+    void createViewerPreviewNode();
+    
+    void teardownPreview();
+    
+    boost::shared_ptr<NodeGui> findOrCreatePreviewReader(const std::string& filetype);
+    
+    void refreshPreviewAfterSelectionChange();
 private:
     // FIXME: PIMPL
 
@@ -534,7 +550,6 @@ private:
     Button* _nextButton;
     Button* _upButton;
     Button* _createDirButton;
-    Button* _previewButton;
     Button* _openButton;
     Button* _cancelButton;
     Button* _addFavoriteButton;
@@ -565,6 +580,18 @@ private:
     QAction* _showHiddenAction;
     QAction* _newFolderAction;
     FileDialogMode _dialogMode;
+    QWidget* _centerArea;
+    QHBoxLayout* _centerAreaLayout;
+    Button* _togglePreviewButton;
+    
+   
+    
+    boost::shared_ptr<FileDialogPreviewProvider> _preview;
+    
+    ///Remember  autoSetProjectFormat  state before opening the dialog
+    bool _wasAutosetProjectFormatEnabled;
+    
+    Gui* _gui;
 };
 
 /**

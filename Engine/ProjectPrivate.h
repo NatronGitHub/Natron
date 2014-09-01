@@ -88,6 +88,7 @@ struct ProjectPrivate
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
 
+    
     ProjectPrivate(Natron::Project* project);
 
     void restoreFromSerialization(const ProjectSerialization & obj);

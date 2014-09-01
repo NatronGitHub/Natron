@@ -75,7 +75,6 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,
       , _lastRequestedRunArgs()
       , _currentRunArgs()
       , _startRenderFrameTime()
-      , _timeline( owner->getNode()->getApp()->getTimeLine() )
       , _getFrameRangeCond()
       , _getFrameRangeMutex()
       , _gettingFrameRange(false)
@@ -300,11 +299,12 @@ VideoEngine::stopEngine()
                 for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
                     bool previewEnabled = (*it)->isPreviewEnabled();
                     if (previewEnabled) {
+                        boost::shared_ptr<TimeLine>  timeline = getTimeline();
                         if (_currentRunArgs._forcePreview) {
-                            (*it)->computePreviewImage( _timeline->currentFrame() );
+                            (*it)->computePreviewImage( timeline->currentFrame() );
                         } else {
                             if (shouldRefreshPreview) {
-                                (*it)->refreshPreviewImage( _timeline->currentFrame() );
+                                (*it)->refreshPreviewImage( timeline->currentFrame() );
                             }
                         }
                     }
@@ -486,7 +486,8 @@ VideoEngine::iterateKernel(bool singleThreaded)
                 _tree.refreshRenderInputs();
             }
         }
-
+        
+        boost::shared_ptr<TimeLine>  timeline = getTimeline();
 
         if (viewer) {
             if ( singleThreaded || appPTR->isBackground() ) {
@@ -514,14 +515,14 @@ VideoEngine::iterateKernel(bool singleThreaded)
 
             //If the frame range is not locked, let the user define it.
             if ( viewer->isFrameRangeLocked() && (viewer->getApp()->getProject()->getLastTimelineSeekCaller() != viewer) ) {
-                _timeline->setFrameRange(_firstFrame, _lastFrame);
+                timeline->setFrameRange(_firstFrame, _lastFrame);
             }
         }
 
         int firstFrame,lastFrame;
         if (viewer) {
-            firstFrame = _timeline->leftBound();
-            lastFrame = _timeline->rightBound();
+            firstFrame = timeline->leftBound();
+            lastFrame = timeline->rightBound();
         } else {
             firstFrame = output->getFirstFrame();
             lastFrame = output->getLastFrame();
@@ -534,7 +535,7 @@ VideoEngine::iterateKernel(bool singleThreaded)
         if (!_currentRunArgs._recursiveCall) {
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
             if (viewer) {
-                currentFrame = _timeline->currentFrame();
+                currentFrame = timeline->currentFrame();
             } else {
                 output->setCurrentFrame(firstFrame);
                 currentFrame = firstFrame;
@@ -551,15 +552,15 @@ VideoEngine::iterateKernel(bool singleThreaded)
                 // viewer
                 assert(viewer);
                 if (_currentRunArgs._forward) {
-                    currentFrame = _timeline->currentFrame();
+                    currentFrame = timeline->currentFrame();
                     if (currentFrame < lastFrame) {
-                        _timeline->incrementCurrentFrame(output);
+                        timeline->incrementCurrentFrame(output);
                         ++currentFrame;
                     } else {
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if (_loopMode) { // loop only for a viewer
                             currentFrame = firstFrame;
-                            _timeline->seekFrame(currentFrame,output);
+                            timeline->seekFrame(currentFrame,output);
                         } else {
                             loopModeLocker.unlock();
 
@@ -567,15 +568,15 @@ VideoEngine::iterateKernel(bool singleThreaded)
                         }
                     }
                 } else {
-                    currentFrame = _timeline->currentFrame();
+                    currentFrame = timeline->currentFrame();
                     if (currentFrame > firstFrame) {
-                        _timeline->decrementCurrentFrame(output);
+                        timeline->decrementCurrentFrame(output);
                         --currentFrame;
                     } else {
                         QMutexLocker loopModeLocker(&_loopModeMutex);
                         if (_loopMode) { //loop only for a viewer
                             currentFrame = lastFrame;
-                            _timeline->seekFrame(currentFrame,output);
+                            timeline->seekFrame(currentFrame,output);
                         } else {
                             loopModeLocker.unlock();
 
@@ -1001,20 +1002,29 @@ VideoEngine::getFrameRange()
     }
     QMutexLocker l(&_getFrameRangeMutex);
 
+    boost::shared_ptr<TimeLine>  timeline = getTimeline();
     if ( _tree.getOutput() ) {
         _tree.getOutput()->getFrameRange_public(&_firstFrame, &_lastFrame);
         if (_firstFrame == INT_MIN) {
-            _firstFrame = _timeline->leftBound();
+            _firstFrame = timeline->leftBound();
         }
         if (_lastFrame == INT_MAX) {
-            _lastFrame = _timeline->rightBound();
+            _lastFrame = timeline->rightBound();
         }
     } else {
-        _firstFrame = _timeline->leftBound();
-        _lastFrame = _timeline->rightBound();
+        _firstFrame = timeline->leftBound();
+        _lastFrame = timeline->rightBound();
     }
 
     _gettingFrameRange = false;
     _getFrameRangeCond.wakeOne();
 }
 
+boost::shared_ptr<TimeLine> VideoEngine::getTimeline() const
+{
+    if (_tree.isOutputAViewer()) {
+        return _tree.outputAsViewer()->getTimeline();
+    } else {
+        return _tree.getOutput()->getApp()->getTimeLine();
+    }
+}

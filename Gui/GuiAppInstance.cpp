@@ -20,6 +20,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeBackDropSerialization.h"
+#include "Gui/ViewerTab.h"
 
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -27,6 +28,7 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
+#include "Engine/ViewerInstance.h"
 using namespace Natron;
 
 struct GuiAppInstancePrivate
@@ -48,6 +50,8 @@ struct GuiAppInstancePrivate
     bool _showingDialog;
     mutable QMutex _showingDialogMutex;
 
+    boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
+
     GuiAppInstancePrivate()
         : _gui(NULL)
           , _nodeMapping()
@@ -56,6 +60,7 @@ struct GuiAppInstancePrivate
           , _isClosing(false)
           , _showingDialog(false)
           , _showingDialogMutex()
+          , _previewProvider(new FileDialogPreviewProvider)
     {
     }
 };
@@ -70,6 +75,24 @@ GuiAppInstance::GuiAppInstance(int appID)
 void
 GuiAppInstance::aboutToQuit()
 {
+    /**
+     Kill the nodes used to make the previews in the file dialogs
+     **/
+    if (_imp->_previewProvider->viewerNode) {
+        _imp->_previewProvider->viewerNode->getNode()->removeReferences();
+        _imp->_previewProvider->viewerNode->deleteReferences();
+    }
+    
+    for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
+         it != _imp->_previewProvider->readerNodes.end(); ++it) {
+        it->second->getNode()->removeReferences();
+        it->second->deleteReferences();
+    }
+    _imp->_previewProvider->readerNodes.clear();
+    
+    _imp->_previewProvider.reset();
+
+    
     _imp->_isClosing = true;
     _imp->_nodeMapping.clear(); //< necessary otherwise Qt parenting system will try to delete the NodeGui instead of automatic shared_ptr
     _imp->_gui->close();
@@ -123,6 +146,8 @@ GuiAppInstance::load(const QString & projectName,
     _imp->_gui->show();
 
 
+    QObject::connect(getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)));
+    
     if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
         appPTR->setLoadingStatus( tr("Checking if updates are available...") );
         ///Before loading autosave check for a new version
@@ -165,9 +190,10 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
                               bool openImageFileDialog,
                               bool autoConnect,
                               double xPosHint,
-                              double yPosHint)
+                              double yPosHint,
+                              bool pushUndoRedoCommand)
 {
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand);
 
     assert(nodegui);
     if ( !multiInstanceParentName.empty() ) {
@@ -559,10 +585,26 @@ GuiAppInstance::disconnectViewersFromViewerCache()
 void
 GuiAppInstance::aboutToAutoSave()
 {
+    _imp->_gui->aboutToSave();
 }
 
 void
 GuiAppInstance::autoSaveFinished()
 {
+    _imp->_gui->saveFinished();
 }
 
+
+boost::shared_ptr<FileDialogPreviewProvider>
+GuiAppInstance::getPreviewProvider() const
+{
+    return _imp->_previewProvider;
+}
+
+void
+GuiAppInstance::projectFormatChanged(const Format& /*f*/)
+{
+    if (_imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
+        _imp->_previewProvider->viewerUI->getInternalNode()->updateTreeAndRender();
+    }
+}

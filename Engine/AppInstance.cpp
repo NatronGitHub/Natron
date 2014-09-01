@@ -188,7 +188,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 int childIndex,
                                 bool autoConnect,
                                 double xPosHint,
-                                double yPosHint)
+                                double yPosHint,
+                                bool pushUndoRedoCommand,
+                                bool addToProject,
+                                const QString& fixedName)
 {
     boost::shared_ptr<Node> node;
     LibraryBinary* pluginBinary = 0;
@@ -209,7 +212,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     try {
         // load() calls OfxEffectInstance::createOFXImageEffectInstance()
-        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName);
+        node->load(pluginID.toStdString(),multiInstanceParentName,childIndex,node, serialization,dontLoadName,fixedName);
     } catch (const std::exception & e) {
         std::string title = std::string("Error while creating node");
         std::string message = title + " " + pluginID.toStdString() + ": " + e.what();
@@ -230,10 +233,19 @@ AppInstance::createNodeInternal(const QString & pluginID,
         node->fetchParentMultiInstancePointer();
     }
 
-    _imp->_currentProject->addNodeToProject(node);
+    if (addToProject) {
+        _imp->_currentProject->addNodeToProject(node);
+    }
 
     // createNodeGui also sets the filename parameter for reader or writers
-    createNodeGui(node, multiInstanceParentName, requestedByLoad, openImageFileDialog, autoConnect, xPosHint, yPosHint);
+    createNodeGui(node,
+                  multiInstanceParentName,
+                  requestedByLoad,
+                  openImageFileDialog,
+                  autoConnect,
+                  xPosHint,
+                  yPosHint,
+                  pushUndoRedoCommand);
 
     // once all the parameters have been loaded or set, we should finalize node creation
     // (on OFX effects, this means setting supportsRS)
@@ -253,16 +265,37 @@ AppInstance::createNode(const CreateNodeArgs & args)
         return boost::shared_ptr<Natron::Node>();
     }
 
-    return createNodeInternal(args.pluginID,args.multiInstanceParentName, args.majorV, args.minorV, false,
-                              args.openImageFileDialog, NodeSerialization( boost::shared_ptr<Natron::Node>() ),false,args.childIndex,
-                              args.autoConnect,args.xPosHint,args.yPosHint);
+    return createNodeInternal(args.pluginID,
+                              args.multiInstanceParentName,
+                              args.majorV, args.minorV,
+                              false,
+                              args.openImageFileDialog,
+                              NodeSerialization( boost::shared_ptr<Natron::Node>() ),
+                              !args.fixedName.isEmpty(),
+                              args.childIndex,
+                              args.autoConnect,
+                              args.xPosHint,args.yPosHint,
+                              args.pushUndoRedoCommand,
+                              args.addToProject,
+                              args.fixedName);
 }
 
 boost::shared_ptr<Natron::Node>
 AppInstance::loadNode(const LoadNodeArgs & args)
 {
-    return createNodeInternal(args.pluginID,args.multiInstanceParentName,args.majorV, args.minorV,
-                              true, false, *args.serialization,args.dontLoadName,-1,false,INT_MIN,INT_MIN);
+    return createNodeInternal(args.pluginID,
+                              args.multiInstanceParentName,
+                              args.majorV, args.minorV,
+                              true,
+                              false,
+                              *args.serialization,
+                              args.dontLoadName,
+                              -1,
+                              false,
+                              INT_MIN,INT_MIN,
+                              false,
+                              true,
+                              QString());
 }
 
 int
@@ -343,9 +376,8 @@ AppInstance::checkViewersConnection()
 
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
-        if (nodes[i]->getPluginID() == "Viewer") {
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-            assert(n);
+        ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
+        if (n) {
             n->updateTreeAndRender();
         }
     }

@@ -24,6 +24,7 @@ namespace Color {
 class Lut;
 }
 }
+class TimeLine;
 class OpenGLViewerI;
 struct TextureRect;
 
@@ -150,6 +151,8 @@ public:
 
     bool isFrameRangeLocked() const;
 
+    boost::shared_ptr<TimeLine> getTimeline() const;
+    
 public slots:
 
 

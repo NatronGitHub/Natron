@@ -216,7 +216,8 @@ Node::load(const std::string & pluginID,
            int childIndex,
            const boost::shared_ptr<Natron::Node> & thisShared,
            const NodeSerialization & serialization,
-           bool dontLoadName)
+           bool dontLoadName,
+           const QString& fixedName)
 {
     ///Called from the main thread. MT-safe
     assert( QThread::currentThread() == qApp->thread() );
@@ -232,7 +233,7 @@ Node::load(const std::string & pluginID,
 
         ///Fetch the parent pointer ONLY when not loading (otherwise parent node might still node be created
         ///at that time)
-        if ( serialization.isNull() ) {
+        if ( serialization.isNull() && fixedName.isEmpty() ) {
             setName( QString( parentMultiInstanceName.c_str() ) + '_' + QString::number(childIndex) );
             nameSet = true;
         }
@@ -240,7 +241,7 @@ Node::load(const std::string & pluginID,
         _imp->isMultiInstance = false;
     }
 
-    if (!serialization.isNull() && !dontLoadName && !nameSet) {
+    if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
         setName( serialization.getPluginLabel().c_str() );
         nameSet = true;
     }
@@ -284,7 +285,11 @@ Node::load(const std::string & pluginID,
     }
 
     if (!nameSet) {
-        getApp()->getProject()->initNodeCountersAndSetName(this);
+        if (fixedName.isEmpty()) {
+            getApp()->getProject()->initNodeCountersAndSetName(this);
+        } else {
+            setName(fixedName);
+        }
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
             updateEffectLabelKnob( getName().c_str() );
         }
@@ -1426,47 +1431,50 @@ Node::deactivate(const std::list< boost::shared_ptr<Natron::Node> > & outputsToD
     }
     /*Removing this node from the output of all inputs*/
     _imp->deactivatedState.clear();
-
+    
     boost::shared_ptr<Natron::Node> thisShared = getApp()->getProject()->getNodePointer(this);
-    assert(thisShared);
-    std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        inputsQueueCopy = _imp->inputsQueue;
-    }
-    for (U32 i = 0; i < inputsQueueCopy.size(); ++i) {
-        if (inputsQueueCopy[i]) {
-            inputsQueueCopy[i]->disconnectOutput(thisShared);
+    
+    ///thisShared might be null if we're tearing down the project.
+    if (thisShared) {
+        std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
+        {
+            QMutexLocker l(&_imp->inputsMutex);
+            inputsQueueCopy = _imp->inputsQueue;
         }
-    }
-
-
-    ///For each output node we remember that the output node  had its input number inputNb connected
-    ///to this node
-    std::list<boost::shared_ptr<Node> > outputsQueueCopy;
-    {
-        QMutexLocker l(&_imp->outputsMutex);
-        outputsQueueCopy = _imp->outputsQueue;
-    }
-
-
-    for (std::list<boost::shared_ptr<Node> >::iterator it = outputsQueueCopy.begin(); it != outputsQueueCopy.end(); ++it) {
-        assert(*it);
-        bool dc;
-        if (disconnectAll) {
-            dc = true;
-        } else {
-            std::list<boost::shared_ptr<Node> >::const_iterator found =
+        for (U32 i = 0; i < inputsQueueCopy.size(); ++i) {
+            if (inputsQueueCopy[i]) {
+                inputsQueueCopy[i]->disconnectOutput(thisShared);
+            }
+        }
+        
+        
+        ///For each output node we remember that the output node  had its input number inputNb connected
+        ///to this node
+        std::list<boost::shared_ptr<Node> > outputsQueueCopy;
+        {
+            QMutexLocker l(&_imp->outputsMutex);
+            outputsQueueCopy = _imp->outputsQueue;
+        }
+        
+        
+        for (std::list<boost::shared_ptr<Node> >::iterator it = outputsQueueCopy.begin(); it != outputsQueueCopy.end(); ++it) {
+            assert(*it);
+            bool dc;
+            if (disconnectAll) {
+                dc = true;
+            } else {
+                std::list<boost::shared_ptr<Node> >::const_iterator found =
                 std::find(outputsToDisconnect.begin(), outputsToDisconnect.end(), *it);
-            dc = found != outputsToDisconnect.end();
-        }
-        if (dc) {
-            int inputNb = (*it)->disconnectInput(thisShared);
-            _imp->deactivatedState.insert( make_pair(*it, inputNb) );
-
-            ///reconnect if inputToConnectTo is not null
-            if (inputToConnectTo) {
-                getApp()->getProject()->connectNodes(inputNb, inputToConnectTo, *it);
+                dc = found != outputsToDisconnect.end();
+            }
+            if (dc) {
+                int inputNb = (*it)->disconnectInput(thisShared);
+                _imp->deactivatedState.insert( make_pair(*it, inputNb) );
+                
+                ///reconnect if inputToConnectTo is not null
+                if (inputToConnectTo) {
+                    getApp()->getProject()->connectNodes(inputNb, inputToConnectTo, *it);
+                }
             }
         }
     }

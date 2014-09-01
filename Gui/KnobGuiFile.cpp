@@ -110,7 +110,7 @@ File_KnobGui::open_file()
     }
 
     SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, _knob->isInputImageFile(),
-                               SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString() );
+                               SequenceFileDialog::OPEN_DIALOG, pathWhereToOpen.toStdString(), getGui());
     if ( dialog.exec() ) {
         std::string selectedFile = dialog.selectedFiles();
         std::string originalSelectedFile = selectedFile;
@@ -260,7 +260,8 @@ OutputFile_KnobGui::open_file(bool openSequence)
         }
     }
 
-    SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString() );
+    SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::SAVE_DIALOG, _lastOpened.toStdString(),
+                              getGui());
     if ( dialog.exec() ) {
         std::string oldPattern = _lineEdit->text().toStdString();
         std::string newPattern = dialog.filesToSave();

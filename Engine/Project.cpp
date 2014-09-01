@@ -615,12 +615,29 @@ Project::initializeKnobs()
 } // initializeKnobs
 
 void
-Project::evaluate(KnobI* /*knob*/,
+Project::evaluate(KnobI* knob,
                   bool isSignificant,
                   Natron::ValueChangedReason /*reason*/)
 {
+    assert(QThread::currentThread() == qApp->thread());
     if (isSignificant) {
-        getApp()->checkViewersConnection();
+        getCurrentNodes();
+        
+        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
+            assert(_imp->currentNodes[i]);
+            
+
+            
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>( _imp->currentNodes[i]->getLiveInstance() );
+            if (n) {
+                
+                ///A change of format requires an age increment otherwise it might load a wrong texture from the viewer cache
+                if (knob == _imp->formatKnob.get()) {
+                    _imp->currentNodes[i]->incrementKnobsAge();
+                }
+                n->updateTreeAndRender();
+            }
+        }
     }
 }
 
@@ -791,7 +808,7 @@ Project::tryAddProjectFormat(const Format & f)
     } else {
         foundFormat = std::find(_imp->additionalFormats.begin(), _imp->additionalFormats.end(), f);
         if ( foundFormat != _imp->additionalFormats.end() ) {
-            return std::distance(_imp->additionalFormats.begin(),foundFormat);
+            return std::distance(_imp->additionalFormats.begin(),foundFormat) + _imp->builtinFormats.size();
         }
     }
 
@@ -1095,6 +1112,20 @@ Project::reset()
     clearNodes();
 }
 
+bool
+Project::isAutoSetProjectFormatEnabled() const
+{
+    QMutexLocker l(&_imp->formatMutex);
+    return _imp->autoSetProjectFormat;
+}
+    
+void
+Project::setAutoSetProjectFormatEnabled(bool enabled)
+{
+    QMutexLocker l(&_imp->formatMutex);
+    _imp->autoSetProjectFormat = enabled;
+}
+    
 void
 Project::setOrAddProjectFormat(const Format & frmt,
                                bool skipAdd)

@@ -689,7 +689,7 @@ NodeGui::updateChannelsTooltip(const Natron::ChannelSet & chan)
 void
 NodeGui::updatePreviewImage(int time)
 {
-    if ( _internalNode->isPreviewEnabled()  && _internalNode->getApp()->getProject()->isAutoPreviewEnabled() ) {
+    if ( isVisible() && _internalNode->isPreviewEnabled()  && _internalNode->getApp()->getProject()->isAutoPreviewEnabled() ) {
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -697,7 +697,7 @@ NodeGui::updatePreviewImage(int time)
 void
 NodeGui::forceComputePreview(int time)
 {
-    if ( _internalNode->isPreviewEnabled() ) {
+    if ( isVisible() && _internalNode->isPreviewEnabled() ) {
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }

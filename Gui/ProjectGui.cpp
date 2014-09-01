@@ -379,6 +379,12 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setCompositingOperator( (Natron::ViewerCompositingOperator)found->second.wipeCompositingOp );
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
                 tab->setFrameRangeLocked(found->second.frameRangeLocked);
+                tab->setTopToolbarVisible(found->second.topToolbarVisible);
+                tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
+                tab->setRightToolbarVisible(found->second.rightToolbarVisible);
+                tab->setPlayerVisible(found->second.playerVisible);
+                tab->setInfobarVisible(found->second.infobarVisible);
+                tab->setTimelineVisible(found->second.timelineVisible);
             }
         }
 

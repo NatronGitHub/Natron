@@ -226,6 +226,8 @@ public slots:
     virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual int getCurrentView() const OVERRIDE FINAL;
+    
+    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
 
     /**
      * @brief Reset the wipe position so it is in the center of the B input.

@@ -11,6 +11,8 @@
 #ifndef GUIAPPINSTANCE_H
 #define GUIAPPINSTANCE_H
 
+#include <map>
+
 #include "Engine/AppInstance.h"
 
 #include "Global/Macros.h"
@@ -18,6 +20,26 @@
 class NodeGui;
 
 class Gui;
+class ViewerTab;
+class Format;
+
+/**
+ * @brief This little struct contains what enables file dialogs to show previews.
+ * It is shared by all dialogs so that we don't have to recreate the nodes everytimes
+ **/
+struct FileDialogPreviewProvider
+{
+    ViewerTab* viewerUI;
+    boost::shared_ptr<NodeGui> viewerNode;
+    std::map<std::string,boost::shared_ptr<NodeGui> > readerNodes;
+    
+    FileDialogPreviewProvider()
+    : viewerUI(0)
+    , viewerNode()
+    , readerNodes()
+    {}
+};
+
 
 struct GuiAppInstancePrivate;
 class GuiAppInstance
@@ -82,10 +104,13 @@ public:
     virtual void aboutToAutoSave() OVERRIDE FINAL;
     virtual void autoSaveFinished() OVERRIDE FINAL;
 
+    boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
+
 public slots:
 
     void onProcessFinished();
 
+    void projectFormatChanged(const Format& f);
 private:
 
     virtual void createBackDrop() OVERRIDE FINAL;
@@ -94,7 +119,8 @@ private:
                                bool loadRequest,
                                bool openImageFileDialog,
                                bool autoConnect,
-                               double xPosHint,double yPosHint) OVERRIDE FINAL;
+                               double xPosHint,double yPosHint,
+                               bool pushUndoRedoCommand) OVERRIDE FINAL;
     virtual void startRenderingFullSequence(Natron::OutputEffectInstance* writer) OVERRIDE FINAL;
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };

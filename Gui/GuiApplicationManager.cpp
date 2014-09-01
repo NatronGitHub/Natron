@@ -108,6 +108,7 @@ struct GuiApplicationManagerPrivate
     QString _openFileRequest;
     AppShortcuts _actionShortcuts;
 
+    
     GuiApplicationManagerPrivate()
         : _toolButtons()
           , _knobsClipBoard(new KnobsClipBoard)
@@ -581,6 +582,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             break;
         case NATRON_PIXMAP_UPDATE_VIEWER_DISABLED:
             img.load(NATRON_IMAGES_PATH "updateViewerDisabled.png");
+            *pix = QPixmap::fromImage(img);
+            break;
+        case NATRON_PIXMAP_SETTINGS:
+            img.load(NATRON_IMAGES_PATH "settings.png");
             *pix = QPixmap::fromImage(img);
             break;
         default:

@@ -152,17 +152,35 @@ struct ViewerTabPrivate
     ViewerCompositingOperator _compOperator;
     Gui* _gui;
     ViewerInstance* _viewerNode; // < pointer to the internal node
+    
+    mutable QMutex _visibleToolbarsMutex; //< protects the 4 bool below
+    bool _infobarVisible;
+    bool _playerVisible;
+    bool _timelineVisible;
+    bool _leftToolbarVisible;
+    bool _rightToolbarVisible;
+    bool _topToolbarVisible;
+    
+    bool _isFileDialogViewer;
 
     ViewerTabPrivate(Gui* gui,
                      ViewerInstance* node)
         : app( gui->getApp() )
           , _renderScaleActive(false)
           , _currentViewIndex(0)
+          , _playerButtonsContainer(0)
           , frameRangeLocked(true)
           , _timeLineGui(NULL)
           , _compOperator(OPERATOR_NONE)
           , _gui(gui)
           , _viewerNode(node)
+          , _infobarVisible(true)
+          , _playerVisible(true)
+          , _timelineVisible(true)
+          , _leftToolbarVisible(true)
+          , _rightToolbarVisible(true)
+          , _topToolbarVisible(true)
+          , _isFileDialogViewer(false)
     {
         _currentRoto.first = NULL;
         _currentRoto.second = NULL;
@@ -703,13 +721,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*=================================================*/
 
     /*frame seeker*/
-    _imp->_timeLineGui = new TimeLineGui(_imp->app->getTimeLine(),_imp->_gui,this);
+    _imp->_timeLineGui = new TimeLineGui(node,timeline,_imp->_gui,this);
     _imp->_timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _imp->_mainLayout->addWidget(_imp->_timeLineGui);
     /*================================================*/
 
 
     /*slots & signals*/
+    
+    manageTimelineSlot(false,timeline);
+    
     boost::shared_ptr<Node> wrapperNode = _imp->_viewerNode->getNode();
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
     QObject::connect( wrapperNode.get(),SIGNAL( inputNameChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
@@ -737,12 +758,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->firstFrame_Button,SIGNAL( clicked() ),this,SLOT( firstFrame() ) );
     QObject::connect( _imp->lastFrame_Button,SIGNAL( clicked() ),this,SLOT( lastFrame() ) );
     QObject::connect( _imp->loopMode_Button, SIGNAL( clicked(bool) ), this, SLOT( toggleLoopMode(bool) ) );
-    QObject::connect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),_imp->app->getTimeLine().get(), SLOT( goToNextKeyframe() ) );
-    QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),_imp->app->getTimeLine().get(), SLOT( goToPreviousKeyframe() ) );
-    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),
-                      this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
-    QObject::connect( timeline.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,
-                      SLOT( onTimelineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+    
+
+    
     QObject::connect( _imp->_refreshButton, SIGNAL( clicked() ), this, SLOT( refresh() ) );
     QObject::connect( _imp->_centerViewerButton, SIGNAL( clicked() ), this, SLOT( centerViewer() ) );
     QObject::connect( _imp->_viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
@@ -1208,12 +1226,19 @@ ViewerTab::disconnectViewer()
 QSize
 ViewerTab::minimumSizeHint() const
 {
+    if (!_imp->_playerButtonsContainer->isVisible()) {
+        return QSize(500,200);
+    }
     return QWidget::minimumSizeHint();
 }
 
 QSize
 ViewerTab::sizeHint() const
 {
+    if (!_imp->_playerButtonsContainer->isVisible()) {
+        return QSize(500,200);
+    }
+
     return QWidget::sizeHint();
 }
 
@@ -1916,7 +1941,13 @@ ViewerTab::setTrackerInterface(NodeGui* n)
         assert(index >= 0);
         QWidget* buttonsBar = it->second->getButtonsBar();
         _imp->_mainLayout->insertWidget(index,buttonsBar);
-        buttonsBar->show();
+        
+        {
+            QMutexLocker l(&_imp->_visibleToolbarsMutex);
+            if (_imp->_topToolbarVisible) {
+                buttonsBar->show();
+            }
+        }
 
         _imp->_currentTracker.first = n;
         _imp->_currentTracker.second = it->second;
@@ -2017,7 +2048,13 @@ ViewerTab::setRotoInterface(NodeGui* n)
         ///Add the widgets
         QToolBar* toolBar = it->second->getToolBar();
         _imp->_viewerLayout->insertWidget(0, toolBar);
-        toolBar->show();
+        
+        {
+            QMutexLocker l(&_imp->_visibleToolbarsMutex);
+            if (_imp->_leftToolbarVisible) {
+                toolBar->show();
+            }
+        }
 
         ///If there's a tracker add it right after the tracker
         int index;
@@ -2031,7 +2068,13 @@ ViewerTab::setRotoInterface(NodeGui* n)
         assert(index >= 0);
         QWidget* buttonsBar = it->second->getCurrentButtonsBar();
         _imp->_mainLayout->insertWidget(index,buttonsBar);
-        buttonsBar->show();
+        
+        {
+            QMutexLocker l(&_imp->_visibleToolbarsMutex);
+            if (_imp->_topToolbarVisible) {
+                buttonsBar->show();
+            }
+        }
 
         QObject::connect( it->second,SIGNAL( roleChanged(int,int) ),this,SLOT( onRotoRoleChanged(int,int) ) );
         _imp->_currentRoto.first = n;
@@ -2565,4 +2608,268 @@ ViewerTab::clearTimelineCacheLine()
         _imp->_timeLineGui->clearCachedFrames();
     }
 }
+
+void
+ViewerTab::toggleInfobarVisbility()
+{
+    bool visible;
+    {
+        QMutexLocker l(&_imp->_visibleToolbarsMutex);
+        visible = !_imp->_infobarVisible;
+    }
+    setInfobarVisible(visible);
+}
+
+void
+ViewerTab::togglePlayerVisibility()
+{
+    bool visible;
+    {
+        QMutexLocker l(&_imp->_visibleToolbarsMutex);
+        visible = !_imp->_playerVisible;
+    }
+    setPlayerVisible(visible);
+}
+
+void
+ViewerTab::toggleTimelineVisibility()
+{
+    bool visible;
+    {
+        QMutexLocker l(&_imp->_visibleToolbarsMutex);
+        visible = !_imp->_timelineVisible;
+    }
+    setTimelineVisible(visible);
+}
+
+void
+ViewerTab::toggleLeftToolbarVisiblity()
+{
+    bool visible;
+    {
+        QMutexLocker l(&_imp->_visibleToolbarsMutex);
+        visible = !_imp->_leftToolbarVisible;
+    }
+    setLeftToolbarVisible(visible);
+}
+
+void
+ViewerTab::toggleRightToolbarVisibility()
+{
+    bool visible;
+    {
+        QMutexLocker l(&_imp->_visibleToolbarsMutex);
+        visible =  !_imp->_rightToolbarVisible;
+    }
+    setRightToolbarVisible(visible);
+}
+
+void
+ViewerTab::toggleTopToolbarVisibility()
+{
+    bool visible;
+    {
+        QMutexLocker l(&_imp->_visibleToolbarsMutex);
+        visible = !_imp->_topToolbarVisible;
+    }
+    setTopToolbarVisible(visible);
+}
+
+void
+ViewerTab::setLeftToolbarVisible(bool visible)
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    _imp->_leftToolbarVisible = visible;
+    if (_imp->_currentRoto.second) {
+        _imp->_currentRoto.second->getToolBar()->setVisible(_imp->_leftToolbarVisible);
+    }
+}
+
+void
+ViewerTab::setRightToolbarVisible(bool visible)
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    _imp->_rightToolbarVisible = visible;
+}
+
+void
+ViewerTab::setTopToolbarVisible(bool visible)
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    _imp->_topToolbarVisible = visible;
+    _imp->_firstSettingsRow->setVisible(_imp->_topToolbarVisible);
+    _imp->_secondSettingsRow->setVisible(_imp->_topToolbarVisible);
+    if (_imp->_currentRoto.second) {
+        _imp->_currentRoto.second->getCurrentButtonsBar()->setVisible(_imp->_topToolbarVisible);
+    }
+    if (_imp->_currentTracker.second) {
+        _imp->_currentTracker.second->getButtonsBar()->setVisible(_imp->_topToolbarVisible);
+    }
+}
+
+void
+ViewerTab::setPlayerVisible(bool visible)
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    _imp->_playerVisible = visible;
+    _imp->_playerButtonsContainer->setVisible(_imp->_playerVisible);
+
+}
+
+void
+ViewerTab::setTimelineVisible(bool visible)
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    _imp->_timelineVisible = visible;
+    _imp->_timeLineGui->setVisible(_imp->_playerVisible);
+
+}
+
+void
+ViewerTab::setInfobarVisible(bool visible)
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    _imp->_infobarVisible = visible;
+    for (int i = 0; i < 2; ++i) {
+        _imp->_infosWidget[i]->setVisible(_imp->_infobarVisible);
+    }
+
+}
+
+void
+ViewerTab::showAllToolbars()
+{
+    if (!isTopToolbarVisible()) {
+        toggleTopToolbarVisibility();
+    }
+    if (!isRightToolbarVisible()) {
+        toggleRightToolbarVisibility();
+    }
+    if (!isLeftToolbarVisible()) {
+        toggleLeftToolbarVisiblity();
+    }
+    if (!isInfobarVisible()) {
+        toggleInfobarVisbility();
+    }
+    if (!isPlayerVisible()) {
+        togglePlayerVisibility();
+    }
+    if (!isTimelineVisible()) {
+        toggleTimelineVisibility();
+    }
+}
+
+void
+ViewerTab::hideAllToolbars()
+{
+    if (isTopToolbarVisible()) {
+        toggleTopToolbarVisibility();
+    }
+    if (isRightToolbarVisible()) {
+        toggleRightToolbarVisibility();
+    }
+    if (isLeftToolbarVisible()) {
+        toggleLeftToolbarVisiblity();
+    }
+    if (isInfobarVisible()) {
+        toggleInfobarVisbility();
+    }
+    if (isPlayerVisible()) {
+        togglePlayerVisibility();
+    }
+    if (isTimelineVisible()) {
+        toggleTimelineVisibility();
+    }
+}
+
+bool
+ViewerTab::isInfobarVisible() const
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    return _imp->_infobarVisible;
+}
+
+bool
+ViewerTab::isTopToolbarVisible() const
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    return _imp->_topToolbarVisible;
+}
+
+bool
+ViewerTab::isPlayerVisible() const
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    return _imp->_playerVisible;
+}
+
+bool
+ViewerTab::isTimelineVisible() const
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    return _imp->_timelineVisible;
+}
+
+bool
+ViewerTab::isLeftToolbarVisible() const
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    return _imp->_leftToolbarVisible;
+}
+
+bool
+ViewerTab::isRightToolbarVisible() const
+{
+    QMutexLocker l(&_imp->_visibleToolbarsMutex);
+    return _imp->_rightToolbarVisible;
+}
+
+void
+ViewerTab::setAsFileDialogViewer()
+{
+    _imp->_isFileDialogViewer = true;
+}
+
+bool
+ViewerTab::isFileDialogViewer() const
+{
+    return _imp->_isFileDialogViewer;
+}
+
+void
+ViewerTab::setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline)
+{
+    _imp->_timeLineGui->setTimeline(timeline);
+    manageTimelineSlot(true,timeline);
+}
+
+void
+ViewerTab::manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline)
+{
+    if (disconnectPrevious) {
+        boost::shared_ptr<TimeLine> previous = _imp->_timeLineGui->getTimeline();
+        QObject::disconnect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),previous.get(), SLOT( goToNextKeyframe() ) );
+        QObject::disconnect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),previous.get(), SLOT( goToPreviousKeyframe() ) );
+        QObject::disconnect( previous.get(),SIGNAL( frameChanged(SequenceTime,int) ),
+                         this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
+        QObject::disconnect( previous.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,
+                         SLOT( onTimelineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+
+    }
+    
+    QObject::connect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),timeline.get(), SLOT( goToNextKeyframe() ) );
+    QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),timeline.get(), SLOT( goToPreviousKeyframe() ) );
+    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),
+                     this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
+    QObject::connect( timeline.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,
+                     SLOT( onTimelineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+
+}
+
+boost::shared_ptr<TimeLine>
+ViewerTab::getTimeLine() const
+{
+    return _imp->_timeLineGui->getTimeline();
+}
+
 

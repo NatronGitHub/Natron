@@ -51,6 +51,9 @@ struct CreateNodeArgs
     int childIndex;
     bool autoConnect;
     double xPosHint,yPosHint;
+    bool pushUndoRedoCommand;
+    bool addToProject;
+    QString fixedName;
 
     ///Constructor used to create a new node
     explicit CreateNodeArgs(const QString & pluginID, //< the pluginID (as they appear in the "Tab" menu in the nodegraph)
@@ -58,10 +61,13 @@ struct CreateNodeArgs
                             int majorVersion = -1, //< use greatest version found
                             int minorVersion = -1, //< use greatest version found
                             bool openImageFileDialog = true, //< open a file dialog if the node is a reader/writer
-                            int childIndex = -1,
-                            bool autoConnect = true,
-                            double xPosHint = INT_MIN,
-                            double yPosHint = INT_MIN)
+                            int childIndex = -1,//< if this is a child of a multi-instance, this is the index
+                            bool autoConnect = true, //< should we attempt to autoconnect ?
+                            double xPosHint = INT_MIN, //< xPosition in the nodegraph
+                            double yPosHint = INT_MIN, //< yPosition in the nodegraph
+                            bool pushUndoRedoCommand = true, //< should we push a new undo/redo command on the GUI?
+                            bool addToProject = true, //< should we add the node to the project ?
+                            const QString & fixedName = QString()) //< if non empty, this will be the name of the node
         : pluginID(pluginID)
           , majorV(majorVersion)
           , minorV(minorVersion)
@@ -71,6 +77,9 @@ struct CreateNodeArgs
           , autoConnect(autoConnect)
           , xPosHint(xPosHint)
           , yPosHint(yPosHint)
+          , pushUndoRedoCommand(pushUndoRedoCommand)
+          , addToProject(addToProject)
+          , fixedName(fixedName)
     {
     }
 };
@@ -93,7 +102,7 @@ struct LoadNodeArgs
         : pluginID(pluginID)
           , majorV(majorVersion)
           , minorV(minorVersion)
-          , dontLoadName(dontLoadName)
+          , dontLoadName(dontLoadName) //< used when copy/pasting nodes to avoid duplicates in names
           , multiInstanceParentName(multiInstanceParentName)
           , serialization(serialization)
     {
@@ -290,7 +299,8 @@ protected:
                                bool /*openImageFileDialog*/,
                                bool /*autoConnect*/,
                                double /*xPosHint*/,
-                               double /*yPosHint*/)
+                               double /*yPosHint*/,
+                               bool /*pushUndoRedoCommand*/)
     {
     }
 
@@ -309,7 +319,8 @@ private:
                                                        int majorVersion,int minorVersion,
                                                        bool requestedByLoad,bool openImageFileDialog,
                                                        const NodeSerialization & serialization,bool dontLoadName,
-                                                       int childIndex,bool autoConnect,double xPosHint,double yPosHint);
+                                                       int childIndex,bool autoConnect,double xPosHint,double yPosHint,
+                                                       bool pushUndoRedoCommand,bool addToProject,const QString& fixedName);
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 

@@ -42,9 +42,8 @@ class OutputEffectInstance;
 }
 class ViewerInstance;
 class OfxNode;
-class TimeLine;
 class Timer;
-
+class TimeLine;
 
 /**
  *@class RenderTree
@@ -411,6 +410,7 @@ private:
 
     Natron::Status renderFrame(SequenceTime time,bool singleThreaded);
 
+    boost::shared_ptr<TimeLine> getTimeline() const;
 private:
     // FIXME: PIMPL
 
@@ -482,7 +482,6 @@ private:
 
     /*Accessed only by the run() thread*/
     timeval _startRenderFrameTime; /*!< stores the time at which the QtConcurrent::map call was made*/
-    boost::shared_ptr<TimeLine> _timeline; /*!< ptr to the timeline*/
     QWaitCondition _getFrameRangeCond;
     mutable QMutex _getFrameRangeMutex;
     bool _gettingFrameRange;

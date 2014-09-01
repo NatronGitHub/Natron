@@ -68,8 +68,19 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ComboBox.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Global/MemoryInfo.h"
-
+#include "Gui/Gui.h"
+#include "Gui/NodeGui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/TabWidget.h"
 #include <SequenceParsing.h>
+
+#include "Engine/Node.h"
+#include "Engine/Settings.h"
+#include "Engine/KnobFile.h"
+#include "Engine/Project.h"
+#include "Engine/ViewerInstance.h"
 
 #define FILE_DIALOG_DISABLE_ICONS
 
@@ -177,11 +188,12 @@ public:
 
 #endif
 
-SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
+SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmit the stylesheet to the dialog
                                        const std::vector<std::string> & filters, // the user accepted file types
                                        bool isSequenceDialog, // true if this dialog can display sequences
                                        FileDialogMode mode, // if it is an open or save dialog
-                                       const std::string & currentDirectory) // the directory to show first
+                                       const std::string & currentDirectory,// the directory to show first
+                                       Gui* gui)
     : QDialog(parent)
       , _nameMapping()
       , _filters(filters)
@@ -198,7 +210,6 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
       , _nextButton(0)
       , _upButton(0)
       , _createDirButton(0)
-      , _previewButton(0)
       , _openButton(0)
       , _cancelButton(0)
       , _addFavoriteButton(0)
@@ -229,6 +240,12 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
       , _showHiddenAction(0)
       , _newFolderAction(0)
       , _dialogMode(mode)
+      , _centerArea(0)
+      , _centerAreaLayout(0)
+      , _togglePreviewButton(0)
+      , _preview()
+      , _wasAutosetProjectFormatEnabled(false)
+      , _gui(gui)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
@@ -287,16 +304,14 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     _buttonsLayout->addWidget(_createDirButton);
     QObject::connect( _createDirButton, SIGNAL( clicked() ), this, SLOT( createDir() ) );
 
-
-    _previewButton = new Button(tr("preview"),_buttonsWidget);
-    _previewButton->setVisible(false); /// @todo Implement preview mode for the file dialog
-    _buttonsLayout->addWidget(_previewButton);
-
-
     _mainLayout->addWidget(_buttonsWidget);
 
     /*creating center*/
-    _centerSplitter = new QSplitter(this);
+    _centerArea = new QWidget(this);
+    _centerAreaLayout = new QHBoxLayout(_centerArea);
+    _centerAreaLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _centerSplitter = new QSplitter(_centerArea);
     _centerSplitter->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     _favoriteWidget = new QWidget(this);
@@ -331,9 +346,25 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
 
     _centerSplitter->addWidget(_favoriteWidget);
     _centerSplitter->addWidget(_view);
-
-    _mainLayout->addWidget(_centerSplitter);
-
+    
+    _centerAreaLayout->addWidget(_centerSplitter);
+    
+    if (mode == OPEN_DIALOG && isSequenceDialog) {
+        QPixmap pixPreviewButton;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY, &pixPreviewButton);
+        _togglePreviewButton = new Button(QIcon(pixPreviewButton),"",_centerArea);
+        QObject::connect(_togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool) ) );
+        _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
+        _togglePreviewButton->setCheckable(true);
+        _togglePreviewButton->setChecked(false);
+        _centerAreaLayout->addWidget(_togglePreviewButton);
+        assert(gui);
+        _preview = gui->getApp()->getPreviewProvider();
+        _wasAutosetProjectFormatEnabled = gui->getApp()->getProject()->isAutoSetProjectFormatEnabled();
+    }
+    
+    _mainLayout->addWidget(_centerArea);
+    
     /*creating selection widget*/
     _selectionWidget = new QWidget(this);
     _selectionLayout = new QHBoxLayout(_selectionWidget);
@@ -731,6 +762,12 @@ SequenceFileDialog::selectionChanged()
             _selectionLineEdit->setText(itemText);
         }
     }
+    
+    ///refrsh preview if any
+    if (_preview && _preview->viewerUI && _preview->viewerUI->isVisible()) {
+        refreshPreviewAfterSelectionChange();
+    }
+    
 } // selectionChanged
 
 void
@@ -1496,7 +1533,8 @@ SequenceFileDialog::openSelectedFiles()
 void
 SequenceFileDialog::cancelSlot()
 {
-    QDialog::reject();
+    teardownPreview();
+    reject();
 }
 
 void
@@ -2516,3 +2554,159 @@ SequenceFileDialog::onSelectionLineEditing(const QString & text)
     }
 }
 
+void
+SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
+{
+    _togglePreviewButton->setDown(toggled);
+    assert(_preview);
+    if (!_preview->viewerNode) {
+        createViewerPreviewNode();
+    }
+    if (toggled) {
+        if (!_preview->viewerUI->parentWidget()) {
+            _centerAreaLayout->addWidget(_preview->viewerUI);
+        }
+        _preview->viewerUI->show();
+        refreshPreviewAfterSelectionChange();
+    } else {
+        _preview->viewerUI->hide();
+    }
+}
+
+void
+SequenceFileDialog::createViewerPreviewNode()
+{
+    CreateNodeArgs args("Viewer",
+                        "",
+                        -1,-1,
+                         false,
+                        -1,
+                        false,
+                        INT_MIN,
+                        INT_MIN,
+                        false,
+                        false,
+                        "Natron_File_Dialog_Preview_Provider_Viewer");
+    
+    boost::shared_ptr<Natron::Node> viewer = _gui->getApp()->createNode(args);
+    _preview->viewerNode = _gui->getApp()->getNodeGui(viewer);
+    assert(_preview->viewerNode);
+    _preview->viewerNode->hideGui();
+    _preview->viewerUI = dynamic_cast<ViewerGL*>(dynamic_cast<ViewerInstance*>(viewer->getLiveInstance())->getUiContext())->getViewerTab();
+    assert(_preview->viewerUI);
+    _preview->viewerUI->setAsFileDialogViewer();
+    
+    ///Set a custom timeline so that it is not in synced with the rest of the viewers of the app
+    boost::shared_ptr<TimeLine> newTimeline(new TimeLine(NULL));
+    _preview->viewerUI->setCustomTimeline(newTimeline);
+    _preview->viewerUI->setClipToProject(false);
+    _preview->viewerUI->setLeftToolbarVisible(false);
+    _preview->viewerUI->setRightToolbarVisible(false);
+    _preview->viewerUI->setTopToolbarVisible(false);
+    _preview->viewerUI->setInfobarVisible(false);
+    _preview->viewerUI->setPlayerVisible(false);
+    TabWidget* parent = dynamic_cast<TabWidget*>(_preview->viewerUI->parentWidget());
+    if (parent) {
+        parent->removeTab(_preview->viewerUI);
+    }
+    _preview->viewerUI->setParent(NULL);
+}
+
+boost::shared_ptr<NodeGui>
+SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
+{
+    std::map<std::string,std::string> readersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
+    if ( !filetype.empty() ) {
+        std::map<std::string,std::string>::iterator found = readersForFormat.find(filetype);
+        if ( found == readersForFormat.end() ) {
+            return boost::shared_ptr<NodeGui>();
+        }
+        std::map<std::string,boost::shared_ptr<NodeGui> >::iterator foundReader = _preview->readerNodes.find(found->second);
+        if (foundReader == _preview->readerNodes.end()) {
+            
+            CreateNodeArgs args(found->second.c_str(),
+                                "",
+                                -1,-1,
+                                false,
+                                -1,
+                                false,
+                                INT_MIN,
+                                INT_MIN,
+                                false,
+                                false,
+                                QString("Natron_File_Dialog_Preview_Provider_Reader") +  QString(found->second.c_str()));
+            
+            boost::shared_ptr<Natron::Node> reader = _gui->getApp()->createNode(args);
+            boost::shared_ptr<NodeGui> readerGui = _gui->getApp()->getNodeGui(reader);
+            assert(readerGui);
+            readerGui->hideGui();
+            _preview->readerNodes.insert(std::make_pair(found->second,readerGui));
+            return readerGui;
+        } else {
+            return foundReader->second;
+        }
+    }
+    return  boost::shared_ptr<NodeGui>();
+}
+
+void
+SequenceFileDialog::refreshPreviewAfterSelectionChange()
+{
+    if (!_preview->viewerUI->isVisible()) {
+        return;
+    }
+    
+    std::string pattern = selectedFiles();
+    QString qpattern( pattern.c_str() );
+    std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
+    assert(_preview->viewerNode);
+    
+    boost::shared_ptr<Natron::Node> currentInput = _preview->viewerNode->getNode()->getInput(0);
+    if (currentInput) {
+        _preview->viewerNode->getNode()->disconnectInput(0);
+        currentInput->disconnectOutput(_preview->viewerNode->getNode());
+    }
+    
+    
+    boost::shared_ptr<NodeGui> reader = findOrCreatePreviewReader(ext);
+    if (reader) {
+        const std::vector<boost::shared_ptr<KnobI> > & knobs = reader->getNode()->getKnobs();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            File_Knob* fileKnob = dynamic_cast<File_Knob*>(knobs[i].get());
+            if ( fileKnob && fileKnob->isInputImageFile() ) {
+                fileKnob->setValue(pattern,0);
+            }
+        }
+        _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(true);
+        _preview->viewerNode->getNode()->connectInput(reader->getNode(), 0);
+        reader->getNode()->connectOutput(_preview->viewerNode->getNode());
+        
+        
+    }
+     _preview->viewerUI->getInternalNode()->updateTreeAndRender();
+}
+
+///Reset everything as it was prior to the dialog being opened, also avoid the nodes being deleted
+void
+SequenceFileDialog::teardownPreview()
+{
+    if (_preview && _preview->viewerUI) {
+        ///Don't delete the viewer when closing the dialog!
+        _centerAreaLayout->removeWidget(_preview->viewerUI);
+        _preview->viewerUI->setParent(NULL);
+        _preview->viewerUI->hide();
+        assert(_gui);
+        bool autoSetProjectFormatEnabled = _gui->getApp()->getProject()->isAutoSetProjectFormatEnabled();
+        if (autoSetProjectFormatEnabled != _wasAutosetProjectFormatEnabled) {
+            _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(_wasAutosetProjectFormatEnabled);
+        }
+    }
+}
+
+void
+SequenceFileDialog::closeEvent(QCloseEvent* e)
+{
+    teardownPreview();
+    QDialog::closeEvent(e);
+}

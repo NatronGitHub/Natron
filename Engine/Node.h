@@ -66,8 +66,24 @@ public:
 
     virtual ~Node();
 
-    void load(const std::string & pluginID,const std::string & parentMultiInstanceName,int childIndex,const boost::shared_ptr<Natron::Node> & thisShared,
-              const NodeSerialization & serialization,bool dontLoadName);
+    /**
+     * @brief Creates the EffectInstance that will be embedded into this node and set it up.
+     * This function also loads all parameters. Node connections will not be setup in this method.
+     * @param pluginID The ID of the effect to create
+     * @param parentMultiInstanceName The exact name of the node that is the parent (when in a multi-instance environment, e.g: tracker)
+     * @param childIndex When parentMultiInstanceName is not empty, this indicates the child index of this node
+     * @param thisShared A shared pointer to this node
+     * @param serialization The object from which to recover the state of the node
+     * @param dontLoadName If set to true then the node shouldn't attempt to restore the name contained in the serialization object.
+     * @param fixedName If set, forces the node to have this name, regardless whether another node in the project might have it.
+     **/
+    void load(const std::string & pluginID,
+              const std::string & parentMultiInstanceName,
+              int childIndex,
+              const boost::shared_ptr<Natron::Node> & thisShared,
+              const NodeSerialization & serialization,
+              bool dontLoadName,
+              const QString& fixedName);
 
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization);

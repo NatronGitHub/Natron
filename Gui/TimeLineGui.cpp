@@ -23,6 +23,8 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Engine/Cache.h"
 #include "Engine/Node.h"
+#include "Engine/Project.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/TimeLine.h"
 
 #include "Gui/ViewerTab.h"
@@ -30,6 +32,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ticks.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/GuiAppInstance.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -88,6 +91,7 @@ typedef std::set<CachedFrame,CachedFrame_compare_time> CachedFrames;
 
 struct TimelineGuiPrivate
 {
+    ViewerInstance* _viewer;
     boost::shared_ptr<TimeLine> _timeline; //ptr to the internal timeline
     Gui* _gui; //< ptr to the gui
     bool _alphaCursor; // should cursor be drawn semi-transparant
@@ -108,9 +112,10 @@ struct TimelineGuiPrivate
     bool _firstPaint;
     CachedFrames cachedFrames;
 
-    TimelineGuiPrivate(boost::shared_ptr<TimeLine> timeline,
+    TimelineGuiPrivate(ViewerInstance* viewer,
                        Gui* gui)
-        : _timeline(timeline)
+        :  _viewer(viewer)
+          , _timeline()
           , _gui(gui)
           , _alphaCursor(false)
           , _lastMouseEventWidgetCoord()
@@ -133,33 +138,48 @@ struct TimelineGuiPrivate
     }
 };
 
-TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline,
+TimeLineGui::TimeLineGui(ViewerInstance* viewer,
+                         boost::shared_ptr<TimeLine> timeline,
                          Gui* gui,
                          QWidget* parent,
                          const QGLWidget *shareWidget)
     : QGLWidget(parent,shareWidget)
-      , _imp( new TimelineGuiPrivate(timeline,gui) )
+      , _imp( new TimelineGuiPrivate(viewer,gui) )
 {
-    //connect the internal timeline to the gui
-    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
-    QObject::connect( timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
-                      this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
-    QObject::connect( timeline.get(), SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),
-                      this, SLOT( onBoundariesChanged(SequenceTime,SequenceTime,int) ) );
-
-
-    //connect the gui to the internal timeline
-    QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
-    QObject::connect( this, SIGNAL( boundariesChanged(SequenceTime,SequenceTime) ),
-                      timeline.get(), SLOT( onBoundariesChanged(SequenceTime,SequenceTime) ) );
-    QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
-
+    setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
 }
 
 TimeLineGui::~TimeLineGui()
 {
+}
+
+void
+TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
+{
+    _imp->_timeline = timeline;
+    //connect the internal timeline to the gui
+    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
+    QObject::connect( timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
+                     this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
+    QObject::connect( timeline.get(), SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),
+                     this, SLOT( onBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+    
+    
+    //connect the gui to the internal timeline
+    QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
+    QObject::connect( this, SIGNAL( boundariesChanged(SequenceTime,SequenceTime) ),
+                     timeline.get(), SLOT( onBoundariesChanged(SequenceTime,SequenceTime) ) );
+    QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+    
+
+}
+
+boost::shared_ptr<TimeLine>
+TimeLineGui::getTimeline() const
+{
+    return _imp->_timeline;
 }
 
 QSize
@@ -525,6 +545,7 @@ void
 TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->_timeline->currentFrame() ) {
+        _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
         emit frameChanged(time);
         update();
     }
@@ -563,6 +584,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     bool distortViewPort = false;
     if (_imp->_state == DRAGGING_CURSOR) {
         if ( tseq != _imp->_timeline->currentFrame() ) {
+            _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
             emit frameChanged(tseq);
         }
         distortViewPort = true;
