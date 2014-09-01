@@ -3183,7 +3183,6 @@ NodeGraph::onTimeChanged(SequenceTime time,
     project->setLastTimelineSeekCaller(NULL);
 
     ///Syncrhronize viewers
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(lastTimelineSeekCaller);
     
     for (U32 i = 0; i < viewers.size(); ++i) {
         if ( (viewers[i] != lastTimelineSeekCaller) || (reason == USER_SEEK) ) {

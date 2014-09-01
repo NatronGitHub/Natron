@@ -988,19 +988,12 @@ GuiApplicationManager::setFileToOpen(const QString & str)
 void
 GuiApplicationManager::handleOpenFileRequest()
 {
-    std::string fileUnPathed = _imp->_openFileRequest.toStdString();
 
-    _imp->_openFileRequest.clear();
-    std::string path = SequenceParsing::removePath(fileUnPathed);
+
     AppInstance* mainApp = getAppInstance(0);
-    if ( mainApp && mainApp->getProject()->isGraphWorthLess() ) {
-        mainApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
-    } else {
-        ///remove autosaves otherwise the new instance might try to load an autosave
-        Project::removeAutoSaves();
-        AppInstance* newApp = newAppInstance();
-        newApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
-    }
+    GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
+    guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+    _imp->_openFileRequest.clear();
 }
 
 void

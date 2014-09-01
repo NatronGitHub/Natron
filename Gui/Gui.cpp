@@ -2311,6 +2311,12 @@ Gui::openProject()
 }
 
 void
+Gui::openProject(const std::string& filename)
+{
+    openProjectInternal(filename);
+}
+
+void
 Gui::openProjectInternal(const std::string & absoluteFileName)
 {
     std::string fileUnPathed = absoluteFileName;

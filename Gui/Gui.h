@@ -385,6 +385,8 @@ public:
     
     void checkNumberOfNonFloatingPanes();
 
+    void openProject(const std::string& filename);
+    
 signals:
 
     void doDialog(int type,const QString & title,const QString & content,Natron::StandardButtons buttons,int defaultB);
