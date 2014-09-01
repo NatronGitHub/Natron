@@ -123,6 +123,13 @@ struct ViewerData
             ar & boost::serialization::make_nvp("PlayerVisible",playerVisible);
             ar & boost::serialization::make_nvp("TimelineVisible",timelineVisible);
             ar & boost::serialization::make_nvp("InfobarVisible",infobarVisible);
+        } else {
+            leftToolbarVisible = true;
+            rightToolbarVisible = true;
+            topToolbarVisible = true;
+            playerVisible = true;
+            timelineVisible = true;
+            infobarVisible = true;
         }
     }
 };
