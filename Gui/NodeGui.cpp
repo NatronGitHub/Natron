@@ -759,7 +759,7 @@ NodeGui::initializeInputs()
     for (int i = 0; i < inputnb; ++i) {
         if ( _inputEdges.find(i) == _inputEdges.end() ) {
             Edge* edge = new Edge( i,0.,thisShared,parentItem() );
-            if ( _internalNode->getLiveInstance()->isInputRotoBrush(i) ) {
+            if ( _internalNode->getLiveInstance()->isInputRotoBrush(i) || !isVisible()) {
                 edge->setActive(false);
                 edge->hide();
             }

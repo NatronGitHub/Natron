@@ -43,34 +43,36 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     _serializedNodes.clear();
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        NodeGuiSerialization state;
-        (*it)->serialize(&state);
-        _serializedNodes.push_back(state);
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
-        if (viewer) {
-            ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
-            assert(tab);
-            ViewerData viewerData;
-            tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &viewerData.zoomPAR);
-            viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
-            viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
-            viewerData.isClippedToProject = tab->isClippedToProject();
-            viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
-            viewerData.gain = tab->getGain();
-            viewerData.colorSpace = tab->getColorSpace();
-            viewerData.channels = tab->getChannelsString();
-            viewerData.renderScaleActivated = tab->getRenderScaleActivated();
-            viewerData.mipMapLevel = tab->getMipMapLevel();
-            viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
-            viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
-            viewerData.frameRangeLocked = tab->isFrameRangeLocked();
-            viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();
-            viewerData.rightToolbarVisible = tab->isRightToolbarVisible();
-            viewerData.topToolbarVisible = tab->isTopToolbarVisible();
-            viewerData.infobarVisible = tab->isInfobarVisible();
-            viewerData.playerVisible = tab->isPlayerVisible();
-            viewerData.timelineVisible = tab->isTimelineVisible();
-            _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
+        if ((*it)->isVisible()) {
+            NodeGuiSerialization state;
+            (*it)->serialize(&state);
+            _serializedNodes.push_back(state);
+            ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
+            if (viewer) {
+                ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
+                assert(tab);
+                ViewerData viewerData;
+                tab->getViewer()->getProjection(&viewerData.zoomLeft, &viewerData.zoomBottom, &viewerData.zoomFactor, &viewerData.zoomPAR);
+                viewerData.userRoI = tab->getViewer()->getUserRegionOfInterest();
+                viewerData.userRoIenabled = tab->getViewer()->isUserRegionOfInterestEnabled();
+                viewerData.isClippedToProject = tab->isClippedToProject();
+                viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
+                viewerData.gain = tab->getGain();
+                viewerData.colorSpace = tab->getColorSpace();
+                viewerData.channels = tab->getChannelsString();
+                viewerData.renderScaleActivated = tab->getRenderScaleActivated();
+                viewerData.mipMapLevel = tab->getMipMapLevel();
+                viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
+                viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
+                viewerData.frameRangeLocked = tab->isFrameRangeLocked();
+                viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();
+                viewerData.rightToolbarVisible = tab->isRightToolbarVisible();
+                viewerData.topToolbarVisible = tab->isTopToolbarVisible();
+                viewerData.infobarVisible = tab->isInfobarVisible();
+                viewerData.playerVisible = tab->isPlayerVisible();
+                viewerData.timelineVisible = tab->isTimelineVisible();
+                _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
+            }
         }
     }
 
